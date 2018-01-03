@@ -18,16 +18,24 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.NegotiateMessage;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
-public interface FrameHandlerFactory
+import java.io.IOException;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Negotiation;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+
+public interface WebSocketNegotiator
 {
-    FrameHandler newFrameHandler(
-            NegotiateMessage.Request negotiateRequest,
-            NegotiateMessage.Response negotiateResponse,
-            WebSocketPolicy candidatePolicy,
-            ByteBufferPool bufferPool);
+    FrameHandler negotiate(Negotiation negotiation,WebSocketPolicy candidatePolicy) throws IOException;
+    
+    WebSocketExtensionRegistry getExtensionRegistry();
+    
+    DecoratedObjectFactory getObjectFactory();
+    
+    ByteBufferPool getByteBufferPool();
+    
 }

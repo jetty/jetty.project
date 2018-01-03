@@ -20,8 +20,6 @@ package org.eclipse.jetty.websocket.core;
 
 import java.net.URI;
 
-import org.eclipse.jetty.websocket.core.WebSocketException;
-
 /**
  * Exception during WebSocket Upgrade Handshake.
  */

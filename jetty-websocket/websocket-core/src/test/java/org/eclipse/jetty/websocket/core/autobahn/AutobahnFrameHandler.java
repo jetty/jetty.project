@@ -87,17 +87,14 @@ class AutobahnFrameHandler extends AbstractFrameHandler
     {
         LOG.info("onClosed {}",closeStatus);  
         if (!open.compareAndSet(true,false))
-            throw new IllegalStateException();
+            LOG.warn("Already closed or not open {}",closeStatus);
     }
 
     @Override
     public void onError(Throwable cause)
     {
         if (cause instanceof WebSocketTimeoutException && open.get())
-        {
             LOG.warn("timeout!");
-            open.set(false);
-        }
         else
             LOG.warn("onError",cause);
     }

@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.Frame;
 
 /**

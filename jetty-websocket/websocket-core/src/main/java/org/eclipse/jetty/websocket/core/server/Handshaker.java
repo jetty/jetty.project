@@ -27,5 +27,10 @@ import org.eclipse.jetty.server.Request;
 
 public interface Handshaker
 {
+    default boolean upgradeRequest(HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        return upgradeRequest(Request.getBaseRequest(request), request, response);
+    }
+    
     boolean upgradeRequest(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException;
 }
