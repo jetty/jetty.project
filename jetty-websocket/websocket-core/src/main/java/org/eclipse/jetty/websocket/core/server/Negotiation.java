@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.server;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
 public class Negotiation
@@ -37,6 +38,8 @@ public class Negotiation
     private final HttpServletResponse response;
     private final List<ExtensionConfig> offeredExtensions;
     private final List<String> offeredSubprotocols;
+    private List<ExtensionConfig> negotiatedExtensions;
+    private WebSocketPolicy policy;
     private int version;
     private Boolean upgrade;
     private String key = null;
@@ -109,67 +112,6 @@ public class Negotiation
             :subprotocols.getValues();
     }
 
-    public HttpServletRequest getRequest()
-    {
-        return request;
-    }
-
-    public HttpServletResponse getResponse()
-    {
-        return response;
-    }
-    
-    public boolean isUpgrade()
-    {
-        return upgrade;
-    }
-
-    public int getVersion()
-    {
-        return version;
-    }
-
-    public String getKey()
-    {
-        return key;
-    }
-
-    
-    
-
-
-    public List<ExtensionConfig> getOfferedExtensions()
-    {
-        return offeredExtensions;
-    }
-
-    public List<String> getOfferedSubprotocols()
-    {
-        return offeredSubprotocols;
-    }
-
-
-    public String getSubprotocol()
-    {
-        return response.getHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString());
-    }
-
-    public void setSubprotocol(String subprotocol)
-    {
-        response.setHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(),subprotocol);
-    }
-    
-    public void sendError(int code, String reason)
-    {            
-        errorCode = code;
-        errorReason = reason;
-    }
-
-    public boolean isError()
-    {
-        return errorCode>0;
-    }
-
     public int getErrorCode()
     {
         return errorCode;
@@ -178,6 +120,82 @@ public class Negotiation
     public String getErrorReason()
     {
         return errorReason;
+    }
+    
+    public String getKey()
+    {
+        return key;
+    }
+
+    public List<ExtensionConfig> getOfferedExtensions()
+    {
+        return offeredExtensions;
+    }
+
+    public List<ExtensionConfig> getNegotiatedExtensions()
+    {
+        return negotiatedExtensions;
+    }
+
+    public void setNegotiatedExtensions(List<ExtensionConfig> extensions)
+    {
+        negotiatedExtensions = extensions;
+    }
+
+    public List<String> getOfferedSubprotocols()
+    {
+        return offeredSubprotocols;
+    }
+
+    public WebSocketPolicy getPolicy()
+    {
+        return policy;
+    }
+
+    public HttpServletRequest getRequest()
+    {
+        return request;
+    }
+    
+    public HttpServletResponse getResponse()
+    {
+        return response;
+    }
+
+    public String getSubprotocol()
+    {
+        return response.getHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString());
+    }
+
+    public int getVersion()
+    {
+        return version;
+    }
+
+    public boolean isError()
+    {
+        return errorCode>0;
+    }
+    
+    public boolean isUpgrade()
+    {
+        return upgrade;
+    }
+
+    public void sendError(int code, String reason)
+    {            
+        errorCode = code;
+        errorReason = reason;
+    }
+
+    public void setPolicy(WebSocketPolicy policy)
+    {
+        this.policy = policy;
+    }
+
+    public void setSubprotocol(String subprotocol)
+    {
+        response.setHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(),subprotocol);
     }
     
     @Override

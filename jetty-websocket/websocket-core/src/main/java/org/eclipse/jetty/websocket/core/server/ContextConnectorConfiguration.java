@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.Connector;
 
 public final class ContextConnectorConfiguration
 {
-    public static <T> T lookup(Class<T> clazz, ServletContext context, Connector connector)
+    public static <T> T lookupX(Class<T> clazz, ServletContext context, Connector connector)
     {
         T t = null;
         if (context!=null)

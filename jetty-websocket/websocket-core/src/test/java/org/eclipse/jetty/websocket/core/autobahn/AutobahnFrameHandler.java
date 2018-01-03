@@ -48,10 +48,11 @@ class AutobahnFrameHandler extends AbstractFrameHandler
         super.onOpen();
     }
 
+    int count;
     @Override
     public void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
     {
-        LOG.info("onText {} {} {}", utf8.length(),fin, getWebSocketChannel());
+        LOG.info("onText {} {} {} {}", count++, utf8.length(),fin, getWebSocketChannel());
         if (fin)
         {
             getWebSocketChannel().outgoingFrame(new TextFrame().setPayload(utf8.toString()),
@@ -81,7 +82,6 @@ class AutobahnFrameHandler extends AbstractFrameHandler
         }
     }
     
-    
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
@@ -94,7 +94,7 @@ class AutobahnFrameHandler extends AbstractFrameHandler
     public void onError(Throwable cause)
     {
         if (cause instanceof WebSocketTimeoutException && open.get())
-            LOG.warn("timeout!");
+            LOG.info("timeout!");
         else
             LOG.warn("onError",cause);
     }

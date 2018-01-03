@@ -26,11 +26,11 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.Negotiation;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
 class AutobahnWebSocketNegotiator implements WebSocketNegotiator
@@ -47,28 +47,29 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
     }
 
     @Override
-    public FrameHandler negotiate(Negotiation negotiation, WebSocketPolicy policy) throws IOException
+    public FrameHandler negotiate(Negotiation negotiation) throws IOException
     {
-
         // Finalize negotiations in API layer involves:
         // TODO need access to real request/response????
         //  + MAY mutate the policy
+        //  + MAY replace the policy
         //  + MAY read request and set response headers
         //  + MAY reject with sendError semantics
-        //  + MAY change extensions by mutating response headers
+        //  + MAY change/add/remove offered extensions 
         //  + MUST pick subprotocol
         //  + MUST return the FrameHandler or null or exception?
-        
         
         // Examples of those steps are below:
 
         //  + MAY mutate the policy
+        WebSocketPolicy policy = negotiation.getPolicy();
         policy.setIdleTimeout(policy.getIdleTimeout()+1);
         int bigFrameSize = 20 * 1024 * 1024;
         policy.setMaxBinaryMessageSize(bigFrameSize);
         policy.setMaxTextMessageSize(bigFrameSize);
         policy.setIdleTimeout(5000);
-
+        //  + MAY replace the policy
+        negotiation.setPolicy(policy.clonePolicy());
         
         //  + MAY read request and set response headers
         String special = negotiation.getRequest().getHeader("MySpecialHeader");
@@ -95,6 +96,11 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
         return new AutobahnFrameHandler();
     }
 
+    @Override
+    public WebSocketPolicy getCandidatePolicy()
+    {
+        return null;
+    }
 
     @Override
     public WebSocketExtensionRegistry getExtensionRegistry()
@@ -102,19 +108,16 @@ class AutobahnWebSocketNegotiator implements WebSocketNegotiator
         return extensionRegistry;
     }
 
-
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
         return objectFactory;
     }
 
-
     @Override
     public ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
     }
-
 
 }
