@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
@@ -268,9 +269,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     public void onFillable()
     {
         if(LOG.isDebugEnabled())
-        {
             LOG.debug("onFillable()");
-        }
         getNetworkBuffer();
         fillAndParse();
     }
@@ -292,8 +291,15 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
 
     private void fillAndParse()
     {
+        boolean interested = false;
+        
+        // TODO get rid of this
         if(!fillAndParseScope.compareAndSet(false,true))
+        {
+            LOG.warn("fillAndParseScope failure!!!!!!!!!");
             return;
+        }
+        
         try
         {
             while (getEndPoint().isOpen())
@@ -327,7 +333,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
                 if (filled == 0)
                 {
                     releaseNetworkBuffer(nBuffer);
-                    fillInterested();
+                    interested = true;
                     return;
                 }
             }
@@ -339,6 +345,8 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         finally
         {
             fillAndParseScope.set(false);
+            if (interested)
+                fillInterested();
         }
     }
 

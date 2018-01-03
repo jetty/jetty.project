@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.websocket.core.util.QuoteUtil;

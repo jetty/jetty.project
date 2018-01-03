@@ -36,9 +36,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class FrameCaptureExtension extends AbstractExtension

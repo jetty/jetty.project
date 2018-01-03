@@ -29,11 +29,11 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.ParserDeMasker;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.core.ParserDeMasker;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-
 /**
  * Settings for WebSocket operations.
  */

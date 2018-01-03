@@ -24,7 +24,6 @@ import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;

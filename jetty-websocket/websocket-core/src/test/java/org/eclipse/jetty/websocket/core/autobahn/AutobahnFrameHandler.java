@@ -67,7 +67,7 @@ class AutobahnFrameHandler extends AbstractFrameHandler
     @Override
     public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
     {        
-        LOG.info("onBinary {} {} {}", payload==null?0:payload.remaining(),fin,getWebSocketChannel());
+        LOG.info("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getWebSocketChannel());
         if (fin)
         {       
             BinaryFrame echo = new BinaryFrame();
@@ -87,17 +87,14 @@ class AutobahnFrameHandler extends AbstractFrameHandler
     {
         LOG.info("onClosed {}",closeStatus);  
         if (!open.compareAndSet(true,false))
-            throw new IllegalStateException();
+            LOG.warn("Already closed or not open {}",closeStatus);
     }
 
     @Override
     public void onError(Throwable cause)
     {
         if (cause instanceof WebSocketTimeoutException && open.get())
-        {
             LOG.warn("timeout!");
-            open.set(false);
-        }
         else
             LOG.warn("onError",cause);
     }

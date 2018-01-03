@@ -18,30 +18,40 @@
 
 package org.eclipse.jetty.websocket.core.autobahn;
 
+import java.io.IOException;
 import java.util.List;
 
-import org.eclipse.jetty.http.HttpHeader;
+import javax.servlet.http.HttpServletRequest;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.NegotiateMessage.Request;
-import org.eclipse.jetty.websocket.core.NegotiateMessage.Response;
+import org.eclipse.jetty.websocket.core.Negotiation;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
-class AutobahnFrameHandlerFactory implements FrameHandlerFactory
+class AutobahnWebSocketNegotiator implements WebSocketNegotiator
 {
-    DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
-    WebSocketExtensionRegistry extensionRegistry = new WebSocketExtensionRegistry();
+    final DecoratedObjectFactory objectFactory;
+    final WebSocketExtensionRegistry extensionRegistry;
+    final ByteBufferPool bufferPool;
+
+    public AutobahnWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool)
+    {
+        this.objectFactory = objectFactory;
+        this.extensionRegistry = extensionRegistry;
+        this.bufferPool = bufferPool;
+    }
 
     @Override
-    public FrameHandler newFrameHandler(Request negotiateRequest, Response negotiateResponse, WebSocketPolicy policy, ByteBufferPool bufferPool)
-    {        
+    public FrameHandler negotiate(Negotiation negotiation, WebSocketPolicy policy) throws IOException
+    {
+
         // Finalize negotiations in API layer involves:
+        // TODO need access to real request/response????
         //  + MAY mutate the policy
         //  + MAY read request and set response headers
         //  + MAY reject with sendError semantics
@@ -61,32 +71,50 @@ class AutobahnFrameHandlerFactory implements FrameHandlerFactory
 
         
         //  + MAY read request and set response headers
-        String special = negotiateRequest.getHeader("MySpecialHeader");
+        String special = negotiation.getRequest().getHeader("MySpecialHeader");
         if (special!=null)
-            negotiateResponse.setHeader("MySpecialHeader","OK:"+special);
+            negotiation.getResponse().setHeader("MySpecialHeader","OK:"+special);
         
         //  + MAY reject with sendError semantics
         if ("abort".equals(special))
         {
-            negotiateResponse.clearHeaders();
-            negotiateResponse.sendError(401,"Some Auth reason");
+            negotiation.getResponse().sendError(401,"Some Auth reason");
             return null;
         }
             
         //  + MAY change extensions by mutating response headers
+        List<ExtensionConfig> offeredExtensions = negotiation.getOfferedExtensions();
         // negotiateResponse.addHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),"@identity");
-        List<ExtensionConfig> offeredExtensions = negotiateRequest.getOfferedExtensions();
-        ExtensionStack extensionStack = new ExtensionStack(extensionRegistry);
-        extensionStack.negotiate(objectFactory, policy, bufferPool, offeredExtensions);
-        negotiateResponse.setExtensionStack(extensionStack);
         
         //  + MUST pick subprotocol
-        List<String> subprotocols = negotiateRequest.getOfferedSubprotocols();
+        List<String> subprotocols = negotiation.getOfferedSubprotocols();
         String subprotocol = (subprotocols==null || subprotocols.isEmpty())?null:subprotocols.get(0);
-        negotiateResponse.setSubprotocol(subprotocol);
+        negotiation.setSubprotocol(subprotocol);
 
         //  + MUST return the FrameHandler or null or exception?
         return new AutobahnFrameHandler();
     }
+
+
+    @Override
+    public WebSocketExtensionRegistry getExtensionRegistry()
+    {
+        return extensionRegistry;
+    }
+
+
+    @Override
+    public DecoratedObjectFactory getObjectFactory()
+    {
+        return objectFactory;
+    }
+
+
+    @Override
+    public ByteBufferPool getByteBufferPool()
+    {
+        return bufferPool;
+    }
+
 
 }

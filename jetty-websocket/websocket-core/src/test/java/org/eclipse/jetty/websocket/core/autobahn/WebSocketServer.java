@@ -30,9 +30,11 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
@@ -55,7 +57,8 @@ public class WebSocketServer
 
         ContextHandler context = new ContextHandler("/");
         server.setHandler(context);
-        context.setAttribute(FrameHandlerFactory.class.getName(), new AutobahnFrameHandlerFactory());
+        context.setAttribute(WebSocketNegotiator.class.getName(), 
+                new AutobahnWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool()));
 
         WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler();
         context.setHandler(handler);

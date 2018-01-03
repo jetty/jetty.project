@@ -22,7 +22,6 @@ import static org.hamcrest.Matchers.is;
 
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.server.AcceptHash;
 import org.junit.Assert;
 import org.junit.Test;
 
