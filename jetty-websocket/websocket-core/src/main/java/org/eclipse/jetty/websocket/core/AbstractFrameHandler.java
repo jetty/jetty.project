@@ -197,9 +197,8 @@ public class AbstractFrameHandler implements FrameHandler
 
                 if (frame.isFin())
                     utf8.checkState();
-
-                onText(frame, callback); // call continuation to appropriate "partial" path
-                onText(utf8, callback, frame.isFin());
+                    
+                onText(utf8,callback,frame.isFin());
                 break;
 
             case OpCode.BINARY:
@@ -209,8 +208,7 @@ public class AbstractFrameHandler implements FrameHandler
                     byteBuffer = BufferUtil.ensureCapacity(byteBuffer,byteBuffer.remaining()+factor*frame.getPayloadLength());
                     BufferUtil.append(byteBuffer,frame.getPayload());
                 }
-
-                onBinary(frame, callback); // call continuation to appropriate "partial" path
+                    
                 onBinary(byteBuffer,callback,frame.isFin());
                 break;
                 
