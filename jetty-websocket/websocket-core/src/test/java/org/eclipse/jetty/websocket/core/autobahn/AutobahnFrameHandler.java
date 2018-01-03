@@ -67,7 +67,7 @@ class AutobahnFrameHandler extends AbstractFrameHandler
     @Override
     public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
     {        
-        LOG.info("onBinary {} {} {}", payload==null?0:payload.remaining(),fin,getWebSocketChannel());
+        LOG.info("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getWebSocketChannel());
         if (fin)
         {       
             BinaryFrame echo = new BinaryFrame();
