@@ -31,6 +31,8 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
+import org.eclipse.jetty.websocket.server.WebSocketCreator;
 
 /**
  * Interface for Configuring WebSocket endpoints on a Jetty ServletContext

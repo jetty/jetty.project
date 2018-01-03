@@ -20,6 +20,9 @@ package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.Callback;
 
+/**
+ * Interface for local WebSocket Endpoint Frame handling.
+ */
 public interface FrameHandler
 {
     void setWebSocketChannel(WebSocketChannel channel);

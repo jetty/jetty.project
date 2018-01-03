@@ -16,18 +16,28 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.server;
 
-import java.io.IOException;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 
-public interface WebSocketHandshake
+/**
+ * Abstract WebSocket creator interface.
+ * <p>
+ * Should you desire filtering of the WebSocket object creation due to criteria such as origin or sub-protocol, then you will be required to implement a custom
+ * WebSocketCreator implementation.
+ * <p>
+ */
+public interface WebSocketCreator
 {
     /**
-     * Formulate a WebSocket upgrade handshake response.
+     * Create a websocket from the incoming request.
      * 
-     * @param request the request
-     * @param response the response
-     * @throws IOException if unable to handshake
+     * @param req
+     *            the request details
+     * @param resp
+     *            the response details
+     * @return a websocket object to use, or null if no websocket should be created from this request.
      */
-    void doHandshakeResponse(ServletUpgradeRequest request, ServletUpgradeResponse response) throws IOException;
+    Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp);
 }

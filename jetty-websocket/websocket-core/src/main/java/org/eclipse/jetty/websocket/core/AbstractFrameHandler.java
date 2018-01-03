@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Utf8StringBuffer;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -35,6 +34,13 @@ import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
+/**
+ * Base level implementation of local WebSocket Endpoint Frame handling.
+ * <p>
+ *    This implementation assumes RFC6455 behavior with HTTP/1.1.
+ *    NOTE: The introduction of WebSocket over HTTP/2 might change the behavior and implementation some.
+ * </p>
+ */
 public class AbstractFrameHandler implements FrameHandler
 {
     private Logger LOG = Log.getLogger(AbstractFrameHandler.class);
@@ -245,7 +251,7 @@ public class AbstractFrameHandler implements FrameHandler
                 else
                 {
                     respond = WebSocketConstants.PROTOCOL;
-                    reason = "invalid "+code+" close received";
+                    reason = "invalid " + code + " close received";
                 }
                 break;
         }
@@ -260,5 +266,4 @@ public class AbstractFrameHandler implements FrameHandler
     public void onClosed(CloseStatus closeStatus)
     {
     }
-
 }

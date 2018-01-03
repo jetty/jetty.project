@@ -86,8 +86,8 @@ public class NegotiateMessage
             this.method = method;
             this.uri = uri;
             this.protocol = protocol;
-        }     
-        
+        }
+
         public List<ExtensionConfig> getOfferedExtensions()
         {
             List<String> list = headers.get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString());
@@ -102,7 +102,7 @@ public class NegotiateMessage
                 
             return csv.getValues().stream().map(ExtensionConfig::parse).collect(Collectors.toList());
         }
-        
+
         public List<String> getOfferedSubprotocols()
         {
             List<String> offered = headers.get(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString());
@@ -123,7 +123,7 @@ public class NegotiateMessage
         {
             return getHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString());
         }
-        
+
         public void setSubprotocol(String subprotocol)
         {
             setHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(),subprotocol);
@@ -143,7 +143,7 @@ public class NegotiateMessage
             else
                 deleteHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString());
         }
-        
+
         public void sendError(int code, String reason)
         {            
             errorCode = code;

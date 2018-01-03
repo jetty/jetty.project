@@ -20,7 +20,7 @@ package examples;
 
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.server.WebSocketCreator;
 
 public class MyAdvancedEchoCreator implements WebSocketCreator
 {

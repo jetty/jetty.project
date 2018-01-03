@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.server.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
 
 public class InfoServlet extends HttpServlet implements WebSocketCreator
