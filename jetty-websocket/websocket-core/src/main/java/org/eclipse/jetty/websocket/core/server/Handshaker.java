@@ -23,14 +23,7 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Request;
-
 public interface Handshaker
 {
-    default boolean upgradeRequest(HttpServletRequest request, HttpServletResponse response) throws IOException
-    {
-        return upgradeRequest(Request.getBaseRequest(request), request, response);
-    }
-    
-    boolean upgradeRequest(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException;
+    boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response) throws IOException;
 }

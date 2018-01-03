@@ -45,7 +45,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.Negotiation;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
@@ -62,9 +61,20 @@ public final class RFC6455Handshaker implements Handshaker
 
     public final static int VERSION = WebSocketConstants.SPEC_VERSION;
 
-    public boolean upgradeRequest(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         // TODO reduce the debug from this class
+        
+        Request baseRequest = Request.getBaseRequest(request);
+        HttpChannel httpChannel = baseRequest.getHttpChannel();
+        Connector connector = httpChannel.getConnector();
+        
+        if (negotiator==null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("not upgraded: no WebSocketNegotiator {}", baseRequest);
+            return false;
+        }
         
         if (!HttpMethod.GET.is(request.getMethod()))
         {
@@ -80,19 +90,7 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
-        ServletContext context = baseRequest.getServletContext();
-        HttpChannel httpChannel = baseRequest.getHttpChannel();
-        Connector connector = httpChannel.getConnector();
 
-        WebSocketNegotiator negotiator = ContextConnectorConfiguration
-                .lookup(WebSocketNegotiator.class, context, connector);
-        if (negotiator==null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: no WebSocketNegotiator {}", baseRequest);
-            return false;
-        }
-        
         Negotiation negotiation = new Negotiation(baseRequest,request,response);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
@@ -118,20 +116,16 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
-        // Create instance of policy that may be mutated by factory
-        WebSocketPolicy policy =  ContextConnectorConfiguration
-                .lookup(WebSocketPolicy.class, context, connector);
+        // Create instance of policy that may be mutated by negotiation
+        WebSocketPolicy policy = negotiator.getCandidatePolicy();
         if (policy==null)
             policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        else
-            policy = policy.clonePolicy();
-        
+        negotiation.setPolicy(policy);
         
         // Negotiate the FrameHandler
-        FrameHandler handler = negotiator.negotiate(negotiation,policy);
+        FrameHandler handler = negotiator.negotiate(negotiation);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated handler {}", handler);
-        
         
         // Handle error responses
         if (response.isCommitted())
@@ -158,6 +152,11 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
+        // Update policy
+        policy = negotiation.getPolicy();
+        if (policy==null)
+            policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        
         // Check if subprotocol negotiated
         String subprotocol = negotiation.getSubprotocol();
         if (negotiation.getOfferedSubprotocols().size()>0 && subprotocol==null)

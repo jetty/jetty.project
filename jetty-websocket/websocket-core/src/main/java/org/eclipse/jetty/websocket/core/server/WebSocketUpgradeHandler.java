@@ -33,13 +33,20 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
 {
     final static Logger LOG = Log.getLogger(WebSocketUpgradeHandler.class);
 
+    final WebSocketNegotiator negotiator;
+    
+    public WebSocketUpgradeHandler(WebSocketNegotiator negotiator)
+    {
+        this.negotiator = negotiator;
+    }
+    
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         Handshaker handshaker = getHandshaker(baseRequest);
         if (LOG.isDebugEnabled())
             LOG.debug("handle {} handshaker={}",baseRequest,handshaker);
-        if (handshaker!=null && handshaker.upgradeRequest(baseRequest, request, response))
+        if (handshaker!=null && handshaker.upgradeRequest(negotiator, request, response))
             return;
         if (!baseRequest.isHandled())
             super.handle(target,baseRequest,request,response);

@@ -57,10 +57,10 @@ public class WebSocketServer
 
         ContextHandler context = new ContextHandler("/");
         server.setHandler(context);
-        context.setAttribute(WebSocketNegotiator.class.getName(), 
-                new AutobahnWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool()));
+        WebSocketNegotiator negotiator =  
+                new AutobahnWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool());
 
-        WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler();
+        WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler(negotiator);
         context.setHandler(handler);
         handler.setHandler(new AbstractHandler()
         {

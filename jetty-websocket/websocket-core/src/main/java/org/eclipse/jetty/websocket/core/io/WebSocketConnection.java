@@ -393,7 +393,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     @Override
     protected boolean onReadTimeout()
     {
-        channel.processError(new SocketTimeoutException("Timeout on Read"));
+        channel.processError(new WebSocketTimeoutException("Timeout on Read"));
         return false;
     }
 
@@ -408,6 +408,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         if (suspendToken.compareAndSet(true, false))
         {
             // Do not fillAndParse again, if we are actively in a fillAndParse
+            // TODO this is a race!
             if (!fillAndParseScope.get())
             {
                 fillAndParse();

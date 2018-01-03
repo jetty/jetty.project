@@ -24,13 +24,14 @@ import java.io.IOException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.Negotiation;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 
 public interface WebSocketNegotiator
 {
-    FrameHandler negotiate(Negotiation negotiation,WebSocketPolicy candidatePolicy) throws IOException;
+    FrameHandler negotiate(Negotiation negotiation) throws IOException;
+    
+    WebSocketPolicy getCandidatePolicy();
     
     WebSocketExtensionRegistry getExtensionRegistry();
     
