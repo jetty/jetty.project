@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.DataFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
@@ -135,7 +136,7 @@ public class AbstractFrameHandler implements FrameHandler
         callback.succeeded();
     }
     
-    public void onText(TextFrame frame, Callback callback)
+    public void onText(DataFrame frame, Callback callback)
     {
         if (utf8==null)
             utf8 = new Utf8StringBuilder(Math.max(1024,frame.getPayloadLength()*2));
@@ -158,7 +159,7 @@ public class AbstractFrameHandler implements FrameHandler
         callback.succeeded();
     }
     
-    public void onBinary(BinaryFrame frame, Callback callback)
+    public void onBinary(DataFrame frame, Callback callback)
     {
         if (frame.isFin())
         {
@@ -196,8 +197,9 @@ public class AbstractFrameHandler implements FrameHandler
 
                 if (frame.isFin())
                     utf8.checkState();
-                    
-                onText(utf8,callback,frame.isFin());
+
+                onText(frame, callback); // call continuation to appropriate "partial" path
+                onText(utf8, callback, frame.isFin());
                 break;
 
             case OpCode.BINARY:
@@ -207,7 +209,8 @@ public class AbstractFrameHandler implements FrameHandler
                     byteBuffer = BufferUtil.ensureCapacity(byteBuffer,byteBuffer.remaining()+factor*frame.getPayloadLength());
                     BufferUtil.append(byteBuffer,frame.getPayload());
                 }
-                    
+
+                onBinary(frame, callback); // call continuation to appropriate "partial" path
                 onBinary(byteBuffer,callback,frame.isFin());
                 break;
                 

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.server;
+package org.eclipse.jetty.websocket.core;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

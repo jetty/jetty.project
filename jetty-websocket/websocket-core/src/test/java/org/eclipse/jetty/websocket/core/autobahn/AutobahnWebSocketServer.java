@@ -38,7 +38,41 @@ import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
-public class WebSocketServer
+/**
+ * WebSocket Server for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
+ * <p>
+ *     Installing Autobahn:
+ * </p>
+ * <pre>
+ *    # For Debian / Ubuntu
+ *    $ sudo apt-get install python python-dev python-twisted
+ *    $ sudo apt-get install python-pip
+ *    $ sudo pip install autobahntestsuite
+ *
+ *    # For Fedora / Redhat
+ *    $ sudo yum install python python-dev python-pip twisted
+ *    $ sudo yum install libffi-devel
+ *    $ sudo pip install autobahntestsuite
+ * </pre>
+ * <p>
+ *     Upgrading an existing installation of autobahntestsuite
+ * </p>
+ * <pre>
+ *     $ sudo pip install -U autobahntestsuite
+ * </pre>
+ * <p>
+ *     Running Autobahn Fuzzing Client (against this server implementation):
+ * </p>
+ * <pre>
+ *     # Change to websocket-core first
+ *     $ cd jetty-websocket/websocket-core
+ *     $ wstest --mode=fuzzingclient --spec=fuzzing-client.json
+ *
+ *     # Report output is configured (in the fuzzing-client.json) at location:
+ *     $ ls target/reports/client/
+ * </pre>
+ */
+public class AutobahnWebSocketServer
 {
     public static void main(String[] args) throws Exception
     {
@@ -51,7 +85,7 @@ public class WebSocketServer
         connector.addBean(new WebSocketPolicy(WebSocketBehavior.SERVER));
         connector.addBean(new RFC6455Handshaker());
 
-        connector.setPort(8080);
+        connector.setPort(9001); // same port as found in fuzzing-client.json
         connector.setIdleTimeout(10000);
         server.addConnector(connector);
 
