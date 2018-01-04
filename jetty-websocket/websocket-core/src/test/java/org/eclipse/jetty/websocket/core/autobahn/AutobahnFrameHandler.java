@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.core.autobahn;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -37,15 +38,14 @@ class AutobahnFrameHandler extends AbstractFrameHandler
     private static Logger LOG = Log.getLogger(AutobahnFrameHandler.class);
 
     private AtomicBoolean open = new AtomicBoolean(false);
-    
+        
     @Override
-    public void onOpen()
+    public void onOpen() throws IOException
     {        
         LOG.info("onOpen {}", getWebSocketChannel());
         
         if (!open.compareAndSet(false,true))
-            throw new IllegalStateException();
-        super.onOpen();
+            throw new IllegalStateException();        
     }
 
     int count;

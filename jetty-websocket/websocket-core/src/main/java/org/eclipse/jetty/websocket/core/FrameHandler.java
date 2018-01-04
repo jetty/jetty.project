@@ -26,8 +26,8 @@ import org.eclipse.jetty.util.Callback;
 public interface FrameHandler
 {
     void setWebSocketChannel(WebSocketChannel channel);
-    void onOpen();
-    void onFrame(Frame frame, Callback callback);
-    void onClosed(CloseStatus closeStatus);
-    void onError(Throwable cause);
+    default void onOpen() throws Exception {}
+    default void onFrame(Frame frame, Callback callback) throws Exception {}
+    default void onClosed(CloseStatus closeStatus) throws Exception {}
+    default void onError(Throwable cause) throws Exception {}
 }

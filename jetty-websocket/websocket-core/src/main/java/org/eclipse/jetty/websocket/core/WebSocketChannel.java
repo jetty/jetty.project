@@ -117,7 +117,15 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     public void processError(Throwable cause)
     {
         // Forward Errors to Local WebSocket EndPoint
-        handler.onError(cause);
+        try
+        {
+            handler.onError(cause);
+        }
+        catch(Throwable e)
+        {
+            cause.addSuppressed(e);
+            LOG.warn(cause);
+        }
 
         if (cause instanceof Utf8Appendable.NotUtf8Exception)
         {
@@ -258,8 +266,26 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
                     @Override
                     public void completed()
                     {
-                        handler.onClosed(state.getCloseStatus());
-                        connection.close();
+                        try
+                        {
+                            handler.onClosed(state.getCloseStatus());
+                        }
+                        catch(Throwable e)
+                        {
+                            try
+                            {
+                                handler.onError(e);
+                            }
+                            catch(Throwable e2)
+                            {
+                                e.addSuppressed(e2);
+                                LOG.warn(e);
+                            }
+                        }
+                        finally
+                        {
+                            connection.close();
+                        }
                     }
                 };
             }

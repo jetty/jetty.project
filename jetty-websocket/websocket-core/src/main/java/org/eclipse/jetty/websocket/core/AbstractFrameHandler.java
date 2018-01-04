@@ -60,11 +60,7 @@ public class AbstractFrameHandler implements FrameHandler
     {
         return channel;
     }
-    
-    @Override
-    public void onOpen()
-    {
-    }
+   
 
     @Override
     public void onFrame(Frame frame, Callback callback)
