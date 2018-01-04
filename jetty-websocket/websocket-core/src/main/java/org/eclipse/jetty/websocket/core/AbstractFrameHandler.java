@@ -71,27 +71,27 @@ public class AbstractFrameHandler implements FrameHandler
         switch (opcode)
         {
             case OpCode.PING:
-                onPing((PingFrame)frame,callback);
+                onPingFrame((PingFrame)frame,callback);
                 break;
          
             case OpCode.PONG:
-                onPong((PongFrame)frame,callback);
+                onPongFrame((PongFrame)frame,callback);
                 break;
                 
             case OpCode.TEXT:
-                onText((TextFrame)frame,callback);
+                onTextFrame((TextFrame)frame,callback);
                 break;
                 
             case OpCode.BINARY:
-                onBinary((BinaryFrame)frame,callback);
+                onBinaryFrame((BinaryFrame)frame,callback);
                 break;
                 
             case OpCode.CONTINUATION:
-                onContinuation((ContinuationFrame)frame,callback);
+                onContinuationFrame((ContinuationFrame)frame,callback);
                 break;
                 
             case OpCode.CLOSE:
-                onClose((CloseFrame)frame,callback);
+                onCloseFrame((CloseFrame)frame,callback);
                 break;
         }
     }
@@ -101,7 +101,13 @@ public class AbstractFrameHandler implements FrameHandler
     {
     }
 
-    public void onPing(PingFrame frame, Callback callback)
+    /**
+     * Notification method for when a Ping frame is received.
+     * The default implementation sends a Pong frame using the passed callback for completion
+     * @param frame The received frame
+     * @param callback The callback to indicate completion of frame handling.
+     */
+    protected void onPingFrame(PingFrame frame, Callback callback)
     {
         ByteBuffer pongBuf;
         if (frame.hasPayload())
@@ -127,12 +133,29 @@ public class AbstractFrameHandler implements FrameHandler
         }
     }
 
-    public void onPong(PongFrame frame, Callback callback)
+    /** 
+     * Notification method for when a Pong frame is received.
+     * The default implementation just succeeds the callback
+     * @param frame The received frame
+     * @param callback The callback to indicate completion of frame handling.
+     */
+    protected void onPongFrame(PongFrame frame, Callback callback)
     {
         callback.succeeded();
     }
-    
-    public void onText(DataFrame frame, Callback callback)
+
+    /** 
+     * Notification method for when a Text frame is received.
+     * The default implementation accumulates the payload in a Utf8StringBuilder
+     * and calls the {@link #onText(Utf8StringBuilder, Callback, boolean)} method.
+     * For partial messages (fin == false), the {@link #onText(Utf8StringBuilder, Callback, boolean)}
+     * may either leave the contents in the Utf8StringBuilder to accumulate with following Continuation
+     * frames, or it may be consumed.
+     * @see #onText(Utf8StringBuilder, Callback, boolean)
+     * @param frame The received frame
+     * @param callback The callback to indicate completion of frame handling.
+     */
+    protected void onTextFrame(DataFrame frame, Callback callback)
     {
         if (utf8==null)
             utf8 = new Utf8StringBuilder(Math.max(1024,frame.getPayloadLength()*2));
@@ -149,13 +172,35 @@ public class AbstractFrameHandler implements FrameHandler
         
         onText(utf8,callback,frame.isFin());            
     }
-
-    public void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
+    
+    /** 
+     * Notification method for when UTF8 text is received. This method is 
+     * called by {@link #onTextFrame(DataFrame, Callback)} and 
+     * {@link #onContinuationFrame(ContinuationFrame, Callback)}.  Implementations
+     * may consume partial content with {@link Utf8StringBuilder#takePartialString()}
+     * or leave it to accumulate over multiple calls.
+     * The default implementation just succeeds the callback.
+     * @param utf8 The received text
+     * @param callback The callback to indicate completion of frame handling.
+     * @param fin True if the current message is completed by this call.
+     */
+    protected void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
     {
         callback.succeeded();
     }
-    
-    public void onBinary(DataFrame frame, Callback callback)
+
+    /** 
+     * Notification method for when a Binary frame is received.
+     * The default implementation accumulates the payload in a ByteBuffer
+     * and calls the {@link #onBinary(ByteBuffer, Callback, boolean)} method.
+     * For partial messages (fin == false), the {@link #onBinary(ByteBuffer, Callback, boolean)}
+     * may either leave the contents in the ByteBuffer to accumulate with following Continuation
+     * frames, or it may be consumed.
+     * @see #onBinary(ByteBuffer, Callback, boolean)
+     * @param frame The received frame
+     * @param callback The callback to indicate completion of frame handling.
+     */
+    protected void onBinaryFrame(DataFrame frame, Callback callback)
     {
         if (frame.isFin())
         {
@@ -178,12 +223,31 @@ public class AbstractFrameHandler implements FrameHandler
         }
     }
 
-    public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
+    /** 
+     * Notification method for when binary data is received. This method is 
+     * called by {@link #onBinaryFrame(DataFrame, Callback)} and 
+     * {@link #onContinuationFrame(ContinuationFrame, Callback)}.  Implementations
+     * may consume partial content from the {@link ByteBuffer}
+     * or leave it to accumulate over multiple calls.
+     * The default implementation just succeeds the callback.
+     * @param payload The received data
+     * @param callback The callback to indicate completion of frame handling.
+     * @param fin True if the current message is completed by this call.
+     */
+    protected void onBinary(ByteBuffer payload, Callback callback, boolean fin)
     {
         callback.succeeded();
     }
 
-    public void onContinuation(ContinuationFrame frame, Callback callback)
+    /** 
+     * Notification method for when a Continuation frame is received.
+     * The default implementation will call either {@link #onText(Utf8StringBuilder, Callback, boolean)}
+     * or {@link #onBinary(ByteBuffer, Callback, boolean)} as appropriate, accumulating
+     * payload as necessary.
+     * @param frame The received frame
+     * @param callback The callback to indicate completion of frame handling.
+     */
+    protected void onContinuationFrame(ContinuationFrame frame, Callback callback)
     {
         switch(partial)
         {
@@ -202,6 +266,7 @@ public class AbstractFrameHandler implements FrameHandler
                 {
                     int factor = frame.isFin()?1:3;
                     byteBuffer = BufferUtil.ensureCapacity(byteBuffer,byteBuffer.remaining()+factor*frame.getPayloadLength());
+                    BufferUtil.compact(byteBuffer);
                     BufferUtil.append(byteBuffer,frame.getPayload());
                 }
                     
@@ -214,8 +279,13 @@ public class AbstractFrameHandler implements FrameHandler
         }
     }
 
-
-    public void onClose(CloseFrame frame, Callback callback)
+    /** 
+     * Notification method for when a Close frame is received.
+     * The default implementation responds with a close frame when necessary.
+     * @param frame The received frame
+     * @param callback The callback to indicate completion of frame handling.
+     */
+    protected void onCloseFrame(CloseFrame frame, Callback callback)
     {
         int respond;
         String reason=null;

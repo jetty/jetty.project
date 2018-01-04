@@ -46,7 +46,7 @@ public class EchoHandler extends AbstractClientFrameHandler
     }
 
     @Override
-    public void onBinary(DataFrame frame, Callback callback)
+    public void onBinaryFrame(DataFrame frame, Callback callback)
     {
         DataFrame dataFrame;
 
@@ -64,7 +64,7 @@ public class EchoHandler extends AbstractClientFrameHandler
     }
 
     @Override
-    public void onText(DataFrame frame, Callback callback)
+    public void onTextFrame(DataFrame frame, Callback callback)
     {
         DataFrame dataFrame;
 
