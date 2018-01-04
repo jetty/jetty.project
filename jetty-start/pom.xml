@@ -11,7 +11,6 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.start</bundle-symbolic-name>
-    <start-jar-file-name>start.jar</start-jar-file-name>
   </properties>
   <build>
    <plugins>
