@@ -32,9 +32,45 @@
           <onlyAnalyze>org.eclipse.jetty.start.*</onlyAnalyze>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <createSourcesJar>true</createSourcesJar>
+              <filters>
+                <filter>
+                  <artifact>org.eclipse.jetty:jetty-util</artifact>
+                  <includes>
+                    <include>org/eclipse/jetty/util/JavaVersion*</include>
+                  </includes>
+              	</filter>
+              </filters>              
+              <relocations>
+                <relocation>
+                  <pattern>org.eclipse.jetty.util</pattern>
+                  <shadedPattern>org.eclipse.jetty.start.shaded.util</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
