@@ -29,6 +29,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -59,6 +60,12 @@ public class MultiPartInputStreamParser
     private static final Logger LOG = Log.getLogger(MultiPartInputStreamParser.class);
     public static final MultipartConfigElement  __DEFAULT_MULTIPART_CONFIG = new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
     public static final MultiMap<Part> EMPTY_MAP = new MultiMap(Collections.emptyMap());
+    /**
+     * The size of the chunks to read from the input stream.
+     * <p>Intended to be edited only for testing.</p>
+     *  
+     */
+    static int CHUNK_READ_SIZE = 4096;
     protected InputStream _in;
     protected MultipartConfigElement _config;
     protected String _contentType;
@@ -168,8 +175,8 @@ public class MultiPartInputStreamParser
                 _out.flush();
                 _bout.writeTo(bos);
                 _out.close();
-                _bout = null;
             }
+            _bout = null;
             _out = bos;
         }
 
@@ -527,9 +534,10 @@ public class MultiPartInputStreamParser
                 contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(bstart,bend)).trim());
             }
 
-            String boundary="--"+contentTypeBoundary;
-            String lastBoundary=boundary+"--";
-            byte[] byteBoundary=lastBoundary.getBytes(StandardCharsets.ISO_8859_1);
+        String boundary="--"+contentTypeBoundary;
+        String lastBoundary=boundary+"--";
+        
+        byte[] boundaryWithNewLinePrefix=("\n--"+contentTypeBoundary).getBytes(StandardCharsets.ISO_8859_1);
 
             // Get first boundary
             String line = null;
@@ -568,7 +576,10 @@ public class MultiPartInputStreamParser
 
             // Read each part
             boolean lastPart=false;
-
+            
+            ReadLineInputStream is = (ReadLineInputStream) _in;
+            
+            
             outer:while(!lastPart)
             {
                 String contentDisposition=null;
@@ -576,9 +587,11 @@ public class MultiPartInputStreamParser
                 String contentTransferEncoding=null;
 
                 MultiMap<String> headers = new MultiMap<>();
+                
+                
                 while(true)
                 {
-                    line=((ReadLineInputStream)_in).readLine();
+                    line=is.readLine();
 
                     //No more input
                     if(line==null)
@@ -655,11 +668,11 @@ public class MultiPartInputStreamParser
                 InputStream partInput = null;
                 if ("base64".equalsIgnoreCase(contentTransferEncoding))
                 {
-                    partInput = new Base64InputStream((ReadLineInputStream)_in);
+                    partInput = new Base64InputStream(is);
                 }
                 else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding))
                 {
-                    partInput = new FilterInputStream(_in)
+                    partInput = new FilterInputStream(is)
                     {
                         @Override
                         public int read() throws IOException
@@ -678,117 +691,277 @@ public class MultiPartInputStreamParser
                             }
                             return c;
                         }
+                        
+                        @Override
+                        public int read(byte b[]) throws IOException 
+                        {
+                            return read(b, 0, b.length);
+                        }
+                        
+                        @Override
+                        public int read(byte b[], int off, int len) throws IOException 
+                        {
+                            int i = 0;
+                            for(i = 0; i < len; i++) 
+                            {
+                                int c = this.read();
+                                if(c == -1) 
+                                {
+                                    return i;
+                                }
+                                b[off + i] = (byte) c;
+                            }
+                            return i;
+                        }
+                        
+                        @Override
+                        public void mark(int readlimit) 
+                        {
+                            this.in.mark(readlimit);
+                        }
+
+                        @Override
+                        public void reset() throws IOException 
+                        {
+                            this.in.reset();
+                        }
+
+                        @Override
+                        public boolean markSupported() 
+                        {
+                            return this.in.markSupported();
+                        }
+                        
+                        
+                        @Override
+                        public long skip(long n) throws IOException 
+                        {
+                            for(long i = 0; i < n; i++) 
+                            {
+                                if(this.read() == -1) return i;
+                            }
+                            return n;
+                        }
+                        
+                        
                     };
                 }
                 else
-                    partInput = _in;
+                    partInput = is;
 
+                boolean trimLastChar = false;
 
                 try
                 {
-                    int state=-2;
-                    int c;
-                    boolean cr=false;
-                    boolean lf=false;
+                    //Read the config noew so we don't need to keep re-reading it.
+                    long maxRequestSize = Long.MAX_VALUE;
+                    if (_config.getMaxRequestSize() > 0) maxRequestSize = _config.getMaxRequestSize();
 
-                    // loop for all lines
-                    while(true)
+                    
+                    int chr = -1;
+                    int bi = 0;
+                    
+                    int lastCharWritten = -1;
+                    
+                    //A buffer used when reading from the input stream.
+                    byte[] bufin = new byte[CHUNK_READ_SIZE];
+                    int offsetIntoBufin = -1;
+                    int bufInSize;
+                    while(true) 
                     {
-                        int b=0;
-                        while((c=(state!=-2)?state:partInput.read())!=-1)
+                        //If mark is not supported the stream must ensure that we will
+                        //never read too much, i.e. not more than the boundary (excluding the trailing new line
+                        // or double dash).
+                        if(partInput.markSupported()) 
                         {
-                            total ++;
-                            if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
-                                throw new IllegalStateException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
+                            partInput.mark(bufin.length);
+                        }
+                        //read a chunk
+                        bufInSize = partInput.read(bufin);
+                        if(bufInSize == -1) break;
+                        for(offsetIntoBufin = 0; offsetIntoBufin < bufInSize;offsetIntoBufin++) 
+                        {
 
-                            state=-2;
+                            chr = bufin[offsetIntoBufin];
 
-                            // look for CR and/or LF
-                            if(c==13||c==10)
+                            //We allow boundaries to start with either CR or LF
+                            if(chr == '\r' || chr == '\n') 
                             {
-                                if(c==13)
-                                {
-                                    partInput.mark(1);
-                                    int tmp=partInput.read();
-                                    if (tmp!=10)
-                                        partInput.reset();
-                                    else
-                                        state=tmp;
+                                
+                                if(bi != 0) {
+                                    //We where already processing what looked like a boundary, write out
+                                    //anything we missed.
+                                    if (offsetIntoBufin < bi) 
+                                    {
+                                        //write all of the boundary up to the point the boundary is in this array.
+                                        part.write(boundaryWithNewLinePrefix,0,bi - offsetIntoBufin);
+                                        lastCharWritten = boundaryWithNewLinePrefix[bi - offsetIntoBufin-1];
+                                        total += bi - offsetIntoBufin;
+                                        if (total > maxRequestSize)
+                                            throw new IllegalStateException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
+                                    }
                                 }
-                                break;
-                            }
-
-                            // Look for boundary
-                            if(b>=0&&b<byteBoundary.length&&c==byteBoundary[b])
+                                bi = 0;
+                                //Remember what this boundary started with.
+                                boundaryWithNewLinePrefix[bi] = (byte) chr;
+                                bi++;
+                            } else if(boundaryWithNewLinePrefix[bi] == chr) 
                             {
-                                b++;
-                            }
-                            else
+                                bi++;
+                                if(bi == boundaryWithNewLinePrefix.length) 
+                                {
+                                    //boundary found
+                                    //As we leave the loop early we need to increase offsetIntoBuffin
+                                    //to ensure where we are up to into the buffer is consistent.
+                                    offsetIntoBufin++;
+                                    break;
+                                }
+                            } else 
                             {
-                                // Got a character not part of the boundary, so we don't have the boundary marker.
-                                // Write out as many chars as we matched, then the char we're looking at.
-                                if(cr)
-                                    part.write(13);
-
-                                if(lf)
-                                    part.write(10);
-
-                                cr=lf=false;
-                                if(b>0)
-                                    part.write(byteBoundary,0,b);
-
-                                b=-1;
-                                part.write(c);
+                                if(bi != 0) {
+                                    if (offsetIntoBufin < bi) 
+                                    {
+                                        //write all of the boundary up to the point the boundary is in this array.
+                                        part.write(boundaryWithNewLinePrefix,0,bi - offsetIntoBufin);
+                                        lastCharWritten = boundaryWithNewLinePrefix[bi - offsetIntoBufin-1];
+                                        total += bi - offsetIntoBufin;
+                                        if (total > maxRequestSize)
+                                            throw new IllegalStateException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
+                                    }
+                                }
+                                bi = 0;
                             }
                         }
-
-                        // Check for incomplete boundary match, writing out the chars we matched along the way
-                        if((b>0&&b<byteBoundary.length-2)||(b==byteBoundary.length-1))
+                        //write up to boundary limit
+                        int toWrite = offsetIntoBufin;
+                        if(bi > 0) 
                         {
-                            if(cr)
-                                part.write(13);
-
-                            if(lf)
-                                part.write(10);
-
-                            cr=lf=false;
-                            part.write(byteBoundary,0,b);
-                            b=-1;
+                            //if we are looking at a boundary only write up to just before we think the
+                            //boundary starts, again this will not include the prevchar which we may write out
+                            //later on.
+                            toWrite = offsetIntoBufin - bi;
                         }
 
-                        // Boundary match. If we've run out of input or we matched the entire final boundary marker, then this is the last part.
-                        if(b>0||c==-1)
+                        if (toWrite > 0) 
                         {
+                            total += toWrite;
+                            if (total > maxRequestSize)
+                                throw new IllegalStateException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
+                            lastCharWritten = bufin[toWrite-1];
+                            part.write(bufin, 0, toWrite);
+                        }
 
-                            if(b==byteBoundary.length)
-                                lastPart=true;
-                            if(state==10)
-                                state=-2;
+                        if(bi == boundaryWithNewLinePrefix.length) 
+                        {                        
+                            //boundary found
                             break;
                         }
+                    }
+                    if(partInput.markSupported()) 
+                    {
+                        partInput.reset();
+                        long actuallySkipped = partInput.skip(offsetIntoBufin);
+                        for(; actuallySkipped<offsetIntoBufin; actuallySkipped++) 
+                        {
+                            partInput.read();
+                        }
+                    }
 
-                        // handle CR LF
-                        if(cr)
-                            part.write(13);
+                    if(bi != boundaryWithNewLinePrefix.length) 
+                    {
+                        throw new IllegalArgumentException("Missing trailing boundary");
+                    }
 
-                        if(lf)
-                            part.write(10);
+                    //backup if the boundary was preceeded with \r\n, as we wrote out the \r
+                    if(boundaryWithNewLinePrefix[0] == '\n' && lastCharWritten == '\r') 
+                    {
+                        //It ended with \r\n remove the extra written out \r
+                        if(part._bout == part._out) 
+                        {
+                            //We are not writing to a file.
+                            int lastchar = part._bout.getCount() - 1;
+                            part._bout.setCount(lastchar);
+                            part._size--;
+                        } else 
+                        {
+                            //we are writing to a file, we will trim the last char file.
+                            trimLastChar = true;
+                        }
+                    }
 
-                        cr=(c==13);
-                        lf=(c==10||state==10);
-                        if(state==10)
-                            state=-2;
+                    
+                    //Is this the end?
+                    if( chr == -1) 
+                    { 
+                        lastPart = true;
+                    } else 
+                    {
+                        int c2ndLastChar = partInput.read();
+                        if(c2ndLastChar == -1) 
+                        {
+                            lastPart = true;
+                        } else if(c2ndLastChar == '-') 
+                        {
+                            int lastChar = partInput.read();
+                            if(lastChar == -1 || lastChar == '-') 
+                            {
+                                lastPart = true;
+                            } else {
+                                throw new IOException("Incomplete parts, final boundary must end with --"); 
+                            }
+                        } else if (c2ndLastChar == '\r') 
+                        {
+                            //This ends well enough but we need to check the next char.
+                            //we need to be careful what we do here this might be the end it or we may find we have
+                            //more to deal with
+                            if(partInput.markSupported()) 
+                            {
+                                partInput.mark(1);
+                            }
+                            int lastchar = partInput.read();
+                            if(lastchar == '\n') {
+                                
+                            } else if (lastchar == -1) 
+                            {
+                                lastPart = true;
+                            } else {
+                                if(partInput.markSupported()) 
+                                {
+                                    partInput.reset();
+                                } else 
+                                {
+                                    throw new RuntimeException("The stream must support marking or "
+                                        + "ensure the boundary is not terminated with \\r.");
+                                }
+                            }
+                        } else if (c2ndLastChar == '\n') 
+                        {
+                            //ok as well
+                        } else 
+                        {
+                            throw new IllegalArgumentException("Boundary must be followed by a new line.");
+                        }
+
                     }
                 }
                 finally
                 {
                     part.close();
+                    //In the case of a file we may need to trim the last char.
+                    if(trimLastChar && part._file != null && part._file.exists()) 
+                    {
+                        File f = part._file;
+                        FileChannel outChan = new FileOutputStream(f, true).getChannel();
+                        outChan.truncate(f.length() - 1);
+                        outChan.close();
+                        part._size--;
+                    }
                 }
             }
             if (lastPart)
             {
                 while(line!=null)
-                    line=((ReadLineInputStream)_in).readLine();
+                    line=is.readLine();
             }
             else
                 throw new IOException("Incomplete parts");
@@ -864,28 +1037,53 @@ public class MultiPartInputStreamParser
         String _line;
         byte[] _buffer;
         int _pos;
+        String returnNext = null;
 
+        public long skip(long n) throws IOException 
+        {
+            return _in.skip(n);
+        }
+
+        public boolean markSupported() 
+        {
+            return false;
+        }
+
+        public void close() throws IOException 
+        {
+            _in.close();
+        }
 
         public Base64InputStream(ReadLineInputStream rlis)
         {
             _in = rlis;
         }
-
-        @Override
-        public int read() throws IOException
+        
+        private boolean fillBuffer() throws IOException 
         {
             if (_buffer==null || _pos>= _buffer.length)
             {
-                //Any CR and LF will be consumed by the readLine() call.
-                //We need to put them back into the bytes returned from this
-                //method because the parsing of the multipart content uses them
-                //as markers to determine when we've reached the end of a part.
+                
+                if(returnNext != null) {
+                    _buffer= returnNext.getBytes();
+                    _pos = 0;
+                    returnNext = null;
+                    return true;
+                }
                 _line = _in.readLine();
                 if (_line==null)
-                    return -1;  //nothing left
-                if (_line.startsWith("--"))
-                    _buffer=(_line+"\r\n").getBytes(); //boundary marking end of part
-                else if (_line.length()==0)
+                    return false;  //nothing left
+                if (_line.startsWith("--")) 
+                {
+                    //Ensure the next call returns the parts after the boundary.
+                    if(_line.endsWith("--")) 
+                    {
+                        returnNext = "--\r\n";
+                    } else {
+                        returnNext = "\r\n";
+                    }
+                    _buffer=(_line).getBytes(); //boundary marking end of part
+                } else if (_line.length()==0)
                     _buffer="\r\n".getBytes(); //blank line
                 else
                 {
@@ -898,8 +1096,40 @@ public class MultiPartInputStreamParser
 
                 _pos=0;
             }
-
-            return _buffer[_pos++];
+            return true;
         }
+
+        @Override
+        public int read() throws IOException
+        {
+            if(fillBuffer()) 
+            {
+                return _buffer[_pos++];
+            } 
+            return -1;
+        }
+        
+        @Override
+        public int read(byte b[]) throws IOException 
+        {
+            return read(b, 0, b.length);
+        }
+        
+        @Override
+        public int read(byte b[], int off, int len) throws IOException 
+        {
+            int i = 0;
+            if(!fillBuffer()) 
+            {
+                return -1;
+            }
+            for(i = 0; i < len && _pos < _buffer.length ; i++) 
+            {
+                b[off + i] = _buffer[_pos];
+                _pos++;
+            }
+            return i;
+        }
+        
     }
 }
