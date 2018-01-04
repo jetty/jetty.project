@@ -399,6 +399,17 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         return !_delayedForContent;
     }
 
+    boolean onIdleTimeout(Throwable timeout)
+    {
+        if (_delayedForContent)
+        {
+            _delayedForContent = false;
+            getRequest().getHttpInput().onIdleTimeout(timeout);
+            execute(this);
+            return false;
+        }
+        return true;
+    }
 
     /**
      * <p>Attempts to perform a HTTP/1.1 upgrade.</p>
