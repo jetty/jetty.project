@@ -84,6 +84,7 @@
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-start</artifactId>
                   <version>${project.version}</version>
+                  <classifier>shaded</classifier>
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
