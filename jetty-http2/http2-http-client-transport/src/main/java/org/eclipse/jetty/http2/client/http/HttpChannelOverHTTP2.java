@@ -34,17 +34,15 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 {
     private final HttpConnectionOverHTTP2 connection;
     private final Session session;
-    private final boolean push;
     private final HttpSenderOverHTTP2 sender;
     private final HttpReceiverOverHTTP2 receiver;
     private Stream stream;
 
-    public HttpChannelOverHTTP2(HttpDestination destination, HttpConnectionOverHTTP2 connection, Session session, boolean push)
+    public HttpChannelOverHTTP2(HttpDestination destination, HttpConnectionOverHTTP2 connection, Session session)
     {
         super(destination);
         this.connection = connection;
         this.session = session;
-        this.push = push;
         this.sender = new HttpSenderOverHTTP2(this);
         this.receiver = new HttpReceiverOverHTTP2(this);
     }
@@ -86,6 +84,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         this.stream = stream;
     }
 
+    public boolean isFailed()
+    {
+        return sender.isFailed() || receiver.isFailed();
+    }
+
     @Override
     public void send()
     {
@@ -97,16 +100,17 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     @Override
     public void release()
     {
+        setStream(null);
         connection.release(this);
     }
 
     @Override
     public boolean abort(HttpExchange exchange, Throwable requestFailure, Throwable responseFailure)
     {
+        Stream stream = getStream();
         boolean aborted = super.abort(exchange, requestFailure, responseFailure);
         if (aborted)
         {
-            Stream stream = getStream();
             if (stream != null)
                 stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
         }
@@ -117,7 +121,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public void exchangeTerminated(HttpExchange exchange, Result result)
     {
         super.exchangeTerminated(exchange, result);
-        if (!push)
-            release();
+        release();
     }
 }

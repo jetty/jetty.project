@@ -86,6 +86,11 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         return channel.getHttpExchange();
     }
 
+    public boolean isFailed()
+    {
+        return requestState.get() == RequestState.FAILURE;
+    }
+
     @Override
     public void onContent()
     {
