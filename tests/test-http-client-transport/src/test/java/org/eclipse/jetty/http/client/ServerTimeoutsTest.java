@@ -46,6 +46,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -75,36 +76,93 @@ public class ServerTimeoutsTest extends AbstractTest
     }
 
     @Test
-    public void testRequestWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires() throws Exception
+    public void testBlockingReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires() throws Exception
     {
-        testRequestWithDelayedFirstContentIdleTimeoutFires(false);
+        testBlockingReadWithDelayedFirstContentIdleTimeoutFires(false);
     }
 
     @Test
-    public void testRequestWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires() throws Exception
+    public void testBlockingReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires() throws Exception
     {
-        testRequestWithDelayedFirstContentIdleTimeoutFires(true);
+        testBlockingReadWithDelayedFirstContentIdleTimeoutFires(true);
     }
 
-    private void testRequestWithDelayedFirstContentIdleTimeoutFires(boolean delayDispatch) throws Exception
+    @Test
+    public void testAsyncReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires() throws Exception
     {
-        httpConfig.setDelayDispatchUntilContent(delayDispatch);
-        CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new EmptyServerHandler()
+        testAsyncReadWithDelayedFirstContentIdleTimeoutFires(false);
+    }
+
+    @Test
+    public void testAsyncReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires() throws Exception
+    {
+        testAsyncReadWithDelayedFirstContentIdleTimeoutFires(true);
+    }
+
+    private void testBlockingReadWithDelayedFirstContentIdleTimeoutFires(boolean delayDispatch) throws Exception
+    {
+        testReadWithDelayedFirstContentIdleTimeoutFires(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
+                // The client did not send the content,
+                // idle timeout should result in IOException.
+                request.getInputStream().read();
+            }
+        }, delayDispatch);
+    }
+
+    private void testAsyncReadWithDelayedFirstContentIdleTimeoutFires(boolean delayDispatch) throws Exception
+    {
+        testReadWithDelayedFirstContentIdleTimeoutFires(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+                request.getInputStream().setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable()
+                    {
+                    }
+
+                    @Override
+                    public void onAllDataRead()
+                    {
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        if (t instanceof TimeoutException)
+                            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                        asyncContext.complete();
+                    }
+                });
+
+            }
+        }, delayDispatch);
+    }
+
+    private void testReadWithDelayedFirstContentIdleTimeoutFires(Handler handler, boolean delayDispatch) throws Exception
+    {
+        httpConfig.setDelayDispatchUntilContent(delayDispatch);
+        CountDownLatch handlerLatch = new CountDownLatch(1);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
                 try
                 {
-                    // The client did not send the content,
-                    // idle timeout should result in IOException.
-                    request.getInputStream().read();
+                    handler.handle(target, jettyRequest, request, response);
                 }
-                catch (IOException x)
+                finally
                 {
                     handlerLatch.countDown();
-                    throw x;
                 }
             }
         });
