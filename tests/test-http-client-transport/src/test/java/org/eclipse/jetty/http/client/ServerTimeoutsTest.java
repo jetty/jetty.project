@@ -75,34 +75,57 @@ public class ServerTimeoutsTest extends AbstractTest
     }
 
     @Test
-    public void testDelayedDispatchRequestWithDelayedFirstContentIdleTimeoutFires() throws Exception
+    public void testRequestWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires() throws Exception
     {
-        httpConfig.setDelayDispatchUntilContent(true);
+        testRequestWithDelayedFirstContentIdleTimeoutFires(false);
+    }
+
+    @Test
+    public void testRequestWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires() throws Exception
+    {
+        testRequestWithDelayedFirstContentIdleTimeoutFires(true);
+    }
+
+    private void testRequestWithDelayedFirstContentIdleTimeoutFires(boolean delayDispatch) throws Exception
+    {
+        httpConfig.setDelayDispatchUntilContent(delayDispatch);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler.ErrorDispatchHandler()
+        start(new EmptyServerHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
-                handlerLatch.countDown();
+                try
+                {
+                    // The client did not send the content,
+                    // idle timeout should result in IOException.
+                    request.getInputStream().read();
+                }
+                catch (IOException x)
+                {
+                    handlerLatch.countDown();
+                    throw x;
+                }
             }
         });
-        long idleTimeout = 2500;
+        long idleTimeout = 1000;
         setServerIdleTimeout(idleTimeout);
 
-        CountDownLatch resultLatch = new CountDownLatch(1);
+        CountDownLatch resultLatch = new CountDownLatch(2);
+        DeferredContentProvider content = new DeferredContentProvider();
         client.POST(newURI())
-                .content(new DeferredContentProvider())
-                .send(result ->
+                .content(content)
+                .onResponseSuccess(response ->
                 {
-                    if (result.isFailed())
+                    if (response.getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
                         resultLatch.countDown();
-                });
+                    content.close();
+                })
+                .send(result -> resultLatch.countDown());
 
-        // We did not send the content, the request was not
-        // dispatched, the server should have idle timed out.
-        Assert.assertFalse(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        // The client did not send the content, the request was
+        // dispatched, the server should have idle timed it out.
+        Assert.assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 

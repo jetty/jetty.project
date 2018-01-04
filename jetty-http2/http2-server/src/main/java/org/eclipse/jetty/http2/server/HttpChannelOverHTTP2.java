@@ -315,16 +315,19 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
 
     public boolean onStreamTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
-        boolean result = false;
-        if (isRequestIdle())
-        {
+        boolean delayed = _delayedUntilContent;
+        _delayedUntilContent = false;
+
+        boolean result = isRequestIdle();
+        if (result)
             consumeInput();
-            result = true;
-        }
 
         getHttpTransport().onStreamTimeout(failure);
-        if (getRequest().getHttpInput().onIdleTimeout(failure))
+        if (getRequest().getHttpInput().onIdleTimeout(failure) || delayed)
+        {
             consumer.accept(this::handleWithContext);
+            result = false;
+        }
 
         return result;
     }

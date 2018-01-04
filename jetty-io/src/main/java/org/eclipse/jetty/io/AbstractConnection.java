@@ -183,7 +183,8 @@ public abstract class AbstractConnection implements Connection
 
     /**
      * <p>Callback method invoked when the endpoint failed to be ready to be read after a timeout</p>
-     * @param timeout TODO
+     *
+     * @param timeout the cause of the read timeout
      * @return true to signal that the endpoint must be closed, false to keep the endpoint open
      */
     protected boolean onReadTimeout(Throwable timeout)

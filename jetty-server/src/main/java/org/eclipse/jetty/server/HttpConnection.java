@@ -287,12 +287,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
     
-    @Override
-    protected boolean onReadTimeout(Throwable timeout)
-    {
-        return _channel.onConnectionReadTimeout(timeout);
-    }
-
     /* ------------------------------------------------------------ */
     /** Fill and parse data looking for content
      * @return true if an {@link RequestHandler} method was called and it returned true;
@@ -490,6 +484,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             else if (getEndPoint().isOpen())
                 fillInterested();
         }
+    }
+
+    @Override
+    protected boolean onReadTimeout(Throwable timeout)
+    {
+        return _channel.onIdleTimeout(timeout);
     }
 
     @Override
