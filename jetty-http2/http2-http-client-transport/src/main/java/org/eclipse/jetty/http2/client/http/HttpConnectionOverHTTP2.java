@@ -65,7 +65,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         request.version(HttpVersion.HTTP_2);
         normalizeRequest(request);
 
-        // One connection maps to N channels, so for each exchange we create a new channel.
+        // One connection maps to N channels, so one channel for each exchange.
         HttpChannelOverHTTP2 channel = provideHttpChannel();
         activeChannels.add(channel);
 
@@ -76,8 +76,13 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         HttpChannelOverHTTP2 channel = idleChannels.poll();
         if (channel == null)
-            channel = new HttpChannelOverHTTP2(getHttpDestination(), this, getSession());
+            channel = newHttpChannel();
         return channel;
+    }
+
+    protected HttpChannelOverHTTP2 newHttpChannel()
+    {
+        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession());
     }
 
     protected void release(HttpChannelOverHTTP2 channel)
@@ -85,6 +90,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         // Only non-push channels are released.
         if (activeChannels.remove(channel))
         {
+            channel.setStream(null);
             // Recycle only non-failed channels.
             if (!channel.isFailed())
                 idleChannels.offer(channel);

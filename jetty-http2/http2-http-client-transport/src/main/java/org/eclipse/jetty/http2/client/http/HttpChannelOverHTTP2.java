@@ -100,7 +100,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     @Override
     public void release()
     {
-        setStream(null);
         connection.release(this);
     }
 
