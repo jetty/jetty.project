@@ -152,7 +152,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
                     LOG.debug("Idle timeout {}/{}ms - {}", elapsed, idleTimeout, this);
                 if (idle)
                 {
-                    idleTimeoutStamp = -1;
+                    idleTimeoutGuard = -1;
                     close(new TimeoutException("Idle timeout expired: " + idleTimeout + "ms"));
                 }
             }
