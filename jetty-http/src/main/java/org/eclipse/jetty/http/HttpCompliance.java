@@ -105,8 +105,8 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
                 
             case "RFC2616":
                 sections = EnumSet.complementOf(EnumSet.of(
-                HttpComplianceSection.RFC7230_3_2_4_NO_FOLDING,
-                HttpComplianceSection.RFC7230_A2_NO_HTTP_9));
+                HttpComplianceSection.NO_FIELD_FOLDING,
+                HttpComplianceSection.NO_HTTP_9));
                 i++;
                 break;
                 

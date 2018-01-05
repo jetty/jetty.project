@@ -38,7 +38,7 @@ public class HttpParserTest
 {
     static
     {
-        HttpCompliance.CUSTOM0.sections().remove(HttpComplianceSection.RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME);
+        HttpCompliance.CUSTOM0.sections().remove(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME);
     }
     
     /**
@@ -128,7 +128,7 @@ public class HttpParserTest
         Assert.assertEquals("/999", _uriOrStatus);
         Assert.assertEquals("HTTP/0.9", _versionOrReason);
         Assert.assertEquals(-1, _headers);
-        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.RFC7230_A2_NO_HTTP_9));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_9));
     }
 
     @Test
@@ -157,7 +157,7 @@ public class HttpParserTest
         Assert.assertEquals("/222", _uriOrStatus);
         Assert.assertEquals("HTTP/0.9", _versionOrReason);
         Assert.assertEquals(-1, _headers);
-        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.RFC7230_A2_NO_HTTP_9));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_9));
     }
 
     @Test
@@ -273,7 +273,7 @@ public class HttpParserTest
         Assert.assertEquals("Name", _hdr[1]);
         Assert.assertEquals("value extra", _val[1]);
         Assert.assertEquals(1, _headers);
-        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.RFC7230_3_2_4_NO_FOLDING));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_FIELD_FOLDING));
     }
 
     @Test
@@ -372,7 +372,7 @@ public class HttpParserTest
         parseAll(parser, buffer);
         
         Assert.assertThat(_bad, Matchers.containsString("Illegal character"));
-        Assert.assertThat(_complianceViolation,contains(HttpComplianceSection.RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME));
+        Assert.assertThat(_complianceViolation,contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
     }
 
     @Test
@@ -390,7 +390,7 @@ public class HttpParserTest
         parseAll(parser, buffer);
         
         Assert.assertThat(_bad, Matchers.containsString("Illegal character"));
-        Assert.assertThat(_complianceViolation,contains(HttpComplianceSection.RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME));
+        Assert.assertThat(_complianceViolation,contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
     }
 
     @Test
@@ -422,7 +422,7 @@ public class HttpParserTest
         Assert.assertEquals("Other", _hdr[1]);
         Assert.assertEquals("value", _val[1]);
 
-        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
     }
 
     @Test
@@ -752,7 +752,7 @@ public class HttpParserTest
         parseAll(parser, buffer);
         Assert.assertNull(_bad);
         Assert.assertEquals("GET", _methodOrVersion);
-        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.RFC7230_3_1_1_METHOD_CASE_SENSITIVE));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.METHOD_CASE_SENSITIVE));
     }
 
     @Test
@@ -814,7 +814,7 @@ public class HttpParserTest
         Assert.assertEquals("cOnNeCtIoN", _hdr[1]);
         Assert.assertEquals("ClOsE", _val[1]);
         Assert.assertEquals(1, _headers);
-        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME,HttpComplianceSection.RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME,HttpComplianceSection.USE_CASE_INSENSITIVE_FIELD_VALUE_CACHE));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE,HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE,HttpComplianceSection.CASE_INSENSITIVE_FIELD_VALUE_CACHE));
     }
 
     @Test

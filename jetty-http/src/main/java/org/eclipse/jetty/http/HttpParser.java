@@ -351,10 +351,10 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     protected String caseInsensitiveHeader(String orig, String normative)
     {                   
-        if (_compliances.contains(HttpComplianceSection.RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME))
+        if (_compliances.contains(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE))
             return normative;
         if (!orig.equals(normative))
-            handleViolation(HttpComplianceSection.RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME,orig);
+            handleViolation(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE,orig);
         return orig;
     }
     
@@ -669,7 +669,7 @@ public class HttpParser
                         _length=_string.length();
                         _methodString=takeString();
 
-                        if (_compliances.contains(HttpComplianceSection.RFC7230_3_1_1_METHOD_CASE_SENSITIVE))
+                        if (_compliances.contains(HttpComplianceSection.METHOD_CASE_SENSITIVE))
                         {
                             HttpMethod method=HttpMethod.CACHE.get(_methodString);
                             if (method!=null)
@@ -682,7 +682,7 @@ public class HttpParser
                             if (method!=null)
                             {
                                 if (!method.asString().equals(_methodString))
-                                    handleViolation(HttpComplianceSection.RFC7230_3_1_1_METHOD_CASE_SENSITIVE,_methodString);
+                                    handleViolation(HttpComplianceSection.METHOD_CASE_SENSITIVE,_methodString);
                                 _methodString = method.asString();
                             }
                         }
@@ -787,7 +787,7 @@ public class HttpParser
                     else if (b < HttpTokens.SPACE && b>=0)
                     {
                         // HTTP/0.9
-                        if (complianceViolation(HttpComplianceSection.RFC7230_A2_NO_HTTP_9,"No request version"))
+                        if (complianceViolation(HttpComplianceSection.NO_HTTP_9,"No request version"))
                             throw new BadMessageException("HTTP/0.9 not supported");
                         handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
                         setState(State.END);
@@ -854,7 +854,7 @@ public class HttpParser
                         else
                         {
                             // HTTP/0.9
-                            if (complianceViolation(HttpComplianceSection.RFC7230_A2_NO_HTTP_9,"No request version"))
+                            if (complianceViolation(HttpComplianceSection.NO_HTTP_9,"No request version"))
                                 throw new BadMessageException("HTTP/0.9 not supported");
 
                             handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
@@ -973,7 +973,7 @@ public class HttpParser
                         if (!(_field instanceof HostPortHttpField) && _valueString!=null && !_valueString.isEmpty())
                         {
                             _field=new HostPortHttpField(_header,
-                                _compliances.contains(HttpComplianceSection.RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME)?_header.asString():_headerString,
+                                _compliances.contains(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE)?_header.asString():_headerString,
                                 _valueString);
                             add_to_connection_trie=_fieldCache!=null;
                         }
@@ -1071,7 +1071,7 @@ public class HttpParser
                         case HttpTokens.SPACE:
                         case HttpTokens.TAB:
                         {
-                            if (complianceViolation(HttpComplianceSection.RFC7230_3_2_4_NO_FOLDING,_headerString))
+                            if (complianceViolation(HttpComplianceSection.NO_FIELD_FOLDING,_headerString))
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Header Folding");
 
                             // header value without name - continuation?
@@ -1190,24 +1190,24 @@ public class HttpParser
                                     String n = cached_field.getName();
                                     String v = cached_field.getValue();
 
-                                    if (!_compliances.contains(HttpComplianceSection.RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME))
+                                    if (!_compliances.contains(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE))
                                     {
                                         // Have to get the fields exactly from the buffer to match case
                                         String en = BufferUtil.toString(buffer,buffer.position()-1,n.length(),StandardCharsets.US_ASCII);
                                         if (!n.equals(en))
                                         {
-                                            handleViolation(HttpComplianceSection.RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME,en);
+                                            handleViolation(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE,en);
                                             n = en;
                                             cached_field = new HttpField(cached_field.getHeader(),n,v);
                                         }
                                     }
                                     
-                                    if (v!=null && !_compliances.contains(HttpComplianceSection.USE_CASE_INSENSITIVE_FIELD_VALUE_CACHE))
+                                    if (v!=null && !_compliances.contains(HttpComplianceSection.CASE_INSENSITIVE_FIELD_VALUE_CACHE))
                                     {
                                         String ev = BufferUtil.toString(buffer,buffer.position()+n.length()+1,v.length(),StandardCharsets.ISO_8859_1);
                                         if (!v.equals(ev))
                                         {
-                                            handleViolation(HttpComplianceSection.USE_CASE_INSENSITIVE_FIELD_VALUE_CACHE,ev+"!="+v);
+                                            handleViolation(HttpComplianceSection.CASE_INSENSITIVE_FIELD_VALUE_CACHE,ev+"!="+v);
                                             v = ev;
                                             cached_field = new HttpField(cached_field.getHeader(),n,v);
                                         }
@@ -1308,7 +1308,7 @@ public class HttpParser
                         _valueString="";
                         _length=-1;
 
-                        if (!complianceViolation(HttpComplianceSection.RFC7230_3_2_FIELD_COLON,_headerString))
+                        if (!complianceViolation(HttpComplianceSection.FIELD_COLON,_headerString))
                         {                        
                             setState(FieldState.FIELD);
                             break;
@@ -1316,7 +1316,7 @@ public class HttpParser
                     }
 
                     //Ignore trailing whitespaces
-                    if (b==HttpTokens.SPACE && !complianceViolation(HttpComplianceSection.RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME,null))
+                    if (b==HttpTokens.SPACE && !complianceViolation(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME,null))
                     {
                         setState(FieldState.WS_AFTER_NAME);
                         break;
