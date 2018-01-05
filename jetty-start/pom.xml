@@ -51,7 +51,6 @@
                   <includes>
                     <include>org/eclipse/jetty/util/JavaVersion*</include>
                     <include>org/eclipse/jetty/util/TopologicalSort*</include>
-                    <include>org/eclipse/jetty/util/component/*</include>
                   </includes>
               	</filter>
               </filters>              
