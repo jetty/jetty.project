@@ -1,3 +1,5 @@
+jetty-9.2.25-SNAPSHOT
+
 jetty-9.2.24.v20180105 - 05 January 2018
  + 2065 Backport #347 to Jetty 9.2.x
 
