@@ -11,7 +11,6 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.start</bundle-symbolic-name>
-    <start-jar-file-name>start.jar</start-jar-file-name>
   </properties>
   <build>
    <plugins>
@@ -44,11 +43,14 @@
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <createSourcesJar>true</createSourcesJar>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>shaded</shadedClassifierName>
               <filters>
                 <filter>
                   <artifact>org.eclipse.jetty:jetty-util</artifact>
                   <includes>
                     <include>org/eclipse/jetty/util/JavaVersion*</include>
+                    <include>org/eclipse/jetty/util/TopologicalSort*</include>
                   </includes>
               	</filter>
               </filters>              
@@ -69,7 +71,6 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
       <version>${project.version}</version>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
