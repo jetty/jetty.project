@@ -890,9 +890,11 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for classes in  
      * @param entry the entry in the potentially MultiRelease jar resource to parse
+     * @param jar the jar file
      * @throws Exception if unable to parse
      */
-    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, MultiReleaseJarFile.VersionedJarEntry entry) throws Exception
+    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, MultiReleaseJarFile.VersionedJarEntry entry)
+    throws Exception
     {
         if (jar == null || entry == null)
             return;

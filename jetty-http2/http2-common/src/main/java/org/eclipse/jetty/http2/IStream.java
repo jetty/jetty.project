@@ -49,7 +49,7 @@ public interface IStream extends Stream, Closeable
 
     /**
      * @return the {@link org.eclipse.jetty.http2.api.Stream.Listener} associated with this stream
-     * @see #setListener(Listener)
+     * @see #setListener(Stream.Listener)
      */
     public Listener getListener();
 
