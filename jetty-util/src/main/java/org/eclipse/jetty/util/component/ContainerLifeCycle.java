@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
@@ -115,6 +116,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                             start(l);
                         }
                         break;
+                    default:
                 }
             }
         }
@@ -154,14 +156,23 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         super.doStop();
         List<Bean> reverse = new ArrayList<>(_beans);
         Collections.reverse(reverse);
+        MultiException mex = new MultiException();
         for (Bean b : reverse)
         {
             if (b._managed==Managed.MANAGED && b._bean instanceof LifeCycle)
             {
                 LifeCycle l = (LifeCycle)b._bean;
-                stop(l);
+                try
+                {
+                    stop(l);
+                }
+                catch(Throwable th)
+                {
+                    mex.add(th);
+                }
             }
         }
+        mex.ifExceptionThrow();
     }
 
     /**
@@ -173,15 +184,24 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         _destroyed = true;
         List<Bean> reverse = new ArrayList<>(_beans);
         Collections.reverse(reverse);
+        MultiException mex = new MultiException();
         for (Bean b : reverse)
         {
             if (b._bean instanceof Destroyable && (b._managed==Managed.MANAGED || b._managed==Managed.POJO))
             {
                 Destroyable d = (Destroyable)b._bean;
-                d.destroy();
+                try
+                {
+                    d.destroy();
+                }
+                catch(Throwable th)
+                {
+                    mex.add(th);
+                }
             }
         }
         _beans.clear();
+        mex.ifExceptionThrowRuntime();
     }
 
     /**

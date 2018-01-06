@@ -23,14 +23,18 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.nio.channels.ClosedChannelException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -41,12 +45,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -55,6 +62,136 @@ import org.junit.runner.RunWith;
 @RunWith(AdvancedRunner.class)
 public class GracefulStopTest 
 {
+    public void testSlowClose(long stopTimeout, long closeWait, Matcher<Long> stopTimeMatcher) throws Exception
+    {
+        Server server= new Server();
+        server.setStopTimeout(stopTimeout);
+
+        CountDownLatch closed = new CountDownLatch(1);
+        ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory() 
+        {
+
+            @Override
+            public Connection newConnection(Connector connector, EndPoint endPoint)
+            {
+                // Slow closing connection
+                HttpConnection conn = new HttpConnection(getHttpConfiguration(), connector, endPoint, getHttpCompliance(), isRecordHttpComplianceViolations())
+                {
+                    @Override
+                    public void close()
+                    {
+                        try
+                        {
+                            Thread.sleep(closeWait);
+                            super.close();
+                        }
+                        catch(Exception e)
+                        {
+                            // e.printStackTrace();
+                        }
+                        finally
+                        {
+                            closed.countDown();
+                        }
+                    }
+                };
+                return configure(conn, connector, endPoint);
+            }
+            
+        });
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        NoopHandler handler = new NoopHandler();
+        server.setHandler(handler);
+
+        server.start();
+        final int port=connector.getLocalPort();
+        Socket client = new Socket("127.0.0.1", port);
+        client.setSoTimeout(10000);
+        client.getOutputStream().write((
+                "GET / HTTP/1.1\r\n"+
+                "Host: localhost:"+port+"\r\n" +
+                "Content-Type: plain/text\r\n" +
+                "\r\n"
+                ).getBytes());
+        client.getOutputStream().flush();
+        handler.latch.await();
+
+        // look for a response
+        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream() ,StandardCharsets.ISO_8859_1));
+        while(true)
+        {
+            String line = in.readLine();
+            if (line==null)
+                Assert.fail();
+            if (line.length()==0)
+                break;
+        }
+        
+
+        long start = System.nanoTime();
+        try
+        {
+            server.stop();
+            assertTrue(stopTimeout==0 || stopTimeout>closeWait);  
+        }
+        catch(Exception e)
+        {
+            assertTrue(stopTimeout>0 && stopTimeout<closeWait);                
+        }
+        long stop = System.nanoTime();
+        
+        // Check stop time was correct
+        assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),stopTimeMatcher);
+
+        // Connection closed
+        while(true)
+        {
+            int r = client.getInputStream().read();
+            if (r==-1)
+                break;
+        }
+
+        // onClose Thread interrupted or completed
+        if (stopTimeout>0)
+            assertTrue(closed.await(1000,TimeUnit.MILLISECONDS));
+        
+        if (!client.isClosed())
+            client.close();
+    }
+
+    /**
+     * Test of non graceful stop when a connection close is slow
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testSlowCloseNotGraceful() throws Exception
+    {
+        testSlowClose(0,5000,lessThan(750L));
+    }
+
+    /**
+     * Test of graceful stop when close is slower than timeout
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testSlowCloseTinyGraceful() throws Exception
+    {
+        testSlowClose(1,5000,lessThan(750L));
+    }
+
+    /**
+     * Test of graceful stop when close is faster than timeout;
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testSlowCloseGraceful() throws Exception
+    {
+        testSlowClose(5000,1000,greaterThan(750L));
+    }
+    
+    
     /**
      * Test of standard graceful timeout mechanism when a block request does
      * not complete
@@ -304,6 +441,23 @@ public class GracefulStopTest
             {
                 handling.set(false);
             }
+        }
+    }
+
+    static class NoopHandler extends AbstractHandler 
+    {           
+        final CountDownLatch latch = new CountDownLatch(1);
+        
+        NoopHandler()
+        {
+        }
+        
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                        throws IOException, ServletException 
+        {
+            baseRequest.setHandled(true);
+            latch.countDown();
         }
     }
 

@@ -40,6 +40,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -117,28 +118,91 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}", this);
-        CloseEndPoints close_endps = new CloseEndPoints();
-        submit(close_endps);
-        close_endps.await(getStopTimeout());
-        CloseSelector close_selector = new CloseSelector();
-        submit(close_selector);
-        close_selector.await(getStopTimeout());
 
-        super.doStop();
+        // Grab a copy of the current selector, so we can force close endpoints later
+        Selector selector;
+        try (Locker.Lock lock = _locker.lock())
+        {
+            selector = _selector;
+        }
+
+        boolean graceful = getStopTimeout()>0;
+        boolean closed = selector==null;
+        if (graceful && !closed)
+        {
+            // Schedule a graceful close
+            GracefulCloseAction close = new GracefulCloseAction();
+            submit(close);
+            closed = close.await(getStopTimeout());
+        }
+        
+        try
+        {
+            super.doStop();
+        }
+        finally
+        {
+            // Really stop the selector
+            try (Locker.Lock lock = _locker.lock())
+            {
+                if (selector!=null && selector.isOpen())
+                    selector.wakeup();
+                _selector = null;
+            }
+            Thread.yield();
+
+            // Close any left over endpoints
+            if (selector!=null && selector.isOpen())
+            {
+                // close all the endpoints directly
+                selector.keys().stream()
+                .filter(SelectionKey::isValid)
+                .map(SelectionKey::attachment)
+                .filter(EndPoint.class::isInstance)
+                .map(EndPoint.class::cast)
+                .filter(EndPoint::isOpen)
+                .forEach(EndPoint::close);
+                selector.close();
+            }
+        }
         
         if (LOG.isDebugEnabled())
-            LOG.debug("Stopped {}", this);
+            LOG.debug("Stopped {} graceful={}", this, graceful);
+        if (graceful && !closed)
+            throw new TimeoutException("Non graceful (>"+getStopTimeout()+"ms) shutdown of "+this);
     }
 
-    public void submit(Runnable change)
+    @Deprecated
+    public void submit(Runnable action)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Queued change {} on {}", change, this);
+            LOG.debug("DEPRECATED! Queued change {} on {}", action, this);
 
         Selector selector = null;
         try (Locker.Lock lock = _locker.lock())
         {
-            _actions.offer(change);
+            _actions.offer(action);
+            
+            if (_selecting)
+            {
+                selector = _selector;
+                // To avoid the extra select wakeup.
+                _selecting = false;
+            }
+        }
+        if (selector != null)
+            selector.wakeup();
+    }
+    
+    protected void submit(Action action)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queued change {} on {}", action, this);
+
+        Selector selector = null;
+        try (Locker.Lock lock = _locker.lock())
+        {
+            _actions.offer(action);
             
             if (_selecting)
             {
@@ -505,8 +569,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             return String.format("%s@%x", getClass().getSimpleName(), hashCode());
         }
     }
-
-    private class DumpKeys extends Invocable.NonBlocking
+    
+    public abstract static class Action extends Invocable.NonBlocking {}
+    
+    private class DumpKeys extends Action
     {
         private CountDownLatch latch = new CountDownLatch(1);
         private List<String> keys;
@@ -551,7 +617,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    class Acceptor extends Invocable.NonBlocking implements Selectable, Closeable
+    class Acceptor extends Action implements Selectable, Closeable
     {
         private final SelectableChannel _channel;
         private SelectionKey _key;
@@ -620,7 +686,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    class Accept extends Invocable.NonBlocking implements Closeable
+    class Accept extends Action implements Closeable
     {
         private final SelectableChannel channel;
         private final Object attachment;
@@ -694,7 +760,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    class Connect extends Invocable.NonBlocking
+    class Connect extends Action
     {
         private final AtomicBoolean failed = new AtomicBoolean();
         private final SelectableChannel channel;
@@ -754,82 +820,44 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CloseEndPoints extends Invocable.NonBlocking
+    private class GracefulCloseAction extends Action
     {
-        private final CountDownLatch _latch = new CountDownLatch(1);
-        private CountDownLatch _allClosed;
-
+        private CountDownLatch _latch = new CountDownLatch(1);
+        
         @Override
         public void run()
         {
-            List<EndPoint> end_points = new ArrayList<>();
-            for (SelectionKey key : _selector.keys())
+            int count = 0;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closing endPoints on {}", ManagedSelector.this);
+            Selector selector;
+            try (Locker.Lock lock = _locker.lock())
+            {
+                selector = _selector;
+                _selector = null;
+            }
+            if (selector==null)
+                return;
+            for (SelectionKey key : selector.keys())
             {
                 if (key.isValid())
                 {
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
-                        end_points.add((EndPoint)attachment);
+                    {
+                        EndPoint endp = ((EndPoint)attachment);
+                        count++;
+                        if (endp.getConnection()!=null)
+                            closeNoExceptions(endp.getConnection());
+                        else
+                            closeNoExceptions(endp);
+                    }                        
                 }
             }
 
-            int size = end_points.size();
             if (LOG.isDebugEnabled())
-                LOG.debug("Closing {} endPoints on {}", size, ManagedSelector.this);
-
-            _allClosed = new CountDownLatch(size);
-            _latch.countDown();
-
-            for (EndPoint endp : end_points)
-                submit(new EndPointCloser(endp, _allClosed));
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Closed {} endPoints on {}", size, ManagedSelector.this);
-        }
-
-        public boolean await(long timeout)
-        {
-            try
-            {
-                return _latch.await(timeout, TimeUnit.MILLISECONDS) &&
-                        _allClosed.await(timeout, TimeUnit.MILLISECONDS);
-            }
-            catch (InterruptedException x)
-            {
-                return false;
-            }
-        }
-    }
-
-    private class EndPointCloser implements Runnable
-    {
-        private final EndPoint _endPoint;
-        private final CountDownLatch _latch;
-
-        private EndPointCloser(EndPoint endPoint, CountDownLatch latch)
-        {
-            _endPoint = endPoint;
-            _latch = latch;
-        }
-
-        @Override
-        public void run()
-        {
-            closeNoExceptions(_endPoint.getConnection());
-            _latch.countDown();
-        }
-    }
-
-    private class CloseSelector extends Invocable.NonBlocking
-    {
-        private CountDownLatch _latch = new CountDownLatch(1);
-
-        @Override
-        public void run()
-        {
-            Selector selector = _selector;
-            _selector = null;
-            closeNoExceptions(selector);
+                LOG.debug("Closed {} endPoints on {}", count, ManagedSelector.this);                
+            
             _latch.countDown();
         }
 
