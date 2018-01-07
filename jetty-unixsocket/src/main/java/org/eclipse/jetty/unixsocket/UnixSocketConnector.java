@@ -57,7 +57,7 @@ import jnr.unixsocket.UnixSocketChannel;
 /**
  *
  */
-@ManagedObject("HTTP connector using NIO ByteChannels and Selectors")
+@ManagedObject("Connector using UNIX Socket")
 public class UnixSocketConnector extends AbstractConnector
 {
     private static final Logger LOG = Log.getLogger(UnixSocketConnector.class);
