@@ -107,11 +107,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>cdi-full-servlet</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>cdi-servlet</artifactId>
         <version>9.3.22-SNAPSHOT</version>
       </dependency>
@@ -344,6 +339,18 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-xml</artifactId>
         <version>9.3.23-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-distribution</artifactId>
+        <version>9.3.23-SNAPSHOT</version>
+        <type>zip</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-distribution</artifactId>
+        <version>9.3.23-SNAPSHOT</version>
+        <type>tar.gz</type>
       </dependency>
     </dependencies>
   </dependencyManagement>
