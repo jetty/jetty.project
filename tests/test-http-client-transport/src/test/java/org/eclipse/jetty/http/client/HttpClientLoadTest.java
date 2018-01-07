@@ -83,8 +83,8 @@ public class HttpClientLoadTest extends AbstractTest
     protected Connector newServerConnector( Server server) throws Exception {
         if (transport == UNIX_SOCKET)
         {
-            sockFile = Files.createTempFile(new File("/tmp").toPath(), "unix", ".sock" );
-            Files.deleteIfExists(sockFile);
+            //sockFile = Files.createTempFile("unix", ".sock" );
+            //Files.deleteIfExists(sockFile);
             UnixSocketConnector
                 unixSocketConnector = new UnixSocketConnector( server, provideServerConnectionFactory( transport ));
             unixSocketConnector.setUnixSocket( sockFile.toString() );
