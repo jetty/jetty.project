@@ -46,6 +46,7 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
@@ -74,7 +75,7 @@ public abstract class AbstractTest
     {
         String transports = System.getProperty("org.eclipse.jetty.http.client.AbstractTest.Transports");
 
-        if (transports!=null)
+        if (!StringUtil.isBlank(transports))
             return Arrays.stream(transports.split("\\s*,\\s*"))
                 .map(Transport::valueOf)
                 .collect(Collectors.toList()).toArray();
