@@ -782,7 +782,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            if (_waitingForContent && !isError())
+            boolean neverDispatched = getHttpChannelState().isIdle();
+            if ((_waitingForContent || neverDispatched) && !isError())
             {
                 x.addSuppressed(new Throwable("HttpInput idle timeout"));
                 _state = new ErrorState(x);
