@@ -167,7 +167,7 @@ public abstract class AbstractConnection implements Connection
         {
             boolean close = true;
             if (cause instanceof TimeoutException)
-                close = onReadTimeout();
+                close = onReadTimeout(cause);
             if (close)
             {
                 if (_endPoint.isOutputShutdown())
@@ -183,9 +183,11 @@ public abstract class AbstractConnection implements Connection
 
     /**
      * <p>Callback method invoked when the endpoint failed to be ready to be read after a timeout</p>
+     *
+     * @param timeout the cause of the read timeout
      * @return true to signal that the endpoint must be closed, false to keep the endpoint open
      */
-    protected boolean onReadTimeout()
+    protected boolean onReadTimeout(Throwable timeout)
     {
         return true;
     }
