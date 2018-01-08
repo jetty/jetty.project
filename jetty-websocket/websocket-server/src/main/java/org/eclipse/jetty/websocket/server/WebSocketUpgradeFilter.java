@@ -56,6 +56,12 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     public static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
     public static final String CONFIG_ATTRIBUTE_KEY = "configAttributeKey";
 
+    /**
+     *
+     * @param context the {@link ServletContextHandler} to use
+     * @return a configured {@link WebSocketUpgradeFilter} instance
+     * @throws ServletException if the filer cannot be configured
+     */
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
     {
         // Prevent double configure
@@ -90,6 +96,9 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     
     /**
      * @deprecated use {@link #configureContext(ServletContextHandler)} instead
+     * @param context the ServletContext to use
+     * @return a configured {@link WebSocketUpgradeFilter} instance
+     * @throws ServletException if the filer cannot be configured
      */
     @Deprecated
     public static WebSocketUpgradeFilter configureContext(ServletContext context) throws ServletException

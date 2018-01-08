@@ -450,6 +450,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     /**
      * Event for no activity on connection (read or write)
+     * @return true to signal that the endpoint must be closed, false to keep the endpoint open
      */
     @Override
     protected boolean onReadTimeout()
