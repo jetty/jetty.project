@@ -206,6 +206,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     {
         channels.remove(channel.getRequest());
         destination.release(this);
+        channel.destroy();
     }
 
     @Override
@@ -254,6 +255,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             HttpExchange exchange = channel.getHttpExchange();
             if (exchange != null)
                 exchange.getRequest().abort(failure);
+            channel.destroy();
         }
         channels.clear();
     }
@@ -262,7 +264,11 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     {
         boolean result = false;
         for (HttpChannelOverFCGI channel : channels.values())
+        {
             result |= channel.responseFailure(failure);
+            channel.destroy();
+        }
+        
         if (result)
             close(failure);
     }

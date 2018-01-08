@@ -131,6 +131,13 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     }
 
     @Override
+    public void onClose()
+    {
+        super.onClose();
+        channel.destroy();
+    }
+
+    @Override
     public boolean isClosed()
     {
         return closed.get();

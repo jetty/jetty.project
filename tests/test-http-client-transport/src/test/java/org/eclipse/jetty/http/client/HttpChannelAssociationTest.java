@@ -146,7 +146,7 @@ public class HttpChannelAssociationTest extends AbstractTest
                         return new HttpConnectionOverHTTP2(destination, session)
                         {
                             @Override
-                            protected HttpChannelOverHTTP2 provideHttpChannel()
+                            protected HttpChannelOverHTTP2 allocateHttpChannel()
                             {
                                 return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession())
                                 {
