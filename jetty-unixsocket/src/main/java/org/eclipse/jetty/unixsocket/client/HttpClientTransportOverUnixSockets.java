@@ -152,14 +152,5 @@ public class HttpClientTransportOverUnixSockets
         {
             LOG.ignore(xx);
         }
-
-        try
-        {
-            Files.deleteIfExists( Paths.get(_unixSocket));
-        }
-        catch ( IOException xx )
-        {
-            LOG.ignore(xx);
-        }
     }
 }

@@ -118,15 +118,6 @@ public abstract class AbstractTest
         startClient();
     }
 
-    @After
-    public void after() throws Exception
-    {
-        if (sockFile!=null)
-        {
-            Files.deleteIfExists( sockFile );
-        }
-    }
-
     @Before
     public void before() throws Exception
     {
@@ -134,6 +125,29 @@ public abstract class AbstractTest
         {
             sockFile = Files.createTempFile(new File("/tmp").toPath(),"unix", ".sock" );
         }
+    }
+
+    @After
+    public void stop() throws Exception
+    {
+        stopClient();
+        stopServer();
+        if (sockFile!=null)
+        {
+            Files.deleteIfExists( sockFile );
+        }
+    }
+
+    protected void stopClient() throws Exception
+    {
+        if (client != null)
+            client.stop();
+    }
+
+    protected void stopServer() throws Exception
+    {
+        if (server != null)
+            server.stop();
     }
     
     protected void startServer(HttpServlet servlet) throws Exception
@@ -318,25 +332,6 @@ public abstract class AbstractTest
             default:
                 throw new IllegalArgumentException();
         }
-    }
-
-    @After
-    public void stop() throws Exception
-    {
-        stopClient();
-        stopServer();
-    }
-
-    protected void stopClient() throws Exception
-    {
-        if (client != null)
-            client.stop();
-    }
-
-    protected void stopServer() throws Exception
-    {
-        if (server != null)
-            server.stop();
     }
 
     protected enum Transport
