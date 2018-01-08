@@ -172,9 +172,7 @@ public class HttpClientUploadDuringServerShutdown
                             public void send()
                             {
                                 if (afterSetup.get())
-                                {
                                     associateLatch.countDown();
-                                }
                                 super.send();
                             }
                         };

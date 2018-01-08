@@ -25,60 +25,55 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class TimeoutCompleteListener implements Response.CompleteListener, Runnable
+public class TimeoutCompleteListener extends CyclicTimeout implements Response.CompleteListener
 {
     private static final Logger LOG = Log.getLogger(TimeoutCompleteListener.class);
 
-    private final AtomicReference<Scheduler.Task> task = new AtomicReference<>();
-    private final Request request;
+    private final AtomicReference<Request> request = new AtomicReference<>();
 
-    public TimeoutCompleteListener(Request request)
+    public TimeoutCompleteListener(Scheduler scheduler)
     {
-        this.request = request;
+        super(scheduler);
+    }
+
+    @Override
+    public void onTimeoutExpired()
+    {
+        Request request = this.request.getAndSet(null);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Total timeout {} ms elapsed for {}", request.getTimeout(), request);
+        if (request != null)
+            request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
     }
 
     @Override
     public void onComplete(Result result)
     {
-        cancel();
-    }
-
-    public boolean schedule(Scheduler scheduler)
-    {
-        long timeout = request.getTimeout();
-        Scheduler.Task task = scheduler.schedule(this, timeout, TimeUnit.MILLISECONDS);
-        Scheduler.Task existing = this.task.getAndSet(task);
-        if (existing != null)
+        Request request = this.request.getAndSet(null);
+        if (request != null)
         {
-            existing.cancel();
-            cancel();
-            throw new IllegalStateException();
-        }
-        if (LOG.isDebugEnabled())
-            LOG.debug("Scheduled timeout task {} in {} ms for {}", task, timeout, request);
-        return true;
-    }
-
-    @Override
-    public void run()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Executing timeout task {} for {}", task, request);
-        request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
-    }
-
-    public void cancel()
-    {
-        Scheduler.Task task = this.task.getAndSet(null);
-        if (task != null)
-        {
-            boolean cancelled = task.cancel();
+            boolean cancelled = cancel();
             if (LOG.isDebugEnabled())
-                LOG.debug("Cancelled (successfully: {}) timeout task {}", cancelled, task);
+                LOG.debug("Cancelled ({}) timeout for {}", cancelled, request);
+        }
+    }
+
+    void schedule(HttpRequest request, long timeoutAt)
+    {
+        if (this.request.compareAndSet(null, request))
+        {
+            long delay = timeoutAt - System.nanoTime();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Scheduled timeout in {} ms for {}", TimeUnit.NANOSECONDS.toMillis(delay), request);
+            if (delay <= 0)
+                onTimeoutExpired();
+            else
+                schedule(delay, TimeUnit.NANOSECONDS);
         }
     }
 }
