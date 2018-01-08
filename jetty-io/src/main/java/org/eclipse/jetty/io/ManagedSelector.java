@@ -40,6 +40,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -62,6 +63,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
 
+    private final AtomicBoolean _started = new AtomicBoolean(false);
     private boolean _selecting = false;
     private final SelectorManager _selectorManager;
     private final int _id;
@@ -89,6 +91,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @Override
     protected void doStart() throws Exception
     {
+        _started.set(true);
         super.doStart();
 
         _selector = _selectorManager.newSelector();
@@ -112,17 +115,37 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @Override
     protected void doStop() throws Exception
     {
+        // doStop might be called for a failed managedSelector,
+        // We do not want to wait twice, so we only stop once for each start
+        if (!_started.compareAndSet(true,false))
+            return;
+        
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}", this);
-        CloseEndPoints close_endps = new CloseEndPoints();
-        submit(close_endps);
-        close_endps.await(getStopTimeout());
-        CloseSelector close_selector = new CloseSelector();
-        submit(close_selector);
-        close_selector.await(getStopTimeout());
+               
+        StopSelector stop_selector = new StopSelector(getStopTimeout()>0);
+        submit(stop_selector);
+ 
+        // We always wait at least 1s for the selector to stop
+        boolean timeout = false;
+        if (!stop_selector.await(Math.max(1000L,getStopTimeout())))
+        {
+            // We failed to correctly stop the selector, so we will force a stop/close here
+            Selector selector = _selector;
+            _selector = null;
+            if (selector!=null)
+            {
+                stop_selector.abort();
+                timeout = getStopTimeout()>0;
+                new StopSelector(false).update(selector);
+            }
+        }
 
         super.doStop();
         
+        if (timeout)
+            throw new TimeoutException("Forced shutdown of "+this);
+
         if (LOG.isDebugEnabled())
             LOG.debug("Stopped {}", this);
     }
@@ -729,81 +752,65 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CloseEndPoints implements SelectorUpdate
+    private class StopSelector implements SelectorUpdate
     {
         private final CountDownLatch _latch = new CountDownLatch(1);
-        private CountDownLatch _allClosed;
-
+        private final boolean _graceful;
+        private volatile boolean _abort;
+        
+        StopSelector(boolean graceful)
+        {
+            _graceful = graceful;
+        }
+        
+        void abort()
+        {
+            _abort = true;
+        }
+        
         @Override
         public void update(Selector selector)
-        {
-            List<EndPoint> end_points = new ArrayList<>();
+        {            
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closing {} endPoints on {}", selector.keys().size(), ManagedSelector.this);
             for (SelectionKey key : selector.keys())
             {
+                if (_abort)
+                    return;
                 if (key.isValid())
                 {
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
-                        end_points.add((EndPoint)attachment);
+                    {
+                        EndPoint endp = (EndPoint)attachment;
+                        Connection connection = endp.getConnection();
+
+                        if (_graceful)
+                        {
+                            if (connection != null)
+                            {
+                                closeNoExceptions(connection);
+                                _selectorManager.connectionClosed(connection);
+                            }
+                            else
+                                closeNoExceptions(endp);
+                            _selectorManager.endPointClosed(endp);
+                        }
+                        else
+                        {
+                            closeNoExceptions(endp);
+                        }
+                    }
                 }
             }
 
-            int size = end_points.size();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Closing {} endPoints on {}", size, ManagedSelector.this);
-
-            _allClosed = new CountDownLatch(size);
-            _latch.countDown();
-
-            for (EndPoint endp : end_points)
-                submit(new EndPointCloser(endp, _allClosed));
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Closed {} endPoints on {}", size, ManagedSelector.this);
-        }
-
-        public boolean await(long timeout)
-        {
-            try
-            {
-                return _latch.await(timeout, TimeUnit.MILLISECONDS) &&
-                        _allClosed.await(timeout, TimeUnit.MILLISECONDS);
-            }
-            catch (InterruptedException x)
-            {
-                return false;
-            }
-        }
-    }
-
-    private class EndPointCloser implements SelectorUpdate
-    {
-        private final EndPoint _endPoint;
-        private final CountDownLatch _latch;
-
-        private EndPointCloser(EndPoint endPoint, CountDownLatch latch)
-        {
-            _endPoint = endPoint;
-            _latch = latch;
-        }
-
-        @Override
-        public void update(Selector selector)
-        {
-            closeNoExceptions(_endPoint.getConnection());
-            _latch.countDown();
-        }
-    }
-
-    private class CloseSelector implements SelectorUpdate
-    {
-        private CountDownLatch _latch = new CountDownLatch(1);
-
-        @Override
-        public void update(Selector selector)
-        {
+            if (_abort)
+                return;
+            
+            LOG.debug("Closing {} on {}", selector, ManagedSelector.this);
             _selector = null;
             closeNoExceptions(selector);
+            
             _latch.countDown();
         }
 
