@@ -178,7 +178,6 @@ public abstract class AbstractTest
     {
         if (transport == Transport.UNIX_SOCKET)
         {
-            Files.deleteIfExists(sockFile);
             UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, provideServerConnectionFactory( transport ));
             unixSocketConnector.setUnixSocket( sockFile.toString() );
             return unixSocketConnector;
