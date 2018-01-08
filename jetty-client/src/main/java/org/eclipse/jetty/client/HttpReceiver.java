@@ -95,6 +95,11 @@ public abstract class HttpReceiver
         return channel.getHttpDestination();
     }
 
+    public boolean isFailed()
+    {
+        return responseState.get() == ResponseState.FAILURE;
+    }
+
     /**
      * Method to be invoked when the response status code is available.
      * <p>

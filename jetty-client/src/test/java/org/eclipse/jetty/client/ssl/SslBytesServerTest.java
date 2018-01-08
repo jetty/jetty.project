@@ -126,12 +126,12 @@ public class SslBytesServerTest extends SslBytesTest
                     }
 
                     @Override
-                    protected boolean onReadTimeout()
+                    protected boolean onReadTimeout(Throwable timeout)
                     {
                         final Runnable idleHook = SslBytesServerTest.this.idleHook;
                         if (idleHook != null)
                             idleHook.run();
-                        return super.onReadTimeout();
+                        return super.onReadTimeout(timeout);
                     }
                 }, connector, endPoint);
             }

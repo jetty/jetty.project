@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.common.io;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -461,11 +460,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         super.onOpen();
     }
 
-    /**
-     * Event for no activity on connection (read or write)
-     */
     @Override
-    protected boolean onReadTimeout()
+    protected boolean onReadTimeout(Throwable timeout)
     {
         notifyError(new SocketTimeoutException("Timeout on Read"));
         return false;
