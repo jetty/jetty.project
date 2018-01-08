@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests.server.jsr356;
 
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assume.assumeThat;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -38,6 +40,7 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.toolchain.test.JDK;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.After;
@@ -97,6 +100,8 @@ public class MemoryUsageTest
     @Test
     public void testMemoryUsage() throws Exception
     {
+        assumeThat("Only run on JDK 8 and older", JDK.IS_9, is(false));
+
         int sessionCount = 1000;
         Session[] sessions = new Session[sessionCount];
 
