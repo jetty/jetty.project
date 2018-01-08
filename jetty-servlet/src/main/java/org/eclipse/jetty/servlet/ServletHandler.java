@@ -833,7 +833,7 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     /**
      * Create a new CachedChain
-     * @param filters a collection of {@link FilterHolder}
+     * @param filters the filter chain to be cached as a collection of {@link FilterHolder}
      * @param servletHolder the servletHolder
      * @return a new {@link CachedChain} instance
      */

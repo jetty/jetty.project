@@ -287,7 +287,7 @@ public class ServerConnector extends AbstractNetworkConnector
      * This open method can be called before starting the connector to pass it a ServerSocketChannel
      * that will be used instead of one returned from {@link #openAcceptChannel()}
      * @param acceptChannel the channel to use
-     * @throws IOException if the server channel cannot be bound
+     * @throws IOException if the server channel is not bound
      */
     public void open(ServerSocketChannel acceptChannel) throws IOException
     {
