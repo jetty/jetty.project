@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
@@ -106,6 +107,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                         if (!l.isRunning())
                             start(l);
                         break;
+                        
                     case AUTO:
                         if (l.isRunning())
                             unmanage(b);
@@ -114,6 +116,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                             manage(b);
                             start(l);
                         }
+                        break;
+                        
+                    default:
                         break;
                 }
             }
@@ -154,14 +159,23 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         super.doStop();
         List<Bean> reverse = new ArrayList<>(_beans);
         Collections.reverse(reverse);
+        MultiException mex = new MultiException();
         for (Bean b : reverse)
         {
             if (b._managed==Managed.MANAGED && b._bean instanceof LifeCycle)
             {
                 LifeCycle l = (LifeCycle)b._bean;
-                stop(l);
+                try
+                {
+                    stop(l);
+                }
+                catch (Throwable th)
+                {
+                    mex.add(th);
+                }
             }
         }
+        mex.ifExceptionThrow();
     }
 
     /**
@@ -178,7 +192,14 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             if (b._bean instanceof Destroyable && (b._managed==Managed.MANAGED || b._managed==Managed.POJO))
             {
                 Destroyable d = (Destroyable)b._bean;
-                d.destroy();
+                try
+                {
+                    d.destroy();
+                }
+                catch(Throwable th)
+                {
+                    LOG.warn(th);
+                }
             }
         }
         _beans.clear();
