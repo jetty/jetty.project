@@ -124,6 +124,7 @@ public abstract class AbstractTest
         if(sockFile == null || !Files.exists( sockFile ))
         {
             sockFile = Files.createTempFile(new File("/tmp").toPath(),"unix", ".sock" );
+            Files.delete( sockFile );
         }
     }
 

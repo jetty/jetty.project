@@ -286,7 +286,6 @@ public class UnixSocketConnector extends AbstractConnector
                 try
                 {
                     serverChannel.close();
-
                 }
                 catch (IOException e)
                 {
@@ -296,7 +295,7 @@ public class UnixSocketConnector extends AbstractConnector
 
             try
             {
-                Files.deleteIfExists( Paths.get(_unixSocket));
+                Files.deleteIfExists(Paths.get(_unixSocket));
             }
             catch ( IOException e )
             {
