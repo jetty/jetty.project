@@ -132,6 +132,9 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     
     /**
      * Embedded Jetty approach for non-bytecode scanning.
+     * @param context the {@link ServletContextHandler} to use
+     * @return a configured {@link ServerContainer} instance
+     * @throws ServletException if the {@link WebSocketUpgradeFilter} cannot be configured
      */
     public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
@@ -170,6 +173,10 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     
     /**
      * @deprecated use {@link #configureContext(ServletContextHandler)} instead
+     * @param context not used
+     * @param jettyContext the {@link ServletContextHandler} to use
+     * @return a configured {@link ServerContainer} instance
+     * @throws ServletException if the {@link WebSocketUpgradeFilter} cannot be configured
      */
     @Deprecated
     public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
