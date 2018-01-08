@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.common.io;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -453,7 +452,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * @return true to signal that the endpoint must be closed, false to keep the endpoint open
      */
     @Override
-    protected boolean onReadTimeout()
+    protected boolean onReadTimeout(Throwable timeout)
     {
         IOState state = getIOState();
         ConnectionState cstate = state.getConnectionState();
@@ -471,7 +470,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         try
         {
-            notifyError(new SocketTimeoutException("Timeout on Read"));
+            notifyError(timeout);
         }
         finally
         {

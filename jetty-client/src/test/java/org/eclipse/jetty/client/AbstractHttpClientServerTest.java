@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
@@ -96,6 +97,7 @@ public abstract class AbstractHttpClientServerTest
         clientThreads.setName("client");
         client = new HttpClient(transport, sslContextFactory);
         client.setExecutor(clientThreads);
+        client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         client.start();
     }
 

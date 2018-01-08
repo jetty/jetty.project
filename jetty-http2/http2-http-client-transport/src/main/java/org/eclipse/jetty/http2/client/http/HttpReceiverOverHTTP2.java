@@ -65,6 +65,13 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
+    protected void reset()
+    {
+        super.reset();
+        contentNotifier.reset();
+    }
+
+    @Override
     public void onHeaders(Stream stream, HeadersFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
@@ -114,6 +121,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         HttpRequest request = exchange.getRequest();
         MetaData.Request metaData = (MetaData.Request)frame.getMetaData();
         HttpRequest pushRequest = (HttpRequest)getHttpDestination().getHttpClient().newRequest(metaData.getURIString());
+        // TODO: copy PUSH_PROMISE headers into pushRequest.
 
         BiFunction<Request, Request, Response.CompleteListener> pushListener = request.getPushListener();
         if (pushListener != null)
@@ -121,7 +129,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             Response.CompleteListener listener = pushListener.apply(request, pushRequest);
             if (listener != null)
             {
-                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().newHttpChannel(true);
+                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().provideHttpChannel();
                 List<Response.ResponseListener> listeners = Collections.singletonList(listener);
                 HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, listeners);
                 pushChannel.associate(pushExchange);
@@ -187,16 +195,16 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         private final Queue<DataInfo> queue = new ArrayDeque<>();
         private DataInfo dataInfo;
 
-        private boolean offer(DataInfo dataInfo)
+        private void offer(DataInfo dataInfo)
         {
             synchronized (this)
             {
-                return queue.offer(dataInfo);
+                queue.offer(dataInfo);
             }
         }
 
         @Override
-        protected Action process() throws Exception
+        protected Action process()
         {
             DataInfo dataInfo;
             synchronized (this)

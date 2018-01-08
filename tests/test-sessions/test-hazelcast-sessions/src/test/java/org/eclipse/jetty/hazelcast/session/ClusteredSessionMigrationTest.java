@@ -21,6 +21,7 @@ package org.eclipse.jetty.hazelcast.session;
 
 import org.eclipse.jetty.server.session.AbstractClusteredSessionMigrationTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.junit.After;
 
 /**
  * ClusteredSessionMigrationTest
@@ -28,6 +29,7 @@ import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 public class ClusteredSessionMigrationTest
     extends AbstractClusteredSessionMigrationTest
 {
+    HazelcastSessionDataStoreFactory factory;
 
     /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
@@ -35,7 +37,14 @@ public class ClusteredSessionMigrationTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
+        factory = new HazelcastSessionDataStoreFactory();
+        factory.setMapName( Long.toString( System.currentTimeMillis() ) );
         return factory;
+    }
+
+    @After
+    public void shutdown()
+    {
+        factory.getHazelcastInstance().getMap( factory.getMapName() ).clear();
     }
 }
