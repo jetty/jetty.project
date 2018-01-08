@@ -41,6 +41,7 @@ import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
+import org.eclipse.jetty.util.JavaVersion;
 
 /**
  * The Arguments required to start Jetty.

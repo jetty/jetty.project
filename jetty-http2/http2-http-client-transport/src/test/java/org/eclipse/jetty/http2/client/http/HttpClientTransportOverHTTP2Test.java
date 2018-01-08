@@ -247,16 +247,19 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 return new HttpConnectionOverHTTP2(destination, session)
                 {
                     @Override
-                    protected HttpChannelOverHTTP2 newHttpChannel(boolean push)
+                    protected HttpChannelOverHTTP2 newHttpChannel()
                     {
-                        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession(), push)
+                        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession())
                         {
                             @Override
                             public void setStream(Stream stream)
                             {
                                 super.setStream(stream);
-                                streamRef.set(stream);
-                                streamLatch.countDown();
+                                if (stream != null)
+                                {
+                                    streamRef.set(stream);
+                                    streamLatch.countDown();
+                                }
                             }
                         };
                     }

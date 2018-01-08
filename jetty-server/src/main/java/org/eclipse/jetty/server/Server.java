@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
@@ -370,7 +371,7 @@ public class Server extends HandlerWrapper implements Attributes
         String gitHash = Jetty.GIT_HASH;
         String timestamp = Jetty.BUILD_TIMESTAMP;
 
-        LOG.info("jetty-{}, build timestamp: {}, git hash: {}", getVersion(), timestamp, gitHash);
+        LOG.info("jetty-{}; built: {}; git: {}; jvm {}", getVersion(), timestamp, gitHash, JavaVersion.VERSION);
         if (!Jetty.STABLE)
         {
             LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");

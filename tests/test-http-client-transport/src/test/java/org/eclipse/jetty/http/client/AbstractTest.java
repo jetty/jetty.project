@@ -46,10 +46,12 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -74,7 +76,7 @@ public abstract class AbstractTest
     {
         String transports = System.getProperty("org.eclipse.jetty.http.client.AbstractTest.Transports");
 
-        if (transports!=null)
+        if (!StringUtil.isBlank(transports))
             return Arrays.stream(transports.split("\\s*,\\s*"))
                 .map(Transport::valueOf)
                 .collect(Collectors.toList()).toArray();
@@ -116,11 +118,37 @@ public abstract class AbstractTest
         startClient();
     }
 
-    @After
-    public void after() throws Exception
+    @Before
+    public void before() throws Exception
     {
+        if(sockFile == null || !Files.exists( sockFile ))
+        {
+            sockFile = Files.createTempFile(new File("/tmp").toPath(),"unix", ".sock" );
+            Files.delete( sockFile );
+        }
+    }
+
+    @After
+    public void stop() throws Exception
+    {
+        stopClient();
+        stopServer();
         if (sockFile!=null)
-            Files.deleteIfExists(sockFile);
+        {
+            Files.deleteIfExists( sockFile );
+        }
+    }
+
+    protected void stopClient() throws Exception
+    {
+        if (client != null)
+            client.stop();
+    }
+
+    protected void stopServer() throws Exception
+    {
+        if (server != null)
+            server.stop();
     }
     
     protected void startServer(HttpServlet servlet) throws Exception
@@ -165,8 +193,6 @@ public abstract class AbstractTest
     {
         if (transport == Transport.UNIX_SOCKET)
         {
-            sockFile = Files.createTempFile(new File("/tmp").toPath(), "unix", ".sock" );
-            Files.deleteIfExists(sockFile);
             UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, provideServerConnectionFactory( transport ));
             unixSocketConnector.setUnixSocket( sockFile.toString() );
             return unixSocketConnector;
@@ -307,25 +333,6 @@ public abstract class AbstractTest
             default:
                 throw new IllegalArgumentException();
         }
-    }
-
-    @After
-    public void stop() throws Exception
-    {
-        stopClient();
-        stopServer();
-    }
-
-    protected void stopClient() throws Exception
-    {
-        if (client != null)
-            client.stop();
-    }
-
-    protected void stopServer() throws Exception
-    {
-        if (server != null)
-            server.stop();
     }
 
     protected enum Transport

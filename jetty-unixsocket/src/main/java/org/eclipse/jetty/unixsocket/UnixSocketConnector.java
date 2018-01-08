@@ -57,7 +57,7 @@ import jnr.unixsocket.UnixSocketChannel;
 /**
  *
  */
-@ManagedObject("HTTP connector using NIO ByteChannels and Selectors")
+@ManagedObject("Connector using UNIX Socket")
 public class UnixSocketConnector extends AbstractConnector
 {
     private static final Logger LOG = Log.getLogger(UnixSocketConnector.class);
@@ -286,7 +286,6 @@ public class UnixSocketConnector extends AbstractConnector
                 try
                 {
                     serverChannel.close();
-
                 }
                 catch (IOException e)
                 {
@@ -296,7 +295,7 @@ public class UnixSocketConnector extends AbstractConnector
 
             try
             {
-                Files.deleteIfExists( Paths.get(_unixSocket));
+                Files.deleteIfExists(Paths.get(_unixSocket));
             }
             catch ( IOException e )
             {
