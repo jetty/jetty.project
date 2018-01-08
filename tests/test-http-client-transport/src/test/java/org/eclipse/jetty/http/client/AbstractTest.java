@@ -132,7 +132,7 @@ public abstract class AbstractTest
     {
         if(sockFile == null || !Files.exists( sockFile ))
         {
-            sockFile = Files.createTempFile("unix", ".sock" );
+            sockFile = Files.createTempFile(new File("/tmp").toPath(),"unix", ".sock" );
         }
     }
     
