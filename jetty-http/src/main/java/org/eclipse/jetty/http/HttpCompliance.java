@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  * </dl>
  * The remainder of the list can contain then names of {@link HttpComplianceSection}s to include them in the mode, or prefixed
  * with a '-' to exclude thm from the mode.    Note that Jetty's modes may have some historic minor differences from the strict
- * RFC compliance, for example the <code>RFC2616</code> HttpCompliance is defines as 
+ * RFC compliance, for example the <code>RFC2616</code> HttpCompliance is defined as 
  * <code>RFC2616,-RFC7230_3_2_FIELD_COLON,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE</code>.
  * <p>
  * Note also that the {@link EnumSet} return by {@link HttpCompliance#sections()} is mutable, so that modes may 

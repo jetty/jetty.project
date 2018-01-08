@@ -46,7 +46,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
-        // TODO: Seems to be not the optimal way to get the compliance mode
         parser = new HttpParser(this, -1, channel.getHttpDestination().getHttpClient().getHttpCompliance());
     }
 
