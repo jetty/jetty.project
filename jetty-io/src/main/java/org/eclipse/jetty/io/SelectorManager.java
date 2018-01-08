@@ -297,27 +297,32 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         CountDownLatch stopped = new CountDownLatch(_selectors.length);
         for (ManagedSelector selector : _selectors)
         {
-            Runnable stop = () ->
+            if (selector==null)
+                stopped.countDown();
+            else
             {
-                try
+                Runnable stop = () ->
                 {
-                    selector.stop();
-                }
-                catch(Throwable th)
+                    try
+                    {
+                        selector.stop();
+                    }
+                    catch(Throwable th)
+                    {
+                        mex.add(th);
+                    }
+                    finally
+                    {
+                        stopped.countDown();
+                    }
+                };
+
+                // Try stopping in parallel
+                if (_reservedThreadExecutor!=null && !_reservedThreadExecutor.tryExecute(stop))
                 {
-                    mex.add(th);
+                    // No reserved thread so serially stop
+                    stop.run();
                 }
-                finally
-                {
-                    stopped.countDown();
-                }
-            };
-            
-            // Try stopping in parallel
-            if (!_reservedThreadExecutor.tryExecute(stop))
-            {
-                // No reserved thread so serially stop
-                stop.run();
             }
         }
         
@@ -336,8 +341,10 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         
         // Cleanup
         for (ManagedSelector selector : _selectors)
-            removeBean(selector);
-        removeBean(_reservedThreadExecutor);
+            if (selector!=null)
+                removeBean(selector);
+        if (_reservedThreadExecutor!=null)
+            removeBean(_reservedThreadExecutor);
         _reservedThreadExecutor = null;
         if (_lease != null)
             _lease.close();
