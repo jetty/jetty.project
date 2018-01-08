@@ -52,18 +52,15 @@ public class UserInfo
         _credential = credential;
         if (roleNames != null)
         {
-            synchronized (_roleNames)
-            {
-                _roleNames.addAll(roleNames);
-                _rolesLoaded = true;
-            }
+            _roleNames.addAll(roleNames);
+            _rolesLoaded = true;
         }
     }
     
     
     /**
-     * @param userName
-     * @param credential
+     * @param userName the user name
+     * @param credential the credential
      */
     public UserInfo (String userName, Credential credential)
     {
