@@ -66,13 +66,13 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         normalizeRequest(request);
 
         // One connection maps to N channels, so one channel for each exchange.
-        HttpChannelOverHTTP2 channel = provideHttpChannel();
+        HttpChannelOverHTTP2 channel = allocateHttpChannel();
         activeChannels.add(channel);
 
         return send(channel, exchange);
     }
 
-    protected HttpChannelOverHTTP2 provideHttpChannel()
+    protected HttpChannelOverHTTP2 allocateHttpChannel()
     {
         HttpChannelOverHTTP2 channel = idleChannels.poll();
         if (channel == null)
@@ -85,7 +85,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession());
     }
 
-    protected void release(HttpChannelOverHTTP2 channel)
+    protected void releaseHttpChannel(HttpChannelOverHTTP2 channel)
     {
         // Only non-push channels are released.
         if (activeChannels.remove(channel))
@@ -94,7 +94,13 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
             // Recycle only non-failed channels.
             if (!channel.isFailed())
                 idleChannels.offer(channel);
+            else
+                channel.destroy();
             getHttpDestination().release(this);
+        }
+        else
+        {
+            channel.destroy();
         }
     }
 
@@ -122,6 +128,13 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
             abort(failure);
 
             session.close(ErrorCode.NO_ERROR.code, failure.getMessage(), Callback.NOOP);
+            
+            HttpChannel channel = idleChannels.poll();
+            while (channel!=null)
+            {
+                channel.destroy();
+                channel = idleChannels.poll();
+            }
         }
     }
 
@@ -140,7 +153,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
                 exchange.getRequest().abort(failure);
         }
         activeChannels.clear();
-        idleChannels.clear();
+        HttpChannel channel = idleChannels.poll();
+        while (channel!=null)
+        {
+            channel.destroy();
+            channel = idleChannels.poll();
+        }
     }
 
     @Override

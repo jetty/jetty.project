@@ -21,6 +21,7 @@ package org.eclipse.jetty.io;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -33,7 +34,7 @@ import static java.lang.Long.MAX_VALUE;
  * <p>This implementation is optimised assuming that the timeout
  * will mostly be cancelled and then reused with a similar value.</p>
  */
-public abstract class CyclicTimeout
+public abstract class CyclicTimeout implements Destroyable
 {
     private static final Logger LOG = Log.getLogger(CyclicTimeout.class);
     private static final Timeout NOT_SET = new Timeout(MAX_VALUE, null);
