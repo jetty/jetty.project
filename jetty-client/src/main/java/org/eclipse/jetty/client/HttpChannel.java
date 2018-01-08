@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public abstract class HttpChannel implements Destroyable
+public abstract class HttpChannel
 {
     protected static final Logger LOG = Log.getLogger(HttpChannel.class);
 
@@ -37,7 +37,6 @@ public abstract class HttpChannel implements Destroyable
         _totalTimeout = new TimeoutCompleteListener(destination.getHttpClient().getScheduler());
     }
 
-    @Override
     public void destroy()
     {
         _totalTimeout.destroy();

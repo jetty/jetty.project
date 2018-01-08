@@ -314,7 +314,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         }
     }
 
-    protected HttpChannelOverFCGI allocateHttpChannel(int id, Request request)
+    protected HttpChannelOverFCGI acquireHttpChannel(int id, Request request)
     {
         HttpChannelOverFCGI channel = idleChannels.poll();
         if (channel == null)
@@ -353,7 +353,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
             // FCGI may be multiplexed, so one channel for each exchange.
             int id = acquireRequest();
-            HttpChannelOverFCGI channel = allocateHttpChannel(id, request);
+            HttpChannelOverFCGI channel = acquireHttpChannel(id, request);
             activeChannels.put(id, channel);
 
             return send(channel, exchange);

@@ -66,13 +66,13 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         normalizeRequest(request);
 
         // One connection maps to N channels, so one channel for each exchange.
-        HttpChannelOverHTTP2 channel = allocateHttpChannel();
+        HttpChannelOverHTTP2 channel = acquireHttpChannel();
         activeChannels.add(channel);
 
         return send(channel, exchange);
     }
 
-    protected HttpChannelOverHTTP2 allocateHttpChannel()
+    protected HttpChannelOverHTTP2 acquireHttpChannel()
     {
         HttpChannelOverHTTP2 channel = idleChannels.poll();
         if (channel == null)
