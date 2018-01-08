@@ -25,6 +25,7 @@ import java.nio.channels.ByteChannel;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -41,7 +42,6 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
 {
     private static final Logger LOG = Log.getLogger(ChannelEndPoint.class);
 
-    private final Locker _locker = new Locker();
     private final ByteChannel _channel;
     private final GatheringByteChannel _gather;
     protected final ManagedSelector _selector;
@@ -95,16 +95,10 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     }
 
-    private final Runnable _runUpdateKey = new RunnableTask("runUpdateKey")
+    private final ManagedSelector.SelectorUpdate _updateKeyAction = new ManagedSelector.SelectorUpdate()
     {
         @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
-        @Override
-        public void run()
+        public void update(Selector selector)
         {
             updateKey();
         }
@@ -336,7 +330,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         int readyOps = _key.readyOps();
         int oldInterestOps;
         int newInterestOps;
-        try (Locker.Lock lock = _locker.lock())
+        synchronized(this)
         {
             _updatePending = true;
             // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
@@ -376,7 +370,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         {
             int oldInterestOps;
             int newInterestOps;
-            try (Locker.Lock lock = _locker.lock())
+            synchronized(this)
             {
                 _updatePending = false;
                 oldInterestOps = _currentInterestOps;
@@ -413,7 +407,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         int oldInterestOps;
         int newInterestOps;
         boolean pending;
-        try (Locker.Lock lock = _locker.lock())
+        synchronized(this)
         {
             pending = _updatePending;
             oldInterestOps = _desiredInterestOps;
@@ -426,7 +420,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             LOG.debug("changeInterests p={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
 
         if (!pending && _selector!=null)
-            _selector.submit(_runUpdateKey);
+            _selector.submit(_updateKeyAction);
     }
 
     @Override

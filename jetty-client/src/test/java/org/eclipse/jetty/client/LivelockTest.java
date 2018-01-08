@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.nio.channels.Selector;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -89,10 +90,10 @@ public class LivelockTest
         AtomicBoolean busy = new AtomicBoolean(true);
 
         ManagedSelector clientSelector = client.getContainedBeans(ManagedSelector.class).stream().findAny().get();
-        Runnable clientLivelock = new Invocable.NonBlocking()
+        ManagedSelector.SelectorUpdate clientLivelock = new ManagedSelector.SelectorUpdate()
         {
             @Override 
-            public void run()
+            public void update(Selector selector)
             {
                 sleep(10);
                 if (busy.get())
@@ -102,10 +103,10 @@ public class LivelockTest
         clientSelector.submit(clientLivelock);
         
         ManagedSelector serverSelector = connector.getContainedBeans(ManagedSelector.class).stream().findAny().get();
-        Runnable serverLivelock = new Invocable.NonBlocking()
+        ManagedSelector.SelectorUpdate serverLivelock = new ManagedSelector.SelectorUpdate()
         {
             @Override 
-            public void run()
+            public void update(Selector selector)
             {
                 sleep(10);
                 if (busy.get())
