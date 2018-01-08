@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -207,14 +208,19 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     protected void release(HttpChannelOverFCGI channel)
     {
-        if (activeChannels.remove(channel.getRequest()) != null)
+        if (activeChannels.remove(channel.getRequest()) == null)
+        {
+            channel.destroy();
+        }
+        else
         {
             channel.setRequest(0);
             // Recycle only non-failed channels.
             if (!channel.isFailed())
                 idleChannels.offer(channel);
+            else
+                channel.destroy();
             destination.release(this);
-        channel.destroy();
         }
     }
 
@@ -267,7 +273,13 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             channel.destroy();
         }
         activeChannels.clear();
-        idleChannels.clear();
+        
+        HttpChannel channel = idleChannels.poll();
+        while (channel!=null)
+        {
+            channel.destroy();
+            channel = idleChannels.poll();
+        }
     }
 
     private void failAndClose(Throwable failure)
@@ -302,7 +314,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         }
     }
 
-    protected HttpChannelOverFCGI provideHttpChannel(int id, Request request)
+    protected HttpChannelOverFCGI allocateHttpChannel(int id, Request request)
     {
         HttpChannelOverFCGI channel = idleChannels.poll();
         if (channel == null)
@@ -341,7 +353,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
             // FCGI may be multiplexed, so one channel for each exchange.
             int id = acquireRequest();
-            HttpChannelOverFCGI channel = provideHttpChannel(id, request);
+            HttpChannelOverFCGI channel = allocateHttpChannel(id, request);
             activeChannels.put(id, channel);
 
             return send(channel, exchange);
