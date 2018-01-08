@@ -678,6 +678,9 @@ public class StreamResetTest extends AbstractTest
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
         Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
 
+        // Give time to the server to process the reset and drain the flusher queue.
+        Thread.sleep(500);
+
         HTTP2Session session = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).getBean(HTTP2Session.class);
         HTTP2Flusher flusher = session.getBean(HTTP2Flusher.class);
         Assert.assertEquals(0, flusher.getFrameQueueSize());

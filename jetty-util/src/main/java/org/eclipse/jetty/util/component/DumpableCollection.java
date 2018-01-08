@@ -21,9 +21,6 @@ package org.eclipse.jetty.util.component;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
-
 public class DumpableCollection implements Dumpable
 {
     private final String _name;
@@ -34,7 +31,7 @@ public class DumpableCollection implements Dumpable
         _name=name;
         _collection=collection;
     }
-
+    
     @Override
     public String dump()
     {
@@ -44,7 +41,7 @@ public class DumpableCollection implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(_name).append("\n");
+        out.append(_name).append(System.lineSeparator());
         if (_collection!=null)
             ContainerLifeCycle.dump(out,indent,_collection);
     }
