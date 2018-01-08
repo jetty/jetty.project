@@ -37,6 +37,7 @@ public class MultiExceptionTest
         me.ifExceptionThrow();
         me.ifExceptionThrowMulti();
         me.ifExceptionThrowRuntime();
+        me.ifExceptionThrowSuppressed();
     }
 
     @Test
@@ -77,6 +78,16 @@ public class MultiExceptionTest
         {
             assertTrue(e.getCause()==io);
         }
+        
+        try
+        {
+            me.ifExceptionThrowSuppressed();
+            assertTrue(false);
+        }
+        catch(IOException e)
+        {
+            assertTrue(e==io);
+        }
 
         me = new MultiException();
         RuntimeException run = new RuntimeException("one");
@@ -98,7 +109,7 @@ public class MultiExceptionTest
     {
         MultiException me = new MultiException();
         IOException io = new IOException("one");
-        RuntimeException run = new RuntimeException("one");
+        RuntimeException run = new RuntimeException("two");
         me.add(io);
         me.add(run);
 
@@ -134,6 +145,19 @@ public class MultiExceptionTest
             assertTrue(e.getCause()==me);
         }
 
+
+        try
+        {
+            me.ifExceptionThrowSuppressed();
+            assertTrue(false);
+        }
+        catch(IOException e)
+        {
+            assertTrue(e==io);
+            assertEquals(1,e.getSuppressed().length);
+            assertTrue(e.getSuppressed()[0]==run);
+        }
+        
         me = new MultiException();
         me.add(run);
         me.add(run);

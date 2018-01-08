@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,8 +31,6 @@ import java.util.List;
 @SuppressWarnings("serial")
 public class MultiException extends Exception
 {
-    private List<Throwable> nested;
-
     /* ------------------------------------------------------------ */
     public MultiException()
     {
@@ -44,41 +43,46 @@ public class MultiException extends Exception
         if (e==null)
             throw new IllegalArgumentException();
 
-        if(nested == null)
-        {
-            initCause(e);
-            nested = new ArrayList<>();
-        }
-        else
-            addSuppressed(e);
-        
         if (e instanceof MultiException)
-        {
-            MultiException me = (MultiException)e;
-            nested.addAll(me.nested);
-        }
+            Arrays.stream(MultiException.class.cast(e).getSuppressed()).forEach(this::add);
         else
-            nested.add(e);
+        {
+            if (getCause()==null)
+                initCause(e);
+            else
+                addSuppressed(e);
+        }
     }
 
     /* ------------------------------------------------------------ */
     public int size()
     {
-        return (nested ==null)?0:nested.size();
+        if (getCause()==null)
+            return 0;
+        return 1+getSuppressed().length;
     }
     
     /* ------------------------------------------------------------ */
     public List<Throwable> getThrowables()
     {
-        if(nested == null)
+        if (getCause()==null)
             return Collections.emptyList();
-        return nested;
+        
+        Throwable[] suppressed = getSuppressed();
+        List<Throwable> list = new ArrayList<>(suppressed.length+1);
+        list.add(getCause());
+        Arrays.stream(suppressed).forEach(list::add);
+        return list;
     }
     
     /* ------------------------------------------------------------ */
     public Throwable getThrowable(int i)
     {
-        return nested.get(i);
+        if (getCause()==null)
+            throw new ArrayIndexOutOfBoundsException();
+        if (i==0)
+            return getCause();
+        return getSuppressed()[i-1];
     }
 
     /* ------------------------------------------------------------ */
@@ -91,22 +95,52 @@ public class MultiException extends Exception
     public void ifExceptionThrow()
         throws Exception
     {
-        if(nested == null)
+        Throwable cause=getCause();
+        if (cause==null)
             return;
         
-        switch (nested.size())
+        Throwable[] suppressed = getSuppressed();
+        
+        if (suppressed.length==0)
         {
-          case 0:
-              break;
-          case 1:
-              Throwable th=nested.get(0);
-              if (th instanceof Error)
-                  throw (Error)th;
-              if (th instanceof Exception)
-                  throw (Exception)th;
-          default:
-              throw this;
+            if (cause instanceof Error)
+                throw (Error)cause;
+            if (cause instanceof Exception)
+                throw (Exception)cause;
         }
+        
+        throw this;
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    /** Throw an Exception, potentially with suppress.
+     * If this multi exception is empty then no action is taken. If the first
+     * exception added is an Error or Exception, then than is throw with 
+     * any additional exceptions added as suppressed. Otherwise this exception
+     * is thrown.
+     * @exception Exception the Error or Exception if at least one is added.
+     */
+    public void ifExceptionThrowSuppressed()
+        throws Exception
+    {
+        Throwable cause=getCause();
+        if (cause==null)
+            return;
+
+        if (cause instanceof Error)
+        {
+            Arrays.stream(getSuppressed()).forEach(cause::addSuppressed);
+            throw (Error)cause;
+        }
+        
+        if (cause instanceof Exception)
+        {
+            Arrays.stream(getSuppressed()).forEach(cause::addSuppressed);
+            throw (Exception)cause;
+        }
+  
+        throw this;
     }
     
     /* ------------------------------------------------------------ */
@@ -120,29 +154,27 @@ public class MultiException extends Exception
      */
     public void ifExceptionThrowRuntime()
         throws Error
-    {
-        if(nested == null)
+    {        
+        Throwable cause = getCause();
+        if (cause==null)
             return;
-        
-        switch (nested.size())
+
+        Throwable[] nested = getSuppressed();
+
+        if (nested.length==0)
         {
-          case 0:
-              break;
-          case 1:
-              Throwable th=nested.get(0);
-              if (th instanceof Error)
-                  throw (Error)th;
-              else if (th instanceof RuntimeException)
-                  throw (RuntimeException)th;
-              else
-                  throw new RuntimeException(th);
-          default:
-              throw new RuntimeException(this);
+            if (cause instanceof Error)
+                throw (Error)cause;
+            if (cause instanceof RuntimeException)
+                throw (RuntimeException)cause;
+            throw new RuntimeException(cause);
         }
+        
+        throw new RuntimeException(this);
     }
     
     /* ------------------------------------------------------------ */
-    /** Throw a multiexception.
+    /** Throw a MultiException.
      * If this multi exception is empty then no action is taken. If it
      * contains a any exceptions then this
      * multi exception is thrown. 
@@ -151,11 +183,10 @@ public class MultiException extends Exception
     public void ifExceptionThrowMulti()
         throws MultiException
     {
-        if(nested == null)
+        if (getCause()==null)
             return;
-        
-        if (nested.size()>0)
-            throw this;
+
+        throw this;
     }
 
     /* ------------------------------------------------------------ */
@@ -164,11 +195,7 @@ public class MultiException extends Exception
     {
         StringBuilder str = new StringBuilder();
         str.append(MultiException.class.getSimpleName());
-        if((nested == null) || (nested.size()<=0)) {
-            str.append("[]");
-        } else {
-            str.append(nested);
-        }
+        str.append(Arrays.asList(getSuppressed()));
         return str.toString();
     }
 
