@@ -33,6 +33,7 @@ public interface SessionDataMap extends LifeCycle
      * be used by one context(/session manager).
      * 
      * @param context context associated
+     * @throws Exception if unable to initialize the
      */
     void initialize(SessionContext context) throws Exception;
     

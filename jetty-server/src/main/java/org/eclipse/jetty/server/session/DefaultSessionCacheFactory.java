@@ -56,7 +56,7 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
     
     
     /**
-     * @return
+     * @return the removeUnloadableSessions
      */
     public boolean isRemoveUnloadableSessions()
     {
@@ -67,7 +67,7 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
 
 
     /**
-     * @param removeUnloadableSessions
+     * @param removeUnloadableSessions the removeUnloadableSessions to set
      */
     public void setRemoveUnloadableSessions(boolean removeUnloadableSessions)
     {
@@ -78,7 +78,7 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
 
 
     /**
-     * @return
+     * @return the evictionPolicy
      */
     public int getEvictionPolicy()
     {
@@ -89,7 +89,7 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
 
 
     /**
-     * @param evictionPolicy
+     * @param evictionPolicy the evictionPolicy to set
      */
     public void setEvictionPolicy(int evictionPolicy)
     {
@@ -100,7 +100,7 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
 
 
     /**
-     * @return
+     * @return the saveOnInactiveEvict
      */
     public boolean isSaveOnInactiveEvict()
     {
@@ -111,7 +111,7 @@ public class DefaultSessionCacheFactory implements SessionCacheFactory
 
 
     /**
-     * @param saveOnInactiveEvict
+     * @param saveOnInactiveEvict the saveOnInactiveEvict to set
      */
     public void setSaveOnInactiveEvict(boolean saveOnInactiveEvict)
     {

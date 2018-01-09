@@ -52,14 +52,14 @@ public class UnreadableSessionDataException extends Exception
 
 
     /**
-     * @param id
-     * @param contextId
-     * @param t
+     * @param id the session id
+     * @param sessionContext the sessionContext
+     * @param t the cause of the exception
      */
-    public UnreadableSessionDataException (String id, SessionContext contextId, Throwable t)
+    public UnreadableSessionDataException (String id, SessionContext sessionContext, Throwable t)
     {
-        super ("Unreadable session "+id+" for "+contextId, t);
-        _sessionContext = contextId;
+        super ("Unreadable session "+id+" for "+sessionContext, t);
+        _sessionContext = sessionContext;
         _id = id;
     }
 }

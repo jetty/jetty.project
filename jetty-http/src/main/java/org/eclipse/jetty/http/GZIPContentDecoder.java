@@ -400,7 +400,8 @@ public class GZIPContentDecoder implements Destroyable
     }
     
     /**
-     * @return An indirect buffer of the configured buffersize either from the pool or freshly allocated. 
+     * @param capacity capacity capacity of the allocated ByteBuffer
+     * @return An indirect buffer of the configured buffersize either from the pool or freshly allocated.
      */
     public ByteBuffer acquire(int capacity)
     {

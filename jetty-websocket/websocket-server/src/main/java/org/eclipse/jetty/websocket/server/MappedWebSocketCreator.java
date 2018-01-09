@@ -68,7 +68,7 @@ public interface MappedWebSocketCreator
     /**
      * Returns the creator for the given path spec.
      *
-     * @param spec @param spec the spec to test for (using the same spec syntax as seen in {@link #addMapping(String, WebSocketCreator)})
+     * @param spec the spec to test for (using the same spec syntax as seen in {@link #addMapping(String, WebSocketCreator)})
      * @return the websocket creator if path spec exists, or null
      */
     WebSocketCreator getMapping(String spec);

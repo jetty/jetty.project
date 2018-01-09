@@ -45,13 +45,6 @@ public class JettyTldPreScanned extends TldPreScanned
 {
     private final Collection<URL> _jettyPreScannedURLs;
     
-    /**
-     * @param context
-     * @param namespaceAware
-     * @param validation
-     * @param blockExternal
-     * @param preScannedTlds
-     */
     public JettyTldPreScanned(ServletContext context, boolean namespaceAware, boolean validation, boolean blockExternal, Collection<URL> preScannedTlds)
     {
         super(context, namespaceAware, validation, blockExternal, preScannedTlds);

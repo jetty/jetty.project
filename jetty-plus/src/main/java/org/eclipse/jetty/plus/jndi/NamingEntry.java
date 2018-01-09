@@ -60,7 +60,7 @@ public abstract class NamingEntry
      * 
      * @param scope an object representing the scope of the name to be bound into jndi, where null means jvm scope.
      * @param jndiName the name that will be associated with an object bound into jndi
-     * @throws NamingException
+     * @throws NamingException if jndiName is null
      */
     protected NamingEntry (Object scope, String jndiName)
     throws NamingException

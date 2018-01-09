@@ -87,7 +87,7 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     
     
     /**
-     * @param sec
+     * @param sec the expiry to use in seconds
      */
     public void setExpirySec (int sec)
     {

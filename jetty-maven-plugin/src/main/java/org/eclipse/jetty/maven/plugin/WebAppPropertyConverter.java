@@ -20,11 +20,13 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +53,7 @@ public class WebAppPropertyConverter
      * @param webApp the webapp to convert
      * @param propsFile the file to put the properties into
      * @param contextXml the optional context xml file related to the webApp
-     * @throws Exception 
+     * @throws Exception if any I/O exception occurs
      */
     public static void toProperties(JettyWebAppContext webApp, File propsFile, String contextXml)
     throws Exception
@@ -112,7 +114,7 @@ public class WebAppPropertyConverter
 
         //web-inf lib
         List<File> deps = webApp.getWebInfLib();
-        StringBuffer strbuff = new StringBuffer();
+        StringBuilder strbuff = new StringBuilder();
         if (deps != null)
         {
             for (int i=0; i<deps.size(); i++)
@@ -128,8 +130,9 @@ public class WebAppPropertyConverter
         //context xml to apply
         if (contextXml != null)
             props.put("context.xml", contextXml);
-        
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(propsFile)))
+
+
+        try (BufferedWriter out = Files.newBufferedWriter(propsFile.toPath()))
         {
             props.store(out, "properties for forked webapp");
         }
@@ -143,7 +146,7 @@ public class WebAppPropertyConverter
      * @param resource the properties file to apply     
      * @param server the Server instance to use
      * @param jettyProperties jetty properties to use if there is a context xml file to apply
-     * @throws Exception
+     * @throws Exception if any I/O exception occurs
      */
     public static void fromProperties (JettyWebAppContext webApp, String resource, Server server, Map<String,String> jettyProperties)
     throws Exception
@@ -161,7 +164,7 @@ public class WebAppPropertyConverter
      * @param propsFile the properties to apply
      * @param server the Server instance to use if there is a context xml file to apply
      * @param jettyProperties jetty properties to use if there is a context xml file to apply
-     * @throws Exception
+     * @throws Exception if any I/O exception occurs
      */
     public static void fromProperties (JettyWebAppContext webApp, File propsFile, Server server, Map<String,String> jettyProperties)
     throws Exception
@@ -175,7 +178,7 @@ public class WebAppPropertyConverter
             throw new IllegalArgumentException (propsFile.getCanonicalPath()+" does not exist");
         
         Properties props = new Properties();
-        try (InputStream in = new FileInputStream(propsFile))
+        try (InputStream in = Files.newInputStream(propsFile.toPath()))
         {
             props.load(in);
         }
@@ -248,7 +251,7 @@ public class WebAppPropertyConverter
         //the pom to override the context xml file, but as the other mojos all
         //configure a WebAppContext in the pom (the <webApp> element), it is 
         //already configured by the time the context xml file is applied.
-        str = (String)props.getProperty("context.xml");
+        str = props.getProperty("context.xml");
         if (!StringUtil.isBlank(str))
         {
             XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(str).getURI().toURL());
@@ -275,7 +278,7 @@ public class WebAppPropertyConverter
      */
     private static String toCSV (Resource[] resources)
     {
-        StringBuffer rb = new StringBuffer();
+        StringBuilder rb = new StringBuilder();
 
         for (Resource r:resources)
         {

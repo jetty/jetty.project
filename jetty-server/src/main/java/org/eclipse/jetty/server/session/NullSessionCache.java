@@ -32,7 +32,7 @@ public class NullSessionCache extends AbstractSessionCache
 {
 
     /**
-     * @param handler
+     * @param handler The SessionHandler related to this SessionCache
      */
     public NullSessionCache(SessionHandler handler)
     {
