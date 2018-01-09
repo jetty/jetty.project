@@ -258,7 +258,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-             <copyright-range>${project.inceptionYear}-2017</copyright-range>
+             <copyright-range>${project.inceptionYear}-2018</copyright-range>
           </properties>
           <mapping>
             <java>DOUBLESLASH_STYLE</java>
