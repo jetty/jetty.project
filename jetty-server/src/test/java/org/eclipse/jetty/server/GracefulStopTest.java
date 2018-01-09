@@ -295,8 +295,21 @@ public class GracefulStopTest
                     {
                         try
                         {
-                            Thread.sleep(closeWait);
-                            super.close();
+                            new Thread(()->
+                            {
+                                try
+                                {
+                                    Thread.sleep(closeWait);
+                                }
+                                catch (InterruptedException e)
+                                {
+                                }
+                                finally
+                                {
+                                    super.close();
+                                }
+
+                            }).start();
                         }
                         catch(Exception e)
                         {
@@ -341,7 +354,6 @@ public class GracefulStopTest
             if (line.length()==0)
                 break;
         }
-        
 
         long start = System.nanoTime();
         try
@@ -403,7 +415,7 @@ public class GracefulStopTest
     @Test
     public void testSlowCloseGraceful() throws Exception
     {
-        testSlowClose(5000,1000,greaterThan(750L));
+        testSlowClose(5000,1000,Matchers.allOf(greaterThan(750L),lessThan(4999L)));
     }
     
     

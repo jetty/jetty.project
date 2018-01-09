@@ -27,6 +27,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -295,9 +296,9 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         
         final MultiException mex = new MultiException();
         CountDownLatch stopped = new CountDownLatch(_selectors.length);
-        for (ManagedSelector selector : _selectors)
+        for (ManagedSelector managed_selector : _selectors)
         {
-            if (selector==null)
+            if (managed_selector==null)
                 stopped.countDown();
             else
             {
@@ -305,7 +306,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
                 {
                     try
                     {
-                        selector.stop();
+                        managed_selector.stop();
                     }
                     catch(Throwable th)
                     {
@@ -318,7 +319,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
                 };
 
                 // Try stopping in parallel
-                if (_reservedThreadExecutor!=null && !_reservedThreadExecutor.tryExecute(stop))
+                if (_reservedThreadExecutor==null || !_reservedThreadExecutor.isStarted() || !_reservedThreadExecutor.tryExecute(stop))
                 {
                     // No reserved thread so serially stop
                     stop.run();
@@ -341,8 +342,11 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         
         // Cleanup
         for (ManagedSelector selector : _selectors)
+        {
             if (selector!=null)
                 removeBean(selector);
+        }
+        Arrays.fill(_selectors,null);
         if (_reservedThreadExecutor!=null)
             removeBean(_reservedThreadExecutor);
         _reservedThreadExecutor = null;
