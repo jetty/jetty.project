@@ -21,6 +21,7 @@ package org.eclipse.jetty.hazelcast.session;
 
 import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.junit.After;
 
 /**
  * ClusteredSessionScavengingTest
@@ -29,13 +30,22 @@ public class ClusteredSessionScavengingTest
     extends AbstractClusteredSessionScavengingTest
 {
 
+    HazelcastSessionDataStoreFactory factory;
+
     /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
+        factory = new HazelcastSessionDataStoreFactory();
+        factory.setMapName( Long.toString( System.currentTimeMillis() ) );
         return factory;
+    }
+
+    @After
+    public void shutdown()
+    {
+        factory.getHazelcastInstance().getMap( factory.getMapName() ).clear();
     }
 }

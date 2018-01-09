@@ -49,6 +49,7 @@ public class MultiReleaseJarFile implements Closeable
     /**
      * Construct a multi release jar file for the current JVM version, ignoring directories.
      * @param file The file to open
+     * @throws IOException if the jar file cannot be read
      */
     public MultiReleaseJarFile(File file) throws IOException
     {

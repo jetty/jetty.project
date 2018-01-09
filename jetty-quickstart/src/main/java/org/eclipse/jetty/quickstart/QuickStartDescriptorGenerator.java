@@ -96,8 +96,10 @@ public class QuickStartDescriptorGenerator
     /**
      * @param w the source WebAppContext
      * @param extraXML any extra xml snippet to append
+     * @param originAttribute param value to use for the context param origin attribute
+     * @param generateOrigin <code>true</code> to generate the origin attribute
      */
-    public QuickStartDescriptorGenerator (WebAppContext w,  String extraXML, String originAttribute, boolean generateOrigin)
+    public QuickStartDescriptorGenerator (WebAppContext w, String extraXML, String originAttribute, boolean generateOrigin)
     {
         _webApp = w;
         _extraXML = extraXML;

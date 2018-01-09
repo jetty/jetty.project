@@ -39,7 +39,7 @@ public class WarUrlActivator implements BundleActivator
     /**
      * Register the url stream handler factory.
      * 
-     * @param context
+     * @param context the {@link BundleContext} to use
      */
     @SuppressWarnings("unchecked")
     public void start(BundleContext context) throws Exception

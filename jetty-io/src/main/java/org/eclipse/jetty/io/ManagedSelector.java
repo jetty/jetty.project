@@ -26,13 +26,15 @@ import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -64,7 +66,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private final Locker _locker = new Locker();
     private boolean _selecting = false;
-    private final Queue<Runnable> _actions = new ArrayDeque<>();
+    private final Deque<Runnable> _actions = new ArrayDeque<>();
     private final SelectorManager _selectorManager;
     private final int _id;
     private final ExecutionStrategy _strategy;
@@ -244,20 +246,31 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out, indent);
         Selector selector = _selector;
+        List<String> keys = null;
+        List<Runnable> actions = null;
         if (selector != null && selector.isOpen())
         {
-            List<Runnable> actions;
+            DumpKeys dump = new DumpKeys();
+            String actionsAt;
             try (Locker.Lock lock = _locker.lock())
             {
+                actionsAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
                 actions = new ArrayList<>(_actions);
+                _actions.addFirst(dump);
+                _selecting = false;
             }
-            List<Object> keys = new ArrayList<>(selector.keys().size());
-            DumpKeys dumpKeys = new DumpKeys(keys);
-            submit(dumpKeys);
-            dumpKeys.await(5, TimeUnit.SECONDS);
-            dump(out, indent, Arrays.asList(new DumpableCollection("keys", keys), new DumpableCollection("actions", actions)));
+            selector.wakeup();
+            keys = dump.get(5, TimeUnit.SECONDS);
+            String keysAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
+            if (keys==null)
+                keys = Collections.singletonList("No dump keys retrieved");
+            dumpBeans(out, indent, Arrays.asList(new DumpableCollection("actions @ "+actionsAt, actions),
+                    new DumpableCollection("keys @ "+keysAt, keys)));
+        }
+        else
+        {
+            dumpBeans(out, indent);
         }
     }
 
@@ -495,47 +508,46 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private class DumpKeys extends Invocable.NonBlocking
     {
-        private final CountDownLatch latch = new CountDownLatch(1);
-        private final List<Object> _dumps;
-
-        private DumpKeys(List<Object> dumps)
-        {
-            this._dumps = dumps;
-        }
-
+        private CountDownLatch latch = new CountDownLatch(1);
+        private List<String> keys;
+        
         @Override
         public void run()
         {
             Selector selector = _selector;
             if (selector != null && selector.isOpen())
-            {
-                Set<SelectionKey> keys = selector.keys();
-                _dumps.add(selector + " keys=" + keys.size());
-                for (SelectionKey key : keys)
+            {            
+                Set<SelectionKey> selector_keys = selector.keys();
+                List<String> list = new ArrayList<>(selector_keys.size()+1);
+                list.add(selector + " keys=" + selector_keys.size());
+                for (SelectionKey key : selector_keys)
                 {
                     try
                     {
-                        _dumps.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), key.interestOps(), key.attachment()));
+                        list.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), key.interestOps(), key.attachment()));
                     }
                     catch (Throwable x)
                     {
-                        _dumps.add(String.format("SelectionKey@%x[%s]->%s", key.hashCode(), x, key.attachment()));
+                        list.add(String.format("SelectionKey@%x[%s]->%s", key.hashCode(), x, key.attachment()));
                     }
                 }
+                keys = list;
             }
+            
             latch.countDown();
         }
 
-        public boolean await(long timeout, TimeUnit unit)
+        public List<String> get(long timeout, TimeUnit unit)
         {
             try
             {
-                return latch.await(timeout, unit);
+                latch.await(timeout, unit);
             }
             catch (InterruptedException x)
             {
-                return false;
+                LOG.ignore(x);
             }
+            return keys;
         }
     }
 

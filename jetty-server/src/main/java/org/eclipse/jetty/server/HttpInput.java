@@ -44,23 +44,27 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * {@link HttpInput} provides an implementation of {@link ServletInputStream} for {@link HttpChannel}.
  * <p>
- * Content may arrive in patterns such as [content(), content(), messageComplete()] so that this class maintains two states: the content state that tells
- * whether there is content to consume and the EOF state that tells whether an EOF has arrived. Only once the content has been consumed the content state is
- * moved to the EOF state.
+ * Content may arrive in patterns such as [content(), content(), messageComplete()]
+ * so that this class maintains two states: the content state that tells
+ * whether there is content to consume and the EOF state that tells whether an EOF has arrived.
+ * Only once the content has been consumed the content state is moved to the EOF state.
+ * </p>
  */
 public class HttpInput extends ServletInputStream implements Runnable
 {
     /**
      * An interceptor for HTTP Request input.
      * <p>
-     * Unlike inputstream wrappers that can be applied by filters, an interceptor
+     * Unlike InputStream wrappers that can be applied by filters, an interceptor
      * is entirely transparent and works with async IO APIs.
+     * </p>
      * <p>
      * An Interceptor may consume data from the passed content and the interceptor 
      * will continue to be called for the same content until the interceptor returns 
-     * null or an empty content.   Thus even if the passed content is completely consumed
+     * null or an empty content. Thus even if the passed content is completely consumed
      * the interceptor will be called with the same content until it can no longer 
-     * produce more content. 
+     * produce more content.
+     * </p>
      * @see HttpInput#setInterceptor(Interceptor)
      * @see HttpInput#addInterceptor(Interceptor)
      */
@@ -77,8 +81,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     
     /**
      * An {@link Interceptor} that chains two other {@link Interceptor}s together.
-     * The {@link #readFrom(Content)} calls the previous {@link Interceptor}'s 
-     * {@link #readFrom(Content)} and then passes any {@link Content} returned 
+     * The {@link Interceptor#readFrom(Content)} calls the previous {@link Interceptor}'s
+     * {@link Interceptor#readFrom(Content)} and then passes any {@link Content} returned
      * to the next {@link Interceptor}.
      */
     public static class ChainedInterceptor implements Interceptor, Destroyable
@@ -282,7 +286,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 {
                     long minimum_data = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
                     if (_contentArrived < minimum_data)
-                        throw new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,String.format("Request data rate < %d B/s",minRequestDataRate));
+                        throw new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,String.format("Request content data rate < %d B/s",minRequestDataRate));
                 }
             }
 
@@ -335,6 +339,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     /**
      * Called by channel when asynchronous IO needs to produce more content
      * @throws IOException
+     *              if unable to produce content
      */
     public void asyncReadProduce() throws IOException
     {
@@ -782,7 +787,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            if (_waitingForContent && !isError())
+            boolean neverDispatched = getHttpChannelState().isIdle();
+            if ((_waitingForContent || neverDispatched) && !isError())
             {
                 x.addSuppressed(new Throwable("HttpInput idle timeout"));
                 _state = new ErrorState(x);

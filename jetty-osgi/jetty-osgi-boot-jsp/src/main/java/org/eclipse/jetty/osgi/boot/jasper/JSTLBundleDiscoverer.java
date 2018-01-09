@@ -120,7 +120,7 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
      * Unsupported: the bundle is a jar that embeds more jars.
      * 
      * @return array of URLs
-     * @throws Exception
+     * @throws Exception In case of errors during resolving TLDs files
      */
     public URL[] getUrlsForBundlesWithTlds(DeploymentManager deployer, BundleFileLocatorHelper locatorHelper) throws Exception
     {

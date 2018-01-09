@@ -33,7 +33,6 @@ import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 /**
  * Client {@link ContainerProvider} implementation.
  * <p>
- * <p>
  * Created by a {@link java.util.ServiceLoader} call in the
  * {@link javax.websocket.ContainerProvider#getWebSocketContainer()} call.
  * </p>
@@ -78,7 +77,6 @@ public class JettyClientContainerProvider extends ContainerProvider
      * Add ability of calls to {@link ContainerProvider#getWebSocketContainer()} to
      * find and return the {@code javax.websocket.server.ServerContainer} from the
      * active {@code javax.servlet.ServletContext}.
-     * <p>
      * <p>
      * This will only work if the call to {@link ContainerProvider#getWebSocketContainer()}
      * occurs within a thread being processed by the Servlet container.

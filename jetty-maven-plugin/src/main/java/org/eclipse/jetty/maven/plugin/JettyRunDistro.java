@@ -310,7 +310,7 @@ public class JettyRunDistro extends JettyRunMojo
      * If jetty home does not exist, download it and
      * unpack to build dir.
      * 
-     * @throws Exception
+     * @throws Exception if jetty distribution cannot be found neither downloaded
      */
     public void configureJettyHome() throws Exception
     {
@@ -341,7 +341,7 @@ public class JettyRunDistro extends JettyRunMojo
      * @param version the version of the artifact
      * @param extension the extension type of the artifact eg "zip", "jar"
      * @return the artifact from the local or remote repo
-     * @throws ArtifactResolverException
+     * @throws ArtifactResolverException in case of an error while resolving the artifact
      */
     public Artifact resolveArtifact (String groupId, String artifactId, String version, String extension)
     throws ArtifactResolverException
@@ -363,7 +363,7 @@ public class JettyRunDistro extends JettyRunMojo
     /**
      * Create or configure a jetty base.
      * 
-     * @throws Exception
+     * @throws Exception if any error occured while copying files
      */
     public void configureJettyBase() throws Exception
     {
@@ -372,9 +372,8 @@ public class JettyRunDistro extends JettyRunMojo
         
         targetBase = new File(target, "jetty-base");
         Path targetBasePath = targetBase.toPath();
-        if (Files.exists(targetBasePath))
-            IO.delete(targetBase);
-        
+        Files.deleteIfExists(targetBase.toPath());
+
         targetBase.mkdirs();
         
         if (jettyBase != null)
@@ -483,7 +482,7 @@ public class JettyRunDistro extends JettyRunMojo
      * Convert webapp config to properties
      * 
      * @param file the file to place the properties into
-     * @throws Exception
+     * @throws Exception if any I/O exception during generating the properties file
      */
     public void createPropertiesFile (File file)
     throws Exception
@@ -496,10 +495,9 @@ public class JettyRunDistro extends JettyRunMojo
      * Make the command to spawn a process to
      * run jetty from a distro.
      * 
-     * @return
+     * @return the command configured
      */
     public ProcessBuilder configureCommand()
-    throws Exception
     {
         List<String> cmd = new ArrayList<>();
         cmd.add("java");

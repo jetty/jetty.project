@@ -60,7 +60,7 @@ public class ClientNonClusteredSessionScavengingTest
             fail( e.getMessage() );
         }
     }
-    private static final String MAP_NAME = "jetty_foo_session";
+    private static final String MAP_NAME = Long.toString( System.currentTimeMillis() );
 
     private HazelcastInstance hazelcastInstance;
 

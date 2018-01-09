@@ -49,6 +49,7 @@ public class Locker
 
     /**
      * @deprecated use {@link #lock()} instead
+     * @return the lock to unlock
      */
     @Deprecated
     public Lock lockIfNotHeld()

@@ -113,7 +113,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @param context the context for the scan
      * @param jars the jars to scan
      * @param useCaches if true, the scanned info is cached
-     * @throws Exception
+     * @throws Exception if unable to scan the jars
      */
     public void scanJars (final WebAppContext context, Collection<Resource> jars, boolean useCaches)
     throws Exception

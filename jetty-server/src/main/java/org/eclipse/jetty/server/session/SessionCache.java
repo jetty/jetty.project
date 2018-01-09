@@ -63,7 +63,7 @@ public interface SessionCache extends LifeCycle
     
     
     /**
-     * @param context
+     * @param context the {@link SessionContext} to use for this cache
      */
     void initialize(SessionContext context);
     
@@ -76,17 +76,17 @@ public interface SessionCache extends LifeCycle
     /**
      * Create an entirely new Session.
      * 
-     * @param request
-     * @param id
-     * @param time
-     * @param maxInactiveMs
+     * @param request the request
+     * @param id the unique id associated to the session
+     * @param time the timestamp of the session creation
+     * @param maxInactiveMs the max inactive time in milliseconds
      * @return a new Session 
      */
     Session newSession (HttpServletRequest request, String id,  long time, long maxInactiveMs);
     
     /**
      * Re-materialize a Session that has previously existed.
-     * @param data
+     * @param data the data associated with the session
      * @return a Session object for the data supplied
      */
     Session newSession (SessionData data);
@@ -95,10 +95,10 @@ public interface SessionCache extends LifeCycle
     /**
      * Change the id of a Session.
      * 
-     * @param oldId
-     * @param newId
+     * @param oldId the current session id
+     * @param newId the new session id
      * @return the Session after changing its id
-     * @throws Exception
+     * @throws Exception if any error occurred
      */
     Session renewSessionId (String oldId, String newId) throws Exception;
     
@@ -107,9 +107,9 @@ public interface SessionCache extends LifeCycle
      * Get an existing Session. If necessary, the cache will load the data for
      * the session from the configured SessionDataStore.
      * 
-     * @param id
+     * @param id the session id
      * @return the Session if one exists, null otherwise
-     * @throws Exception
+     * @throws Exception if any error occurred
      */
     Session get(String id) throws Exception;
     
@@ -120,9 +120,9 @@ public interface SessionCache extends LifeCycle
      * implementations may want to delay writing out Session contents
      * until the last request exits a Session.
      * 
-     * @param id
-     * @param session
-     * @throws Exception
+     * @param id the session id
+     * @param session the current session object
+     * @throws Exception if any error occurred
      */
     void put(String id, Session session) throws Exception;
     
@@ -131,10 +131,10 @@ public interface SessionCache extends LifeCycle
      * Check to see if a Session is in the cache. Does NOT consult
      * the SessionDataStore.
      * 
-     * @param id
+     * @param id the session id
      * @return true if a Session object matching the id is present
      * in the cache, false otherwise
-     * @throws Exception
+     * @throws Exception if any error occurred
      */
     boolean contains (String id) throws Exception;
     
@@ -143,9 +143,9 @@ public interface SessionCache extends LifeCycle
      * Check to see if a session exists: WILL consult the
      * SessionDataStore.
      * 
-     * @param id
+     * @param id the session id
      * @return true if the session exists, false otherwise
-     * @throws Exception
+     * @throws Exception if any error occurred
      */
     boolean exists (String id) throws Exception;
     
@@ -154,9 +154,9 @@ public interface SessionCache extends LifeCycle
      * Remove a Session completely: from both this 
      * cache and the SessionDataStore.
      * 
-     * @param id
+     * @param id the session id
      * @return the Session that was removed, null otherwise
-     * @throws Exception
+     * @throws Exception if any error occurred
      */
     Session delete (String id) throws Exception;
 
@@ -177,7 +177,7 @@ public interface SessionCache extends LifeCycle
      * Check a Session to see if it might be appropriate to
      * evict or expire.
      * 
-     * @param session
+     * @param session the session to check
      */
     void checkInactiveSession(Session session);  
     
@@ -185,9 +185,14 @@ public interface SessionCache extends LifeCycle
     /**
      * A SessionDataStore that is the authoritative source
      * of session information.
-     * @param sds
+     * @param sds the {@link SessionDataStore} to use
      */
     void setSessionDataStore(SessionDataStore sds);
+
+    /**
+     *
+     * @return the {@link SessionDataStore} used
+     */
     SessionDataStore getSessionDataStore();
 
     
@@ -204,15 +209,25 @@ public interface SessionCache extends LifeCycle
      * be evicted.
      */
     void setEvictionPolicy (int policy);
+
+    /**
+     *
+     * @return the eviction policy
+     */
     int getEvictionPolicy ();
     
     /**
      * Whether or not a a session that is about to be evicted should
      * be saved before being evicted. 
      * 
-     * @param saveOnEvict
+     * @param saveOnEvict <code>true</code> if the session should be saved before being evicted
      */
     void setSaveOnInactiveEviction (boolean saveOnEvict);
+
+    /**
+     *
+     * @return <code>true</code> if the session should be saved before being evicted
+     */
     boolean isSaveOnInactiveEviction ();
     
     
@@ -221,9 +236,14 @@ public interface SessionCache extends LifeCycle
      * immediately saved. If false, a session that is created and
      * invalidated within a single request is never persisted.
      * 
-     * @param saveOnCreate
+     * @param saveOnCreate <code>true</code> to immediately save the newly created session
      */
     void setSaveOnCreate(boolean saveOnCreate);
+
+    /**
+     *
+     * @return if <code>true</code> the newly created session will be saved immediately
+     */
     boolean isSaveOnCreate();
     
     
@@ -231,8 +251,13 @@ public interface SessionCache extends LifeCycle
      * If the data for a session exists but is unreadable, 
      * the SessionCache can instruct the SessionDataStore to delete it.
      * 
-     * @param removeUnloadableSessions
+     * @param removeUnloadableSessions <code>true</code> to delete session which cannot be loaded
      */
     void setRemoveUnloadableSessions(boolean removeUnloadableSessions);
+
+    /**
+     *
+     * @return if <code>true</code> unloadable session will be deleted
+     */
     boolean isRemoveUnloadableSessions();
 }

@@ -19,7 +19,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker.Lock;
@@ -177,7 +175,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     
     
     /**
-     * 
+     * @param handler the {@link SessionHandler} to use
      */
     public AbstractSessionCache (SessionHandler handler)
     {
@@ -309,7 +307,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * If a session's data cannot be loaded from the store without error, remove
      * it from the persistent store.
      * 
-     * @param removeUnloadableSessions 
+     * @param removeUnloadableSessions if <code>true</code> unloadable sessions will be removed from session store
      */
     @Override
     public void setRemoveUnloadableSessions(boolean removeUnloadableSessions)

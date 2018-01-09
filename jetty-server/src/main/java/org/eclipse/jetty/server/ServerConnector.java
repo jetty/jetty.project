@@ -57,14 +57,18 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * use all the commons services (eg {@link Executor}, {@link Scheduler})  of the
  * passed {@link Server} instance, but all services may also be constructor injected
  * into the connector so that it may operate with dedicated or otherwise shared services.
+ * </p>
  * <h2>Connection Factories</h2>
+ * <p>
  * Various convenience constructors are provided to assist with common configurations of
  * ConnectionFactories, whose generic use is described in {@link AbstractConnector}.
  * If no connection factories are passed, then the connector will
  * default to use a {@link HttpConnectionFactory}.  If an non null {@link SslContextFactory}
  * instance is passed, then this used to instantiate a {@link SslConnectionFactory} which is
  * prepended to the other passed or default factories.
+ * </p>
  * <h2>Selectors</h2>
+ * <p>
  * The connector will use the {@link Executor} service to execute a number of Selector Tasks,
  * which are implemented to each use a NIO {@link Selector} instance to asynchronously
  * schedule a set of accepted connections.  It is the selector thread that will call the
@@ -72,10 +76,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * {@link EndPoint#write(Callback, java.nio.ByteBuffer...)} methods.  It is expected
  * that these callbacks may do some non-blocking IO work, but will always dispatch to the
  * {@link Executor} service any blocking, long running or application tasks.
+ * </p>
  * <p>
  * The default number of selectors is equal to half of the number of processors available to the JVM,
  * which should allow optimal performance even if all the connections used are performing
  * significant non-blocking work in the callback tasks.
+ * </p>
  */
 @ManagedObject("HTTP connector using NIO ByteChannels and Selectors")
 public class ServerConnector extends AbstractNetworkConnector
@@ -281,7 +287,7 @@ public class ServerConnector extends AbstractNetworkConnector
      * This open method can be called before starting the connector to pass it a ServerSocketChannel
      * that will be used instead of one returned from {@link #openAcceptChannel()}
      * @param acceptChannel the channel to use
-     * @throws IOException
+     * @throws IOException if the server channel is not bound
      */
     public void open(ServerSocketChannel acceptChannel) throws IOException
     {
@@ -311,7 +317,7 @@ public class ServerConnector extends AbstractNetworkConnector
     /**
      * Called by {@link #open()} to obtain the accepting channel.
      * @return ServerSocketChannel used to accept connections.
-     * @throws IOException
+     * @throws IOException if unable to obtain or configure the server channel
      */
     protected ServerSocketChannel openAcceptChannel() throws IOException
     {

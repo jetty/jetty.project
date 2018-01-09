@@ -19,9 +19,15 @@
 
 package org.eclipse.jetty.hazelcast.session.client;
 
+import com.hazelcast.config.Config;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
 import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.AbstractModifyMaxInactiveIntervalTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.junit.After;
+import org.junit.Before;
 
 /**
  * ModifyMaxInactiveIntervalTest
@@ -30,6 +36,27 @@ public class ClientModifyMaxInactiveIntervalTest
     extends AbstractModifyMaxInactiveIntervalTest
 {
 
+    private static final String MAP_NAME = Long.toString( System.currentTimeMillis() );
+
+    private HazelcastInstance hazelcastInstance;
+
+    @Before
+    public void startHazelcast()
+        throws Exception
+    {
+        Config config = new Config().addMapConfig( new MapConfig().setName( MAP_NAME ) ) //
+            .setInstanceName( "beer" );
+        // start Hazelcast instance
+        hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance( config );
+    }
+
+    @After
+    public void stopHazelcast()
+        throws Exception
+    {
+        hazelcastInstance.shutdown();
+    }
+
     /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
@@ -37,6 +64,8 @@ public class ClientModifyMaxInactiveIntervalTest
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
+        factory.setOnlyClient( true );
+        factory.setMapName( MAP_NAME );
         return factory;
     }
 

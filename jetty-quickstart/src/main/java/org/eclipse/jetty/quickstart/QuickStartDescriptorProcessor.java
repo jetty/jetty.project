@@ -123,7 +123,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
      * @param context  the webapp 
      * @param descriptor the xml file to process
      * @param node the context-param node in the xml file
-     * @throws Exception
+     * @throws Exception if some resources cannot be read
      */
     public void visitContextParam (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
             throws Exception

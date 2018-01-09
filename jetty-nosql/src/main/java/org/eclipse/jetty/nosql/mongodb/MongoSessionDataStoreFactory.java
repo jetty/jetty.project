@@ -126,8 +126,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
 
 
     /**
-     * @throws MongoException
-     * @throws UnknownHostException
+     * @throws Exception  {@link UnknownHostException} if any issue while resolving MongoDB Host
      * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
