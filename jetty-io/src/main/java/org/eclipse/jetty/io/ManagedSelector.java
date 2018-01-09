@@ -117,11 +117,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     @Override
     protected void doStop() throws Exception
-    {
-        boolean timeout = false;
-        
+    {        
         // doStop might be called for a failed managedSelector,
         // We do not want to wait twice, so we only stop once for each start
+        boolean timeout = false;
         if (_started.compareAndSet(true,false))
         {
             if (getStopTimeout()>0)
@@ -129,31 +128,32 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 // If we are graceful we can wait for connections to close
                 Set<Closeable> closed = new HashSet<>();
                 
-                
                 long now = System.nanoTime();
                 long wait_until = now+TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
-                while(true)
-                {
-                    // If we have waited long enough, then we have timed out
-                    if (now>wait_until)
-                    {
-                        timeout = true;
-                        break;
-                    }
-                    
+                while(now<wait_until)
+                {                    
                     // Close any connection and wait for no endpoints in selector
                     CloseConnections close_connections = new CloseConnections(closed);
                     submit(close_connections);
-                    if (close_connections._zero.await(200,TimeUnit.MILLISECONDS))
+                    if (close_connections._zero.await(100,TimeUnit.MILLISECONDS))
                         break;
                     now = System.nanoTime();
                 }
+            }
+            else
+            {
+                // Close connections, but only wait a single selector cycle for it to take effect
+                CloseConnections close_connections = new CloseConnections();
+                submit(close_connections);
+                close_connections._complete.await();
             }
             
             // Wait for any remaining endpoints to be closed and the selector to be stopped
             StopSelector stop_selector = new StopSelector();
             submit(stop_selector);
-            stop_selector.stopped.await();
+            stop_selector._stopped.await();
+            
+            timeout = getStopTimeout()>0 && !stop_selector._zero;
         }
 
         super.doStop();
@@ -765,6 +765,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     {
         final Set<Closeable> _closed;
         final CountDownLatch _zero = new CountDownLatch(1);
+        final CountDownLatch _complete = new CountDownLatch(1);
+
+        public CloseConnections()
+        {
+            this(null);
+        }
         
         public CloseConnections(Set<Closeable> closed)
         {
@@ -785,30 +791,41 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
                     {
-                        zero = false;
                         EndPoint endp = (EndPoint)attachment;
+                        if (!endp.isOutputShutdown())
+                            zero = false;
                         Connection connection = endp.getConnection();
                         if (connection != null)
                             closeable = connection;
                         else
                             closeable = endp;
                     }
-                    if (!_closed.contains(closeable))
+                    
+                    if (closeable!=null)
                     {
-                        _closed.add(closeable);
-                        closeNoExceptions(closeable);
+                        if (_closed==null)
+                        {
+                            closeNoExceptions(closeable);
+                        }
+                        else if (!_closed.contains(closeable))
+                        {                        
+                            _closed.add(closeable);
+                            closeNoExceptions(closeable);
+                        }
                     }
                 }
             }
             
             if (zero)
                 _zero.countDown();
+            _complete.countDown();
         }
     }
     
     private class StopSelector implements SelectorUpdate
     {
-        CountDownLatch stopped = new CountDownLatch(1);
+        CountDownLatch _stopped = new CountDownLatch(1);
+        boolean _zero = true;
         
         @Override
         public void update(Selector selector)
@@ -819,13 +836,18 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
+                    {
+                        EndPoint endp = (EndPoint)attachment;
+                        if (!endp.isOutputShutdown())
+                            _zero = false;
                         closeNoExceptions((EndPoint)attachment);
+                    }
                 }
             }
             
             _selector = null;
             closeNoExceptions(selector);
-            stopped.countDown();
+            _stopped.countDown();
         }
     }
 
