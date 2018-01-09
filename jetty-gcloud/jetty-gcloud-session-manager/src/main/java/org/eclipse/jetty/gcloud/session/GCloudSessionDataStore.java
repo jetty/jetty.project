@@ -838,12 +838,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     /**
      * Check to see if indexes are available, in which case
      * we can do more performant queries.
-     * @return
+     * @return <code>true</code> if indexes are available
      */
-    protected boolean checkIndexes ()
+    protected boolean checkIndexes()
     {
-        long start =0;
-        
         try
         {
             Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
