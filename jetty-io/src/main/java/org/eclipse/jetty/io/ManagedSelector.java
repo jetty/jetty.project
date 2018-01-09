@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -126,21 +127,24 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (getStopTimeout()>0)
             {
                 // If we are graceful we can wait for connections to close
-                CloseConnections close_connections = new CloseConnections();
-                submit(close_connections);
+                Set<Closeable> closed = new HashSet<>();
+                
                 
                 long now = System.nanoTime();
                 long wait_until = now+TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
                 while(true)
                 {
+                    // If we have waited long enough, then we have timed out
                     if (now>wait_until)
                     {
                         timeout = true;
                         break;
                     }
-                    NoEndPoints no_endpoints = new NoEndPoints();
-                    submit(no_endpoints);
-                    if (no_endpoints.zero.await(200,TimeUnit.MILLISECONDS))
+                    
+                    // Close any connection and wait for no endpoints in selector
+                    CloseConnections close_connections = new CloseConnections(closed);
+                    submit(close_connections);
+                    if (close_connections._zero.await(200,TimeUnit.MILLISECONDS))
                         break;
                     now = System.nanoTime();
                 }
@@ -759,48 +763,46 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private class CloseConnections implements SelectorUpdate
     {
+        final Set<Closeable> _closed;
+        final CountDownLatch _zero = new CountDownLatch(1);
+        
+        public CloseConnections(Set<Closeable> closed)
+        {
+            _closed = closed;
+        }
+
         @Override
         public void update(Selector selector)
         {            
             if (LOG.isDebugEnabled())
-                LOG.debug("Closing {} endPoints on {}", selector.keys().size(), ManagedSelector.this);
+                LOG.debug("Closing {} connections on {}", selector.keys().size(), ManagedSelector.this);
+            boolean zero = true;
             for (SelectionKey key : selector.keys())
             {
                 if (key.isValid())
                 {
+                    Closeable closeable = null;
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
                     {
+                        zero = false;
                         EndPoint endp = (EndPoint)attachment;
                         Connection connection = endp.getConnection();
                         if (connection != null)
-                            closeNoExceptions(connection);
+                            closeable = connection;
                         else
-                            closeNoExceptions(endp.getConnection());
+                            closeable = endp;
+                    }
+                    if (!_closed.contains(closeable))
+                    {
+                        _closed.add(closeable);
+                        closeNoExceptions(closeable);
                     }
                 }
             }
-        }
-    }
-
-    private class NoEndPoints implements SelectorUpdate
-    {
-        CountDownLatch zero = new CountDownLatch(1);
-        
-        @Override
-        public void update(Selector selector)
-        {
-            for (SelectionKey key : selector.keys())
-            {
-                if (key.isValid())
-                {
-                    Object attachment = key.attachment();
-                    if (attachment instanceof EndPoint)
-                        return;
-                }
-            }
             
-            zero.countDown();
+            if (zero)
+                _zero.countDown();
         }
     }
     
