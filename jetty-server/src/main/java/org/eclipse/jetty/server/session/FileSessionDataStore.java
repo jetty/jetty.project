@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
@@ -202,7 +203,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         //another context. This ensures that files that
         //belong to defunct contexts are cleaned up. 
         //If the graceperiod is disabled, don't do the sweep!
-        if ((_gracePeriodSec > 0) && ((_lastSweepTime == 0) || ((now - _lastSweepTime) >= (5000L*_gracePeriodSec))))
+        if ((_gracePeriodSec > 0) && ((_lastSweepTime == 0) || ((now - _lastSweepTime) >= (5*TimeUnit.SECONDS.toMillis(_gracePeriodSec)))))
         {
             _lastSweepTime = now;
             sweepDisk();
@@ -264,7 +265,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
         long expiry = getExpiryFromFilename(p.getFileName().toString());
         //files with 0 expiry never expire
-        if (expiry >0 && ((now - expiry) >= (5*1000L*_gracePeriodSec)))
+        if (expiry >0 && ((now - expiry) >= (5*TimeUnit.SECONDS.toMillis(_gracePeriodSec))))
         {
             Files.deleteIfExists(p);
             if (LOG.isDebugEnabled()) LOG.debug("Sweep deleted {}", p.getFileName());
