@@ -101,7 +101,7 @@ ____
 The demonstration web applications are not necessarily secure and should *not* be deployed in production web servers.
 ____
 
-You can see the configuration of the demo-base by using the following commands:
+You can see the configuration of the `demo-base` by using the following commands:
 
 [source, screen, subs="{sub-order}"]
 ----

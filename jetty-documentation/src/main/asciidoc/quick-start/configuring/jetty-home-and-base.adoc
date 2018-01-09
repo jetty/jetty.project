@@ -1,0 +1,152 @@
+
+[[the-jetty-distribution]]
+
+==== A Look at the Distribution
+
+Now that we have run the server a few times, let's look at the distribution package and provide some context:
+
+.Contents of the Jetty Distribution
+[width="80%",cols="40%,60%",options="header"]
+|=======================================================================
+|Location |Description
+|bin/ |Contains `jetty.sh`, a shell script designed to help run Jetty on UNIX and Linux based systems.
+|demo-base/ |This is a Jetty base directory that includes several demonstration web-apps to highlight various Jetty functionality. It also includes a local copy of the official documentation.
+|etc/ |Contains Jetty XML configuration files
+|lib/ |Contains copies of the JAR files required to run Jetty
+|logs/ | Default location where log files will be stored
+|modules/ |Contains the module files that are used to enable specific functionality on a Jetty server
+|resources/ |Directory containing additional resources for classpath, activated via configuration
+|webapps/ |Contains webapps that run under the default configuration of Jetty
+|license-eplv10-aslv20.html |File containing the Eclipse Public License (v1.0) and the Apache License (v2.0)
+|notice.html |Eclipse Foundation Software User Agreement
+|start.jar |Jar file that runs the Jetty server.
+|start.ini |Configuration file containing command line arguments under the default configuration of Jetty
+|README.txt |Useful getting started information
+|VERSION.txt |Release information including bug fix information.
+|=======================================================================
+
+Prior to Jetty 9 users would run their distributions out of this directory.
+They would modify xml files location in the `etc` directory and/or add items to the command line in `start.ini`, and maybe even package some custom jars in the `lib` directory.
+This setup worked well - all your configuration was done in a relatively central location - but there were some flaws.
+
+For example, if you wanted to run multiple servers, you would need to run several copies of the distribution.
+This mean several copies of the same jar files taking up space and a distributed configuration base; if you needed to make changes that effected all servers, you would need to edit every individual instance of the distribution, which is not only timely but opens up the window for differences in configuration across servers that *should* all have the same baseline.
+Additionally, if you wanted to roll back to a default version of Jetty, you'd need to replace the files you modified in each of your implementations.
+
+Single-instance server implementations also faced issues.
+Because everything for the server did exist in one location, upgrading Jetty could become a bit of a tangled mess.
+Modified XML files might not be renamed and were at risk of being overwritten, as could ini configuration files.
+Administrators had to be very careful during upgrades and make sure recent backups were on hand in case of any issues.
+In short, it created a lot of extra work!
+
+==== A Solution
+
+So how did Jetty solve this?
+The concept of a separate of Jetty Home and Jetty Base was introduced.
+Jetty Home would act as the source of truth for all default Jetty distribution files while Jetty Base(s) would serve as the place where instance-specific configuration could take place.
+
+For an example, let's say you are tasked with setting up three servers for your company - a public-facing company website, an internal HR system, and a ordering system for procurement.
+Instead of having three separate copies of the distribution, it is much easier to have one central Jetty Home with all the required files and separate Jetty Bases for each of the outlying systems:
+//TODO - Redo the diagram.
+image:images/jetty-home-and-base-example.png[image,width=761]
+
+In this setup, you have one (1) Jetty Home which contains all the default files for Jetty (XML, jars, module definitions...etc.), and three (3) separate Jetty Bases for individual configuration.
+Each Jetty base is independent of the others - there is no mingling of files or configuration, and when an update is performed to Jetty, only the Jetty home directory needs changed.
+
+===== Location of Jetty Base
+
+Where do Jetty base directories live, exactly?
+Well, they can be located pretty much anywhere.
+In the last chapter, we launched Jetty using `demo-base` which was located inside the Jetty distribution.
+For most users, this model works just fine.
+You have the distribution directory acting as Jetty Home, and several Jetty Base subdirectories inside of it.
+However, if your needs or company policies don't allow for hosting a Jetty Base from the Jetty distribution you can serve it from almost anywhere. 
+
+Wherever your Jetty Base is configured, the recommended approach to starting Jetty is doing so from your Base directory and calling the `start.jar` located in the Home directory remotely.
+Since your Jetty Home directory is unlikely to change, it can be helpful to declare it's location as an environment variable to assist in calling it on the command line.
+Declaring environment variables will differ depending on your system, though we have provided instructions for the most common ones in the link:#troubleshooting-jetty[reference section.]
+
+//TODO - Include examples of startup using Env Variable?
+
+===== Contents of a Jetty Base
+
+Now that you know what a Base is, and where it can live, you are probably asking yourself what _exactly_ it contains.
+Simply put, a Jetty Base will contain all the specific items and configurations required to run your webserver the way _you_ want.
+It will contain your web application(s), your customizations, your configurations, log files, third party jar files, keystores...etc.
+Let's revisit the `demo-base` as an example and look at it's contents:
+
+[source, screen, subs="{sub-order}"]
+----
+$ cd $JETTY_HOME/demo-base/
+$ tree
+.
+├── etc
+│   ├── conscrypt.xml
+│   ├── demo-rewrite-rules.xml
+│   ├── keystore
+│   ├── login.conf
+│   ├── login.properties
+│   ├── realm.properties
+│   └── test-realm.xml
+├── lib
+│   ├── conscrypt
+│   │   └── conscrypt-uber-1.0.0.RC9.jar
+│   └── ext
+│       └── test-mock-resources-9.4.7.v20170914.jar
+├── resources
+├── start.d
+│   ├── annotations.ini
+│   ├── client.ini
+│   ├── conscrypt.ini
+│   ├── continuation.ini
+│   ├── demo.ini
+│   ├── deploy.ini
+│   ├── ext.ini
+│   ├── http.ini
+│   ├── https.ini
+│   ├── jndi.ini
+│   ├── jsp.ini
+│   ├── jstl.ini
+│   ├── resources.ini
+│   ├── server.ini
+│   └── servlets.ini
+└── webapps
+    ├── async-rest.war
+...    
+    ├── example-moved.xml
+    ├── javadoc-proxy.war
+    ├── README.TXT
+    ├── ROOT
+    │   ├── images
+    │   │   ├── jetty-header.jpg
+    │   │   └── webtide_logo.jpg
+    │   ├── index.html
+    │   └── jetty.css
+    ├── test.d
+    │   └── override-web.xml
+    ├── test-jaas.war
+    ├── test-jaas.xml
+    ├── test-jndi.war
+    ├── test-jndi.xml
+    ├── test-spec.war
+    ├── test-spec.xml
+    ├── test.war
+    └── test.xml
+----
+_(For readability the tree listing for the `docs` directory in `webapps` has been ommitted)_
+
+//TODO - Additional content
+
+[[base-vs-home-resolution]]
+
+Potential configuration is resolved from these 2 directory locations.
+When Jetty starts up in processes configuration from them as follows:
+
+Check Jetty Base First::
+  If the referenced configuration exists, relative to the defined Jetty base, it is used.
+Check Jetty Home Second::
+  If the referenced configuration exists, relative to the defined Jetty home, it is used.
+Use java.io.File(String pathname) Logic::
+  Lastly, use the reference as a `java.io.File(String pathname)` reference, following the default resolution rules outlined by that constructor. In brief, the reference will be used as-is, be it relative (to current working directory, aka $\{user.dir}) or absolute path, or even network reference (such as on Windows and use of UNC paths).
+
+For more details on how startup with start.jar works, see link:#executing-startjar[Using start.jar: Executing]

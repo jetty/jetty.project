@@ -37,7 +37,7 @@ Versions that have been deprecated or are released as Milestones (M) or Release 
 _____
 
 [[distribution-content]]
-==== Distribution Content
+===== Distribution Content
 
 A summary of the distribution's contents follows.
 The top-level directory contains:
@@ -79,7 +79,7 @@ When you download and unpack the binary, it is extracted into a directory called
 Put this directory in a convenient location.
 
 [[jetty-home-distribution-content]]
-==== Distribution Content
+===== Distribution Content
 
 A summary of the Jetty-Home's distribution contents follows.
 The top-level directory contains:
