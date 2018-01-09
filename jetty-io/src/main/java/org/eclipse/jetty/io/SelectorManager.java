@@ -28,12 +28,10 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -290,70 +288,25 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     protected void doStop() throws Exception
     {
-        // TODO the total stop time budget may be exceeded if
-        // reserved threads are not available to stop selectors
-        // in parallel
-        
-        final MultiException mex = new MultiException();
-        CountDownLatch stopped = new CountDownLatch(_selectors.length);
-        for (ManagedSelector managed_selector : _selectors)
-        {
-            if (managed_selector==null)
-                stopped.countDown();
-            else
-            {
-                Runnable stop = () ->
-                {
-                    try
-                    {
-                        managed_selector.stop();
-                    }
-                    catch(Throwable th)
-                    {
-                        mex.add(th);
-                    }
-                    finally
-                    {
-                        stopped.countDown();
-                    }
-                };
-
-                // Try stopping in parallel
-                if (_reservedThreadExecutor==null || !_reservedThreadExecutor.isStarted() || !_reservedThreadExecutor.tryExecute(stop))
-                {
-                    // No reserved thread so serially stop
-                    stop.run();
-                }
-            }
-        }
-        
-        // wait for all selectors to be stopped, we rely on their respect for timeouts so we can wait forever
-        stopped.await();
-        
-        // Stop
         try
         {
             super.doStop();
         }
-        catch(Throwable th)
+        finally
         {
-            mex.add(th);
+            // Cleanup
+            for (ManagedSelector selector : _selectors)
+            {
+                if (selector!=null)
+                    removeBean(selector);
+            }
+            Arrays.fill(_selectors,null);
+            if (_reservedThreadExecutor!=null)
+                removeBean(_reservedThreadExecutor);
+            _reservedThreadExecutor = null;
+            if (_lease != null)
+                _lease.close();
         }
-        
-        // Cleanup
-        for (ManagedSelector selector : _selectors)
-        {
-            if (selector!=null)
-                removeBean(selector);
-        }
-        Arrays.fill(_selectors,null);
-        if (_reservedThreadExecutor!=null)
-            removeBean(_reservedThreadExecutor);
-        _reservedThreadExecutor = null;
-        if (_lease != null)
-            _lease.close();
-        
-        mex.ifExceptionThrow();
     }
 
     /**

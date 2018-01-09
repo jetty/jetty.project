@@ -135,7 +135,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     // Close any connection and wait for no endpoints in selector
                     CloseConnections close_connections = new CloseConnections(closed);
                     submit(close_connections);
-                    if (close_connections._zero.await(100,TimeUnit.MILLISECONDS))
+                    if (close_connections._noEndPoints.await(100,TimeUnit.MILLISECONDS))
                         break;
                     now = System.nanoTime();
                 }
@@ -153,7 +153,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             submit(stop_selector);
             stop_selector._stopped.await();
             
-            timeout = getStopTimeout()>0 && !stop_selector._zero;
+            timeout = getStopTimeout()>0 && stop_selector._forcedEndPointClose;
         }
 
         super.doStop();
@@ -764,7 +764,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private class CloseConnections implements SelectorUpdate
     {
         final Set<Closeable> _closed;
-        final CountDownLatch _zero = new CountDownLatch(1);
+        final CountDownLatch _noEndPoints = new CountDownLatch(1);
         final CountDownLatch _complete = new CountDownLatch(1);
 
         public CloseConnections()
@@ -817,7 +817,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             
             if (zero)
-                _zero.countDown();
+                _noEndPoints.countDown();
             _complete.countDown();
         }
     }
@@ -825,7 +825,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private class StopSelector implements SelectorUpdate
     {
         CountDownLatch _stopped = new CountDownLatch(1);
-        boolean _zero = true;
+        boolean _forcedEndPointClose = false;
         
         @Override
         public void update(Selector selector)
@@ -839,7 +839,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     {
                         EndPoint endp = (EndPoint)attachment;
                         if (!endp.isOutputShutdown())
-                            _zero = false;
+                            _forcedEndPointClose = true;
                         closeNoExceptions((EndPoint)attachment);
                     }
                 }
