@@ -42,8 +42,8 @@ import org.eclipse.jetty.util.log.Logger;
  * </dl>
  * The remainder of the list can contain then names of {@link HttpComplianceSection}s to include them in the mode, or prefixed
  * with a '-' to exclude thm from the mode.    Note that Jetty's modes may have some historic minor differences from the strict
- * RFC compliance, for example the <code>RFC2616</code> HttpCompliance is defined as 
- * <code>RFC2616,-RFC7230_3_2_FIELD_COLON,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE</code>.
+ * RFC compliance, for example the <code>RFC2616_LEGACY</code> HttpCompliance is defined as 
+ * <code>RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE</code>.
  * <p>
  * Note also that the {@link EnumSet} return by {@link HttpCompliance#sections()} is mutable, so that modes may 
  * be altered in code and will affect all usages of the mode.
@@ -51,20 +51,20 @@ import org.eclipse.jetty.util.log.Logger;
 public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so that extra custom modes can be defined dynamically
 { 
     /** A Legacy compliance mode to match jetty's behavior prior to RFC2616 and RFC7230. It only
-     * contains {@link HttpComplianceSection#RFC7230_3_1_1_METHOD_CASE_SENSITIVE}
+     * contains {@link HttpComplianceSection#METHOD_CASE_SENSITIVE}
      */
-    LEGACY(sectionsBySpec("0,RFC7230_3_1_1_METHOD_CASE_SENSITIVE")), 
+    LEGACY(sectionsBySpec("0,METHOD_CASE_SENSITIVE")), 
     
     /** The legacy RFC2616 support, which incorrectly excludes 
-     * {@link HttpComplianceSection#RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME}, {@link HttpComplianceSection#RFC7230_3_2_FIELD_COLON}
+     * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE}, {@link HttpComplianceSection#FIELD_COLON}
      */
-    RFC2616_LEGACY(sectionsBySpec("RFC2616,-RFC7230_3_2_FIELD_COLON,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")), 
+    RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE")), 
     
     /** The strict RFC2616 support mode */
     RFC2616(sectionsBySpec("RFC2616")), 
     
-    /** Jetty's current RFC7230 support, which incorrectly excludes  {@link HttpComplianceSection#RFC7230_3_1_1_METHOD_CASE_SENSITIVE} */
-    RFC7230_LEGACY(sectionsBySpec("RFC7230,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")),
+    /** Jetty's current RFC7230 support, which incorrectly excludes  {@link HttpComplianceSection#METHOD_CASE_SENSITIVE} */
+    RFC7230_LEGACY(sectionsBySpec("RFC7230,-METHOD_CASE_SENSITIVE")),
 
     /** The RFC7230 support mode */
     RFC7230(sectionsBySpec("RFC7230")),
