@@ -511,6 +511,9 @@ public class DoSFilter implements Filter
     }
 
     /**
+     * @param request  the current request
+     * @param response the current response
+     * @param thread the handling thread
      * Get priority for this request, based on user type
      *
      * @param request the current request

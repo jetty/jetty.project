@@ -148,6 +148,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
     /**
      * Aborts the active session abruptly.
+     * @param statusCode the status code
+     * @param reason the raw reason code
      */
     public void abort(int statusCode, String reason)
     {

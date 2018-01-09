@@ -86,10 +86,10 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * Configure to only support the RFC7239 Forwarded header and to
-     * not support any {@code X-Forwarded-} headers.   This convenience method
-     * clears all the non RFC headers if passed true and sets them to
-     * the default values (if not already set) if passed false.
+     * @param rfc7239only Configure to only support the RFC7239 Forwarded header and to
+     *                    not support any {@code X-Forwarded-} headers.   This convenience method
+     *                    clears all the non RFC headers if passed true and sets them to
+     *                    the default values (if not already set) if passed false.
      * @param rfc7239only Configure to support only RFC7239
      */
     public void setForwardedOnly(boolean rfc7239only)

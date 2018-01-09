@@ -83,13 +83,20 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     
     /**
      * @deprecated use {@code ServerContainer(NativeWebSocketConfiguration, HttpClient)} instead
+     * @param configuration the {@link NativeWebSocketConfiguration} to use
+     * @param executor not used
      */
     @Deprecated
     public ServerContainer(NativeWebSocketConfiguration configuration, Executor executor)
     {
         this(configuration, (HttpClient) null);
     }
-    
+
+    /**
+     *
+     * @param configuration the {@link NativeWebSocketConfiguration} to use
+     * @param httpClient the {@link HttpClient} instance to use
+     */
     public ServerContainer(NativeWebSocketConfiguration configuration, HttpClient httpClient)
     {
         super(configuration.getFactory(), httpClient);

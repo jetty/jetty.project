@@ -51,7 +51,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     
     
     /**
-     * @param manager
+     * @param manager The SessionHandler related to this SessionCache
      */
     public DefaultSessionCache (SessionHandler manager)
     {

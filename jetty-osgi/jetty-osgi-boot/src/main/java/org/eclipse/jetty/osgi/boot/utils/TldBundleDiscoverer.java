@@ -33,10 +33,10 @@ public interface TldBundleDiscoverer
     /**
      * Find bundles that contain tlds and convert into URL references to their location.
      * 
-     * @param manager
-     * @param fileLocator
+     * @param manager The {@link DeploymentManager} instance to use
+     * @param fileLocator the {@link BundleFileLocatorHelper} instance to use
      * @return array of URLs representing locations of tld containing bundles
-     * @throws Exception
+     * @throws Exception In case of errors during resolving TLDs files
      */
     URL[] getUrlsForBundlesWithTlds(DeploymentManager manager, BundleFileLocatorHelper fileLocator) throws Exception;
 

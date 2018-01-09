@@ -89,8 +89,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     /**
      * @param executor The executor to use to obtain threads
      * @param capacity The number of threads to preallocate. If less than 0 then capacity
-     * is calculated based on a heuristic from the number of available processors and
-     * thread pool size.
+     *                 is calculated based on a heuristic from the number of available processors and
+     *                 thread pool size.
+     * @param owner    the owner of the instance. Only used for debugging purpose withing the {@link #toString()} method
      */
     public ReservedThreadExecutor(Executor executor,int capacity, Object owner)
     {

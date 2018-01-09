@@ -107,9 +107,9 @@ public class HouseKeeper extends AbstractLifeCycle
      * Get a scheduler. First try a common scheduler, failing that
      * create our own.
      * 
-     * @throws Exception
+     * @throws Exception when the scheduler cannot be started
      */
-    protected void findScheduler () throws Exception
+    protected void findScheduler() throws Exception
     {
         if (_scheduler == null)
         {
@@ -133,9 +133,9 @@ public class HouseKeeper extends AbstractLifeCycle
     
     /**
      * If scavenging is not scheduled, schedule it.
-     * @throws Exception
+     * @throws Exception if any error during scheduling the scavenging
      */
-    protected void startScavenging()  throws Exception
+    protected void startScavenging() throws Exception
     {
         synchronized (this)
         {
@@ -155,7 +155,7 @@ public class HouseKeeper extends AbstractLifeCycle
     /**
      * If scavenging is scheduled, stop it.
      * 
-     * @throws Exception
+     * @throws Exception if any error during stopping the scavenging
      */
     protected void stopScavenging() throws Exception
     {
@@ -195,9 +195,9 @@ public class HouseKeeper extends AbstractLifeCycle
     /**
      * Set the period between scavenge cycles
      * @param sec the interval (in seconds)
-     * @throws Exception 
+     * @throws Exception if any error during restarting the scavenging
      */
-    public void setIntervalSec (long sec) throws Exception
+    public void setIntervalSec(long sec) throws Exception
     {
         if (isStarted() || isStarting())
         {

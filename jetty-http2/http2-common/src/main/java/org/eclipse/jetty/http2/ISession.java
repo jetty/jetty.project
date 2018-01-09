@@ -117,6 +117,7 @@ public interface ISession extends Session
      *
      * @see #onShutdown()
      * @see #close(int, String, Callback)
+     * @return <code>true</code> if the session has expired
      */
     public boolean onIdleTimeout();
 

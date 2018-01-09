@@ -184,7 +184,7 @@ public class ServerSupport
         if (files == null || files.isEmpty())
             return server;
 
-        Map<String,Object> lastMap = new HashMap<String,Object>();
+        Map<String,Object> lastMap = new HashMap<>();
 
         if (server != null)
             lastMap.put("Server", server);
@@ -232,7 +232,7 @@ public class ServerSupport
      * @param files the xml configs to apply
      * @return the Server after application of configs
      * 
-     * @throws Exception
+     * @throws Exception if unable to apply the xml configuration
      */
     public static Server applyXmlConfigurations (Server server, List<File> files) 
             throws Exception

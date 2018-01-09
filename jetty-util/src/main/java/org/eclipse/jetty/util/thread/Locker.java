@@ -48,6 +48,7 @@ public class Locker
     }
 
     /**
+     * @return the lock to unlock
      * @return whether this lock has been acquired
      */
     public boolean isLocked()
