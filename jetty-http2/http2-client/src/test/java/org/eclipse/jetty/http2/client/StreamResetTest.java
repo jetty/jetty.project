@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,6 +46,8 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.HTTP2Flusher;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
@@ -54,6 +56,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -629,6 +632,58 @@ public class StreamResetTest extends AbstractTest
                 .forEach(Callback::succeeded);
 
         Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testResetAfterBlockingWrite() throws Exception
+    {
+        int windowSize = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+        CountDownLatch writeLatch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                try
+                {
+                    ServletOutputStream output = response.getOutputStream();
+                    output.write(new byte[10 * windowSize]);
+                }
+                catch (IOException e)
+                {
+                    writeLatch.countDown();
+                }
+            }
+        });
+
+        AtomicLong received = new AtomicLong();
+        CountDownLatch latch = new CountDownLatch(1);
+        Session client = newClient(new Session.Listener.Adapter());
+        MetaData.Request request = newRequest("GET", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(request, null, true);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        client.newStream(frame, promise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                if (received.addAndGet(frame.getData().remaining()) == windowSize)
+                    latch.countDown();
+            }
+        });
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        // Reset.
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
+
+        // Give time to the server to process the reset and drain the flusher queue.
+        Thread.sleep(500);
+
+        HTTP2Session session = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).getBean(HTTP2Session.class);
+        HTTP2Flusher flusher = session.getBean(HTTP2Flusher.class);
+        Assert.assertEquals(0, flusher.getFrameQueueSize());
     }
 
     @Test

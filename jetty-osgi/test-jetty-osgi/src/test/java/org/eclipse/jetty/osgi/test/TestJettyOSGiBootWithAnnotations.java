@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -96,8 +96,6 @@ public class TestJettyOSGiBootWithAnnotations
         xmlConfigs.append(new File(etc, "jetty-deployer.xml").toURI());
         xmlConfigs.append(";");
         xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
-        
-        System.err.println(xmlConfigs);
         
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
         options.add(systemProperty("jetty.http.port").value("0"));

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -86,7 +87,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         {
             HttpRequest request = (HttpRequest)result.getRequest();
             ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding());
-            if (result.isFailed())
+            if (result.getResponseFailure() != null)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Authentication challenge failed {}", result.getFailure());
@@ -98,7 +99,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             HttpConversation conversation = request.getConversation();
             if (conversation.getAttribute(authenticationAttribute) != null)
             {
-                // We have already tried to authenticate, but we failed again
+                // We have already tried to authenticate, but we failed again.
                 if (LOG.isDebugEnabled())
                     LOG.debug("Bad credentials for {}", request);
                 forwardSuccessComplete(request, response);
@@ -111,7 +112,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Authentication challenge without {} header", header);
-                forwardFailureComplete(request, null, response, new HttpResponseException("HTTP protocol violation: Authentication challenge without " + header + " header", response));
+                forwardFailureComplete(request, result.getRequestFailure(), response, new HttpResponseException("HTTP protocol violation: Authentication challenge without " + header + " header", response));
                 return;
             }
 
@@ -138,9 +139,18 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
+            ContentProvider requestContent = request.getContent();
+            if (requestContent != null && !requestContent.isReproducible())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Request content not reproducible for {}", request);
+                forwardSuccessComplete(request, response);
+                return;
+            }
+
             try
             {
-                final Authentication.Result authnResult = authentication.authenticate(request, response, headerInfo, conversation);
+                Authentication.Result authnResult = authentication.authenticate(request, response, headerInfo, conversation);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Authentication result {}", authnResult);
                 if (authnResult == null)

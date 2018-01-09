@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.hazelcast.session;
 
 import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.junit.After;
 
 /**
  * ClusteredOrphanedSessionTest
@@ -29,6 +30,7 @@ public class ClusteredOrphanedSessionTest
     extends AbstractClusteredOrphanedSessionTest
 {
 
+    HazelcastSessionDataStoreFactory factory;
 
     /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
@@ -36,9 +38,14 @@ public class ClusteredOrphanedSessionTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
+        factory = new HazelcastSessionDataStoreFactory();
+        factory.setMapName( Long.toString( System.currentTimeMillis() ) );
         return factory;
     }
 
-
+    @After
+    public void shutdown()
+    {
+        factory.getHazelcastInstance().getMap( factory.getMapName() ).clear();
+    }
 }

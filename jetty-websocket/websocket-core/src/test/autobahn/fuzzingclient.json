@@ -1,0 +1,13 @@
+
+{
+   "outdir": "./reports/servers",
+   "servers": [
+      {
+         "agent": "jetty-10-SNAPSHOT",
+         "url": "ws://127.0.0.1:9001"
+      }
+   ],
+   "cases": ["*"],
+   "exclude-cases": [],
+   "exclude-agent-cases": {}
+}

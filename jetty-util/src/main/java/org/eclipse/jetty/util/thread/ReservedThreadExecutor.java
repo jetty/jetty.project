@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -89,8 +89,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     /**
      * @param executor The executor to use to obtain threads
      * @param capacity The number of threads to preallocate. If less than 0 then capacity
-     * is calculated based on a heuristic from the number of available processors and
-     * thread pool size.
+     *                 is calculated based on a heuristic from the number of available processors and
+     *                 thread pool size.
+     * @param owner    the owner of the instance. Only used for debugging purpose withing the {@link #toString()} method
      */
     public ReservedThreadExecutor(Executor executor,int capacity, Object owner)
     {
@@ -230,14 +231,15 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
         {
             while (true)
             {
+                // Not atomic, but there is a re-check in ReservedThread.run().
                 int pending = _pending.get();
-                if (pending >= _capacity)
+                int size = _size.get();
+                if (pending + size >= _capacity)
                     return;
                 if (_pending.compareAndSet(pending, pending + 1))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} startReservedThread p={}", this, pending + 1);
-
                     _executor.execute(new ReservedThread());
                     return;
                 }

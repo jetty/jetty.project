@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -1098,25 +1098,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super.setEventListeners(eventListeners);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Add EventListener
-     * Convenience method that calls {@link #setEventListeners(EventListener[])}
-     * @param listener the listener to add
-     */
-    @Override
-    public void addEventListener(EventListener listener)
-    {
-        super.addEventListener(listener);
-        if ((listener instanceof HttpSessionActivationListener)
-            || (listener instanceof HttpSessionAttributeListener)
-            || (listener instanceof HttpSessionBindingListener)
-            || (listener instanceof HttpSessionListener)
-            || (listener instanceof HttpSessionIdListener))
-        {
-            if (_sessionHandler!=null)
-                _sessionHandler.addEventListener(listener);
-        }
-    }
+
     
     @Override
     public void removeEventListener(EventListener listener)

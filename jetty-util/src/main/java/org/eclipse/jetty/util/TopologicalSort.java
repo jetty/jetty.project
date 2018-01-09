@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,7 +17,6 @@
 //
 
 package org.eclipse.jetty.util;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -28,9 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 
 
 /**
@@ -49,7 +45,7 @@ import org.eclipse.jetty.util.component.Dumpable;
  * 
  * @param <T> The type to be sorted. It must be able to be added to a {@link HashSet}
  */
-public class TopologicalSort<T> implements Dumpable
+public class TopologicalSort<T>
 {
     private final Map<T,Set<T>> _dependencies = new HashMap<>();
 
@@ -199,26 +195,12 @@ public class TopologicalSort<T> implements Dumpable
                 return -1;
             return 1;
         }
-        
     }
     
     @Override
     public String toString()
     {
         return "TopologicalSort "+_dependencies;
-    }
-
-    @Override
-    public String dump()
-    {
-        return ContainerLifeCycle.dump(this);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        out.append(String.format("TopologicalSort@%x%n",hashCode()));
-        ContainerLifeCycle.dump(out, indent,_dependencies.entrySet());
     }
     
     private static class CyclicException extends IllegalStateException

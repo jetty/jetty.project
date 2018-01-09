@@ -17,7 +17,7 @@
 [[http-client-authentication]]
 === Authentication Support
 
-Jetty's HTTP client supports the "Basic" and "Digest" authentication mechanisms defined by link:https://tools.ietf.org/html/rfc7235[RFC 7235].
+Jetty's HTTP client supports the `BASIC` and `DIGEST` authentication mechanisms defined by link:https://tools.ietf.org/html/rfc7235[RFC 7235].
 
 You can configure authentication credentials in the HTTP client instance as follows:
 
@@ -38,7 +38,7 @@ ContentResponse response = httpClient
         .get(5, TimeUnit.SECONDS);
 ----
 
-Jetty's HTTP client tests authentication credentials against the challenge(s) the server issues, and if they match it automatically sends the right authentication headers to the server for authentication.
+Jetty's HTTP client tests authentication credentials against the challenge(s) the server issues (see our section here on link:#configuring-security-secure-passwords[secure password obfuscation]), and if they match it automatically sends the right authentication headers to the server for authentication.
 If the authentication is successful, it caches the result and reuses it for subsequent requests for the same domain and matching URIs.
 
 The HTTP conversation for a successful match is the following:

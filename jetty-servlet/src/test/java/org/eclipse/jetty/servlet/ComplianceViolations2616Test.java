@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -147,8 +147,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200 OK"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: RFC2616<RFC7230: name only header"));
-
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: RFC2616<RFC7230: https://tools.ietf.org/html/rfc7230#section-3.2 No colon"));   
         assertThat("Response body", response, containsString("[Name] = []"));
     }
 
@@ -165,8 +164,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: RFC2616<RFC7230: name only header"));
-
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: RFC2616<RFC7230: https://tools.ietf.org/html/rfc7230#section-3.2 No colon"));        
         assertThat("Response body", response, containsString("[Name] = []"));
     }
 
@@ -184,8 +182,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: RFC2616<RFC7230: header folding"));
-
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: RFC2616<RFC7230: https://tools.ietf.org/html/rfc7230#section-3.2.4 folding"));        
         assertThat("Response body", response, containsString("[Name] = [Some Value]"));
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,11 +22,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntFunction;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -34,6 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
+import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -41,6 +45,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.DigestAuthentication;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -220,7 +225,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             {
                 baseRequest.setHandled(true);
                 if (requests.incrementAndGet() == 1)
-                    response.sendRedirect(URIUtil.newURI(scheme,request.getServerName(),request.getServerPort(),request.getRequestURI(),null));
+                    response.sendRedirect(URIUtil.newURI(scheme, request.getServerName(), request.getServerPort(), request.getRequestURI(), null));
             }
         });
 
@@ -259,7 +264,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             {
                 baseRequest.setHandled(true);
                 if (request.getRequestURI().endsWith("/redirect"))
-                    response.sendRedirect(URIUtil.newURI(scheme,request.getServerName(),request.getServerPort(),"/secure",null));
+                    response.sendRedirect(URIUtil.newURI(scheme, request.getServerName(), request.getServerPort(), "/secure", null));
             }
         });
 
@@ -425,6 +430,40 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     }
 
     @Test
+    public void test_NonReproducibleContent() throws Exception
+    {
+        startBasic(new EmptyServerHandler());
+
+        AuthenticationStore authenticationStore = client.getAuthenticationStore();
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+        BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "basic");
+        authenticationStore.addAuthentication(authentication);
+
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        byte[] data = new byte[]{'h', 'e', 'l', 'l', 'o'};
+        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(data))
+        {
+            @Override
+            public boolean isReproducible()
+            {
+                return false;
+            }
+        };
+        Request request = client.newRequest(uri)
+                .path("/secure")
+                .content(content);
+        request.send(result ->
+        {
+            if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.UNAUTHORIZED_401)
+                resultLatch.countDown();
+        });
+
+        content.close();
+
+        Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void test_RequestFailsAfterResponse() throws Exception
     {
         startBasic(new EmptyServerHandler());
@@ -434,32 +473,111 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "basic");
         authenticationStore.addAuthentication(authentication);
 
-        CountDownLatch successLatch = new CountDownLatch(1);
+        AtomicBoolean fail = new AtomicBoolean(true);
+        GeneratingContentProvider content = new GeneratingContentProvider(index ->
+        {
+            switch (index)
+            {
+                case 0:
+                    return ByteBuffer.wrap(new byte[]{'h', 'e', 'l', 'l', 'o'});
+                case 1:
+                    return ByteBuffer.wrap(new byte[]{'w', 'o', 'r', 'l', 'd'});
+                case 2:
+                    if (fail.compareAndSet(true, false))
+                    {
+                        // Wait for the 401 response to arrive
+                        // to the authentication protocol handler.
+                        sleep(1000);
+                        // Trigger request failure.
+                        throw new RuntimeException();
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                default:
+                    throw new IllegalStateException();
+            }
+        });
         CountDownLatch resultLatch = new CountDownLatch(1);
-        DeferredContentProvider content = new DeferredContentProvider();
-        Request request = client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .path("/secure")
                 .content(content)
-                .onResponseSuccess(response -> successLatch.countDown());
-        request.send(result ->
-        {
-            if (result.isFailed() && result.getResponseFailure() == null)
-                resultLatch.countDown();
-        });
+                .send(result ->
+                {
+                    if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                        resultLatch.countDown();
+                });
 
-        // Send some content to make sure the request is dispatched on the server.
-        content.offer(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
-
-        // Wait for the response to arrive to
-        // the authentication protocol handler.
-        Thread.sleep(1000);
-
-        // Trigger request failure.
-        request.abort(new Exception());
-
-        // Verify that the response was successful, it's the request that failed.
-        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    private void sleep(long time)
+    {
+        try
+        {
+            Thread.sleep(time);
+        }
+        catch (InterruptedException x)
+        {
+            throw new RuntimeException(x);
+        }
+    }
+
+    private static class GeneratingContentProvider implements ContentProvider
+    {
+        private static final ByteBuffer DONE = ByteBuffer.allocate(0);
+
+        private final IntFunction<ByteBuffer> generator;
+
+        private GeneratingContentProvider(IntFunction<ByteBuffer> generator)
+        {
+            this.generator = generator;
+        }
+
+        @Override
+        public long getLength()
+        {
+            return -1;
+        }
+
+        @Override
+        public boolean isReproducible()
+        {
+            return true;
+        }
+
+        @Override
+        public Iterator<ByteBuffer> iterator()
+        {
+            return new Iterator<ByteBuffer>()
+            {
+                private int index;
+                public ByteBuffer current;
+
+                @Override
+                public boolean hasNext()
+                {
+                    if (current == null)
+                    {
+                        current = generator.apply(index++);
+                        if (current == null)
+                            current = DONE;
+                    }
+                    return current != DONE;
+                }
+
+                @Override
+                public ByteBuffer next()
+                {
+                    ByteBuffer result = current;
+                    current = null;
+                    if (result == null)
+                        throw new NoSuchElementException();
+                    return result;
+                }
+            };
+        }
     }
 }

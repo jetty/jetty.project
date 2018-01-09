@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -73,6 +73,7 @@ public class HttpChannelState
      */
     public enum Action
     {
+        NOOP,             // No action 
         DISPATCH,         // handle a normal request dispatch
         ASYNC_DISPATCH,   // handle an async request dispatch
         ERROR_DISPATCH,   // handle a normal error
@@ -243,6 +244,8 @@ public class HttpChannelState
                         case IDLE:
                         case REGISTERED:
                             break;
+                        default:
+                            throw new IllegalStateException(getStatusStringLocked());
                     }
 
                     if (_asyncWritePossible)
@@ -269,14 +272,13 @@ public class HttpChannelState
                         case STARTED:
                         case EXPIRING:
                         case ERRORING:
-                            return Action.WAIT;
+                            _state=State.ASYNC_WAIT;
+                            return Action.NOOP;
                         case NOT_ASYNC:
-                            break;
                         default:
                             throw new IllegalStateException(getStatusStringLocked());
                     }
 
-                    return Action.WAIT;
 
                 case ASYNC_ERROR:
                     return Action.ASYNC_ERROR;
@@ -408,6 +410,7 @@ public class HttpChannelState
                 case DISPATCHED:
                 case ASYNC_IO:
                 case ASYNC_ERROR:
+                case ASYNC_WAIT:
                     break;
 
                 default:
@@ -1246,6 +1249,7 @@ public class HttpChannelState
      * Called to indicate that more content may be available,
      * but that a handling thread may need to produce (fill/parse)
      * it.  Typically called by the async read success callback.
+     * @return <code>true</code> if more content may be available
      */
     public boolean onReadPossible()
     {
@@ -1276,7 +1280,7 @@ public class HttpChannelState
     /**
      * Called to signal that a read has read -1.
      * Will wake if the read was called while in ASYNC_WAIT state
-     * @return true if woken
+     * @return <code>true</code> if woken
      */
     public boolean onReadEof()
     {

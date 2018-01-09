@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
-
 /**
  * A Utility class to help implement {@link EndPoint#write(Callback, ByteBuffer...)} by calling
  * {@link EndPoint#flush(ByteBuffer...)} until all content is written.
@@ -60,7 +59,7 @@ abstract public class WriteFlusher
         // fill the state machine
         __stateTransitions.put(StateType.IDLE, EnumSet.of(StateType.WRITING));
         __stateTransitions.put(StateType.WRITING, EnumSet.of(StateType.IDLE, StateType.PENDING, StateType.FAILED));
-        __stateTransitions.put(StateType.PENDING, EnumSet.of(StateType.COMPLETING,StateType.IDLE));
+        __stateTransitions.put(StateType.PENDING, EnumSet.of(StateType.COMPLETING, StateType.IDLE));
         __stateTransitions.put(StateType.COMPLETING, EnumSet.of(StateType.IDLE, StateType.PENDING, StateType.FAILED));
         __stateTransitions.put(StateType.FAILED, EnumSet.of(StateType.IDLE));
     }
@@ -104,29 +103,30 @@ abstract public class WriteFlusher
 
     /**
      * Tries to update the current state to the given new state.
+     *
      * @param previous the expected current state
-     * @param next the desired new state
+     * @param next     the desired new state
      * @return the previous state or null if the state transition failed
      * @throws WritePendingException if currentState is WRITING and new state is WRITING (api usage error)
      */
-    private boolean updateState(State previous,State next)
+    private boolean updateState(State previous, State next)
     {
-        if (!isTransitionAllowed(previous,next))
+        if (!isTransitionAllowed(previous, next))
             throw new IllegalStateException();
 
         boolean updated = _state.compareAndSet(previous, next);
         if (DEBUG)
-            LOG.debug("update {}:{}{}{}", this, previous, updated?"-->":"!->",next);
+            LOG.debug("update {}:{}{}{}", this, previous, updated ? "-->" : "!->", next);
         return updated;
     }
 
     private void fail(PendingState pending)
     {
         State current = _state.get();
-        if (current.getType()==StateType.FAILED)
+        if (current.getType() == StateType.FAILED)
         {
-            FailedState failed=(FailedState)current;
-            if (updateState(failed,__IDLE))
+            FailedState failed = (FailedState)current;
+            if (updateState(failed, __IDLE))
             {
                 pending.fail(failed.getCause());
                 return;
@@ -138,9 +138,9 @@ abstract public class WriteFlusher
     private void ignoreFail()
     {
         State current = _state.get();
-        while (current.getType()==StateType.FAILED)
+        while (current.getType() == StateType.FAILED)
         {
-            if (updateState(current,__IDLE))
+            if (updateState(current, __IDLE))
                 return;
             current = _state.get();
         }
@@ -209,10 +209,11 @@ abstract public class WriteFlusher
     private static class FailedState extends State
     {
         private final Throwable _cause;
+
         private FailedState(Throwable cause)
         {
             super(StateType.FAILED);
-            _cause=cause;
+            _cause = cause;
         }
 
         public Throwable getCause()
@@ -257,7 +258,7 @@ abstract public class WriteFlusher
 
         protected boolean fail(Throwable cause)
         {
-            if (_callback!=null)
+            if (_callback != null)
             {
                 _callback.failed(cause);
                 return true;
@@ -267,7 +268,7 @@ abstract public class WriteFlusher
 
         protected void complete()
         {
-            if (_callback!=null)
+            if (_callback != null)
                 _callback.succeeded();
         }
 
@@ -286,8 +287,8 @@ abstract public class WriteFlusher
     {
         State s = _state.get();
         return (s instanceof PendingState)
-                ?((PendingState)s).getCallbackInvocationType()
-                :Invocable.InvocationType.BLOCKING;
+                ? ((PendingState)s).getCallbackInvocationType()
+                : Invocable.InvocationType.BLOCKING;
     }
 
     /**
@@ -300,13 +301,13 @@ abstract public class WriteFlusher
      * Tries to switch state to WRITING. If successful it writes the given buffers to the EndPoint. If state transition
      * fails it'll fail the callback.
      *
-     * If not all buffers can be written in one go it creates a new <code>PendingState</code> object to preserve the state
+     * If not all buffers can be written in one go it creates a new {@code PendingState} object to preserve the state
      * and then calls {@link #onIncompleteFlush()}. The remaining buffers will be written in {@link #completeWrite()}.
      *
      * If all buffers have been written it calls callback.complete().
      *
      * @param callback the callback to call on either failed or complete
-     * @param buffers the buffers to flush to the endpoint
+     * @param buffers  the buffers to flush to the endpoint
      * @throws WritePendingException if unable to write due to prior pending write
      */
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
@@ -314,20 +315,20 @@ abstract public class WriteFlusher
         if (DEBUG)
             LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
 
-        if (!updateState(__IDLE,__WRITING))
+        if (!updateState(__IDLE, __WRITING))
             throw new WritePendingException();
 
         try
         {
-            buffers=flush(buffers);
+            buffers = flush(buffers);
 
             // if we are incomplete?
-            if (buffers!=null)
+            if (buffers != null)
             {
                 if (DEBUG)
                     LOG.debug("flushed incomplete");
-                PendingState pending=new PendingState(buffers, callback);
-                if (updateState(__WRITING,pending))
+                PendingState pending = new PendingState(buffers, callback);
+                if (updateState(__WRITING, pending))
                     onIncompleteFlush();
                 else
                     fail(pending);
@@ -335,25 +336,24 @@ abstract public class WriteFlusher
             }
 
             // If updateState didn't succeed, we don't care as our buffers have been written
-            if (!updateState(__WRITING,__IDLE))
+            if (!updateState(__WRITING, __IDLE))
                 ignoreFail();
-            if (callback!=null)
+            if (callback != null)
                 callback.succeeded();
         }
         catch (IOException e)
         {
             if (DEBUG)
                 LOG.debug("write exception", e);
-            if (updateState(__WRITING,__IDLE))
+            if (updateState(__WRITING, __IDLE))
             {
-                if (callback!=null)
+                if (callback != null)
                     callback.failed(e);
             }
             else
                 fail(new PendingState(buffers, callback));
         }
     }
-
 
     /**
      * Complete a write that has not completed and that called {@link #onIncompleteFlush()} to request a call to this
@@ -370,27 +370,27 @@ abstract public class WriteFlusher
 
         State previous = _state.get();
 
-        if (previous.getType()!=StateType.PENDING)
+        if (previous.getType() != StateType.PENDING)
             return; // failure already handled.
 
         PendingState pending = (PendingState)previous;
-        if (!updateState(pending,__COMPLETING))
+        if (!updateState(pending, __COMPLETING))
             return; // failure already handled.
 
         try
         {
             ByteBuffer[] buffers = pending.getBuffers();
 
-            buffers=flush(buffers);
+            buffers = flush(buffers);
 
             // if we are incomplete?
-            if (buffers!=null)
+            if (buffers != null)
             {
                 if (DEBUG)
-                    LOG.debug("flushed incomplete {}",BufferUtil.toDetailString(buffers));
-                if (buffers!=pending.getBuffers())
-                    pending=new PendingState(buffers, pending._callback);
-                if (updateState(__COMPLETING,pending))
+                    LOG.debug("flushed incomplete {}", BufferUtil.toDetailString(buffers));
+                if (buffers != pending.getBuffers())
+                    pending = new PendingState(buffers, pending._callback);
+                if (updateState(__COMPLETING, pending))
                     onIncompleteFlush();
                 else
                     fail(pending);
@@ -398,7 +398,7 @@ abstract public class WriteFlusher
             }
 
             // If updateState didn't succeed, we don't care as our buffers have been written
-            if (!updateState(__COMPLETING,__IDLE))
+            if (!updateState(__COMPLETING, __IDLE))
                 ignoreFail();
             pending.complete();
         }
@@ -406,7 +406,7 @@ abstract public class WriteFlusher
         {
             if (DEBUG)
                 LOG.debug("completeWrite exception", e);
-            if(updateState(__COMPLETING,__IDLE))
+            if (updateState(__COMPLETING, __IDLE))
                 pending.fail(e);
             else
                 fail(pending);
@@ -422,59 +422,84 @@ abstract public class WriteFlusher
      */
     protected ByteBuffer[] flush(ByteBuffer[] buffers) throws IOException
     {
-        boolean progress=true;
-        while(progress && buffers!=null)
+        boolean progress = true;
+        while (progress && buffers != null)
         {
-            int before=buffers.length==0?0:buffers[0].remaining();
-            boolean flushed=_endPoint.flush(buffers);
-            int r=buffers.length==0?0:buffers[0].remaining();
+            long before = remaining(buffers);
+            boolean flushed = _endPoint.flush(buffers);
+            long after = remaining(buffers);
+            long written = before - after;
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Flushed={} {}/{}+{} {}",flushed,before-r,before,buffers.length-1,this);
+                LOG.debug("Flushed={} written={} remaining={} {}", flushed, written, after, this);
+
+            if (written > 0)
+            {
+                Connection connection = _endPoint.getConnection();
+                if (connection instanceof Listener)
+                    ((Listener)connection).onFlushed(written);
+            }
 
             if (flushed)
                 return null;
 
-            progress=before!=r;
+            progress = written > 0;
 
-            int not_empty=0;
-            while(r==0)
+            int index = 0;
+            while (true)
             {
-                if (++not_empty==buffers.length)
+                if (index == buffers.length)
                 {
-                    buffers=null;
-                    not_empty=0;
+                    // All buffers consumed.
+                    buffers = null;
+                    index = 0;
                     break;
                 }
-                progress=true;
-                r=buffers[not_empty].remaining();
+                else
+                {
+                    int remaining = buffers[index].remaining();
+                    if (remaining > 0)
+                        break;
+                    ++index;
+                    progress = true;
+                }
             }
-
-            if (not_empty>0)
-                buffers=Arrays.copyOfRange(buffers,not_empty,buffers.length);
+            if (index > 0)
+                buffers = Arrays.copyOfRange(buffers, index, buffers.length);
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("!fully flushed {}",this);
+            LOG.debug("!fully flushed {}", this);
 
         // If buffers is null, then flush has returned false but has consumed all the data!
         // This is probably SSL being unable to flush the encrypted buffer, so return EMPTY_BUFFERS
         // and that will keep this WriteFlusher pending.
-        return buffers==null?EMPTY_BUFFERS:buffers;
+        return buffers == null ? EMPTY_BUFFERS : buffers;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Notify the flusher of a failure
+    private long remaining(ByteBuffer[] buffers)
+    {
+        if (buffers == null)
+            return 0;
+        long result = 0;
+        for (ByteBuffer buffer : buffers)
+            result += buffer.remaining();
+        return result;
+    }
+
+    /**
+     * Notify the flusher of a failure
+     *
      * @param cause The cause of the failure
      * @return true if the flusher passed the failure to a {@link Callback} instance
      */
     public boolean onFail(Throwable cause)
     {
         // Keep trying to handle the failure until we get to IDLE or FAILED state
-        while(true)
+        while (true)
         {
-            State current=_state.get();
-            switch(current.getType())
+            State current = _state.get();
+            switch (current.getType())
             {
                 case IDLE:
                 case FAILED:
@@ -487,7 +512,7 @@ abstract public class WriteFlusher
                         LOG.debug("failed: " + this, cause);
 
                     PendingState pending = (PendingState)current;
-                    if (updateState(pending,__IDLE))
+                    if (updateState(pending, __IDLE))
                         return pending.fail(cause);
                     break;
 
@@ -495,7 +520,7 @@ abstract public class WriteFlusher
                     if (DEBUG)
                         LOG.debug("failed: " + this, cause);
 
-                    if (updateState(current,new FailedState(cause)))
+                    if (updateState(current, new FailedState(cause)))
                         return false;
                     break;
             }
@@ -512,29 +537,9 @@ abstract public class WriteFlusher
         return _state.get().getType() == StateType.IDLE;
     }
 
-    public boolean isInProgress()
-    {
-        switch(_state.get().getType())
-        {
-            case WRITING:
-            case PENDING:
-            case COMPLETING:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    @Override
-    public String toString()
-    {
-        State s = _state.get();
-        return String.format("WriteFlusher@%x{%s}->%s", hashCode(), s,s instanceof PendingState?((PendingState)s).getCallback():null);
-    }
-
     public String toStateString()
     {
-        switch(_state.get().getType())
+        switch (_state.get().getType())
         {
             case WRITING:
                 return "W";
@@ -549,5 +554,34 @@ abstract public class WriteFlusher
             default:
                 return "?";
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        State s = _state.get();
+        return String.format("WriteFlusher@%x{%s}->%s", hashCode(), s, s instanceof PendingState ? ((PendingState)s).getCallback() : null);
+    }
+
+    /**
+     * <p>A listener of {@link WriteFlusher} events.</p>
+     */
+    public interface Listener
+    {
+        /**
+         * <p>Invoked when a {@link WriteFlusher} flushed bytes in a non-blocking way,
+         * as part of a - possibly larger - write.</p>
+         * <p>This method may be invoked multiple times, for example when writing a large
+         * buffer: a first flush of bytes, then the connection became TCP congested, and
+         * a subsequent flush of bytes when the connection became writable again.</p>
+         * <p>This method is never invoked concurrently, but may be invoked by different
+         * threads, so implementations may not rely on thread-local variables.</p>
+         * <p>Implementations may throw an {@link IOException} to signal that the write
+         * should fail, for example if the implementation enforces a minimum data rate.</p>
+         *
+         * @param bytes the number of bytes flushed
+         * @throws IOException if the write should fail
+         */
+        void onFlushed(long bytes) throws IOException;
     }
 }

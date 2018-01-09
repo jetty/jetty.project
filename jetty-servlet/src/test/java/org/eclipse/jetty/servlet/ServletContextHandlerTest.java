@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -38,6 +39,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionBindingEvent;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -68,6 +73,57 @@ public class ServletContextHandlerTest
 
     private static final AtomicInteger __testServlets = new AtomicInteger();
     
+    public static class MySessionHandler extends SessionHandler
+    {
+        public void checkSessionListeners (int size)
+        {
+            assertNotNull(_sessionListeners);
+            assertEquals(size, _sessionListeners.size());
+        }
+        
+        public void checkSessionAttributeListeners(int size)
+        {
+            assertNotNull(_sessionAttributeListeners);
+            assertEquals(size, _sessionAttributeListeners.size());
+        }
+        
+        public void checkSessionIdListeners(int size)
+        {
+            assertNotNull(_sessionIdListeners);
+            assertEquals(size, _sessionIdListeners.size());
+        }
+    }
+    
+    public static class MyTestSessionListener implements HttpSessionAttributeListener, HttpSessionListener
+    {
+
+        @Override
+        public void sessionCreated(HttpSessionEvent se)
+        {
+        }
+
+        @Override
+        public void sessionDestroyed(HttpSessionEvent se)
+        {
+        }
+
+        @Override
+        public void attributeAdded(HttpSessionBindingEvent event)
+        {
+        }
+
+        @Override
+        public void attributeRemoved(HttpSessionBindingEvent event)
+        {
+        }
+
+        @Override
+        public void attributeReplaced(HttpSessionBindingEvent event)
+        {            
+        }
+        
+    }
+    
     @Before
     public void createServer()
     {
@@ -83,6 +139,24 @@ public class ServletContextHandlerTest
     {
         _server.stop();
         _server.join();
+    }
+    
+    @Test
+    public void testAddSessionListener() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
+
+        MySessionHandler sessions = new MySessionHandler(); 
+        root.setSessionHandler(sessions);
+        assertNotNull(sessions);
+        
+        root.addEventListener(new MyTestSessionListener());
+        sessions.checkSessionAttributeListeners(1);
+        sessions.checkSessionIdListeners(0);
+        sessions.checkSessionListeners(1);
     }
 
     @Test

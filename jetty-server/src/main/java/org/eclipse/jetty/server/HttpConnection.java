@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,6 +40,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -49,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport, Connection.UpgradeFrom
+public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport, Connection.UpgradeFrom, WriteFlusher.Listener
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
     public static final HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.asString());
@@ -192,6 +193,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return null;
     }
 
+    @Override
+    public void onFlushed(long bytes) throws IOException
+    {
+        // Unfortunately cannot distinguish between header and content
+        // bytes, and for content bytes whether they are chunked or not.
+        _channel.getResponse().getHttpOutput().onFlushed(bytes);
+    }
+
     void releaseRequestBuffer()
     {
         if (_requestBuffer != null && !_requestBuffer.hasRemaining())
@@ -274,7 +283,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 LOG.debug("{} onFillable exit {} {}", this, _channel.getState(),BufferUtil.toDetailString(_requestBuffer));
         }
     }
-
+    
     /* ------------------------------------------------------------ */
     /** Fill and parse data looking for content
      * @return true if an {@link RequestHandler} method was called and it returned true;
@@ -472,6 +481,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             else if (getEndPoint().isOpen())
                 fillInterested();
         }
+    }
+
+    @Override
+    protected boolean onReadTimeout(Throwable timeout)
+    {
+        return _channel.onIdleTimeout(timeout);
     }
 
     @Override

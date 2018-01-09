@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -236,9 +236,12 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         int port = request.getPort();
         if (port >= 0 && getPort() != port)
             throw new IllegalArgumentException("Invalid request port " + port + " for destination " + this);
+        send(new HttpExchange(this, request, listeners));
+    }
 
-        HttpExchange exchange = new HttpExchange(this, request, listeners);
-
+    public void send(HttpExchange exchange)
+    {
+        HttpRequest request = exchange.getRequest();
         if (client.isRunning())
         {
             if (enqueue(exchanges, exchange))
@@ -335,12 +338,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                     if (LOG.isDebugEnabled())
                         LOG.debug("Send failed {} for {}", result, exchange);
                     if (result.retry)
-                    {
-                        if (enqueue(getHttpExchanges(), exchange))
-                            return true;
-                    }
-
-                    request.abort(result.failure);
+                        send(exchange);
+                    else
+                        request.abort(result.failure);
                 }
             }
             return getHttpExchanges().peek() != null;

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -163,6 +163,19 @@ public interface Stream
          */
         public void onData(Stream stream, DataFrame frame, Callback callback);
 
+        public default void onReset(Stream stream, ResetFrame frame, Callback callback)
+        {
+            try
+            {
+                onReset(stream, frame);
+                callback.succeeded();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+        }
+
         /**
          * <p>Callback method invoked when a RST_STREAM frame has been received for this stream.</p>
          *
@@ -170,7 +183,9 @@ public interface Stream
          * @param frame  the RST_FRAME received
          * @see Session.Listener#onReset(Session, ResetFrame)
          */
-        public void onReset(Stream stream, ResetFrame frame);
+        public default void onReset(Stream stream, ResetFrame frame)
+        {
+        }
 
         /**
          * <p>Callback method invoked when the stream exceeds its idle timeout.</p>

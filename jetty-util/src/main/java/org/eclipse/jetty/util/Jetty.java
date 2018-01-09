@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -56,7 +56,10 @@ public class Jetty
             LOG.ignore( e );
         }
 
-        GIT_HASH = __buildProperties.getProperty( "buildNumber", "unknown" );
+        String git_hash = __buildProperties.getProperty( "buildNumber", "unknown" );
+        if (git_hash.startsWith("${"))
+            git_hash = "unknown";
+        GIT_HASH = git_hash;
         System.setProperty( "jetty.git.hash" , GIT_HASH );
         BUILD_TIMESTAMP = formatTimestamp( __buildProperties.getProperty( "timestamp", "unknown" ));
 
@@ -90,7 +93,7 @@ public class Jetty
         }
         catch ( NumberFormatException e )
         {
-            LOG.debug( e );
+            LOG.ignore( e );
             return "unknown";
         }
     }

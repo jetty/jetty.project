@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -57,7 +57,7 @@ public interface MappedWebSocketCreator
     /**
      * Returns the creator for the given path spec.
      *
-     * @param spec @param spec the spec to test for (using the same spec syntax as seen in {@link #addMapping(String, WebSocketCreator)})
+     * @param spec the spec to test for (using the same spec syntax as seen in {@link #addMapping(String, WebSocketCreator)})
      * @return the websocket creator if path spec exists, or null
      */
     WebSocketCreator getMapping(String spec);

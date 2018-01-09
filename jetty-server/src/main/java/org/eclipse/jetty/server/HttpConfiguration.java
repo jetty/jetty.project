@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -67,6 +67,7 @@ public class HttpConfiguration
     private int _maxErrorDispatches = 10;
     private boolean _useDirectByteBuffers = false;
     private long _minRequestDataRate;
+    private long _minResponseDataRate;
     private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
     private boolean _notifyRemoteAsyncErrors = true;
 
@@ -129,6 +130,7 @@ public class HttpConfiguration
         _maxErrorDispatches=config._maxErrorDispatches;
         _useDirectByteBuffers=config._useDirectByteBuffers;
         _minRequestDataRate=config._minRequestDataRate;
+        _minResponseDataRate=config._minResponseDataRate;
         _cookieCompliance=config._cookieCompliance;
         _notifyRemoteAsyncErrors=config._notifyRemoteAsyncErrors;
     }
@@ -512,7 +514,29 @@ public class HttpConfiguration
     {
         _minRequestDataRate=bytesPerSecond;
     }
-    
+
+    /**
+     * @return The minimum response data rate in bytes per second; or &lt;=0 for no limit
+     */
+    @ManagedAttribute("The minimum response content data rate in bytes per second")
+    public long getMinResponseDataRate()
+    {
+        return _minResponseDataRate;
+    }
+
+    /**
+     * <p>Sets an minimum response content data rate.</p>
+     * <p>The value is enforced only approximately - not precisely - due to the fact that
+     * for efficiency reasons buffer writes may be comprised of both response headers and
+     * response content.</p>
+     *
+     * @param bytesPerSecond The minimum response data rate in bytes per second; or &lt;=0 for no limit
+     */
+    public void setMinResponseDataRate(long bytesPerSecond)
+    {
+        _minResponseDataRate = bytesPerSecond;
+    }
+
     public CookieCompliance getCookieCompliance()
     {
         return _cookieCompliance;

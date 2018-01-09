@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -163,12 +163,12 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onReset(Stream stream, ResetFrame frame)
+        public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
             ErrorCode error = ErrorCode.from(frame.getError());
             if (error == null)
                 error = ErrorCode.CANCEL_STREAM_ERROR;
-            getConnection().onStreamFailure((IStream)stream, new EofException("HTTP/2 " + error), Callback.NOOP);
+            getConnection().onStreamFailure((IStream)stream, new EofException("HTTP/2 " + error), callback);
         }
 
         @Override

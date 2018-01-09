@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.client.util.PathContentProvider;
 
@@ -47,6 +48,22 @@ public interface ContentProvider extends Iterable<ByteBuffer>
      * @return the content length, if known, or -1 if the content length is unknown
      */
     long getLength();
+
+    /**
+     * <p>Whether this ContentProvider can produce exactly the same content more
+     * than once.</p>
+     * <p>Implementations should return {@code true} only if the content can be
+     * produced more than once, which means that invocations to {@link #iterator()}
+     * must return a new, independent, iterator instance over the content.</p>
+     * <p>The {@link HttpClient} implementation may use this method in particular
+     * cases where it detects that it is safe to retry a request that failed.</p>
+     *
+     * @return whether the content can be produced more than once
+     */
+    default boolean isReproducible()
+    {
+        return false;
+    }
 
     /**
      * An extension of {@link ContentProvider} that provides a content type string

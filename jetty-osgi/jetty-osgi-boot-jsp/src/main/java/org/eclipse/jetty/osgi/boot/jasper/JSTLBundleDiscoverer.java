@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -120,7 +120,7 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
      * Unsupported: the bundle is a jar that embeds more jars.
      * 
      * @return array of URLs
-     * @throws Exception
+     * @throws Exception In case of errors during resolving TLDs files
      */
     public URL[] getUrlsForBundlesWithTlds(DeploymentManager deployer, BundleFileLocatorHelper locatorHelper) throws Exception
     {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -314,9 +314,10 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    protected String legacyString(String orig, String cached)
+    protected String caseInsensitiveHeader(String orig, String normative)
     {                   
-        return (_compliance!=LEGACY || orig.equals(cached) || complianceViolation(RFC2616,"case sensitive"))?cached:orig;
+        return (_compliance!=LEGACY || orig.equals(normative) || complianceViolation(RFC2616,"https://tools.ietf.org/html/rfc2616#section-4.2 case sensitive header: "+orig))
+                ?normative:orig;
     }
     
     /* ------------------------------------------------------------------------------- */
@@ -629,9 +630,27 @@ public class HttpParser
                     {
                         _length=_string.length();
                         _methodString=takeString();
+
+                        // TODO #1966 This cache lookup is case insensitive when it should be case sensitive by RFC2616, RFC7230
                         HttpMethod method=HttpMethod.CACHE.get(_methodString);
                         if (method!=null)
-                            _methodString=legacyString(_methodString,method.asString());
+                        {
+                            switch(_compliance)
+                            {
+                                case LEGACY:
+                                    // Legacy correctly allows case sensitive header;
+                                    break;
+
+                                case RFC2616:
+                                case RFC7230:
+                                    if (!method.asString().equals(_methodString) && _complianceHandler!=null)
+                                        _complianceHandler.onComplianceViolation(_compliance,HttpCompliance.LEGACY,
+                                                "https://tools.ietf.org/html/rfc7230#section-3.1.1 case insensitive method "+_methodString);
+                                    // TODO Good to used cached version for faster equals checking, but breaks case sensitivity because cache is insensitive
+                                    _methodString = method.asString();  
+                                    break;
+                            }                       
+                        }
                         setState(State.SPACE1);
                     }
                     else if (b < SPACE)
@@ -732,7 +751,7 @@ public class HttpParser
                     else if (b < HttpTokens.SPACE && b>=0)
                     {
                         // HTTP/0.9
-                        if (complianceViolation(RFC7230,"HTTP/0.9"))
+                        if (complianceViolation(RFC7230,"https://tools.ietf.org/html/rfc7230#appendix-A.2 HTTP/0.9"))
                             throw new BadMessageException("HTTP/0.9 not supported");
                         handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
                         setState(State.END);
@@ -799,7 +818,7 @@ public class HttpParser
                         else
                         {
                             // HTTP/0.9
-                            if (complianceViolation(RFC7230,"HTTP/0.9"))
+                            if (complianceViolation(RFC7230,"https://tools.ietf.org/html/rfc7230#appendix-A.2 HTTP/0.9"))
                                 throw new BadMessageException("HTTP/0.9 not supported");
 
                             handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
@@ -917,7 +936,7 @@ public class HttpParser
                         _host=true;
                         if (!(_field instanceof HostPortHttpField) && _valueString!=null && !_valueString.isEmpty())
                         {
-                            _field=new HostPortHttpField(_header,legacyString(_headerString,_header.asString()),_valueString);
+                            _field=new HostPortHttpField(_header,caseInsensitiveHeader(_headerString,_header.asString()),_valueString);
                             add_to_connection_trie=_fieldCache!=null;
                         }
                       break;
@@ -946,7 +965,7 @@ public class HttpParser
                 if (add_to_connection_trie && !_fieldCache.isFull() && _header!=null && _valueString!=null)
                 {
                     if (_field==null)
-                        _field=new HttpField(_header,legacyString(_headerString,_header.asString()),_valueString);
+                        _field=new HttpField(_header,caseInsensitiveHeader(_headerString,_header.asString()),_valueString);
                     _fieldCache.put(_field);
                 }
             }
@@ -1014,7 +1033,7 @@ public class HttpParser
                         case HttpTokens.SPACE:
                         case HttpTokens.TAB:
                         {
-                            if (complianceViolation(RFC7230,"header folding"))
+                            if (complianceViolation(RFC7230,"https://tools.ietf.org/html/rfc7230#section-3.2.4 folding"))
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Header Folding");
 
                             // header value without name - continuation?
@@ -1137,13 +1156,13 @@ public class HttpParser
                                     {
                                         // Have to get the fields exactly from the buffer to match case
                                         String fn=field.getName();
-                                        n=legacyString(BufferUtil.toString(buffer,buffer.position()-1,fn.length(),StandardCharsets.US_ASCII),fn);
+                                        n=caseInsensitiveHeader(BufferUtil.toString(buffer,buffer.position()-1,fn.length(),StandardCharsets.US_ASCII),fn);
                                         String fv=field.getValue();
                                         if (fv==null)
                                             v=null;
                                         else
                                         {
-                                            v=legacyString(BufferUtil.toString(buffer,buffer.position()+fn.length()+1,fv.length(),StandardCharsets.ISO_8859_1),fv);
+                                            v=caseInsensitiveHeader(BufferUtil.toString(buffer,buffer.position()+fn.length()+1,fv.length(),StandardCharsets.ISO_8859_1),fv);
                                             field=new HttpField(field.getHeader(),n,v);
                                         }
                                     }
@@ -1236,7 +1255,7 @@ public class HttpParser
                         break;
                     }
                     
-                    if (b==HttpTokens.LINE_FEED && !complianceViolation(RFC7230,"name only header"))
+                    if (b==HttpTokens.LINE_FEED && !complianceViolation(RFC7230,"https://tools.ietf.org/html/rfc7230#section-3.2 No colon"))
                     {
                         if (_headerString==null)
                         {

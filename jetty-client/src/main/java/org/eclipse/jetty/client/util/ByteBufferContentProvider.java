@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -58,6 +58,12 @@ public class ByteBufferContentProvider extends AbstractTypedContentProvider
     }
 
     @Override
+    public boolean isReproducible()
+    {
+        return true;
+    }
+
+    @Override
     public Iterator<ByteBuffer> iterator()
     {
         return new Iterator<ByteBuffer>()
@@ -84,12 +90,6 @@ public class ByteBufferContentProvider extends AbstractTypedContentProvider
                 {
                     throw new NoSuchElementException();
                 }
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
             }
         };
     }

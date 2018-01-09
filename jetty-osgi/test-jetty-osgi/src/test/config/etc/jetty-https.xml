@@ -16,11 +16,18 @@
       </New>
     </Arg>
   </Call>
-
+        <Call name="addLifeCycleListener">
+          <Arg>
+            <New class="org.eclipse.jetty.osgi.boot.utils.ServerConnectorListener">
+              <Set name="sysPropertyName">boot.https.port</Set>
+            </New>
+          </Arg>
+        </Call>
   <Call name="addConnectionFactory">
     <Arg>
       <New class="org.eclipse.jetty.server.HttpConnectionFactory">
         <Arg name="config"><Ref refid="sslHttpConfig" /></Arg>
+        <Arg name="compliance"><Call class="org.eclipse.jetty.http.HttpCompliance" name="valueOf"><Arg><Property name="jetty.http.compliance" default="RFC7230"/></Arg></Call></Arg>
       </New>
     </Arg>
   </Call>

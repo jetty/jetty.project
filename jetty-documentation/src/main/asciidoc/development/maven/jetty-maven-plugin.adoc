@@ -116,7 +116,7 @@ soLinger;;
 The socket linger time.
 +
 You could instead configure the connectors in a standard link:#jetty-xml-config[jetty xml config file] and put its location into the `jettyXml` parameter.
-Note that since jetty-9.0 it is no longer possible to configure a link:#maven-config-https[https connector] directly in the pom.xml: you need to link:#maven-config-https[use jetty xml config files to do it].
+Note that since Jetty 9.0 it is no longer possible to configure a link:#maven-config-https[https connector] directly in the pom.xml: you need to link:#maven-config-https[use jetty xml config files to do it].
 jettyXml::
 Optional.
 A comma separated list of locations of Jetty xml files to apply in addition to any plugin configuration parameters.
@@ -356,7 +356,7 @@ Any changes you make are immediately reflected in the running instance of Jetty,
 
 ____
 [NOTE]
-As of jetty-9.4.7, when using jetty:run in a multi-module build, it is no longer necessary to build each of the modules that form dependencies of the webapp first.
+As of Jetty 9.4.7, when using jetty:run in a multi-module build, it is no longer necessary to build each of the modules that form dependencies of the webapp first.
 Thus, if your webapp depends on other modules in your project and they are present in the reactor at the same time, jetty will use their compiled classes rather than their jar files from your local maven repository.
 ____
 
@@ -620,7 +620,7 @@ This is maximum number of times the parent process checks to see if the child pr
 Only relevant if `waitForChild` is `false`.
 maxChildCheckInterval::
 Default is `100`.
-This is the time in milliseconds between checks to see if the child process has started. 
+This is the time in milliseconds between checks to see if the child process has started.
 Only relevant if `waitForChild` is `false`.
 forkWebXml::
 Default is `target/fork-web.xml`.
@@ -675,18 +675,18 @@ ____
 [[jetty-run-distro-goal]]
 ==== jetty:run-distro
 
-Introduced in jetty-9.4.8, this goal allows you to execute your unassembled webapp in a local distribution of jetty.
+Introduced in Jetty 9.4.8, this goal allows you to execute your unassembled webapp in a local distribution of Jetty.
 This can be useful if your webapp requires a highly customized environment in which to run.
-If your webapp is designed to run in the jetty distribution in production, then this goal is the closest approximation to that environment. 
+If your webapp is designed to run in the jetty distribution in production, then this goal is the closest approximation to that environment.
 
-Similar to the jetty:run-forked goal, this goal will fork a child process in which to execute your webapp in the distro.
+Similar to the `jetty:run-forked` goal, this goal will fork a child process in which to execute your webapp in the distro.
 
 ===== Configuration
 
 The configuration parameters are mostly the same as the `jetty:run` goal (although see below for some exceptions), with the addition of:
 
 jettyBase::
-Optional. 
+Optional.
 The location of an existing jetty base directory to use to deploy the webapp.
 The existing base will be copied to the `target/` directory before the webapp is deployed.
 If there is no existing jetty base, a fresh one will be made in `target/jetty-base`.
@@ -719,7 +719,7 @@ Only applicable if `waitForChild` is `false`.
 
 ____
 [NOTE]
-Use the `modules` parameter to configure the jetty distribution appropriately rather than using jetty artifacts as `plugin dependencies`.
+Use the `modules` parameter to configure the Jetty distribution appropriately rather than using jetty artifacts as `plugin dependencies`.
 ____
 
 The following `jetty:run` parameters are *NOT* applicable to this goal:
@@ -772,6 +772,7 @@ Here's an example of using the configuration parameters:
       <modules>
        <module>apache-jsp</module>
        <module>apache-jstl</module>
+       <module>jmx</module>
       </modules>
       <jettyProperties>
         <jettyProperty>jetty.server.dumpAfterStart=true</jettyProperty>
@@ -787,6 +788,13 @@ Here's an example of using the configuration parameters:
 </project>
 
 ----
+
+____
+[NOTE]
+When defining modules for this goal, use the standard link:#startup-modules[Jetty module] names and not the name of the related Jetty sub-project.
+For example, in the configuration above support for JMX is configured by adding the `jmx` Jetty module and not the `jetty-jmx` sub-project.
+____
+
 
 To deploy your unassembled web app to jetty running as a local distribution:
 

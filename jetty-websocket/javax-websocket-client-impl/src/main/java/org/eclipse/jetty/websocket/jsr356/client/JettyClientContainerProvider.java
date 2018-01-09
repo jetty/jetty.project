@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,6 @@ import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 
 /**
  * Client {@link ContainerProvider} implementation.
- * <p>
  * <p>
  * Created by a {@link java.util.ServiceLoader} call in the
  * {@link javax.websocket.ContainerProvider#getWebSocketContainer()} call.
@@ -85,7 +84,6 @@ public class JettyClientContainerProvider extends ContainerProvider
      * Add ability of calls to {@link ContainerProvider#getWebSocketContainer()} to
      * find and return the {@link javax.websocket.server.ServerContainer} from the
      * active {@code javax.servlet.ServletContext}.
-     * <p>
      * <p>
      * This will only work if the call to {@link ContainerProvider#getWebSocketContainer()}
      * occurs within a thread being processed by the Servlet container.

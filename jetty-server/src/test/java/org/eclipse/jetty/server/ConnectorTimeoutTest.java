@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -601,7 +601,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         long start = System.currentTimeMillis();
         try
         {
-            IO.toString(is);
+            String response = IO.toString(is);
+            Assert.assertThat(response,Matchers.is(""));
             Assert.assertEquals(-1, is.read());
         }
         catch(SSLException e)
@@ -629,12 +630,13 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         long start = System.currentTimeMillis();
         try
         {
-            IO.toString(is);
+            String response = IO.toString(is);
+            Assert.assertThat(response,Matchers.is(""));
             Assert.assertEquals(-1, is.read());
         }
         catch(SSLException e)
         {
-            // e.printStackTrace();
+            e.printStackTrace();
         }
         catch(Exception e)
         {
@@ -644,6 +646,88 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
     }
 
+    @Test(timeout=60000)
+    public void testMaxIdleDelayedDispatch() throws Exception
+    {
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+        InputStream is=client.getInputStream();
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        os.write((
+            "GET / HTTP/1.1\r\n"+
+            "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+            "connection: keep-alive\r\n"+
+            "Content-Length: 20\r\n"+
+            "Content-Type: text/plain\r\n"+
+            "Connection: close\r\n"+
+            "\r\n").getBytes("utf-8"));
+        os.flush();
+
+        long start = System.currentTimeMillis();
+        try
+        {
+            String response = IO.toString(is);
+            Assert.assertThat(response,Matchers.containsString("500"));
+            Assert.assertEquals(-1, is.read());
+        }
+        catch(SSLException e)
+        {
+            e.printStackTrace();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        int duration = (int)(System.currentTimeMillis() - start);
+        Assert.assertThat(duration,Matchers.greaterThanOrEqualTo(MAX_IDLE_TIME));
+        Assert.assertThat(duration,Matchers.lessThan(maximumTestRuntime));
+    }
+    
+    @Test(timeout=60000)
+    public void testMaxIdleDispatch() throws Exception
+    {
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+        InputStream is=client.getInputStream();
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        os.write((
+            "GET / HTTP/1.1\r\n"+
+            "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+            "connection: keep-alive\r\n"+
+            "Content-Length: 20\r\n"+
+            "Content-Type: text/plain\r\n"+
+            "Connection: close\r\n"+
+            "\r\n"+
+            "1234567890").getBytes("utf-8"));
+        os.flush();
+
+        long start = System.currentTimeMillis();
+        try
+        {
+            String response = IO.toString(is);
+            Assert.assertThat(response,Matchers.containsString("500"));
+            Assert.assertEquals(-1, is.read());
+        }
+        catch(SSLException e)
+        {
+            e.printStackTrace();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        int duration = (int)(System.currentTimeMillis() - start);
+        Assert.assertThat(duration,Matchers.greaterThanOrEqualTo(MAX_IDLE_TIME));
+        Assert.assertThat(duration,Matchers.lessThan(maximumTestRuntime));
+    }
+    
+    
     @Test(timeout=60000)
     public void testMaxIdleWithSlowRequest() throws Exception
     {

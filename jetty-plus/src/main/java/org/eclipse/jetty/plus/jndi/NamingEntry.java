@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -60,7 +60,7 @@ public abstract class NamingEntry
      * 
      * @param scope an object representing the scope of the name to be bound into jndi, where null means jvm scope.
      * @param jndiName the name that will be associated with an object bound into jndi
-     * @throws NamingException
+     * @throws NamingException if jndiName is null
      */
     protected NamingEntry (Object scope, String jndiName)
     throws NamingException

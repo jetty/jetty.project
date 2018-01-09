@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -86,7 +86,10 @@ public class TestJettyOSGiBootWithJsp
         xmlConfigs.append(";");
         if (ssl)
         {
+
             xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
+            xmlConfigs.append(";");
+            xmlConfigs.append(new File(etc, "jetty-alpn.xml").toURI());
             xmlConfigs.append(";");
             xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
             xmlConfigs.append(";");
@@ -129,7 +132,6 @@ public class TestJettyOSGiBootWithJsp
     @Test
     public void testJspDump() throws Exception
     {
-        // TestOSGiUtil.debugBundles(bundleContext);
         HttpClient client = new HttpClient();
         try
         {

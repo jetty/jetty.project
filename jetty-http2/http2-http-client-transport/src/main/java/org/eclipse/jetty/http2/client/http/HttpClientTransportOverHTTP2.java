@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -62,12 +62,18 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         });
     }
 
+    public HTTP2Client getHTTP2Client()
+    {
+        return client;
+    }
+
     @ManagedAttribute(value = "The number of selectors", readonly = true)
     public int getSelectors()
     {
         return client.getSelectors();
     }
 
+    @ManagedAttribute(value = "Whether ALPN should be used when establishing connections")
     public boolean isUseALPN()
     {
         return useALPN;

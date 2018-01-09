@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -184,7 +184,7 @@ public class ServerSupport
         if (files == null || files.isEmpty())
             return server;
 
-        Map<String,Object> lastMap = new HashMap<String,Object>();
+        Map<String,Object> lastMap = new HashMap<>();
 
         if (server != null)
             lastMap.put("Server", server);
@@ -232,7 +232,7 @@ public class ServerSupport
      * @param files the xml configs to apply
      * @return the Server after application of configs
      * 
-     * @throws Exception
+     * @throws Exception if unable to apply the xml configuration
      */
     public static Server applyXmlConfigurations (Server server, List<File> files) 
             throws Exception

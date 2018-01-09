@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -389,9 +389,10 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
 
     /**
      * Event for no activity on connection (read or write)
+     * @return true to signal that the endpoint must be closed, false to keep the endpoint open
      */
     @Override
-    protected boolean onReadTimeout()
+    protected boolean onReadTimeout(Throwable timeout)
     {
         channel.processError(new WebSocketTimeoutException("Timeout on Read"));
         return false;

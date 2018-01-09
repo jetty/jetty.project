@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,57 +27,105 @@ import java.util.regex.Pattern;
  */
 public class JavaVersion
 {
-    
     /**
      * Context attribute that can be set to target a different version of the jvm than the current runtime.
      * Acceptable values should correspond to those returned by JavaVersion.getPlatform().
      */
     public static final String JAVA_TARGET_PLATFORM = "org.eclipse.jetty.javaTargetPlatform";
     
-    // Copy of version in jetty-start
+    /** Regex for Java version numbers */
+    private static final String VNUM = "(?<VNUM>[1-9][0-9]*(?:(?:\\.0)*\\.[0-9]+)*)";
+    private static final String UPDATE = "(?:(?<UNDERSCORE>_)(?<UPDATE>[0-9]+))?";
+    private static final String PRE = "(?:-(?<PRE>[a-zA-Z0-9]+))?";
+    private static final String BUILD = "(?:(?<PLUS>\\+)(?<BUILD>[0-9]+))?";
+    private static final String OPT = "(?:-(?<OPT>[-a-zA-Z0-9.]+))?";
 
-    private static final Pattern PRE_JDK9 = Pattern.compile("1\\.(\\d)(\\.(\\d+)(_(\\d+))?)?(-.+)?");
-    // Regexp from JEP 223 (http://openjdk.java.net/jeps/223).
-    private static final Pattern JDK9 = Pattern.compile("(\\d+)(\\.(\\d+))?(\\.(\\d+))?((-.+)?(\\+(\\d+)?(-.+)?)?)");
+    private static final String VSTR_FORMAT = VNUM + UPDATE + PRE + BUILD + OPT;
 
-    public static final JavaVersion VERSION = parse(System.getProperty("java.version"));
+    static final Pattern VSTR_PATTERN = Pattern.compile(VSTR_FORMAT);
+    
+    public static final JavaVersion VERSION = parse(System.getProperty("java.runtime.version",System.getProperty("java.version")));
 
-    public static JavaVersion parse(String version)
+    public static JavaVersion parse(String v) 
     {
-        if (version.startsWith("1."))
-            return parsePreJDK9(version);
-        return parseJDK9(version);
+        Matcher m = VSTR_PATTERN.matcher(v);
+        if (!m.matches())
+            throw new IllegalArgumentException("Invalid version string: '" + v + "'");
+        
+        // $VNUM is a dot-separated list of integers of arbitrary length
+        String[] split = m.group("VNUM").split("\\.");
+        int[] version = new int[split.length];
+        for (int i = 0; i < split.length; i++)
+            version[i] = Integer.parseInt(split[i]);
+
+        if (m.group("UNDERSCORE")!=null)
+        {
+            return new JavaVersion(
+                    v,
+                    (version[0]>=9 || version.length==1)?version[0]:version[1],
+                    version[0],
+                    version.length>1?version[1]:0,
+                    version.length>2?version[2]:0,
+                    Integer.parseInt(m.group("UPDATE")),
+                    suffix(version,m.group("PRE"),m.group("OPT"))
+                    );
+        }
+        
+        if (m.group("PLUS")!=null)
+        {
+            return new JavaVersion(
+                    v,
+                    (version[0]>=9 || version.length==1)?version[0]:version[1],
+                    version[0],
+                    version.length>1?version[1]:0,
+                    version.length>2?version[2]:0,
+                    Integer.parseInt(m.group("BUILD")),
+                    suffix(version,m.group("PRE"),m.group("OPT"))
+                    );
+        }
+
+        return new JavaVersion(
+                v,
+                (version[0]>=9 || version.length==1)?version[0]:version[1],
+                version[0],
+                version.length>1?version[1]:0,
+                version.length>2?version[2]:0,
+                0,
+                suffix(version,m.group("PRE"),m.group("OPT"))
+                );
+        
     }
 
-    private static JavaVersion parsePreJDK9(String version)
+    private static String suffix(int[] version, String pre, String opt)
     {
-        Matcher matcher = PRE_JDK9.matcher(version);
-        if (!matcher.matches())
-            throw new IllegalArgumentException("Invalid Java version " + version);
-        int major = 1;
-        int minor = Integer.parseInt(matcher.group(1));
-        String microGroup = matcher.group(3);
-        int micro = microGroup == null || microGroup.isEmpty() ? 0 : Integer.parseInt(microGroup);
-        String updateGroup = matcher.group(5);
-        int update = updateGroup == null || updateGroup.isEmpty() ? 0 : Integer.parseInt(updateGroup);
-        String suffix = matcher.group(6);
-        return new JavaVersion(version, minor, major, minor, micro, update, suffix);
+        StringBuilder buf = new StringBuilder();
+        for (int i=3;i<version.length;i++)
+        {
+            if (i>3)
+                buf.append(".");
+            buf.append(version[i]);
+        }
+               
+        if (pre!=null)
+        {
+            if (buf.length()>0)
+                buf.append('-');
+            buf.append(pre);
+        }
+        
+        if (opt!=null)
+        {
+            if (buf.length()>0)
+                buf.append('-');
+            buf.append(opt);
+        }
+        
+        if (buf.length()==0)
+            return null;
+        
+        return buf.toString();
     }
-
-    private static JavaVersion parseJDK9(String version)
-    {
-        Matcher matcher = JDK9.matcher(version);
-        if (!matcher.matches())
-            throw new IllegalArgumentException("Invalid Java version " + version);
-        int major = Integer.parseInt(matcher.group(1));
-        String minorGroup = matcher.group(3);
-        int minor = minorGroup == null || minorGroup.isEmpty() ? 0 : Integer.parseInt(minorGroup);
-        String microGroup = matcher.group(5);
-        int micro = microGroup == null || microGroup.isEmpty() ? 0 : Integer.parseInt(microGroup);
-        String suffix = matcher.group(6);
-        return new JavaVersion(version, major, major, minor, micro, 0, suffix);
-    }
-
+    
     private final String version;
     private final int platform;
     private final int major;
@@ -136,7 +184,7 @@ public class JavaVersion
     }
 
     /**
-     * <p>Returns the micro number version, such as {@code 0} for JDK 1.8.0_92 and {@code 4} for JDK 9.2.4.</p>
+     * <p>Returns the micro number version (aka security number), such as {@code 0} for JDK 1.8.0_92 and {@code 4} for JDK 9.2.4.</p>
      *
      * @return the micro number version
      */
