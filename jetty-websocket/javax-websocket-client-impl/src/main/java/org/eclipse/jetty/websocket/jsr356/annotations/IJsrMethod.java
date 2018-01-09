@@ -70,7 +70,7 @@ public interface IJsrMethod
     /**
      * The message decoder class to use.
      * 
-     * @param decoderClass
+     * @param decoderClass the {@link Decoder} implementation to use
      */
     void setMessageDecoder(Class<? extends Decoder> decoderClass);
 

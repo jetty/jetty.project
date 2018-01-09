@@ -184,8 +184,9 @@ public class LdapLoginModule extends AbstractLoginModule
         Attributes attributes;
 
         /**
-         * @param userName
-         * @param credential
+         * @param userName the user name
+         * @param credential the credential
+         * @param attributes the user {@link Attributes}
          */
         public LDAPUserInfo(String userName, Credential credential, Attributes attributes)
         {
@@ -266,25 +267,21 @@ public class LdapLoginModule extends AbstractLoginModule
      * NOTE: this is not an user authenticated operation
      *
      * @param username
-     * @return
+     * @return the {@link Attributes} from the user
      * @throws LoginException
      */
     private Attributes getUserAttributes(String username) throws LoginException
     {
-        Attributes attributes = null;
-
-        SearchResult result;
         try
         {
-            result = findUser(username);
-            attributes = result.getAttributes();
+            SearchResult result = findUser(username);
+            Attributes attributes = result.getAttributes();
+            return attributes;
         }
         catch (NamingException e)
         {
             throw new LoginException("Root context binding failure.");
         }
-
-        return attributes;
     }
 
     private String getUserCredentials(Attributes attributes) throws LoginException

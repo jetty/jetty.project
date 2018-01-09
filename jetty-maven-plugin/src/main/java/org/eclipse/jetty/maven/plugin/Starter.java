@@ -240,7 +240,7 @@ public class Starter
     }
     
     /**
-     * @param args
+     * @param args Starter arguments
      */
     public static final void main(String[] args)
     {

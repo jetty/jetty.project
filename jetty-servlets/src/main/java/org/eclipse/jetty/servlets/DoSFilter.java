@@ -512,6 +512,9 @@ public class DoSFilter implements Filter
 
     /**
      * @deprecated use {@link #onRequestTimeout(HttpServletRequest, HttpServletResponse, Thread)} instead
+     * @param request  the current request
+     * @param response the current response
+     * @param thread the handling thread
      */
     @Deprecated
     protected void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)

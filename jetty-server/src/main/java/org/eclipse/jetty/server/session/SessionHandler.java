@@ -1006,7 +1006,7 @@ public class SessionHandler extends ScopedHandler
     
     
     /**
-     * @param cache
+     * @param cache the session store to use
      */
     public void setSessionCache (SessionCache cache)
     {
@@ -1294,7 +1294,7 @@ public class SessionHandler extends ScopedHandler
      * configurable amount of time, or the session itself
      * has passed its expiry.
      * 
-     * @param session
+     * @param session the session
      */
     public void sessionInactivityTimerExpired (Session session)
     {
@@ -1349,8 +1349,8 @@ public class SessionHandler extends ScopedHandler
      * 
      * @param id identity of session to check
      * 
-     * @return true if this manager knows about this id
-     * @throws Exception 
+     * @return <code>true</code> if this manager knows about this id
+     * @throws Exception  if any error occurred
      */
     public boolean isIdInUse(String id) throws Exception
     {

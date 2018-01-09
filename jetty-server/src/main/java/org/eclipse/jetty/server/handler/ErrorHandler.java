@@ -152,6 +152,8 @@ public class ErrorHandler extends AbstractHandler
      * @param baseRequest The base request
      * @param request The servlet request (may be wrapped)
      * @param response The response (may be wrapped)
+     * @param code the http error code
+     * @param message the http error message
      * @throws IOException if the response cannot be generated
      */
     protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message)
@@ -230,6 +232,8 @@ public class ErrorHandler extends AbstractHandler
      * @param baseRequest The base request
      * @param request The servlet request (may be wrapped)
      * @param response The response (may be wrapped)
+     * @param code the http error code
+     * @param message the http error message
      * @param mimeType The mimetype to generate (may be *&#47;*or other wildcard)
      * @throws IOException if a response cannot be generated
      */
