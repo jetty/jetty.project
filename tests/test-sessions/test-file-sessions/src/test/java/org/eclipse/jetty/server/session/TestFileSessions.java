@@ -117,6 +117,17 @@ public class TestFileSessions extends AbstractTestBase
             FileTestHelper.createFile(nonExpired);
             FileTestHelper.assertFileExists(nonExpired, true);
             
+            //create a file that is a never-expire session file for our context that should be ignored
+            String neverExpired = "0_test_0.0.0.0_sessionc";
+            FileTestHelper.createFile(neverExpired);
+            FileTestHelper.assertFileExists(neverExpired, true);
+            
+            //create a file that is a never-expire session file for another context that should be ignored
+            String foreignNeverExpired = "0_test_0.0.0.0_sessionc";
+            FileTestHelper.createFile(foreignNeverExpired);
+            FileTestHelper.assertFileExists(foreignNeverExpired, true);
+            
+            
             //need to wait to ensure scavenge runs so sweeper runs
             Thread.currentThread().sleep(2000L*scavengePeriod);
             FileTestHelper.assertSessionExists("sessiona", false);
@@ -124,6 +135,8 @@ public class TestFileSessions extends AbstractTestBase
             FileTestHelper.assertFileExists(nonExpired, true);
             FileTestHelper.assertFileExists(nonExpiredForeign, true);
             FileTestHelper.assertFileExists(expiredForeign, true);
+            FileTestHelper.assertFileExists(neverExpired, true);
+            FileTestHelper.assertFileExists(foreignNeverExpired, true);
         }
         finally
         {
