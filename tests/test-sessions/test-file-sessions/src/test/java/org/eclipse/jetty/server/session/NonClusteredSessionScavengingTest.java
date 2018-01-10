@@ -47,7 +47,7 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
     @Override
     public void assertSession(String id, boolean exists)
     {
-        FileTestHelper.assertFileExists(id, exists);
+        FileTestHelper.assertSessionExists(id, exists);
         
     }
 
