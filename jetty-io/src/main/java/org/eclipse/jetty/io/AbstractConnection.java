@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -167,7 +167,7 @@ public abstract class AbstractConnection implements Connection
         {
             boolean close = true;
             if (cause instanceof TimeoutException)
-                close = onReadTimeout();
+                close = onReadTimeout(cause);
             if (close)
             {
                 if (_endPoint.isOutputShutdown())
@@ -183,9 +183,11 @@ public abstract class AbstractConnection implements Connection
 
     /**
      * <p>Callback method invoked when the endpoint failed to be ready to be read after a timeout</p>
+     *
+     * @param timeout the cause of the read timeout
      * @return true to signal that the endpoint must be closed, false to keep the endpoint open
      */
-    protected boolean onReadTimeout()
+    protected boolean onReadTimeout(Throwable timeout)
     {
         return true;
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,14 +52,14 @@ public class UnreadableSessionDataException extends Exception
 
 
     /**
-     * @param id
-     * @param contextId
-     * @param t
+     * @param id the session id
+     * @param sessionContext the sessionContext
+     * @param t the cause of the exception
      */
-    public UnreadableSessionDataException (String id, SessionContext contextId, Throwable t)
+    public UnreadableSessionDataException (String id, SessionContext sessionContext, Throwable t)
     {
-        super ("Unreadable session "+id+" for "+contextId, t);
-        _sessionContext = contextId;
+        super ("Unreadable session "+id+" for "+sessionContext, t);
+        _sessionContext = sessionContext;
         _id = id;
     }
 }

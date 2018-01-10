@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -177,7 +177,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * look at the java.class.path, and the jdk.module.path.
      * 
      * @param context the WebAppContext being deployed
-     * @throws Exception
+     * @throws Exception if unable to apply optional filtering on the container's classpath
      */
     public void findAndFilterContainerPaths (final WebAppContext context)
     throws Exception
@@ -287,7 +287,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * all jars are considered selected.
      * 
      * @param context the WebAppContext being deployed
-     * @throws Exception
+     * @throws Exception if unable to find the jars or apply filtering
      */
     public void findAndFilterWebAppPaths (WebAppContext context)
     throws Exception

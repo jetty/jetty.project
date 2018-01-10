@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
@@ -146,9 +147,9 @@ public class HttpChannelAssociationTest extends AbstractTest
                         return new HttpConnectionOverHTTP2(destination, session)
                         {
                             @Override
-                            protected HttpChannelOverHTTP2 newHttpChannel(boolean push)
+                            protected HttpChannelOverHTTP2 newHttpChannel()
                             {
-                                return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession(), push)
+                                return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession())
                                 {
                                     @Override
                                     public boolean associate(HttpExchange exchange)
@@ -171,9 +172,9 @@ public class HttpChannelAssociationTest extends AbstractTest
                         return new HttpConnectionOverFCGI(endPoint, destination, promise, isMultiplexed())
                         {
                             @Override
-                            protected HttpChannelOverFCGI newHttpChannel(int id, org.eclipse.jetty.client.api.Request request)
+                            protected HttpChannelOverFCGI newHttpChannel(Request request)
                             {
-                                return new HttpChannelOverFCGI(this, getFlusher(), id, request.getIdleTimeout())
+                                return new HttpChannelOverFCGI(this, getFlusher(), request.getIdleTimeout())
                                 {
                                     @Override
                                     public boolean associate(HttpExchange exchange)

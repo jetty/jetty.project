@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -247,16 +247,19 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 return new HttpConnectionOverHTTP2(destination, session)
                 {
                     @Override
-                    protected HttpChannelOverHTTP2 newHttpChannel(boolean push)
+                    protected HttpChannelOverHTTP2 newHttpChannel()
                     {
-                        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession(), push)
+                        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession())
                         {
                             @Override
                             public void setStream(Stream stream)
                             {
                                 super.setStream(stream);
-                                streamRef.set(stream);
-                                streamLatch.countDown();
+                                if (stream != null)
+                                {
+                                    streamRef.set(stream);
+                                    streamLatch.countDown();
+                                }
                             }
                         };
                     }

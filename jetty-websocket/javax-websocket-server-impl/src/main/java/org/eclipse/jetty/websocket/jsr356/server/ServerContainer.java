@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -80,13 +80,20 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     
     /**
      * @deprecated use {@code ServerContainer(NativeWebSocketConfiguration, HttpClient)} instead
+     * @param configuration the {@link NativeWebSocketConfiguration} to use
+     * @param executor not used
      */
     @Deprecated
     public ServerContainer(NativeWebSocketConfiguration configuration, Executor executor)
     {
         this(configuration, (HttpClient) null);
     }
-    
+
+    /**
+     *
+     * @param configuration the {@link NativeWebSocketConfiguration} to use
+     * @param httpClient the {@link HttpClient} instance to use
+     */
     public ServerContainer(NativeWebSocketConfiguration configuration, HttpClient httpClient)
     {
         super(configuration.getFactory(), httpClient);

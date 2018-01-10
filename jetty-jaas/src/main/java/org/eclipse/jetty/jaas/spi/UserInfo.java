@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,9 +42,9 @@ public class UserInfo
     
     
     /**
-     * @param userName
-     * @param credential
-     * @param roleNames
+     * @param userName the user name
+     * @param credential the credential
+     * @param roleNames a {@link List} of role name
      */
     public UserInfo (String userName, Credential credential, List<String> roleNames)
     {
@@ -52,18 +52,15 @@ public class UserInfo
         _credential = credential;
         if (roleNames != null)
         {
-            synchronized (_roleNames)
-            {
-                _roleNames.addAll(roleNames);
-                _rolesLoaded = true;
-            }
+            _roleNames.addAll(roleNames);
+            _rolesLoaded = true;
         }
     }
     
     
     /**
-     * @param userName
-     * @param credential
+     * @param userName the user name
+     * @param credential the credential
      */
     public UserInfo (String userName, Credential credential)
     {
@@ -76,16 +73,16 @@ public class UserInfo
      * Should be overridden by subclasses to obtain
      * role info
      * 
-     * @return
-     * @throws Exception
+     * @return List of role associated to the user
+     * @throws Exception if the roles cannot be retrieved
      */
-    public List<String> doFetchRoles ()
+    public List<String> doFetchRoles()
     throws Exception
     {
         return Collections.emptyList();
     }
     
-    public void fetchRoles () throws Exception
+    public void fetchRoles() throws Exception
     {
         synchronized (_roleNames)
         {

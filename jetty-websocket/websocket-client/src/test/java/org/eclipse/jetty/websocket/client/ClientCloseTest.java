@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,14 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.client;
-
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -77,6 +69,14 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 public class ClientCloseTest
 {
@@ -147,7 +147,7 @@ public class ClientCloseTest
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            LOG.warn("onWebSocketError",cause);
+            LOG.debug("onWebSocketError",cause);
             assertThat("Unique Error Event", error.compareAndSet(null, cause), is(true));
             errorLatch.countDown();
         }
@@ -526,8 +526,7 @@ public class ClientCloseTest
 
         // client idle timeout triggers close event on client ws-endpoint
         assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
-        assertThat("OnError", clientSocket.error.get(), instanceOf(SocketTimeoutException.class));
-        assertThat("OnError", clientSocket.error.get().getMessage(), containsString("Timeout on Read"));
+        assertThat("OnError", clientSocket.error.get(), instanceOf(TimeoutException.class));
     }
 
     @Test(timeout = 5000L)

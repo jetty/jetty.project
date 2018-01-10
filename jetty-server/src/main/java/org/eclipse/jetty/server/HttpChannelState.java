@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -1249,6 +1249,7 @@ public class HttpChannelState
      * Called to indicate that more content may be available,
      * but that a handling thread may need to produce (fill/parse)
      * it.  Typically called by the async read success callback.
+     * @return <code>true</code> if more content may be available
      */
     public boolean onReadPossible()
     {
@@ -1279,7 +1280,7 @@ public class HttpChannelState
     /**
      * Called to signal that a read has read -1.
      * Will wake if the read was called while in ASYNC_WAIT state
-     * @return true if woken
+     * @return <code>true</code> if woken
      */
     public boolean onReadEof()
     {

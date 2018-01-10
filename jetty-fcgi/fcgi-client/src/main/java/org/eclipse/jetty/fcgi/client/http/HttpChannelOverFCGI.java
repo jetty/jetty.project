@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,18 +38,17 @@ public class HttpChannelOverFCGI extends HttpChannel
 {
     private final HttpConnectionOverFCGI connection;
     private final Flusher flusher;
-    private final int request;
     private final HttpSenderOverFCGI sender;
     private final HttpReceiverOverFCGI receiver;
     private final FCGIIdleTimeout idle;
+    private int request;
     private HttpVersion version;
 
-    public HttpChannelOverFCGI(final HttpConnectionOverFCGI connection, Flusher flusher, int request, long idleTimeout)
+    public HttpChannelOverFCGI(final HttpConnectionOverFCGI connection, Flusher flusher, long idleTimeout)
     {
         super(connection.getHttpDestination());
         this.connection = connection;
         this.flusher = flusher;
-        this.request = request;
         this.sender = new HttpSenderOverFCGI(this);
         this.receiver = new HttpReceiverOverFCGI(this);
         this.idle = new FCGIIdleTimeout(connection, idleTimeout);
@@ -58,6 +57,11 @@ public class HttpChannelOverFCGI extends HttpChannel
     protected int getRequest()
     {
         return request;
+    }
+
+    void setRequest(int request)
+    {
+        this.request = request;
     }
 
     @Override
@@ -70,6 +74,11 @@ public class HttpChannelOverFCGI extends HttpChannel
     protected HttpReceiver getHttpReceiver()
     {
         return receiver;
+    }
+
+    public boolean isFailed()
+    {
+        return sender.isFailed() || receiver.isFailed();
     }
 
     @Override

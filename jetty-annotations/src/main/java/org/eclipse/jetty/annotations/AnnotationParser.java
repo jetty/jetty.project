@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -890,9 +890,11 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for classes in  
      * @param entry the entry in the potentially MultiRelease jar resource to parse
+     * @param jar the jar file
      * @throws Exception if unable to parse
      */
-    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, MultiReleaseJarFile.VersionedJarEntry entry) throws Exception
+    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, MultiReleaseJarFile.VersionedJarEntry entry)
+    throws Exception
     {
         if (jar == null || entry == null)
             return;
