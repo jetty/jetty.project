@@ -2,10 +2,10 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
-  <Set name="contextPath">/badapp</Set>
+  <Set name="contextPath">/badapp-uaf</Set>
   <Set name="war"><SystemProperty name="test.docroots"/>/deployerror/badapp/</Set>
   <Set name="extraClasspath"><SystemProperty name="maven.test.classes"/></Set>
-  <Set name="throwUnavailableOnStartupException">true</Set>
+  <Set name="throwUnavailableOnStartupException">false</Set> <!-- Intentionally set to false to test behavior -->
   <Call name="setAttribute">
     <Arg>org.eclipse.jetty.containerInitializerExclusionPattern</Arg>
     <Arg>org.jboss.*</Arg>

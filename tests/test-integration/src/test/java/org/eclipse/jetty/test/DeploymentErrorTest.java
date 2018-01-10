@@ -18,29 +18,32 @@
 
 package org.eclipse.jetty.test;
 
-import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,7 +51,6 @@ import org.junit.Test;
 public class DeploymentErrorTest
 {
     private static Server server;
-    private static URI serverURI; // TODO: test that we can not access webapp.
     private static DeploymentManager deploymentManager;
 
     @BeforeClass
@@ -92,6 +94,10 @@ public class DeploymentErrorTest
                     "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
                     "org.eclipse.jetty.annotations.AnnotationConfiguration");
 
+            // Tracking Config
+            classlist.addBefore("org.eclipse.jetty.webapp.WebInfConfiguration",
+                    TrackedConfiguration.class.getName());
+
             server.start();
         }
         catch (final Exception e)
@@ -107,14 +113,100 @@ public class DeploymentErrorTest
     }
 
     @Test
-    public void testErrorDeploy() throws Exception
+    public void testErrorDeploy_ThrowUnavailableTrue() throws Exception
     {
-        assertThat("app not started", deploymentManager.getApps(AppLifeCycle.STARTED), empty());
-        TimeUnit.SECONDS.sleep(3);
         List<App> apps = new ArrayList<>();
         apps.addAll(deploymentManager.getApps());
-        assertThat("Apps tracked", apps.size(), is(1));
-        App app = apps.get(0);
-        assertThat("App.handler.isFailed", app.getContextHandler().isFailed(), is(true));
+        assertThat("Apps tracked", apps.size(), is(2));
+        String contextPath = "/badapp";
+        App app = findApp(contextPath, apps);
+        ContextHandler context = app.getContextHandler();
+        assertThat("ContextHandler.isStarted", context.isStarted(), is(false));
+        assertThat("ContextHandler.isFailed", context.isFailed(), is(true));
+        assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
+        WebAppContext webapp = (WebAppContext) context;
+        TrackedConfiguration trackedConfiguration = null;
+        for(Configuration webappConfig: webapp.getConfigurations())
+        {
+            if(webappConfig instanceof TrackedConfiguration)
+                trackedConfiguration = (TrackedConfiguration) webappConfig;
+        }
+        assertThat("webapp TrackedConfiguration exists", trackedConfiguration, notNullValue());
+        assertThat("trackedConfig.preConfigureCount", trackedConfiguration.preConfigureCounts.get(contextPath), is(1));
+        assertThat("trackedConfig.configureCount", trackedConfiguration.configureCounts.get(contextPath), is(1));
+        // NOTE: Failure occurs during configure, so postConfigure never runs.
+        assertThat("trackedConfig.postConfigureCount", trackedConfiguration.postConfigureCounts.get(contextPath), nullValue());
+    }
+
+    @Test
+    public void testErrorDeploy_ThrowUnavailableFalse() throws Exception
+    {
+        List<App> apps = new ArrayList<>();
+        apps.addAll(deploymentManager.getApps());
+        assertThat("Apps tracked", apps.size(), is(2));
+        String contextPath = "/badapp-uaf";
+        App app = findApp(contextPath, apps);
+        ContextHandler context = app.getContextHandler();
+        assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
+        assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
+        assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
+        WebAppContext webapp = (WebAppContext) context;
+        TrackedConfiguration trackedConfiguration = null;
+        for(Configuration webappConfig: webapp.getConfigurations())
+        {
+            if(webappConfig instanceof TrackedConfiguration)
+                trackedConfiguration = (TrackedConfiguration) webappConfig;
+        }
+        assertThat("webapp TrackedConfiguration exists", trackedConfiguration, notNullValue());
+        assertThat("trackedConfig.preConfigureCount", trackedConfiguration.preConfigureCounts.get(contextPath), is(1));
+        assertThat("trackedConfig.configureCount", trackedConfiguration.configureCounts.get(contextPath), is(1));
+        // NOTE: Failure occurs during configure, so postConfigure never runs.
+        assertThat("trackedConfig.postConfigureCount", trackedConfiguration.postConfigureCounts.get(contextPath), nullValue());
+    }
+
+    private App findApp(String contextPath, List<App> apps)
+    {
+        for (App app : apps)
+        {
+            if (contextPath.equals(app.getContextPath()))
+                return app;
+        }
+        return null;
+    }
+
+    public static class TrackedConfiguration extends AbstractConfiguration
+    {
+        public Map<String, Integer> preConfigureCounts = new HashMap<>();
+        public Map<String, Integer> configureCounts = new HashMap<>();
+        public Map<String, Integer> postConfigureCounts = new HashMap<>();
+
+        private void incrementCount(WebAppContext context, Map<String, Integer> contextCounts)
+        {
+            Integer count = contextCounts.get(context.getContextPath());
+            if(count == null)
+            {
+                count = new Integer(0);
+            }
+            count++;
+            contextCounts.put(context.getContextPath(), count);
+        }
+
+        @Override
+        public void preConfigure(WebAppContext context) throws Exception
+        {
+            incrementCount(context, preConfigureCounts);
+        }
+
+        @Override
+        public void configure(WebAppContext context) throws Exception
+        {
+            incrementCount(context, configureCounts);
+        }
+
+        @Override
+        public void postConfigure(WebAppContext context) throws Exception
+        {
+            incrementCount(context, postConfigureCounts);
+        }
     }
 }
