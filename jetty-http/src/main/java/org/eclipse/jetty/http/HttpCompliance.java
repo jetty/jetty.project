@@ -70,12 +70,16 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     RFC7230(sectionsBySpec("RFC7230")),
     
     /** Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM0</code> */
+    @Deprecated
     CUSTOM0(sectionsByProperty("CUSTOM0")),
     /** Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM1</code> */
+    @Deprecated
     CUSTOM1(sectionsByProperty("CUSTOM1")),
     /** Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM2</code> */
+    @Deprecated
     CUSTOM2(sectionsByProperty("CUSTOM2")),
     /** Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM3</code> */
+    @Deprecated
     CUSTOM3(sectionsByProperty("CUSTOM3"));
   
     private static final Logger LOG = Log.getLogger(HttpParser.class);
