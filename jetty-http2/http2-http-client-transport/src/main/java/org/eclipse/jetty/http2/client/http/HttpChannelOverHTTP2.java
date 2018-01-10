@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -90,11 +90,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     }
 
     @Override
-    public void send()
+    public void send(HttpExchange exchange)
     {
-        HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
-            sender.send(exchange);
+        sender.send(exchange);
     }
 
     @Override

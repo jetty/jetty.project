@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -129,7 +129,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             Response.CompleteListener listener = pushListener.apply(request, pushRequest);
             if (listener != null)
             {
-                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().provideHttpChannel();
+                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().acquireHttpChannel();
                 List<Response.ResponseListener> listeners = Collections.singletonList(listener);
                 HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, listeners);
                 pushChannel.associate(pushExchange);

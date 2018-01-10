@@ -414,6 +414,18 @@
         <artifactId>jetty-xml</artifactId>
         <version>9.4.9-SNAPSHOT</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-distribution</artifactId>
+        <version>9.3.23-SNAPSHOT</version>
+        <type>zip</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-distribution</artifactId>
+        <version>9.3.23-SNAPSHOT</version>
+        <type>tar.gz</type>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

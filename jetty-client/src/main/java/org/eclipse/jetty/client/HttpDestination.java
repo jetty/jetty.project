@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
@@ -34,6 +37,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -45,6 +49,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
 
 @ManagedObject
@@ -60,6 +65,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     private final ProxyConfiguration.Proxy proxy;
     private final ClientConnectionFactory connectionFactory;
     private final HttpField hostField;
+    private final TimeoutTask timeout;
     private ConnectionPool connectionPool;
 
     public HttpDestination(HttpClient client, Origin origin)
@@ -71,6 +77,8 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
         this.requestNotifier = new RequestNotifier(client);
         this.responseNotifier = new ResponseNotifier();
+        
+        this.timeout = new TimeoutTask(client.getScheduler());
 
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
         proxy = proxyConfig.match(origin);
@@ -228,7 +236,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     }
 
     protected void send(HttpRequest request, List<Response.ResponseListener> listeners)
-    {
+    {        
         if (!getScheme().equalsIgnoreCase(request.getScheme()))
             throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
         if (!getHost().equalsIgnoreCase(request.getHost()))
@@ -246,6 +254,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             if (enqueue(exchanges, exchange))
             {
+                long expiresAt = request.getTimeoutAt();
+                if (expiresAt != -1)
+                    timeout.schedule(expiresAt);
+
                 if (!client.isRunning() && exchanges.remove(exchange))
                 {
                     request.abort(new RejectedExecutionException(client + " is stopping"));
@@ -370,6 +382,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         if (LOG.isDebugEnabled())
             LOG.debug("Closed {}", this);
         connectionPool.close();
+        timeout.destroy();
     }
 
     public void release(Connection connection)
@@ -469,5 +482,60 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 proxy == null ? "" : "(via " + proxy + ")",
                 exchanges.size(),
                 connectionPool);
+    }
+    
+    // The TimeoutTask that expires when the next check of expiry is needed
+    private class TimeoutTask extends CyclicTimeout
+    {
+        private final AtomicLong nextTimeout = new AtomicLong(Long.MAX_VALUE);
+
+        private TimeoutTask(Scheduler scheduler)
+        {
+            super(scheduler);
+        }
+
+        @Override
+        public void onTimeoutExpired()
+        {
+            nextTimeout.set(Long.MAX_VALUE);
+            long now = System.nanoTime();
+            long nextExpiresAt = Long.MAX_VALUE;
+            
+            // Check all queued exchanges for those that have expired
+            // and to determine when the next check must be.
+            for (HttpExchange exchange : exchanges)
+            {
+                HttpRequest request = exchange.getRequest();
+                long expiresAt = request.getTimeoutAt();
+                if (expiresAt == -1)
+                    continue;
+                if (expiresAt <= now)
+                    request.abort(new TimeoutException("Total timeout " + request.getTimeout() + " ms elapsed"));
+                else if (expiresAt < nextExpiresAt)
+                    nextExpiresAt = expiresAt;
+            }
+            
+            if (nextExpiresAt < Long.MAX_VALUE && client.isRunning())
+                schedule(nextExpiresAt);
+        }
+
+        private void schedule(long expiresAt)
+        {
+            // Schedule a timeout for the soonest any known exchange can expire.
+            // If subsequently that exchange is removed from the queue, the
+            // timeout is not cancelled, instead the entire queue is swept
+            // for expired exchanges and a new timeout is set.
+            long timeoutAt = nextTimeout.getAndUpdate(e -> Math.min(e, expiresAt));
+            if (timeoutAt != expiresAt)
+            {
+                long delay = expiresAt - System.nanoTime();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Scheduled timeout in {} ms", TimeUnit.NANOSECONDS.toMillis(delay));
+                if (delay <= 0)
+                    onTimeoutExpired();
+                else
+                    schedule(delay, TimeUnit.NANOSECONDS);
+            }
+        }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -207,11 +208,17 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     protected void release(HttpChannelOverFCGI channel)
     {
-        if (activeChannels.remove(channel.getRequest()) != null)
+        if (activeChannels.remove(channel.getRequest()) == null)
+        {
+            channel.destroy();
+        }
+        else
         {
             channel.setRequest(0);
             // Recycle only non-failed channels.
-            if (!channel.isFailed())
+            if (channel.isFailed())
+                channel.destroy();
+            else
                 idleChannels.offer(channel);
             destination.release(this);
         }
@@ -263,16 +270,27 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             HttpExchange exchange = channel.getHttpExchange();
             if (exchange != null)
                 exchange.getRequest().abort(failure);
+            channel.destroy();
         }
         activeChannels.clear();
-        idleChannels.clear();
+        
+        HttpChannel channel = idleChannels.poll();
+        while (channel!=null)
+        {
+            channel.destroy();
+            channel = idleChannels.poll();
+        }
     }
 
     private void failAndClose(Throwable failure)
     {
         boolean result = false;
         for (HttpChannelOverFCGI channel : activeChannels.values())
+        {
             result |= channel.responseFailure(failure);
+            channel.destroy();
+        }
+        
         if (result)
             close(failure);
     }
@@ -296,7 +314,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         }
     }
 
-    protected HttpChannelOverFCGI provideHttpChannel(int id, Request request)
+    protected HttpChannelOverFCGI acquireHttpChannel(int id, Request request)
     {
         HttpChannelOverFCGI channel = idleChannels.poll();
         if (channel == null)
@@ -335,7 +353,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
             // FCGI may be multiplexed, so one channel for each exchange.
             int id = acquireRequest();
-            HttpChannelOverFCGI channel = provideHttpChannel(id, request);
+            HttpChannelOverFCGI channel = acquireHttpChannel(id, request);
             activeChannels.put(id, channel);
 
             return send(channel, exchange);
