@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 

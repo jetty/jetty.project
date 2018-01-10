@@ -216,10 +216,10 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         {
             channel.setRequest(0);
             // Recycle only non-failed channels.
-            if (!channel.isFailed())
-                idleChannels.offer(channel);
-            else
+            if (channel.isFailed())
                 channel.destroy();
+            else
+                idleChannels.offer(channel);
             destination.release(this);
         }
     }
