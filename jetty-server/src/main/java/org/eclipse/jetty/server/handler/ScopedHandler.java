@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 
 
 /* ------------------------------------------------------------ */
@@ -148,6 +151,22 @@ public abstract class ScopedHandler extends HandlerWrapper
     /**
      * Scope the handler
      * <p>Derived implementations should call {@link #nextScope(String, Request, HttpServletRequest, HttpServletResponse)}
+     * @param target
+     *          The target of the request - either a URI or a name.
+     * @param baseRequest
+     *          The original unwrapped request object.
+     * @param request
+     *            The request either as the {@link Request} object or a wrapper of that request. The
+     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
+     *            method can be used access the Request object if required.
+     * @param response
+     *            The response as the {@link Response} object or a wrapper of that request. The
+     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
+     *            method can be used access the Response object if required.
+     * @throws IOException
+     *             if unable to handle the request or response processing
+     * @throws ServletException
+     *             if unable to handle the request or response due to underlying servlet issue
      */
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
@@ -158,6 +177,22 @@ public abstract class ScopedHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Scope the handler
+     * @param target
+     *          The target of the request - either a URI or a name.
+     * @param baseRequest
+     *          The original unwrapped request object.
+     * @param request
+     *            The request either as the {@link Request} object or a wrapper of that request. The
+     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
+     *            method can be used access the Request object if required.
+     * @param response
+     *            The response as the {@link Response} object or a wrapper of that request. The
+     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
+     *            method can be used access the Response object if required.
+     * @throws IOException
+     *             if unable to handle the request or response processing
+     * @throws ServletException
+     *             if unable to handle the request or response due to underlying servlet issue
      */
     public final void nextScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
@@ -173,7 +208,23 @@ public abstract class ScopedHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /**
      * Do the handler work within the scope.
-     * <p>Derived implementations should call {@link #nextHandle(String, Request, HttpServletRequest, HttpServletResponse)} 
+     * <p>Derived implementations should call {@link #nextHandle(String, Request, HttpServletRequest, HttpServletResponse)}
+     * @param target
+     *          The target of the request - either a URI or a name.
+     * @param baseRequest
+     *          The original unwrapped request object.
+     * @param request
+     *            The request either as the {@link Request} object or a wrapper of that request. The
+     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
+     *            method can be used access the Request object if required.
+     * @param response
+     *            The response as the {@link Response} object or a wrapper of that request. The
+     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
+     *            method can be used access the Response object if required.
+     * @throws IOException
+     *             if unable to handle the request or response processing
+     * @throws ServletException
+     *             if unable to handle the request or response due to underlying servlet issue
      */
     public abstract void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException;
@@ -181,6 +232,22 @@ public abstract class ScopedHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /*
      * Do the handler work within the scope.
+     * @param target
+     *          The target of the request - either a URI or a name.
+     * @param baseRequest
+     *          The original unwrapped request object.
+     * @param request
+     *            The request either as the {@link Request} object or a wrapper of that request. The
+     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
+     *            method can be used access the Request object if required.
+     * @param response
+     *            The response as the {@link Response} object or a wrapper of that request. The
+     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
+     *            method can be used access the Response object if required.
+     * @throws IOException
+     *             if unable to handle the request or response processing
+     * @throws ServletException
+     *             if unable to handle the request or response due to underlying servlet issue
      */
     public final void nextHandle(String target, final Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {

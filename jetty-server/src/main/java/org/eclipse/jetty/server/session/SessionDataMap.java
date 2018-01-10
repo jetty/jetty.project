@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@ public interface SessionDataMap extends LifeCycle
      * be used by one context(/session manager).
      * 
      * @param context context associated
+     * @throws Exception if unable to initialize the
      */
     void initialize(SessionContext context) throws Exception;
     

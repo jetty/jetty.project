@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,12 +30,12 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A Connection Listener that limits the number of Connections.
+ * <p>A Connection Listener that limits the number of Connections.</p>
  * <p>This listener applies a limit to the number of connections, which when 
  * exceeded results in  a call to {@link AbstractConnector#setAccepting(boolean)} 
  * to prevent further connections being received.  It can be applied to an
  * entire server or to a specific connector.
- * <p>
+ * </p>
  * @see Connection.Listener
  */
 @ManagedObject

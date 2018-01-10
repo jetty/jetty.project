@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -62,8 +62,8 @@ public class AliasedConstraintTest
     private static Server server;
     private static LocalConnector connector;
     private static ConstraintSecurityHandler security;
-    
-    
+
+
     @BeforeClass
     public static void startServer() throws Exception
     {
@@ -75,7 +75,7 @@ public class AliasedConstraintTest
         SessionHandler session = new SessionHandler();
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
-        
+
         loginService.putUser("user0",new Password("password"),new String[] {});
         loginService.putUser("user",new Password("password"),new String[] { "user" });
         loginService.putUser("user2",new Password("password"),new String[] { "user" });

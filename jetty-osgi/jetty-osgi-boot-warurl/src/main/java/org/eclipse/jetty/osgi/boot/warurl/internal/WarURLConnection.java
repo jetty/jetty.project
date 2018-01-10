@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,6 +52,7 @@ public class WarURLConnection extends URLConnection
      * a new temporary file ust to replace the manifest.
      * @param newmanifest The new manifest
      * @param rawIn The file input stream or equivalent. not the jar input stream.
+     * @throws IOException if an I/O error occurs.
      */
     public static InputStream substitueManifest(final Manifest newmanifest,
             final InputStream rawIn) throws IOException
@@ -106,6 +107,7 @@ public class WarURLConnection extends URLConnection
      * @param url The file url (for example)
      * @param mf The manifest to use as a replacement to the jar file inside
      * the file url.
+     * @throws IOException if an I/O error occurs.
      */
     public WarURLConnection(URL url, Manifest mf) throws IOException
     {
