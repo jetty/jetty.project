@@ -88,7 +88,7 @@ public class HttpChannelOverHTTP extends HttpChannel
     @Override
     public void release()
     {
-        connection.release(this);
+        connection.release();
     }
 
     @Override
