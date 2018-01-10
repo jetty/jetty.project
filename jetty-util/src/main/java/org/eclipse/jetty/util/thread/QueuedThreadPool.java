@@ -61,6 +61,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     private int _idleTimeout;
     private int _maxThreads;
     private int _minThreads;
+    private int _reservedThreads;
     private int _priority = Thread.NORM_PRIORITY;
     private boolean _daemon = false;
     private boolean _detailedDump = false;
@@ -93,6 +94,11 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
+    {
+        this(maxThreads, minThreads, idleTimeout, -1, queue, null);
+    }
+    
+    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("reservedThreads") int reservedThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
     {
         setMinThreads(minThreads);
         setMaxThreads(maxThreads);

@@ -66,39 +66,20 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     private final AtomicInteger _pending = new AtomicInteger();
 
     private ThreadPoolBudget.Lease _lease;
-    private Object _owner;
     private long _idleTime = 1L;
     private TimeUnit _idleTimeUnit = TimeUnit.MINUTES;
-
-    public ReservedThreadExecutor(Executor executor)
-    {
-        this(executor,1);
-    }
-
-    /**
-     * @param executor The executor to use to obtain threads
-     * @param capacity The number of threads to preallocate. If less than 0 then capacity
-     * is calculated based on a heuristic from the number of available processors and
-     * thread pool size.
-     */
-    public ReservedThreadExecutor(Executor executor, int capacity)
-    {
-        this(executor,capacity,null);
-    }
 
     /**
      * @param executor The executor to use to obtain threads
      * @param capacity The number of threads to preallocate. If less than 0 then capacity
      *                 is calculated based on a heuristic from the number of available processors and
      *                 thread pool size.
-     * @param owner    the owner of the instance. Only used for debugging purpose withing the {@link #toString()} method
      */
-    public ReservedThreadExecutor(Executor executor,int capacity, Object owner)
+    public ReservedThreadExecutor(Executor executor,int capacity)
     {
         _executor = executor;
         _capacity = reservedThreads(executor,capacity);
         _stack = new ConcurrentLinkedDeque<>();
-        _owner = owner;
 
         LOG.debug("{}",this);
     }
@@ -255,13 +236,12 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     @Override
     public String toString()
     {
-        return String.format("%s@%x{s=%d/%d,p=%d}@%s",
+        return String.format("%s@%x{s=%d/%d,p=%d}",
                 getClass().getSimpleName(),
                 hashCode(),
                 _size.get(),
                 _capacity,
-                _pending.get(),
-                _owner);
+                _pending.get());
     }
 
     private class ReservedThread implements Runnable
