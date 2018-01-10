@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,12 +42,12 @@ public class Util
     /**
      * Create an osgi filter for the given classname and server name.
      * 
-     * @param bundleContext
+     * @param bundleContext the {@link BundleContext} instance to use
      * @param classname the class to match on the filter
      * @param managedServerName the name of the jetty server instance
      * @return a new filter
      * 
-     * @throws InvalidSyntaxException
+     * @throws InvalidSyntaxException If the filter contains an invalid string that cannot be parsed.
      */
     public static Filter createFilter (BundleContext bundleContext, String classname, String managedServerName) throws InvalidSyntaxException
     {

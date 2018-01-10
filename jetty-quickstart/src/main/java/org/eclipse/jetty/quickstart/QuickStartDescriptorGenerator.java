@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -96,8 +96,10 @@ public class QuickStartDescriptorGenerator
     /**
      * @param w the source WebAppContext
      * @param extraXML any extra xml snippet to append
+     * @param originAttribute param value to use for the context param origin attribute
+     * @param generateOrigin <code>true</code> to generate the origin attribute
      */
-    public QuickStartDescriptorGenerator (WebAppContext w,  String extraXML, String originAttribute, boolean generateOrigin)
+    public QuickStartDescriptorGenerator (WebAppContext w, String extraXML, String originAttribute, boolean generateOrigin)
     {
         _webApp = w;
         _extraXML = extraXML;

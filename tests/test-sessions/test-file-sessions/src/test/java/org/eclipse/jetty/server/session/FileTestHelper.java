@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 
 import org.eclipse.jetty.util.IO;
 
@@ -87,12 +89,13 @@ public class FileTestHelper
                 break;
             }
         }
+        
         if (fname != null)
             return new File (_tmpDir, fname);
         return null;
     }
 
-    public static void assertFileExists (String sessionId, boolean exists)
+    public static void assertSessionExists (String sessionId, boolean exists)
     {
         assertNotNull(_tmpDir);
         assertTrue(_tmpDir.exists());
@@ -113,6 +116,29 @@ public class FileTestHelper
             assertTrue(found);
         else
             assertFalse(found);
+    }
+    
+    public static void assertFileExists (String filename, boolean exists)
+    {
+        assertNotNull(_tmpDir);
+        assertTrue(_tmpDir.exists());
+        File file = new File (_tmpDir, filename);
+        if (exists)
+            assertTrue(file.exists());
+        else
+            assertFalse(file.exists());
+    }
+    
+    
+    public static void createFile (String filename)
+    throws IOException
+    {
+        assertNotNull(_tmpDir);
+        assertTrue(_tmpDir.exists());
+        
+        File file = new File (_tmpDir, filename);
+        Files.deleteIfExists(file.toPath());
+        file.createNewFile();
     }
     
     

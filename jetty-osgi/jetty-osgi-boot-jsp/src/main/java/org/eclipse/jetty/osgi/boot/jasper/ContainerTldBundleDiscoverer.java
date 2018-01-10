@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -146,7 +146,7 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
 
     /**
      * Check that jsp is on the classpath
-     * @return
+     * @return <code>true</code> if jsp is available in the environment
      */
     public boolean isJspAvailable()
     {
@@ -195,7 +195,7 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
     /**
      * Find the bundle that contains a jstl implementation class, which assumes that
      * the jstl taglibs will be inside the same bundle.
-     * @return
+     * @return Bundle contains the jstl implementation class
      */
     public Bundle findJstlBundle ()
     {

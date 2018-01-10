@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,13 +27,20 @@ public abstract class HttpChannel
     protected static final Logger LOG = Log.getLogger(HttpChannel.class);
 
     private final HttpDestination _destination;
+    private final TimeoutCompleteListener _totalTimeout;
     private HttpExchange _exchange;
 
     protected HttpChannel(HttpDestination destination)
     {
-        this._destination = destination;
+        _destination = destination;
+        _totalTimeout = new TimeoutCompleteListener(destination.getHttpClient().getScheduler());
     }
 
+    public void destroy()
+    {
+        _totalTimeout.destroy();
+    }
+    
     public HttpDestination getHttpDestination()
     {
         return _destination;
@@ -102,7 +109,23 @@ public abstract class HttpChannel
 
     protected abstract HttpReceiver getHttpReceiver();
 
-    public abstract void send();
+    public void send()
+    {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange != null)
+        {
+            HttpRequest request = exchange.getRequest();
+            long timeoutAt = request.getTimeoutAt();
+            if (timeoutAt != -1)
+            {
+                exchange.getResponseListeners().add(_totalTimeout);
+                _totalTimeout.schedule(request, timeoutAt);
+            }
+            send(exchange);
+        }
+    }
+
+    public abstract void send(HttpExchange exchange);
 
     public abstract void release();
 

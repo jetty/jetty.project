@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.nio.channels.Selector;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,7 +30,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.SocketAddressResolver;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
@@ -89,10 +89,10 @@ public class LivelockTest
         AtomicBoolean busy = new AtomicBoolean(true);
 
         ManagedSelector clientSelector = client.getContainedBeans(ManagedSelector.class).stream().findAny().get();
-        Runnable clientLivelock = new Invocable.NonBlocking()
+        ManagedSelector.SelectorUpdate clientLivelock = new ManagedSelector.SelectorUpdate()
         {
             @Override 
-            public void run()
+            public void update(Selector selector)
             {
                 sleep(10);
                 if (busy.get())
@@ -102,10 +102,10 @@ public class LivelockTest
         clientSelector.submit(clientLivelock);
         
         ManagedSelector serverSelector = connector.getContainedBeans(ManagedSelector.class).stream().findAny().get();
-        Runnable serverLivelock = new Invocable.NonBlocking()
+        ManagedSelector.SelectorUpdate serverLivelock = new ManagedSelector.SelectorUpdate()
         {
             @Override 
-            public void run()
+            public void update(Selector selector)
             {
                 sleep(10);
                 if (busy.get())

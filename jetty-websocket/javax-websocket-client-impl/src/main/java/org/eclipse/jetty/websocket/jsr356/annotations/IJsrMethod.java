@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -70,7 +70,7 @@ public interface IJsrMethod
     /**
      * The message decoder class to use.
      * 
-     * @param decoderClass
+     * @param decoderClass the {@link Decoder} implementation to use
      */
     void setMessageDecoder(Class<? extends Decoder> decoderClass);
 
