@@ -551,7 +551,7 @@ public class HttpClient extends ContainerLifeCycle
     protected boolean removeDestination(HttpDestination destination)
     {
         removeBean(destination);
-        return destinations.remove(destination.getOrigin()) != null;
+        return destinations.remove(destination.getOrigin(), destination);
     }
 
     /**
