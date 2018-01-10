@@ -169,10 +169,11 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         return receiver.onUpgradeFrom();
     }
 
-    public void release()
+    public void release(HttpChannelOverHTTP channel)
     {
         // Restore idle timeout
         getEndPoint().setIdleTimeout(idleTimeout);
+        channel.destroy();
         getHttpDestination().release(this);
     }
 
