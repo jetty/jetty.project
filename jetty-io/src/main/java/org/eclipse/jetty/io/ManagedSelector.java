@@ -159,7 +159,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         super.doStop();
         
         if (timeout)
-            throw new TimeoutException();
+            throw new TimeoutException("Unable to gracefully stop "+this);
     }
 
     /**
