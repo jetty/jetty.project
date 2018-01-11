@@ -27,6 +27,7 @@ import java.util.List;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -516,7 +517,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public void onComplianceViolation(HttpCompliance compliance, HttpCompliance required, String reason)
+    public void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String reason)
     {
         if (_httpConnection.isRecordHttpComplianceViolations())
         {
@@ -524,10 +525,11 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             {
                 _complianceViolations = new ArrayList<>();
             }
-            String violation = String.format("%s<%s: %s for %s", compliance, required, reason, getHttpTransport());
-            _complianceViolations.add(violation);
+            String record = String.format("%s (see %s) in mode %s for %s in %s", 
+                violation.getDescription(), violation.getURL(), compliance, reason, getHttpTransport());
+            _complianceViolations.add(record);
             if (LOG.isDebugEnabled())
-                LOG.debug(violation);
+                LOG.debug(record);
         }
     }
 }
