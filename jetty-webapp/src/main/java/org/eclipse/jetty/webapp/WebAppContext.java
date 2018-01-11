@@ -554,6 +554,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             LOG.warn("Failed startup of context "+this, t);
             _unavailableException=t;
             setAvailable(false);
+            setFailed(t);
             if (isThrowUnavailableOnStartupException())
                 throw t;
         }

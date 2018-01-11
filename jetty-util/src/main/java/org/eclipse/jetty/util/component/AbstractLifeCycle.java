@@ -62,7 +62,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
         {
             try
             {
-                if (_state == __STARTED || _state == __STARTING)
+                if (_state == __STARTED || _state == __STARTING || _state == __FAILED)
                     return;
                 setStarting();
                 doStart();
@@ -206,7 +206,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
             listener.lifeCycleStopped(this);
     }
 
-    private void setFailed(Throwable th)
+    protected void setFailed(Throwable th)
     {
         _state = __FAILED;
         if (LOG.isDebugEnabled())

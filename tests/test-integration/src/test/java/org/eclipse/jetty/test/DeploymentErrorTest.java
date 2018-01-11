@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.test;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
@@ -52,6 +53,7 @@ public class DeploymentErrorTest
 {
     private static Server server;
     private static DeploymentManager deploymentManager;
+    private static ContextHandlerCollection contexts;
 
     @BeforeClass
     public static void setUpServer()
@@ -63,12 +65,8 @@ public class DeploymentErrorTest
             connector.setPort(0);
             server.addConnector(connector);
 
-            // Empty handler collections
-            ContextHandlerCollection contexts = new ContextHandlerCollection();
-            HandlerCollection handlers = new HandlerCollection();
-            handlers.setHandlers(new Handler[]
-                    { contexts, new DefaultHandler() });
-            server.setHandler(handlers);
+            // Empty contexts collections
+            contexts = new ContextHandlerCollection();
 
             // Deployment Manager
             deploymentManager = new DeploymentManager();
@@ -82,6 +80,12 @@ public class DeploymentErrorTest
             appProvider.setScanInterval(1);
             deploymentManager.addAppProvider(appProvider);
             server.addBean(deploymentManager);
+
+            // Server handlers
+            HandlerCollection handlers = new HandlerCollection();
+            handlers.setHandlers(new Handler[]
+                    {contexts, new DefaultHandler() });
+            server.setHandler(handlers);
 
             // Setup Configurations
             Configuration.ClassList classlist = Configuration.ClassList
@@ -162,6 +166,21 @@ public class DeploymentErrorTest
         assertThat("trackedConfig.configureCount", trackedConfiguration.configureCounts.get(contextPath), is(1));
         // NOTE: Failure occurs during configure, so postConfigure never runs.
         assertThat("trackedConfig.postConfigureCount", trackedConfiguration.postConfigureCounts.get(contextPath), nullValue());
+    }
+
+    @Test
+    public void testContextHandlerCollection()
+    {
+        Handler handlers[] = contexts.getHandlers();
+        assertThat("ContextHandlerCollection.Handlers.length", handlers.length, is(2));
+
+        // Verify that both handlers are unavailable
+        for(Handler handler: handlers)
+        {
+            assertThat("Handler", handler, instanceOf(ContextHandler.class));
+            ContextHandler contextHandler = (ContextHandler) handler;
+            assertThat("ContextHandler.isAvailable", contextHandler.isAvailable(), is(false));
+        }
     }
 
     private App findApp(String contextPath, List<App> apps)
