@@ -120,46 +120,20 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     {        
         // doStop might be called for a failed managedSelector,
         // We do not want to wait twice, so we only stop once for each start
-        boolean timeout = false;
         if (_started.compareAndSet(true,false))
         {
-            if (getStopTimeout()>0)
-            {
-                // If we are graceful we can wait for connections to close
-                Set<Closeable> closed = new HashSet<>();
-                
-                long now = System.nanoTime();
-                long wait_until = now+TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
-                while(now<wait_until)
-                {                    
-                    // Close any connection and wait for no endpoints in selector
-                    CloseConnections close_connections = new CloseConnections(closed);
-                    submit(close_connections);
-                    if (close_connections._noEndPoints.await(100,TimeUnit.MILLISECONDS))
-                        break;
-                    now = System.nanoTime();
-                }
-            }
-            else
-            {
-                // Close connections, but only wait a single selector cycle for it to take effect
-                CloseConnections close_connections = new CloseConnections();
-                submit(close_connections);
-                close_connections._complete.await();
-            }
-            
+            // Close connections, but only wait a single selector cycle for it to take effect
+            CloseConnections close_connections = new CloseConnections();
+            submit(close_connections);
+            close_connections._complete.await();
+
             // Wait for any remaining endpoints to be closed and the selector to be stopped
             StopSelector stop_selector = new StopSelector();
             submit(stop_selector);
             stop_selector._stopped.await();
-            
-            timeout = getStopTimeout()>0 && stop_selector._forcedEndPointClose;
         }
 
-        super.doStop();
-        
-        if (timeout)
-            throw new TimeoutException();
+        super.doStop();        
     }
 
     /**
