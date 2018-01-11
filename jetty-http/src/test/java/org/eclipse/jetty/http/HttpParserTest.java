@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.Matchers.contains;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpParser.State;
@@ -33,6 +36,11 @@ import org.junit.Test;
 
 public class HttpParserTest
 {
+    static
+    {
+        HttpCompliance.CUSTOM0.sections().remove(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME);
+    }
+    
     /**
      * Parse until {@link State#END} state.
      * If the parser is already in the END state, then it is {@link HttpParser#reset()} and re-parsed.
@@ -112,7 +120,7 @@ public class HttpParserTest
         ByteBuffer buffer = BufferUtil.toBuffer("GET /999\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertNull(_bad);
@@ -120,7 +128,7 @@ public class HttpParserTest
         Assert.assertEquals("/999", _uriOrStatus);
         Assert.assertEquals("HTTP/0.9", _versionOrReason);
         Assert.assertEquals(-1, _headers);
-        Assert.assertThat(_complianceViolation, Matchers.containsString("0.9"));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_9));
     }
 
     @Test
@@ -132,7 +140,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
         Assert.assertEquals("HTTP/0.9 not supported", _bad);
-        Assert.assertNull(_complianceViolation);
+        Assert.assertThat(_complianceViolation,Matchers.empty());
     }
 
     @Test
@@ -141,7 +149,7 @@ public class HttpParserTest
         ByteBuffer buffer = BufferUtil.toBuffer("POST /222  \r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertNull(_bad);
@@ -149,7 +157,7 @@ public class HttpParserTest
         Assert.assertEquals("/222", _uriOrStatus);
         Assert.assertEquals("HTTP/0.9", _versionOrReason);
         Assert.assertEquals(-1, _headers);
-        Assert.assertThat(_complianceViolation, Matchers.containsString("0.9"));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_9));
     }
 
     @Test
@@ -162,7 +170,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
         Assert.assertEquals("HTTP/0.9 not supported", _bad);
-        Assert.assertNull(_complianceViolation);
+        Assert.assertThat(_complianceViolation,Matchers.empty());
     }
 
     @Test
@@ -256,7 +264,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertThat(_bad, Matchers.nullValue());
@@ -265,7 +273,7 @@ public class HttpParserTest
         Assert.assertEquals("Name", _hdr[1]);
         Assert.assertEquals("value extra", _val[1]);
         Assert.assertEquals(1, _headers);
-        Assert.assertThat(_complianceViolation, Matchers.containsString("folding"));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_FIELD_FOLDING));
     }
 
     @Test
@@ -279,12 +287,12 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertThat(_bad, Matchers.notNullValue());
         Assert.assertThat(_bad, Matchers.containsString("Header Folding"));
-        Assert.assertNull(_complianceViolation);
+        Assert.assertThat(_complianceViolation,Matchers.empty());
     }
     
     @Test
@@ -297,7 +305,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertThat(_bad, Matchers.notNullValue());
@@ -314,7 +322,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertThat(_bad, Matchers.notNullValue());
@@ -350,34 +358,92 @@ public class HttpParserTest
     }
 
     @Test
-    public void testNoColonLegacy() throws Exception
+    public void testSpaceinNameCustom0() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
                 "GET / HTTP/1.0\r\n" +
                         "Host: localhost\r\n" +
-                        "Name\r\n" +
+                        "Name with space: value\r\n" +
                         "Other: value\r\n" +
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler,HttpCompliance.LEGACY);
+        HttpParser parser = new HttpParser(handler,HttpCompliance.CUSTOM0);
+        parseAll(parser, buffer);
+        
+        Assert.assertThat(_bad, Matchers.containsString("Illegal character"));
+        Assert.assertThat(_complianceViolation,contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
+    }
+
+    @Test
+    public void testNoColonCustom0() throws Exception
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "GET / HTTP/1.0\r\n" +
+                        "Host: localhost\r\n" +
+                        "Name \r\n" +
+                        "Other: value\r\n" +
+                        "\r\n");
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler,HttpCompliance.CUSTOM0);
+        parseAll(parser, buffer);
+        
+        Assert.assertThat(_bad, Matchers.containsString("Illegal character"));
+        Assert.assertThat(_complianceViolation,contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
+    }
+
+    @Test
+    public void testTrailingSpacesInHeaderNameInCustom0Mode() throws Exception
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "HTTP/1.1 204 No Content\r\n" +
+                "Access-Control-Allow-Headers : Origin\r\n" +
+                "Other: value\r\n" +
+                "\r\n");
+
+        HttpParser.ResponseHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.CUSTOM0);
         parseAll(parser, buffer);
 
         Assert.assertTrue(_headerCompleted);
         Assert.assertTrue(_messageCompleted);
-        Assert.assertEquals("GET", _methodOrVersion);
-        Assert.assertEquals("/", _uriOrStatus);
-        Assert.assertEquals("HTTP/1.0", _versionOrReason);
-        Assert.assertEquals("Host", _hdr[0]);
-        Assert.assertEquals("localhost", _val[0]);
-        Assert.assertEquals("Name", _hdr[1]);
-        Assert.assertEquals("", _val[1]);
-        Assert.assertEquals("Other", _hdr[2]);
-        Assert.assertEquals("value", _val[2]);
-        Assert.assertEquals(2, _headers);
-        Assert.assertThat(_complianceViolation, Matchers.containsString("No colon"));
+
+        Assert.assertEquals("HTTP/1.1", _methodOrVersion);
+        Assert.assertEquals("204", _uriOrStatus);
+        Assert.assertEquals("No Content", _versionOrReason);
+        Assert.assertEquals(null, _content);
+
+        Assert.assertEquals(1, _headers);
+        System.out.println(Arrays.asList(_hdr));
+        System.out.println(Arrays.asList(_val));
+        Assert.assertEquals("Access-Control-Allow-Headers", _hdr[0]);
+        Assert.assertEquals("Origin", _val[0]);
+        Assert.assertEquals("Other", _hdr[1]);
+        Assert.assertEquals("value", _val[1]);
+
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
     }
-    
+
+    @Test
+    public void testTrailingSpacesInHeaderNameNoCustom0() throws Exception
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "HTTP/1.1 204 No Content\r\n" +
+                        "Access-Control-Allow-Headers : Origin\r\n" +
+                        "Other: value\r\n" +
+                        "\r\n");
+
+        HttpParser.ResponseHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        Assert.assertEquals("HTTP/1.1", _methodOrVersion);
+        Assert.assertEquals("204", _uriOrStatus);
+        Assert.assertEquals("No Content", _versionOrReason);
+        Assert.assertThat(_bad, Matchers.containsString("Illegal character 0x20"));
+    }
+
     @Test
     public void testNoColon7230() throws Exception
     {
@@ -388,10 +454,10 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler,HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler,HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
         Assert.assertThat(_bad, Matchers.containsString("Illegal character"));
-        Assert.assertNull(_complianceViolation);
+        Assert.assertThat(_complianceViolation,Matchers.empty());
     }
     
 
@@ -682,11 +748,11 @@ public class HttpParserTest
                 "Connection: close\r\n" +
                 "\r\n");
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
         Assert.assertNull(_bad);
         Assert.assertEquals("GET", _methodOrVersion);
-        Assert.assertThat(_complianceViolation, Matchers.containsString("case insensitive method gEt"));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.METHOD_CASE_SENSITIVE));
     }
 
     @Test
@@ -702,7 +768,7 @@ public class HttpParserTest
         parseAll(parser, buffer);
         Assert.assertNull(_bad);
         Assert.assertEquals("gEt", _methodOrVersion);
-        Assert.assertNull(_complianceViolation);
+        Assert.assertThat(_complianceViolation,Matchers.empty());
     }
 
     @Test
@@ -714,7 +780,7 @@ public class HttpParserTest
                         "cOnNeCtIoN: ClOsE\r\n" +
                         "\r\n");
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
         Assert.assertNull(_bad);
         Assert.assertEquals("GET", _methodOrVersion);
@@ -725,7 +791,7 @@ public class HttpParserTest
         Assert.assertEquals("Connection", _hdr[1]);
         Assert.assertEquals("close", _val[1]);
         Assert.assertEquals(1, _headers);
-        Assert.assertNull(_complianceViolation);
+        Assert.assertThat(_complianceViolation,Matchers.empty());
     }
 
     @Test
@@ -748,7 +814,7 @@ public class HttpParserTest
         Assert.assertEquals("cOnNeCtIoN", _hdr[1]);
         Assert.assertEquals("ClOsE", _val[1]);
         Assert.assertEquals(1, _headers);
-        Assert.assertThat(_complianceViolation, Matchers.containsString("case sensitive"));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE,HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE,HttpComplianceSection.CASE_INSENSITIVE_FIELD_VALUE_CACHE));
     }
 
     @Test
@@ -1366,10 +1432,10 @@ public class HttpParserTest
 
     @Test
     public void testResponseReasonIso8859_1() throws Exception
-    {   
+    {
         ByteBuffer buffer = BufferUtil.toBuffer(
                 "HTTP/1.1 302 déplacé temporairement\r\n"
-                        + "Content-Length: 0\r\n" 
+                        + "Content-Length: 0\r\n"
                         + "\r\n",StandardCharsets.ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
@@ -2041,7 +2107,7 @@ public class HttpParserTest
         _headers = 0;
         _headerCompleted = false;
         _messageCompleted = false;
-        _complianceViolation = null;
+        _complianceViolation.clear();
     }
 
     private String _host;
@@ -2059,8 +2125,8 @@ public class HttpParserTest
     private boolean _early;
     private boolean _headerCompleted;
     private boolean _messageCompleted;
-    private String _complianceViolation;
-
+    private final List<HttpComplianceSection> _complianceViolation = new ArrayList<>();
+    
     private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, HttpParser.ComplianceHandler
     {
         @Override
@@ -2147,8 +2213,9 @@ public class HttpParserTest
             _methodOrVersion = version.asString();
             _uriOrStatus = Integer.toString(status);
             _versionOrReason = reason;
-            _hdr = new String[9];
-            _val = new String[9];
+            _headers = -1;
+            _hdr = new String[10];
+            _val = new String[10];
             _messageCompleted = false;
             _headerCompleted = false;
             return false;
@@ -2167,9 +2234,9 @@ public class HttpParserTest
         }
 
         @Override
-        public void onComplianceViolation(HttpCompliance compliance, HttpCompliance required, String reason)
+        public void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String reason)
         {
-            _complianceViolation=reason;
+            _complianceViolation.add(violation);
         }
     }
 }

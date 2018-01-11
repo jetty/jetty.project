@@ -68,12 +68,8 @@ public abstract class HttpConnection implements Connection
         HttpRequest httpRequest = (HttpRequest)request;
 
         ArrayList<Response.ResponseListener> listeners = new ArrayList<>(httpRequest.getResponseListeners());
-        if (httpRequest.getTimeout() > 0)
-        {
-            TimeoutCompleteListener timeoutListener = new TimeoutCompleteListener(httpRequest);
-            timeoutListener.schedule(getHttpClient().getScheduler());
-            listeners.add(timeoutListener);
-        }
+        
+        httpRequest.sent();
         if (listener != null)
             listeners.add(listener);
 

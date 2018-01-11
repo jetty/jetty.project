@@ -104,7 +104,7 @@ public class ExtendedServerTest extends HttpServerTestBase
     {
         public ExtendedHttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
         {
-            super(config,connector,endPoint,HttpCompliance.RFC7230,false);
+            super(config,connector,endPoint,HttpCompliance.RFC7230_LEGACY,false);
         }
 
         @Override

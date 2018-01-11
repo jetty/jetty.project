@@ -187,9 +187,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         if (closed.compareAndSet(false, true))
         {
             getHttpDestination().close(this);
-
             abort(failure);
-
+            channel.destroy();
             getEndPoint().shutdownOutput();
             if (LOG.isDebugEnabled())
                 LOG.debug("Shutdown {}", this);
