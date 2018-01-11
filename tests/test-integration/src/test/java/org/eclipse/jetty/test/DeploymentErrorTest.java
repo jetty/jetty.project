@@ -24,15 +24,20 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -140,6 +145,8 @@ public class DeploymentErrorTest
         assertThat("trackedConfig.configureCount", trackedConfiguration.configureCounts.get(contextPath), is(1));
         // NOTE: Failure occurs during configure, so postConfigure never runs.
         assertThat("trackedConfig.postConfigureCount", trackedConfiguration.postConfigureCounts.get(contextPath), nullValue());
+
+        assertHttpState(contextPath, HttpStatus.NOT_FOUND_404);
     }
 
     @Test
@@ -166,6 +173,24 @@ public class DeploymentErrorTest
         assertThat("trackedConfig.configureCount", trackedConfiguration.configureCounts.get(contextPath), is(1));
         // NOTE: Failure occurs during configure, so postConfigure never runs.
         assertThat("trackedConfig.postConfigureCount", trackedConfiguration.postConfigureCounts.get(contextPath), nullValue());
+
+        assertHttpState(contextPath, HttpStatus.SERVICE_UNAVAILABLE_503);
+    }
+
+    private void assertHttpState(String contextPath, int expectedStatusCode) throws Exception
+    {
+        URI destURI = server.getURI().resolve(contextPath);
+        HttpClient client = new HttpClient();
+        try
+        {
+            client.start();
+            ContentResponse response = client.newRequest(destURI).method(HttpMethod.GET).send();
+            assertThat("GET Response: " + destURI, response.getStatus(), is(expectedStatusCode));
+        }
+        finally
+        {
+            client.stop();
+        }
     }
 
     @Test
