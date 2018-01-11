@@ -206,7 +206,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
             listener.lifeCycleStopped(this);
     }
 
-    protected void setFailed(Throwable th)
+    private void setFailed(Throwable th)
     {
         _state = __FAILED;
         if (LOG.isDebugEnabled())
