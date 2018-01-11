@@ -62,7 +62,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
         {
             try
             {
-                if (_state == __STARTED || _state == __STARTING || _state == __FAILED)
+                if (_state == __STARTED || _state == __STARTING)
                     return;
                 setStarting();
                 doStart();

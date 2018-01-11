@@ -553,8 +553,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             // start up of the webapp context failed, make sure it is not started
             LOG.warn("Failed startup of context "+this, t);
             _unavailableException=t;
-            setAvailable(false);
-            setFailed(t);
+            setAvailable(false); // webapp cannot be accessed
+            setFailed(t); // be a proper Jetty LifeCycle participant and notify listeners of failure
             if (isThrowUnavailableOnStartupException())
                 throw t;
         }
