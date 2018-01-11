@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -41,7 +40,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -799,7 +797,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private class StopSelector implements SelectorUpdate
     {
         CountDownLatch _stopped = new CountDownLatch(1);
-        boolean _forcedEndPointClose = false;
         
         @Override
         public void update(Selector selector)
@@ -810,12 +807,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
-                    {
-                        EndPoint endp = (EndPoint)attachment;
-                        if (!endp.isOutputShutdown())
-                            _forcedEndPointClose = true;
                         closeNoExceptions((EndPoint)attachment);
-                    }
                 }
             }
             
