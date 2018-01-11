@@ -245,7 +245,7 @@ public class HttpConnectionTest
     @Test
     public void test_0_9() throws Exception
     {
-        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
         LocalEndPoint endp = connector.executeRequest("GET /R1\n");
         endp.waitUntilClosed();
         String response=BufferUtil.toString(endp.takeOutput());
