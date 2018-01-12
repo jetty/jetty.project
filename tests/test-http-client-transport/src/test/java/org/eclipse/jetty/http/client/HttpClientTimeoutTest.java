@@ -278,6 +278,8 @@ public class HttpClientTimeoutTest extends AbstractTest
 
     private void testConnectTimeoutFailsRequest(boolean blocking) throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+
         String host = "10.255.255.1";
         int port = 80;
         int connectTimeout = 1000;
@@ -305,6 +307,7 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
         String host = "10.255.255.1";
         int port = 80;
         int connectTimeout = 2000;
@@ -334,6 +337,8 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void retryAfterConnectTimeout() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+
         final String host = "10.255.255.1";
         final int port = 80;
         int connectTimeout = 1000;
