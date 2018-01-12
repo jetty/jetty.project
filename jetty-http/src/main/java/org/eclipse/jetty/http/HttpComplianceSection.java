@@ -28,8 +28,7 @@ public enum HttpComplianceSection
     FIELD_NAME_CASE_INSENSITIVE("https://tools.ietf.org/html/rfc7230#section-3.2","Field name is case-insensitive"),    
     NO_WS_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2.4","Whitespace not allowed after field name"),    
     NO_FIELD_FOLDING("https://tools.ietf.org/html/rfc7230#section-3.2.4","No line Folding"),
-    NO_HTTP_9("https://tools.ietf.org/html/rfc7230#appendix-A.2","No HTTP/0.9"),
-    ; 
+    NO_HTTP_0_9("https://tools.ietf.org/html/rfc7230#appendix-A.2","No HTTP/0.9"); 
 
     final String url;
     final String description;
