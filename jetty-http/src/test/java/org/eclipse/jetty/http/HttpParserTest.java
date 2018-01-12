@@ -128,7 +128,7 @@ public class HttpParserTest
         Assert.assertEquals("/999", _uriOrStatus);
         Assert.assertEquals("HTTP/0.9", _versionOrReason);
         Assert.assertEquals(-1, _headers);
-        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_9));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_0_9));
     }
 
     @Test
@@ -157,7 +157,7 @@ public class HttpParserTest
         Assert.assertEquals("/222", _uriOrStatus);
         Assert.assertEquals("HTTP/0.9", _versionOrReason);
         Assert.assertEquals(-1, _headers);
-        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_9));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_HTTP_0_9));
     }
 
     @Test

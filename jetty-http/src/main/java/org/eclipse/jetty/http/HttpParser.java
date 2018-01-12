@@ -764,7 +764,7 @@ public class HttpParser
                     else if (b < HttpTokens.SPACE && b>=0)
                     {
                         // HTTP/0.9
-                        if (complianceViolation(HttpComplianceSection.NO_HTTP_9,"No request version"))
+                        if (complianceViolation(HttpComplianceSection.NO_HTTP_0_9,"No request version"))
                             throw new BadMessageException("HTTP/0.9 not supported");
                         handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
                         setState(State.END);
@@ -831,7 +831,7 @@ public class HttpParser
                         else
                         {
                             // HTTP/0.9
-                            if (complianceViolation(HttpComplianceSection.NO_HTTP_9,"No request version"))
+                            if (complianceViolation(HttpComplianceSection.NO_HTTP_0_9,"No request version"))
                                 throw new BadMessageException("HTTP/0.9 not supported");
 
                             handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
