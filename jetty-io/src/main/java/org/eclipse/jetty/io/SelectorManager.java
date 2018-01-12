@@ -38,10 +38,11 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPoolBudget;
+import org.eclipse.jetty.util.thread.TryExecutor;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 /**
@@ -63,9 +64,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final AtomicInteger _selectorIndex = new AtomicInteger();
     private final IntUnaryOperator _selectorIndexUpdate;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-    private int _reservedThreads = -1;
     private ThreadPoolBudget.Lease _lease;
-    private ReservedThreadExecutor _reservedThreadExecutor;
 
     private static int defaultSelectors(Executor executor)
     {
@@ -133,34 +132,26 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     }
 
     /**
-     * Get the number of preallocated producing threads
-     * @see EatWhatYouKill
+     * No longer implemented
+     * @see QueuedThreadPool
      * @see ReservedThreadExecutor
-     * @return The number of threads preallocated to producing (default -1).
+     * @return -1
      */
-    @ManagedAttribute("The number of reserved producer threads")
+    @Deprecated
     public int getReservedThreads()
     {
-        return _reservedThreads;
+        return -1;
     }
-    
+
     /**
-     * Set the number of reserved threads for high priority tasks.
-     * <p>Reserved threads are used to take over producing duties, so that a 
-     * producer thread may immediately consume a task it has produced (EatWhatYouKill
-     * scheduling). If a reserved thread is not available, then produced tasks must
-     * be submitted to an executor to be executed by a different thread.
-     * @see EatWhatYouKill
+     * No longer implemented
+     * @see QueuedThreadPool
      * @see ReservedThreadExecutor
-     * @param threads  The number of producing threads to preallocate. If 
-     * less that 0 (the default), then a heuristic based on the number of CPUs and
-     * the thread pool size is used to select the number of threads. If 0, no 
-     * threads are preallocated and the EatWhatYouKill scheduler will be 
-     * disabled and all produced tasks will be executed in a separate thread. 
+     * @param threads ignored 
      */
+    @Deprecated
     public void setReservedThreads(int threads)
     {
-        _reservedThreads = threads;
     }
     
     /**
@@ -262,8 +253,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     protected void doStart() throws Exception
     {
-        _reservedThreadExecutor = new ReservedThreadExecutor(getExecutor(),_reservedThreads,this);
-        addBean(_reservedThreadExecutor,true);
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _selectors.length);
         for (int i = 0; i < _selectors.length; i++)
         {
@@ -301,9 +290,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
                     removeBean(selector);
             }
             Arrays.fill(_selectors,null);
-            if (_reservedThreadExecutor!=null)
-                removeBean(_reservedThreadExecutor);
-            _reservedThreadExecutor = null;
             if (_lease != null)
                 _lease.close();
         }

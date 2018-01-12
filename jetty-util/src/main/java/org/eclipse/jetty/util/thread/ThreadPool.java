@@ -92,10 +92,4 @@ public interface ThreadPool extends Executor
             return null;
         }
     }
-    
-    /** A Threadpool that can confirm if a thread is available immediately */
-    public interface Reserved extends ThreadPool
-    {
-        public boolean tryExecute(Runnable task);
-    }
 }

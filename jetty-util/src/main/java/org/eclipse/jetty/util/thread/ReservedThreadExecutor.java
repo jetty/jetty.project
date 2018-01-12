@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  * whenever it has been idle for that period.
  */
 @ManagedObject("A pool for reserved threads")
-public class ReservedThreadExecutor extends AbstractLifeCycle implements Executor
+public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExecutor
 {
     private static final Logger LOG = Log.getLogger(ReservedThreadExecutor.class);
     private static final Runnable STOP = new Runnable()
@@ -83,6 +83,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
 
         LOG.debug("{}",this);
     }
+    
     /**
      * @param executor The executor to use to obtain threads
      * @param capacity The number of threads to preallocate, If less than 0 then capacity
@@ -91,7 +92,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
      * @return the number of reserved threads that would be used by a ReservedThreadExecutor
      * constructed with these arguments.
      */
-    public static int reservedThreads(Executor executor,int capacity)
+    private static int reservedThreads(Executor executor,int capacity)
     {
         if (capacity>=0)
             return capacity;

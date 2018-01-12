@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
+import org.eclipse.jetty.util.thread.TryExecutor;
 
 /**
  * <p>A strategy where the thread that produces will run the resulting task if it
@@ -73,24 +73,14 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     private final LongAdder _executed = new LongAdder();
     private final Producer _producer;
     private final Executor _executor;
-    private final ReservedThreadExecutor _producers;
+    private final TryExecutor _producers;
     private State _state = State.IDLE;
 
     public EatWhatYouKill(Producer producer, Executor executor)
     {
-        this(producer,executor,new ReservedThreadExecutor(executor,1));
-    }
-
-    public EatWhatYouKill(Producer producer, Executor executor, int maxReserved)
-    {
-        this(producer,executor,new ReservedThreadExecutor(executor,maxReserved));
-    }
-
-    public EatWhatYouKill(Producer producer, Executor executor, ReservedThreadExecutor producers)
-    {
         _producer = producer;
         _executor = executor;
-        _producers = producers;
+        _producers = TryExecutor.getTryExecutor(executor);
         addBean(_producer);
         if (LOG.isDebugEnabled())
             LOG.debug("{} created", this);        

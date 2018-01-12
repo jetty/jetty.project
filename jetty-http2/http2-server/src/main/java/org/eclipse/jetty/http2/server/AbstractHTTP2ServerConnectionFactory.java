@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.server;
 
 import java.util.Objects;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -35,7 +36,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 
 @ManagedObject
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
@@ -183,28 +183,12 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
             streamIdleTimeout = endPoint.getIdleTimeout();
         session.setStreamIdleTimeout(streamIdleTimeout);
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
-
-        ReservedThreadExecutor executor = provideReservedThreadExecutor(connector);
         
         ServerParser parser = newServerParser(connector, session);
-        HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), executor,
+        HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
                         endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
         connection.addListener(connectionListener);
         return configure(connection, connector, endPoint);
-    }
-
-    protected ReservedThreadExecutor provideReservedThreadExecutor(Connector connector)
-    {
-        synchronized (this)
-        {
-            ReservedThreadExecutor executor = getBean(ReservedThreadExecutor.class);
-            if (executor == null)
-            {
-                executor = new ReservedThreadExecutor(connector.getExecutor(), getReservedThreads());
-                addManaged(executor);
-            }
-            return executor;
-        }
     }
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
