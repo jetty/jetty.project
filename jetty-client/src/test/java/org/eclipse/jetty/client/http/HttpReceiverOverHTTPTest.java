@@ -20,6 +20,8 @@ package org.eclipse.jetty.client.http;
 
 import java.io.EOFException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -30,9 +32,9 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -44,21 +46,38 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class HttpReceiverOverHTTPTest
-{
+{    
     @Rule
     public final TestTracker tracker = new TestTracker();
 
+    @Parameterized.Parameter(0)
+    public HttpCompliance compliance;
+    
     private HttpClient client;
     private HttpDestinationOverHTTP destination;
     private ByteArrayEndPoint endPoint;
     private HttpConnectionOverHTTP connection;
-
+    
+    @Parameterized.Parameters
+    public static Collection<Object[]> parameters() throws Exception
+    {
+        return Arrays.asList(
+            new Object[] { HttpCompliance.LEGACY },
+            new Object[] { HttpCompliance.RFC2616_LEGACY },
+            new Object[] { HttpCompliance.RFC7230_LEGACY }
+        );
+    }
+    
     @Before
     public void init() throws Exception
     {
         client = new HttpClient();
+        client.setHttpCompliance(compliance);
         client.start();
         destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
         destination.start();

@@ -110,7 +110,7 @@ public class ComplianceViolations2616Test
         HttpConfiguration config = new HttpConfiguration();
         config.setSendServerVersion(false);
 
-        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(config, HttpCompliance.RFC2616);
+        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(config, HttpCompliance.RFC2616_LEGACY);
         httpConnectionFactory.setRecordHttpComplianceViolations(true);
         connector = new LocalConnector(server, null, null, null, -1, httpConnectionFactory);
 
@@ -147,7 +147,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200 OK"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: RFC2616<RFC7230: https://tools.ietf.org/html/rfc7230#section-3.2 No colon"));   
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));   
         assertThat("Response body", response, containsString("[Name] = []"));
     }
 
@@ -164,7 +164,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: RFC2616<RFC7230: https://tools.ietf.org/html/rfc7230#section-3.2 No colon"));        
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));        
         assertThat("Response body", response, containsString("[Name] = []"));
     }
 
@@ -182,7 +182,8 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: RFC2616<RFC7230: https://tools.ietf.org/html/rfc7230#section-3.2.4 folding"));        
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: No line Folding"));        
         assertThat("Response body", response, containsString("[Name] = [Some Value]"));
+        
     }
 }
