@@ -51,6 +51,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
@@ -160,11 +161,14 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void testTimeoutOnListenerWithExplicitConnection() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+        NetworkConnector network_connector = (NetworkConnector)connector;
+        
         long timeout = 1000;
         start(new TimeoutHandler(2 * timeout));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = client.getDestination(getScheme(), "localhost", connector.getLocalPort());
+        Destination destination = client.getDestination(getScheme(), "localhost", network_connector.getLocalPort());
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
@@ -184,11 +188,14 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void testTimeoutIsCancelledOnSuccessWithExplicitConnection() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+        NetworkConnector network_connector = (NetworkConnector)connector;   
+        
         long timeout = 1000;
         start(new TimeoutHandler(timeout));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = client.getDestination(getScheme(), "localhost", connector.getLocalPort());
+        Destination destination = client.getDestination(getScheme(), "localhost", network_connector.getLocalPort());
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
@@ -271,6 +278,8 @@ public class HttpClientTimeoutTest extends AbstractTest
 
     private void testConnectTimeoutFailsRequest(boolean blocking) throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+
         String host = "10.255.255.1";
         int port = 80;
         int connectTimeout = 1000;
@@ -298,6 +307,7 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
         String host = "10.255.255.1";
         int port = 80;
         int connectTimeout = 2000;
@@ -327,6 +337,8 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void retryAfterConnectTimeout() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+
         final String host = "10.255.255.1";
         final int port = 80;
         int connectTimeout = 1000;
@@ -375,10 +387,13 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void testTimeoutCancelledWhenSendingThrowsException() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+        NetworkConnector network_connector = (NetworkConnector)connector;
+        
         start(new EmptyServerHandler());
 
         long timeout = 1000;
-        Request request = client.newRequest("badscheme://localhost:" + connector.getLocalPort());
+        Request request = client.newRequest("badscheme://localhost:" + network_connector.getLocalPort());
 
         try
         {

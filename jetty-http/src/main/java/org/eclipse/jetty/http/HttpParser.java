@@ -79,7 +79,6 @@ import static org.eclipse.jetty.http.HttpTokens.TAB;
  * <dl>
  * <dt>RFC7230</dt><dd>(default) Compliance with RFC7230</dd>
  * <dt>RFC2616</dt><dd>Wrapped headers and HTTP/0.9 supported</dd>
- * <dt>WEAK</dt><dd>Wrapped headers, HTTP/0.9 supported and a weaker parsing behaviour</dd>
  * <dt>LEGACY</dt><dd>(aka STRICT) Adherence to Servlet Specification requirement for
  * exact case of header names, bypassing the header caches, which are case insensitive,
  * otherwise equivalent to RFC2616</dd>
@@ -787,7 +786,7 @@ public class HttpParser
                     else if (b < HttpTokens.SPACE && b>=0)
                     {
                         // HTTP/0.9
-                        if (complianceViolation(HttpComplianceSection.NO_HTTP_9,"No request version"))
+                        if (complianceViolation(HttpComplianceSection.NO_HTTP_0_9,"No request version"))
                             throw new BadMessageException("HTTP/0.9 not supported");
                         handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
                         setState(State.END);
@@ -854,7 +853,7 @@ public class HttpParser
                         else
                         {
                             // HTTP/0.9
-                            if (complianceViolation(HttpComplianceSection.NO_HTTP_9,"No request version"))
+                            if (complianceViolation(HttpComplianceSection.NO_HTTP_0_9,"No request version"))
                                 throw new BadMessageException("HTTP/0.9 not supported");
 
                             handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
