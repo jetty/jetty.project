@@ -529,6 +529,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             list.add(selector + " keys=" + selector_keys.size());
             for (SelectionKey key : selector_keys)
             {
+                    if (key==null)
+                        continue;
                 try
                 {
                     list.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), key.interestOps(), key.attachment()));
@@ -756,7 +758,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             boolean zero = true;
             for (SelectionKey key : selector.keys())
             {
-                if (key.isValid())
+                if (key!=null && key.isValid())
                 {
                     Closeable closeable = null;
                     Object attachment = key.attachment();
@@ -802,7 +804,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             for (SelectionKey key : selector.keys())
             {
-                if (key.isValid())
+                if (key!=null && key.isValid())
                 {
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
