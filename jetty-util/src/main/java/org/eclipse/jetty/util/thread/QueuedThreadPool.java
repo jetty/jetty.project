@@ -282,7 +282,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     /**
      * Set the number of reserved threads.
      *
-     * @param reserved number of reserved threads or -1 for heuristically determined 
+     * @param reservedThreads number of reserved threads or -1 for heuristically determined 
      * @see #getReservedThreads
      */
     public void setReservedThreads(int reservedThreads)

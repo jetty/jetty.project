@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2.server;
 
 import java.util.Objects;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -49,7 +48,6 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
-    private int reservedThreads;
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -143,20 +141,22 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     }
 
     /**
-     * @see ReservedThreadExecutor
-     * @return The number of reserved threads
+     * Deprecated
+     * @return -1
      */
-    @ManagedAttribute("The number of threads reserved for high priority tasks")
+    @Deprecated
     public int getReservedThreads()
     {
-        return reservedThreads;
+        return -1;
     }
 
+    @Deprecated
+    /**
+     * Deprecated
+     * @threads ignored
+     */
     public void setReservedThreads(int threads)
     {
-        // TODO: see also HTTP2Connection.FillableCallback.
-        // TODO: currently disabled since the only value that works is 0.
-//        this.reservedThreads = threads;
     }
 
     public HttpConfiguration getHttpConfiguration()

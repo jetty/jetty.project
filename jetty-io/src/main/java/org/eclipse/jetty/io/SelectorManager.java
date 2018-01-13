@@ -133,8 +133,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
 
     /**
      * No longer implemented
-     * @see QueuedThreadPool
-     * @see ReservedThreadExecutor
      * @return -1
      */
     @Deprecated
@@ -145,8 +143,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
 
     /**
      * No longer implemented
-     * @see QueuedThreadPool
-     * @see ReservedThreadExecutor
      * @param threads ignored 
      */
     @Deprecated
