@@ -150,7 +150,7 @@ public class HttpClient extends ContainerLifeCycle
     private boolean connectBlocking = false;
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
-    private String contentType = "application/octet-stream";
+    private String defaultRequestContentType = "application/octet-stream";
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -1093,7 +1093,7 @@ public class HttpClient extends ContainerLifeCycle
     @ManagedAttribute("The default content type for request content")
     public String getDefaultRequestContentType()
     {
-        return contentType;
+        return defaultRequestContentType;
     }
 
     /**
@@ -1101,7 +1101,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setDefaultRequestContentType(String contentType)
     {
-        this.contentType = contentType;
+        this.defaultRequestContentType = contentType;
     }
 
     /**
