@@ -34,7 +34,6 @@
         <Set name="acceptQueueSize"><Property name="jetty.ssl.acceptQueueSize" deprecated="ssl.acceptQueueSize" default="0"/></Set>
         <Get name="SelectorManager">
           <Set name="connectTimeout"><Property name="jetty.ssl.connectTimeout" default="15000"/></Set>
-          <Set name="reservedThreads"><Property name="jetty.ssl.reservedThreads" default="-2"/></Set>
         </Get>
       </New>
     </Arg>

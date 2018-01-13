@@ -175,8 +175,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     @Override
     public void execute(Runnable task) throws RejectedExecutionException
     {
-        if (!tryExecute(task))
-            throw new RejectedExecutionException();
+        _executor.execute(task);
     }
 
     /**
