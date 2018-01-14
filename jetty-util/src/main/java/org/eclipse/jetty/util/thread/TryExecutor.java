@@ -54,6 +54,24 @@ public interface TryExecutor extends Executor
         return NO_TRY;
     }
     
+    public static TryExecutor getNoTryExecutor(Executor executor)
+    {
+        return new TryExecutor()
+        {
+            @Override
+            public void execute(Runnable task)
+            {
+                executor.execute(task);
+            }
+            
+            @Override
+            public boolean tryExecute(Runnable task)
+            {
+                return false;
+            }
+        };
+    }
+    
     public static TryExecutor NO_TRY = new TryExecutor()
     {
         @Override

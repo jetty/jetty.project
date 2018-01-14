@@ -73,14 +73,14 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     private final LongAdder _executed = new LongAdder();
     private final Producer _producer;
     private final Executor _executor;
-    private final TryExecutor _producers;
+    private final TryExecutor _tryExecutor;
     private State _state = State.IDLE;
 
     public EatWhatYouKill(Producer producer, Executor executor)
     {
         _producer = producer;
         _executor = executor;
-        _producers = TryExecutor.getTryExecutor(executor);
+        _tryExecutor = TryExecutor.getTryExecutor(executor);
         addBean(_producer);
         if (LOG.isDebugEnabled())
             LOG.debug("{} created", this);        
@@ -204,7 +204,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 {
                     synchronized(this)
                     {
-                        if (_producers.tryExecute(this))
+                        if (_tryExecutor.tryExecute(this))
                         {
                             // EXECUTE PRODUCE CONSUME!
                             // We have executed a new Producer, so we can EWYK consume
@@ -324,7 +324,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     {
         builder.append(_state);
         builder.append('/');
-        builder.append(_producers);
+        builder.append(_tryExecutor);
         builder.append("[nb=");
         builder.append(getNonBlockingTasksConsumed());
         builder.append(",c=");
