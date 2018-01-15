@@ -131,7 +131,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     protected void doStart() throws Exception
     {
-        int reservedThreads = _reservedThreads==-1?Math.max(1,getMaxThreads()/20):_reservedThreads;
+        int reservedThreads = _reservedThreads==-1?Math.max(1,getMaxThreads()/10):_reservedThreads;
         if (reservedThreads>0)
             _tryExecutor = new ReservedThreadExecutor(this,_reservedThreads);
         addBean(_tryExecutor);
@@ -627,25 +627,15 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     public String toString()
     {
-        int r = -1;
-        int p = 0;
-        int c = _reservedThreads;
-        if (_tryExecutor instanceof ReservedThreadExecutor)
-        {
-            ReservedThreadExecutor rte = (ReservedThreadExecutor)_tryExecutor;
-            r = rte.getAvailable();
-            p = rte.getPending();
-            c = rte.getCapacity();
-        }
-        return String.format("QueuedThreadPool@%s{%s,%d<=%d<=%d,i=%d,r=%d/%d/%d,q=%d}", 
+        return String.format("QueuedThreadPool@%s{%s,%d<=%d<=%d,i=%d,q=%d,r=%s}", 
             _name,
             getState(),
             getMinThreads(),
             getThreads(),
             getMaxThreads(),
             getIdleThreads(),
-            r,p,c,
-            (_jobs == null ? -1 : _jobs.size()));
+            _jobs.size(),
+            _tryExecutor);
     }
 
     private Runnable idleJobPoll() throws InterruptedException

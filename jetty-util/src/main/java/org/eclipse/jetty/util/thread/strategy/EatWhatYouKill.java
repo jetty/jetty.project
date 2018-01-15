@@ -80,7 +80,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     {
         _producer = producer;
         _executor = executor;
-        _tryExecutor = TryExecutor.getTryExecutor(executor);
+        _tryExecutor = TryExecutor.asTryExecutor(executor);
         addBean(_producer);
         if (LOG.isDebugEnabled())
             LOG.debug("{} created", this);        

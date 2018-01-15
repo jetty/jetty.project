@@ -150,13 +150,14 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         return -1;
     }
 
-    @Deprecated
     /**
      * Deprecated
      * @threads ignored
      */
+    @Deprecated
     public void setReservedThreads(int threads)
     {
+        throw new UnsupportedOperationException();
     }
 
     public HttpConfiguration getHttpConfiguration()

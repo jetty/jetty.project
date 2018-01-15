@@ -148,6 +148,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Deprecated
     public void setReservedThreads(int threads)
     {
+        throw new UnsupportedOperationException();
     }
     
     /**

@@ -40,22 +40,11 @@ public interface TryExecutor extends Executor
             throw new RejectedExecutionException();
     }
     
-    public static boolean tryExecute(Executor executor, Runnable task)
-    {
-        if (executor instanceof TryExecutor)
-            return ((TryExecutor)executor).tryExecute(task);
-        return false;
-    }
-
-    public static TryExecutor getTryExecutor(Executor executor)
+    public static TryExecutor asTryExecutor(Executor executor)
     {        
         if (executor instanceof TryExecutor)
             return (TryExecutor)executor;
-        return NO_TRY;
-    }
-    
-    public static TryExecutor getNoTryExecutor(Executor executor)
-    {
+
         return new TryExecutor()
         {
             @Override
