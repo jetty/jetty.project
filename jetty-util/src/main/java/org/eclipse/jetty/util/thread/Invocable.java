@@ -49,14 +49,7 @@ public interface Invocable
         BLOCKING, NON_BLOCKING, EITHER
     }
 
-    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<Boolean>()
-    {
-        @Override
-        protected Boolean initialValue()
-        {
-            return Boolean.FALSE;
-        }
-    };
+    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<Boolean>();
 
     /**
      * Test if the current thread has been tagged as non blocking
@@ -65,7 +58,7 @@ public interface Invocable
      */
     public static boolean isNonBlockingInvocation()
     {
-        return __nonBlocking.get();
+        return Boolean.TRUE.equals(__nonBlocking.get());
     }
 
     /**
@@ -75,7 +68,6 @@ public interface Invocable
      */
     public static void invokeNonBlocking(Runnable task)
     {
-        // a Choice exists, so we must indicate NonBlocking
         Boolean was_non_blocking = __nonBlocking.get();
         try
         {
@@ -86,84 +78,6 @@ public interface Invocable
         {
             __nonBlocking.set(was_non_blocking);
         }
-    }
-
-    /**
-     * Invoke a task with the calling thread.
-     * If the task is an {@link Invocable} of {@link InvocationType#EITHER}
-     * then it is invoked with {@link #invokeNonBlocking(Runnable)}, to 
-     * indicate the type of invocation that has been assumed.
-     * @param task The task to invoke.
-     */
-    public static void invokePreferNonBlocking(Runnable task)
-    {
-        switch (getInvocationType(task))
-        {
-            case BLOCKING:
-            case NON_BLOCKING:
-                task.run();
-                break;
-
-            case EITHER:
-                // a Choice exists, so we must indicate NonBlocking
-                invokeNonBlocking(task);
-                break;
-        }
-    }
-
-    /**
-     * Invoke a task with the calling thread.
-     * If the task is an {@link Invocable} of {@link InvocationType#EITHER}
-     * and the preferredInvocationType is not {@link InvocationType#BLOCKING}
-     * then it is invoked with {@link #invokeNonBlocking(Runnable)}.
-     * @param task The task to invoke.
-     * @param preferredInvocationType The invocation type to use if the task
-     * does not indicate a preference.
-     */
-    public static void invokePreferred(Runnable task, InvocationType preferredInvocationType)
-    {
-        switch (getInvocationType(task))
-        {
-            case BLOCKING:
-            case NON_BLOCKING:
-                task.run();
-                break;
-
-            case EITHER:
-                if (getInvocationType(task) == InvocationType.EITHER && preferredInvocationType == InvocationType.NON_BLOCKING)
-                    invokeNonBlocking(task);
-                else
-                    task.run();
-                break;
-        }
-    }
-
-    /**
-     * wrap a task with the to indicate invocation type.
-     * If the task is an {@link Invocable} of {@link InvocationType#EITHER}
-     * and the preferredInvocationType is not {@link InvocationType#BLOCKING}
-     * then it is wrapped with an invocation of {@link #invokeNonBlocking(Runnable)}.
-     * otherwise the task itself is returned.
-     * @param task The task to invoke.
-     * @param preferredInvocationType The invocation type to use if the task
-     * does not indicate a preference.
-     * @return A Runnable that invokes the task in the declared or preferred type.
-     */
-    public static Runnable asPreferred(Runnable task, InvocationType preferredInvocationType)
-    {
-        switch (getInvocationType(task))
-        {
-            case BLOCKING:
-            case NON_BLOCKING:
-                break;
-
-            case EITHER:
-                if (preferredInvocationType == InvocationType.NON_BLOCKING)
-                    return () -> invokeNonBlocking(task);
-                break;
-        }
-
-        return task;
     }
 
     /**

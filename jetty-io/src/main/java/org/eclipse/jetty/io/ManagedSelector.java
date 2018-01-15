@@ -423,6 +423,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             catch (Throwable x)
             {
                 closeNoExceptions(_selector);
+                _selector = null;
                 if (isRunning())
                     LOG.warn(x);
                 else
@@ -490,16 +491,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             // This will update only those keys whose selection did not cause an
             // updateKeys update to be submitted.
             for (SelectionKey key : _keys)
-                updateKey(key);
+            {
+                Object attachment = key.attachment();
+                if (attachment instanceof Selectable)
+                    ((Selectable)attachment).updateKey();
+            }
             _keys.clear();
         }
 
-        private void updateKey(SelectionKey key)
-        {
-            Object attachment = key.attachment();
-            if (attachment instanceof Selectable)
-                ((Selectable)attachment).updateKey();
-        }
 
         @Override
         public String toString()
