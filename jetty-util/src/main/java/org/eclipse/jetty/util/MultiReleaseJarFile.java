@@ -238,7 +238,7 @@ public class MultiReleaseJarFile implements Closeable
         boolean isApplicable()
         {
             if (multiRelease)
-               return this.version>=0 && this.version <= platform && name.length()>0;
+               return ( this.version==0 || this.version == platform ) && name.length()>0;
             return this.version==0;
         }
 
