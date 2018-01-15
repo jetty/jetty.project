@@ -44,30 +44,30 @@ public interface TryExecutor extends Executor
     {        
         if (executor instanceof TryExecutor)
             return (TryExecutor)executor;
-
-        return new TryExecutor()
-        {
-            @Override
-            public void execute(Runnable task)
-            {
-                executor.execute(task);
-            }
-            
-            @Override
-            public boolean tryExecute(Runnable task)
-            {
-                return false;
-            }
-        };
+        return new NoTryExecutor(executor);
     }
-    
-    public static TryExecutor NO_TRY = new TryExecutor()
+
+    public static class NoTryExecutor implements TryExecutor
     {
+        private final Executor executor;
+
+        public NoTryExecutor(Executor executor)
+        {
+            this.executor = executor;
+        }
+
+        @Override
+        public void execute(Runnable task)
+        {
+            executor.execute(task);
+        }
+
         @Override
         public boolean tryExecute(Runnable task)
         {
             return false;
         }
-    };
-    
+    }
+
+    public static final TryExecutor NO_TRY = task -> false;
 }
