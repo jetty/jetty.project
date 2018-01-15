@@ -59,24 +59,8 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        
-        // TODO HTTP2 cannot use EWYK without fix for #1803
-        TryExecutor no_try = new TryExecutor()
-        {
-            @Override
-            public void execute(Runnable task)
-            {
-                executor.execute(task);
-            }
-            
-            @Override
-            public boolean tryExecute(Runnable task)
-            {
-                return false;
-            }
-        };
-        
-        this.strategy = new EatWhatYouKill(producer, no_try);
+                
+        this.strategy = new EatWhatYouKill(producer, executor);
         LifeCycle.start(strategy);
     }
 
