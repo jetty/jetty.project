@@ -141,7 +141,6 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     }
 
     /**
-     * Deprecated
      * @return -1
      */
     @Deprecated
@@ -151,7 +150,6 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     }
 
     /**
-     * Deprecated
      * @param threads ignored
      */
     @Deprecated

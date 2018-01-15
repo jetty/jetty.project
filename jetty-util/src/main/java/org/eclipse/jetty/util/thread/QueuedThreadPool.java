@@ -95,16 +95,16 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 
     public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
     {
-        this(maxThreads, minThreads, idleTimeout, -1, queue, null);
+        this(maxThreads, minThreads, idleTimeout, -1, queue, threadGroup);
     }
     
-    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("reservedThreads") int reservedThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
+    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
     {
         setMinThreads(minThreads);
         setMaxThreads(maxThreads);
         setIdleTimeout(idleTimeout);
         setStopTimeout(5000);
-
+        setReservedThreads(reservedThreads);
         if (queue==null)
         {
             int capacity=Math.max(_minThreads, 8);
@@ -112,7 +112,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         }
         _jobs=queue;
         _threadGroup=threadGroup;
-        _budget=new ThreadPoolBudget(this);        
+        setThreadPoolBudget(new ThreadPoolBudget(this));
     }
 
     @Override

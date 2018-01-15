@@ -38,12 +38,9 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPoolBudget;
-import org.eclipse.jetty.util.thread.TryExecutor;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 /**
  * <p>{@link SelectorManager} manages a number of {@link ManagedSelector}s that
@@ -132,8 +129,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     }
 
     /**
-     * No longer implemented
      * @return -1
+     * @deprecated
      */
     @Deprecated
     public int getReservedThreads()
@@ -142,8 +139,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     }
 
     /**
-     * No longer implemented
-     * @param threads ignored 
+     * @param threads ignored
+     * @deprecated
      */
     @Deprecated
     public void setReservedThreads(int threads)
@@ -170,7 +167,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         return _selectors.length;
     }
 
-    private ManagedSelector chooseSelector(SelectableChannel channel)
+    private ManagedSelector chooseSelector()
     {
         return _selectors[_selectorIndex.updateAndGet(_selectorIndexUpdate)];
     }
@@ -187,7 +184,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public void connect(SelectableChannel channel, Object attachment)
     {
-        ManagedSelector set = chooseSelector(channel);
+        ManagedSelector set = chooseSelector();
         set.submit(set.new Connect(channel, attachment));
     }
 
@@ -212,7 +209,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public void accept(SelectableChannel channel, Object attachment)
     {
-        final ManagedSelector selector = chooseSelector(channel);
+        final ManagedSelector selector = chooseSelector();
         selector.submit(selector.new Accept(channel, attachment));
     }
 
@@ -227,7 +224,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public Closeable acceptor(SelectableChannel server)
     {
-        final ManagedSelector selector = chooseSelector(null);
+        final ManagedSelector selector = chooseSelector();
         ManagedSelector.Acceptor acceptor = selector.new Acceptor(server);
         selector.submit(acceptor);
         return acceptor;
