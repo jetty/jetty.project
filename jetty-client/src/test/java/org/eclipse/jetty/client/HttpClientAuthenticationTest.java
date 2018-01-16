@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -465,8 +466,16 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @Test
     public void test_RequestFailsAfterResponse() throws Exception
-    {
-        startBasic(new EmptyServerHandler());
+    {        
+        startBasic(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request,
+                                   HttpServletResponse response) throws IOException, ServletException
+            {
+                IO.readBytes(jettyRequest.getInputStream());              
+            }
+        });
 
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
         URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
