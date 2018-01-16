@@ -43,18 +43,12 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        Handshaker handshaker = getHandshaker(baseRequest);
+        Handshaker handshaker = HandshakerFactory.getHandshaker(request);
         if (LOG.isDebugEnabled())
             LOG.debug("handle {} handshaker={}",baseRequest,handshaker);
         if (handshaker!=null && handshaker.upgradeRequest(negotiator, request, response))
             return;
         if (!baseRequest.isHandled())
             super.handle(target,baseRequest,request,response);
-    }
-
-    protected Handshaker getHandshaker(Request baseRequest)
-    {
-        // TODO This needs to be a factory so a handshaker can be obtained for either HTTP/1 or HTTP/2
-        return baseRequest.getHttpChannel().getConnector().getBean(Handshaker.class);
     }
 }
