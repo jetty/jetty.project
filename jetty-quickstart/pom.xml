@@ -72,13 +72,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jsp</artifactId>
+      <artifactId>jetty-apache-jsp</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jstl</artifactId>
+      <artifactId>jetty-apache-jstl</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

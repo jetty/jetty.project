@@ -77,7 +77,7 @@
     <!-- below here lie testing dragons -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jsp</artifactId>
+      <artifactId>jetty-apache-jsp</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
