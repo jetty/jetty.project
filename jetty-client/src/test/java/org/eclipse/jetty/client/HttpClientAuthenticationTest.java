@@ -41,6 +41,7 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
@@ -464,6 +465,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
+    
     @Test
     public void test_RequestFailsAfterResponse() throws Exception
     {        
@@ -476,9 +478,35 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 IO.readBytes(jettyRequest.getInputStream());              
             }
         });
+        
+        CountDownLatch authLatch = new CountDownLatch(1);
+        client.getProtocolHandlers().remove(WWWAuthenticationProtocolHandler.NAME);
+        client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(client)
+        {
+            @Override
+            public Listener getResponseListener()
+            {
+                Response.Listener listener = super.getResponseListener();
+                return new Listener.Adapter()
+                {
+                    @Override
+                    public void onSuccess(Response response)
+                    {
+                        authLatch.countDown();
+                    }
 
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        listener.onComplete(result);
+                    }
+                };
+            }
+        });
+        
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
         URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+
         BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "basic");
         authenticationStore.addAuthentication(authentication);
 
@@ -495,8 +523,13 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                     if (fail.compareAndSet(true, false))
                     {
                         // Wait for the 401 response to arrive
-                        // to the authentication protocol handler.
-                        sleep(1000);
+                        try
+                        {
+                            authLatch.await();
+                        }
+                        catch(InterruptedException e)
+                        {}
+                        
                         // Trigger request failure.
                         throw new RuntimeException();
                     }
@@ -504,6 +537,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                     {
                         return null;
                     }
+                    
                 default:
                     throw new IllegalStateException();
             }
@@ -513,6 +547,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 .scheme(scheme)
                 .path("/secure")
                 .content(content)
+                .onResponseSuccess(r->authLatch.countDown())
                 .send(result ->
                 {
                     if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
@@ -520,18 +555,6 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 });
 
         Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    private void sleep(long time)
-    {
-        try
-        {
-            Thread.sleep(time);
-        }
-        catch (InterruptedException x)
-        {
-            throw new RuntimeException(x);
-        }
     }
 
     private static class GeneratingContentProvider implements ContentProvider
