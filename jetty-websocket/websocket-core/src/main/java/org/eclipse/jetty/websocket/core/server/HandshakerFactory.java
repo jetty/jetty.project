@@ -26,7 +26,23 @@ public class HandshakerFactory
 {
     public static Handshaker getHandshaker(HttpServletRequest request)
     {
-        // TODO: flesh out better
+        // FAST FAIL: Return null if not an obvious upgrade request.
+
+        String upgrade = request.getHeader("Upgrade");
+        if ((upgrade == null) || (!"websocket".equalsIgnoreCase(upgrade)))
+        {
+            // no "Upgrade: websocket" header present.
+            return null;
+        }
+
+        String connection = request.getHeader("Connection");
+        if (connection == null)
+        {
+            // no "Connection: upgrade" header present.
+            return null;
+        }
+
+        // TODO: should probably check HTTP/1.1 vs HTTP/2 at some point in the future too.
 
         Request baseRequest = Request.getBaseRequest(request);
         if (baseRequest != null)
@@ -38,6 +54,7 @@ public class HandshakerFactory
             }
         }
 
+        // TODO: should probably return null if missing obvious "Upgrade:WebSocket" header.
         // TODO: use request knowledge about handshake type. eg: HTTP/1.1 or HTTP/2
         return new RFC6455Handshaker();
     }

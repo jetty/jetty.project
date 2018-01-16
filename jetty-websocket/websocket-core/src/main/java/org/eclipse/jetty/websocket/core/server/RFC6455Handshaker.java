@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 
-import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -35,9 +34,12 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
@@ -55,8 +57,9 @@ import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 public final class RFC6455Handshaker implements Handshaker
 {
     static final Logger LOG = Log.getLogger(RFC6455Handshaker.class);
-    private static HttpField UpgradeWebSocket = new PreEncodedHttpField(HttpHeader.UPGRADE, "WebSocket");
-    private static HttpField ConnectionUpgrade = new PreEncodedHttpField(HttpHeader.CONNECTION,HttpHeader.UPGRADE.asString());
+    private static final HttpField UPGRADE_WEBSOCKET = new PreEncodedHttpField(HttpHeader.UPGRADE, "WebSocket");
+    private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION,HttpHeader.UPGRADE.asString());
+    private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
     public final static int VERSION = WebSocketConstants.SPEC_VERSION;
 
@@ -214,9 +217,16 @@ public final class RFC6455Handshaker implements Handshaker
         // send upgrade response
         Response baseResponse = baseRequest.getResponse();
         baseResponse.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
-        baseResponse.getHttpFields().add(UpgradeWebSocket); // TODO set rather than add
-        baseResponse.getHttpFields().add(ConnectionUpgrade); // TODO set rather than add
-        baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_ACCEPT, AcceptHash.hashKey(negotiation.getKey()));
+        baseResponse.getHttpFields().put(UPGRADE_WEBSOCKET);
+        baseResponse.getHttpFields().put(CONNECTION_UPGRADE);
+        baseResponse.getHttpFields().put(HttpHeader.SEC_WEBSOCKET_ACCEPT, AcceptHash.hashKey(negotiation.getKey()));
+
+        // See bugs.eclipse.org/485969
+        if (getSendServerVersion(connector))
+        {
+            baseResponse.getHttpFields().put(SERVER_VERSION);
+        }
+
         baseResponse.flushBuffer();
         baseRequest.setHandled(true);
 
@@ -231,5 +241,20 @@ public final class RFC6455Handshaker implements Handshaker
     protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
     {
         return new WebSocketConnection(endPoint,executor,byteBufferPool,wsChannel);
+    }
+
+    private boolean getSendServerVersion(Connector connector)
+    {
+        ConnectionFactory connFactory = connector.getConnectionFactory(HttpVersion.HTTP_1_1.asString());
+        if (connFactory == null)
+            return false;
+
+        if (connFactory instanceof HttpConnectionFactory)
+        {
+            HttpConfiguration httpConf = ((HttpConnectionFactory) connFactory).getHttpConfiguration();
+            if (httpConf != null)
+                return httpConf.getSendServerVersion();
+        }
+        return false;
     }
 }
