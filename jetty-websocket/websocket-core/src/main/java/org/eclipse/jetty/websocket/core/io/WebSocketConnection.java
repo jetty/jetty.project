@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core.io;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -36,7 +35,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
@@ -94,11 +92,10 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
 
         this.bufferPool = bufferPool;
 
-        this.id = String.format("%s:%d->%s:%d",
-                endp.getLocalAddress().getAddress().getHostAddress(),
-                endp.getLocalAddress().getPort(),
-                endp.getRemoteAddress().getAddress().getHostAddress(),
-                endp.getRemoteAddress().getPort());
+        // TODO: this should be unique for the connection, resilient for proxying, and unix socket like usages
+        this.id = String.format("%s->%s",
+                endp.getLocalAddress().getAddress(),
+                endp.getRemoteAddress().getAddress());
 
         this.policy = channel.getPolicy();
         this.channel = channel;

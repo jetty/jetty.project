@@ -67,6 +67,14 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         handler.setWebSocketChannel(this);
     }
 
+    /**
+     * Flush the batched frames, blocking till completion.
+     */
+    public void flush()
+    {
+        // TODO: flush the outgoing frames.
+    }
+
     public ExtensionStack getExtensionStack()
     {
         return extensionStack;
@@ -86,19 +94,50 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     {
         return null; // TODO
     }
-    
+
+    public boolean isOpen()
+    {
+        // TODO: should report true after frameHandler.open() and false after frameHandler.close()
+        // TODO: should be aware of connection termination too.
+        return false;
+    }
+
     public void setWebSocketConnection(WebSocketConnection connection)
     {
         this.connection = connection;
     }
 
+    /**
+     * Send Close Frame with no payload.
+     *
+     * @param callback the callback on successful send of close frame
+     */
+    public void close(Callback callback)
+    {
+        outgoingFrame(new CloseFrame(), callback, BatchMode.OFF);
+    }
+
+    /**
+     * Send Close Frame with specified Status Code and optional Reason
+     *
+     * @param statusCode a valid WebSocket status code
+     * @param reason an optional reason phrase
+     * @param callback the callback on successful send of close frame
+     */
     public void close(int statusCode, String reason, Callback callback)
     {
         // TODO guard for multiple closes?
+        // TODO truncate extra large reason phrases to fit within limits?
 
         outgoingFrame(new CloseFrame().setPayload(statusCode, reason), callback, BatchMode.OFF);
     }
 
+    /**
+     * Send Close Frame with specified Close Status
+     *
+     * @param closeStatus a valid WebSocket CloseStatus
+     * @param callback the callback on successful send of close frame
+     */
     public void close(CloseStatus closeStatus, Callback callback)
     {
         close(closeStatus.getCode(), closeStatus.getReason(), callback);

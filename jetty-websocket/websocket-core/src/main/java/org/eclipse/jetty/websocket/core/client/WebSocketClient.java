@@ -120,6 +120,7 @@ public class WebSocketClient extends ContainerLifeCycle
         return request.sendAsync();
     }
 
+    // TODO: review need for this.
     private synchronized void init() throws IOException
     {
         if (!ShutdownThread.isRegistered(this))
