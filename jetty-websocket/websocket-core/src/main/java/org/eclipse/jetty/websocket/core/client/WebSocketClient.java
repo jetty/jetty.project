@@ -66,10 +66,14 @@ public class WebSocketClient extends ContainerLifeCycle
         this.objectFactory = new DecoratedObjectFactory();
     }
 
-    public Future<WebSocketChannel> connect(FrameHandler localFrameHandler, URI wsUri) throws IOException
+    public Future<WebSocketChannel> connect(FrameHandler frameHandler, URI wsUri) throws IOException
     {
-        WebSocketClientUpgradeRequest request = new WebSocketClientUpgradeRequest(this, wsUri, localFrameHandler);
+        WebSocketClientUpgradeRequest request = new WebSocketClientUpgradeRequest(this, wsUri, frameHandler);
+        return connect(request);
+    }
 
+    public Future<WebSocketChannel> connect(WebSocketClientUpgradeRequest request) throws IOException
+    {
         if (!isStarted())
         {
             throw new IllegalStateException(WebSocketClient.class.getSimpleName() + "@" + this.hashCode() + " is not started");
@@ -104,7 +108,7 @@ public class WebSocketClient extends ContainerLifeCycle
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("connect websocket {} to {}", localFrameHandler, toUri);
+            LOG.debug("connect websocket {} to {}", request.getFrameHandler(), request.getURI());
 
         init();
 

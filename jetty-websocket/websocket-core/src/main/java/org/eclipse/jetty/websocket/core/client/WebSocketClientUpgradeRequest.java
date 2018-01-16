@@ -104,6 +104,11 @@ public class WebSocketClientUpgradeRequest extends HttpRequest implements Respon
         return extensions;
     }
 
+    public FrameHandler getFrameHandler()
+    {
+        return frameHandler;
+    }
+
     public void setExtensions(List<ExtensionConfig> configs)
     {
         this.extensions = configs;
