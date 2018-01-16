@@ -18,14 +18,17 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
+import java.util.function.BiFunction;
 
 import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.server.WebSocketCreator;
@@ -33,52 +36,102 @@ import org.eclipse.jetty.websocket.server.WebSocketCreator;
 /**
  * Basic WebSocketServletFactory for working with Jetty-based WebSocketServlets
  */
-public interface WebSocketServletFactory
+public class WebSocketServletFactory
 {
-    class Loader
-    {
-        final static String DEFAULT_IMPL = "org.eclipse.jetty.websocket.server.WebSocketServerFactory";
+    /** The context that the factory was created from */
+    private final ClassLoader contextClassloader;
+    private WebSocketPolicy policy;
+    private WebSocketCreator creator;
+    private WebSocketExtensionRegistry extensionRegistry;
+    private DecoratedObjectFactory objectFactory;
+    private ByteBufferPool bufferPool;
 
-        public static WebSocketServletFactory load(ServletContext ctx)
-        {
-            try
-            {
-                Class<? extends WebSocketServletFactory> wsClazz =
-                        (Class<? extends WebSocketServletFactory>) Class.forName(DEFAULT_IMPL,true,Thread.currentThread().getContextClassLoader());
-                Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(new Class<?>[]{ServletContext.class});
-                return ctor.newInstance(ctx);
-            }
-            catch (ClassNotFoundException e)
-            {
-                throw new RuntimeException("Unable to load " + DEFAULT_IMPL, e);
-            }
-            catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e)
-            {
-                throw new RuntimeException("Unable to instantiate " + DEFAULT_IMPL, e);
-            }
-        }
+    /** The API specific FrameHandler creation function */
+    private BiFunction<WebSocketServletFactory, Object, FrameHandler> newFrameHandlerFunction;
+
+    public WebSocketServletFactory(ServletContext context)
+    {
+        this(getContextAttribute(context, WebSocketPolicy.class),
+                getContextAttribute(context, WebSocketExtensionRegistry.class),
+                getContextAttribute(context, DecoratedObjectFactory.class),
+                getContextAttribute(context, ByteBufferPool.class));
     }
 
-    boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException;
-    
-    boolean acceptWebSocket(WebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException;
+    public WebSocketServletFactory(WebSocketPolicy policy)
+    {
+        this(policy, null, null, null);
+    }
 
-    void start() throws Exception;
-    void stop() throws Exception;
-    
-    WebSocketCreator getCreator();
-    
-    WebSocketExtensionRegistry getExtensionRegistry();
-    
+    public WebSocketServletFactory(WebSocketPolicy policy, WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool)
+    {
+        this.policy = policy;
+        this.extensionRegistry = extensionRegistry;
+        this.objectFactory = objectFactory;
+        this.bufferPool = bufferPool;
+        this.contextClassloader = Thread.currentThread().getContextClassLoader();
+
+        if (this.policy == null)
+            this.policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        if (this.objectFactory == null)
+            this.objectFactory = new DecoratedObjectFactory();
+        if (this.extensionRegistry == null)
+            this.extensionRegistry = new WebSocketExtensionRegistry();
+        if (this.bufferPool == null)
+            this.bufferPool = new MappedByteBufferPool();
+    }
+
+    private static <T> T getContextAttribute(ServletContext context, Class<T> clazz)
+    {
+        return (T) context.getAttribute(clazz.getName());
+    }
+
+    public void setNewFrameHandlerFunction(BiFunction<WebSocketServletFactory, Object, FrameHandler> newFrameHandlerFunction)
+    {
+        this.newFrameHandlerFunction = newFrameHandlerFunction;
+    }
+
+    public ClassLoader getContextClassloader()
+    {
+        return contextClassloader;
+    }
+
+    public WebSocketCreator getCreator()
+    {
+        return creator;
+    }
+
+    public WebSocketExtensionRegistry getExtensionRegistry()
+    {
+        return this.extensionRegistry;
+    }
+
+    public ByteBufferPool getBufferPool()
+    {
+        return bufferPool;
+    }
+
+    public DecoratedObjectFactory getObjectFactory()
+    {
+        return objectFactory;
+    }
+
     /**
      * Get the base policy in use for WebSockets.
      *
      * @return the base policy
      */
-    WebSocketPolicy getPolicy();
-    
-    boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response);
-    
+    public WebSocketPolicy getPolicy()
+    {
+        return this.policy;
+    }
+
+    public FrameHandler newFrameHandler(Object websocketPojo)
+    {
+        Objects.requireNonNull(websocketPojo, "WebSocket Class cannot be null");
+
+        return newFrameHandlerFunction.apply(this, websocketPojo);
+    }
+
     /**
      * Register a websocket class pojo with the default {@link WebSocketCreator}.
      * <p>
@@ -86,7 +139,26 @@ public interface WebSocketServletFactory
      *
      * @param websocketPojo the class to instantiate for each incoming websocket upgrade request.
      */
-    void register(Class<?> websocketPojo);
-    
-    void setCreator(WebSocketCreator creator);
+    public void register(Class<?> websocketPojo)
+    {
+        Objects.requireNonNull(websocketPojo, "WebSocket Class cannot be null");
+
+        this.creator = (req, resp) -> {
+            try
+            {
+                return objectFactory.createInstance(websocketPojo);
+            }
+            catch (InstantiationException | IllegalAccessException e)
+            {
+                throw new WebSocketException("Unable to create instance of " + websocketPojo, e);
+            }
+        };
+    }
+
+    public void setCreator(WebSocketCreator creator)
+    {
+        Objects.requireNonNull(creator, "WebSocketCreator cannot be null");
+
+        this.creator = creator;
+    }
 }

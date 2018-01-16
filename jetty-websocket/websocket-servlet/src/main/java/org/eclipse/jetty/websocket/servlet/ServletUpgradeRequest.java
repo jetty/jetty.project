@@ -41,11 +41,10 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
 /**
- * Servlet specific {@link UpgradeRequest} implementation.
+ * Servlet specific Upgrade Request implementation.
  */
-public class ServletUpgradeRequest implements UpgradeRequest
+public class ServletUpgradeRequest
 {
-    private static final String CANNOT_MODIFY_SERVLET_REQUEST = "Cannot modify Servlet Request";
     private final URI requestURI;
     private final String queryString;
     private final UpgradeHttpServletRequest request;
@@ -67,29 +66,11 @@ public class ServletUpgradeRequest implements UpgradeRequest
         this.request = new UpgradeHttpServletRequest(httpRequest);
     }
 
-    @Override
-    public void addExtensions(ExtensionConfig... configs)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
-    @Override
-    public void addExtensions(String... configs)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
-    public void complete()
-    {
-        request.complete();
-    }
-
     public X509Certificate[] getCertificates()
     {
         return (X509Certificate[])request.getAttribute("javax.servlet.request.X509Certificate");
     }
 
-    @Override
     public List<HttpCookie> getCookies()
     {
         if(cookies == null)
@@ -110,20 +91,17 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return cookies;
     }
 
-    @Override
     public List<ExtensionConfig> getExtensions()
     {
         Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
         return ExtensionConfig.parseEnum(e);
     }
 
-    @Override
     public String getHeader(String name)
     {
         return request.getHeader(name);
     }
 
-    @Override
     public int getHeaderInt(String name)
     {
         String val = request.getHeader(name);
@@ -134,19 +112,16 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return Integer.parseInt(val);
     }
 
-    @Override
     public Map<String, List<String>> getHeaderMap()
     {
         return request.getHeaders();
     }
 
-    @Override
     public List<String> getHeaders(String name)
     {
         return request.getHeaders().get(name);
     }
 
-    @Override
     public String getHost()
     {
         return requestURI.getHost();
@@ -165,7 +140,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return request;
     }
 
-    @Override
     public String getHttpVersion()
     {
         return request.getProtocol();
@@ -233,7 +207,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return new InetSocketAddress(getLocalAddress(), getLocalPort());
     }
 
-    @Override
     public String getMethod()
     {
         return request.getMethod();
@@ -244,7 +217,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return getHeader("Origin");
     }
 
-    @Override
     public Map<String, List<String>> getParameterMap()
     {
         if (parameterMap == null)
@@ -260,7 +232,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return parameterMap;
     }
     
-    @Override
     public String getProtocolVersion()
     {
         String version = request.getHeader(WebSocketConstants.SEC_WEBSOCKET_VERSION);
@@ -271,7 +242,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return version;
     }
     
-    @Override
     public String getQueryString()
     {
         return this.queryString;
@@ -329,7 +299,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return requestPath;
     }
 
-    @Override
     public URI getRequestURI()
     {
         return requestURI;
@@ -361,7 +330,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return request.getSession(false);
     }
 
-    @Override
     public List<String> getSubProtocols()
     {
         if (subprotocols == null)
@@ -388,7 +356,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return request.getUserPrincipal();
     }
 
-    @Override
     public boolean hasSubProtocol(String test)
     {
         for (String protocol : getSubProtocols())
@@ -426,68 +393,8 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return protocol.split("\\s*,\\s*");
     }
 
-    @Override
-    public void setCookies(List<HttpCookie> cookies)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
-    @Override
-    public void setExtensions(List<ExtensionConfig> configs)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
-    @Override
-    public void setHeader(String name, List<String> values)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
-    @Override
-    public void setHeader(String name, String value)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
-    @Override
-    public void setHeaders(Map<String, List<String>> headers)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
-    @Override
-    public void setHttpVersion(String httpVersion)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
-    @Override
-    public void setMethod(String method)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
-    @Override
-    public void setRequestURI(URI uri)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
     public void setServletAttribute(String name, Object value)
     {
         request.setAttribute(name, value);
-    }
-
-    @Override
-    public void setSubProtocols(List<String> subProtocols)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
-    @Override
-    public void setSubProtocols(String... protocols)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
     }
 }

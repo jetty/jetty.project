@@ -47,7 +47,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
 
     public NativeWebSocketConfiguration(ServletContext context)
     {
-        this(WebSocketServletFactory.Loader.load(context));
+        this(new WebSocketServletFactory(context));
     }
 
     public NativeWebSocketConfiguration(WebSocketServletFactory webSocketServletFactory)

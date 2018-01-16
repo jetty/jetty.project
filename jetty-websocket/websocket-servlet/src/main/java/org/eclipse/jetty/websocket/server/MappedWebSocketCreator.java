@@ -20,8 +20,6 @@ package org.eclipse.jetty.websocket.server;
 
 /**
  * Common interface for MappedWebSocketCreator
- *
- * TODO: move to [websocket-server]
  */
 public interface MappedWebSocketCreator
 {

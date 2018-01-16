@@ -26,6 +26,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
+import org.eclipse.jetty.websocket.core.server.HandshakerFactory;
+
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
  * <p>
@@ -78,21 +83,9 @@ import javax.servlet.http.HttpServletResponse;
 public abstract class WebSocketServlet extends HttpServlet
 {
     private WebSocketServletFactory factory;
+    private WebSocketServletNegotiator negotiator;
 
     public abstract void configure(WebSocketServletFactory factory);
-
-    @Override
-    public void destroy()
-    {
-        try
-        {
-            factory.stop();
-        }
-        catch (Exception ignore)
-        {
-            // ignore;
-        }
-    }
 
     /**
      * @see javax.servlet.GenericServlet#init()
@@ -103,35 +96,36 @@ public abstract class WebSocketServlet extends HttpServlet
         try
         {
             ServletContext ctx = getServletContext();
-            factory = WebSocketServletFactory.Loader.load(ctx);
 
+            // TODO: pull baseline policy from context attribute?
+            WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
             String max = getInitParameter("maxIdleTime");
             if (max != null)
             {
-                factory.getPolicy().setIdleTimeout(Long.parseLong(max));
+                policy.setIdleTimeout(Long.parseLong(max));
             }
 
             max = getInitParameter("maxTextMessageSize");
             if (max != null)
             {
-                factory.getPolicy().setMaxTextMessageSize(Integer.parseInt(max));
+                policy.setMaxTextMessageSize(Integer.parseInt(max));
             }
 
             max = getInitParameter("maxBinaryMessageSize");
             if (max != null)
             {
-                factory.getPolicy().setMaxBinaryMessageSize(Integer.parseInt(max));
+                policy.setMaxBinaryMessageSize(Integer.parseInt(max));
             }
 
             max = getInitParameter("inputBufferSize");
             if (max != null)
             {
-                factory.getPolicy().setInputBufferSize(Integer.parseInt(max));
+                policy.setInputBufferSize(Integer.parseInt(max));
             }
 
-            configure(factory);
-            
-            factory.start();
+            factory = new WebSocketServletFactory(policy);
+            configure(factory); // Let user modify factory, policy, creator, extensions, etc..
+            negotiator = new WebSocketServletNegotiator(factory, factory.getCreator());
             
             ctx.setAttribute(WebSocketServletFactory.class.getName(),factory);
         }
@@ -147,22 +141,22 @@ public abstract class WebSocketServlet extends HttpServlet
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if (factory.isUpgradeRequest(request,response))
+        Handshaker handshaker = HandshakerFactory.getHandshaker(request);
+
+        // Attempt to upgrade
+        if (handshaker != null && handshaker.upgradeRequest(negotiator, request, response))
         {
-            // We have an upgrade request
-            if (factory.acceptWebSocket(request,response))
-            {
-                // We have a socket instance created
-                return;
-            }
-            // If we reach this point, it means we had an incoming request to upgrade
-            // but it was either not a proper websocket upgrade, or it was possibly rejected
-            // due to incoming request constraints (controlled by WebSocketCreator)
-            if (response.isCommitted())
-            {
-                // not much we can do at this point.
-                return;
-            }
+            // Upgrade was a success, nothing else to do.
+            return;
+        }
+
+        // If we reach this point, it means we had an incoming request to upgrade
+        // but it was either not a proper websocket upgrade, or it was possibly rejected
+        // due to incoming request constraints (controlled by WebSocketCreator)
+        if (response.isCommitted())
+        {
+            // not much we can do at this point.
+            return;
         }
 
         // All other processing

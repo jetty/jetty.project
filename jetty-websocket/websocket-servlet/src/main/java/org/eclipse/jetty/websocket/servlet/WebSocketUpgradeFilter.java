@@ -43,6 +43,8 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
+import org.eclipse.jetty.websocket.core.server.HandshakerFactory;
 import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
 import org.eclipse.jetty.websocket.server.WebSocketCreator;
 
@@ -123,11 +125,13 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     private boolean localConfiguration = false;
     private boolean alreadySetToAttribute = false;
     
+    @SuppressWarnings("unused")
     public WebSocketUpgradeFilter()
     {
         // do nothing
     }
-    
+
+    @SuppressWarnings("unused")
     public WebSocketUpgradeFilter(WebSocketServletFactory factory)
     {
         this(new NativeWebSocketConfiguration(factory));
@@ -198,8 +202,10 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         {
             HttpServletRequest httpreq = (HttpServletRequest) request;
             HttpServletResponse httpresp = (HttpServletResponse) response;
+
+            Handshaker handshaker = HandshakerFactory.getHandshaker(httpreq);
             
-            if (!factory.isUpgradeRequest(httpreq, httpresp))
+            if (handshaker == null)
             {
                 // Not an upgrade request, skip it
                 chain.doFilter(request, response);
@@ -229,12 +235,13 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
             }
             
             WebSocketCreator creator = resource.getResource();
+            WebSocketServletNegotiator negotiator = new WebSocketServletNegotiator(factory, creator);
             
             // Store PathSpec resource mapping as request attribute
             httpreq.setAttribute(PathSpec.class.getName(), resource.getPathSpec());
-            
+
             // We have an upgrade request
-            if (factory.acceptWebSocket(creator, httpreq, httpresp))
+            if (handshaker.upgradeRequest(negotiator, httpreq, httpresp))
             {
                 // We have a socket instance created
                 return;
