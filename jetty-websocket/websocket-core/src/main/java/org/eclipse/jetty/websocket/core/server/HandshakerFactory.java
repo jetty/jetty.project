@@ -54,8 +54,6 @@ public class HandshakerFactory
             }
         }
 
-        // TODO: should probably return null if missing obvious "Upgrade:WebSocket" header.
-        // TODO: use request knowledge about handshake type. eg: HTTP/1.1 or HTTP/2
         return new RFC6455Handshaker();
     }
 }
