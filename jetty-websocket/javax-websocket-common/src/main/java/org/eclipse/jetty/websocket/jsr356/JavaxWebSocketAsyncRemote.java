@@ -31,24 +31,34 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
-import org.eclipse.jetty.websocket.core.util.TextUtil;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
+import org.eclipse.jetty.websocket.jsr356.util.TextUtil;
 
 public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpoint.Async
 {
     static final Logger LOG = Log.getLogger(JavaxWebSocketAsyncRemote.class);
 
-    protected JavaxWebSocketAsyncRemote(JavaxWebSocketSession session)
+    protected JavaxWebSocketAsyncRemote(JavaxWebSocketSession session, WebSocketChannel channel)
     {
-        super(session);
+        super(session, channel);
     }
 
     @Override
     public long getSendTimeout()
     {
-        return session.getConnection().getIdleTimeout();
+        // TODO: verify that JSR356 "send timeout" means the same as connection idle timeout
+        return getIdleTimeout();
+    }
+
+    @Override
+    public void setSendTimeout(long timeoutmillis)
+    {
+        // TODO: verify that JSR356 "send timeout" means the same as connection idle timeout
+        setIdleTimeout(timeoutmillis);
     }
 
     @Override
@@ -60,7 +70,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
             LOG.debug("sendBinary({})", BufferUtil.toDetailString(data));
         }
         FutureCallback future = new FutureCallback();
-        super.sendBinary(data, future);
+        outgoingFrame(new BinaryFrame().setPayload(data), future, batchMode);
         return future;
     }
 
@@ -73,7 +83,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendBinary({},{})", BufferUtil.toDetailString(data), handler);
         }
-        super.sendBinary(data, new SendHandlerCallback(handler));
+        outgoingFrame(new BinaryFrame().setPayload(data), new SendHandlerCallback(handler), batchMode);
     }
 
     @Override
@@ -127,8 +137,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             Encoder.TextStream etxt = (Encoder.TextStream) encoder;
             SendHandlerCallback callback = new SendHandlerCallback(handler);
-            WebSocketCoreConnection connection = session.getConnection();
-            try (MessageWriter writer = new MessageWriter(connection, connection.getInputBufferSize(), connection.getBufferPool()))
+            try (MessageWriter writer = new MessageWriter(this, getInputBufferSize(), getBufferPool()))
             {
                 writer.setCallback(callback);
                 etxt.encode(data, writer);
@@ -157,8 +166,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             Encoder.BinaryStream ebin = (Encoder.BinaryStream) encoder;
             SendHandlerCallback callback = new SendHandlerCallback(handler);
-            WebSocketCoreConnection connection = session.getConnection();
-            try (MessageOutputStream out = new MessageOutputStream(connection, connection.getInputBufferSize(), connection.getBufferPool()))
+            try (MessageOutputStream out = new MessageOutputStream(this, getInputBufferSize(), getBufferPool()))
             {
                 out.setCallback(callback);
                 ebin.encode(data, out);
@@ -182,7 +190,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
             LOG.debug("sendText({})", TextUtil.hint(text));
         }
         FutureCallback future = new FutureCallback();
-        super.sendText(text, future);
+        outgoingFrame(new TextFrame().setPayload(text), future, batchMode);
         return future;
     }
 
@@ -195,12 +203,6 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendText({},{})", TextUtil.hint(text), handler);
         }
-        super.sendText(text, new SendHandlerCallback(handler));
-    }
-
-    @Override
-    public void setSendTimeout(long timeoutmillis)
-    {
-        session.getConnection().setMaxIdleTimeout(timeoutmillis);
+        outgoingFrame(new TextFrame().setPayload(text), new SendHandlerCallback(handler), batchMode);
     }
 }

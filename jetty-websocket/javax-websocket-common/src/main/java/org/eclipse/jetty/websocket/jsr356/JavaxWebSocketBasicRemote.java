@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
@@ -30,32 +32,41 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
-import org.eclipse.jetty.websocket.core.util.TextUtil;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.DataFrame;
+import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
+import org.eclipse.jetty.websocket.jsr356.util.TextUtil;
 
 public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint implements RemoteEndpoint.Basic
 {
     private static final Logger LOG = Log.getLogger(JavaxWebSocketBasicRemote.class);
 
-    protected JavaxWebSocketBasicRemote(JavaxWebSocketSession session)
+    protected JavaxWebSocketBasicRemote(JavaxWebSocketSession session, WebSocketChannel channel)
     {
-        super(session);
+        super(session, channel);
     }
 
     @Override
     public OutputStream getSendStream() throws IOException
     {
-        WebSocketCoreConnection connection = session.getConnection();
-        return new MessageOutputStream(connection, connection.getInputBufferSize(), connection.getBufferPool());
+        return new MessageOutputStream(this, getInputBufferSize(), getBufferPool());
     }
 
     @Override
     public Writer getSendWriter() throws IOException
     {
-        WebSocketCoreConnection connection = session.getConnection();
-        return new MessageWriter(connection, connection.getInputBufferSize(), connection.getBufferPool());
+        return new MessageWriter(this, getInputBufferSize(), getBufferPool());
+    }
+
+    public boolean isFirstDataFrame()
+    {
+        // TODO: needs information from WebSocketChannel.OutgoingState.partial to function properly
+        return true;
     }
 
     @Override
@@ -66,9 +77,9 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendBinary({})", BufferUtil.toDetailString(data));
         }
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
+        try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
         {
-            super.sendBinary(data, b);
+            outgoingFrame(new BinaryFrame().setPayload(data), b, BatchMode.OFF);
         }
     }
 
@@ -80,16 +91,27 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendBinary({},{})", BufferUtil.toDetailString(partialByte), isLast);
         }
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
+        try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
         {
-            super.sendPartialBinary(partialByte, isLast, b);
+            DataFrame frame;
+            if (isFirstDataFrame())
+            {
+                frame = new BinaryFrame();
+            }
+            else
+            {
+                frame = new ContinuationFrame();
+            }
+            frame.setPayload(partialByte);
+            frame.setFin(isLast);
+            outgoingFrame(frame, b, BatchMode.OFF);
         }
     }
 
     @Override
     public void sendObject(Object data) throws IOException, EncodeException
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
+        try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
         {
             super.sendObject(data, b);
         }
@@ -103,9 +125,9 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendText({})", TextUtil.hint(text));
         }
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
+        try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
         {
-            super.sendText(text, b);
+            outgoingFrame(new TextFrame().setPayload(text), b, BatchMode.OFF);
         }
     }
 
@@ -117,9 +139,20 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendText({},{})", TextUtil.hint(partialMessage), isLast);
         }
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
+        try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
         {
-            super.sendPartialText(partialMessage, isLast, b);
+            DataFrame frame;
+            if (isFirstDataFrame())
+            {
+                frame = new TextFrame();
+            }
+            else
+            {
+                frame = new ContinuationFrame();
+            }
+            frame.setPayload(BufferUtil.toBuffer(partialMessage, UTF_8));
+            frame.setFin(isLast);
+            outgoingFrame(frame, b, BatchMode.OFF);
         }
     }
 }

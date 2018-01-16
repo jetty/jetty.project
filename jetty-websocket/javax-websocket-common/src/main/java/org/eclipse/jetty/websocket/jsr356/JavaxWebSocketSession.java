@@ -23,7 +23,6 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.security.Principal;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,31 +41,31 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.jsr356.io.JavaxWebSocketConnection;
+import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 
 /**
  * Client Session for the JSR.
  */
-public class JavaxWebSocketSession<
-        P extends JavaxWebSocketContainer,
-        C extends JavaxWebSocketConnection,
-        L extends JavaxWebSocketLocalEndpoint,
-        R extends JavaxWebSocketRemoteEndpoint>
-        extends WebSocketCoreSession<P,C,L,R> implements javax.websocket.Session
+public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.websocket.Session
 {
     private static final Logger LOG = Log.getLogger(JavaxWebSocketSession.class);
 
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
+    private final JavaxWebSocketContainer container;
+    private final WebSocketChannel channel;
+    private final JavaxWebSocketUpgradeRequest upgradeRequest;
+    private final JavaxWebSocketUpgradeResponse upgradeResponse;
+    private final JavaxWebSocketFrameHandler frameHandler;
+    private final WebSocketPolicy policy;
 
     private EndpointConfig config;
     private AvailableDecoders availableDecoders;
@@ -75,7 +74,7 @@ public class JavaxWebSocketSession<
     private Set<MessageHandler> messageHandlerSet;
 
     private List<Extension> negotiatedExtensions;
-    private Map<String, String> pathParameters = new HashMap<>();
+    private Map<String, String> pathParameters = Collections.emptyMap();
     private JavaxWebSocketAsyncRemote asyncRemote;
     private JavaxWebSocketBasicRemote basicRemote;
     /**
@@ -83,64 +82,29 @@ public class JavaxWebSocketSession<
      * Most commonly used from client implementations that want a future to
      * base connect + onOpen success against (like JSR-356 client)
      */
-    private CompletableFuture<JavaxWebSocketSession<P,C,L,R>> openFuture;
+    private CompletableFuture<JavaxWebSocketSession> openFuture;
 
-    public JavaxWebSocketSession(P container, C connection)
+    public JavaxWebSocketSession(JavaxWebSocketContainer container,
+                                 JavaxWebSocketUpgradeRequest upgradeRequest,
+                                 JavaxWebSocketUpgradeResponse upgradeResponse,
+                                 JavaxWebSocketFrameHandler frameHandler,
+                                 WebSocketPolicy policy,
+                                 WebSocketChannel channel)
     {
-        super(container, connection);
-        connection.setSession(this);
-    }
+        this.container = container;
+        this.channel = channel;
+        this.upgradeRequest = upgradeRequest;
+        this.upgradeResponse = upgradeResponse;
+        this.frameHandler = frameHandler;
+        this.policy = policy;
 
-    public void setOpenFuture(CompletableFuture<JavaxWebSocketSession<P,C,L,R>> future)
-    {
-        this.openFuture = future;
-    }
+        // Container tracks channels
+        // If container is stopped, then channel is stopped.
+        this.container.addManaged(channel);
 
-    @Override
-    protected void notifyError(Throwable cause)
-    {
-        if (openFuture != null && !openFuture.isDone())
-            openFuture.completeExceptionally(cause);
-
-        super.notifyError(cause);
-    }
-
-    @Override
-    protected void notifyOpen()
-    {
-        if(openFuture != null && !openFuture.isDone())
-            openFuture.complete(this);
-
-        super.notifyOpen();
-    }
-
-    @Override
-    public void setWebSocketEndpoint(Object websocket, WebSocketPolicy policy, L localEndpoint, R remoteEndpoint)
-    {
-        final Object endpoint;
-
-        if (websocket instanceof ConfiguredEndpoint)
-        {
-            ConfiguredEndpoint configuredEndpoint = (ConfiguredEndpoint) websocket;
-            endpoint = configuredEndpoint.getRawEndpoint();
-            this.config = configuredEndpoint.getConfig();
-        }
-        else
-        {
-            endpoint = websocket;
-            this.config = new BasicEndpointConfig();
-        }
-
-        this.availableDecoders = new AvailableDecoders(this.config);
-        this.availableEncoders = new AvailableEncoders(this.config);
-
-        if (this.config instanceof PathParamProvider)
-        {
-            PathParamProvider pathParamProvider = (PathParamProvider) this.config;
-            pathParameters.putAll(pathParamProvider.getPathParams());
-        }
-
-        super.setWebSocketEndpoint(endpoint, policy, localEndpoint, remoteEndpoint);
+        // Channel tracks a single session
+        // If channel is stopped, then session is stopped
+        this.channel.addManaged(this);
     }
 
     /**
@@ -231,15 +195,6 @@ public class JavaxWebSocketSession<
         }
     }
 
-    protected synchronized void registerMessageHandler(MessageHandler handler)
-    {
-        if (messageHandlerSet == null)
-        {
-            messageHandlerSet = new HashSet<>();
-        }
-        messageHandlerSet.add(handler);
-    }
-
     /**
      * {@inheritDoc}
      *
@@ -251,7 +206,7 @@ public class JavaxWebSocketSession<
     {
         try (SharedBlockingCallback.Blocker blocker = blocking.acquire())
         {
-            super.close(new CloseStatus(), blocker);
+            channel.close(blocker);
         }
     }
 
@@ -266,7 +221,7 @@ public class JavaxWebSocketSession<
     {
         try (SharedBlockingCallback.Blocker blocker = blocking.acquire())
         {
-            super.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), blocker);
+            channel.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), blocker);
         }
     }
 
@@ -281,7 +236,7 @@ public class JavaxWebSocketSession<
     {
         if (asyncRemote == null)
         {
-            asyncRemote = new JavaxWebSocketAsyncRemote(this);
+            asyncRemote = new JavaxWebSocketAsyncRemote(this, channel);
         }
         return asyncRemote;
     }
@@ -297,9 +252,15 @@ public class JavaxWebSocketSession<
     {
         if (basicRemote == null)
         {
-            basicRemote = new JavaxWebSocketBasicRemote(this);
+            basicRemote = new JavaxWebSocketBasicRemote(this, channel);
         }
         return basicRemote;
+    }
+
+    public BatchMode getBatchMode()
+    {
+        // JSR 356 specification mandates default batch mode to be off.
+        return BatchMode.OFF;
     }
 
     /**
@@ -311,7 +272,7 @@ public class JavaxWebSocketSession<
     @Override
     public WebSocketContainer getContainer()
     {
-        return getParentContainer();
+        return this.container;
     }
 
     public AvailableDecoders getDecoders()
@@ -338,7 +299,7 @@ public class JavaxWebSocketSession<
     @Override
     public String getId()
     {
-        return getConnection().getId();
+        return channel.getConnection().getId();
     }
 
     /**
@@ -351,6 +312,19 @@ public class JavaxWebSocketSession<
     public int getMaxBinaryMessageBufferSize()
     {
         return getPolicy().getMaxBinaryMessageSize();
+    }
+
+    /**
+     * Maximum size of a whole BINARY message that this implementation can buffer.
+     *
+     * @param length the length in bytes
+     * @see Session#setMaxBinaryMessageBufferSize(int)
+     * @since JSR356 v1.0
+     */
+    @Override
+    public void setMaxBinaryMessageBufferSize(int length)
+    {
+        getPolicy().setMaxBinaryMessageSize(length);
     }
 
     /**
@@ -368,6 +342,19 @@ public class JavaxWebSocketSession<
     /**
      * {@inheritDoc}
      *
+     * @see Session#setMaxIdleTimeout(long)
+     * @since JSR356 v1.0
+     */
+    @Override
+    public void setMaxIdleTimeout(long milliseconds)
+    {
+        getPolicy().setIdleTimeout(milliseconds);
+        channel.getConnection().setMaxIdleTimeout(milliseconds);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * @see Session#getMaxTextMessageBufferSize()
      * @since JSR356 v1.0
      */
@@ -375,6 +362,19 @@ public class JavaxWebSocketSession<
     public int getMaxTextMessageBufferSize()
     {
         return getPolicy().getMaxTextMessageSize();
+    }
+
+    /**
+     * Maximum size of a whole TEXT message that this implementation can buffer.
+     *
+     * @param length the length in bytes
+     * @see Session#setMaxTextMessageBufferSize(int)
+     * @since JSR356 v1.0
+     */
+    @Override
+    public void setMaxTextMessageBufferSize(int length)
+    {
+        getPolicy().setMaxTextMessageSize(length);
     }
 
     /**
@@ -404,7 +404,7 @@ public class JavaxWebSocketSession<
     @Override
     public List<Extension> getNegotiatedExtensions()
     {
-        List<ExtensionConfig> extensions = getConnection().getUpgradeResponse().getExtensions();
+        List<ExtensionConfig> extensions = upgradeResponse.getExtensions();
 
         if ((negotiatedExtensions == null) && extensions != null)
         {
@@ -422,7 +422,7 @@ public class JavaxWebSocketSession<
     @Override
     public String getNegotiatedSubprotocol()
     {
-        String acceptedSubProtocol = getConnection().getUpgradeResponse().getAcceptedSubProtocol();
+        String acceptedSubProtocol = upgradeResponse.getAcceptedSubProtocol();
         if (acceptedSubProtocol == null)
         {
             return "";
@@ -439,10 +439,7 @@ public class JavaxWebSocketSession<
     @Override
     public Set<Session> getOpenSessions()
     {
-        // TODO: maintain internal Set of onOpen sessions
-        Set<Session> sessions = new HashSet<>();
-        sessions.addAll(getBeans(JavaxWebSocketSession.class));
-        return sessions;
+        return container.getOpenSessions();
     }
 
     /**
@@ -454,7 +451,17 @@ public class JavaxWebSocketSession<
     @Override
     public Map<String, String> getPathParameters()
     {
-        return Collections.unmodifiableMap(pathParameters);
+        return pathParameters;
+    }
+
+    public void setPathParameters(Map<String, String> pathParams)
+    {
+        this.pathParameters = Collections.unmodifiableMap(pathParams);
+    }
+
+    public WebSocketPolicy getPolicy()
+    {
+        return policy;
     }
 
     /**
@@ -466,7 +473,7 @@ public class JavaxWebSocketSession<
     @Override
     public String getProtocolVersion()
     {
-        return getConnection().getUpgradeRequest().getProtocolVersion();
+        return upgradeRequest.getProtocolVersion();
     }
 
     /**
@@ -478,7 +485,7 @@ public class JavaxWebSocketSession<
     @Override
     public String getQueryString()
     {
-        return getConnection().getUpgradeRequest().getRequestURI().getQuery();
+        return upgradeRequest.getRequestURI().getQuery();
     }
 
     /**
@@ -490,7 +497,7 @@ public class JavaxWebSocketSession<
     @Override
     public Map<String, List<String>> getRequestParameterMap()
     {
-        return getConnection().getUpgradeRequest().getParameterMap();
+        return upgradeRequest.getParameterMap();
     }
 
     /**
@@ -502,7 +509,7 @@ public class JavaxWebSocketSession<
     @Override
     public URI getRequestURI()
     {
-        return getConnection().getUpgradeRequest().getRequestURI();
+        return upgradeRequest.getRequestURI();
     }
 
     /**
@@ -514,11 +521,10 @@ public class JavaxWebSocketSession<
     @Override
     public Principal getUserPrincipal()
     {
-        UpgradeRequest request = getConnection().getUpgradeRequest();
         try
         {
-            Method method = request.getClass().getMethod("getUserPrincipal");
-            return (Principal) method.invoke(request);
+            Method method = upgradeRequest.getClass().getMethod("getUserPrincipal");
+            return (Principal) method.invoke(upgradeRequest);
         }
         catch (NoSuchMethodException e)
         {
@@ -547,25 +553,25 @@ public class JavaxWebSocketSession<
     /**
      * {@inheritDoc}
      *
-     * @see Session#isSecure()
-     * @since JSR356 v1.0
-     */
-    @Override
-    public boolean isSecure()
-    {
-        return getConnection().isSecure();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
      * @see Session#isOpen()
      * @since JSR356 v1.0
      */
     @Override
     public boolean isOpen()
     {
-        return getConnection().isOpen();
+        return channel.isOpen();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @see Session#isSecure()
+     * @since JSR356 v1.0
+     */
+    @Override
+    public boolean isSecure()
+    {
+        return upgradeRequest.isSecure();
     }
 
     @Override
@@ -582,66 +588,57 @@ public class JavaxWebSocketSession<
         }
     }
 
-    /**
-     * Maximum size of a whole BINARY message that this implementation can buffer.
-     *
-     * @param length the length in bytes
-     * @see Session#setMaxBinaryMessageBufferSize(int)
-     * @since JSR356 v1.0
-     */
-    @Override
-    public void setMaxBinaryMessageBufferSize(int length)
+    public void setOpenFuture(CompletableFuture<JavaxWebSocketSession> future)
     {
-        getPolicy().setMaxBinaryMessageSize(length);
+        this.openFuture = future;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @see Session#setMaxIdleTimeout(long)
-     * @since JSR356 v1.0
-     */
-    @Override
-    public void setMaxIdleTimeout(long milliseconds)
+    public void setWebSocketEndpoint(Object websocket, WebSocketPolicy policy, JavaxWebSocketFrameHandler localEndpoint, JavaxWebSocketRemoteEndpoint remoteEndpoint)
     {
-        getPolicy().setIdleTimeout(milliseconds);
-        super.getConnection().setMaxIdleTimeout(milliseconds);
-    }
+        final Object endpoint;
 
-    /**
-     * Maximum size of a whole TEXT message that this implementation can buffer.
-     *
-     * @param length the length in bytes
-     * @see Session#setMaxTextMessageBufferSize(int)
-     * @since JSR356 v1.0
-     */
-    @Override
-    public void setMaxTextMessageBufferSize(int length)
-    {
-        getPolicy().setMaxTextMessageSize(length);
-    }
-
-    public void setPathParameters(Map<String, String> pathParams)
-    {
-        this.pathParameters.clear();
-        if (pathParams != null)
+        if (websocket instanceof ConfiguredEndpoint)
         {
-            this.pathParameters.putAll(pathParams);
+            ConfiguredEndpoint configuredEndpoint = (ConfiguredEndpoint) websocket;
+            endpoint = configuredEndpoint.getRawEndpoint();
+            this.config = configuredEndpoint.getConfig();
         }
-    }
+        else
+        {
+            endpoint = websocket;
+            this.config = new BasicEndpointConfig();
+        }
 
-    public BatchMode getBatchMode()
-    {
-        // JSR 356 specification mandates default batch mode to be off.
-        return BatchMode.OFF;
+        this.availableDecoders = new AvailableDecoders(this.config);
+        this.availableEncoders = new AvailableEncoders(this.config);
+
+        if (this.config instanceof PathParamProvider)
+        {
+            PathParamProvider pathParamProvider = (PathParamProvider) this.config;
+            pathParameters.putAll(pathParamProvider.getPathParams());
+        }
+
+        // super.setWebSocketEndpoint(endpoint, policy, localEndpoint, remoteEndpoint);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s[%s,%s,%s]", this.getClass().getSimpleName(),
-                getPolicy().getBehavior(),
-                localEndpoint.getEndpointInstance().getClass().getName(),
-                connection.getClass().getSimpleName());
+        return String.format("%s@%x[%s,%s]", this.getClass().getSimpleName(), this.hashCode(),
+                getPolicy().getBehavior(), frameHandler);
+    }
+
+    protected SharedBlockingCallback getBlocking()
+    {
+        return blocking;
+    }
+
+    protected synchronized void registerMessageHandler(MessageHandler handler)
+    {
+        if (messageHandlerSet == null)
+        {
+            messageHandlerSet = new HashSet<>();
+        }
+        messageHandlerSet.add(handler);
     }
 }

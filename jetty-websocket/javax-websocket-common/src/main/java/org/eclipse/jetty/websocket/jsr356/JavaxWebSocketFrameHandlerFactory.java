@@ -52,13 +52,13 @@ import org.eclipse.jetty.websocket.jsr356.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.StringMessageSink;
 
-public class JavaxWebSocketLocalEndpointFactory
+public class JavaxWebSocketFrameHandlerFactory
 {
-    private Map<Class<?>, JavaxWebSocketLocalEndpointMetadata> metadataMap = new ConcurrentHashMap<>();
+    private Map<Class<?>, JavaxWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
 
-    public JavaxWebSocketLocalEndpointMetadata getMetadata(Class<?> endpointClass)
+    public JavaxWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
     {
-        JavaxWebSocketLocalEndpointMetadata metadata = metadataMap.get(endpointClass);
+        JavaxWebSocketFrameHandlerMetadata metadata = metadataMap.get(endpointClass);
 
         if (metadata == null)
         {
@@ -69,7 +69,7 @@ public class JavaxWebSocketLocalEndpointFactory
         return metadata;
     }
 
-    public JavaxWebSocketLocalEndpointMetadata createMetadata(Class<?> endpointClass)
+    public JavaxWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass)
     {
         if (javax.websocket.Endpoint.class.isAssignableFrom(endpointClass))
         {
@@ -85,7 +85,7 @@ public class JavaxWebSocketLocalEndpointFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public JavaxWebSocketLocalEndpoint createLocalEndpoint(Object endpointInstance, JavaxWebSocketSession session, WebSocketPolicy policy, Executor executor)
+    public JavaxWebSocketFrameHandlerImpl createLocalEndpoint(Object endpointInstance, JavaxWebSocketSession session, WebSocketPolicy policy, Executor executor)
     {
         Object endpoint;
         EndpointConfig config;
@@ -101,7 +101,7 @@ public class JavaxWebSocketLocalEndpointFactory
             config = new BasicEndpointConfig();
         }
 
-        JavaxWebSocketLocalEndpointMetadata metadata = getMetadata(endpoint.getClass());
+        JavaxWebSocketFrameHandlerMetadata metadata = getMetadata(endpoint.getClass());
 
         WebSocketPolicy endpointPolicy = policy.clonePolicy();
 
@@ -134,7 +134,7 @@ public class JavaxWebSocketLocalEndpointFactory
         MessageSink textSink = createMessageSink(textHandle, textSinkClass, endpointPolicy, executor);
         MessageSink binarySink = createMessageSink(binaryHandle, binarySinkClass, endpointPolicy, executor);
 
-        return new JavaxWebSocketLocalEndpoint(
+        return new JavaxWebSocketFrameHandlerImpl(
                 endpoint,
                 endpointPolicy,
                 openHandle, closeHandle, errorHandle,
@@ -192,9 +192,9 @@ public class JavaxWebSocketLocalEndpointFactory
         }
     }
 
-    private JavaxWebSocketLocalEndpointMetadata createEndpointMetadata(Class<?> endpointClass)
+    private JavaxWebSocketFrameHandlerMetadata createEndpointMetadata(Class<?> endpointClass)
     {
-        JavaxWebSocketLocalEndpointMetadata metadata = new JavaxWebSocketLocalEndpointMetadata();
+        JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata();
 
         MethodHandles.Lookup lookup = MethodHandles.lookup();
 
@@ -216,9 +216,9 @@ public class JavaxWebSocketLocalEndpointFactory
         return metadata;
     }
 
-    private JavaxWebSocketLocalEndpointMetadata createClientEndpointMetadata(javax.websocket.ClientEndpoint anno, Class<?> endpointClass)
+    private JavaxWebSocketFrameHandlerMetadata createClientEndpointMetadata(javax.websocket.ClientEndpoint anno, Class<?> endpointClass)
     {
-        JavaxWebSocketLocalEndpointMetadata metadata = new JavaxWebSocketLocalEndpointMetadata();
+        JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata();
 
         metadata.setClientConfigurator(anno.configurator());
         metadata.setDecoders(anno.decoders());

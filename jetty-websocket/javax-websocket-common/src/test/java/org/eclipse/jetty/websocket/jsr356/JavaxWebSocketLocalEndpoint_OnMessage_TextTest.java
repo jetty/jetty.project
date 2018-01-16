@@ -41,7 +41,7 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_TextTest extends AbstractJava
 {
     private void onText(TrackingSocket socket, String msg) throws Exception
     {
-        JavaxWebSocketLocalEndpoint localEndpoint = createLocalEndpoint(socket);
+        JavaxWebSocketFrameHandlerImpl localEndpoint = createLocalEndpoint(socket);
 
         // This invocation is the same for all tests
         localEndpoint.onOpen();

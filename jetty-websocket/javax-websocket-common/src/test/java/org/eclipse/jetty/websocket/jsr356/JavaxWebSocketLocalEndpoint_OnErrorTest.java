@@ -36,7 +36,7 @@ public class JavaxWebSocketLocalEndpoint_OnErrorTest extends AbstractJavaxWebSoc
     
     private void assertOnErrorInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
     {
-        JavaxWebSocketLocalEndpoint localEndpoint = createLocalEndpoint(socket);
+        JavaxWebSocketFrameHandlerImpl localEndpoint = createLocalEndpoint(socket);
 
         // These invocations are the same for all tests
         localEndpoint.onOpen();

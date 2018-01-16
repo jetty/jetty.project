@@ -27,7 +27,7 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 
-public class JavaxWebSocketLocalEndpointMetadata
+public class JavaxWebSocketFrameHandlerMetadata
 {
     private MethodHandle openHandle;
     private MethodHandle closeHandle;

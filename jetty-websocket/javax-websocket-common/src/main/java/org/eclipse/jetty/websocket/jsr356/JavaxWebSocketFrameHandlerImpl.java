@@ -30,11 +30,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
-public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
+public class JavaxWebSocketFrameHandlerImpl implements JavaxWebSocketFrameHandler
 {
     private final Logger log;
     private final Object endpointInstance;
@@ -47,11 +47,12 @@ public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
     private MessageSink binarySink;
     private MethodHandle pongHandle;
     private MessageSink activeMessageSink;
+    private WebSocketChannel channel;
 
-    public JavaxWebSocketLocalEndpoint(Object endpointInstance, WebSocketPolicy endpointPolicy,
-                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-                                       MessageSink textSink, MessageSink binarySink,
-                                       MethodHandle pongHandle)
+    public JavaxWebSocketFrameHandlerImpl(Object endpointInstance, WebSocketPolicy endpointPolicy,
+                                          MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
+                                          MessageSink textSink, MessageSink binarySink,
+                                          MethodHandle pongHandle)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 
@@ -71,12 +72,17 @@ public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
         return binarySink;
     }
 
+    public void setBinarySink(MessageSink binarySink)
+    {
+        // Safe to do this way, as any active sink is tracked in activeSink variable
+        this.binarySink = binarySink;
+    }
+
     public Object getEndpointInstance()
     {
         return endpointInstance;
     }
 
-    @Override
     public Logger getLog()
     {
         return this.log;
@@ -87,13 +93,6 @@ public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
         return policy;
     }
 
-    @Override
-    public boolean isOpen()
-    {
-        return open.get();
-    }
-
-    @Override
     public void onBinary(Frame frame, Callback callback)
     {
         if (activeMessageSink == null)
@@ -102,7 +101,6 @@ public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
         acceptMessage(frame, callback);
     }
 
-    @Override
     public void onClose(CloseStatus close)
     {
         if (open.compareAndSet(true, false))
@@ -122,13 +120,11 @@ public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
         }
     }
 
-    @Override
     public void onContinuation(Frame frame, Callback callback)
     {
         acceptMessage(frame, callback);
     }
 
-    @Override
     public void onError(Throwable cause)
     {
         if (open.compareAndSet(true, false))
@@ -156,13 +152,11 @@ public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
         }
     }
 
-    @Override
     public void onFrame(Frame frame)
     {
         // Ignore - not supported by JSR356
     }
 
-    @Override
     public void onOpen()
     {
         if (open.compareAndSet(false, true))
@@ -181,13 +175,11 @@ public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
         }
     }
 
-    @Override
     public void onPing(ByteBuffer payload)
     {
         // Ignore - not supported by JSR356
     }
 
-    @Override
     public void onPong(ByteBuffer payload)
     {
         if (pongHandle == null)
@@ -206,19 +198,12 @@ public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
         }
     }
 
-    @Override
     public void onText(Frame frame, Callback callback)
     {
         if (activeMessageSink == null)
             activeMessageSink = textSink;
 
         acceptMessage(frame, callback);
-    }
-
-    public void setBinarySink(MessageSink binarySink)
-    {
-        // Safe to do this way, as any active sink is tracked in activeSink variable
-        this.binarySink = binarySink;
     }
 
     public void setPongHandle(MethodHandle pongHandle)
@@ -230,6 +215,12 @@ public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
     {
         // Safe to do this way, as any active sink is tracked in activeSink variable
         this.textSink = textSink;
+    }
+
+    @Override
+    public void setWebSocketChannel(WebSocketChannel channel)
+    {
+        this.channel = channel;
     }
 
     private void acceptMessage(Frame frame, Callback callback)

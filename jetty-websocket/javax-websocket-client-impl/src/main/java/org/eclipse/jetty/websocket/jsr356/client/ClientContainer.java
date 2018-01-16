@@ -48,7 +48,7 @@ import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketExtensionConfig;
-import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketLocalEndpoint;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerImpl;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.io.JavaxWebSocketConnection;
@@ -72,7 +72,7 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
     protected Function<JavaxWebSocketConnection, JavaxWebSocketSession<
             ? extends ClientContainer,
             ? extends JavaxWebSocketConnection,
-            ? extends JavaxWebSocketLocalEndpoint,
+            ? extends JavaxWebSocketFrameHandlerImpl,
             ? extends JavaxWebSocketRemoteEndpoint>> newSessionFunction =
             (connection) -> new JavaxWebSocketSession(ClientContainer.this, connection);
 
@@ -137,7 +137,7 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
     public JavaxWebSocketSession createSession(JavaxWebSocketClientConnection connection, Object endpointInstance)
     {
         JavaxWebSocketSession session = newSessionFunction.apply(connection);
-        JavaxWebSocketLocalEndpoint localEndpoint = getLocalEndpointFactory().createLocalEndpoint(endpointInstance, session, getPolicy(), httpClient.getExecutor());
+        JavaxWebSocketFrameHandlerImpl localEndpoint = getLocalEndpointFactory().createLocalEndpoint(endpointInstance, session, getPolicy(), httpClient.getExecutor());
         JavaxWebSocketRemoteEndpoint remoteEndpoint = new JavaxWebSocketRemoteEndpoint(session);
 
         session.setWebSocketEndpoint(endpointInstance, localEndpoint.getPolicy(), localEndpoint, remoteEndpoint);

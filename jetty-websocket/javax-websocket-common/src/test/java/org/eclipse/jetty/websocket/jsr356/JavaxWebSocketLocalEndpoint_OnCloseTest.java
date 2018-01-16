@@ -39,7 +39,7 @@ public class JavaxWebSocketLocalEndpoint_OnCloseTest extends AbstractJavaxWebSoc
     
     private void assertOnCloseInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
     {
-        JavaxWebSocketLocalEndpoint localEndpoint = createLocalEndpoint(socket);
+        JavaxWebSocketFrameHandlerImpl localEndpoint = createLocalEndpoint(socket);
 
         // These invocations are the same for all tests
         localEndpoint.onOpen();

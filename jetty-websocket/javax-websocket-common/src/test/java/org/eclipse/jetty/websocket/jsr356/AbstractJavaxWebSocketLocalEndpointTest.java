@@ -75,14 +75,14 @@ public abstract class AbstractJavaxWebSocketLocalEndpointTest
         return new JavaxWebSocketSession(container, connection);
     }
 
-    protected JavaxWebSocketLocalEndpoint createLocalEndpoint(TrackingSocket socket)
+    protected JavaxWebSocketFrameHandlerImpl createLocalEndpoint(TrackingSocket socket)
     {
-        JavaxWebSocketLocalEndpointFactory factory = new JavaxWebSocketLocalEndpointFactory();
+        JavaxWebSocketFrameHandlerFactory factory = new JavaxWebSocketFrameHandlerFactory();
         BasicEndpointConfig config = new BasicEndpointConfig();
         ConfiguredEndpoint endpoint = new ConfiguredEndpoint(socket, config);
         JavaxWebSocketSession session = newSession();
 
-        JavaxWebSocketLocalEndpoint localEndpoint = factory.createLocalEndpoint(endpoint,
+        JavaxWebSocketFrameHandlerImpl localEndpoint = factory.createLocalEndpoint(endpoint,
                 session, container.getPolicy(), container.getExecutor());
 
         JavaxWebSocketRemoteEndpoint remoteEndpoint = null;

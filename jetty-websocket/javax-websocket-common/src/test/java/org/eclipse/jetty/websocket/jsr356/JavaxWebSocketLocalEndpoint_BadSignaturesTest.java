@@ -34,7 +34,7 @@ public class JavaxWebSocketLocalEndpoint_BadSignaturesTest extends AbstractJavax
 {
     private void assertBadSocket(Object socket, String expectedString) throws Exception
     {
-        JavaxWebSocketLocalEndpointFactory factory = new JavaxWebSocketLocalEndpointFactory();
+        JavaxWebSocketFrameHandlerFactory factory = new JavaxWebSocketFrameHandlerFactory();
         BasicEndpointConfig config = new BasicEndpointConfig();
         ConfiguredEndpoint endpoint = new ConfiguredEndpoint(socket, config);
         JavaxWebSocketSession session = newSession();

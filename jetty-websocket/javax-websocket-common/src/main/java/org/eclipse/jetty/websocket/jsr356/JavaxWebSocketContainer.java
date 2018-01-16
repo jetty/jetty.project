@@ -34,7 +34,7 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
 {
     private final WebSocketPolicy containerPolicy;
     private final WebSocketExtensionRegistry extensionRegistry;
-    private final JavaxWebSocketLocalEndpointFactory localEndpointFactory;
+    private final JavaxWebSocketFrameHandlerFactory localEndpointFactory;
     private long asyncSendTimeout = -1;
     private long defaultMaxSessionIdleTimeout = -1;
 
@@ -42,12 +42,7 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
     {
         this.containerPolicy = containerPolicy;
         this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.localEndpointFactory = new JavaxWebSocketLocalEndpointFactory();
-    }
-
-    public void addSession(JavaxWebSocketSession session)
-    {
-        addManaged(session);
+        this.localEndpointFactory = new JavaxWebSocketFrameHandlerFactory();
     }
 
     /**
@@ -162,7 +157,7 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         return ret;
     }
 
-    public JavaxWebSocketLocalEndpointFactory getLocalEndpointFactory()
+    public JavaxWebSocketFrameHandlerFactory getLocalEndpointFactory()
     {
         return localEndpointFactory;
     }
