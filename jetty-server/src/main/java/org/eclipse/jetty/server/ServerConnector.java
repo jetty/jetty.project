@@ -342,13 +342,6 @@ public class ServerConnector extends AbstractNetworkConnector
 
         return serverChannel;
     }
-    
-    @Override
-    public Future<Void> shutdown()
-    {
-        // shutdown all the connections
-        return super.shutdown();
-    }
 
     @Override
     public void close()

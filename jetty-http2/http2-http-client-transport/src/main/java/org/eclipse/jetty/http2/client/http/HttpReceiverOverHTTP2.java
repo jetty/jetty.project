@@ -129,7 +129,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             Response.CompleteListener listener = pushListener.apply(request, pushRequest);
             if (listener != null)
             {
-                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().provideHttpChannel();
+                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().acquireHttpChannel();
                 List<Response.ResponseListener> listeners = Collections.singletonList(listener);
                 HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, listeners);
                 pushChannel.associate(pushExchange);

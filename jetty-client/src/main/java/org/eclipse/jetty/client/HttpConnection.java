@@ -68,12 +68,8 @@ public abstract class HttpConnection implements Connection
         HttpRequest httpRequest = (HttpRequest)request;
 
         ArrayList<Response.ResponseListener> listeners = new ArrayList<>(httpRequest.getResponseListeners());
-        if (httpRequest.getTimeout() > 0)
-        {
-            TimeoutCompleteListener timeoutListener = new TimeoutCompleteListener(httpRequest);
-            timeoutListener.schedule(getHttpClient().getScheduler());
-            listeners.add(timeoutListener);
-        }
+        
+        httpRequest.sent();
         if (listener != null)
             listeners.add(listener);
 
@@ -125,9 +121,15 @@ public abstract class HttpConnection implements Connection
                 if (content instanceof ContentProvider.Typed)
                     contentType = ((ContentProvider.Typed)content).getContentType();
                 if (contentType != null)
+                {
                     headers.put(HttpHeader.CONTENT_TYPE, contentType);
+                }
                 else
-                    headers.put(HttpHeader.CONTENT_TYPE, "application/octet-stream");
+                {
+                    contentType = getHttpClient().getDefaultRequestContentType();
+                    if (contentType != null)
+                        headers.put(HttpHeader.CONTENT_TYPE, contentType);
+                }
             }
             long contentLength = content.getLength();
             if (contentLength >= 0)
