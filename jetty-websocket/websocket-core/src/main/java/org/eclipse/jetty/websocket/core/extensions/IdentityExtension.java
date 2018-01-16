@@ -48,7 +48,7 @@ public class IdentityExtension extends AbstractExtension
     }
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         // pass through
         nextOutgoingFrame(frame,callback, batchMode);

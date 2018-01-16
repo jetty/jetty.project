@@ -48,15 +48,15 @@ public class AbstractFrameHandler implements FrameHandler
     private byte partial = 0;
     private Utf8StringBuilder utf8;
     private ByteBuffer byteBuffer;
-    private WebSocketChannel channel;
+    private FrameHandler.Channel channel;
 
     @Override
-    public void setWebSocketChannel(WebSocketChannel channel)
+    public void setWebSocketChannel(FrameHandler.Channel channel)
     {
         this.channel = channel;
     }
     
-    public WebSocketChannel getWebSocketChannel()
+    public FrameHandler.Channel getWebSocketChannel()
     {
         return channel;
     }
@@ -123,7 +123,7 @@ public class AbstractFrameHandler implements FrameHandler
 
         try
         {
-            channel.outgoingFrame(new PongFrame().setPayload(pongBuf),callback,BatchMode.OFF);
+            channel.sendFrame(new PongFrame().setPayload(pongBuf),callback,BatchMode.OFF);
         }
         catch (Throwable t)
         {

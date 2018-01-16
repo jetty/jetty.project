@@ -56,7 +56,7 @@ public class FragmentExtension extends AbstractExtension
     }
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         ByteBuffer payload = frame.getPayload();
         int length = payload != null ? payload.remaining() : 0;

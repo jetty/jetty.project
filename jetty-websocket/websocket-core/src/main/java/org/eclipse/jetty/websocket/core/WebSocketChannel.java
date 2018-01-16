@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
@@ -39,7 +40,7 @@ import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
  * The Core WebSocket Session.
  *
  */
-public class WebSocketChannel extends ContainerLifeCycle implements IncomingFrames, OutgoingFrames
+public class WebSocketChannel extends ContainerLifeCycle implements IncomingFrames, FrameHandler.Channel
 {
     private Logger LOG = Log.getLogger(this.getClass());
 
@@ -48,7 +49,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     private final FrameHandler handler;
     private final ExtensionStack extensionStack;
     private final String subprotocol;
-
+    
     private WebSocketConnection connection;
 
     public WebSocketChannel(FrameHandler handler,
@@ -67,9 +68,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         handler.setWebSocketChannel(this);
     }
 
-    /**
-     * Flush the batched frames, blocking till completion.
-     */
+    @Override
     public void flush()
     {
         // TODO: flush the outgoing frames.
@@ -84,22 +83,45 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     {
         return handler;
     }
+    
+    @Override
+    public String getId()
+    {
+        return getConnection().getId();
+    }
 
+    @Override
     public String getSubprotocol()
     {
         return subprotocol;
     }
+    
+
+    @Override
+    public long getIdleTimeout(TimeUnit units)
+    {
+        return TimeUnit.MICROSECONDS.convert(getConnection().getEndPoint().getIdleTimeout(),units);
+    }
+    
+    @Override
+    public void setIdleTimeout(long timeout, TimeUnit units)
+    {
+        getConnection().getEndPoint().setIdleTimeout(units.toMillis(timeout));
+    }
+    
+    
     
     public Object getAttachment()
     {
         return null; // TODO
     }
 
+    @Override
     public boolean isOpen()
     {
         // TODO: should report true after frameHandler.open() and false after frameHandler.close()
         // TODO: should be aware of connection termination too.
-        return false;
+        return !state.isClosed();
     }
 
     public void setWebSocketConnection(WebSocketConnection connection)
@@ -112,9 +134,10 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
      *
      * @param callback the callback on successful send of close frame
      */
+    @Override
     public void close(Callback callback)
     {
-        outgoingFrame(new CloseFrame(), callback, BatchMode.OFF);
+        sendFrame(new CloseFrame(), callback, BatchMode.OFF);
     }
 
     /**
@@ -124,12 +147,13 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
      * @param reason an optional reason phrase
      * @param callback the callback on successful send of close frame
      */
+    @Override
     public void close(int statusCode, String reason, Callback callback)
     {
         // TODO guard for multiple closes?
         // TODO truncate extra large reason phrases to fit within limits?
 
-        outgoingFrame(new CloseFrame().setPayload(statusCode, reason), callback, BatchMode.OFF);
+        sendFrame(new CloseFrame().setPayload(statusCode, reason), callback, BatchMode.OFF);
     }
 
     /**
@@ -283,6 +307,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     @Override
     protected void doStop() throws Exception
     {
+        new Throwable().printStackTrace();
         this.connection.disconnect();
         super.doStop();
     }
@@ -294,7 +319,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     }
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode) 
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode) 
     {
         if (frame instanceof CloseFrame)
         {
@@ -330,7 +355,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
             }
         }
 
-        extensionStack.outgoingFrame(frame,callback,batchMode);
+        extensionStack.sendFrame(frame,callback,batchMode);
     }
 
     private class IncomingState implements IncomingFrames
@@ -398,7 +423,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         byte partial = -1;
         
         @Override
-        public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+        public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
         {
             // TODO This needs to be reviewed against RFC for possible interleavings
             switch(partial)
@@ -418,7 +443,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
                     callback.failed(new IllegalStateException());       
             }
             
-            connection.outgoingFrame(frame,callback,batchMode);
+            connection.sendFrame(frame,callback,batchMode);
         }
     }
 

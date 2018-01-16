@@ -334,7 +334,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         String payload = "Are you there?";
         Frame ping = new PingFrame().setPayload(payload);
 
-        ext.outgoingFrame(ping, null, BatchMode.OFF);
+        ext.sendFrame(ping, null, BatchMode.OFF);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);

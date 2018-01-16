@@ -269,7 +269,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         if (!isRunning())
             throw new IllegalStateException(getState());
@@ -400,7 +400,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing {}",current);
-            nextOutgoing.outgoingFrame(current.frame,this,current.batchMode);
+            nextOutgoing.sendFrame(current.frame,this,current.batchMode);
             return Action.SCHEDULED;
         }
 

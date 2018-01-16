@@ -144,11 +144,6 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         return id;
     }
 
-    public long getIdleTimeout()
-    {
-        return getEndPoint().getIdleTimeout();
-    }
-
     public Parser getParser()
     {
         return parser;
@@ -521,7 +516,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     }
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         flusher.enqueue(frame,callback,batchMode);
     }

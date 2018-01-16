@@ -55,7 +55,7 @@ class AutobahnFrameHandler extends AbstractFrameHandler
         LOG.info("onText {} {} {} {}", count++, utf8.length(),fin, getWebSocketChannel());
         if (fin)
         {
-            getWebSocketChannel().outgoingFrame(new TextFrame().setPayload(utf8.toString()),
+            getWebSocketChannel().sendFrame(new TextFrame().setPayload(utf8.toString()),
                     callback,
                     BatchMode.OFF);
         }
@@ -74,7 +74,7 @@ class AutobahnFrameHandler extends AbstractFrameHandler
             BinaryFrame echo = new BinaryFrame();
             if (payload!=null)
                 echo.setPayload(payload);
-            getWebSocketChannel().outgoingFrame(echo,callback,BatchMode.OFF);
+            getWebSocketChannel().sendFrame(echo,callback,BatchMode.OFF);
         }
         else
         {

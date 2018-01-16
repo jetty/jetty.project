@@ -23,7 +23,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 
 /**
- * The possible batch modes when invoking {@link OutgoingFrames#outgoingFrame(Frame, Callback, BatchMode)}.
+ * The possible batch modes when invoking {@link OutgoingFrames#sendFrame(Frame, Callback, BatchMode)}.
  */
 public enum BatchMode
 {

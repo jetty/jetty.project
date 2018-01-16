@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -25,9 +27,26 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface FrameHandler
 {
-    void setWebSocketChannel(WebSocketChannel channel);
+    void setWebSocketChannel(Channel channel);
     default void onOpen() throws Exception {}
     default void onFrame(Frame frame, Callback callback) throws Exception {}
     default void onClosed(CloseStatus closeStatus) throws Exception {}
     default void onError(Throwable cause) throws Exception {}
+    
+    interface Channel extends OutgoingFrames
+    {
+        String getId();  // TODO this is here for now, but I'm not convinced it is a core concept
+        
+        String getSubprotocol();
+        
+        boolean isOpen(); // TODO is this needed and/or enough? what about half closed states?
+        
+        long getIdleTimeout(TimeUnit units);
+        void setIdleTimeout(long timeout, TimeUnit units);
+                
+        void flush(); // TODO is this needed? 
+
+        void close(Callback callback); // TODO is this needed?
+        void close(int statusCode, String reason, Callback callback);
+    }
 }
