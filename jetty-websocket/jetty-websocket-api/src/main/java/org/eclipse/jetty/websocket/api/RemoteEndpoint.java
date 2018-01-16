@@ -24,9 +24,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
 
-public interface RemoteEndpoint extends WebSocketRemoteEndpoint
+public interface RemoteEndpoint
 {
     /**
      * Send a binary message, returning when all bytes of the message has been transmitted.
@@ -35,7 +34,6 @@ public interface RemoteEndpoint extends WebSocketRemoteEndpoint
      *
      * @param data the message to be sent
      * @throws IOException if unable to send the bytes
-     * @see #sendBinary(ByteBuffer, Callback)
      * @since 10.0
      */
     void sendBinary(ByteBuffer data) throws IOException;
@@ -48,7 +46,6 @@ public interface RemoteEndpoint extends WebSocketRemoteEndpoint
      * @param fragment the piece of the message being sent
      * @param isLast true if this is the last piece of the partial bytes
      * @throws IOException if unable to send the partial bytes
-     * @see #sendPartialBinary(ByteBuffer, boolean, Callback)
      * @since 10.0
      */
     void sendPartialBinary(ByteBuffer fragment, boolean isLast) throws IOException;
@@ -61,7 +58,6 @@ public interface RemoteEndpoint extends WebSocketRemoteEndpoint
      * @param fragment the piece of the message being sent
      * @param isLast true if this is the last piece of the partial bytes
      * @throws IOException if unable to send the partial bytes
-     * @see #sendPartialText(String, boolean, Callback)
      * @since 10.0
      */
     void sendPartialText(String fragment, boolean isLast) throws IOException;
@@ -73,7 +69,6 @@ public interface RemoteEndpoint extends WebSocketRemoteEndpoint
      *
      * @param applicationData the data to be carried in the ping request
      * @throws IOException if unable to send the ping
-     * @see #sendPing(ByteBuffer, Callback)
      */
     void sendPing(ByteBuffer applicationData) throws IOException;
 
@@ -84,7 +79,6 @@ public interface RemoteEndpoint extends WebSocketRemoteEndpoint
      *
      * @param applicationData the application data to be carried in the pong response.
      * @throws IOException if unable to send the pong
-     * @see #sendPong(ByteBuffer, Callback)
      */
     void sendPong(ByteBuffer applicationData) throws IOException;
 
@@ -95,20 +89,28 @@ public interface RemoteEndpoint extends WebSocketRemoteEndpoint
      *
      * @param text the message to be sent
      * @throws IOException if unable to send the text message
-     * @see #sendText(String, Callback)
      * @since 10.0
      */
     void sendText(String text) throws IOException;
+
+    /**
+     * Send a binary message, triggering the callback when bytes have been transmitted.
+     * <p>
+     * Note: this is an async call
+     *
+     * @param data the message to be sent
+     * @param callback the callback for the send operation
+     * @since 10.0
+     */
+    void sendBinary(ByteBuffer data, Callback callback);
 
     /**
      * Send a binary message, returning when all bytes of the message has been transmitted.
      * <p>
      * Note: this is a blocking call
      *
-     * @param data
-     *            the message to be sent
-     * @throws IOException
-     *             if unable to send the bytes
+     * @param data the message to be sent
+     * @throws IOException if unable to send the bytes
      * @deprecated use {@link #sendBinary(ByteBuffer)}
      */
     @Deprecated
@@ -119,8 +121,7 @@ public interface RemoteEndpoint extends WebSocketRemoteEndpoint
      * transmitted. Developers may use the returned
      * Future object to track progress of the transmission.
      *
-     * @param data
-     *            the data being sent
+     * @param data the data being sent
      * @return the Future object representing the send operation.
      * @deprecated use {@link #sendBinary(ByteBuffer, Callback)}
      */
@@ -132,42 +133,60 @@ public interface RemoteEndpoint extends WebSocketRemoteEndpoint
      * transmitted. Developers may provide a callback to
      * be notified when the message has been transmitted or resulted in an error.
      *
-     * @param data
-     *            the data being sent
-     * @param callback
-     *            callback to notify of success or failure of the write operation
+     * @param data the data being sent
+     * @param callback callback to notify of success or failure of the write operation
      * @deprecated use {@link #sendBinary(ByteBuffer, Callback)}
      */
     @Deprecated
     void sendBytes(ByteBuffer data, WriteCallback callback);
 
     /**
+     * Send a binary message in pieces, triggering the callback when the partial message has been transmitted.
+     * <p>
+     * The runtime reads the message in order. Non-final pieces are
+     * sent with isLast set to false. The final piece must be sent with isLast set to true.
+     *
+     * @param fragment the piece of the message being sent
+     * @param isLast true if this is the last piece of the partial bytes
+     * @param callback the callback for the send operation
+     * @since 10.0
+     */
+    void sendPartialBinary(ByteBuffer fragment, boolean isLast, Callback callback);
+
+    /**
      * Send a binary message in pieces, blocking until all of the message has been transmitted. The runtime reads the
      * message in order. Non-final pieces are
      * sent with isLast set to false. The final piece must be sent with isLast set to true.
      *
-     * @param fragment
-     *            the piece of the message being sent
-     * @param isLast
-     *            true if this is the last piece of the partial bytes
-     * @throws IOException
-     *             if unable to send the partial bytes
+     * @param fragment the piece of the message being sent
+     * @param isLast true if this is the last piece of the partial bytes
+     * @throws IOException if unable to send the partial bytes
      * @deprecated use {@link #sendPartialBinary(ByteBuffer, boolean, Callback)}
      */
     @Deprecated
     void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException;
+
+
+    /**
+     * Send a text message in pieces, triggering the callback when the partial message has been transmitted.
+     * <p>The runtime reads the message in order. Non-final pieces are sent
+     * with isLast set to false. The final piece must be sent with isLast set to true.
+     *
+     * @param fragment the piece of the message being sent
+     * @param isLast true if this is the last piece of the partial text
+     * @param callback the callback for the send operation
+     * @since 10.0
+     */
+    void sendPartialText(String fragment, boolean isLast, Callback callback);
 
     /**
      * Send a text message in pieces, blocking until all of the message has been transmitted. The runtime reads the
      * message in order. Non-final pieces are sent
      * with isLast set to false. The final piece must be sent with isLast set to true.
      *
-     * @param fragment
-     *            the piece of the message being sent
-     * @param isLast
-     *            true if this is the last piece of the partial bytes
-     * @throws IOException
-     *             if unable to send the partial bytes
+     * @param fragment the piece of the message being sent
+     * @param isLast true if this is the last piece of the partial text
+     * @throws IOException if unable to send the partial bytes
      * @deprecated use {@link #sendPartialText(String, boolean, Callback)}
      */
     @Deprecated
@@ -178,10 +197,8 @@ public interface RemoteEndpoint extends WebSocketRemoteEndpoint
      * <p>
      * Note: this is a blocking call
      *
-     * @param text
-     *            the message to be sent
-     * @throws IOException
-     *             if unable to send the text message
+     * @param text the message to be sent
+     * @throws IOException if unable to send the text message
      * @deprecated Use {@link #sendText(String)}
      */
     @Deprecated
@@ -189,11 +206,20 @@ public interface RemoteEndpoint extends WebSocketRemoteEndpoint
 
     /**
      * Initiates the asynchronous transmission of a text message. This method may return before the message is
+     * transmitted. Developers may use the callback be notified that the message has been transmitted.
+     *
+     * @param text the text being sent
+     * @param callback the callback for the send operation
+     * @since 10.0
+     */
+    void sendText(String text, Callback callback);
+
+    /**
+     * Initiates the asynchronous transmission of a text message. This method may return before the message is
      * transmitted. Developers may use the returned
      * Future object to track progress of the transmission.
      *
-     * @param text
-     *            the text being sent
+     * @param text the text being sent
      * @return the Future object representing the send operation.
      * @deprecated Use {@link #sendText(String, Callback)}
      */
@@ -205,10 +231,8 @@ public interface RemoteEndpoint extends WebSocketRemoteEndpoint
      * transmitted. Developers may provide a callback to
      * be notified when the message has been transmitted or resulted in an error.
      *
-     * @param text
-     *            the text being sent
-     * @param callback
-     *            callback to notify of success or failure of the write operation
+     * @param text the text being sent
+     * @param callback callback to notify of success or failure of the write operation
      * @deprecated Use {@link #sendText(String, Callback)}
      */
     @Deprecated
