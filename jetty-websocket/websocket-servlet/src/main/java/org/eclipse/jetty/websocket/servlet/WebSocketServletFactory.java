@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
-import java.util.function.BiFunction;
+import java.util.ServiceLoader;
 
 import javax.servlet.ServletContext;
 
@@ -38,16 +41,16 @@ import org.eclipse.jetty.websocket.server.WebSocketCreator;
  */
 public class WebSocketServletFactory
 {
-    /** The context that the factory was created from */
+    public static final String FRAME_HANDLER_FACTORY_LIST = FrameHandlerFactory.class.getName() + ".list";
+
+    /** The context that the factory was created from, so that API classes can be loaded properly */
     private final ClassLoader contextClassloader;
     private WebSocketPolicy policy;
     private WebSocketCreator creator;
     private WebSocketExtensionRegistry extensionRegistry;
     private DecoratedObjectFactory objectFactory;
     private ByteBufferPool bufferPool;
-
-    /** The API specific FrameHandler creation function */
-    private BiFunction<WebSocketServletFactory, Object, FrameHandler> newFrameHandlerFunction;
+    private List<FrameHandlerFactory> frameHandlerFactories;
 
     public WebSocketServletFactory(ServletContext context)
     {
@@ -55,11 +58,9 @@ public class WebSocketServletFactory
                 getContextAttribute(context, WebSocketExtensionRegistry.class),
                 getContextAttribute(context, DecoratedObjectFactory.class),
                 getContextAttribute(context, ByteBufferPool.class));
-    }
 
-    public WebSocketServletFactory(WebSocketPolicy policy)
-    {
-        this(policy, null, null, null);
+        // Inspect ServletContext for FrameHandlerFactory configuration
+        this.frameHandlerFactories = (List<FrameHandlerFactory>) context.getAttribute(FRAME_HANDLER_FACTORY_LIST);
     }
 
     public WebSocketServletFactory(WebSocketPolicy policy, WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool)
@@ -85,9 +86,32 @@ public class WebSocketServletFactory
         return (T) context.getAttribute(clazz.getName());
     }
 
-    public void setNewFrameHandlerFunction(BiFunction<WebSocketServletFactory, Object, FrameHandler> newFrameHandlerFunction)
+    public List<FrameHandlerFactory> getFrameHandlerFactories()
     {
-        this.newFrameHandlerFunction = newFrameHandlerFunction;
+        synchronized (this)
+        {
+            if (frameHandlerFactories == null)
+            {
+                frameHandlerFactories = new ArrayList<>();
+                ServiceLoader<FrameHandlerFactory> factoryLoader = ServiceLoader.load(FrameHandlerFactory.class, contextClassloader);
+                Iterator<FrameHandlerFactory> factoryIterator = factoryLoader.iterator();
+                while (factoryIterator.hasNext())
+                {
+                    frameHandlerFactories.add(factoryIterator.next());
+                }
+            }
+            return frameHandlerFactories;
+        }
+    }
+
+    public void setFrameHandlerFactories(List<FrameHandlerFactory> frameHandlerFactories)
+    {
+        // seems like a strange setter, until you realize it's used by test cases
+
+        synchronized (this)
+        {
+            this.frameHandlerFactories = frameHandlerFactories;
+        }
     }
 
     public ClassLoader getContextClassloader()
@@ -129,7 +153,17 @@ public class WebSocketServletFactory
     {
         Objects.requireNonNull(websocketPojo, "WebSocket Class cannot be null");
 
-        return newFrameHandlerFunction.apply(this, websocketPojo);
+        FrameHandler frameHandler = null;
+
+        for (FrameHandlerFactory factory : getFrameHandlerFactories())
+        {
+            frameHandler = factory.newFrameHandler(websocketPojo);
+            if (frameHandler != null)
+                return frameHandler;
+        }
+
+        // No factory worked!
+        return frameHandler;
     }
 
     /**

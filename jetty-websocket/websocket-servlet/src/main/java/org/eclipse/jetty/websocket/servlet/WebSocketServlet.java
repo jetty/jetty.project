@@ -26,8 +26,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.HandshakerFactory;
 
@@ -97,33 +95,31 @@ public abstract class WebSocketServlet extends HttpServlet
         {
             ServletContext ctx = getServletContext();
 
-            // TODO: pull baseline policy from context attribute?
-            WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+            factory = new WebSocketServletFactory(ctx);
             String max = getInitParameter("maxIdleTime");
             if (max != null)
             {
-                policy.setIdleTimeout(Long.parseLong(max));
+                factory.getPolicy().setIdleTimeout(Long.parseLong(max));
             }
 
             max = getInitParameter("maxTextMessageSize");
             if (max != null)
             {
-                policy.setMaxTextMessageSize(Integer.parseInt(max));
+                factory.getPolicy().setMaxTextMessageSize(Integer.parseInt(max));
             }
 
             max = getInitParameter("maxBinaryMessageSize");
             if (max != null)
             {
-                policy.setMaxBinaryMessageSize(Integer.parseInt(max));
+                factory.getPolicy().setMaxBinaryMessageSize(Integer.parseInt(max));
             }
 
             max = getInitParameter("inputBufferSize");
             if (max != null)
             {
-                policy.setInputBufferSize(Integer.parseInt(max));
+                factory.getPolicy().setInputBufferSize(Integer.parseInt(max));
             }
 
-            factory = new WebSocketServletFactory(policy);
             configure(factory); // Let user modify factory, policy, creator, extensions, etc..
             negotiator = new WebSocketServletNegotiator(factory, factory.getCreator());
             

@@ -32,7 +32,7 @@ public interface WebSocketConnectionListener
      * The underlying Connection will be considered closed at this point.
      * 
      * @param statusCode
-     *            the close status code. (See {@link StatusCode})
+     *            the close status code. (See {@link org.eclipse.jetty.websocket.api.StatusCode})
      * @param reason
      *            the optional reason for the close.
      */

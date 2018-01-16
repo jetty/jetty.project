@@ -16,21 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.servlet;
 
-import java.io.IOException;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-
-public interface WebSocketHandshake
+/**
+ * Factory for API's to use for creating API specific FrameHandler instances that
+ * websocket-core will utilize.
+ */
+public interface FrameHandlerFactory
 {
     /**
-     * Formulate a WebSocket upgrade handshake response.
-     * 
-     * @param request the request
-     * @param response the response
-     * @throws IOException if unable to handshake
+     * Attempt to create a FrameHandler from the provided websocketPojo.
+     *
+     * @param websocketPojo the websocket pojo to work with
+     * @return the API specific FrameHandler, or null if this implementation is unable to create the FrameHandler (allowing another {@link FrameHandlerFactory} to try)
      */
-    void doHandshakeResponse(ServletUpgradeRequest request, ServletUpgradeResponse response) throws IOException;
+    FrameHandler newFrameHandler(Object websocketPojo);
 }
