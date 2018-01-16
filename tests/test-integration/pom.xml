@@ -115,7 +115,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jsp</artifactId>
+      <artifactId>jetty-apache-jsp</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

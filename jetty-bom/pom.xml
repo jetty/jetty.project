@@ -93,12 +93,12 @@
     <dependencies>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>apache-jsp</artifactId>
+        <artifactId>jetty-apache-jsp</artifactId>
         <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>apache-jstl</artifactId>
+        <artifactId>jetty-apache-jstl</artifactId>
         <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>

@@ -5,7 +5,7 @@
     <version>9.4.9-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>apache-jstl</artifactId>
+  <artifactId>jetty-apache-jstl</artifactId>
   <name>Apache :: JSTL module</name>
   <url>http://tomcat.apache.org/taglibs/standard/</url>
   <packaging>jar</packaging>
@@ -53,7 +53,7 @@
     
     <dependency>
        <groupId>org.eclipse.jetty</groupId>
-       <artifactId>apache-jsp</artifactId>
+       <artifactId>jetty-apache-jsp</artifactId>
        <version>${project.version}</version>
        <scope>test</scope>
     </dependency>

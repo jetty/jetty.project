@@ -60,8 +60,8 @@
     <module>jetty-websocket</module>
     <module>jetty-servlets</module>
     <module>jetty-util-ajax</module>
-    <module>apache-jsp</module>
-    <module>apache-jstl</module>
+    <module>jetty-apache-jsp</module>
+    <module>jetty-apache-jstl</module>
     <module>jetty-maven-plugin</module>
     <module>jetty-jspc-maven-plugin</module>
     <module>jetty-deploy</module>
