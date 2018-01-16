@@ -63,7 +63,6 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     private final WebSocketPolicy policy;
     private final AtomicBoolean suspendToken;
     private final Flusher flusher;
-    private final String id;
 
     private WebSocketChannel channel;
 
@@ -91,11 +90,6 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
 
         this.bufferPool = bufferPool;
-
-        // TODO: this should be unique for the connection, resilient for proxying, and unix socket like usages
-        this.id = String.format("%s->%s",
-                endp.getLocalAddress().getAddress(),
-                endp.getRemoteAddress().getAddress());
 
         this.policy = channel.getPolicy();
         this.channel = channel;
@@ -137,16 +131,6 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     public Generator getGenerator()
     {
         return generator;
-    }
-
-    public String getId()
-    {
-        return id;
-    }
-
-    public long getIdleTimeout()
-    {
-        return getEndPoint().getIdleTimeout();
     }
 
     public Parser getParser()
@@ -521,7 +505,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     }
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         flusher.enqueue(frame,callback,batchMode);
     }

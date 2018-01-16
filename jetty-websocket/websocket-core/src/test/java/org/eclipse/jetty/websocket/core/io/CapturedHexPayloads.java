@@ -31,7 +31,7 @@ public class CapturedHexPayloads implements OutgoingFrames
     private List<String> captured = new ArrayList<>();
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         String hexPayload = Hex.asHex(frame.getPayload());
         captured.add(hexPayload);

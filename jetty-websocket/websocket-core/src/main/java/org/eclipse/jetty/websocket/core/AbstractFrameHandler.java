@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.FrameHandler.Channel;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
@@ -48,19 +49,24 @@ public class AbstractFrameHandler implements FrameHandler
     private byte partial = 0;
     private Utf8StringBuilder utf8;
     private ByteBuffer byteBuffer;
-    private WebSocketChannel channel;
-
-    @Override
-    public void setWebSocketChannel(WebSocketChannel channel)
-    {
-        this.channel = channel;
-    }
+    private FrameHandler.Channel channel;
     
-    public WebSocketChannel getWebSocketChannel()
+    public FrameHandler.Channel getWebSocketChannel()
     {
         return channel;
     }
-   
+    
+    @Override
+    public void onOpen(Channel channel)
+    {
+        this.channel = channel;
+        onOpen();
+    }
+    
+    public void onOpen()
+    {   
+    }
+    
 
     @Override
     public void onFrame(Frame frame, Callback callback)
@@ -123,7 +129,7 @@ public class AbstractFrameHandler implements FrameHandler
 
         try
         {
-            channel.outgoingFrame(new PongFrame().setPayload(pongBuf),callback,BatchMode.OFF);
+            channel.sendFrame(new PongFrame().setPayload(pongBuf),callback,BatchMode.OFF);
         }
         catch (Throwable t)
         {

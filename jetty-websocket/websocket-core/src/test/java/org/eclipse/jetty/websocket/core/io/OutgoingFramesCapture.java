@@ -76,7 +76,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         frames.add(WebSocketFrame.copy(frame));
         // Consume bytes

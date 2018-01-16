@@ -81,7 +81,7 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         saveFrame(frame,true);
         try

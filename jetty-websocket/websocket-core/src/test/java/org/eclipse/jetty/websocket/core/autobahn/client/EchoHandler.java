@@ -59,7 +59,7 @@ public class EchoHandler extends AbstractClientFrameHandler
 
         dataFrame.setFin(frame.isFin());
         dataFrame.setPayload(copyOf(frame.getPayload()));
-        getWebSocketChannel().outgoingFrame(dataFrame, Callback.NOOP, BatchMode.OFF);
+        getWebSocketChannel().sendFrame(dataFrame, Callback.NOOP, BatchMode.OFF);
         callback.succeeded(); // TODO: pass argument callback into outgoingFrame instead?
     }
 
@@ -77,7 +77,7 @@ public class EchoHandler extends AbstractClientFrameHandler
 
         dataFrame.setFin(frame.isFin());
         dataFrame.setPayload(copyOf(frame.getPayload()));
-        getWebSocketChannel().outgoingFrame(dataFrame, Callback.NOOP, BatchMode.OFF);
+        getWebSocketChannel().sendFrame(dataFrame, Callback.NOOP, BatchMode.OFF);
         callback.succeeded(); // TODO: pass argument callback into outgoingFrame instead?
     }
 

@@ -39,5 +39,5 @@ public interface OutgoingFrames
      * @param callback  the callback to notify when the frame is written.
      * @param batchMode the batch mode requested by the sender.
      */
-    void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode);
+    void sendFrame(Frame frame, Callback callback, BatchMode batchMode);
 }

@@ -126,7 +126,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         Frame frame = new TextFrame().setPayload(text);
-        ext.outgoingFrame(frame, null, BatchMode.OFF);
+        ext.sendFrame(frame, null, BatchMode.OFF);
 
         capture.assertBytes(0, expectedHex);
     }
@@ -233,9 +233,9 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         init(ext);
         ext.setNextOutgoingFrames(capture);
 
-        ext.outgoingFrame(new TextFrame().setPayload("time:"), null, BatchMode.OFF);
-        ext.outgoingFrame(new TextFrame().setPayload("time:"), null, BatchMode.OFF);
-        ext.outgoingFrame(new TextFrame().setPayload("time:"), null, BatchMode.OFF);
+        ext.sendFrame(new TextFrame().setPayload("time:"), null, BatchMode.OFF);
+        ext.sendFrame(new TextFrame().setPayload("time:"), null, BatchMode.OFF);
+        ext.sendFrame(new TextFrame().setPayload("time:"), null, BatchMode.OFF);
 
         List<String> actual = capture.getCaptured();
 
@@ -307,8 +307,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
 
-        ext.outgoingFrame(new TextFrame().setPayload("Hello"), null, BatchMode.OFF);
-        ext.outgoingFrame(new TextFrame().setPayload("There"), null, BatchMode.OFF);
+        ext.sendFrame(new TextFrame().setPayload("Hello"), null, BatchMode.OFF);
+        ext.sendFrame(new TextFrame().setPayload("There"), null, BatchMode.OFF);
 
         capture.assertBytes(0, "c107f248cdc9c90700");
     }
@@ -403,7 +403,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         clientExtension.setNextOutgoingFrames(new OutgoingFrames()
         {
             @Override
-            public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+            public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
             {
                 LOG.debug("outgoingFrame({})", frame);
                 serverExtension.incomingFrame(frame, callback);
@@ -432,7 +432,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         BinaryFrame frame = new BinaryFrame();
         frame.setPayload(input);
         frame.setFin(true);
-        clientExtension.outgoingFrame(frame, null, BatchMode.OFF);
+        clientExtension.sendFrame(frame, null, BatchMode.OFF);
 
         Assert.assertArrayEquals(input, result.toByteArray());
     }

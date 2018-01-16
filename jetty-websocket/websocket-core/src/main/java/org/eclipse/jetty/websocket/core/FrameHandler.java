@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -25,9 +27,23 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface FrameHandler
 {
-    void setWebSocketChannel(WebSocketChannel channel);
-    default void onOpen() throws Exception {}
+    default void onOpen(Channel channel) throws Exception {}
     default void onFrame(Frame frame, Callback callback) throws Exception {}
     default void onClosed(CloseStatus closeStatus) throws Exception {}
     default void onError(Throwable cause) throws Exception {}
+    
+    interface Channel extends OutgoingFrames
+    {        
+        String getSubprotocol();
+        
+        boolean isOpen(); // TODO this checks that frames can be sent
+        
+        long getIdleTimeout(TimeUnit units);
+        void setIdleTimeout(long timeout, TimeUnit units);
+                
+        void flushBatch();
+
+        void close(Callback callback);
+        void close(int statusCode, String reason, Callback callback);
+    }
 }

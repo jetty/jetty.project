@@ -204,7 +204,7 @@ public abstract class CompressExtension extends AbstractExtension
     }
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         // We use a queue and an IteratingCallback to handle concurrency.
         // We must compress and write atomically, otherwise the compression
