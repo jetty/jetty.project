@@ -65,11 +65,10 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         extensionStack.setNextIncoming(new IncomingState());
         extensionStack.setNextOutgoing(new OutgoingState());
         addBean(handler, true);
-        handler.setWebSocketChannel(this);
     }
 
     @Override
-    public void flush()
+    public void flushBatch()
     {
         // TODO: flush the outgoing frames.
     }
@@ -83,12 +82,6 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     {
         return handler;
     }
-    
-    @Override
-    public String getId()
-    {
-        return getConnection().getId();
-    }
 
     @Override
     public String getSubprotocol()
@@ -100,7 +93,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     @Override
     public long getIdleTimeout(TimeUnit units)
     {
-        return TimeUnit.MICROSECONDS.convert(getConnection().getEndPoint().getIdleTimeout(),units);
+        return TimeUnit.MILLISECONDS.convert(getConnection().getEndPoint().getIdleTimeout(),units);
     }
     
     @Override
@@ -109,19 +102,10 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         getConnection().getEndPoint().setIdleTimeout(units.toMillis(timeout));
     }
     
-    
-    
-    public Object getAttachment()
-    {
-        return null; // TODO
-    }
-
     @Override
     public boolean isOpen()
     {
-        // TODO: should report true after frameHandler.open() and false after frameHandler.close()
-        // TODO: should be aware of connection termination too.
-        return !state.isClosed();
+        return state.isOutOpen();
     }
 
     public void setWebSocketConnection(WebSocketConnection connection)
@@ -270,7 +254,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
             {
                 // Open connection and handler
                 state.onOpen();
-                handler.onOpen();                
+                handler.onOpen(this);                
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
             }

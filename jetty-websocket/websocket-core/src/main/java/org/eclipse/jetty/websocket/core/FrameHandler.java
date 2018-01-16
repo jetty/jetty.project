@@ -27,26 +27,23 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface FrameHandler
 {
-    void setWebSocketChannel(Channel channel);
-    default void onOpen() throws Exception {}
+    default void onOpen(Channel channel) throws Exception {}
     default void onFrame(Frame frame, Callback callback) throws Exception {}
     default void onClosed(CloseStatus closeStatus) throws Exception {}
     default void onError(Throwable cause) throws Exception {}
     
     interface Channel extends OutgoingFrames
-    {
-        String getId();  // TODO this is here for now, but I'm not convinced it is a core concept
-        
+    {        
         String getSubprotocol();
         
-        boolean isOpen(); // TODO is this needed and/or enough? what about half closed states?
+        boolean isOpen(); // TODO this checks that frames can be sent
         
         long getIdleTimeout(TimeUnit units);
         void setIdleTimeout(long timeout, TimeUnit units);
                 
-        void flush(); // TODO is this needed? 
+        void flushBatch();
 
-        void close(Callback callback); // TODO is this needed?
+        void close(Callback callback);
         void close(int statusCode, String reason, Callback callback);
     }
 }

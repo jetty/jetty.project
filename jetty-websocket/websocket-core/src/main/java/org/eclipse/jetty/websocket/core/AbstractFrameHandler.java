@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.FrameHandler.Channel;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
@@ -49,18 +50,23 @@ public class AbstractFrameHandler implements FrameHandler
     private Utf8StringBuilder utf8;
     private ByteBuffer byteBuffer;
     private FrameHandler.Channel channel;
-
-    @Override
-    public void setWebSocketChannel(FrameHandler.Channel channel)
-    {
-        this.channel = channel;
-    }
     
     public FrameHandler.Channel getWebSocketChannel()
     {
         return channel;
     }
-   
+    
+    @Override
+    public void onOpen(Channel channel)
+    {
+        this.channel = channel;
+        onOpen();
+    }
+    
+    public void onOpen()
+    {   
+    }
+    
 
     @Override
     public void onFrame(Frame frame, Callback callback)
