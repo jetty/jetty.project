@@ -44,7 +44,7 @@ public class WebSocketClient extends ContainerLifeCycle
     private WebSocketExtensionRegistry extensionRegistry;
     private DecoratedObjectFactory objectFactory;
 
-    // TODO: Things to consider for inclusion in this class
+    // TODO: Things to consider for inclusion in this class (or removal if they can be set elsewhere, like HttpClient)
     // - AsyncWrite Idle Timeout
     // - Bind Address
     // - SslContextFactory setup
@@ -112,11 +112,6 @@ public class WebSocketClient extends ContainerLifeCycle
 
         init();
 
-        /* Note: UpgradeListener is used by javax.websocket.ClientEndpointConfig.Configurator
-         * See: org.eclipse.jetty.websocket.jsr356.JsrUpgradeListener
-         */
-        // TODO: need way to hook into the pre-request and post-response upgrade/negotiate steps
-        // request.setUpgradeListener(upgradeListener);
         return request.sendAsync();
     }
 

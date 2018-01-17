@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConversation;
@@ -60,6 +61,7 @@ public class WebSocketClientUpgradeRequest extends HttpRequest implements Respon
     private final CompletableFuture<WebSocketChannel> fut;
     private final WebSocketClient wsClient;
     private final FrameHandler frameHandler;
+    private List<UpgradeListener> upgradeListeners = new ArrayList<>();
     /** Offered Extensions */
     private List<ExtensionConfig> extensions = new ArrayList<>();
     /** Offered SubProtocols */
@@ -276,11 +278,7 @@ public class WebSocketClientUpgradeRequest extends HttpRequest implements Respon
 
         wsChannel.setWebSocketConnection(wsConnection);
 
-        //wsClient.addManaged(wsChannel); // TODO: or should this be the connection?
-
-        // TODO: need way to hook into the post-upgraded response
-        // if (upgradeListener != null)
-        //    upgradeListener.onHandshakeResponse(new ClientUpgradeResponse(response));
+        notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
 
         // Now swap out the connection
         endp.upgrade(wsConnection);
@@ -315,9 +313,23 @@ public class WebSocketClientUpgradeRequest extends HttpRequest implements Respon
         header(HttpHeader.PRAGMA, "no-cache");
         header(HttpHeader.CACHE_CONTROL, "no-cache");
 
-        // TODO: need way to hook into pre-upgrade request
-        // if (upgradeListener != null)
-        //    upgradeListener.onHandshakeRequest(this);
+        // Notify upgrade hooks
+        notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
+    }
+
+    private void notifyUpgradeListeners(Consumer<UpgradeListener> action)
+    {
+        for (UpgradeListener listener : upgradeListeners)
+        {
+            try
+            {
+                action.accept(listener);
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Unhandled error: " + t.getMessage(), t);
+            }
+        }
     }
 
     private void updateWebSocketExtensionHeader()
