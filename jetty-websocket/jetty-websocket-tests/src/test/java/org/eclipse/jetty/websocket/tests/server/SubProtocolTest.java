@@ -59,7 +59,7 @@ public class SubProtocolTest
         public void onConnect(Session session)
         {
             this.session = session;
-            this.acceptedProtocol = session.getUpgradeResponse().getAcceptedSubProtocol();
+            this.acceptedProtocol = session.getHandshakeResponse().getAcceptedSubProtocol();
         }
         
         @OnWebSocketMessage

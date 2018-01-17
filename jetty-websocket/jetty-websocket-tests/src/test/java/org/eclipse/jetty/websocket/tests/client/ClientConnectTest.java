@@ -393,7 +393,7 @@ public class ClientConnectTest
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         
         assertThat("Client dropped Transfer-Encoding header",
-                clientSession.getUpgradeResponse().getHeader("Transfer-Encoding"),
+                clientSession.getHandshakeResponse().getHeader("Transfer-Encoding"),
                 nullValue());
         
         assertThat("Client onOpen event occurred",

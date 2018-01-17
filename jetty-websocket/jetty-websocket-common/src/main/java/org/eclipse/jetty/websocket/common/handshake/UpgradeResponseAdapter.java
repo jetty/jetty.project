@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common.handshake;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,12 @@ public class UpgradeResponseAdapter implements UpgradeResponse
         }
         values.add(value);
         headers.put(key,values);
+    }
+
+    @Override
+    public void sendError(int statusCode) throws IOException
+    {
+        throw new UnsupportedOperationException("Not supported");
     }
 
     /**
@@ -116,7 +123,7 @@ public class UpgradeResponseAdapter implements UpgradeResponse
     }
 
     @Override
-    public Map<String, List<String>> getHeaders()
+    public Map<String, List<String>> getHeadersMap()
     {
         return headers;
     }
@@ -131,18 +138,6 @@ public class UpgradeResponseAdapter implements UpgradeResponse
     public int getStatusCode()
     {
         return statusCode;
-    }
-
-    @Override
-    public String getStatusReason()
-    {
-        return statusReason;
-    }
-
-    @Override
-    public boolean isSuccess()
-    {
-        return success;
     }
 
     /**
@@ -205,23 +200,5 @@ public class UpgradeResponseAdapter implements UpgradeResponse
         List<String> values = new ArrayList<>();
         values.add(value);
         headers.put(name,values);
-    }
-
-    @Override
-    public void setStatusCode(int statusCode)
-    {
-        this.statusCode = statusCode;
-    }
-
-    @Override
-    public void setStatusReason(String statusReason)
-    {
-        this.statusReason = statusReason;
-    }
-
-    @Override
-    public void setSuccess(boolean success)
-    {
-        this.success = success;
     }
 }

@@ -32,6 +32,6 @@ public class MyEchoSocket
     public void onWebSocketText(Session session, String message)
     {
         // Echo message back, asynchronously
-        session.getRemote().sendString(message,null);
+        session.getRemote().sendText(message,null);
     }
 }

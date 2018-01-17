@@ -34,6 +34,6 @@ public class MyBinaryEchoSocket
     public void onWebSocketText(Session session, byte buf[], int offset, int len)
     {
         // Echo message back, asynchronously
-        session.getRemote().sendBytes(ByteBuffer.wrap(buf,offset,len),null);
+        session.getRemote().sendBinary(ByteBuffer.wrap(buf,offset,len),null);
     }
 }

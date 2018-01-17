@@ -26,8 +26,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketException;
@@ -51,8 +49,14 @@ public class JettyWebSocketFrameHandlerImpl implements JettyWebSocketFrameHandle
     private final MethodHandle frameHandle;
     private final MethodHandle pingHandle;
     private final MethodHandle pongHandle;
-    private final UpgradeRequest upgradeRequest;
-    private final UpgradeResponse upgradeResponse;
+    /**
+     * Immutable HandshakeRequest available via Session
+     */
+    private final HandshakeRequest handshakeRequest;
+    /**
+     * Immutable HandshakeResponse available via Session
+     */
+    private final HandshakeResponse handshakeResponse;
     private final Executor executor; // TODO: should come from WebSocket Container
     private MessageSink textSink;
     private MessageSink binarySink;
@@ -60,7 +64,7 @@ public class JettyWebSocketFrameHandlerImpl implements JettyWebSocketFrameHandle
     private WebSocketSessionImpl session;
 
     public JettyWebSocketFrameHandlerImpl(Object endpointInstance, WebSocketPolicy endpointPolicy,
-                                          UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
+                                          HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse,
                                           MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                           MethodHandle textHandle, MethodHandle binaryHandle,
                                           Class<? extends MessageSink> textSinkClass,
@@ -73,8 +77,8 @@ public class JettyWebSocketFrameHandlerImpl implements JettyWebSocketFrameHandle
 
         this.endpointInstance = endpointInstance;
         this.policy = endpointPolicy;
-        this.upgradeRequest = upgradeRequest;
-        this.upgradeResponse = upgradeResponse;
+        this.handshakeRequest = handshakeRequest;
+        this.handshakeResponse = handshakeResponse;
 
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
@@ -173,7 +177,7 @@ public class JettyWebSocketFrameHandlerImpl implements JettyWebSocketFrameHandle
     public void onOpen(Channel channel) throws Exception
     {
         JettyWebSocketRemoteEndpoint remote = new JettyWebSocketRemoteEndpoint(channel);
-        session = new WebSocketSessionImpl(remote, upgradeRequest, upgradeResponse);
+        session = new WebSocketSessionImpl(remote, handshakeRequest, handshakeResponse);
 
 
         if (textHandle != null)

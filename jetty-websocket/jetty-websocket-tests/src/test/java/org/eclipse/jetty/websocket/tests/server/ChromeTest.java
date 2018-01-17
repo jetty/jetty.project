@@ -95,7 +95,7 @@ public class ChromeTest
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
         
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        List<ExtensionConfig> extensionConfigList = clientSession.getUpgradeResponse().getExtensions();
+        List<ExtensionConfig> extensionConfigList = clientSession.getHandshakeResponse().getExtensions();
         assertThat("Client Upgrade Response.Extensions", extensionConfigList.size(), is(1));
         assertThat("Client Upgrade Response.Extensions[0]", extensionConfigList.get(0).toString(), containsString("x-webkit-deflate-frame"));
         

@@ -56,7 +56,7 @@ public class SessionSocket
         {
             if (message.startsWith("getParameterMap"))
             {
-                Map<String, List<String>> parameterMap = session.getUpgradeRequest().getParameterMap();
+                Map<String, List<String>> parameterMap = session.getHandshakeRequest().getParameterMap();
                 
                 int idx = message.indexOf('|');
                 String key = message.substring(idx + 1);
@@ -95,7 +95,7 @@ public class SessionSocket
             
             if ("session.upgradeRequest.requestURI".equals(message))
             {
-                String response = String.format("session.upgradeRequest.requestURI=%s", session.getUpgradeRequest().getRequestURI().toASCIIString());
+                String response = String.format("session.upgradeRequest.requestURI=%s", session.getHandshakeRequest().getRequestURI().toASCIIString());
                 sendString(response);
                 return;
             }

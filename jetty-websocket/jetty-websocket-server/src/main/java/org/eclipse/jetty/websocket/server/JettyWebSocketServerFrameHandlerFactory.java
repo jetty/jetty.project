@@ -18,10 +18,14 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketConnectionListener;
+import java.util.concurrent.Executors;
+
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
+import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 /**
  * Factory for websocket-core {@link FrameHandler} implementations suitable for
@@ -39,34 +43,19 @@ import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
  * <li>Implements {@link org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener}</li>
  * </ul>
  */
-public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
+public class JettyWebSocketServerFrameHandlerFactory extends JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
 {
-    // TODO: merge with LocalEndpointFactory / LocalEndpointMetadata / LocalEndpointImpl
+    public JettyWebSocketServerFrameHandlerFactory()
+    {
+        super(Executors.newFixedThreadPool(10)); // TODO: get from container (somehow)
+    }
 
     @Override
-    public FrameHandler newFrameHandler(Object websocketPojo)
+    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse)
     {
         if(websocketPojo == null)
             return null;
 
-        Class<?> websocketClazz =websocketPojo.getClass();
-        WebSocket websocketAnno = websocketClazz.getAnnotation(WebSocket.class);
-        if(websocketAnno != null)
-        {
-            return createAnnotatedFrameHandler(websocketAnno, websocketPojo);
-        }
-
-        if(WebSocketConnectionListener.class.isAssignableFrom(websocketClazz))
-        {
-
-        }
-
-        return null;
-    }
-
-    private FrameHandler createAnnotatedFrameHandler(WebSocket websocketAnno, Object websocketPojo)
-    {
-        // TODO
-        return null;
+        return super.createLocalEndpoint(websocketPojo, policy, handshakeRequest, handshakeResponse);
     }
 }

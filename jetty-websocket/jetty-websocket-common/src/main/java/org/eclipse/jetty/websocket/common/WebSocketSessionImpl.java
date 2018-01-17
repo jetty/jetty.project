@@ -24,8 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.io.SuspendToken;
@@ -33,16 +31,16 @@ import org.eclipse.jetty.websocket.core.io.SuspendToken;
 public class WebSocketSessionImpl implements Session
 {
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
-    private final UpgradeRequest upgradeRequest;
-    private final UpgradeResponse upgradeResponse;
+    private final HandshakeRequest handshakeRequest;
+    private final HandshakeResponse handshakeResponse;
 
     public WebSocketSessionImpl(JettyWebSocketRemoteEndpoint remoteEndpoint,
-                                UpgradeRequest upgradeRequest,
-                                UpgradeResponse upgradeResponse)
+                                HandshakeRequest handshakeRequest,
+                                HandshakeResponse handshakeResponse)
     {
         this.remoteEndpoint = remoteEndpoint;
-        this.upgradeRequest = upgradeRequest;
-        this.upgradeResponse = upgradeResponse;
+        this.handshakeRequest = handshakeRequest;
+        this.handshakeResponse = handshakeResponse;
     }
 
     @Override
@@ -84,7 +82,7 @@ public class WebSocketSessionImpl implements Session
     @Override
     public SocketAddress getLocalSocketAddress()
     {
-        return upgradeRequest.getLocalSocketAddress();
+        return handshakeRequest.getLocalSocketAddress();
     }
 
     @Override
@@ -96,7 +94,7 @@ public class WebSocketSessionImpl implements Session
     @Override
     public String getProtocolVersion()
     {
-        return getUpgradeRequest().getProtocolVersion();
+        return getHandshakeRequest().getProtocolVersion();
     }
 
     @Override
@@ -108,19 +106,19 @@ public class WebSocketSessionImpl implements Session
     @Override
     public SocketAddress getRemoteSocketAddress()
     {
-        return upgradeRequest.getRemoteSocketAddress();
+        return handshakeRequest.getRemoteSocketAddress();
     }
 
     @Override
-    public UpgradeRequest getUpgradeRequest()
+    public HandshakeRequest getHandshakeRequest()
     {
-        return this.upgradeRequest;
+        return this.handshakeRequest;
     }
 
     @Override
-    public UpgradeResponse getUpgradeResponse()
+    public HandshakeResponse getHandshakeResponse()
     {
-        return this.upgradeResponse;
+        return this.handshakeResponse;
     }
 
     @Override
@@ -132,7 +130,7 @@ public class WebSocketSessionImpl implements Session
     @Override
     public boolean isSecure()
     {
-        return upgradeRequest.isSecure();
+        return handshakeRequest.isSecure();
     }
 
     @Override

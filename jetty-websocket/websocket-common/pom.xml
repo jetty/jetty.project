@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
@@ -9,17 +7,17 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-websocket-api</artifactId>
-  <name>Jetty :: Websocket :: org.eclipse.jetty.websocket :: API</name>
+  <artifactId>websocket-common</artifactId>
+  <name>Jetty :: Websocket :: Common</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.api</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-common</artifactId>
+      <artifactId>websocket-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -33,8 +31,36 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>artifact-jars</id>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
+          <execution>
+            <id>ban-ws-apis</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <includes>
+                    <include>org.eclipse.jetty.websocket:jetty-websocket-api</include>
+                    <include>javax.websocket</include>
+                  </includes>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
           <execution>
             <id>ban-java-servlet-api</id>
             <goals>

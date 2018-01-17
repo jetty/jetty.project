@@ -33,8 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -99,7 +97,7 @@ public class JettyWebSocketFrameHandlerFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public JettyWebSocketFrameHandler createLocalEndpoint(Object endpointInstance, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
+    public JettyWebSocketFrameHandler createLocalEndpoint(Object endpointInstance, WebSocketPolicy policy, HandshakeRequest upgradeRequest, HandshakeResponse upgradeResponse)
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 

@@ -216,7 +216,7 @@ public class PerMessageDeflateExtensionTest
         actual.append('[');
         
         boolean delim = false;
-        for (ExtensionConfig ext : session.getUpgradeResponse().getExtensions())
+        for (ExtensionConfig ext : session.getHandshakeResponse().getExtensions())
         {
             if (delim)
                 actual.append(", ");

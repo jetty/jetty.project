@@ -134,8 +134,8 @@ public class WebSocketClientTest
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         assertThat("Client Session", clientSession, notNullValue());
         assertThat("Client Session.onOpen", clientSession.isOpen(), is(true));
-        assertThat("Client Session.upgradeRequest", clientSession.getUpgradeRequest(), notNullValue());
-        assertThat("Client Session.upgradeRequest", clientSession.getUpgradeResponse(), notNullValue());
+        assertThat("Client Session.upgradeRequest", clientSession.getHandshakeRequest(), notNullValue());
+        assertThat("Client Session.upgradeRequest", clientSession.getHandshakeResponse(), notNullValue());
         
         // Verify Client Session Tracking
         Collection<WebSocketSessionImpl> sessions = client.getBeans(WebSocketSessionImpl.class);
@@ -248,7 +248,7 @@ public class WebSocketClientTest
         
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         
-        UpgradeRequest req = clientSession.getUpgradeRequest();
+        UpgradeRequest req = clientSession.getHandshakeRequest();
         Assert.assertThat("Upgrade Request", req, notNullValue());
         
         Map<String, List<String>> parameterMap = req.getParameterMap();

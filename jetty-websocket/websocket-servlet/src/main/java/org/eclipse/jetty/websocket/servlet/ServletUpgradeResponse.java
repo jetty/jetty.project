@@ -30,13 +30,14 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
 /**
  * Servlet Specific UpgradeResponse implementation.
  */
-public class ServletUpgradeResponse
+public class ServletUpgradeResponse implements HandshakeResponse
 {
     private final HttpServletResponse response;
     private boolean extensionsNegotiated = false;
@@ -59,27 +60,32 @@ public class ServletUpgradeResponse
         response.setHeader(name, value);
     }
 
+    @Override
     public String getAcceptedSubProtocol()
     {
         return getHeader(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL);
     }
 
+    @Override
     public List<ExtensionConfig> getExtensions()
     {
         return extensions;
     }
 
+    @Override
     public String getHeader(String name)
     {
         return response.getHeader(name);
     }
 
+    @Override
     public Set<String> getHeaderNames()
     {
         return Collections.unmodifiableSet(new HashSet<>(response.getHeaderNames()));
     }
 
-    public Map<String, List<String>> getHeaders()
+    @Override
+    public Map<String, List<String>> getHeadersMap()
     {
         Map<String, List<String>> headers = response.getHeaderNames().stream()
                 .collect(Collectors.toMap((name) -> name,
@@ -87,11 +93,13 @@ public class ServletUpgradeResponse
         return Collections.unmodifiableMap(headers);
     }
 
+    @Override
     public List<String> getHeaders(String name)
     {
         return Collections.unmodifiableList(new ArrayList<>(response.getHeaders(name)));
     }
 
+    @Override
     public int getStatusCode()
     {
         return response.getStatus();

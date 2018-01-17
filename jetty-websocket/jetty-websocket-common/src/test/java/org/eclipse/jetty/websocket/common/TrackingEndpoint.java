@@ -28,8 +28,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 import org.eclipse.jetty.websocket.core.AbstractTrackingEndpoint;
@@ -38,8 +36,8 @@ import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 
 public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionImpl> implements WebSocketListener, WebSocketFrameListener
 {
-    public UpgradeRequest openUpgradeRequest;
-    public UpgradeResponse openUpgradeResponse;
+    public HandshakeRequest openUpgradeRequest;
+    public HandshakeResponse openUpgradeResponse;
 
     public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
@@ -82,8 +80,8 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionI
     {
         assertThat("Session type", session, instanceOf(WebSocketSessionImpl.class));
         super.onWSOpen((WebSocketSessionImpl) session);
-        this.openUpgradeRequest = session.getUpgradeRequest();
-        this.openUpgradeResponse = session.getUpgradeResponse();
+        this.openUpgradeRequest = session.getHandshakeRequest();
+        this.openUpgradeResponse = session.getHandshakeResponse();
     }
 
     @Override

@@ -23,8 +23,10 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -163,7 +165,7 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     }
 
     @Override
-    public Map<String, List<String>> getHeaderMap()
+    public Map<String, List<String>> getHeadersMap()
     {
         return headers;
     }
@@ -210,6 +212,12 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     }
 
     @Override
+    public String getOrigin()
+    {
+        return null;
+    }
+
+    @Override
     public void setMethod(String method)
     {
         this.method = method;
@@ -253,6 +261,18 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     public SocketAddress getRemoteSocketAddress()
     {
         return remoteSocketAddress;
+    }
+
+    @Override
+    public Locale getLocale()
+    {
+        return null;
+    }
+
+    @Override
+    public Enumeration<Locale> getLocales()
+    {
+        return null;
     }
 
     public void setRemoteSocketAddress(SocketAddress remoteSocketAddress)

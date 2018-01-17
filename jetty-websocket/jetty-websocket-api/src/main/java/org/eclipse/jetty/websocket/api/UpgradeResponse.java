@@ -20,18 +20,20 @@ package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
+import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
 /**
- * The HTTP Upgrade to WebSocket Response
+ * The mutable HTTP Response to Upgrade to WebSocket
  */
-public interface UpgradeResponse
+public interface UpgradeResponse extends HandshakeResponse
 {
     /**
      * Add a header value to the response.
+     * <p>
+     *  If header already exists, a new value is appended to the end of value list per HTTP rules
+     * </p>
      *
      * @param name the header name
      * @param value the header value
@@ -39,72 +41,15 @@ public interface UpgradeResponse
     void addHeader(String name, String value);
 
     /**
-     * Get the accepted WebSocket protocol.
-     *
-     * @return the accepted WebSocket protocol.
-     */
-    String getAcceptedSubProtocol();
-
-    /**
-     * Get the list of extensions that should be used for the websocket.
-     *
-     * @return the list of negotiated extensions to use.
-     */
-    List<ExtensionConfig> getExtensions();
-
-    /**
-     * Get a header value
-     *
-     * @param name the header name
-     * @return the value (null if header doesn't exist)
-     */
-    String getHeader(String name);
-
-    /**
-     * Get the header names
-     *
-     * @return the set of header names
-     */
-    Set<String> getHeaderNames();
-
-    /**
-     * Get the headers map
-     *
-     * @return the map of headers
-     */
-    Map<String, List<String>> getHeaders();
-
-    /**
-     * Get the multi-value header value
-     *
-     * @param name the header name
-     * @return the list of values (null if header doesn't exist)
-     */
-    List<String> getHeaders(String name);
-
-    /**
-     * Get the HTTP Response Status Code
-     *
-     * @return the status code
-     */
-    int getStatusCode();
-
-    /**
-     * Get the HTTP Response Status Reason
-     *
-     * @return the HTTP Response status reason
-     */
-    String getStatusReason();
-
-    /**
-     * Test if upgrade response is successful.
+     * Respond with HTTP error (and optionally process the default Servlet error handling)
      * <p>
-     * Merely notes if the response was sent as a WebSocket Upgrade,
-     * or was failed (resulting in no upgrade handshake)
+     * This means that the websocket endpoint will not upgrade
      *
-     * @return true if upgrade response was generated, false if no upgrade response was generated
+     * @param statusCode the HTTP response status code
+     * @throws IOException
+     * if unable to send the error
      */
-    boolean isSuccess();
+    void sendError(int statusCode) throws IOException;
 
     /**
      * Issue a forbidden upgrade response.
@@ -155,29 +100,4 @@ public interface UpgradeResponse
      * @param value the header value
      */
     void setHeader(String name, String value);
-
-    /**
-     * Set the HTTP Response status code
-     *
-     * @param statusCode the status code
-     */
-    void setStatusCode(int statusCode);
-
-    /**
-     * Set the HTTP Response status reason phrase
-     * <p>
-     * Note, not all implementation of UpgradeResponse can support this feature
-     *
-     * @param statusReason the status reason phrase
-     */
-    void setStatusReason(String statusReason);
-
-    /**
-     * Set the success of the upgrade response.
-     * <p>
-     *
-     * @param success true to indicate a response to the upgrade handshake was sent, false to indicate no upgrade
-     * response was sent
-     */
-    void setSuccess(boolean success);
 }

@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
@@ -94,11 +95,11 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
             // If a FrameHandlerFactory is specified, use it
             if (frameHandlerFactory != null)
             {
-                return frameHandlerFactory.newFrameHandler(websocketPojo);
+                return frameHandlerFactory.newFrameHandler(websocketPojo, factory.getPolicy(), upgradeRequest, upgradeResponse);
             }
 
             // Use WebSocketServletFactory to create FrameHandler
-            return factory.newFrameHandler(websocketPojo);
+            return factory.newFrameHandler(websocketPojo, factory.getPolicy(), upgradeRequest, upgradeResponse);
         }
         catch (URISyntaxException e)
         {

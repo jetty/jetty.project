@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.servlet;
 
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Principal;
@@ -37,13 +38,14 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
 /**
  * Servlet specific Upgrade Request implementation.
  */
-public class ServletUpgradeRequest
+public class ServletUpgradeRequest implements HandshakeRequest
 {
     private final URI requestURI;
     private final String queryString;
@@ -59,21 +61,21 @@ public class ServletUpgradeRequest
         this.secure = httpRequest.isSecure();
 
         StringBuffer uri = httpRequest.getRequestURL();
-        if (this.queryString!=null)
+        if (this.queryString != null)
             uri.append("?").append(this.queryString);
-        uri.replace(0,uri.indexOf(":"),secure ? "wss" : "ws");        
+        uri.replace(0, uri.indexOf(":"), secure ? "wss" : "ws");
         this.requestURI = new URI(uri.toString());
         this.request = new UpgradeHttpServletRequest(httpRequest);
     }
 
     public X509Certificate[] getCertificates()
     {
-        return (X509Certificate[])request.getAttribute("javax.servlet.request.X509Certificate");
+        return (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
     }
 
     public List<HttpCookie> getCookies()
     {
-        if(cookies == null)
+        if (cookies == null)
         {
             Cookie[] requestCookies = request.getCookies();
             if (requestCookies != null)
@@ -87,21 +89,24 @@ public class ServletUpgradeRequest
                 }
             }
         }
-        
+
         return cookies;
     }
 
+    @Override
     public List<ExtensionConfig> getExtensions()
     {
         Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
         return ExtensionConfig.parseEnum(e);
     }
 
+    @Override
     public String getHeader(String name)
     {
         return request.getHeader(name);
     }
 
+    @Override
     public int getHeaderInt(String name)
     {
         String val = request.getHeader(name);
@@ -112,16 +117,19 @@ public class ServletUpgradeRequest
         return Integer.parseInt(val);
     }
 
-    public Map<String, List<String>> getHeaderMap()
+    @Override
+    public Map<String, List<String>> getHeadersMap()
     {
         return request.getHeaders();
     }
 
+    @Override
     public List<String> getHeaders(String name)
     {
         return request.getHeaders().get(name);
     }
 
+    @Override
     public String getHost()
     {
         return requestURI.getHost();
@@ -140,19 +148,10 @@ public class ServletUpgradeRequest
         return request;
     }
 
+    @Override
     public String getHttpVersion()
     {
         return request.getProtocol();
-    }
-
-    /**
-     * Equivalent to {@link HttpServletRequest#getLocalAddr()}
-     *
-     * @return the local address
-     */
-    public String getLocalAddress()
-    {
-        return request.getLocalAddr();
     }
 
     /**
@@ -160,6 +159,7 @@ public class ServletUpgradeRequest
      *
      * @return the preferred <code>Locale</code> for the client
      */
+    @Override
     public Locale getLocale()
     {
         return request.getLocale();
@@ -170,53 +170,39 @@ public class ServletUpgradeRequest
      *
      * @return an Enumeration of preferred Locale objects
      */
+    @Override
     public Enumeration<Locale> getLocales()
     {
         return request.getLocales();
     }
 
     /**
-     * Equivalent to {@link HttpServletRequest#getLocalName()}
-     *
-     * @return the local host name
-     */
-    public String getLocalHostName()
-    {
-        return request.getLocalName();
-    }
-
-    /**
-     * Equivalent to {@link HttpServletRequest#getLocalPort()}
-     *
-     * @return the local port
-     */
-    public int getLocalPort()
-    {
-        return request.getLocalPort();
-    }
-
-    /**
-     * Return a {@link InetSocketAddress} for the local socket.
+     * Return a {@link java.net.SocketAddress} for the local socket.
      * <p>
      * Warning: this can cause a DNS lookup
      *
      * @return the local socket address
      */
-    public InetSocketAddress getLocalSocketAddress()
+    @Override
+    public SocketAddress getLocalSocketAddress()
     {
-        return new InetSocketAddress(getLocalAddress(), getLocalPort());
+        // TODO: fix when HttpServletRequest can use Unix Socket stuff
+        return new InetSocketAddress(request.getLocalAddr(), request.getLocalPort());
     }
 
+    @Override
     public String getMethod()
     {
         return request.getMethod();
     }
 
+    @Override
     public String getOrigin()
     {
         return getHeader("Origin");
     }
 
+    @Override
     public Map<String, List<String>> getParameterMap()
     {
         if (parameterMap == null)
@@ -226,67 +212,39 @@ public class ServletUpgradeRequest
             {
                 parameterMap = new HashMap<>(requestParams.size());
                 for (Map.Entry<String, String[]> entry : requestParams.entrySet())
-                    parameterMap.put(entry.getKey(),Arrays.asList(entry.getValue()));
+                    parameterMap.put(entry.getKey(), Arrays.asList(entry.getValue()));
             }
         }
         return parameterMap;
     }
-    
+
+    @Override
     public String getProtocolVersion()
     {
         String version = request.getHeader(WebSocketConstants.SEC_WEBSOCKET_VERSION);
-        if(version == null)
+        if (version == null)
         {
             return Integer.toString(WebSocketConstants.SPEC_VERSION);
         }
         return version;
     }
-    
+
+    @Override
     public String getQueryString()
     {
         return this.queryString;
     }
 
     /**
-     * Equivalent to {@link HttpServletRequest#getRemoteAddr()}
-     *
-     * @return the remote address
-     */
-    public String getRemoteAddress()
-    {
-        return request.getRemoteAddr();
-    }
-
-    /**
-     * Equivalent to {@link HttpServletRequest#getRemoteHost()}
-     *
-     * @return the remote host name
-     */
-    public String getRemoteHostName()
-    {
-        return request.getRemoteHost();
-    }
-
-    /**
-     * Equivalent to {@link HttpServletRequest#getRemotePort()}
-     *
-     * @return the remote port
-     */
-    public int getRemotePort()
-    {
-        return request.getRemotePort();
-    }
-
-    /**
-     * Return a {@link InetSocketAddress} for the remote socket.
+     * Return a {@link SocketAddress} for the remote socket.
      * <p>
      * Warning: this can cause a DNS lookup
      *
      * @return the remote socket address
      */
-    public InetSocketAddress getRemoteSocketAddress()
+    public SocketAddress getRemoteSocketAddress()
     {
-        return new InetSocketAddress(getRemoteAddress(), getRemotePort());
+        return new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
     }
 
     public String getRequestPath()
@@ -299,6 +257,7 @@ public class ServletUpgradeRequest
         return requestPath;
     }
 
+    @Override
     public URI getRequestURI()
     {
         return requestURI;
@@ -313,7 +272,7 @@ public class ServletUpgradeRequest
     {
         return request.getAttributes();
     }
-    
+
     public Map<String, List<String>> getServletParameters()
     {
         return getParameterMap();
@@ -330,6 +289,7 @@ public class ServletUpgradeRequest
         return request.getSession(false);
     }
 
+    @Override
     public List<String> getSubProtocols()
     {
         if (subprotocols == null)
@@ -341,7 +301,7 @@ public class ServletUpgradeRequest
                 while (requestProtocols.hasMoreElements())
                 {
                     String candidate = requestProtocols.nextElement();
-                    Collections.addAll(subprotocols,parseProtocols(candidate));
+                    Collections.addAll(subprotocols, parseProtocols(candidate));
                 }
             }
         }
@@ -356,6 +316,7 @@ public class ServletUpgradeRequest
         return request.getUserPrincipal();
     }
 
+    @Override
     public boolean hasSubProtocol(String test)
     {
         for (String protocol : getSubProtocols())
@@ -367,12 +328,8 @@ public class ServletUpgradeRequest
         }
         return false;
     }
-    
-    public boolean isOrigin(String test)
-    {
-        return test.equalsIgnoreCase(getOrigin());
-    }
 
+    @Override
     public boolean isSecure()
     {
         return this.secure;

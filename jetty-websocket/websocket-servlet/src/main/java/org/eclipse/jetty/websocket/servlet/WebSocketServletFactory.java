@@ -29,6 +29,9 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
+import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketException;
@@ -148,7 +151,7 @@ public class WebSocketServletFactory
         return this.policy;
     }
 
-    public FrameHandler newFrameHandler(Object websocketPojo)
+    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse)
     {
         Objects.requireNonNull(websocketPojo, "WebSocket Class cannot be null");
 
@@ -156,7 +159,7 @@ public class WebSocketServletFactory
 
         for (FrameHandlerFactory factory : getFrameHandlerFactories())
         {
-            frameHandler = factory.newFrameHandler(websocketPojo);
+            frameHandler = factory.newFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse);
             if (frameHandler != null)
                 return frameHandler;
         }

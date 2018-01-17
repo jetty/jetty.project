@@ -73,7 +73,7 @@ public class BrowserSocket
                     randomText[i] = letters[rand.nextInt(lettersLen)];
                 }
                 msg = String.format("ManyThreads [%s]",String.valueOf(randomText));
-                remote.sendString(msg,null);
+                remote.sendText(msg,null);
             }
         }
     }
@@ -181,7 +181,7 @@ public class BrowserSocket
                     else
                     {
                         writeMessage("Client requested Sec-WebSocket-Extensions: " + this.requestedExtensions);
-                        writeMessage("Negotiated Sec-WebSocket-Extensions: " + session.getUpgradeResponse().getHeader("Sec-WebSocket-Extensions"));
+                        writeMessage("Negotiated Sec-WebSocket-Extensions: " + session.getHandshakeResponse().getHeader("Sec-WebSocket-Extensions"));
                     }
 
                     break;
@@ -271,7 +271,7 @@ public class BrowserSocket
         }
 
         // Async write
-        session.getRemote().sendString(message,null);
+        session.getRemote().sendText(message,null);
     }
 
     private void writeMessage(String format, Object... args)

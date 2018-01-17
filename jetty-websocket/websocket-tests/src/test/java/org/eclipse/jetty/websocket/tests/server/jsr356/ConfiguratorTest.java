@@ -442,7 +442,7 @@ public class ConfiguratorTest
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
         
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        List<ExtensionConfig> negotiatedExtensions = clientSession.getUpgradeResponse().getExtensions();
+        List<ExtensionConfig> negotiatedExtensions = clientSession.getHandshakeResponse().getExtensions();
         assertThat("UpgradeResponse.extensions", negotiatedExtensions, notNullValue());
         assertThat("UpgradeResponse.extensions.size", negotiatedExtensions.size(), is(1));
         assertThat("UpgradeResponse.extensions[0]", negotiatedExtensions.get(0).toString(), is("identity"));

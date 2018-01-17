@@ -25,6 +25,8 @@ import java.net.SocketAddress;
 
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
+import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.io.SuspendToken;
@@ -172,18 +174,18 @@ public interface Session extends Closeable
     SocketAddress getRemoteSocketAddress();
 
     /**
-     * Get the UpgradeRequest used to create this session
+     * Get the HandshakeRequest used to create this session
      * 
-     * @return the UpgradeRequest used to create this session
+     * @return the HandshakeRequest used to create this session
      */
-    UpgradeRequest getUpgradeRequest();
+    HandshakeRequest getHandshakeRequest();
 
     /**
-     * Get the UpgradeResponse used to create this session
+     * Get the HandshakeResponse used to create this session
      * 
-     * @return the UpgradeResponse used to create this session
+     * @return the HandshakeResponse used to create this session
      */
-    UpgradeResponse getUpgradeResponse();
+    HandshakeResponse getHandshakeResponse();
 
     /**
      * Return true if and only if the underlying socket is onOpen.

@@ -24,95 +24,56 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
+import org.eclipse.jetty.websocket.core.server.HandshakerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletNegotiator;
 
 public abstract class WebSocketHandler extends HandlerWrapper
 {
-    /**
-     * Create a simple WebSocketHandler that registers a single WebSocket POJO that is created on every upgrade request.
-     */
-    public static class Simple extends WebSocketHandler
-    {
-        private Class<?> websocketPojo;
-
-        public Simple(Class<?> websocketClass)
-        {
-            super();
-            this.websocketPojo = websocketClass;
-        }
-
-        @Override
-        public void configure(WebSocketServletFactory factory)
-        {
-            factory.register(websocketPojo);
-        }
-    }
-    
-    private final ByteBufferPool bufferPool;
-    private WebSocketServletFactory webSocketFactory;
-
-    public WebSocketHandler()
-    {
-        this(new MappedByteBufferPool());
-    }
-    
-    public WebSocketHandler(ByteBufferPool bufferPool)
-    {
-        this.bufferPool = bufferPool;
-    }
+    private WebSocketServletFactory factory;
+    private WebSocketServletNegotiator negotiator;
 
     public abstract void configure(WebSocketServletFactory factory);
-
-    public void configurePolicy(WebSocketPolicy policy)
-    {
-        /* leave at default */
-    }
 
     @Override
     protected void doStart() throws Exception
     {
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        configurePolicy(policy);
-        webSocketFactory = new WebSocketServerFactory(policy, getServer().getThreadPool(), bufferPool);
-        addBean(webSocketFactory);
-        configure(webSocketFactory);
+        factory = new WebSocketServletFactory(new WebSocketPolicy(WebSocketBehavior.SERVER), null, null, null);
+        addBean(factory);
+        configure(factory);
+        negotiator = new WebSocketServletNegotiator(factory, factory.getCreator());
         super.doStart();
     }
     
-    public WebSocketServletFactory getWebSocketFactory()
-    {
-        if (!isRunning())
-            throw new IllegalStateException("Not Started yet");
-        return webSocketFactory;
-    }
-
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (webSocketFactory.isUpgradeRequest(request,response))
+        Handshaker handshaker = HandshakerFactory.getHandshaker(request);
+
+        // Attempt to upgrade
+        if (handshaker != null && handshaker.upgradeRequest(negotiator, request, response))
         {
-            // We have an upgrade request
-            if (webSocketFactory.acceptWebSocket(request,response))
-            {
-                // We have a socket instance created
-                baseRequest.setHandled(true);
-                return;
-            }
-            // If we reach this point, it means we had an incoming request to upgrade
-            // but it was either not a proper websocket upgrade, or it was possibly rejected
-            // due to incoming request constraints (controlled by WebSocketCreator)
-            if (response.isCommitted())
-            {
-                // not much we can do at this point.
-                return;
-            }
+            // Upgrade was a success, nothing else to do.
+            baseRequest.setHandled(true);
+            return;
         }
+
+        // If we reach this point, it means we had an incoming request to upgrade
+        // but it was either not a proper websocket upgrade, or it was possibly rejected
+        // due to incoming request constraints (controlled by WebSocketCreator)
+        if (response.isCommitted())
+        {
+            // not much we can do at this point.
+            baseRequest.setHandled(true);
+            return;
+        }
+
+        // All other processing
         super.handle(target,baseRequest,request,response);
     }
 }

@@ -88,8 +88,8 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionI
     {
         assertThat("Session type", session, instanceOf(WebSocketSessionImpl.class));
         super.onWSOpen((WebSocketSessionImpl) session);
-        this.openUpgradeRequest = session.getUpgradeRequest();
-        this.openUpgradeResponse = session.getUpgradeResponse();
+        this.openUpgradeRequest = session.getHandshakeRequest();
+        this.openUpgradeResponse = session.getHandshakeResponse();
     }
     
     @Override
