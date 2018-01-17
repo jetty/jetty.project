@@ -31,8 +31,6 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
-import org.eclipse.jetty.websocket.server.WebSocketCreator;
 
 /**
  * Interface for Configuring WebSocket endpoints on a Jetty ServletContext
@@ -40,10 +38,10 @@ import org.eclipse.jetty.websocket.server.WebSocketCreator;
  * Only applicable if using {@link WebSocketUpgradeFilter}
  * </p>
  */
-public class NativeWebSocketConfiguration extends ContainerLifeCycle implements MappedWebSocketCreator
+public class NativeWebSocketConfiguration extends ContainerLifeCycle
 {
     private final WebSocketServletFactory factory;
-    private final PathMappings<WebSocketCreator> mappings = new PathMappings<>();
+    private final PathMappings<WebSocketServletNegotiator> mappings = new PathMappings<>();
 
     public NativeWebSocketConfiguration(ServletContext context)
     {
@@ -60,7 +58,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     @Override
     public void doStop() throws Exception
     {
-        mappings.removeIf((mapped) -> !(mapped.getResource() instanceof PersistedWebSocketCreator));
+        mappings.removeIf((mapped) -> !(mapped.getResource() instanceof WebSocketServletNegotiator));
         super.doStop();
     }
 
@@ -80,18 +78,12 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
      * @param target the target path
      * @return the matching resource, or null if no match.
      */
-    public MappedResource<WebSocketCreator> getMatch(String target)
+    public MappedResource<WebSocketServletNegotiator> getMatch(String target)
     {
-        MappedResource<WebSocketCreator> mapping = this.mappings.getMatch(target);
+        MappedResource<WebSocketServletNegotiator> mapping = this.mappings.getMatch(target);
         if (mapping == null)
         {
             return null;
-        }
-
-        if(mapping.getResource() instanceof PersistedWebSocketCreator)
-        {
-            // unwrap
-            return new MappedResource<>(mapping.getPathSpec(), ((PersistedWebSocketCreator) mapping.getResource()).delegate);
         }
 
         return mapping;
@@ -117,16 +109,35 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
      * </p>
      *
      * @param pathSpec the pathspec to respond on
+     * @param negotiator the WebSocketServletNegotiator to use
+     * @since 10.0
+     */
+    public void addMapping(PathSpec pathSpec, WebSocketServletNegotiator negotiator)
+    {
+        mappings.put(pathSpec, negotiator);
+    }
+
+    /**
+     * Manually add a WebSocket mapping.
+     * <p>
+     * If mapping is added before this configuration is started, then it is persisted through
+     * stop/start of this configuration's lifecycle.  Otherwise it will be removed when
+     * this configuration is stopped.
+     * </p>
+     *
+     * @param pathSpec the pathspec to respond on
      * @param creator the websocket creator to activate on the provided mapping.
      */
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator)
     {
         WebSocketCreator wsCreator = creator;
+        WebSocketServletNegotiator negotiator =
+                new WebSocketServletNegotiator(factory, wsCreator);
         if (!isRunning())
         {
-            wsCreator = new PersistedWebSocketCreator(creator);
+            negotiator = new PersistedWebSocketServletNegotiator(negotiator);
         }
-        mappings.put(pathSpec, wsCreator);
+        addMapping(pathSpec, negotiator);
     }
 
     /**
@@ -137,7 +148,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
      */
     public void addMapping(PathSpec pathSpec, final Class<?> endpointClass)
     {
-        mappings.put(pathSpec, (req, resp) ->
+        addMapping(pathSpec, (req, resp) ->
         {
             try
             {
@@ -150,8 +161,6 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
         });
     }
 
-
-    @Override
     public void addMapping(String rawspec, WebSocketCreator creator)
     {
         PathSpec spec = toPathSpec(rawspec);
@@ -180,33 +189,26 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
         throw new IllegalArgumentException("Unrecognized path spec syntax [" + rawspec + "]");
     }
 
-    @Override
-    public WebSocketCreator getMapping(String rawspec)
+    public WebSocketServletNegotiator getMapping(String rawspec)
     {
         PathSpec pathSpec = toPathSpec(rawspec);
-        for (MappedResource<WebSocketCreator> mapping : mappings)
+        for (MappedResource<WebSocketServletNegotiator> mapping : mappings)
         {
             if (mapping.getPathSpec().equals(pathSpec))
             {
-                WebSocketCreator creator = mapping.getResource();
-                if (creator instanceof PersistedWebSocketCreator)
-                {
-                    return ((PersistedWebSocketCreator) creator).delegate;
-                }
-                return creator;
+                return mapping.getResource();
             }
         }
         return null;
     }
 
-    @Override
     public boolean removeMapping(String rawspec)
     {
         PathSpec pathSpec = toPathSpec(rawspec);
         boolean removed = false;
-        for (Iterator<MappedResource<WebSocketCreator>> iterator = mappings.iterator(); iterator.hasNext(); )
+        for (Iterator<MappedResource<WebSocketServletNegotiator>> iterator = mappings.iterator(); iterator.hasNext(); )
         {
-            MappedResource<WebSocketCreator> mapping = iterator.next();
+            MappedResource<WebSocketServletNegotiator> mapping = iterator.next();
             if (mapping.getPathSpec().equals(pathSpec))
             {
                 iterator.remove();
@@ -219,7 +221,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     /**
      * Manually add a WebSocket mapping.
      *
-     * @param rawspec the pathspec to map to (see {@link MappedWebSocketCreator#addMapping(String, WebSocketCreator)} for syntax details)
+     * @param rawspec the pathspec to map to (see {@link #addMapping(String, WebSocketCreator)} for syntax details)
      * @param endpointClass the endpoint class to use for new upgrade requests on the provided pathspec
      */
     public void addMapping(String rawspec, final Class<?> endpointClass)
@@ -228,19 +230,11 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
         addMapping(pathSpec, endpointClass);
     }
 
-    private class PersistedWebSocketCreator implements WebSocketCreator
+    private class PersistedWebSocketServletNegotiator extends WebSocketServletNegotiator
     {
-        final WebSocketCreator delegate;
-
-        public PersistedWebSocketCreator(WebSocketCreator delegate)
+        public PersistedWebSocketServletNegotiator(WebSocketServletNegotiator negotiator)
         {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
-        {
-            return delegate.createWebSocket(req, resp);
+            super(negotiator.getFactory(), negotiator.getCreator(), negotiator.getFrameHandlerFactory());
         }
 
         @Override

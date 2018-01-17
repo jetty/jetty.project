@@ -33,6 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -58,13 +60,19 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
-public class LocalEndpointFactory
+public class JettyWebSocketFrameHandlerFactory
 {
-    private Map<Class<?>, LocalEndpointMetadata> metadataMap = new ConcurrentHashMap<>();
+    private final Executor executor;
+    private Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
 
-    public LocalEndpointMetadata getMetadata(Class<?> endpointClass)
+    public JettyWebSocketFrameHandlerFactory(Executor executor)
     {
-        LocalEndpointMetadata metadata = metadataMap.get(endpointClass);
+        this.executor = executor;
+    }
+
+    public JettyWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
+    {
+        JettyWebSocketFrameHandlerMetadata metadata = metadataMap.get(endpointClass);
 
         if (metadata == null)
         {
@@ -75,7 +83,7 @@ public class LocalEndpointFactory
         return metadata;
     }
 
-    public LocalEndpointMetadata createMetadata(Class<?> endpointClass)
+    public JettyWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass)
     {
         if (WebSocketConnectionListener.class.isAssignableFrom(endpointClass))
         {
@@ -91,9 +99,9 @@ public class LocalEndpointFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public LocalEndpointImpl createLocalEndpoint(Object endpointInstance, Session session, WebSocketPolicy policy, Executor executor)
+    public JettyWebSocketFrameHandler createLocalEndpoint(Object endpointInstance, WebSocketPolicy policy, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
-        LocalEndpointMetadata metadata = getMetadata(endpointInstance.getClass());
+        JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
         WebSocketPolicy endpointPolicy = policy.clonePolicy();
         if (metadata.getIdleTimeout() > 0)
@@ -127,27 +135,27 @@ public class LocalEndpointFactory
         MethodHandle pingHandle = metadata.getPingHandle();
         MethodHandle pongHandle = metadata.getPongHandle();
 
-        openHandle = bindTo(openHandle, endpointInstance, session);
-        closeHandle = bindTo(closeHandle, endpointInstance, session);
-        errorHandle = bindTo(errorHandle, endpointInstance, session);
-        textHandle = bindTo(textHandle, endpointInstance, session);
-        binaryHandle = bindTo(binaryHandle, endpointInstance, session);
-        frameHandle = bindTo(frameHandle, endpointInstance, session);
-        pingHandle = bindTo(pingHandle, endpointInstance, session);
-        pongHandle = bindTo(pongHandle, endpointInstance, session);
+        openHandle = bindTo(openHandle, endpointInstance);
+        closeHandle = bindTo(closeHandle, endpointInstance);
+        errorHandle = bindTo(errorHandle, endpointInstance);
+        textHandle = bindTo(textHandle, endpointInstance);
+        binaryHandle = bindTo(binaryHandle, endpointInstance);
+        frameHandle = bindTo(frameHandle, endpointInstance);
+        pingHandle = bindTo(pingHandle, endpointInstance);
+        pongHandle = bindTo(pongHandle, endpointInstance);
 
-        MessageSink textSink = createMessageSink(textHandle, textSinkClass, endpointPolicy, executor);
-        MessageSink binarySink = createMessageSink(binaryHandle, binarySinkClass, endpointPolicy, executor);
-
-        return new LocalEndpointImpl(
+        return new JettyWebSocketFrameHandlerImpl(
                 endpointInstance,
                 endpointPolicy,
+                upgradeRequest, upgradeResponse,
                 openHandle, closeHandle, errorHandle,
-                textSink, binarySink,
-                frameHandle, pingHandle, pongHandle);
+                textHandle, binaryHandle,
+                textSinkClass, binarySinkClass,
+                frameHandle, pingHandle, pongHandle,
+                executor);
     }
 
-    private MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, WebSocketPolicy endpointPolicy, Executor executor)
+    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, WebSocketPolicy endpointPolicy, Executor executor)
     {
         if (msgHandle == null)
             return null;
@@ -170,7 +178,7 @@ public class LocalEndpointFactory
         }
     }
 
-    private MethodHandle bindTo(MethodHandle methodHandle, Object... objs)
+    public static MethodHandle bindTo(MethodHandle methodHandle, Object... objs)
     {
         if (methodHandle == null)
             return null;
@@ -197,9 +205,9 @@ public class LocalEndpointFactory
         }
     }
 
-    private LocalEndpointMetadata createListenerMetadata(Class<?> endpointClass)
+    private JettyWebSocketFrameHandlerMetadata createListenerMetadata(Class<?> endpointClass)
     {
-        LocalEndpointMetadata metadata = new LocalEndpointMetadata();
+        JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
 
         MethodHandles.Lookup lookup = MethodHandles.lookup();
 
@@ -262,9 +270,9 @@ public class LocalEndpointFactory
         return metadata;
     }
 
-    private LocalEndpointMetadata createAnnotatedMetadata(WebSocket anno, Class<?> endpointClass)
+    private JettyWebSocketFrameHandlerMetadata createAnnotatedMetadata(WebSocket anno, Class<?> endpointClass)
     {
-        LocalEndpointMetadata metadata = new LocalEndpointMetadata();
+        JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
 
         metadata.setInputBufferSize(anno.inputBufferSize());
         metadata.setMaxBinaryMessageSize(anno.maxBinaryMessageSize());

@@ -26,6 +26,7 @@ import javax.websocket.Extension;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
@@ -35,6 +36,7 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
     private final WebSocketPolicy containerPolicy;
     private final WebSocketExtensionRegistry extensionRegistry;
     private final JavaxWebSocketFrameHandlerFactory localEndpointFactory;
+    private ByteBufferPool bufferPool;
     private long asyncSendTimeout = -1;
     private long defaultMaxSessionIdleTimeout = -1;
 
@@ -43,6 +45,7 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         this.containerPolicy = containerPolicy;
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.localEndpointFactory = new JavaxWebSocketFrameHandlerFactory();
+        this.bufferPool = new MappedByteBufferPool(); // TODO: obtain from / sync with websocket-core on container setup
     }
 
     /**

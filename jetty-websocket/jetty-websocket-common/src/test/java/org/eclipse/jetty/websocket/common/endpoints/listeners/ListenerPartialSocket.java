@@ -24,8 +24,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketPartialListener;
+import org.eclipse.jetty.websocket.common.util.TextUtil;
 import org.eclipse.jetty.websocket.core.util.EventQueue;
-import org.eclipse.jetty.websocket.core.util.TextUtil;
 
 public class ListenerPartialSocket implements WebSocketPartialListener
 {

@@ -92,6 +92,12 @@ public class Utf8CharBuffer extends Utf8Appendable
         return buffer.capacity();
     }
 
+    @Override
+    public String getPartialString()
+    {
+        throw new UnsupportedOperationException("Cannot get Partial String from Utf8CharBuffer");
+    }
+
     public int remaining()
     {
         return buffer.remaining();

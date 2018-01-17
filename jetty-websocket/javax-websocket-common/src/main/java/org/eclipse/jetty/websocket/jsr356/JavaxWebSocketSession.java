@@ -40,6 +40,7 @@ import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -66,6 +67,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     private final JavaxWebSocketUpgradeResponse upgradeResponse;
     private final JavaxWebSocketFrameHandler frameHandler;
     private final WebSocketPolicy policy;
+    private final String id;
 
     private EndpointConfig config;
     private AvailableDecoders availableDecoders;
@@ -88,6 +90,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
                                  JavaxWebSocketUpgradeRequest upgradeRequest,
                                  JavaxWebSocketUpgradeResponse upgradeResponse,
                                  JavaxWebSocketFrameHandler frameHandler,
+                                 String id,
                                  WebSocketPolicy policy,
                                  WebSocketChannel channel)
     {
@@ -96,15 +99,12 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         this.upgradeRequest = upgradeRequest;
         this.upgradeResponse = upgradeResponse;
         this.frameHandler = frameHandler;
+        this.id = id;
         this.policy = policy;
 
-        // Container tracks channels
-        // If container is stopped, then channel is stopped.
-        this.container.addManaged(channel);
-
-        // Channel tracks a single session
-        // If channel is stopped, then session is stopped
-        this.channel.addManaged(this);
+        // Container tracks sessions
+        // If container is stopped, then session and channel are stopped. TODO: how is the websocket-core channel stopped/closed?
+        this.container.addManaged(this);
     }
 
     /**
@@ -275,6 +275,11 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         return this.container;
     }
 
+    public ByteBufferPool getContainerBufferPool()
+    {
+        return this.container.getBufferPool();
+    }
+
     public AvailableDecoders getDecoders()
     {
         return availableDecoders;
@@ -299,7 +304,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public String getId()
     {
-        return channel.getConnection().getId();
+        return this.id;
     }
 
     /**

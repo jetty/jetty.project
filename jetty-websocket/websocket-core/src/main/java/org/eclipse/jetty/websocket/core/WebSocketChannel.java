@@ -85,7 +85,19 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     {
         return subprotocol;
     }
-    
+
+    @Override
+    public List<ExtensionConfig> getExtensionConfig()
+    {
+        // TODO: implement
+        return null;
+    }
+
+    @Override
+    public void disconnect() throws IOException
+    {
+        // TODO: implement
+    }
 
     @Override
     public long getIdleTimeout(TimeUnit units)

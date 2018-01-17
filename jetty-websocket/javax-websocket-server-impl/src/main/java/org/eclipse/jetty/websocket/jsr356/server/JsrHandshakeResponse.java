@@ -23,13 +23,13 @@ import java.util.Map;
 
 import javax.websocket.HandshakeResponse;
 
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 
 public class JsrHandshakeResponse implements HandshakeResponse
 {
-    private final UpgradeResponse response;
+    private final ServletUpgradeResponse response;
 
-    public JsrHandshakeResponse(UpgradeResponse resp)
+    public JsrHandshakeResponse(ServletUpgradeResponse resp)
     {
         this.response = resp;
     }

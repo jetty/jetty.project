@@ -44,9 +44,9 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.impl.HttpClientProvider;
 import org.eclipse.jetty.websocket.client.impl.WebSocketClientConnection;
-import org.eclipse.jetty.websocket.common.LocalEndpointFactory;
-import org.eclipse.jetty.websocket.common.LocalEndpointImpl;
-import org.eclipse.jetty.websocket.common.RemoteEndpointImpl;
+import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerImpl;
+import org.eclipse.jetty.websocket.common.JettyWebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
@@ -62,12 +62,12 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     private final WebSocketPolicy clientPolicy;
     private final WebSocketExtensionRegistry extensionRegistry;
     private final DecoratedObjectFactory objectFactory;
-    private final LocalEndpointFactory localEndpointFactory;
+    private final JettyWebSocketFrameHandlerFactory localEndpointFactory;
     private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
     private final int id = ThreadLocalRandom.current().nextInt();
     protected Function<WebSocketClientConnection, WebSocketSessionImpl<
             WebSocketClient, WebSocketClientConnection,
-            LocalEndpointImpl, RemoteEndpointImpl>> newSessionFunction =
+            JettyWebSocketFrameHandlerImpl, JettyWebSocketRemoteEndpoint>> newSessionFunction =
             (connection) -> new WebSocketSessionImpl(WebSocketClient.this, connection);
 
     /**
@@ -109,7 +109,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         {
             this.objectFactory = objectFactory;
         }
-        this.localEndpointFactory = new LocalEndpointFactory();
+        this.localEndpointFactory = new JettyWebSocketFrameHandlerFactory();
     }
 
     public void addSessionListener(SessionListener listener)
@@ -411,8 +411,8 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     protected WebSocketSessionImpl createSession(WebSocketClientConnection connection, Object endpointInstance)
     {
         WebSocketSessionImpl session = newSessionFunction.apply(connection);
-        LocalEndpointImpl localEndpoint = localEndpointFactory.createLocalEndpoint(endpointInstance, session, getPolicy(), httpClient.getExecutor());
-        RemoteEndpointImpl remoteEndpoint = new RemoteEndpointImpl(connection, connection.getRemoteAddress());
+        JettyWebSocketFrameHandlerImpl localEndpoint = localEndpointFactory.createLocalEndpoint(endpointInstance, session, getPolicy(), httpClient.getExecutor());
+        JettyWebSocketRemoteEndpoint remoteEndpoint = new JettyWebSocketRemoteEndpoint(connection, connection.getRemoteAddress());
 
         session.setWebSocketEndpoint(endpointInstance, localEndpoint.getPolicy(), localEndpoint, remoteEndpoint);
         return session;

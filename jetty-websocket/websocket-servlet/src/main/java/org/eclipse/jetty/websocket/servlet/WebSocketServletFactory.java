@@ -34,7 +34,6 @@ import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.server.WebSocketCreator;
 
 /**
  * Basic WebSocketServletFactory for working with Jetty-based WebSocketServlets
@@ -177,7 +176,7 @@ public class WebSocketServletFactory
     {
         Objects.requireNonNull(websocketPojo, "WebSocket Class cannot be null");
 
-        this.creator = (req, resp) -> {
+        setCreator((req, resp) -> {
             try
             {
                 return objectFactory.createInstance(websocketPojo);
@@ -186,13 +185,13 @@ public class WebSocketServletFactory
             {
                 throw new WebSocketException("Unable to create instance of " + websocketPojo, e);
             }
-        };
+        });
     }
 
     public void setCreator(WebSocketCreator creator)
     {
+        // This is called from WebSocketServlet and WebSocketUpgradeFilter
         Objects.requireNonNull(creator, "WebSocketCreator cannot be null");
-
         this.creator = creator;
     }
 }

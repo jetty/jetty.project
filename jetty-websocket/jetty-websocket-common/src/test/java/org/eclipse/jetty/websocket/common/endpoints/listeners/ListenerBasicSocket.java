@@ -21,8 +21,8 @@ package org.eclipse.jetty.websocket.common.endpoints.listeners;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
+import org.eclipse.jetty.websocket.common.util.TextUtil;
 import org.eclipse.jetty.websocket.core.util.EventQueue;
-import org.eclipse.jetty.websocket.core.util.TextUtil;
 
 public class ListenerBasicSocket implements WebSocketListener
 {

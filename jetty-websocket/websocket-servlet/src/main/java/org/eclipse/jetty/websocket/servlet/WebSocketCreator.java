@@ -16,33 +16,25 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api;
-
-import org.eclipse.jetty.util.Callback;
+package org.eclipse.jetty.websocket.servlet;
 
 /**
- * Callback for Write events.
- * @deprecated use {@link org.eclipse.jetty.util.Callback}
+ * Abstract WebSocket creator interface.
+ * <p>
+ * Should you desire filtering of the WebSocket object creation due to criteria such as origin or sub-protocol, then you will be required to implement a custom
+ * WebSocketCreator implementation.
+ * <p>
  */
-@Deprecated
-public interface WriteCallback extends Callback
+public interface WebSocketCreator
 {
     /**
-     * <p>
-     * Callback invoked when the write fails.
-     * </p>
-     *
-     * @param x
-     *            the reason for the write failure
+     * Create a websocket from the incoming request.
+     * 
+     * @param req
+     *            the request details
+     * @param resp
+     *            the response details
+     * @return a websocket object to use, or null if no websocket should be created from this request.
      */
-    void writeFailed(Throwable x);
-
-    /**
-     * <p>
-     * Callback invoked when the write completes.
-     * </p>
-     *
-     * @see #writeFailed(Throwable)
-     */
-    void writeSuccess();
+    Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp);
 }

@@ -43,14 +43,14 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.invoke.InvokerUtils;
-import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.messages.ByteArrayMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
+import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 
 public class JavaxWebSocketFrameHandlerFactory
 {

@@ -34,13 +34,13 @@ import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
-public class OutgoingMessageCapture implements OutgoingFrames
+public class OutgoingMessageCapture extends DummyChannel implements FrameHandler.Channel
 {
     private static final Logger LOG = Log.getLogger(OutgoingMessageCapture.class);
 
@@ -72,7 +72,7 @@ public class OutgoingMessageCapture implements OutgoingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         switch (frame.getOpCode())
         {
