@@ -441,4 +441,18 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
         ContainerLifeCycle.dump(out,indent,Arrays.asList(subprotocol,policy,extensionStack,handler));
     }
 
+
+    @Override
+    public List<ExtensionConfig> getExtensionConfig()
+    {
+        return extensionStack.getNegotiatedExtensions();
+    }
+
+
+    @Override
+    public WebSocketBehavior getBehavior()
+    {
+        return policy.getBehavior();
+    }
+
 }

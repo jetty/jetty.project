@@ -46,12 +46,12 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
 public class AbstractFrameHandler implements FrameHandler
 {
     private Logger LOG = Log.getLogger(AbstractFrameHandler.class);
-    private byte partial = 0;
+    private Frame.Type partial;
     private Utf8StringBuilder utf8;
     private ByteBuffer byteBuffer;
     private FrameHandler.Channel channel;
     
-    public FrameHandler.Channel getWebSocketChannel()
+    public FrameHandler.Channel getChannel()
     {
         return channel;
     }
@@ -174,7 +174,7 @@ public class AbstractFrameHandler implements FrameHandler
         if (frame.isFin())
             utf8.checkState();
         else
-            partial = frame.getOpCode();
+            partial = Frame.Type.TEXT;
         
         onText(utf8,callback,frame.isFin());            
     }
@@ -214,7 +214,7 @@ public class AbstractFrameHandler implements FrameHandler
         }
         else
         {
-            partial = frame.getOpCode();
+            partial = Frame.Type.BINARY;
             
             // TODO use the pool?
             if (byteBuffer==null)
@@ -255,9 +255,15 @@ public class AbstractFrameHandler implements FrameHandler
      */
     protected void onContinuationFrame(ContinuationFrame frame, Callback callback)
     {
+        if (partial==null)
+        {
+            callback.failed(new IllegalStateException());
+            return;
+        }
+            
         switch(partial)
         {
-            case OpCode.TEXT:
+            case TEXT:
                 if (frame.hasPayload())
                     utf8.append(frame.getPayload());
 
@@ -267,7 +273,7 @@ public class AbstractFrameHandler implements FrameHandler
                 onText(utf8,callback,frame.isFin());
                 break;
 
-            case OpCode.BINARY:
+            case BINARY:
                 if (frame.hasPayload())
                 {
                     int factor = frame.isFin()?1:3;

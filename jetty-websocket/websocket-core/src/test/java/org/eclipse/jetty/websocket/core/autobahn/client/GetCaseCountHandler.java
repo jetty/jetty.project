@@ -47,8 +47,8 @@ public class GetCaseCountHandler extends AbstractClientFrameHandler
     @Override
     protected void onWholeText(String message)
     {
-        LOG.debug("onWholeText(\"{}\")",message);
         casecount = Integer.decode(message);
         latch.countDown();
+        LOG.info("Running {} Autobahn testcase",casecount);
     }
 }

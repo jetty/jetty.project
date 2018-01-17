@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.core.autobahn.client;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.DataFrame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
@@ -46,51 +46,61 @@ public class EchoHandler extends AbstractClientFrameHandler
     }
 
     @Override
-    public void onBinaryFrame(DataFrame frame, Callback callback)
-    {
-        DataFrame dataFrame;
-
-        if(frame.getOpCode() == OpCode.BINARY)
-            dataFrame = new BinaryFrame();
-        else if(frame.getOpCode() == OpCode.CONTINUATION)
-            dataFrame = new ContinuationFrame();
-        else
-            throw new RuntimeException("Bad opcode to onBinary(" + frame + ", " + callback + ")");
-
-        dataFrame.setFin(frame.isFin());
-        dataFrame.setPayload(copyOf(frame.getPayload()));
-        getWebSocketChannel().sendFrame(dataFrame, Callback.NOOP, BatchMode.OFF);
-        callback.succeeded(); // TODO: pass argument callback into outgoingFrame instead?
-    }
-
-    @Override
-    public void onTextFrame(DataFrame frame, Callback callback)
-    {
-        DataFrame dataFrame;
-
-        if(frame.getOpCode() == OpCode.TEXT)
-            dataFrame = new TextFrame();
-        else if(frame.getOpCode() == OpCode.CONTINUATION)
-            dataFrame = new ContinuationFrame();
-        else
-            throw new RuntimeException("Bad opcode to onText(" + frame + ", " + callback + ")");
-
-        dataFrame.setFin(frame.isFin());
-        dataFrame.setPayload(copyOf(frame.getPayload()));
-        getWebSocketChannel().sendFrame(dataFrame, Callback.NOOP, BatchMode.OFF);
-        callback.succeeded(); // TODO: pass argument callback into outgoingFrame instead?
-    }
-
-    @Override
     public void onOpen()
     {
         super.onOpen();
         LOG.info("Executing test case {}",currentCaseId);
     }
+    
+    int count;
+
+    @Override
+    public void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
+    {
+        LOG.info("onText {} {} {} {}", count++, utf8.length(),fin, getChannel());
+        if (fin)
+        {
+            getChannel().sendFrame(new TextFrame().setPayload(utf8.toString()),
+                    callback,
+                    BatchMode.OFF);
+        }
+        else
+        {
+            callback.succeeded();
+        }
+    }
+
+    @Override
+    public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
+    {        
+        LOG.info("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getChannel());
+        if (fin)
+        {       
+            BinaryFrame echo = new BinaryFrame();
+            if (payload!=null)
+                echo.setPayload(payload);
+            getChannel().sendFrame(echo,callback,BatchMode.OFF);
+        }
+        else
+        {
+            callback.succeeded();
+        }
+    }
+
+    @Override
+    public void onError(Throwable cause)
+    {
+        if (cause instanceof WebSocketTimeoutException)
+            LOG.debug("timeout!");
+        else
+            LOG.warn("onError",cause);
+    }
+    
 
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
+        LOG.info("onClosed {}",closeStatus);
         super.onClosed(closeStatus);
         latch.countDown();
     }

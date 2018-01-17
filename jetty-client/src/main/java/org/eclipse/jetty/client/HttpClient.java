@@ -116,6 +116,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 @ManagedObject("The HTTP client")
 public class HttpClient extends ContainerLifeCycle
 {
+    public static final String USER_AGENT = "Jetty/" + Jetty.VERSION;
     private static final Logger LOG = Log.getLogger(HttpClient.class);
 
     private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
@@ -132,7 +133,7 @@ public class HttpClient extends ContainerLifeCycle
     private ByteBufferPool byteBufferPool;
     private Scheduler scheduler;
     private SocketAddressResolver resolver;
-    private HttpField agentField = new HttpField(HttpHeader.USER_AGENT, "Jetty/" + Jetty.VERSION);
+    private HttpField agentField = new HttpField(HttpHeader.USER_AGENT, USER_AGENT);
     private boolean followRedirects = true;
     private int maxConnectionsPerDestination = 64;
     private int maxRequestsQueuedPerDestination = 1024;

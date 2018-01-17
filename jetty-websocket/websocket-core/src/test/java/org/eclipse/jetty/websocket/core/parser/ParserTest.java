@@ -1598,7 +1598,6 @@ public class ParserTest
         Assert.assertThat(frame.getCloseStatus().getCode(),is(1004));
     }
 
-
     @Test
     public void testParse_Autobahn_7_9_6() throws Exception
     {       
@@ -1610,5 +1609,4 @@ public class ParserTest
         CloseFrame frame = (CloseFrame)capture.framesQueue.peek();
         Assert.assertThat(frame.getCloseStatus().getCode(),is(1014));
     }
-    
 }

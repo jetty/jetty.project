@@ -220,7 +220,14 @@ public class CloseFrame extends ControlFrame
     @Override
     public String toString()
     {
-        return super.toString()+getCloseStatus();
+        try
+        {
+            return super.toString()+getCloseStatus();
+        }
+        catch(Throwable th)
+        {
+            return super.toString();
+        }
     }
     
     

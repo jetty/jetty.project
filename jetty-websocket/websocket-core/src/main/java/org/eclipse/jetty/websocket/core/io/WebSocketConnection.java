@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -39,9 +40,11 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.Parser;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
@@ -63,6 +66,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     private final WebSocketPolicy policy;
     private final AtomicBoolean suspendToken;
     private final Flusher flusher;
+    private final Random random;
 
     private WebSocketChannel channel;
 
@@ -103,6 +107,8 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
 
         this.parser.configureFromExtensions(channel.getExtensionStack().getExtensions());
         this.generator.configureFromExtensions(channel.getExtensionStack().getExtensions());
+        
+        this.random = this.policy.getBehavior()==WebSocketBehavior.CLIENT?new Random(endp.hashCode()):null;
     }
 
     @Override
@@ -496,6 +502,14 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     @Override
     public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
+        if (getPolicy().getBehavior()==WebSocketBehavior.CLIENT)
+        {
+            WebSocketFrame wsf = (WebSocketFrame)frame;
+            wsf.setMasked(true);
+            byte[] mask = new byte[4];
+            random.nextBytes(mask);
+            wsf.setMask(mask);
+        }
         flusher.enqueue(frame,callback,batchMode);
     }
 
