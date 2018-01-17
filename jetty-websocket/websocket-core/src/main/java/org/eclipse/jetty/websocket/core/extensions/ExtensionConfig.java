@@ -237,6 +237,20 @@ public class ExtensionConfig
         return Collections.unmodifiableMap(parameters);
     }
 
+    public final void setParameter(String key)
+    {
+        parameters.put(key,null);
+    }
+
+    public final void setParameter(String key, int value)
+    {
+        parameters.put(key,Integer.toString(value));
+    }
+
+    public final void setParameter(String key, String value)
+    {
+        parameters.put(key,value);
+    }
 
     @Override
     public String toString()

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.api;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
@@ -124,10 +125,16 @@ public interface Session extends Closeable
 
     /**
      * Get the address of the local side.
-     * 
+     * <p>
+     *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
+     *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
+     *     without supporting {@link InetSocketAddress}
+     * </p>
+     *
      * @return the local side address
+     * @since 10.0
      */
-    InetSocketAddress getLocalAddress();
+    SocketAddress getLocalSocketAddress();
 
     /**
      * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
@@ -153,10 +160,16 @@ public interface Session extends Closeable
 
     /**
      * Get the address of the remote side.
-     * 
+     * <p>
+     *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
+     *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
+     *     without supporting {@link InetSocketAddress}
+     * </p>
+     *
      * @return the remote side address
+     * @since 10.0
      */
-    InetSocketAddress getRemoteAddress();
+    SocketAddress getRemoteSocketAddress();
 
     /**
      * Get the UpgradeRequest used to create this session

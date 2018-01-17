@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -32,6 +33,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
@@ -83,7 +85,19 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     {
         return subprotocol;
     }
-    
+
+    @Override
+    public List<ExtensionConfig> getExtensionConfig()
+    {
+        // TODO: implement
+        return null;
+    }
+
+    @Override
+    public void disconnect() throws IOException
+    {
+        // TODO: implement
+    }
 
     @Override
     public long getIdleTimeout(TimeUnit units)

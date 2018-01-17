@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
  * Factory for websocket-core {@link FrameHandler} implementations suitable for
  * use with jetty-native websocket API.
  * <p>
- * Will create a {@link FrameHandler} suitable for use with classes/objects that are:
+ * Will create a {@link FrameHandler} suitable for use with classes/objects that:
  * </p>
  * <ul>
  * <li>Is &#64;{@link org.eclipse.jetty.websocket.api.annotations.WebSocket} annotated</li>
@@ -41,6 +41,8 @@ import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
  */
 public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
 {
+    // TODO: merge with LocalEndpointFactory / LocalEndpointMetadata / LocalEndpointImpl
+
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo)
     {

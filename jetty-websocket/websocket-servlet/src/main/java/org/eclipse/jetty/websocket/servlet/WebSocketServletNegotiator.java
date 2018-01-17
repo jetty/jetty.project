@@ -30,17 +30,39 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
-import org.eclipse.jetty.websocket.server.WebSocketCreator;
 
 public class WebSocketServletNegotiator implements WebSocketNegotiator
 {
     private final WebSocketServletFactory factory;
     private final WebSocketCreator creator;
+    private FrameHandlerFactory frameHandlerFactory;
 
     public WebSocketServletNegotiator(WebSocketServletFactory factory, WebSocketCreator creator)
     {
         this.factory = factory;
         this.creator = creator;
+    }
+
+    public WebSocketServletNegotiator(WebSocketServletFactory factory, WebSocketCreator creator, FrameHandlerFactory frameHandlerFactory)
+    {
+        this.factory = factory;
+        this.creator = creator;
+        this.frameHandlerFactory = frameHandlerFactory;
+    }
+
+    public WebSocketServletFactory getFactory()
+    {
+        return factory;
+    }
+
+    public WebSocketCreator getCreator()
+    {
+        return creator;
+    }
+
+    public FrameHandlerFactory getFrameHandlerFactory()
+    {
+        return frameHandlerFactory;
     }
 
     @Override
@@ -69,7 +91,14 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
                 return null;
             }
 
-            return getApiFrameHandler(websocketPojo);
+            // If a FrameHandlerFactory is specified, use it
+            if (frameHandlerFactory != null)
+            {
+                return frameHandlerFactory.newFrameHandler(websocketPojo);
+            }
+
+            // Use WebSocketServletFactory to create FrameHandler
+            return factory.newFrameHandler(websocketPojo);
         }
         catch (URISyntaxException e)
         {
@@ -79,18 +108,6 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
         {
             Thread.currentThread().setContextClassLoader(old);
         }
-    }
-
-    /**
-     * Ask the configured API for this factory to create a FrameHandler for the
-     * provided WebSocket Pojo class
-     *
-     * @param websocketPojo the class to create the FrameHandler from
-     * @return the FrameHandler implementation from the API, nor null if not able to create the FrameHandler
-     */
-    private FrameHandler getApiFrameHandler(Object websocketPojo)
-    {
-        return factory.newFrameHandler(websocketPojo);
     }
 
     @Override

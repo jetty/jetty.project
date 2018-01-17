@@ -22,25 +22,26 @@ import java.lang.invoke.MethodHandle;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.common.MessageSinkImpl;
-import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class PartialTextMessageSink extends MessageSinkImpl
 {
-    private final Utf8PartialBuilder utf8Partial;
+    private final Utf8StringBuilder utf8Partial;
 
     public PartialTextMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
     {
         super(policy, executor, methodHandle);
-        this.utf8Partial = new Utf8PartialBuilder();
+        this.utf8Partial = new Utf8StringBuilder();
     }
 
     @Override
     public void accept(Frame frame, Callback callback)
     {
-        String partialText = utf8Partial.toPartialString(frame.getPayload());
+        utf8Partial.append(frame.getPayload());
+        String partialText = utf8Partial.takePartialString();
         try
         {
             methodHandle.invoke(partialText, frame.isFin());

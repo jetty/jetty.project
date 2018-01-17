@@ -25,6 +25,9 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryStreamSocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedTextSocket;
@@ -53,6 +56,7 @@ import org.junit.rules.TestName;
 
 public class LocalEndpointMetadataTest
 {
+    private Executor executor = Executors.newFixedThreadPool(10);
     public static final Matcher<Object> EXISTS = notNullValue();
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -60,9 +64,9 @@ public class LocalEndpointMetadataTest
     @Rule
     public TestName testname = new TestName();
 
-    private LocalEndpointFactory endpointFactory = new LocalEndpointFactory();
+    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(executor);
 
-    private LocalEndpointMetadata createMetadata(Class<?> endpointClass)
+    private JettyWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass)
     {
         return endpointFactory.createMetadata(endpointClass);
     }
@@ -121,7 +125,7 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedBinaryArraySocket() throws Exception
     {
-        LocalEndpointMetadata metadata = createMetadata(AnnotatedBinaryArraySocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(AnnotatedBinaryArraySocket.class);
 
         String classId = AnnotatedBinaryArraySocket.class.getSimpleName();
 
@@ -146,7 +150,7 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedBinaryStreamSocket() throws Exception
     {
-        LocalEndpointMetadata metadata = createMetadata(AnnotatedBinaryStreamSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(AnnotatedBinaryStreamSocket.class);
 
         String classId = AnnotatedBinaryStreamSocket.class.getSimpleName();
 
@@ -171,7 +175,7 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedMyEchoBinarySocket() throws Exception
     {
-        LocalEndpointMetadata metadata = createMetadata(MyEchoBinarySocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(MyEchoBinarySocket.class);
 
         String classId = MyEchoBinarySocket.class.getSimpleName();
 
@@ -196,7 +200,7 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedMyEchoSocket() throws Exception
     {
-        LocalEndpointMetadata metadata = createMetadata(MyEchoSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(MyEchoSocket.class);
 
         String classId = MyEchoSocket.class.getSimpleName();
 
@@ -221,7 +225,7 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedMyStatelessEchoSocket() throws Exception
     {
-        LocalEndpointMetadata metadata = createMetadata(MyStatelessEchoSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(MyStatelessEchoSocket.class);
 
         String classId = MyStatelessEchoSocket.class.getSimpleName();
 
@@ -246,7 +250,7 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedNoop() throws Exception
     {
-        LocalEndpointMetadata metadata = createMetadata(NoopSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(NoopSocket.class);
 
         String classId = NoopSocket.class.getSimpleName();
 
@@ -271,7 +275,7 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedOnFrame() throws Exception
     {
-        LocalEndpointMetadata metadata = createMetadata(FrameSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(FrameSocket.class);
 
         String classId = FrameSocket.class.getSimpleName();
 
@@ -296,7 +300,7 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedTextSocket() throws Exception
     {
-        LocalEndpointMetadata metadata = createMetadata(AnnotatedTextSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(AnnotatedTextSocket.class);
 
         String classId = AnnotatedTextSocket.class.getSimpleName();
 
@@ -321,7 +325,7 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedTextStreamSocket() throws Exception
     {
-        LocalEndpointMetadata metadata = createMetadata(AnnotatedTextStreamSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(AnnotatedTextStreamSocket.class);
 
         String classId = AnnotatedTextStreamSocket.class.getSimpleName();
 
@@ -346,7 +350,7 @@ public class LocalEndpointMetadataTest
     @Test
     public void testListenerBasicSocket()
     {
-        LocalEndpointMetadata metadata = createMetadata(ListenerBasicSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(ListenerBasicSocket.class);
 
         String classId = ListenerBasicSocket.class.getSimpleName();
 
@@ -371,7 +375,7 @@ public class LocalEndpointMetadataTest
     @Test
     public void testListenerFrameSocket() throws Exception
     {
-        LocalEndpointMetadata metadata = createMetadata(ListenerFrameSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(ListenerFrameSocket.class);
 
         String classId = ListenerFrameSocket.class.getSimpleName();
 

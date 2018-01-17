@@ -34,10 +34,10 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketExtension;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -49,15 +49,15 @@ public class JsrCreator implements WebSocketCreator
     public static final String PROP_LOCAL_ADDRESS = "javax.websocket.endpoint.localAddress";
     public static final String PROP_LOCALES = "javax.websocket.upgrade.locales";
     private static final Logger LOG = Log.getLogger(JsrCreator.class);
-    private final WebSocketContainerScope containerScope;
+    private final JavaxWebSocketContainer containerScope;
     private final ServerEndpointConfig baseConfig;
-    private final ExtensionFactory extensionFactory;
+    private final WebSocketExtensionRegistry extensionRegistry;
 
-    public JsrCreator(WebSocketContainerScope containerScope, ServerEndpointConfig config, ExtensionFactory extensionFactory)
+    public JsrCreator(JavaxWebSocketContainer containerScope, ServerEndpointConfig config, WebSocketExtensionRegistry extensionRegistry)
     {
         this.containerScope = containerScope;
         this.baseConfig = config;
-        this.extensionFactory = extensionFactory;
+        this.extensionRegistry = extensionRegistry;
     }
 
     @Override
@@ -117,7 +117,7 @@ public class JsrCreator implements WebSocketCreator
 
         // [JSR] Step 3: deal with extensions
         List<Extension> installedExtensions = new ArrayList<>();
-        for (String extName : extensionFactory.getAvailableExtensions().keySet())
+        for (String extName : extensionRegistry.getAvailableExtensions().keySet())
         {
             installedExtensions.add(new JavaxWebSocketExtension(extName));
         }

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -85,6 +86,27 @@ public interface FrameHandler
          * @return the list of Extension Configurations for this channel.
          */
         List<ExtensionConfig> getExtensionConfig();
+
+        /**
+         * TODO: need implementation
+         *
+         * Issue a harsh disconnect of the underlying connection.
+         * <p>
+         * This will terminate the connection, without sending a websocket close frame.
+         * No WebSocket Protocol close handshake will be performed.
+         * </p>
+         * <p>
+         * Once called, any read/write activity on the websocket from this point will be indeterminate.
+         * This can result in the {@link #onError(Throwable)} event being called indicating any issue that arises.
+         * </p>
+         * <p>
+         * Once the underlying connection has been determined to be closed, the {@link #onClosed(CloseStatus)} event will be called.
+         * </p>
+         *
+         * @throws IOException
+         *             if unable to disconnect
+         */
+        void disconnect() throws IOException;
         
         boolean isOpen(); // TODO this checks that frames can be sent (Needed by API present in JSR356 - See javax.websocket.Session.isOpen())
 

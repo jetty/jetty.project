@@ -19,67 +19,48 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.concurrent.CompletableFuture;
+import java.net.SocketAddress;
+import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.io.SuspendToken;
 
-public class WebSocketSessionImpl extends WebSocketCoreSession implements Session
+public class WebSocketSessionImpl implements Session
 {
+    private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
 
-    public WebSocketSessionImpl(WebSocketLocalEndpoint localEndpoint,
-                                WebSocketRemoteEndpoint remoteEndpoint,
-                                WebSocketPolicy policy,
-                                ExtensionStack extensionStack,
+    public WebSocketSessionImpl(JettyWebSocketRemoteEndpoint remoteEndpoint,
                                 UpgradeRequest upgradeRequest,
                                 UpgradeResponse upgradeResponse)
     {
-        super(localEndpoint, remoteEndpoint, policy, extensionStack);
+        this.remoteEndpoint = remoteEndpoint;
         this.upgradeRequest = upgradeRequest;
         this.upgradeResponse = upgradeResponse;
     }
 
     @Override
-    public LocalEndpointImpl getLocal()
-    {
-        return (LocalEndpointImpl) super.getLocal();
-    }
-
-    public void setFuture(CompletableFuture<Session> fut)
-    {
-        // TODO do we still need this?
-    }
-
-    @Override
     public void close()
     {
-        super.close(WebSocketConstants.NORMAL, null, Callback.NOOP);
+        remoteEndpoint.close();
     }
 
     @Override
     public void close(CloseStatus closeStatus)
     {
-        super.close(closeStatus, Callback.NOOP);
+        remoteEndpoint.close(closeStatus.getCode(), closeStatus.getReason());
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
-        super.close(statusCode, reason, Callback.NOOP);
+        remoteEndpoint.close(statusCode, reason);
     }
 
     @Override
@@ -91,19 +72,25 @@ public class WebSocketSessionImpl extends WebSocketCoreSession implements Sessio
     @Override
     public void disconnect() throws IOException
     {
-        getConnection().disconnect();
+        remoteEndpoint.getChannel().disconnect();
     }
 
     @Override
     public long getIdleTimeout()
     {
-        return getConnection().getIdleTimeout();
+        return remoteEndpoint.getChannel().getIdleTimeout(TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public InetSocketAddress getLocalAddress()
+    public SocketAddress getLocalSocketAddress()
     {
-        return getConnection().getLocalAddress();
+        return upgradeRequest.getLocalSocketAddress();
+    }
+
+    @Override
+    public WebSocketPolicy getPolicy()
+    {
+        return null;
     }
 
     @Override
@@ -113,15 +100,15 @@ public class WebSocketSessionImpl extends WebSocketCoreSession implements Sessio
     }
 
     @Override
-    public RemoteEndpointImpl getRemote()
+    public JettyWebSocketRemoteEndpoint getRemote()
     {
-        return (RemoteEndpointImpl) super.getRemote();
+        return remoteEndpoint;
     }
 
     @Override
-    public InetSocketAddress getRemoteAddress()
+    public SocketAddress getRemoteSocketAddress()
     {
-        return getConnection().getRemoteAddress();
+        return upgradeRequest.getRemoteSocketAddress();
     }
 
     @Override
@@ -139,34 +126,25 @@ public class WebSocketSessionImpl extends WebSocketCoreSession implements Sessio
     @Override
     public boolean isOpen()
     {
-        return getSessionState().isOpen();
+        return remoteEndpoint.getChannel().isOpen();
     }
 
     @Override
     public boolean isSecure()
     {
-        // TODO: get "is secure" from HttpServletRequest? or Connection? or Jetty EndPoint?
-        String scheme = getUpgradeRequest().getRequestURI().getScheme();
-        return "wss".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
-    }
-
-    @Override
-    public void onOpen()
-    {
-        // TODO: [EVENT] before onOpen
-        super.onOpen();
-        // TODO: [EVENT] after onOpen (potentially successful, how do we determine if in error?)
+        return upgradeRequest.isSecure();
     }
 
     @Override
     public void setIdleTimeout(long ms)
     {
-        getConnection().setMaxIdleTimeout(ms);
+        remoteEndpoint.getChannel().setIdleTimeout(ms, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public SuspendToken suspend()
     {
-        return getConnection().suspend();
+        // TODO: need to implement
+        throw new UnsupportedOperationException("Not supported in websocket-core yet");
     }
 }

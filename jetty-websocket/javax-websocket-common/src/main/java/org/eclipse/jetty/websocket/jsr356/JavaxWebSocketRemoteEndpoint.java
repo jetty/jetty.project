@@ -20,19 +20,20 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.SendHandler;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.DataFrame;
@@ -49,11 +50,11 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     private static final Logger LOG = Log.getLogger(JavaxWebSocketRemoteEndpoint.class);
 
     protected final JavaxWebSocketSession session;
-    private final WebSocketChannel channel;
+    private final FrameHandler.Channel channel;
     protected BatchMode batchMode = BatchMode.OFF; // TODO: should this be defaulted to AUTO instead?
     protected byte messageType = -1;
 
-    protected JavaxWebSocketRemoteEndpoint(JavaxWebSocketSession session, WebSocketChannel channel)
+    protected JavaxWebSocketRemoteEndpoint(JavaxWebSocketSession session, FrameHandler.Channel channel)
     {
         this.session = session;
         this.channel = channel;
@@ -62,7 +63,10 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     @Override
     public void flushBatch() throws IOException
     {
-        channel.flush();
+        try (SharedBlockingCallback.Blocker blocker = session.getBlocking().acquire())
+        {
+            channel.flushBatch(blocker);
+        }
     }
 
     @Override
@@ -76,33 +80,23 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     {
         if (getBatchMode() == BatchMode.ON && !allowed)
         {
-            channel.flush();
+            flushBatch();
         }
         setBatchMode(allowed ? BatchMode.ON : BatchMode.OFF);
     }
 
-    public ByteBufferPool getBufferPool()
-    {
-        return channel.getBufferPool();
-    }
-
     public long getIdleTimeout()
     {
-        return channel.getConnection().getIdleTimeout();
+        return channel.getIdleTimeout(TimeUnit.MILLISECONDS);
     }
 
     public void setIdleTimeout(long ms)
     {
-        channel.getConnection().setMaxIdleTimeout(ms);
-    }
-
-    public int getInputBufferSize()
-    {
-        return channel.getConnection().getInputBufferSize();
+        channel.setIdleTimeout(ms, TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         if (frame instanceof DataFrame)
         {
@@ -140,7 +134,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
         try
         {
-            channel.outgoingFrame(frame, callback, batchMode);
+            channel.sendFrame(frame, callback, batchMode);
         }
         finally
         {
@@ -171,14 +165,14 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
             {
                 Encoder.Text text = (Encoder.Text) encoder;
                 String msg = text.encode(data);
-                channel.outgoingFrame(new TextFrame().setPayload(msg), callback, batchMode);
+                sendFrame(new TextFrame().setPayload(msg), callback, batchMode);
                 return;
             }
 
             if (encoder instanceof Encoder.TextStream)
             {
                 Encoder.TextStream etxt = (Encoder.TextStream) encoder;
-                try (MessageWriter writer = new MessageWriter(this, getInputBufferSize(), getBufferPool()))
+                try (MessageWriter writer = new MessageWriter(this, session.getPolicy().getMaxTextMessageBufferSize(), session.getContainerBufferPool()))
                 {
                     writer.setCallback(callback);
                     etxt.encode(data, writer);
@@ -190,14 +184,14 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
             {
                 Encoder.Binary ebin = (Encoder.Binary) encoder;
                 ByteBuffer buf = ebin.encode(data);
-                channel.outgoingFrame(new BinaryFrame().setPayload(buf), callback, batchMode);
+                sendFrame(new BinaryFrame().setPayload(buf), callback, batchMode);
                 return;
             }
 
             if (encoder instanceof Encoder.BinaryStream)
             {
                 Encoder.BinaryStream ebin = (Encoder.BinaryStream) encoder;
-                try (MessageOutputStream out = new MessageOutputStream(this, getInputBufferSize(), getBufferPool()))
+                try (MessageOutputStream out = new MessageOutputStream(this, session.getPolicy().getMaxBinaryMessageBufferSize(), session.getContainerBufferPool()))
                 {
                     out.setCallback(callback);
                     ebin.encode(data, out);
@@ -228,7 +222,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         }
         // TODO: is this supposed to be a blocking call?
         // TODO: what to do on excessively large payloads (error and close connection per RFC6455, or truncate?)
-        channel.outgoingFrame(new PingFrame().setPayload(data), Callback.NOOP, batchMode);
+        sendFrame(new PingFrame().setPayload(data), Callback.NOOP, batchMode);
     }
 
     @Override
@@ -240,7 +234,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         }
         // TODO: is this supposed to be a blocking call?
         // TODO: what to do on excessively large payloads (error and close connection per RFC6455, or truncate?)
-        channel.outgoingFrame(new PongFrame().setPayload(data), Callback.NOOP, batchMode);
+        sendFrame(new PongFrame().setPayload(data), Callback.NOOP, batchMode);
     }
 
     protected void assertMessageNotNull(Object data)

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common.handshake;
 
 import java.net.HttpCookie;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,8 +43,11 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     private String httpVersion;
     private String method;
     private String host;
+    private SocketAddress localSocketAddress;
+    private SocketAddress remoteSocketAddress;
+    private boolean secure;
 
-    protected UpgradeRequestAdapter()
+    public UpgradeRequestAdapter()
     {
         /* anonymous, no requestURI, upgrade request */
     }
@@ -75,9 +79,29 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     }
 
     @Override
+    public void setCookies(List<HttpCookie> cookies)
+    {
+        this.cookies.clear();
+        if (cookies != null && !cookies.isEmpty())
+        {
+            this.cookies.addAll(cookies);
+        }
+    }
+
+    @Override
     public List<ExtensionConfig> getExtensions()
     {
         return extensions;
+    }
+
+    @Override
+    public void setExtensions(List<ExtensionConfig> configs)
+    {
+        this.extensions.clear();
+        if (configs != null)
+        {
+            this.extensions.addAll(configs);
+        }
     }
 
     @Override
@@ -163,20 +187,49 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     }
 
     @Override
+    public void setHttpVersion(String httpVersion)
+    {
+        this.httpVersion = httpVersion;
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return localSocketAddress;
+    }
+
+    public void setLocalSocketAddress(SocketAddress localSocketAddress)
+    {
+        this.localSocketAddress = localSocketAddress;
+    }
+
+    @Override
     public String getMethod()
     {
         return method;
     }
 
+    @Override
+    public void setMethod(String method)
+    {
+        this.method = method;
+    }
+
     /**
      * Returns a map of the query parameters of the request.
-     * 
+     *
      * @return a unmodifiable map of query parameters of the request.
      */
     @Override
     public Map<String, List<String>> getParameterMap()
     {
         return Collections.unmodifiableMap(parameters);
+    }
+
+    protected void setParameterMap(Map<String, List<String>> parameters)
+    {
+        this.parameters.clear();
+        this.parameters.putAll(parameters);
     }
 
     @Override
@@ -195,6 +248,17 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     {
         return requestURI.getQuery();
     }
+    
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return remoteSocketAddress;
+    }
+
+    public void setRemoteSocketAddress(SocketAddress remoteSocketAddress)
+    {
+        this.remoteSocketAddress = remoteSocketAddress;
+    }
 
     @Override
     public URI getRequestURI()
@@ -203,9 +267,35 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     }
 
     @Override
+    public void setRequestURI(URI uri)
+    {
+        this.requestURI = uri;
+        String scheme = uri.getScheme();
+        if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme))
+        {
+            throw new IllegalArgumentException("URI scheme must be 'ws' or 'wss'");
+        }
+        this.host = this.requestURI.getHost();
+        this.parameters.clear();
+    }
+
+    @Override
     public List<String> getSubProtocols()
     {
         return subProtocols;
+    }
+
+    /**
+     * Set Sub Protocol request list.
+     *
+     * @param protocols
+     *            the sub protocols desired
+     */
+    @Override
+    public void setSubProtocols(String... protocols)
+    {
+        subProtocols.clear();
+        Collections.addAll(subProtocols, protocols);
     }
 
     @Override
@@ -222,23 +312,14 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     }
 
     @Override
-    public void setCookies(List<HttpCookie> cookies)
+    public boolean isSecure()
     {
-        this.cookies.clear();
-        if (cookies != null && !cookies.isEmpty())
-        {
-            this.cookies.addAll(cookies);
-        }
+        return secure;
     }
-    
-    @Override
-    public void setExtensions(List<ExtensionConfig> configs)
+
+    public void setSecure(boolean secure)
     {
-        this.extensions.clear();
-        if (configs != null)
-        {
-            this.extensions.addAll(configs);
-        }
+        this.secure = secure;
     }
 
     @Override
@@ -269,37 +350,6 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     }
 
     @Override
-    public void setHttpVersion(String httpVersion)
-    {
-        this.httpVersion = httpVersion;
-    }
-
-    @Override
-    public void setMethod(String method)
-    {
-        this.method = method;
-    }
-
-    protected void setParameterMap(Map<String, List<String>> parameters)
-    {
-        this.parameters.clear();
-        this.parameters.putAll(parameters);
-    }
-
-    @Override
-    public void setRequestURI(URI uri)
-    {
-        this.requestURI = uri;
-        String scheme = uri.getScheme();
-        if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme))
-        {
-            throw new IllegalArgumentException("URI scheme must be 'ws' or 'wss'");
-        }
-        this.host = this.requestURI.getHost();
-        this.parameters.clear();
-    }
-
-    @Override
     public void setSubProtocols(List<String> subProtocols)
     {
         this.subProtocols.clear();
@@ -307,18 +357,5 @@ public class UpgradeRequestAdapter implements UpgradeRequest
         {
             this.subProtocols.addAll(subProtocols);
         }
-    }
-
-    /**
-     * Set Sub Protocol request list.
-     * 
-     * @param protocols
-     *            the sub protocols desired
-     */
-    @Override
-    public void setSubProtocols(String... protocols)
-    {
-        subProtocols.clear();
-        Collections.addAll(subProtocols, protocols);
     }
 }

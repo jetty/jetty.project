@@ -28,6 +28,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 import org.eclipse.jetty.websocket.core.AbstractTrackingEndpoint;

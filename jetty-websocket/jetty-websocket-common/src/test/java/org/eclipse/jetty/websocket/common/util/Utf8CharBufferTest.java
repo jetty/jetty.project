@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.util.Utf8CharBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 

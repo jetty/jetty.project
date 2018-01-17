@@ -48,7 +48,7 @@ public class MessageOutputStreamTest
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private WebSocketPolicy policy;
-    private OutgoingMessageCapture remoteSocket;
+    private OutgoingMessageCapture channelCapture;
 
     @Before
     public void setupTest() throws Exception
@@ -56,21 +56,21 @@ public class MessageOutputStreamTest
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
 
-        remoteSocket = new OutgoingMessageCapture(policy);
+        channelCapture = new OutgoingMessageCapture(policy);
     }
 
     @Test
     public void testMultipleWrites() throws Exception
     {
-        try (MessageOutputStream stream = new MessageOutputStream(remoteSocket, policy.getOutputBufferSize(), bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, policy.getOutputBufferSize(), bufferPool))
         {
             stream.write("Hello".getBytes("UTF-8"));
             stream.write(" ".getBytes("UTF-8"));
             stream.write("World".getBytes("UTF-8"));
         }
 
-        Assert.assertThat("Socket.binaryMessages.size", remoteSocket.binaryMessages.size(), is(1));
-        ByteBuffer buffer = remoteSocket.binaryMessages.poll(1, TimeUnit.SECONDS);
+        Assert.assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
+        ByteBuffer buffer = channelCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         Assert.assertThat("Message", message, is("Hello World"));
     }
@@ -78,13 +78,13 @@ public class MessageOutputStreamTest
     @Test
     public void testSingleWrite() throws Exception
     {
-        try (MessageOutputStream stream = new MessageOutputStream(remoteSocket, policy.getOutputBufferSize(), bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, policy.getOutputBufferSize(), bufferPool))
         {
             stream.write("Hello World".getBytes("UTF-8"));
         }
 
-        Assert.assertThat("Socket.binaryMessages.size", remoteSocket.binaryMessages.size(), is(1));
-        ByteBuffer buffer = remoteSocket.binaryMessages.poll(1, TimeUnit.SECONDS);
+        Assert.assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
+        ByteBuffer buffer = channelCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         Assert.assertThat("Message", message, is("Hello World"));
     }
@@ -98,13 +98,13 @@ public class MessageOutputStreamTest
         Arrays.fill(buf, (byte) 'x');
         buf[bufsize - 1] = (byte) 'o'; // mark last entry for debugging
 
-        try (MessageOutputStream stream = new MessageOutputStream(remoteSocket, policy.getOutputBufferSize(), bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(channelCapture, policy.getOutputBufferSize(), bufferPool))
         {
             stream.write(buf);
         }
 
-        Assert.assertThat("Socket.binaryMessages.size", remoteSocket.binaryMessages.size(), is(1));
-        ByteBuffer buffer = remoteSocket.binaryMessages.poll(1, TimeUnit.SECONDS);
+        Assert.assertThat("Socket.binaryMessages.size", channelCapture.binaryMessages.size(), is(1));
+        ByteBuffer buffer = channelCapture.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         Assert.assertThat("Message", message, endsWith("xxxxxo"));
     }

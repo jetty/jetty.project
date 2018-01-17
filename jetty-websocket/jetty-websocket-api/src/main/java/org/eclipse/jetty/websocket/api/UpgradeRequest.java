@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.net.HttpCookie;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -117,6 +118,9 @@ public interface UpgradeRequest
      */
     String getHttpVersion();
 
+    SocketAddress getLocalSocketAddress();
+    SocketAddress getRemoteSocketAddress();
+
     /**
      * The HTTP method for this Upgrade Request.
      * <p>
@@ -171,6 +175,8 @@ public interface UpgradeRequest
      * @return true if sub-protocol exists on request
      */
     boolean hasSubProtocol(String test);
+
+    boolean isSecure();
 
     /**
      * Set the list of Cookies on the request

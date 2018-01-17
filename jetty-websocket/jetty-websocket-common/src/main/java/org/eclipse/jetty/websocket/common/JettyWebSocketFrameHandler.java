@@ -16,8 +16,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.handshake;
+package org.eclipse.jetty.websocket.common;
 
-public class DummyUpgradeResponse extends UpgradeResponseAdapter
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+
+public interface JettyWebSocketFrameHandler extends FrameHandler
 {
+    WebSocketPolicy getPolicy();
+    WebSocketSessionImpl getSession();
 }

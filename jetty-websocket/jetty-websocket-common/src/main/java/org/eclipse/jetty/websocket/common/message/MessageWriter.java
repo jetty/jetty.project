@@ -28,9 +28,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.common.util.Utf8CharBuffer;
-import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
@@ -43,7 +42,7 @@ public class MessageWriter extends Writer
 {
     private static final Logger LOG = Log.getLogger(MessageWriter.class);
 
-    private final OutgoingFrames outgoing;
+    private final FrameHandler.Channel channel;
     private final ByteBufferPool bufferPool;
     private final SharedBlockingCallback blocker;
     private long frameCount;
@@ -53,9 +52,9 @@ public class MessageWriter extends Writer
     private Callback callback;
     private boolean closed;
 
-    public MessageWriter(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
+    public MessageWriter(FrameHandler.Channel outgoing, int bufferSize, ByteBufferPool bufferPool)
     {
-        this.outgoing = outgoing;
+        this.channel = outgoing;
         this.bufferPool = bufferPool;
         this.blocker = new SharedBlockingCallback();
         this.buffer = bufferPool.acquire(bufferSize, true);
@@ -146,7 +145,7 @@ public class MessageWriter extends Writer
 
             try (SharedBlockingCallback.Blocker b = blocker.acquire())
             {
-                outgoing.outgoingFrame(frame, b, BatchMode.OFF);
+                channel.sendFrame(frame, b, BatchMode.OFF);
                 b.block();
             }
 
@@ -184,7 +183,7 @@ public class MessageWriter extends Writer
         }
     }
 
-    public void setCallback(WriteCallback callback)
+    public void setCallback(Callback callback)
     {
         synchronized (this)
         {

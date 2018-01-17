@@ -23,7 +23,7 @@ import java.lang.invoke.MethodHandle;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
-public class LocalEndpointMetadata
+public class JettyWebSocketFrameHandlerMetadata
 {
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
