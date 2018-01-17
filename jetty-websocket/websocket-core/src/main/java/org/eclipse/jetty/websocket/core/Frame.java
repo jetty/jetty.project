@@ -115,4 +115,18 @@ public interface Frame
     boolean isRsv2();
 
     boolean isRsv3();
+
+    default boolean isControl()
+    {
+        switch(getType())
+        {
+            case BINARY:
+            case TEXT:
+            case CONTINUATION:
+                return false;
+
+            default:
+                return true;
+        }
+    }
 }

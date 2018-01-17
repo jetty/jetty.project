@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -32,6 +33,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
@@ -425,6 +427,20 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     {
         ContainerLifeCycle.dumpObject(out,this);
         ContainerLifeCycle.dump(out,indent,Arrays.asList(subprotocol,policy,extensionStack,handler));
+    }
+
+
+    @Override
+    public List<ExtensionConfig> getExtensionConfig()
+    {
+        return extensionStack.getNegotiatedExtensions();
+    }
+
+
+    @Override
+    public WebSocketBehavior getBehavior()
+    {
+        return policy.getBehavior();
     }
 
 }

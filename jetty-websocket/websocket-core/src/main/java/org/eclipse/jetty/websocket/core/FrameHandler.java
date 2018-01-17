@@ -65,7 +65,7 @@ public interface FrameHandler
      * An error has occurred or been detected in websocket-core and being reported to FrameHandler.
      *
      * @param cause the reason for the error
-     * @throws Exception if unable to process the error. TODO: what hapens if an exception occurs here?  does any error means a connection is (or will be) closed?
+     * @throws Exception if unable to process the error. TODO: what happens if an exception occurs here?  does any error means a connection is (or will be) closed?
      */
     void onError(Throwable cause) throws Exception;
 
@@ -86,7 +86,10 @@ public interface FrameHandler
          */
         List<ExtensionConfig> getExtensionConfig();
         
-        boolean isOpen(); // TODO this checks that frames can be sent (Needed by API present in JSR356 - See javax.websocket.Session.isOpen())
+        WebSocketBehavior getBehavior();
+        
+        
+        boolean isOpen();
 
         /**
          * Get the Idle Timeout in the unit provided.
