@@ -27,10 +27,10 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface FrameHandler
 {
-    default void onOpen(Channel channel) throws Exception {}
-    default void onFrame(Frame frame, Callback callback) throws Exception {}
-    default void onClosed(CloseStatus closeStatus) throws Exception {}
-    default void onError(Throwable cause) throws Exception {}
+    void onOpen(Channel channel) throws Exception;
+    void onFrame(Frame frame, Callback callback) throws Exception;
+    void onClosed(CloseStatus closeStatus) throws Exception;
+    void onError(Throwable cause) throws Exception;
     
     interface Channel extends OutgoingFrames
     {        
