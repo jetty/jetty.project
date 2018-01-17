@@ -69,101 +69,50 @@ public class ExtensionStackTest
     @Test
     public void testStartIdentity() throws Exception
     {
-        try
-        {
-            // 1 extension
-            List<ExtensionConfig> configs = new ArrayList<>();
-            configs.add(ExtensionConfig.parse("identity"));
-            stack.negotiate(objectFactory, policy, bufferPool, configs);
+        // 1 extension
+        List<ExtensionConfig> configs = new ArrayList<>();
+        configs.add(ExtensionConfig.parse("identity"));
+        stack.negotiate(objectFactory, policy, bufferPool, configs);
 
-            // Setup Listeners
-            IncomingFrames session = new IncomingFramesCapture();
-            OutgoingFrames connection = new OutgoingFramesCapture();
-            stack.setNextOutgoing(connection);
-            stack.setNextIncoming(session);
+        // Setup Listeners
+        IncomingFrames session = new IncomingFramesCapture();
+        OutgoingFrames connection = new OutgoingFramesCapture();
+        stack.connect(session,connection);
 
-            // Start
-            stack.start();
+        // Dump
+        LOG.debug("{}",stack.dump());
 
-            // Dump
-            LOG.debug("{}",stack.dump());
+        // Should be no change to handlers
+        Extension actualIncomingExtension = assertIsExtension("Incoming",stack.getNextIncoming(),IdentityExtension.class);
+        Extension actualOutgoingExtension = assertIsExtension("Outgoing",stack.getNextOutgoing(),IdentityExtension.class);
+        Assert.assertEquals(actualIncomingExtension,actualOutgoingExtension);
 
-            // Should be no change to handlers
-            Extension actualIncomingExtension = assertIsExtension("Incoming",stack.getNextIncoming(),IdentityExtension.class);
-            Extension actualOutgoingExtension = assertIsExtension("Outgoing",stack.getNextOutgoing(),IdentityExtension.class);
-            Assert.assertEquals(actualIncomingExtension,actualOutgoingExtension);
-        }
-        finally
-        {
-            stack.stop();
-        }
     }
 
     @Test
     public void testStartIdentityTwice() throws Exception
     {
-        try
-        {
-            // 1 extension
-            List<ExtensionConfig> configs = new ArrayList<>();
-            configs.add(ExtensionConfig.parse("identity; id=A"));
-            configs.add(ExtensionConfig.parse("identity; id=B"));
-            stack.negotiate(objectFactory, policy, bufferPool, configs);
+        // 1 extension
+        List<ExtensionConfig> configs = new ArrayList<>();
+        configs.add(ExtensionConfig.parse("identity; id=A"));
+        configs.add(ExtensionConfig.parse("identity; id=B"));
+        stack.negotiate(objectFactory, policy, bufferPool, configs);
 
-            // Setup Listeners
-            IncomingFrames session = new IncomingFramesCapture();
-            OutgoingFrames connection = new OutgoingFramesCapture();
-            stack.setNextOutgoing(connection);
-            stack.setNextIncoming(session);
+        // Setup Listeners
+        IncomingFrames session = new IncomingFramesCapture();
+        OutgoingFrames connection = new OutgoingFramesCapture();
+        stack.connect(session,connection);
 
-            // Start
-            stack.start();
+        // Dump
+        LOG.debug("{}",stack.dump());
 
-            // Dump
-            LOG.debug("{}",stack.dump());
+        // Should be no change to handlers
+        IdentityExtension actualIncomingExtension = assertIsExtension("Incoming",stack.getNextIncoming(),IdentityExtension.class);
+        IdentityExtension actualOutgoingExtension = assertIsExtension("Outgoing",stack.getNextOutgoing(),IdentityExtension.class);
 
-            // Should be no change to handlers
-            IdentityExtension actualIncomingExtension = assertIsExtension("Incoming",stack.getNextIncoming(),IdentityExtension.class);
-            IdentityExtension actualOutgoingExtension = assertIsExtension("Outgoing",stack.getNextOutgoing(),IdentityExtension.class);
+        Assert.assertThat("Incoming[identity].id",actualIncomingExtension.getParam("id"),is("A"));
+        Assert.assertThat("Outgoing[identity].id",actualOutgoingExtension.getParam("id"),is("B"));
 
-            Assert.assertThat("Incoming[identity].id",actualIncomingExtension.getParam("id"),is("A"));
-            Assert.assertThat("Outgoing[identity].id",actualOutgoingExtension.getParam("id"),is("B"));
-        }
-        finally
-        {
-            stack.stop();
-        }
-    }
-
-    @Test
-    public void testStartNothing() throws Exception
-    {
-        try
-        {
-            // intentionally empty
-            List<ExtensionConfig> configs = new ArrayList<>();
-            stack.negotiate(objectFactory, policy, bufferPool, configs);
-
-            // Setup Listeners
-            IncomingFrames session = new IncomingFramesCapture();
-            OutgoingFrames connection = new OutgoingFramesCapture();
-            stack.setNextOutgoing(connection);
-            stack.setNextIncoming(session);
-
-            // Start
-            stack.start();
-
-            // Dump
-            LOG.debug("{}",stack.dump());
-
-            // Should be no change to handlers
-            Assert.assertEquals("Incoming Handler",stack.getNextIncoming(),session);
-            Assert.assertEquals("Outgoing Handler",stack.getNextOutgoing(),connection);
-        }
-        finally
-        {
-            stack.stop();
-        }
     }
 
     @Test

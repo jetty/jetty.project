@@ -18,15 +18,10 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -36,7 +31,7 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 @ManagedObject("Abstract Extension")
-public abstract class AbstractExtension extends AbstractLifeCycle implements Dumpable, Extension
+public abstract class AbstractExtension implements Extension
 {
     private final Logger log;
     private WebSocketPolicy policy;
@@ -48,29 +43,6 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
     public AbstractExtension()
     {
         log = Log.getLogger(this.getClass());
-    }
-    
-    @Override
-    public String dump()
-    {
-        return ContainerLifeCycle.dump(this);
-    }
-
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        // incoming
-        dumpWithHeading(out, indent, "incoming", this.nextIncoming);
-        dumpWithHeading(out, indent, "outgoing", this.nextOutgoing);
-    }
-
-    protected void dumpWithHeading(Appendable out, String indent, String heading, Object bean) throws IOException
-    {
-        out.append(indent).append(" +- ");
-        out.append(heading).append(" : ");
-        if(bean == null)
-            out.append("<null>");
-        else
-            out.append(bean.toString());
     }
     
     public void init(WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -155,7 +127,7 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
     protected void nextIncomingFrame(Frame frame, Callback callback)
     {
         log.debug("nextIncomingFrame({})",frame);
-        this.nextIncoming.incomingFrame(frame, callback);
+        this.nextIncoming.receiveFrame(frame, callback);
     }
 
     protected void nextOutgoingFrame(Frame frame, Callback callback, BatchMode batchMode)

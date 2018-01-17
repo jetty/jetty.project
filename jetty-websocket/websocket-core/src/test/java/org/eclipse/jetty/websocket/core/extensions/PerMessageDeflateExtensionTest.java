@@ -240,7 +240,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         String payload = "Are you there?";
         Frame ping = new PingFrame().setPayload(payload);
-        ext.incomingFrame(ping, Callback.NOOP);
+        ext.receiveFrame(ping, Callback.NOOP);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);
@@ -286,7 +286,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         {
             TextFrame frame = new TextFrame().setPayload(q);
             frame.setRsv1(false); // indication to extension that frame is not compressed (ie: a normal frame)
-            ext.incomingFrame(frame, Callback.NOOP);
+            ext.receiveFrame(frame, Callback.NOOP);
         }
 
         int len = quote.size();

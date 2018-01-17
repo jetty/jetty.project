@@ -50,7 +50,7 @@ public class DeflateFrameExtension extends CompressExtension
     }
 
     @Override
-    public void incomingFrame(Frame frame, Callback callback)
+    public void receiveFrame(Frame frame, Callback callback)
     {
         // Incoming frames are always non concurrent because
         // they are read and parsed with a single thread, and

@@ -276,7 +276,7 @@ public class WebSocketClientUpgradeRequest extends HttpRequest implements Respon
 
         wsChannel.setWebSocketConnection(wsConnection);
 
-        wsClient.addManaged(wsChannel); // TODO: or should this be the connection?
+        //wsClient.addManaged(wsChannel); // TODO: or should this be the connection?
 
         // TODO: need way to hook into the post-upgraded response
         // if (upgradeListener != null)

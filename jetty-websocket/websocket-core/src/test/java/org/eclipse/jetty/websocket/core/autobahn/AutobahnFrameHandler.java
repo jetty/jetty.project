@@ -23,10 +23,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractFrameHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
@@ -51,7 +53,7 @@ class AutobahnFrameHandler extends AbstractFrameHandler
     @Override
     public void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
     {
-        LOG.info("onText {} {} {} {}", count++, utf8.length(),fin, getWebSocketChannel());
+        LOG.debug("onText {} {} {} {}", count++, utf8.length(),fin, getWebSocketChannel());
         if (fin)
         {
             getWebSocketChannel().sendFrame(new TextFrame().setPayload(utf8.toString()),
@@ -67,7 +69,7 @@ class AutobahnFrameHandler extends AbstractFrameHandler
     @Override
     public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
     {        
-        LOG.info("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getWebSocketChannel());
+        LOG.debug("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getWebSocketChannel());
         if (fin)
         {       
             BinaryFrame echo = new BinaryFrame();

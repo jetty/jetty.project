@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -28,19 +29,21 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
+import org.eclipse.jetty.websocket.core.io.FrameFlusher;
 import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 
 /**
  * The Core WebSocket Session.
  *
  */
-public class WebSocketChannel extends ContainerLifeCycle implements IncomingFrames, FrameHandler.Channel
+public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, Dumpable
 {
     private Logger LOG = Log.getLogger(this.getClass());
 
@@ -61,17 +64,9 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         this.policy = policy;
         this.extensionStack = extensionStack;
         this.subprotocol = subprotocol;
-        addBean(extensionStack,true);
-        extensionStack.setNextIncoming(new IncomingState());
-        extensionStack.setNextOutgoing(new OutgoingState());
-        addBean(handler, true);
+        extensionStack.connect(new IncomingState(),new OutgoingState());
     }
 
-    @Override
-    public void flushBatch()
-    {
-        // TODO: flush the outgoing frames.
-    }
 
     public ExtensionStack getExtensionStack()
     {
@@ -138,17 +133,6 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         // TODO truncate extra large reason phrases to fit within limits?
 
         sendFrame(new CloseFrame().setPayload(statusCode, reason), callback, BatchMode.OFF);
-    }
-
-    /**
-     * Send Close Frame with specified Close Status
-     *
-     * @param closeStatus a valid WebSocket CloseStatus
-     * @param callback the callback on successful send of close frame
-     */
-    public void close(CloseStatus closeStatus, Callback callback)
-    {
-        close(closeStatus.getCode(), closeStatus.getReason(), callback);
     }
 
     public WebSocketPolicy getPolicy()
@@ -242,8 +226,6 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
 
         try
         {
-            start();
-
             // Upgrade success
             state.onConnected();
 
@@ -289,17 +271,9 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     }
 
     @Override
-    protected void doStop() throws Exception
+    public void receiveFrame(Frame frame, Callback callback)
     {
-        new Throwable().printStackTrace();
-        this.connection.disconnect();
-        super.doStop();
-    }
-
-    @Override
-    public void incomingFrame(Frame frame, Callback callback)
-    {
-        extensionStack.incomingFrame(frame, callback);
+        extensionStack.receiveFrame(frame, callback);
     }
 
     @Override
@@ -342,10 +316,18 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         extensionStack.sendFrame(frame,callback,batchMode);
     }
 
+
+    @Override
+    public void flushBatch(Callback callback)
+    {
+        extensionStack.sendFrame(FrameFlusher.FLUSH_FRAME,callback,BatchMode.OFF);
+    }
+    
+    
     private class IncomingState implements IncomingFrames
     {
         @Override
-        public void incomingFrame(Frame frame, Callback callback)
+        public void receiveFrame(Frame frame, Callback callback)
         {
             try
             {
@@ -378,7 +360,8 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
                                     // No!
                                     if (LOG.isDebugEnabled())
                                         LOG.debug("ConnectionState: sending close response {}",closeStatus);
-                                    close(closeStatus, Callback.NOOP);
+
+                                    close(closeStatus.getCode(), closeStatus.getReason(), Callback.NOOP);
                                     return;
                                 }
                             }
@@ -429,6 +412,19 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
             
             connection.sendFrame(frame,callback,batchMode);
         }
+    }
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        ContainerLifeCycle.dumpObject(out,this);
+        ContainerLifeCycle.dump(out,indent,Arrays.asList(subprotocol,policy,extensionStack,handler));
     }
 
 }

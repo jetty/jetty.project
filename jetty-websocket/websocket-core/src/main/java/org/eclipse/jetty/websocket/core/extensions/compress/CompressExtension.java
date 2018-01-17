@@ -375,16 +375,6 @@ public abstract class CompressExtension extends AbstractExtension
         }
         return true;
     }
-    
-    @Override
-    protected void doStop() throws Exception
-    {
-        if(deflaterImpl != null)
-            deflaterImpl.end();
-        if(inflaterImpl != null)
-            inflaterImpl.end();
-        super.doStop();
-    }
 
     @Override
     public String toString()

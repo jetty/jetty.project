@@ -111,18 +111,6 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         return super.getExecutor();
     }
 
-
-    public void disconnect()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("disconnect()");
-
-        // close FrameFlusher, we cannot write anymore at this point.
-        flusher.close();
-
-        close();
-    }
-
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;
@@ -165,7 +153,8 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         if (LOG.isDebugEnabled())
             LOG.debug("onClose() of physical connection");
 
-        flusher.close();
+        // TODO review all close paths
+        flusher.terminate(new IOException("Closed"),true);
         super.onClose();
     }
 
@@ -187,7 +176,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
 
-        channel.incomingFrame(frame, new Callback()
+        channel.receiveFrame(frame, new Callback()
         {
             @Override
             public void succeeded()

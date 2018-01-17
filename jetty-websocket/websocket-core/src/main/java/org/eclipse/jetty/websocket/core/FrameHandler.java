@@ -41,7 +41,7 @@ public interface FrameHandler
         long getIdleTimeout(TimeUnit units);
         void setIdleTimeout(long timeout, TimeUnit units);
                 
-        void flushBatch();
+        void flushBatch(Callback callback);
 
         void close(Callback callback);
         void close(int statusCode, String reason, Callback callback);

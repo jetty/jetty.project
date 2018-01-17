@@ -21,9 +21,11 @@ package org.eclipse.jetty.websocket.core.extensions;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Queue;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
@@ -32,6 +34,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -44,7 +47,7 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
  * Represents the stack of Extensions.
  */
 @ManagedObject("Extension Stack")
-public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames, OutgoingFrames
+public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 {
     private static final Logger LOG = Log.getLogger(ExtensionStack.class);
 
@@ -52,104 +55,18 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     private final IteratingCallback flusher = new Flusher();
     private final WebSocketExtensionRegistry factory;
     private List<Extension> extensions;
-    private IncomingFrames nextIncoming;
-    private OutgoingFrames nextOutgoing;
+    private IncomingFrames incoming;
+    private OutgoingFrames outgoing;
 
     public ExtensionStack(WebSocketExtensionRegistry factory)
     {
         this.factory = factory;
     }
 
-    @Override
-    protected void doStart() throws Exception
-    {
-        if (extensions==null)
-            throw new IllegalStateException("Extensions not negotiated!");
-
-        super.doStart();
-
-        // Wire up Extensions
-        if ((extensions != null) && (extensions.size() > 0))
-        {
-            ListIterator<Extension> exts = extensions.listIterator();
-
-            // Connect outgoings
-            while (exts.hasNext())
-            {
-                Extension ext = exts.next();
-                ext.setNextOutgoingFrames(nextOutgoing);
-                nextOutgoing = ext;
-                addBean(ext);
-            }
-
-            // Connect incomingFrames
-            while (exts.hasPrevious())
-            {
-                Extension ext = exts.previous();
-                ext.setNextIncomingFrames(nextIncoming);
-                nextIncoming = ext;
-            }
-        }
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        super.dump(out,indent);
-
-        IncomingFrames websocket = getLastIncoming();
-        OutgoingFrames network = getLastOutgoing();
-
-        // TODO use the utility methods for this
-        out.append(indent).append(" +- Stack").append(System.lineSeparator());
-        out.append(indent).append("     +- Network  : ").append(network.toString()).append(System.lineSeparator());
-        for (Extension ext : extensions)
-        {
-            out.append(indent).append("     +- Extension: ").append(ext.toString()).append(System.lineSeparator());
-        }
-        out.append(indent).append("     +- Websocket: ").append(websocket.toString()).append(System.lineSeparator());
-    }
-
     @ManagedAttribute(name = "Extension List", readonly = true)
     public List<Extension> getExtensions()
     {
         return extensions;
-    }
-
-    private IncomingFrames getLastIncoming()
-    {
-        IncomingFrames last = nextIncoming;
-        boolean done = false;
-        while (!done)
-        {
-            if (last instanceof AbstractExtension)
-            {
-                last = ((AbstractExtension)last).getNextIncoming();
-            }
-            else
-            {
-                done = true;
-            }
-        }
-        return last;
-    }
-
-    private OutgoingFrames getLastOutgoing()
-    {
-        OutgoingFrames last = nextOutgoing;
-        boolean done = false;
-        while (!done)
-        {
-            if (last instanceof AbstractExtension)
-            {
-                last = ((AbstractExtension)last).getNextOutgoing();
-            }
-            else
-            {
-                done = true;
-            }
-        }
-        return last;
     }
 
     /**
@@ -159,34 +76,22 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
      */
     public List<ExtensionConfig> getNegotiatedExtensions()
     {
-        List<ExtensionConfig> ret = new ArrayList<>();
-        if (extensions == null)
-        {
-            return ret;
-        }
-
-        for (Extension ext : extensions)
-        {
-            if (ext.getName().charAt(0) == '@')
-            {
-                // special, internal-only extensions, not present on negotiation level
-                continue;
-            }
-            ret.add(ext.getConfig());
-        }
-        return ret;
+        if (extensions==null)
+            return Collections.emptyList();
+        
+        return extensions.stream().filter(e->!e.getName().startsWith("@")).map(Extension::getConfig).collect(Collectors.toList());
     }
 
     @ManagedAttribute(name = "Next Incoming Frames Handler", readonly = true)
     public IncomingFrames getNextIncoming()
     {
-        return nextIncoming;
+        return incoming;
     }
 
     @ManagedAttribute(name = "Next Outgoing Frames Handler", readonly = true)
     public OutgoingFrames getNextOutgoing()
     {
-        return nextOutgoing;
+        return outgoing;
     }
 
     public boolean hasNegotiatedExtensions()
@@ -195,11 +100,11 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     }
 
     @Override
-    public void incomingFrame(Frame frame, Callback callback)
+    public void receiveFrame(Frame frame, Callback callback)
     {
-        if (!isRunning())
-            throw new IllegalStateException(getState());
-        nextIncoming.incomingFrame(frame, callback);
+        if (incoming==null)
+            throw new IllegalStateException();
+        incoming.receiveFrame(frame, callback);
     }
 
     /**
@@ -247,7 +152,6 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 
             // Add Extension
             extensions.add(ext);
-            addBean(ext);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Adding Extension: {}",config);
@@ -266,13 +170,35 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
                 rsvClaims[2] = ext.getName();
             }
         }
+
+        // Wire up Extensions
+        if ((extensions != null) && (extensions.size() > 0))
+        {
+            ListIterator<Extension> exts = extensions.listIterator();
+
+            // Connect outgoings
+            while (exts.hasNext())
+            {
+                Extension ext = exts.next();
+                ext.setNextOutgoingFrames(outgoing);
+                outgoing = ext;
+            }
+
+            // Connect incomingFrames
+            while (exts.hasPrevious())
+            {
+                Extension ext = exts.previous();
+                ext.setNextIncomingFrames(incoming);
+                incoming = ext;
+            }
+        }
     }
 
     @Override
     public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
-        if (!isRunning())
-            throw new IllegalStateException(getState());
+        if (outgoing==null)
+            throw new IllegalStateException();
         FrameEntry entry = new FrameEntry(frame,callback,batchMode);
         if (LOG.isDebugEnabled())
             LOG.debug("Queuing {}",entry);
@@ -280,14 +206,20 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         flusher.iterate();
     }
 
-    public void setNextIncoming(IncomingFrames nextIncoming)
+    public void connect(IncomingFrames incoming, OutgoingFrames outgoing)
     {
-        this.nextIncoming = nextIncoming;
-    }
-
-    public void setNextOutgoing(OutgoingFrames nextOutgoing)
-    {
-        this.nextOutgoing = nextOutgoing;
+        if (extensions==null)
+            throw new IllegalStateException();
+        if (extensions.isEmpty())
+        {
+            this.incoming = incoming;
+            this.outgoing = outgoing;
+        }
+        else
+        {
+            extensions.get(0).setNextOutgoingFrames(outgoing);
+            extensions.get(extensions.size()-1).setNextIncomingFrames(incoming);
+        }
     }
 
     public void setPolicy(WebSocketPolicy policy)
@@ -325,6 +257,21 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         }
     }
 
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        ContainerLifeCycle.dumpObject(out,this);
+        ContainerLifeCycle.dump(out,indent,extensions==null?Collections.emptyList():extensions);
+    }
+    
+    
     @Override
     public String toString()
     {
@@ -358,8 +305,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             }
             s.append(']');
         }
-        s.append(",incoming=").append((this.nextIncoming == null)?"<null>":this.nextIncoming.getClass().getName());
-        s.append(",outgoing=").append((this.nextOutgoing == null)?"<null>":this.nextOutgoing.getClass().getName());
+        s.append(",incoming=").append((this.incoming == null)?"<null>":this.incoming.getClass().getName());
+        s.append(",outgoing=").append((this.outgoing == null)?"<null>":this.outgoing.getClass().getName());
         s.append("]");
         return s.toString();
     }
@@ -400,7 +347,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing {}",current);
-            nextOutgoing.sendFrame(current.frame,this,current.batchMode);
+            outgoing.sendFrame(current.frame,this,current.batchMode);
             return Action.SCHEDULED;
         }
 
@@ -469,7 +416,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         @Override
         public String toString()
         {
-            return "ExtensionStack$Flusher[" + getState() + "]";
+            return "ExtensionStack$Flusher[" + (extensions==null?-1:extensions.size()) + "]";
         }
     }
+
 }

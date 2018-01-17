@@ -35,5 +35,5 @@ public interface IncomingFrames
      * @param frame the frame to process
      * @param callback the read completion
      */
-    void incomingFrame(Frame frame, Callback callback);
+    void receiveFrame(Frame frame, Callback callback);
 }

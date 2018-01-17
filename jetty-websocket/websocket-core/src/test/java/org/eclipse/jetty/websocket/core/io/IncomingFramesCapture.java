@@ -34,7 +34,7 @@ public class IncomingFramesCapture implements IncomingFrames
     public BlockingQueue<WebSocketFrame> frames = new LinkedBlockingDeque<>();
     
     @Override
-    public void incomingFrame(Frame frame, Callback callback)
+    public void receiveFrame(Frame frame, Callback callback)
     {
         WebSocketFrame copy = WebSocketFrame.copy(frame);
         frames.offer(copy);

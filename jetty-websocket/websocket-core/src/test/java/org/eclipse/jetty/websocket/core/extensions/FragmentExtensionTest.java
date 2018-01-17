@@ -71,7 +71,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         for (String q : quote)
         {
             Frame frame = new TextFrame().setPayload(q);
-            ext.incomingFrame(frame, Callback.NOOP);
+            ext.receiveFrame(frame, Callback.NOOP);
         }
 
         int len = quote.size();
@@ -114,7 +114,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         String payload = "Are you there?";
         Frame ping = new PingFrame().setPayload(payload);
-        ext.incomingFrame(ping, Callback.NOOP);
+        ext.receiveFrame(ping, Callback.NOOP);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);

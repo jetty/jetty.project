@@ -19,7 +19,6 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
 
 import org.eclipse.jetty.util.thread.Locker;
 
@@ -419,7 +418,7 @@ public abstract class IteratingCallback implements Callback
                     break;
 
                 default:
-                    failure="Close from "+_state;
+                    failure=String.format("Close %s in state %s",this,_state);
                     _state=State.CLOSED;
             }
         }

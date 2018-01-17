@@ -82,7 +82,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         Parser parser = new Parser(policy, bufferPool, (frame) ->
         {
-            ext.incomingFrame(frame, Callback.NOOP);
+            ext.receiveFrame(frame, Callback.NOOP);
             return true;
         });
         parser.configureFromExtensions(Collections.singletonList(ext));
@@ -406,7 +406,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
             public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
             {
                 LOG.debug("outgoingFrame({})", frame);
-                serverExtension.incomingFrame(frame, callback);
+                serverExtension.receiveFrame(frame, callback);
                 callback.succeeded();
             }
         });
@@ -415,7 +415,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         serverExtension.setNextIncomingFrames(new IncomingFrames()
         {
             @Override
-            public void incomingFrame(Frame frame, Callback callback)
+            public void receiveFrame(Frame frame, Callback callback)
             {
                 LOG.debug("incomingFrame({})", frame);
                 try

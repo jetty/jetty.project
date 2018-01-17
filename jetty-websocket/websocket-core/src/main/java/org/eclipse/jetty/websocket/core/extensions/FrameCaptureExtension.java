@@ -65,7 +65,7 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void incomingFrame(Frame frame, Callback callback)
+    public void receiveFrame(Frame frame, Callback callback)
     {
         saveFrame(frame,false);
         try
