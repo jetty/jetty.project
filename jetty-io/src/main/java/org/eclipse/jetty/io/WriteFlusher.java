@@ -504,7 +504,10 @@ abstract public class WriteFlusher
                 case IDLE:
                 case FAILED:
                     if (DEBUG)
-                        LOG.debug("ignored: " + this, cause);
+                    {
+                        LOG.debug("ignored: {} {}", cause, this);
+                        LOG.ignore(cause);
+                    }
                     return false;
 
                 case PENDING:

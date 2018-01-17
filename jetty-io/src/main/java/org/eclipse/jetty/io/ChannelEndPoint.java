@@ -232,8 +232,8 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         try
         {
             int filled = _channel.read(buffer);
-            if (LOG.isDebugEnabled()) // Avoid boxing of variable 'filled'
-                LOG.debug("filled {} {}", filled, this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("filled {} {}", filled, BufferUtil.toDetailString(buffer));
 
             if (filled>0)
                 notIdle();

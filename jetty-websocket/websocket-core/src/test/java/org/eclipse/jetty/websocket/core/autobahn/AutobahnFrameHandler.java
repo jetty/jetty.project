@@ -43,20 +43,21 @@ class AutobahnFrameHandler extends AbstractFrameHandler
     @Override
     public void onOpen()
     {        
-        LOG.info("onOpen {}", getWebSocketChannel());
+        LOG.info("onOpen {}", getChannel());
         
         if (!open.compareAndSet(false,true))
             throw new IllegalStateException();        
     }
 
     int count;
+    
     @Override
     public void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
     {
-        LOG.debug("onText {} {} {} {}", count++, utf8.length(),fin, getWebSocketChannel());
+        LOG.debug("onText {} {} {} {}", count++, utf8.length(),fin, getChannel());
         if (fin)
         {
-            getWebSocketChannel().sendFrame(new TextFrame().setPayload(utf8.toString()),
+            getChannel().sendFrame(new TextFrame().setPayload(utf8.toString()),
                     callback,
                     BatchMode.OFF);
         }
@@ -69,13 +70,13 @@ class AutobahnFrameHandler extends AbstractFrameHandler
     @Override
     public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
     {        
-        LOG.debug("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getWebSocketChannel());
+        LOG.debug("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getChannel());
         if (fin)
         {       
             BinaryFrame echo = new BinaryFrame();
             if (payload!=null)
                 echo.setPayload(payload);
-            getWebSocketChannel().sendFrame(echo,callback,BatchMode.OFF);
+            getChannel().sendFrame(echo,callback,BatchMode.OFF);
         }
         else
         {

@@ -39,7 +39,7 @@ public abstract class AbstractClientFrameHandler extends AbstractFrameHandler
     @Override
     public void onOpen()
     {
-        LOG.debug("onOpen()");
+        LOG.info("onOpen({})",getChannel());
     }
 
     @Override
@@ -51,7 +51,9 @@ public abstract class AbstractClientFrameHandler extends AbstractFrameHandler
     @Override
     public void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
     {
-        onWholeText(utf8.toString());
+        LOG.info("onText len={} fin={}",utf8.length(),fin);
+        if (fin)
+            onWholeText(utf8.toString());
         callback.succeeded();
     }
 
@@ -62,7 +64,8 @@ public abstract class AbstractClientFrameHandler extends AbstractFrameHandler
     @Override
     public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
     {
-        onWholeBinary(payload);
+        if (fin)
+            onWholeBinary(payload);
         callback.succeeded();
     }
 

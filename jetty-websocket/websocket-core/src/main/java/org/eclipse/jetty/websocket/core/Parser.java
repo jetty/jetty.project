@@ -96,7 +96,7 @@ public class Parser
         this.policy = wspolicy;
         this.parserHandler = parserHandler;
     
-        LOG = Log.getLogger(Parser.class.getName() + "." + wspolicy.getBehavior());
+        LOG = Log.getLogger(Parser.class.getName() + wspolicy.getBehavior());
     }
     
     private void assertSanePayloadLength(long len)
