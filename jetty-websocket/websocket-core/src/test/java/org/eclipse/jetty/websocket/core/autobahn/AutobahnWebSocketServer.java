@@ -66,10 +66,10 @@ import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
  * <pre>
  *     # Change to websocket-core first
  *     $ cd jetty-websocket/websocket-core
- *     $ wstest --mode=fuzzingclient --spec=fuzzing-client.json
+ *     $ wstest --mode=fuzzingclient --spec=fuzzingclient.json
  *
- *     # Report output is configured (in the fuzzing-client.json) at location:
- *     $ ls target/reports/client/
+ *     # Report output is configured (in the fuzzingclient.json) at location:
+ *     $ ls target/reports/servers/
  * </pre>
  */
 public class AutobahnWebSocketServer

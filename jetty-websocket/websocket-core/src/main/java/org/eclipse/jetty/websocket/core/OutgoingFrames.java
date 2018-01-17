@@ -39,5 +39,9 @@ public interface OutgoingFrames
      * @param callback  the callback to notify when the frame is written.
      * @param batchMode the batch mode requested by the sender.
      */
+    // TODO: rename back to not break existing Custom Extensions
+    // TODO: if we do break Custom Extensions, then this should be .enqueueFrame() or .offerFrame(), not .sendFrame()
+    // TODO: alternate approach is to leave this for Extensions only to use, not using it websocket-core itself
+    // TODO: a websocket-extensions-api module for a stable API would make sense then.
     void sendFrame(Frame frame, Callback callback, BatchMode batchMode);
 }

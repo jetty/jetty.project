@@ -62,10 +62,10 @@ import org.eclipse.jetty.websocket.core.client.WebSocketClient;
  * <pre>
  *     # Change to websocket-core
  *     $ cd jetty-websocket/websocket-core
- *     $ wstest --mode=fuzzingserver --spec=fuzzing-server.json
+ *     $ wstest --mode=fuzzingserver --spec=fuzzingserver.json
  *
- *     # Report output is configured (in the fuzzing-server.json) at location:
- *     $ ls target/reports/server/
+ *     # Report output is configured (in the fuzzingserver.json) at location:
+ *     $ ls target/reports/clients/
  * </pre>
  */
 public class AutobahnWebSocketClient
