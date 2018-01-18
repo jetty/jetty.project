@@ -87,19 +87,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     }
 
     @Override
-    public List<ExtensionConfig> getExtensionConfig()
-    {
-        // TODO: implement
-        return null;
-    }
-
-    @Override
-    public void disconnect() throws IOException
-    {
-        // TODO: implement
-    }
-
-    @Override
     public long getIdleTimeout(TimeUnit units)
     {
         return TimeUnit.MILLISECONDS.convert(getConnection().getEndPoint().getIdleTimeout(),units);
@@ -337,6 +324,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
         extensionStack.sendFrame(FrameFlusher.FLUSH_FRAME,callback,BatchMode.OFF);
     }
     
+    @Override
+    public void abort()
+    {
+        connection.getEndPoint().close();
+    }
     
     private class IncomingState implements IncomingFrames
     {

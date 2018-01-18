@@ -90,7 +90,7 @@ public interface FrameHandler
         /**
          * TODO: need implementation
          *
-         * Issue a harsh disconnect of the underlying connection.
+         * Issue a harsh abort of the underlying connection.
          * <p>
          * This will terminate the connection, without sending a websocket close frame.
          * No WebSocket Protocol close handshake will be performed.
@@ -103,10 +103,12 @@ public interface FrameHandler
          * Once the underlying connection has been determined to be closed, the {@link #onClosed(CloseStatus)} event will be called.
          * </p>
          *
-         * @throws IOException
-         *             if unable to disconnect
          */
-        void disconnect() throws IOException;
+        void abort();
+        
+        @Deprecated
+        default void disconnect() { abort(); } // TODO this is called abort elsewhere in jetty. 
+        
         
         WebSocketBehavior getBehavior();
         
