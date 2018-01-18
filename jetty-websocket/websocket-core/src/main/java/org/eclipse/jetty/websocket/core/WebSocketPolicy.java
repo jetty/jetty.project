@@ -159,9 +159,9 @@ public class WebSocketPolicy
         }
     }
 
-    public WebSocketPolicy clonePolicy()
+    public WebSocketPolicy clonePolicyAs(WebSocketBehavior behavior)
     {
-        WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
+        WebSocketPolicy clone = new WebSocketPolicy(behavior);
         clone.idleTimeout = this.idleTimeout;
         clone.maxTextMessageSize = this.maxTextMessageSize;
         clone.maxTextMessageBufferSize = this.maxTextMessageBufferSize;
@@ -172,6 +172,11 @@ public class WebSocketPolicy
         clone.maxAllowedFrameSize = this.maxAllowedFrameSize;
         clone.asyncWriteTimeout = this.asyncWriteTimeout;
         return clone;
+    }
+
+    public WebSocketPolicy clonePolicy()
+    {
+        return clonePolicyAs(this.behavior);
     }
     
     /**

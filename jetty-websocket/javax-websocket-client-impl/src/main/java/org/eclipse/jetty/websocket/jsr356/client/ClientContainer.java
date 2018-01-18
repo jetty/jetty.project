@@ -42,7 +42,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
@@ -90,12 +92,12 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
     /**
      * This is the entry point for ServerContainer, via ServletContext.getAttribute(ServerContainer.class.getName())
      *
-     * @param policy the WebSocketPolicy to use
+     * @param containerContext the container this is running within
      * @param httpClient the HttpClient instance to use
      */
-    protected ClientContainer(final WebSocketPolicy policy, final HttpClient httpClient)
+    protected ClientContainer(final WebSocketContainerContext containerContext, final HttpClient httpClient)
     {
-        super(policy);
+        super(containerContext.getPolicy().clonePolicyAs(WebSocketBehavior.CLIENT));
 
         // TODO: adjust policy behavior to CLIENT ?
 

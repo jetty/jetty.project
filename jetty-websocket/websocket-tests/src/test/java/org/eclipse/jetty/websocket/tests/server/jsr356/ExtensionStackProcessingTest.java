@@ -46,7 +46,7 @@ import org.eclipse.jetty.websocket.core.extensions.compress.DeflateFrameExtensio
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketExtension;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.impl.NativeWebSocketConfiguration;
 import org.junit.After;
 import org.junit.Assert;
@@ -88,7 +88,7 @@ public class ExtensionStackProcessingTest
         server.addConnector(connector);
     
         servletContextHandler = new ServletContextHandler(server, "/", true, false);
-        ServerContainer container = WebSocketServerContainerInitializer.configureContext(servletContextHandler);
+        ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(servletContextHandler);
         
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEndpoint.class, "/").build();
         container.addEndpoint(config);

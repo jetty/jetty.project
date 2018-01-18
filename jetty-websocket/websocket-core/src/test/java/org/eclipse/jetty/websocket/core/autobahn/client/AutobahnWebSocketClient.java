@@ -31,8 +31,8 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.WebSocketChannel;
-import org.eclipse.jetty.websocket.core.client.WebSocketClient;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
 /**
  * WebSocket Client for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
@@ -173,7 +173,7 @@ public class AutobahnWebSocketClient
 
     private Logger log;
     private URI baseWebsocketUri;
-    private WebSocketClient client;
+    private WebSocketCoreClient client;
     private String hostname;
     private int port;
     private String userAgent;
@@ -185,7 +185,7 @@ public class AutobahnWebSocketClient
         this.port = port;
         this.userAgent = userAgent;
         this.baseWebsocketUri = new URI("ws://" + hostname + ":" + port);
-        this.client = new WebSocketClient();
+        this.client = new WebSocketCoreClient();
         this.client.getPolicy().setMaxBinaryMessageSize(20 * MBYTE);
         this.client.getPolicy().setMaxTextMessageSize(20 * MBYTE);
         // TODO: this should be enabled by default
@@ -197,7 +197,7 @@ public class AutobahnWebSocketClient
     {
         URI wsUri = baseWebsocketUri.resolve("/getCaseCount");
         GetCaseCountHandler onCaseCount = new GetCaseCountHandler();
-        Future<WebSocketChannel> response = client.connect(onCaseCount, wsUri);
+        Future<FrameHandler.Channel> response = client.connect(onCaseCount, wsUri);
 
         if (waitForUpgrade(wsUri, response))
         {
@@ -216,7 +216,7 @@ public class AutobahnWebSocketClient
         log.debug("next uri - {}", wsUri);
         EchoHandler onEchoMessage = new EchoHandler(caseNumber);
 
-        Future<WebSocketChannel> response = client.connect(onEchoMessage, wsUri);
+        Future<FrameHandler.Channel> response = client.connect(onEchoMessage, wsUri);
 
         if (waitForUpgrade(wsUri, response))
         {
@@ -240,7 +240,7 @@ public class AutobahnWebSocketClient
     {
         URI wsUri = baseWebsocketUri.resolve("/updateReports?agent=" + UrlEncoded.encodeString(userAgent));
         UpdateReportsHandler onUpdateReports = new UpdateReportsHandler();
-        Future<WebSocketChannel> response = client.connect(onUpdateReports, wsUri);
+        Future<FrameHandler.Channel> response = client.connect(onUpdateReports, wsUri);
         response.get(5, TimeUnit.SECONDS);
         onUpdateReports.awaitClose();
     }
@@ -250,7 +250,7 @@ public class AutobahnWebSocketClient
         log.info(String.format(format, args));
     }
 
-    private boolean waitForUpgrade(URI wsUri, Future<WebSocketChannel> response) throws InterruptedException
+    private boolean waitForUpgrade(URI wsUri, Future<FrameHandler.Channel> response) throws InterruptedException
     {
         try
         {

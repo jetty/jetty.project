@@ -95,7 +95,8 @@ public abstract class WebSocketServlet extends HttpServlet
         {
             ServletContext ctx = getServletContext();
 
-            factory = new WebSocketServletFactory(ctx);
+            ServletContextWebSocketContainer wsContainer = ServletContextWebSocketContainer.get(ctx);
+            factory = new WebSocketServletFactory(wsContainer);
             String max = getInitParameter("maxIdleTime");
             if (max != null)
             {

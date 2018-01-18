@@ -64,7 +64,7 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.jsr356.server.JsrCreator;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.junit.After;
@@ -385,7 +385,7 @@ public class ConfiguratorTest
         context.setContextPath("/");
         server.setHandler(context);
         
-        ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
+        ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(context);
         container.addEndpoint(CaptureHeadersSocket.class);
         container.addEndpoint(EmptySocket.class);
         container.addEndpoint(NoExtensionsSocket.class);

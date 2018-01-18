@@ -68,9 +68,9 @@ public class WebSocketSessionImpl implements Session
     }
 
     @Override
-    public void disconnect() throws IOException
+    public void abort() throws IOException
     {
-        remoteEndpoint.getChannel().disconnect();
+        remoteEndpoint.getChannel().abort();
     }
 
     @Override

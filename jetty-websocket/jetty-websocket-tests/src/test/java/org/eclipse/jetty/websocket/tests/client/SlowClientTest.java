@@ -26,13 +26,14 @@ import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
+import org.eclipse.jetty.websocket.tests.WSServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -45,7 +46,7 @@ public class SlowClientTest
     @Rule
     public TestName testname = new TestName();
     
-    private UntrustedWSServer server;
+    private WSServer server;
     private WebSocketClient client;
     
     @Before
@@ -59,7 +60,9 @@ public class SlowClientTest
     @Before
     public void startServer() throws Exception
     {
-        server = new UntrustedWSServer();
+        server = new WSServer(
+                MavenTestingUtils.getTargetTestingPath(SlowClientTest.class.getSimpleName()), ""
+        );
         server.start();
     }
     
@@ -82,7 +85,7 @@ public class SlowClientTest
         TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
         client.getPolicy().setIdleTimeout(60000);
         
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        URI wsUri = server.getServerUri();
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri);

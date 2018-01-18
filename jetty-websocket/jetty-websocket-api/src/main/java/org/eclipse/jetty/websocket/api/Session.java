@@ -43,7 +43,7 @@ public interface Session extends Closeable
      * 
      * @see #close(CloseStatus)
      * @see #close(int, String)
-     * @see #disconnect()
+     * @see #abort()
      */
     @Override
     void close();
@@ -59,7 +59,7 @@ public interface Session extends Closeable
      * 
      * @see #close()
      * @see #close(int, String)
-     * @see #disconnect()
+     * @see #abort()
      */
     void close(CloseStatus closeStatus);
 
@@ -76,7 +76,7 @@ public interface Session extends Closeable
      * 
      * @see #close()
      * @see #close(CloseStatus)
-     * @see #disconnect()
+     * @see #abort()
      */
     void close(int statusCode, String reason);
 
@@ -93,12 +93,12 @@ public interface Session extends Closeable
      *
      * @see #close()
      * @see #close(CloseStatus)
-     * @see #disconnect()
+     * @see #abort()
      */
     void close(StatusCode statusCode, String reason);
 
     /**
-     * Issue a harsh disconnect of the underlying connection.
+     * Issue a harsh abort of the underlying connection.
      * <p>
      * This will terminate the connection, without sending a websocket close frame.
      * <p>
@@ -109,13 +109,9 @@ public interface Session extends Closeable
      * websocket.
      * 
      * @throws IOException
-     *             if unable to disconnect
-     * 
-     * @see #close()
-     * @see #close(CloseStatus)
-     * @see #close(int, String)
+     *             if unable to abort
      */
-    void disconnect() throws IOException;
+    void abort() throws IOException;
 
     /**
      * Return the number of milliseconds before this conversation will be closed by the container if it is inactive, ie no messages are either sent or received

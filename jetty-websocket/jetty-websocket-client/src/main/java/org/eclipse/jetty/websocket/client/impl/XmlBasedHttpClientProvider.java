@@ -23,12 +23,11 @@ import java.net.URL;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 class XmlBasedHttpClientProvider
 {
-    public static HttpClient get(@SuppressWarnings("unused") WebSocketContainerScope scope)
+    public static HttpClient get()
     {
         URL resource = Thread.currentThread().getContextClassLoader().getResource("jetty-websocket-httpclient.xml");
         if (resource == null)

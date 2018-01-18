@@ -20,8 +20,10 @@ package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 
 public interface RemoteEndpoint
 {
@@ -35,6 +37,38 @@ public interface RemoteEndpoint
      * @since 10.0
      */
     void sendBinary(ByteBuffer data) throws IOException;
+
+    /**
+     * Send a binary message, returning when all bytes of the message has been transmitted.
+     * <p>
+     * Note: this is a blocking call
+     *
+     * @param data
+     *            the message to be sent
+     * @throws IOException
+     *             if unable to send the bytes
+     * @deprecated use {@link #sendBinary(ByteBuffer)} instead
+     */
+    @Deprecated
+    default void sendBytes(ByteBuffer data) throws IOException
+    {
+        sendBinary(data);
+    }
+
+    /**
+     * Initiates the asynchronous transmission of a binary message. This method returns before the message is
+     * transmitted. Developers may provide a callback to
+     * be notified when the message has been transmitted or resulted in an error.
+     *
+     * @param data the data being sent
+     * @param callback callback to notify of success or failure of the write operation
+     * @deprecated use {@link #sendBinary(ByteBuffer, Callback)} instead
+     */
+    @Deprecated
+    default void sendBytes(ByteBuffer data, WriteCallback callback)
+    {
+        sendBinary(data, callback);
+    }
 
     /**
      * Send a binary message in pieces, blocking until all of the message has been transmitted. The runtime reads the
@@ -79,6 +113,56 @@ public interface RemoteEndpoint
      * @throws IOException if unable to send the pong
      */
     void sendPong(ByteBuffer applicationData) throws IOException;
+
+    /**
+     * Send a text message, blocking until all bytes of the message has been transmitted.
+     * <p>
+     * Note: this is a blocking call
+     *
+     * @param text
+     *            the message to be sent
+     * @throws IOException
+     *             if unable to send the text message
+     * @deprecated use {@link #sendText(String)} instead
+     */
+    @Deprecated
+    default void sendString(String text) throws IOException
+    {
+        sendText(text);
+    }
+
+    /**
+     * Initiates the asynchronous transmission of a text message. This method may return before the message is
+     * transmitted. Developers may provide a callback to
+     * be notified when the message has been transmitted or resulted in an error.
+     *
+     * @param text the text being sent
+     * @param callback callback to notify of success or failure of the write operation
+     * @deprecated use {@link #sendText(String, Callback)} instead
+     */
+    @Deprecated
+    default void sendString(String text, WriteCallback callback)
+    {
+        sendText(text, callback);
+    }
+
+    /**
+     * Initiates the asynchronous transmission of a text message. This method may return before the message is
+     * transmitted. Developers may use the returned
+     * Future object to track progress of the transmission.
+     *
+     * @param text
+     *            the text being sent
+     * @return the Future object representing the send operation.
+     * @deprecated use {@link #sendText(String, Callback)} instead
+     */
+    @Deprecated
+    default Future<Void> sendStringByFuture(String text)
+    {
+        FutureCallback callback = new FutureCallback();
+        sendText(text, callback);
+        return callback;
+    }
 
     /**
      * Send a text message, blocking until all bytes of the message has been transmitted.

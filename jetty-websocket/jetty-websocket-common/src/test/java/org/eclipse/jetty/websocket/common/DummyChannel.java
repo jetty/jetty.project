@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
@@ -43,8 +43,14 @@ public class DummyChannel implements FrameHandler.Channel
     }
 
     @Override
-    public void disconnect() throws IOException
+    public void abort()
     {
+    }
+
+    @Override
+    public WebSocketBehavior getBehavior()
+    {
+        return null;
     }
 
     @Override

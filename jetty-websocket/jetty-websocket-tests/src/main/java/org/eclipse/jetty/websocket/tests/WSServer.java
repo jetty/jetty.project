@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebSocketConfiguration;
+import org.eclipse.jetty.websocket.server.WebSocketConfiguration;
 
 /**
  * Utility to build out exploded directory WebApps, in the /target/tests/ directory, for testing out servers that use javax.websocket endpoints.
@@ -163,7 +163,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
     {
         return this.contextDir;
     }
-    
+
     @Override
     protected Handler createRootHandler(Server server) throws Exception
     {

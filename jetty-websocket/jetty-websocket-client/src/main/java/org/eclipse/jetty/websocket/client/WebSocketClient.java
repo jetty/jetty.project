@@ -24,60 +24,43 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.impl.HttpClientProvider;
-import org.eclipse.jetty.websocket.client.impl.WebSocketClientConnection;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.client.impl.ClientUpgradeRequestImpl;
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
+import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerImpl;
-import org.eclipse.jetty.websocket.common.JettyWebSocketRemoteEndpoint;
-import org.eclipse.jetty.websocket.common.SessionListener;
-import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 
-public class WebSocketClient extends ContainerLifeCycle implements SessionListener
+public class WebSocketClient extends ContainerLifeCycle implements WebSocketContainerContext
 {
-    private static final Logger LOG = Log.getLogger(WebSocketClient.class);
-    // From HttpClient
-    private final HttpClient httpClient;
-    // The container
-    private final WebSocketPolicy clientPolicy;
-    private final WebSocketExtensionRegistry extensionRegistry;
-    private final DecoratedObjectFactory objectFactory;
-    private final JettyWebSocketFrameHandlerFactory localEndpointFactory;
-    private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
+    private final WebSocketCoreClient coreClient;
     private final int id = ThreadLocalRandom.current().nextInt();
-    protected Function<WebSocketClientConnection, WebSocketSessionImpl<
-            WebSocketClient, WebSocketClientConnection,
-            JettyWebSocketFrameHandlerImpl, JettyWebSocketRemoteEndpoint>> newSessionFunction =
-            (connection) -> new WebSocketSessionImpl(WebSocketClient.this, connection);
+    private final JettyWebSocketFrameHandlerFactory frameHandlerFactory;
+    private ClassLoader contextClassLoader;
+    private DecoratedObjectFactory objectFactory;
+    private WebSocketExtensionRegistry extensionRegistry;
 
     /**
      * Instantiate a WebSocketClient with defaults
      */
     public WebSocketClient()
     {
-        // Create synthetic HttpClient
-        this(HttpClientProvider.get(null));
-        addBean(this.httpClient);
+        this(new WebSocketCoreClient());
     }
 
     /**
@@ -87,42 +70,23 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
      */
     public WebSocketClient(HttpClient httpClient)
     {
-        this(httpClient, new DecoratedObjectFactory());
+        this(new WebSocketCoreClient(httpClient));
     }
 
-    /**
-     * Instantiate a WebSocketClient using HttpClient for defaults
-     *
-     * @param httpClient the HttpClient to base internal defaults off of
-     * @param objectFactory the DecoratedObjectFactory for all client instantiated classes
-     */
-    public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory objectFactory)
+    private WebSocketClient(WebSocketCoreClient coreClient)
     {
-        this.clientPolicy = WebSocketPolicy.newClientPolicy();
-        this.httpClient = httpClient;
+        this.coreClient = coreClient;
+        this.contextClassLoader = this.getClass().getClassLoader();
+        this.objectFactory = new DecoratedObjectFactory();
         this.extensionRegistry = new WebSocketExtensionRegistry();
-        if (objectFactory == null)
-        {
-            this.objectFactory = new DecoratedObjectFactory();
-        }
-        else
-        {
-            this.objectFactory = objectFactory;
-        }
-        this.localEndpointFactory = new JettyWebSocketFrameHandlerFactory();
+        this.frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(getExecutor());
     }
 
-    public void addSessionListener(SessionListener listener)
+    public CompletableFuture<Session> connect(Object websocket, URI toUri) throws IOException
     {
-        this.listeners.add(listener);
-    }
-
-    public Future<Session> connect(Object websocket, URI toUri) throws IOException
-    {
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
-        request.setRequestURI(toUri);
-
-        return connect(websocket, toUri, request);
+        ClientUpgradeRequestImpl upgradeRequest = new ClientUpgradeRequestImpl(this, coreClient, null, toUri, websocket);
+        coreClient.connect(upgradeRequest);
+        return upgradeRequest.getFutureSession();
     }
 
     /**
@@ -134,89 +98,11 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
-    public Future<Session> connect(Object websocket, URI toUri, UpgradeRequest request) throws IOException
+    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request) throws IOException
     {
-        return connect(websocket, toUri, request, (UpgradeListener) null);
-    }
-
-    /**
-     * Connect to remote websocket endpoint
-     *
-     * @param websocket the websocket object
-     * @param toUri the websocket uri to connect to
-     * @param request the upgrade request information
-     * @param upgradeListener the upgrade listener
-     * @return the future for the session, available on success of connect
-     * @throws IOException if unable to connect
-     */
-    public Future<Session> connect(Object websocket, URI toUri, UpgradeRequest request, UpgradeListener upgradeListener) throws IOException
-    {
-        if (request instanceof WebSocketUpgradeRequest)
-        {
-            return connect(websocket, (WebSocketUpgradeRequest) request, upgradeListener);
-        }
-        else
-        {
-            request.setRequestURI(toUri);
-            return connect(websocket, new WebSocketUpgradeRequest(this, request), upgradeListener);
-        }
-    }
-
-    /**
-     * Connect to remote websocket endpoint
-     *
-     * @param websocket the websocket object
-     * @param request the upgrade request information
-     * @param upgradeListener the upgrade listener
-     * @return the future for the session, available on success of connect
-     * @throws IOException if unable to connect
-     */
-    public Future<Session> connect(Object websocket, WebSocketUpgradeRequest request, UpgradeListener upgradeListener) throws IOException
-    {
-        /* Note: UpgradeListener is used by javax.websocket.ClientEndpointConfig.Configurator
-         * See: org.eclipse.jetty.websocket.jsr356.JsrUpgradeListener
-         */
-        if (!isStarted())
-        {
-            throw new IllegalStateException(WebSocketClient.class.getSimpleName() + "@" + this.hashCode() + " is not started");
-        }
-
-        URI toUri = request.getURI();
-
-        // Validate websocket URI
-        if (!toUri.isAbsolute())
-        {
-            throw new IllegalArgumentException("WebSocket URI must be absolute");
-        }
-
-        if (StringUtil.isBlank(toUri.getScheme()))
-        {
-            throw new IllegalArgumentException("WebSocket URI must include a scheme");
-        }
-
-        String scheme = toUri.getScheme().toLowerCase(Locale.ENGLISH);
-        if (("ws".equals(scheme) == false) && ("wss".equals(scheme) == false))
-        {
-            throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
-        }
-
-        // Validate Requested Extensions
-        for (ExtensionConfig reqExt : request.getExtensions())
-        {
-            if (!extensionRegistry.isAvailable(reqExt.getName()))
-            {
-                throw new IllegalArgumentException("Requested extension [" + reqExt.getName() + "] is not installed");
-            }
-        }
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("connect websocket {} to {}", websocket, toUri);
-
-        init();
-
-        request.setWebSocket(websocket);
-        request.setUpgradeListener(upgradeListener);
-        return request.sendAsync();
+        ClientUpgradeRequestImpl upgradeRequest = new ClientUpgradeRequestImpl(this, coreClient, request, toUri, websocket);
+        coreClient.connect(upgradeRequest);
+        return upgradeRequest.getFutureSession();
     }
 
     @Override
@@ -243,17 +129,17 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
     public SocketAddress getBindAddress()
     {
-        return httpClient.getBindAddress();
+        return getHttpClient().getBindAddress();
     }
 
     public void setBindAddress(SocketAddress bindAddress)
     {
-        this.httpClient.setBindAddress(bindAddress);
+        getHttpClient().setBindAddress(bindAddress);
     }
 
     public long getConnectTimeout()
     {
-        return httpClient.getConnectTimeout();
+        return getHttpClient().getConnectTimeout();
     }
 
     /**
@@ -263,17 +149,35 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
      */
     public void setConnectTimeout(long ms)
     {
-        this.httpClient.setConnectTimeout(ms);
+        getHttpClient().setConnectTimeout(ms);
     }
 
     public CookieStore getCookieStore()
     {
-        return httpClient.getCookieStore();
+        return getHttpClient().getCookieStore();
     }
 
     public void setCookieStore(CookieStore cookieStore)
     {
-        this.httpClient.setCookieStore(cookieStore);
+        getHttpClient().setCookieStore(cookieStore);
+    }
+
+    @Override
+    public ByteBufferPool getBufferPool()
+    {
+        return getHttpClient().getByteBufferPool();
+    }
+
+    @Override
+    public ClassLoader getContextClassloader()
+    {
+        return this.contextClassLoader;
+    }
+
+    @Override
+    public Executor getExecutor()
+    {
+        return getHttpClient().getExecutor();
     }
 
     public WebSocketExtensionRegistry getExtensionRegistry()
@@ -283,7 +187,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
     public HttpClient getHttpClient()
     {
-        return this.httpClient;
+        return coreClient.getHttpClient();
     }
 
     /**
@@ -324,7 +228,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     public void setMaxIdleTimeout(long ms)
     {
         getPolicy().setIdleTimeout(ms);
-        httpClient.setIdleTimeout(ms);
+        getHttpClient().setIdleTimeout(ms);
     }
 
     /**
@@ -357,7 +261,12 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
     public WebSocketPolicy getPolicy()
     {
-        return this.clientPolicy;
+        return coreClient.getPolicy();
+    }
+
+    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse, CompletableFuture<Session> futureSession)
+    {
+        return frameHandlerFactory.newJettyFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse, futureSession);
     }
 
     /**
@@ -365,35 +274,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
      */
     public SslContextFactory getSslContextFactory()
     {
-        return httpClient.getSslContextFactory();
-    }
-
-    @Override
-    public void onClosed(WebSocketSessionImpl session)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Session Closed: {}", session);
-        removeBean(session);
-    }
-
-    @Override
-    public void onCreated(WebSocketSessionImpl session)
-    {
-        // TODO: implement?
-    }
-
-    @Override
-    public void onOpened(WebSocketSessionImpl session)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Session Opened: {}", session);
-        addManaged(session);
-        LOG.debug("post-onSessionOpened() - {}", this);
-    }
-
-    public boolean removeSessionListener(SessionListener listener)
-    {
-        return this.listeners.remove(listener);
+        return getHttpClient().getSslContextFactory();
     }
 
     @Override
@@ -401,60 +282,10 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     {
         final StringBuilder sb = new StringBuilder("WebSocketClient@");
         sb.append(Integer.toHexString(id));
-        sb.append("[httpClient=").append(httpClient);
+        sb.append("[coreClient=").append(coreClient);
         sb.append(",openSessions.size=");
         sb.append(getOpenSessions().size());
         sb.append(']');
         return sb.toString();
-    }
-
-    protected WebSocketSessionImpl createSession(WebSocketClientConnection connection, Object endpointInstance)
-    {
-        WebSocketSessionImpl session = newSessionFunction.apply(connection);
-        JettyWebSocketFrameHandlerImpl localEndpoint = localEndpointFactory.createLocalEndpoint(endpointInstance, session, getPolicy(), httpClient.getExecutor());
-        JettyWebSocketRemoteEndpoint remoteEndpoint = new JettyWebSocketRemoteEndpoint(connection, connection.getRemoteAddress());
-
-        session.setWebSocketEndpoint(endpointInstance, localEndpoint.getPolicy(), localEndpoint, remoteEndpoint);
-        return session;
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Stopping {}", this);
-
-        if (ShutdownThread.isRegistered(this))
-        {
-            ShutdownThread.deregister(this);
-        }
-
-        super.doStop();
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Stopped {}", this);
-    }
-
-    protected void notifySessionListeners(Consumer<SessionListener> consumer)
-    {
-        for (SessionListener listener : listeners)
-        {
-            try
-            {
-                consumer.accept(listener);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Exception while invoking listener " + listener, x);
-            }
-        }
-    }
-
-    private synchronized void init() throws IOException
-    {
-        if (!ShutdownThread.isRegistered(this))
-        {
-            ShutdownThread.register(this);
-        }
     }
 }

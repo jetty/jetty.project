@@ -18,41 +18,21 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
-import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 class DefaultHttpClientProvider
 {
-    public static HttpClient newHttpClient(WebSocketContainerScope scope)
+    public static HttpClient newHttpClient()
     {
-        SslContextFactory sslContextFactory = null;
-        Executor executor = null;
-        
-        if (scope != null)
-        {
-            sslContextFactory = scope.getSslContextFactory();
-            executor = scope.getExecutor();
-        }
-        
-        if (sslContextFactory == null)
-        {
-            sslContextFactory = new SslContextFactory();
-        }
-        
+        SslContextFactory sslContextFactory = new SslContextFactory();
         HttpClient client = new HttpClient(sslContextFactory);
-        if (executor == null)
-        {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            String name = "WebSocketClient@" + client.hashCode();
-            threadPool.setName(name);
-            threadPool.setDaemon(true);
-            executor = threadPool;
-        }
-        client.setExecutor(executor);
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        String name = "WebSocketClient@" + client.hashCode();
+        threadPool.setName(name);
+        threadPool.setDaemon(true);
+        client.setExecutor(threadPool);
         return client;
     }
 }

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +29,8 @@ import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
  */
 public interface FrameHandler
 {
+    // TODO: have conversation about "throws Exception" vs "throws WebSocketException" vs "throws Throwable" in below signatures.
+
     /**
      * Connection is being opened.
      * <p>
@@ -102,17 +103,11 @@ public interface FrameHandler
          * <p>
          * Once the underlying connection has been determined to be closed, the {@link #onClosed(CloseStatus)} event will be called.
          * </p>
-         *
          */
         void abort();
         
-        @Deprecated
-        default void disconnect() { abort(); } // TODO this is called abort elsewhere in jetty. 
-        
-        
         WebSocketBehavior getBehavior();
-        
-        
+
         boolean isOpen();
 
         /**
@@ -161,6 +156,6 @@ public interface FrameHandler
         void close(int statusCode, String reason, Callback callback);
     }
 
-    // TODO: Want access to common ByteBufferPool used by core for reuse in APIs (either read-only, or pushed into core)
-    // TODO: Want access to common Executor used by core for reuse in APIs (either read-only, or pushed into core)
+    // FIXED: Want access to common ByteBufferPool - negotiator has getBufferPool() now
+    // TODO: Want access to common Executor used by core for reuse in APIs (either read-only, or pushed into core) - connection has Executor now
 }

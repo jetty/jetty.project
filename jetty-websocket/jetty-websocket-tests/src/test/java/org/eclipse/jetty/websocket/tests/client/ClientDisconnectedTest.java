@@ -78,7 +78,7 @@ public class ClientDisconnectedTest
             LOG.debug("onOpen({})", sess);
             try
             {
-                sess.disconnect();
+                sess.abort();
             }
             catch (IOException ignore)
             {
@@ -117,7 +117,7 @@ public class ClientDisconnectedTest
             LOG.debug("onWebSocketText({})", message);
             try
             {
-                getSession().disconnect();
+                getSession().abort();
             }
             catch (IOException ignore)
             {
@@ -139,7 +139,7 @@ public class ClientDisconnectedTest
             LOG.debug("onClose({})", session);
             try
             {
-                session.disconnect();
+                session.abort();
             }
             catch (IOException ignore)
             {
@@ -342,7 +342,7 @@ public class ClientDisconnectedTest
             assertThat("OnOpen.UpgradeResponse", clientSocket.openUpgradeResponse, notNullValue());
             assertThat("Negotiated SubProtocol", clientSocket.openUpgradeResponse.getAcceptedSubProtocol(), is("msgdrop"));
 
-            session.getRemote().sendString("drop-me");
+            session.getRemote().sendText("drop-me");
 
             clientSocket.awaitErrorEvent("Client");
             clientSocket.assertErrorEvent("Client", instanceOf(WebSocketTimeoutException.class), containsString("Connection Idle Timeout"));

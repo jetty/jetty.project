@@ -18,18 +18,8 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
-import java.util.ServiceLoader;
 
-import javax.servlet.ServletContext;
-
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -43,82 +33,21 @@ import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
  */
 public class WebSocketServletFactory
 {
-    public static final String FRAME_HANDLER_FACTORY_LIST = FrameHandlerFactory.class.getName() + ".list";
-
-    /** The context that the factory was created from, so that API classes can be loaded properly */
-    private final ClassLoader contextClassloader;
-    private WebSocketPolicy policy;
+    private final ServletContextWebSocketContainer container;
+    private final WebSocketPolicy policy;
+    private final WebSocketExtensionRegistry extensionRegistry;
     private WebSocketCreator creator;
-    private WebSocketExtensionRegistry extensionRegistry;
-    private DecoratedObjectFactory objectFactory;
-    private ByteBufferPool bufferPool;
-    private List<FrameHandlerFactory> frameHandlerFactories;
 
-    public WebSocketServletFactory(ServletContext context)
+    public WebSocketServletFactory(ServletContextWebSocketContainer wsContainer)
     {
-        this(getContextAttribute(context, WebSocketPolicy.class),
-                getContextAttribute(context, WebSocketExtensionRegistry.class),
-                getContextAttribute(context, DecoratedObjectFactory.class),
-                getContextAttribute(context, ByteBufferPool.class));
-
-        // Inspect ServletContext for FrameHandlerFactory configuration
-        this.frameHandlerFactories = (List<FrameHandlerFactory>) context.getAttribute(FRAME_HANDLER_FACTORY_LIST);
+        this.container = wsContainer;
+        this.policy = wsContainer.getPolicy().clonePolicyAs(WebSocketBehavior.SERVER);
+        this.extensionRegistry = new WebSocketExtensionRegistry();
     }
 
-    public WebSocketServletFactory(WebSocketPolicy policy, WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory, ByteBufferPool bufferPool)
+    public ServletContextWebSocketContainer getContainer()
     {
-        this.policy = policy;
-        this.extensionRegistry = extensionRegistry;
-        this.objectFactory = objectFactory;
-        this.bufferPool = bufferPool;
-        this.contextClassloader = Thread.currentThread().getContextClassLoader();
-
-        if (this.policy == null)
-            this.policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        if (this.objectFactory == null)
-            this.objectFactory = new DecoratedObjectFactory();
-        if (this.extensionRegistry == null)
-            this.extensionRegistry = new WebSocketExtensionRegistry();
-        if (this.bufferPool == null)
-            this.bufferPool = new MappedByteBufferPool();
-    }
-
-    private static <T> T getContextAttribute(ServletContext context, Class<T> clazz)
-    {
-        return (T) context.getAttribute(clazz.getName());
-    }
-
-    public List<FrameHandlerFactory> getFrameHandlerFactories()
-    {
-        synchronized (this)
-        {
-            if (frameHandlerFactories == null)
-            {
-                frameHandlerFactories = new ArrayList<>();
-                ServiceLoader<FrameHandlerFactory> factoryLoader = ServiceLoader.load(FrameHandlerFactory.class, contextClassloader);
-                Iterator<FrameHandlerFactory> factoryIterator = factoryLoader.iterator();
-                while (factoryIterator.hasNext())
-                {
-                    frameHandlerFactories.add(factoryIterator.next());
-                }
-            }
-            return frameHandlerFactories;
-        }
-    }
-
-    public void setFrameHandlerFactories(List<FrameHandlerFactory> frameHandlerFactories)
-    {
-        // seems like a strange setter, until you realize it's used by test cases
-
-        synchronized (this)
-        {
-            this.frameHandlerFactories = frameHandlerFactories;
-        }
-    }
-
-    public ClassLoader getContextClassloader()
-    {
-        return contextClassloader;
+        return container;
     }
 
     public WebSocketCreator getCreator()
@@ -131,18 +60,8 @@ public class WebSocketServletFactory
         return this.extensionRegistry;
     }
 
-    public ByteBufferPool getBufferPool()
-    {
-        return bufferPool;
-    }
-
-    public DecoratedObjectFactory getObjectFactory()
-    {
-        return objectFactory;
-    }
-
     /**
-     * Get the base policy in use for WebSockets.
+     * Get the base policy in use for WebSockets for this Factory.
      *
      * @return the base policy
      */
@@ -153,19 +72,7 @@ public class WebSocketServletFactory
 
     public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse)
     {
-        Objects.requireNonNull(websocketPojo, "WebSocket Class cannot be null");
-
-        FrameHandler frameHandler = null;
-
-        for (FrameHandlerFactory factory : getFrameHandlerFactories())
-        {
-            frameHandler = factory.newFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse);
-            if (frameHandler != null)
-                return frameHandler;
-        }
-
-        // No factory worked!
-        return frameHandler;
+        return container.newFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse);
     }
 
     /**
@@ -182,7 +89,7 @@ public class WebSocketServletFactory
         setCreator((req, resp) -> {
             try
             {
-                return objectFactory.createInstance(websocketPojo);
+                return container.getObjectFactory().createInstance(websocketPojo);
             }
             catch (InstantiationException | IllegalAccessException e)
             {

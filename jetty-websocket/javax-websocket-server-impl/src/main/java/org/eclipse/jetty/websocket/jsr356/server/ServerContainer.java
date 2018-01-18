@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
 
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
@@ -34,27 +33,24 @@ import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.jsr356.client.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.client.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.servlet.impl.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.servlet.impl.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
 
 @ManagedObject("JSR356 Server Container")
 public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer
 {
     private static final Logger LOG = Log.getLogger(ServerContainer.class);
-    
+
     /**
      * Get the WebSocketContainer out of the current ThreadLocal reference
      * of the active ContextHandler.
@@ -77,32 +73,20 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         return (javax.websocket.WebSocketContainer) handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
     }
     
-    private final NativeWebSocketConfiguration configuration;
+    private final WebSocketContainerContext containerContext;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
     
     /**
-     * @deprecated use {@code ServerContainer(NativeWebSocketConfiguration, HttpClient)} instead
-     * @param configuration the {@link NativeWebSocketConfiguration} to use
-     * @param executor not used
-     */
-    @Deprecated
-    public ServerContainer(NativeWebSocketConfiguration configuration, Executor executor)
-    {
-        this(configuration, (HttpClient) null);
-    }
-
-    /**
      *
-     * @param configuration the {@link NativeWebSocketConfiguration} to use
+     * @param containerContext the {@link WebSocketContainerContext} to use
      * @param httpClient the {@link HttpClient} instance to use
      */
-    public ServerContainer(NativeWebSocketConfiguration configuration, HttpClient httpClient)
+    public ServerContainer(WebSocketContainerContext containerContext, HttpClient httpClient)
     {
-        super(configuration.getFactory(), httpClient);
-        this.configuration = configuration;
-        this.configuration.getFactory().addSessionFactory(new JsrSessionFactory(this));
-        addBean(this.configuration);
+        super(containerContext, httpClient);
+        this.containerContext = containerContext;
+        addBean(this.containerContext);
     }
     
     @Override
@@ -198,8 +182,8 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         assertIsValidEndpoint(config);
         
-        JsrCreator creator = new JsrCreator(this, config, this.configuration.getFactory().getExtensionFactory());
-        this.configuration.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
+        JsrCreator creator = new JsrCreator(this, config, this.containerContext.getFactory().getExtensionFactory());
+        this.containerContext.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
     }
     
     private void assertIsValidEndpoint(ServerEndpointConfig config) throws DeploymentException
@@ -303,37 +287,37 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public long getDefaultAsyncSendTimeout()
     {
-        return this.configuration.getPolicy().getAsyncWriteTimeout();
+        return this.containerContext.getPolicy().getAsyncWriteTimeout();
     }
     
     @Override
     public int getDefaultMaxBinaryMessageBufferSize()
     {
-        return this.configuration.getPolicy().getMaxBinaryMessageSize();
+        return this.containerContext.getPolicy().getMaxBinaryMessageSize();
     }
     
     @Override
     public long getDefaultMaxSessionIdleTimeout()
     {
-        return this.configuration.getPolicy().getIdleTimeout();
+        return this.containerContext.getPolicy().getIdleTimeout();
     }
     
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
-        return this.configuration.getPolicy().getMaxTextMessageSize();
+        return this.containerContext.getPolicy().getMaxTextMessageSize();
     }
     
     public WebSocketServerFactory getWebSocketServerFactory()
     {
-        return this.configuration.getFactory();
+        return this.containerContext.getFactory();
     }
     
     @Override
     public void setAsyncSendTimeout(long ms)
     {
         super.setAsyncSendTimeout(ms);
-        this.configuration.getPolicy().setAsyncWriteTimeout(ms);
+        this.containerContext.getPolicy().setAsyncWriteTimeout(ms);
     }
     
     @Override
@@ -341,14 +325,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         super.setDefaultMaxBinaryMessageBufferSize(max);
         // overall message limit (used in non-streaming)
-        this.configuration.getPolicy().setMaxBinaryMessageSize(max);
+        this.containerContext.getPolicy().setMaxBinaryMessageSize(max);
     }
     
     @Override
     public void setDefaultMaxSessionIdleTimeout(long ms)
     {
         super.setDefaultMaxSessionIdleTimeout(ms);
-        this.configuration.getPolicy().setIdleTimeout(ms);
+        this.containerContext.getPolicy().setIdleTimeout(ms);
     }
     
     @Override
@@ -356,7 +340,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         super.setDefaultMaxTextMessageBufferSize(max);
         // overall message limit (used in non-streaming)
-        this.configuration.getPolicy().setMaxTextMessageSize(max);
+        this.containerContext.getPolicy().setMaxTextMessageSize(max);
     }
     
     @Override

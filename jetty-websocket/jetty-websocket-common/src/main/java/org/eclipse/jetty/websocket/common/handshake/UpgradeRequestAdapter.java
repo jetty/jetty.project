@@ -54,9 +54,16 @@ public class UpgradeRequestAdapter implements UpgradeRequest
         /* anonymous, no requestURI, upgrade request */
     }
 
-    public UpgradeRequestAdapter(URI requestURI)
+    public UpgradeRequestAdapter(URI uri)
     {
-        setRequestURI(requestURI);
+        this.requestURI = uri;
+        String scheme = uri.getScheme();
+        if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme))
+        {
+            throw new IllegalArgumentException("URI scheme must be 'ws' or 'wss'");
+        }
+        this.host = this.requestURI.getHost();
+        this.parameters.clear();
     }
 
     @Override
@@ -189,12 +196,6 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     }
 
     @Override
-    public void setHttpVersion(String httpVersion)
-    {
-        this.httpVersion = httpVersion;
-    }
-
-    @Override
     public SocketAddress getLocalSocketAddress()
     {
         return localSocketAddress;
@@ -215,12 +216,6 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     public String getOrigin()
     {
         return null;
-    }
-
-    @Override
-    public void setMethod(String method)
-    {
-        this.method = method;
     }
 
     /**
@@ -284,19 +279,6 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     public URI getRequestURI()
     {
         return requestURI;
-    }
-
-    @Override
-    public void setRequestURI(URI uri)
-    {
-        this.requestURI = uri;
-        String scheme = uri.getScheme();
-        if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme))
-        {
-            throw new IllegalArgumentException("URI scheme must be 'ws' or 'wss'");
-        }
-        this.host = this.requestURI.getHost();
-        this.parameters.clear();
     }
 
     @Override

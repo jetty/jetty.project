@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.net.HttpCookie;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -97,34 +96,6 @@ public interface UpgradeRequest extends HandshakeRequest
      * @param headers the headers to set
      */
     void setHeaders(Map<String, List<String>> headers);
-
-    /**
-     * Set the HTTP Version to use.
-     * <p>
-     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this should always be
-     * {@code HTTP/1.1}
-     *
-     * @param httpVersion the HTTP version to use.
-     */
-    void setHttpVersion(String httpVersion);
-
-    /**
-     * Set the HTTP method to use.
-     * <p>
-     * As of <a href="http://tools.ietf.org/html/rfc6455">RFC6455 (December 2011)</a> this is always {@code GET}
-     *
-     * @param method the HTTP method to use.
-     */
-    void setMethod(String method);
-
-    /**
-     * Set the Request URI to use for this request.
-     * <p>
-     * Must be an absolute URI with scheme {@code 'ws'} or {@code 'wss'}
-     *
-     * @param uri the Request URI
-     */
-    void setRequestURI(URI uri);
 
     /**
      * Set the offered WebSocket Sub-Protocol list.

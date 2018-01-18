@@ -81,7 +81,7 @@
          <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
          <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
          <Item>org.eclipse.jetty.webapp.JmxConfiguration</Item>
-         <Item>org.eclipse.jetty.webapp.WebSocketConfiguration</Item>
+         <Item>org.eclipse.jetty.websocket.server.WebSocketConfiguration</Item>
          <Item>org.eclipse.jetty.osgi.annotations.AnnotationConfiguration</Item>
          <Item>org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration</Item>
          <Item>org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration</Item>

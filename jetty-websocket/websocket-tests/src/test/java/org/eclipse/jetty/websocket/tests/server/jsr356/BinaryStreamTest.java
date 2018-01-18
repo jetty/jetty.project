@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.LocalServer;
@@ -64,7 +64,7 @@ public class BinaryStreamTest
             @Override
             protected void configureServletContextHandler(ServletContextHandler context) throws Exception
             {
-                container = WebSocketServerContainerInitializer.configureContext(context);
+                container = JavaxWebSocketServerContainerInitializer.configureContext(context);
                 ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ServerBinaryStreamer.class, PATH).build();
                 container.addEndpoint(config);
             }

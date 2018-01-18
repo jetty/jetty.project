@@ -19,37 +19,32 @@
 package org.eclipse.jetty.websocket.tests.client;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
 import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
-import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
-import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -66,7 +61,7 @@ public class WebSocketClientTest
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
     
-    private UntrustedWSServer server;
+    private LocalServer server;
     private WebSocketClient client;
     
     @Before
@@ -79,7 +74,7 @@ public class WebSocketClientTest
     @Before
     public void startServer() throws Exception
     {
-        server = new UntrustedWSServer();
+        server = new LocalServer();
         server.start();
     }
     
@@ -102,7 +97,6 @@ public class WebSocketClientTest
         
         client.getPolicy().setIdleTimeout(10000);
         
-        URI wsUri = server.getWsUri();
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setSubProtocols("echo");
         request.addExtensions("x-bad"); // extension that doesn't exist
@@ -110,24 +104,22 @@ public class WebSocketClientTest
         // Should trigger failure on bad extension
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage(containsString("x-bad"));
+        URI wsUri = WSURI.toWebsocket(server.getServerUri());
         client.connect(clientEndpoint, wsUri, request);
     }
     
     @Test
-    public void testBasicEcho() throws IOException, InterruptedException, ExecutionException, TimeoutException
+    public void testBasicEcho() throws Exception
     {
         // Set client timeout
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
         
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
-        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
-        server.registerOnOpenFuture(wsUri, serverSessionFut);
-        
         // Client connects
         TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
         clientUpgradeRequest.setSubProtocols("echo");
+        URI wsUri = WSURI.toWebsocket(server.getServerUri());
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri, clientUpgradeRequest);
         
         // Verify Client Session
@@ -141,15 +133,11 @@ public class WebSocketClientTest
         Collection<WebSocketSessionImpl> sessions = client.getBeans(WebSocketSessionImpl.class);
         Assert.assertThat("client.beans[session].size", sessions.size(), is(1));
         
-        // Server accepts connect
-        UntrustedWSSession serverSession = serverSessionFut.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        UntrustedWSEndpoint serverEndpoint = serverSession.getUntrustedEndpoint();
-        
         // client confirms connection via echo
         clientEndpoint.awaitOpenEvent("Client");
         
         // client sends message
-        clientEndpoint.getRemote().sendString("Hello Echo");
+        clientEndpoint.getRemote().sendText("Hello Echo");
         
         // Wait for response to echo
         String message = clientEndpoint.messageQueue.poll(5, TimeUnit.SECONDS);
@@ -157,10 +145,6 @@ public class WebSocketClientTest
         
         // client closes
         clientEndpoint.close(StatusCode.NORMAL, "Normal Close");
-        
-        // Server close event
-        serverEndpoint.awaitCloseEvent("Server");
-        serverEndpoint.assertCloseStatus("Server", StatusCode.NORMAL, containsString("Normal Close"));
         
         // client triggers close event on client ws-endpoint
         clientEndpoint.awaitCloseEvent("Client");
@@ -172,9 +156,9 @@ public class WebSocketClientTest
     {
         client.setMaxIdleTimeout(160000);
         TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setSubProtocols("echo");
+        URI wsUri = WSURI.toWebsocket(server.getServerUri());
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri, request);
         
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -189,23 +173,16 @@ public class WebSocketClientTest
     public void testLocalRemoteAddress() throws Exception
     {
         TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        URI wsUri = WSURI.toWebsocket(server.getServerUri());
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri);
         
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         
-        InetSocketAddress local = clientSession.getLocalAddress();
-        InetSocketAddress remote = clientSession.getRemoteAddress();
+        SocketAddress local = clientSession.getHandshakeRequest().getLocalSocketAddress();
+        SocketAddress remote = clientSession.getHandshakeRequest().getRemoteSocketAddress();
         
         Assert.assertThat("Local Socket Address", local, notNullValue());
         Assert.assertThat("Remote Socket Address", remote, notNullValue());
-        
-        // Hard to validate (in a portable unit test) the local address that was used/bound in the low level Jetty Endpoint
-        Assert.assertThat("Local Socket Address / Host", local.getAddress().getHostAddress(), notNullValue());
-        Assert.assertThat("Local Socket Address / Port", local.getPort(), greaterThan(0));
-        
-        Assert.assertThat("Remote Socket Address / Host", remote.getAddress().getHostAddress(), is(wsUri.getHost()));
-        Assert.assertThat("Remote Socket Address / Port", remote.getPort(), greaterThan(0));
     }
     
     /**
@@ -217,10 +194,10 @@ public class WebSocketClientTest
     public void testMaxMessageSize() throws Exception
     {
         TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
         client.getPolicy().setMaxTextMessageSize(100 * 1024);
+        URI wsUri = WSURI.toWebsocket(server.getServerUri());
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri, upgradeRequest);
         
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -231,7 +208,7 @@ public class WebSocketClientTest
         Arrays.fill(buf, (byte) 'x');
         String outgoingMessage = StringUtil.toUTF8String(buf, 0, buf.length);
         
-        clientSession.getRemote().sendStringByFuture(outgoingMessage);
+        clientSession.getRemote().sendText(outgoingMessage);
         
         String incomingMessage = clientEndpoint.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Message received", incomingMessage, is(outgoingMessage));
@@ -242,13 +219,13 @@ public class WebSocketClientTest
     public void testParameterMap() throws Exception
     {
         TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname).resolve("?snack=cashews&amount=handful&brand=off");
+        URI wsUri = WSURI.toWebsocket(server.getServerUri()).resolve("?snack=cashews&amount=handful&brand=off");
         assertThat("wsUri has query", wsUri.getQuery(), notNullValue());
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri);
         
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         
-        UpgradeRequest req = clientSession.getHandshakeRequest();
+        HandshakeRequest req = clientSession.getHandshakeRequest();
         Assert.assertThat("Upgrade Request", req, notNullValue());
         
         Map<String, List<String>> parameterMap = req.getParameterMap();

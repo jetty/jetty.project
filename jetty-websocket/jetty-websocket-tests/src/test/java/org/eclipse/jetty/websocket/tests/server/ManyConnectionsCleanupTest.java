@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -40,12 +41,12 @@ import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.servlet.ServletContextWebSocketContainer;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
@@ -88,17 +89,14 @@ public class ManyConnectionsCleanupTest
     @SuppressWarnings("serial")
     public static class CloseServlet extends WebSocketServlet implements WebSocketCreator
     {
-        private WebSocketServerFactory serverFactory;
+        private WebSocketServletFactory webSocketServletFactory;
         private AtomicInteger calls = new AtomicInteger(0);
         
         @Override
         public void configure(WebSocketServletFactory factory)
         {
             factory.setCreator(this);
-            if (factory instanceof WebSocketServerFactory)
-            {
-                this.serverFactory = (WebSocketServerFactory) factory;
-            }
+            this.webSocketServletFactory = factory;
         }
         
         @Override
@@ -118,7 +116,7 @@ public class ManyConnectionsCleanupTest
             
             if (req.hasSubProtocol("container"))
             {
-                closeSocket = new ContainerSocket(serverFactory, calls);
+                closeSocket = new ContainerSocket(webSocketServletFactory, calls);
                 return closeSocket;
             }
             return new RFC6455Socket();
@@ -131,13 +129,13 @@ public class ManyConnectionsCleanupTest
     public static class ContainerSocket extends AbstractCloseSocket
     {
         private static final Logger LOG = Log.getLogger(ManyConnectionsCleanupTest.ContainerSocket.class);
-        private final WebSocketServerFactory container;
+        private final ServletContextWebSocketContainer container;
         private final AtomicInteger calls;
         private Session session;
         
-        public ContainerSocket(WebSocketServerFactory container, AtomicInteger calls)
+        public ContainerSocket(WebSocketServletFactory servletFactory, AtomicInteger calls)
         {
-            this.container = container;
+            this.container = servletFactory.getContainer();
             this.calls = calls;
         }
         
@@ -157,12 +155,12 @@ public class ManyConnectionsCleanupTest
                 {
                     ret.append('[').append(idx++).append("] ").append(sess.toString()).append('\n');
                 }
-                session.getRemote().sendStringByFuture(ret.toString());
+                session.getRemote().sendText(ret.toString(), Callback.NOOP);
                 session.close(StatusCode.NORMAL, "ContainerSocket");
             }
             else if (message.equalsIgnoreCase("calls"))
             {
-                session.getRemote().sendStringByFuture(String.format("calls=%,d", calls.get()));
+                session.getRemote().sendText(String.format("calls=%,d", calls.get()), Callback.NOOP);
             }
         }
         

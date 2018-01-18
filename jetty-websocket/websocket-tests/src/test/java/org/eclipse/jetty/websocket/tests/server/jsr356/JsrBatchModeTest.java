@@ -37,7 +37,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -76,7 +76,7 @@ public class JsrBatchModeTest
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
-        ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
+        ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(context);
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class, "/").build();
         container.addEndpoint(config);
 

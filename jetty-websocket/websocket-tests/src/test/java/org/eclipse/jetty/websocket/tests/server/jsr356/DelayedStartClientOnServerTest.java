@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WSURI;
 import org.eclipse.jetty.websocket.jsr356.client.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.junit.Test;
 
 public class DelayedStartClientOnServerTest
@@ -216,7 +216,7 @@ public class DelayedStartClientOnServerTest
         Server server = new Server(0);
         ServletContextHandler contextHandler = new ServletContextHandler();
         server.setHandler(contextHandler);
-        WebSocketServerContainerInitializer.configureContext(contextHandler);
+        JavaxWebSocketServerContainerInitializer.configureContext(contextHandler);
         try
         {
             server.start();
@@ -240,7 +240,7 @@ public class DelayedStartClientOnServerTest
         server.setHandler(contextHandler);
         // Using JSR356 Client Techniques to connectToServer()
         contextHandler.addServlet(ClientConnectServlet.class, "/connect");
-        javax.websocket.server.ServerContainer container = WebSocketServerContainerInitializer.configureContext(contextHandler);
+        javax.websocket.server.ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(contextHandler);
         container.addEndpoint(EchoSocket.class);
         try
         {
@@ -266,7 +266,7 @@ public class DelayedStartClientOnServerTest
         server.setHandler(contextHandler);
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
-        javax.websocket.server.ServerContainer container = WebSocketServerContainerInitializer.configureContext(contextHandler);
+        javax.websocket.server.ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(contextHandler);
         container.addEndpoint(EchoSocket.class);
         try
         {
@@ -291,7 +291,7 @@ public class DelayedStartClientOnServerTest
         server.setHandler(contextHandler);
         // Using JSR356 Client Techniques to configure WebSocketContainer
         contextHandler.addServlet(ClientConfigureServlet.class, "/configure");
-        javax.websocket.server.ServerContainer container = WebSocketServerContainerInitializer.configureContext(contextHandler);
+        javax.websocket.server.ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(contextHandler);
         container.addEndpoint(EchoSocket.class);
         try
         {
@@ -318,7 +318,7 @@ public class DelayedStartClientOnServerTest
         server.setHandler(contextHandler);
         // Using JSR356 Server Techniques to configure WebSocketContainer
         contextHandler.addServlet(ServerConfigureServlet.class, "/configure");
-        javax.websocket.server.ServerContainer container = WebSocketServerContainerInitializer.configureContext(contextHandler);
+        javax.websocket.server.ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(contextHandler);
         container.addEndpoint(EchoSocket.class);
         try
         {

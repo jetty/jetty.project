@@ -25,22 +25,22 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
+import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
 public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionImpl> implements WebSocketListener, WebSocketFrameListener
 {
-    public UpgradeRequest openUpgradeRequest;
-    public UpgradeResponse openUpgradeResponse;
+    public HandshakeRequest openUpgradeRequest;
+    public HandshakeResponse openUpgradeResponse;
     
     public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
@@ -118,20 +118,5 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionI
         }
         
         messageQueue.offer(text);
-    }
-    
-    public WebSocketCoreConnection getConnection()
-    {
-        return this.session.getConnection();
-    }
-    
-    public EndPoint getJettyEndPoint()
-    {
-        WebSocketCoreConnection connection = getConnection();
-        if (connection != null)
-        {
-            return connection.getEndPoint();
-        }
-        return null;
     }
 }

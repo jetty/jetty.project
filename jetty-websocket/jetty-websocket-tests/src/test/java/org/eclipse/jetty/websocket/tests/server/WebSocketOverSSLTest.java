@@ -30,7 +30,6 @@ import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.junit.AfterClass;
@@ -88,9 +87,7 @@ public class WebSocketOverSSLTest
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
             RemoteEndpoint remote = session.getRemote();
-            remote.sendString(msg);
-            if (remote.getBatchMode() == BatchMode.ON)
-                remote.flush();
+            remote.sendText(msg);
 
             // Read frame (hopefully text frame)
             String captured = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
@@ -130,9 +127,7 @@ public class WebSocketOverSSLTest
 
             // Generate text frame
             RemoteEndpoint remote = session.getRemote();
-            remote.sendString("session.isSecure");
-            if (remote.getBatchMode() == BatchMode.ON)
-                remote.flush();
+            remote.sendText("session.isSecure");
 
             // Read frame (hopefully text frame)
             String captured = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
@@ -172,9 +167,7 @@ public class WebSocketOverSSLTest
 
             // Generate text frame
             RemoteEndpoint remote = session.getRemote();
-            remote.sendString("session.upgradeRequest.requestURI");
-            if (remote.getBatchMode() == BatchMode.ON)
-                remote.flush();
+            remote.sendText("session.upgradeRequest.requestURI");
 
             // Read frame (hopefully text frame)
             String captured = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);

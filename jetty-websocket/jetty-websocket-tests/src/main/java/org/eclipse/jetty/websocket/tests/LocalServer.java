@@ -20,6 +20,10 @@ package org.eclipse.jetty.websocket.tests;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.function.BiConsumer;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -33,14 +37,19 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.api.WSURI;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
 {
@@ -52,9 +61,10 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     private LocalConnector localConnector;
     private ServletContextHandler servletContextHandler;
     private URI serverUri;
+    private URI wsUri;
     private boolean ssl = false;
     private SslContextFactory sslContextFactory;
-    
+
     public void enableSsl(boolean ssl)
     {
         this.ssl = ssl;
@@ -84,7 +94,12 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     {
         return sslContextFactory;
     }
-    
+
+    public URI getWsUri()
+    {
+        return wsUri;
+    }
+
     public boolean isSslEnabled()
     {
         return ssl;
@@ -194,12 +209,32 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("%s://%s:%d/", ssl ? "wss" : "ws", host, port));
+        serverUri = new URI(String.format("%s://%s:%d/", ssl ? "https" : "http", host, port));
+        wsUri = WSURI.toWebsocket(serverUri);
         
         // Some debugging
         if (LOG.isDebugEnabled())
         {
             LOG.debug(server.dump());
         }
+    }
+
+    public void registerHttpService(String urlPattern, BiConsumer<HttpServletRequest, HttpServletResponse> serviceConsumer)
+    {
+        ServletHolder holder = new ServletHolder(new BiConsumerServiceServlet(serviceConsumer));
+        servletContextHandler.addServlet(holder, urlPattern);
+    }
+
+    public void registerWebSocket(String urlPattern, WebSocketCreator creator)
+    {
+        ServletHolder holder = new ServletHolder(new WebSocketServlet()
+        {
+            @Override
+            public void configure(WebSocketServletFactory factory)
+            {
+                factory.setCreator(creator);
+            }
+        });
+        servletContextHandler.addServlet(holder, urlPattern);
     }
 }

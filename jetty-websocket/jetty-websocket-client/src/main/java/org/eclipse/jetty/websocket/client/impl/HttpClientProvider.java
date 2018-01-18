@@ -22,19 +22,18 @@ import java.lang.reflect.Method;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 public final class HttpClientProvider
 {
-    public static HttpClient get(WebSocketContainerScope scope)
+    public static HttpClient get()
     {
         try
         {
             if (Class.forName("org.eclipse.jetty.xml.XmlConfiguration") != null)
             {
                 Class<?> xmlClazz = Class.forName("org.eclipse.jetty.websocket.client.XmlBasedHttpClientProvider");
-                Method getMethod = xmlClazz.getMethod("get", WebSocketContainerScope.class);
-                Object ret = getMethod.invoke(null, scope);
+                Method getMethod = xmlClazz.getMethod("get");
+                Object ret = getMethod.invoke(null);
                 if ((ret != null) && (ret instanceof HttpClient))
                 {
                     return (HttpClient) ret;
@@ -46,6 +45,6 @@ public final class HttpClientProvider
             Log.getLogger(HttpClientProvider.class).ignore(ignore);
         }
         
-        return DefaultHttpClientProvider.newHttpClient(scope);
+        return DefaultHttpClientProvider.newHttpClient();
     }
 }

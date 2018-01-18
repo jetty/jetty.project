@@ -31,8 +31,8 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -46,7 +46,7 @@ public class SlowServerTest
     @Rule
     public TestName testname = new TestName();
     
-    private UntrustedWSServer server;
+    private LocalServer server;
     private WebSocketClient client;
     
     @Before
@@ -60,7 +60,7 @@ public class SlowServerTest
     @Before
     public void startServer() throws Exception
     {
-        server = new UntrustedWSServer();
+        server = new LocalServer();
         server.start();
     }
     
@@ -80,10 +80,9 @@ public class SlowServerTest
     public void testServerSlowToRead() throws Exception
     {
         TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
-        // client.setMasker(new ZeroMasker());
         client.setMaxIdleTimeout(60000);
     
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        URI wsUri = server.getWsUri();
         
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
@@ -127,10 +126,9 @@ public class SlowServerTest
     public void testServerSlowToSend() throws Exception
     {
         TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
-        // client.setMasker(new ZeroMasker());
         client.setMaxIdleTimeout(60000);
     
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        URI wsUri = server.getWsUri();
     
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");

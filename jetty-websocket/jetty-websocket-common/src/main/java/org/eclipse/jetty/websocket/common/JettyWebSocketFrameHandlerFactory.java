@@ -29,6 +29,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
@@ -55,10 +56,27 @@ import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
-public class JettyWebSocketFrameHandlerFactory
+/**
+ * Factory for websocket-core {@link FrameHandler} implementations suitable for
+ * use with jetty-native websocket API.
+ * <p>
+ * Will create a {@link FrameHandler} suitable for use with classes/objects that:
+ * </p>
+ * <ul>
+ * <li>Is &#64;{@link org.eclipse.jetty.websocket.api.annotations.WebSocket} annotated</li>
+ * <li>Extends {@link org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.listeners.WebSocketListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.listeners.WebSocketConnectionListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.listeners.WebSocketPartialListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.listeners.WebSocketPingPongListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener}</li>
+ * </ul>
+ */
+public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
 {
     private final Executor executor;
     private Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
@@ -97,7 +115,13 @@ public class JettyWebSocketFrameHandlerFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public JettyWebSocketFrameHandler createLocalEndpoint(Object endpointInstance, WebSocketPolicy policy, HandshakeRequest upgradeRequest, HandshakeResponse upgradeResponse)
+    @Override
+    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse)
+    {
+        return newJettyFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse, null);
+    }
+
+    public JettyWebSocketFrameHandler newJettyFrameHandler(Object endpointInstance, WebSocketPolicy policy, HandshakeRequest upgradeRequest, HandshakeResponse upgradeResponse, CompletableFuture<Session> futureSession)
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
@@ -142,7 +166,11 @@ public class JettyWebSocketFrameHandlerFactory
         pingHandle = bindTo(pingHandle, endpointInstance);
         pongHandle = bindTo(pongHandle, endpointInstance);
 
-        return new JettyWebSocketFrameHandlerImpl(
+        CompletableFuture<Session> future = futureSession;
+        if(future == null)
+            future = new CompletableFuture<>();
+
+        return new JettyWebSocketFrameHandler(
                 endpointInstance,
                 endpointPolicy,
                 upgradeRequest, upgradeResponse,
@@ -150,6 +178,7 @@ public class JettyWebSocketFrameHandlerFactory
                 textHandle, binaryHandle,
                 textSinkClass, binarySinkClass,
                 frameHandle, pingHandle, pongHandle,
+                future,
                 executor);
     }
 

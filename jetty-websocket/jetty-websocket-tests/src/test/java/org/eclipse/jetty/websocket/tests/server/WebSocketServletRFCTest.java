@@ -29,24 +29,32 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.JettyWebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
+import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSClient;
 import org.eclipse.jetty.websocket.tests.UntrustedWSConnection;
 import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
@@ -90,12 +98,12 @@ public class WebSocketServletRFCTest
     @Rule
     public TestName testname = new TestName();
     
-    private UntrustedWSClient client;
+    private WebSocketClient client;
     
     @Before
     public void startClient() throws Exception
     {
-        client = new UntrustedWSClient();
+        client = new WebSocketClient();
         client.start();
     }
     
@@ -106,18 +114,6 @@ public class WebSocketServletRFCTest
     }
     
     /**
-     * @param clazz the class to enable
-     * @param enabled true to enable the stack traces (or not)
-     * @deprecated use {@link StacklessLogging} in a try-with-resources block instead
-     */
-    @Deprecated
-    private void enableStacks(Class<?> clazz, boolean enabled)
-    {
-        StdErrLog log = StdErrLog.getLogger(clazz);
-        log.setHideStacks(!enabled);
-    }
-    
-    /**
      * Test that aggregation of binary frames into a single message occurs
      *
      * @throws Exception on test failure
@@ -125,14 +121,15 @@ public class WebSocketServletRFCTest
     @Test
     public void testBinaryAggregate() throws Exception
     {
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
+
         URI wsUri = server.getServerUri();
+
+        // TODO: Use WebSocketCoreClient here
+        Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri);
         
-        ClientUpgradeRequest req = new ClientUpgradeRequest();
-        Future<UntrustedWSSession> clientConnectFuture = client.connect(wsUri, req);
-        
-        UntrustedWSSession clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        UntrustedWSConnection clientConnection = clientSession.getUntrustedConnection();
-        
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
         // Generate binary frames
         byte buf1[] = new byte[128];
         byte buf2[] = new byte[128];
@@ -141,23 +138,24 @@ public class WebSocketServletRFCTest
         Arrays.fill(buf1, (byte) 0xAA);
         Arrays.fill(buf2, (byte) 0xBB);
         Arrays.fill(buf3, (byte) 0xCC);
+
+        RemoteEndpoint remoteEndpoint = clientSession.getRemote();
+        JettyWebSocketRemoteEndpoint jettyRemoteEndpoint = (JettyWebSocketRemoteEndpoint) remoteEndpoint;
+        FrameHandler.Channel rawchannel = jettyRemoteEndpoint.getChannel();
         
         WebSocketFrame bin;
         
         bin = new BinaryFrame().setPayload(buf1).setFin(false);
-        
-        clientConnection.write(bin); // write buf1 (fin=false)
+        rawchannel.sendFrame(bin, Callback.NOOP, BatchMode.OFF); // write buf1 (fin=false)
         
         bin = new ContinuationFrame().setPayload(buf2).setFin(false);
-        
-        clientConnection.write(bin); // write buf2 (fin=false)
+        rawchannel.sendFrame(bin, Callback.NOOP, BatchMode.OFF); // write buf2 (fin=false)
         
         bin = new ContinuationFrame().setPayload(buf3).setFin(true);
-        
-        clientConnection.write(bin); // write buf3 (fin=true)
+        rawchannel.sendFrame(bin, Callback.NOOP, BatchMode.OFF); // write buf3 (fin=true)
         
         // Read frame echo'd back (hopefully a single binary frame)
-        WebSocketFrame incomingFrame = clientSession.getUntrustedEndpoint().framesQueue.poll(5, TimeUnit.SECONDS);
+        WebSocketFrame incomingFrame = clientSession.framesQueue.poll(5, TimeUnit.SECONDS);
         
         int expectedSize = buf1.length + buf2.length + buf3.length;
         assertThat("BinaryFrame.payloadLength", incomingFrame.getPayloadLength(), is(expectedSize));

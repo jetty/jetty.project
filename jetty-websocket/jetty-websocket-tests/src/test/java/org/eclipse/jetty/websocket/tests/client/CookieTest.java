@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
-import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
@@ -26,20 +25,20 @@ import java.net.CookieManager;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WSURI;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
-import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,48 +47,65 @@ import org.junit.rules.TestName;
 
 public class CookieTest
 {
-    private static final Logger LOG = Log.getLogger(CookieTest.class);
-    
+    @WebSocket
+    public static class EchoCookiesSocket
+    {
+        private final HandshakeRequest handshakeRequest;
+
+        public EchoCookiesSocket(HandshakeRequest handshakeRequest)
+        {
+            this.handshakeRequest = handshakeRequest;
+        }
+
+        @OnWebSocketConnect
+        public void onOpen(Session session)
+        {
+            StringBuilder resp = new StringBuilder();
+            handshakeRequest.getCookies().forEach((cookie) -> {
+                resp.append(cookie.toString()).append("\n");
+            });
+            session.getRemote().sendText(resp.toString(), Callback.NOOP);
+        }
+    }
+
     @Rule
     public TestName testname = new TestName();
-    
-    private UntrustedWSServer server;
+
+    private LocalServer server;
     private WebSocketClient client;
-    
+
     @Before
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
-    
+
     @Before
     public void startServer() throws Exception
     {
-        server = new UntrustedWSServer();
+        server = new LocalServer();
+        server.registerWebSocket("/cookies", (req, resp) -> new EchoCookiesSocket(req));
         server.start();
     }
-    
+
     @After
     public void stopClient() throws Exception
     {
         client.stop();
     }
-    
+
     @After
     public void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Test
     public void testViaCookieManager() throws Exception
     {
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
-        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
-        server.registerOnOpenFuture(wsUri, serverSessionFut);
-        
+
         // Setup client
         CookieManager cookieMgr = new CookieManager();
         client.setCookieStore(cookieMgr.getCookieStore());
@@ -97,53 +113,44 @@ public class CookieTest
         cookie.setPath("/");
         cookie.setVersion(0);
         cookie.setMaxAge(100000);
-        cookieMgr.getCookieStore().add(server.getWsUri(), cookie);
-        
+        cookieMgr.getCookieStore().add(server.getServerUri(), cookie);
+
         cookie = new HttpCookie("foo", "bar is the word");
         cookie.setPath("/");
         cookie.setMaxAge(100000);
-        cookieMgr.getCookieStore().add(server.getWsUri(), cookie);
-    
+        cookieMgr.getCookieStore().add(server.getServerUri(), cookie);
+
         // Client connects
+        URI wsUri = WSURI.toWebsocket(server.getServerUri()).resolve("/cookies");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        
-        // Server accepts connect
-        UntrustedWSSession serverSession = serverSessionFut.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        
+        clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
         // client confirms upgrade and receipt of frame
-        List<String> serverCookies = serverSession.getUntrustedEndpoint().openUpgradeRequest.getHeaders("Cookie");
-        
-        assertThat("Cookies seen at server side", serverCookies, hasItem(containsString("hello=world")));
-        assertThat("Cookies seen at server side", serverCookies, hasItem(containsString("foo=bar is the word")));
+        String responseMessage = clientSocket.messageQueue.poll(1, TimeUnit.SECONDS);
+        assertThat("Cookies seen at server side", responseMessage, containsString("hello=world"));
+        assertThat("Cookies seen at server side", responseMessage, containsString("foo=bar is the word"));
     }
-    
+
     @Test
     public void testViaServletUpgradeRequest() throws Exception
     {
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
-        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
-        server.registerOnOpenFuture(wsUri, serverSessionFut);
-        
+
         // Setup client
         HttpCookie cookie = new HttpCookie("hello", "world");
         cookie.setPath("/");
         cookie.setMaxAge(100000);
-        
+
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setCookies(Collections.singletonList(cookie));
-        
+
         // Client connects
+        URI wsUri = WSURI.toWebsocket(server.getServerUri()).resolve("/cookies");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, request);
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        
-        // Server accepts connect
-        UntrustedWSSession serverSession = serverSessionFut.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        
+        clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
         // client confirms upgrade and receipt of frame
-        List<String> serverCookies = serverSession.getUntrustedEndpoint().openUpgradeRequest.getHeaders("Cookie");
-        
-        assertThat("Cookies seen at server side", serverCookies, hasItem(containsString("hello=world")));
+        String responseMessage = clientSocket.messageQueue.poll(1, TimeUnit.SECONDS);
+        assertThat("Cookies seen at server side", responseMessage, containsString("hello=world"));
     }
 }

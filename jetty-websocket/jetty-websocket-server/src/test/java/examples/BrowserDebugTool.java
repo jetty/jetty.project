@@ -22,20 +22,14 @@ import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.server.WebSocketHandler;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.util.resource.PathResource;
 
 /**
  * Tool to help debug websocket circumstances reported around browsers.
@@ -43,7 +37,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
  * Provides a server, with a few simple websocket's that can be twiddled from a browser. This helps with setting up breakpoints and whatnot to help debug our
  * websocket implementation from the context of a browser client.
  */
-public class BrowserDebugTool implements WebSocketCreator
+public class BrowserDebugTool
 {
     private static final Logger LOG = Log.getLogger(BrowserDebugTool.class);
 
@@ -75,49 +69,6 @@ public class BrowserDebugTool implements WebSocketCreator
     private Server server;
     private ServerConnector connector;
 
-    @Override
-    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
-    {
-        LOG.debug("Creating BrowserSocket");
-
-        if (req.getSubProtocols() != null)
-        {
-            if (!req.getSubProtocols().isEmpty())
-            {
-                String subProtocol = req.getSubProtocols().get(0);
-                resp.setAcceptedSubProtocol(subProtocol);
-            }
-        }
-
-        String ua = req.getHeader("User-Agent");
-        String rexts = req.getHeader("Sec-WebSocket-Extensions");
-
-        // manually negotiate extensions
-        List<ExtensionConfig> negotiated = new ArrayList<>();
-        // adding frame debug
-        negotiated.add(new ExtensionConfig("@frame-capture; output-dir=target"));
-        for (ExtensionConfig config : req.getExtensions())
-        {
-            if (config.getName().equals("permessage-deflate"))
-            {
-                // what we are interested in here
-                negotiated.add(config);
-                continue;
-            }
-            // skip all others
-        }
-
-        resp.setExtensions(negotiated);
-
-        LOG.debug("User-Agent: {}",ua);
-        LOG.debug("Sec-WebSocket-Extensions (Request) : {}",rexts);
-        LOG.debug("Sec-WebSocket-Protocol (Request): {}",req.getHeader("Sec-WebSocket-Protocol"));
-        LOG.debug("Sec-WebSocket-Protocol (Response): {}",resp.getAcceptedSubProtocol());
-
-        req.getExtensions();
-        return new BrowserSocket(ua,rexts);
-    }
-
     public int getPort()
     {
         return connector.getLocalPort();
@@ -130,54 +81,29 @@ public class BrowserDebugTool implements WebSocketCreator
         connector.setPort(port);
         server.addConnector(connector);
 
-        WebSocketHandler wsHandler = new WebSocketHandler()
-        {
-            @Override
-            public void configure(WebSocketServletFactory factory)
-            {
-                LOG.debug("Configuring WebSocketServerFactory ...");
-
-                // Registering Frame Debug
-                // factory.getExtensionRegistry().register("@frame-capture",FrameCaptureExtension.class);
-
-                // Disable permessage-deflate
-                factory.getExtensionRegistry().unregister("permessage-deflate");
-
-                // Setup the desired Socket to use for all incoming upgrade requests
-                factory.setCreator(BrowserDebugTool.this);
-
-                // Set the timeout
-                factory.getPolicy().setIdleTimeout(30000);
-
-                // Set top end message size
-                factory.getPolicy().setMaxTextMessageSize(15 * 1024 * 1024);
-            }
-        };
-
-        server.setHandler(wsHandler);
-
         String resourceBase = "src/test/resources/browser-debug-tool";
         Path basePath = Paths.get(resourceBase).toAbsolutePath();
 
-        if(!Files.exists(basePath))
+        if (!Files.exists(basePath))
         {
             throw new FileNotFoundException("Base Path: " + basePath);
         }
 
-        ResourceHandler rHandler = new ResourceHandler();
-        rHandler.setDirectoriesListed(true);
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        context.setBaseResource(new PathResource(basePath));
+        context.addServlet(DebugToolServlet.class, "/*");
+        context.addServlet(DefaultServlet.class, "/");
+        server.setHandler(context);
 
-        rHandler.setResourceBase(resourceBase);
-        wsHandler.setHandler(rHandler);
-
-        LOG.info("{} setup on port {}",this.getClass().getName(),port);
+        LOG.info("{} setup on port {}", this.getClass().getName(), port);
     }
 
     public void start() throws Exception
     {
         server.setDumpAfterStart(Boolean.getBoolean("jetty.server.dumpAfterStart"));
         server.start();
-        LOG.info("Server available on port {}",getPort());
+        LOG.info("Server available on port {}", getPort());
     }
 
     public void stop() throws Exception

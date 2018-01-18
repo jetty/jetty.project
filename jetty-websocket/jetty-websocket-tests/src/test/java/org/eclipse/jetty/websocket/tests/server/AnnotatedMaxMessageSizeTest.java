@@ -29,22 +29,17 @@ import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WSURI;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.server.WebSocketHandler;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -71,9 +66,7 @@ public class AnnotatedMaxMessageSizeTest
                 return;
             }
             RemoteEndpoint remote = session.getRemote();
-            remote.sendBytes(ByteBuffer.wrap(buf, offset, length), null);
-            if (remote.getBatchMode() == BatchMode.ON)
-                remote.flush();
+            remote.sendBinary(ByteBuffer.wrap(buf, offset, length));
         }
         
         @OnWebSocketMessage
@@ -85,35 +78,21 @@ public class AnnotatedMaxMessageSizeTest
                 return;
             }
             RemoteEndpoint remote = session.getRemote();
-            remote.sendString(message, null);
-            if (remote.getBatchMode() == BatchMode.ON)
-                remote.flush();
+            remote.sendText(message);
         }
     }
     
-    private static Server server;
+    private static LocalServer server;
     private static URI serverUri;
     
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        server.addConnector(connector);
-        
-        WebSocketHandler wsHandler = new WebSocketHandler()
-        {
-            @Override
-            public void configure(WebSocketServletFactory factory)
-            {
-                factory.register(BigEchoSocket.class);
-            }
-        };
-        
-        server.setHandler(wsHandler);
+        server = new LocalServer();
+        server.registerWebSocket("/", (req,resp) -> new BigEchoSocket());
         server.start();
         
-        serverUri = WSURI.toWebsocket(server.getURI()).resolve("/");
+        serverUri = server.getWsUri();
     }
     
     @AfterClass
@@ -154,7 +133,7 @@ public class AnnotatedMaxMessageSizeTest
         
         // Message
         String msg = "this is an echo ... cho ... ho ... o";
-        clientSession.getRemote().sendString(msg);
+        clientSession.getRemote().sendText(msg);
         
         // Read message
         String incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
@@ -180,7 +159,7 @@ public class AnnotatedMaxMessageSizeTest
         byte buf[] = new byte[size]; // buffer bigger than maxMessageSize
         Arrays.fill(buf, (byte) 'x');
         String msg = new String(buf, StandardCharsets.UTF_8);
-        clientSession.getRemote().sendString(msg);
+        clientSession.getRemote().sendText(msg);
     
         // Read message
         clientSocket.awaitCloseEvent("Client");

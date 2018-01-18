@@ -88,7 +88,7 @@ public class JettyWebSocketFrameHandlerTest
     {
         UpgradeRequest upgradeRequest = new DummyUpgradeRequest();
         UpgradeResponse upgradeResponse = new DummyUpgradeResponse();
-        JettyWebSocketFrameHandler localEndpoint = endpointFactory.createLocalEndpoint(wsEndpoint, policy, upgradeRequest, upgradeResponse);
+        JettyWebSocketFrameHandler localEndpoint = endpointFactory.newJettyFrameHandler(wsEndpoint, policy, upgradeRequest, upgradeResponse, null);
         return localEndpoint;
     }
 

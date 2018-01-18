@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.client.JettyClientContainerProvider;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.tests.Sha1Sum;
 import org.junit.AfterClass;
@@ -92,7 +92,7 @@ public class StreamTest
         context.setContextPath("/");
         server.setHandler(context);
 
-        ServerContainer wsContainer = WebSocketServerContainerInitializer.configureContext(context);
+        ServerContainer wsContainer = JavaxWebSocketServerContainerInitializer.configureContext(context);
 
         // Prepare Server Side Output directory for uploaded files
         outputDir = MavenTestingUtils.getTargetTestingDir(StreamTest.class.getName());

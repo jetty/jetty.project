@@ -199,7 +199,7 @@ public class PerMessageDeflateExtensionTest
             String sha1 = Sha1Sum.calculate(msg);
             
             // Client sends first message
-            session.getRemote().sendBytes(ByteBuffer.wrap(msg));
+            session.getRemote().sendBinary(ByteBuffer.wrap(msg));
             
             String echoMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             Assert.assertThat("Echo'd Message", echoMsg, is("binary[sha1=" + sha1 + "]"));

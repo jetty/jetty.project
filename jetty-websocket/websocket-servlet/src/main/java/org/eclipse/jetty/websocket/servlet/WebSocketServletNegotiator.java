@@ -72,7 +72,7 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try
         {
-            Thread.currentThread().setContextClassLoader(factory.getContextClassloader());
+            Thread.currentThread().setContextClassLoader(factory.getContainer().getContextClassloader());
 
             ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation.getRequest());
             ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation.getResponse());
@@ -126,12 +126,12 @@ public class WebSocketServletNegotiator implements WebSocketNegotiator
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
-        return factory.getObjectFactory();
+        return factory.getContainer().getObjectFactory();
     }
 
     @Override
     public ByteBufferPool getByteBufferPool()
     {
-        return factory.getBufferPool();
+        return factory.getContainer().getBufferPool();
     }
 }

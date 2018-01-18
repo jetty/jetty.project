@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.core.CloseInfo;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.junit.AfterClass;
@@ -72,7 +72,7 @@ public class UriTemplateParameterTest
             @Override
             protected void configureServletContextHandler(ServletContextHandler context) throws Exception
             {
-                ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
+                ServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(context);
                 container.addEndpoint(IntParamTextSocket.class);
             }
         };

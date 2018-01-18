@@ -43,12 +43,10 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     private final FrameHandler.Channel channel;
     private byte messageType = -1;
     private final SharedBlockingCallback blocker = new SharedBlockingCallback();
-    private volatile BatchMode batchMode;
 
     public JettyWebSocketRemoteEndpoint(FrameHandler.Channel channel)
     {
         this.channel = channel;
-        this.batchMode = BatchMode.AUTO;
     }
 
     /**
@@ -96,17 +94,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         try (SharedBlockingCallback.Blocker b = blocker.acquire())
         {
-            BatchMode batchMode1 = BatchMode.OFF;
-            if (frame.isDataFrame())
-                batchMode1 = getBatchMode();
-            channel.sendFrame(frame, b, batchMode1);
+            channel.sendFrame(frame, b, BatchMode.OFF);
             b.block();
         }
-    }
-
-    public BatchMode getBatchMode()
-    {
-        return batchMode;
     }
 
     @Override
@@ -156,7 +146,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendBinary(ByteBuffer data, Callback callback)
     {
-        channel.sendFrame(new BinaryFrame().setPayload(data), callback, getBatchMode());
+        channel.sendFrame(new BinaryFrame().setPayload(data), callback, BatchMode.OFF);
     }
 
     @Override
@@ -180,7 +170,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         frame.setPayload(fragment);
         frame.setFin(isLast);
 
-        channel.sendFrame(frame, callback, getBatchMode());
+        channel.sendFrame(frame, callback, BatchMode.OFF);
 
         if (isLast)
         {
@@ -209,7 +199,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         frame.setPayload(BufferUtil.toBuffer(fragment, UTF_8));
         frame.setFin(isLast);
 
-        channel.sendFrame(frame, callback, getBatchMode());
+        channel.sendFrame(frame, callback, BatchMode.OFF);
 
         if (isLast)
         {
@@ -220,6 +210,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendText(String text, Callback callback)
     {
-        channel.sendFrame(new TextFrame().setPayload(text), callback, getBatchMode());
+        channel.sendFrame(new TextFrame().setPayload(text), callback, BatchMode.OFF);
     }
 }
