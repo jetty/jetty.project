@@ -25,6 +25,8 @@
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
+    <Arg name="threadpool"><Ref refid="threadPool"/></Arg>
+
     <!-- =========================================================== -->
     <!-- Add shared Scheduler instance                               -->
     <!-- =========================================================== -->
