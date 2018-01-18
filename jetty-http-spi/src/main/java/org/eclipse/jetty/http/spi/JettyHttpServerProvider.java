@@ -66,7 +66,8 @@ public class JettyHttpServerProvider extends HttpServerProvider
         }
 
         JettyHttpServer jettyHttpServer = new JettyHttpServer(server, shared);
-        jettyHttpServer.bind(addr, backlog);
+        if (addr != null)
+            jettyHttpServer.bind(addr, backlog);
         return jettyHttpServer;
     }
 
