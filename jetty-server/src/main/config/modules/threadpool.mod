@@ -16,5 +16,5 @@ etc/jetty-threadpool.xml
 ## Thread Idle Timeout (in milliseconds)
 #jetty.threadPool.idleTimeout=60000
 
-## Detailed Dump Required?
+## Whether to Output a Detailed Dump
 #jetty.threadPool.detailedDump=false

@@ -20,9 +20,6 @@
   <!-- Consult the javadoc of o.e.j.util.thread.QueuedThreadPool   -->
   <!-- for all configuration that may be set here.                 -->
   <!-- =========================================================== -->
-  <!-- uncomment to change type of threadpool
-  <Arg name="threadpool"><New id="threadpool" class="org.eclipse.jetty.util.thread.QueuedThreadPool"/></Arg>
-  -->
   <Get name="ThreadPool">
     <Set name="minThreads" type="int"><Property name="jetty.threadPool.minThreads" deprecated="threads.min" default="10"/></Set>
     <Set name="maxThreads" type="int"><Property name="jetty.threadPool.maxThreads" deprecated="threads.max" default="200"/></Set>
