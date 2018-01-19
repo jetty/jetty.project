@@ -33,7 +33,7 @@ import javax.websocket.Session;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.junit.Test;
 
@@ -41,13 +41,13 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_TextTest extends AbstractJava
 {
     private void onText(TrackingSocket socket, String msg) throws Exception
     {
-        JavaxWebSocketFrameHandlerImpl localEndpoint = createLocalEndpoint(socket);
+        JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // This invocation is the same for all tests
-        localEndpoint.onOpen();
+        localEndpoint.onOpen(channel);
         
         ByteBuffer payload = BufferUtil.toBuffer(msg, StandardCharsets.UTF_8);
-        localEndpoint.onText(new TextFrame().setPayload(payload).setFin(true), Callback.NOOP);
+        localEndpoint.onFrame(new TextFrame().setPayload(payload).setFin(true), Callback.NOOP);
     }
 
     private void assertOnMessageInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -29,54 +30,91 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 
-public class DummyContainer extends JavaxWebSocketContainer
+/**
+ * Dummy Container for testing.
+ */
+public class DummyContainer extends JavaxWebSocketContainer implements WebSocketContainerContext
 {
-    private ByteBufferPool bufferPool;
-    private Executor executor;
+    private final ByteBufferPool bufferPool;
+    private final ClassLoader contextClassLoader;
+    private final Executor executor;
+    private final WebSocketExtensionRegistry extensionRegistry;
+    private final DecoratedObjectFactory objectFactory;
+    private final WebSocketPolicy policy;
 
-    public DummyContainer(WebSocketPolicy containerPolicy)
+    public DummyContainer(WebSocketPolicy policy)
     {
-        super(containerPolicy);
+        super(policy);
+        this.policy = policy;
         this.bufferPool = new MappedByteBufferPool();
-        this.executor = new QueuedThreadPool();
+        this.contextClassLoader = this.getClass().getClassLoader();
+        this.executor = Executors.newFixedThreadPool(10);
+        this.extensionRegistry = new WebSocketExtensionRegistry();
+        this.objectFactory = new DecoratedObjectFactory();
     }
 
     @Override
     public Session connectToServer(Object annotatedEndpointInstance, URI path) throws DeploymentException, IOException
     {
-        throw new UnsupportedOperationException("Not implemented in " + DummyContainer.class.getName());
+        throw new UnsupportedOperationException("Not supported by DummyContainer");
     }
 
     @Override
     public Session connectToServer(Class<?> annotatedEndpointClass, URI path) throws DeploymentException, IOException
     {
-        throw new UnsupportedOperationException("Not implemented in " + DummyContainer.class.getName());
+        throw new UnsupportedOperationException("Not supported by DummyContainer");
     }
 
     @Override
     public Session connectToServer(Endpoint endpointInstance, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
     {
-        throw new UnsupportedOperationException("Not implemented in " + DummyContainer.class.getName());
+        throw new UnsupportedOperationException("Not supported by DummyContainer");
     }
 
     @Override
     public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
     {
-        throw new UnsupportedOperationException("Not implemented in " + DummyContainer.class.getName());
+        throw new UnsupportedOperationException("Not supported by DummyContainer");
     }
 
     @Override
     public ByteBufferPool getBufferPool()
     {
-        return this.bufferPool;
+        return bufferPool;
+    }
+
+    @Override
+    public ClassLoader getContextClassloader()
+    {
+        return contextClassLoader;
     }
 
     @Override
     public Executor getExecutor()
     {
-        return this.executor;
+        return executor;
+    }
+
+    @Override
+    public WebSocketExtensionRegistry getExtensionRegistry()
+    {
+        return extensionRegistry;
+    }
+
+    @Override
+    public DecoratedObjectFactory getObjectFactory()
+    {
+        return objectFactory;
+    }
+
+    @Override
+    public WebSocketPolicy getPolicy()
+    {
+        return policy;
     }
 }

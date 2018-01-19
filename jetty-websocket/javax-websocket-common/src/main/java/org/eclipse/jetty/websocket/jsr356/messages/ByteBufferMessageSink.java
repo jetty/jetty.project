@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.MessageSinkImpl;
+import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 
 public class ByteBufferMessageSink extends MessageSinkImpl
 {
@@ -41,7 +41,6 @@ public class ByteBufferMessageSink extends MessageSinkImpl
     public ByteBufferMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
     {
         super(policy, executor, methodHandle);
-
         // Validate onMessageMethod
         Objects.requireNonNull(methodHandle, "MethodHandle");
         MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);

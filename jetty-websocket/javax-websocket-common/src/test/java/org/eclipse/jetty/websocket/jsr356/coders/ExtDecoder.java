@@ -16,21 +16,15 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.client;
+package org.eclipse.jetty.websocket.jsr356.coders;
 
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import javax.websocket.Decoder;
 
-public class ConfigurationException extends WebSocketException
+/**
+ * Testing scenario of an extended Decoder interface
+ * @param <T> the decoder type
+ */
+public interface ExtDecoder<T> extends Decoder.Text<T>
 {
-    private static final long serialVersionUID = 3026803845657799372L;
-
-    public ConfigurationException(String message)
-    {
-        super(message);
-    }
-
-    public ConfigurationException(String message, Throwable cause)
-    {
-        super(message,cause);
-    }
+    void setId(String id);
 }

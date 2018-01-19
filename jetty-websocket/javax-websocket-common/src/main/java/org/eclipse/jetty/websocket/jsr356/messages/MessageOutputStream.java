@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
@@ -39,7 +39,7 @@ public class MessageOutputStream extends OutputStream
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStream.class);
 
-    private final OutgoingFrames outgoing;
+    private final FrameHandler.Channel channel;
     private final ByteBufferPool bufferPool;
     private final SharedBlockingCallback blocker;
     private long frameCount;
@@ -49,9 +49,9 @@ public class MessageOutputStream extends OutputStream
     private Callback callback;
     private boolean closed;
 
-    public MessageOutputStream(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
+    public MessageOutputStream(FrameHandler.Channel channel, int bufferSize, ByteBufferPool bufferPool)
     {
-        this.outgoing = outgoing;
+        this.channel = channel;
         this.bufferPool = bufferPool;
         this.blocker = new SharedBlockingCallback();
         this.buffer = bufferPool.acquire(bufferSize, true);
@@ -139,7 +139,7 @@ public class MessageOutputStream extends OutputStream
 
             try(SharedBlockingCallback.Blocker b=blocker.acquire())
             {
-                outgoing.outgoingFrame(frame, b, BatchMode.OFF);
+                channel.sendFrame(frame, b, BatchMode.OFF);
                 b.block();
             }
 

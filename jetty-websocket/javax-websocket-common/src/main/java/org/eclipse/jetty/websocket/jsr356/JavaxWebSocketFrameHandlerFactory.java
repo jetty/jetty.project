@@ -29,8 +29,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
@@ -41,6 +43,8 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
+import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.messages.ByteArrayMessageSink;
@@ -54,7 +58,14 @@ import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 
 public class JavaxWebSocketFrameHandlerFactory
 {
+    private static final AtomicLong IDGEN = new AtomicLong(0);
+    private final JavaxWebSocketContainer container;
     private Map<Class<?>, JavaxWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
+
+    public JavaxWebSocketFrameHandlerFactory(JavaxWebSocketContainer container)
+    {
+        this.container = container;
+    }
 
     public JavaxWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
     {
@@ -85,7 +96,7 @@ public class JavaxWebSocketFrameHandlerFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public JavaxWebSocketFrameHandlerImpl createLocalEndpoint(Object endpointInstance, JavaxWebSocketSession session, WebSocketPolicy policy, Executor executor)
+    public JavaxWebSocketFrameHandler newJavaxFrameHandler(Object endpointInstance, WebSocketPolicy policy, HandshakeRequest upgradeRequest, HandshakeResponse upgradeResponse, CompletableFuture<Session> futureSession)
     {
         Object endpoint;
         EndpointConfig config;
@@ -122,27 +133,37 @@ public class JavaxWebSocketFrameHandlerFactory
         // TODO: handle decoders in bindTo steps?
         // TODO: handle parameterized @PathParam entries?
 
-        openHandle = bindTo(openHandle, endpoint, session);
-        closeHandle = bindTo(closeHandle, endpoint, session);
-        errorHandle = bindTo(errorHandle, endpoint, session);
-        textHandle = bindTo(textHandle, endpoint, session);
-        binaryHandle = bindTo(binaryHandle, endpoint, session);
-        pongHandle = bindTo(pongHandle, endpoint, session);
+        openHandle = bindTo(openHandle, endpoint);
+        closeHandle = bindTo(closeHandle, endpoint);
+        errorHandle = bindTo(errorHandle, endpoint);
+        textHandle = bindTo(textHandle, endpoint);
+        binaryHandle = bindTo(binaryHandle, endpoint);
+        pongHandle = bindTo(pongHandle, endpoint);
 
         // TODO: or handle decoders in createMessageSink?
+        CompletableFuture<Session> future = futureSession;
+        if(future == null)
+            future = new CompletableFuture<>();
 
-        MessageSink textSink = createMessageSink(textHandle, textSinkClass, endpointPolicy, executor);
-        MessageSink binarySink = createMessageSink(binaryHandle, binarySinkClass, endpointPolicy, executor);
+        String id = String.format("%s-%s-%d", upgradeRequest.getLocalSocketAddress(),
+                upgradeRequest.getRemoteSocketAddress(), IDGEN.getAndIncrement());
 
-        return new JavaxWebSocketFrameHandlerImpl(
-                endpoint,
+        return new JavaxWebSocketFrameHandler(
+                container,
+                endpointInstance,
                 endpointPolicy,
+                upgradeRequest, upgradeResponse,
                 openHandle, closeHandle, errorHandle,
-                textSink, binarySink,
-                pongHandle);
+                textHandle, binaryHandle,
+                textSinkClass, binarySinkClass,
+                pongHandle,
+                id,
+                config,
+                future);
     }
 
-    private MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, WebSocketPolicy endpointPolicy, Executor executor)
+    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass,
+                                                WebSocketPolicy endpointPolicy, Executor executor)
     {
         if (msgHandle == null)
             return null;
@@ -165,7 +186,7 @@ public class JavaxWebSocketFrameHandlerFactory
         }
     }
 
-    private MethodHandle bindTo(MethodHandle methodHandle, Object... objs)
+    public static MethodHandle bindTo(MethodHandle methodHandle, Object... objs)
     {
         if (methodHandle == null)
             return null;

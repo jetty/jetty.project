@@ -27,21 +27,16 @@ import javax.websocket.OnError;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.junit.Test;
 
 public class JavaxWebSocketLocalEndpoint_BadSignaturesTest extends AbstractJavaxWebSocketLocalEndpointTest
 {
     private void assertBadSocket(Object socket, String expectedString) throws Exception
     {
-        JavaxWebSocketFrameHandlerFactory factory = new JavaxWebSocketFrameHandlerFactory();
-        BasicEndpointConfig config = new BasicEndpointConfig();
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(socket, config);
-        JavaxWebSocketSession session = newSession();
-
         expectedException.expect(InvalidSignatureException.class);
         expectedException.expectMessage(containsString(expectedString));
-        factory.createLocalEndpoint(endpoint, session, container.getPolicy(), container.getExecutor());
+        newJavaxFrameHandler(socket);
     }
 
     @SuppressWarnings("UnusedParameters")

@@ -18,16 +18,18 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
+import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -36,7 +38,7 @@ import org.junit.rules.ExpectedException;
 public abstract class AbstractJavaxWebSocketLocalEndpointTest
 {
     protected static WebSocketPolicy clientPolicy = WebSocketPolicy.newClientPolicy();
-    protected static JavaxWebSocketContainer container;
+    protected static DummyContainer container;
     
     @BeforeClass
     public static void initContainer() throws Exception
@@ -53,11 +55,12 @@ public abstract class AbstractJavaxWebSocketLocalEndpointTest
     
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
-    
+
     protected AvailableEncoders encoders;
     protected AvailableDecoders decoders;
     protected Map<String, String> uriParams = new HashMap<>();
     protected EndpointConfig endpointConfig;
+    protected FrameHandler.Channel channel = new DummyChannel();
     
     public AbstractJavaxWebSocketLocalEndpointTest()
     {
@@ -67,27 +70,16 @@ public abstract class AbstractJavaxWebSocketLocalEndpointTest
         uriParams = new HashMap<>();
     }
     
-    public JavaxWebSocketSession newSession()
+    protected JavaxWebSocketFrameHandler newJavaxFrameHandler(Object websocket)
     {
-        String id = this.getClass().getSimpleName();
-        URI requestURI = URI.create("ws://localhost/" + id);
-        DummyConnection connection = DummyConnection.from(container, requestURI);
-        return new JavaxWebSocketSession(container, connection);
-    }
-
-    protected JavaxWebSocketFrameHandlerImpl createLocalEndpoint(TrackingSocket socket)
-    {
-        JavaxWebSocketFrameHandlerFactory factory = new JavaxWebSocketFrameHandlerFactory();
+        JavaxWebSocketFrameHandlerFactory factory = new JavaxWebSocketFrameHandlerFactory(container);
         BasicEndpointConfig config = new BasicEndpointConfig();
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(socket, config);
-        JavaxWebSocketSession session = newSession();
+        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket, config);
+        HandshakeRequest handshakeRequest = new HandshakeRequestAdapter();
+        HandshakeResponse handshakeResponse = new HandshakeResponseAdapter();
 
-        JavaxWebSocketFrameHandlerImpl localEndpoint = factory.createLocalEndpoint(endpoint,
-                session, container.getPolicy(), container.getExecutor());
-
-        JavaxWebSocketRemoteEndpoint remoteEndpoint = null;
-
-        session.setWebSocketEndpoint(socket, container.getPolicy(), localEndpoint, remoteEndpoint);
+        JavaxWebSocketFrameHandler localEndpoint = factory.newJavaxFrameHandler(endpoint,
+                container.getPolicy(), handshakeRequest, handshakeResponse, new CompletableFuture<>());
 
         return localEndpoint;
     }

@@ -22,14 +22,13 @@ import java.lang.invoke.MethodHandle;
 
 import javax.websocket.Decoder;
 
-import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
 public class DecodedTextMessageSink extends StringMessageSink
 {
-    public DecodedTextMessageSink(JavaxWebSocketSession session, WebSocketLocalEndpoint endpointFunctions, Decoder.Text decoder, MethodHandle methodHandle)
+    public DecodedTextMessageSink(JavaxWebSocketSession session, Decoder.Text decoder, MethodHandle methodHandle)
     {
-        super(session.getPolicy(), session.getExecutor(), methodHandle);
+        super(session.getPolicy(), session.getContainerContext().getExecutor(), methodHandle);
 
         /*super(policy, (message) ->
         {
@@ -43,7 +42,7 @@ public class DecodedTextMessageSink extends StringMessageSink
                 if (ret != null)
                 {
                     // send response
-                    endpointFunctions.getSession().getBasicRemote().sendObject(ret);
+                    frameHandler.getSession().getBasicRemote().sendObject(ret);
                 }
                 
                 return null;
@@ -52,6 +51,6 @@ public class DecodedTextMessageSink extends StringMessageSink
             {
                 throw new WebSocketException(e);
             }
-        });*/
+        }); */
     }
 }

@@ -109,11 +109,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         return session;
     }
 
-    public CompletableFuture<Session> getFutureSession()
-    {
-        return futureSession;
-    }
-
     @Override
     public void onClosed(CloseStatus closeStatus) throws Exception
     {

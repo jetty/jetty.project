@@ -32,7 +32,6 @@ import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.junit.Test;
@@ -40,12 +39,12 @@ import org.junit.Test;
 public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryStreamTest extends AbstractJavaxWebSocketLocalEndpointTest
 {
     @SuppressWarnings("Duplicates")
-    private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<WebSocketLocalEndpoint, Void> func) throws Exception
+    private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<JavaxWebSocketFrameHandler, Void> func) throws Exception
     {
-        JavaxWebSocketFrameHandlerImpl localEndpoint = createLocalEndpoint(socket);
+        JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // This invocation is the same for all tests
-        localEndpoint.onOpen();
+        localEndpoint.onOpen(channel);
         
         func.apply(localEndpoint);
         
@@ -75,7 +74,14 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryStreamTest extends Abst
     {
         TrackingSocket socket = performOnMessageInvocation(new MessageStreamSocket(), (endpoint) ->
         {
-            endpoint.onBinary(new BinaryFrame().setPayload("Hello World").setFin(true), Callback.NOOP);
+            try
+            {
+                endpoint.onFrame(new BinaryFrame().setPayload("Hello World").setFin(true), Callback.NOOP);
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException("Unexpected error", e);
+            }
             return null;
         });
         

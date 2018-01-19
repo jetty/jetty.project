@@ -60,6 +60,16 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         this.channel = channel;
     }
 
+    protected MessageWriter newMessageWriter()
+    {
+        return new MessageWriter(channel, session.getMaxTextMessageBufferSize(), session.getContainerContext().getBufferPool());
+    }
+
+    protected MessageOutputStream newMessageOutputStream()
+    {
+        return new MessageOutputStream(channel, session.getMaxBinaryMessageBufferSize(), session.getContainerContext().getBufferPool());
+    }
+
     @Override
     public void flushBatch() throws IOException
     {
@@ -172,7 +182,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
             if (encoder instanceof Encoder.TextStream)
             {
                 Encoder.TextStream etxt = (Encoder.TextStream) encoder;
-                try (MessageWriter writer = new MessageWriter(this, session.getPolicy().getMaxTextMessageBufferSize(), session.getContainerBufferPool()))
+                try (MessageWriter writer = newMessageWriter())
                 {
                     writer.setCallback(callback);
                     etxt.encode(data, writer);
@@ -191,7 +201,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
             if (encoder instanceof Encoder.BinaryStream)
             {
                 Encoder.BinaryStream ebin = (Encoder.BinaryStream) encoder;
-                try (MessageOutputStream out = new MessageOutputStream(this, session.getPolicy().getMaxBinaryMessageBufferSize(), session.getContainerBufferPool()))
+                try (MessageOutputStream out = newMessageOutputStream())
                 {
                     out.setCallback(callback);
                     ebin.encode(data, out);

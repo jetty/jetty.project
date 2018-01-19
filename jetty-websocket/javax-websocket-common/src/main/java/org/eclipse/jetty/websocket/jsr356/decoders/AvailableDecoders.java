@@ -33,9 +33,9 @@ import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.InitException;
+import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 
 public class AvailableDecoders implements Predicate<Class<?>>
 {

@@ -23,33 +23,31 @@ import java.util.concurrent.Executor;
 
 import javax.websocket.Decoder;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
 public class DecodedReaderMessageSink extends ReaderMessageSink
 {
-    private static final Logger LOG = Log.getLogger(DecodedReaderMessageSink.class);
-    
+    private final Decoder.TextStream decoder;
+
+    public DecodedReaderMessageSink(JavaxWebSocketSession session, Decoder.TextStream decoder, MethodHandle methodHandle)
+    {
+        this(session.getPolicy(), session.getContainerContext().getExecutor(), decoder, methodHandle);
+    }
+
     public DecodedReaderMessageSink(WebSocketPolicy policy, Executor executor, Decoder.TextStream decoder, MethodHandle methodHandle)
     {
         super(policy, executor, methodHandle);
+        this.decoder = decoder;
 
         /*super(executor, (reader) ->
         {
             try
             {
-                if(LOG.isDebugEnabled())
-                    LOG.debug("{}.decode((Reader){})", decoder.getClass().getName(), reader);
                 Object decoded = decoder.decode(reader);
     
-                if(LOG.isDebugEnabled())
-                    LOG.debug("onMessageFunction/{}/.apply({})", onMessageFunction, decoded);
                 // notify event
                 Object ret = onMessageFunction.apply(decoded);
-                
-                if(LOG.isDebugEnabled())
-                    LOG.debug("ret = {}", ret);
                 
                 if (ret != null)
                 {

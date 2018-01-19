@@ -40,14 +40,13 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
-import org.eclipse.jetty.websocket.jsr356.client.ClientContainer;
+import org.eclipse.jetty.websocket.jsr356.client.JavaxClientContainer;
 import org.eclipse.jetty.websocket.jsr356.client.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
 
 @ManagedObject("JSR356 Server Container")
-public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer
+public class ServerContainer extends JavaxClientContainer implements javax.websocket.server.ServerContainer
 {
     private static final Logger LOG = Log.getLogger(ServerContainer.class);
 

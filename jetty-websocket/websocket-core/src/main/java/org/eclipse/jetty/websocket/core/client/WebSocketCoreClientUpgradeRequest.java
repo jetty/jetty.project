@@ -136,6 +136,13 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
         updateWebSocketSubProtocolHeader();
     }
 
+    public void setSubProtocols(List<String> protocols)
+    {
+        this.subProtocols.clear();
+        this.subProtocols.addAll(protocols);
+        updateWebSocketSubProtocolHeader();
+    }
+
     @Override
     public void send(final Response.CompleteListener listener)
     {

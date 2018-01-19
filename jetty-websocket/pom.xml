@@ -25,11 +25,11 @@
         <module>jetty-websocket-server</module>
         <module>jetty-websocket-tests</module>
         <!-- JSR356 Implementation -->
-        <!-- temp disabled 
-        <module>websocket-tests</module>
         <module>javax-websocket-common</module>
         <module>javax-websocket-client-impl</module>
         <module>javax-websocket-server-impl</module>
+        <!-- temp disabled
+        <module>websocket-tests</module>
           -->
     </modules>
 

@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
@@ -61,8 +62,18 @@ public class WebSocketCoreClient extends ContainerLifeCycle
 
     public WebSocketCoreClient(HttpClient httpClient)
     {
-        this.httpClient = httpClient;
-        this.policy = WebSocketPolicy.newClientPolicy();
+        this(WebSocketPolicy.newClientPolicy(), httpClient);
+    }
+
+    public WebSocketCoreClient(WebSocketPolicy policy)
+    {
+        this(policy, null);
+    }
+
+    public WebSocketCoreClient(WebSocketPolicy policy, HttpClient httpClient)
+    {
+        this.httpClient = httpClient == null ? new HttpClient() : httpClient;
+        this.policy = policy.clonePolicyAs(WebSocketBehavior.CLIENT);
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.objectFactory = new DecoratedObjectFactory();
     }
@@ -85,6 +96,8 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         {
             throw new IllegalStateException(WebSocketCoreClient.class.getSimpleName() + "@" + this.hashCode() + " is not started");
         }
+
+        // TODO: add HttpClient delayed/on-demand start - See Issue #1516
 
         URI toUri = request.getURI();
 

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
@@ -33,24 +32,24 @@ import javax.websocket.Session;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
+import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.junit.Test;
 
 public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryTest extends AbstractJavaxWebSocketLocalEndpointTest
 {
     private void assertOnMessageInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
     {
-        JavaxWebSocketFrameHandlerImpl localEndpoint = createLocalEndpoint(socket);
+        JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
         
         // This invocation is the same for all tests
-        localEndpoint.onOpen();
+        localEndpoint.onOpen(channel);
         
-        assertThat("Has BinarySink", localEndpoint.getBinarySink(), notNullValue());
+        assertThat("Has BinarySink", localEndpoint.hasBinarySink(), is(true));
         
         // This invocation is the same for all tests
         ByteBuffer byteBuffer = ByteBuffer.wrap("Hello World".getBytes(StandardCharsets.UTF_8));
-        localEndpoint.onBinary(new BinaryFrame().setPayload(byteBuffer).setFin(true), Callback.NOOP);
+        localEndpoint.onFrame(new BinaryFrame().setPayload(byteBuffer).setFin(true), Callback.NOOP);
         String event = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("Event", event, is(String.format(expectedEventFormat, args)));
     }

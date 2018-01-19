@@ -20,31 +20,36 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Executor;
+import java.util.concurrent.CompletableFuture;
 
 import javax.websocket.Extension;
+import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
+import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 
-public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer
+public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer, WebSocketContainerContext
 {
     private final WebSocketPolicy containerPolicy;
     private final WebSocketExtensionRegistry extensionRegistry;
-    private final JavaxWebSocketFrameHandlerFactory localEndpointFactory;
+    private final JavaxWebSocketFrameHandlerFactory frameHandlerFactory;
     private ByteBufferPool bufferPool;
     private long asyncSendTimeout = -1;
-    private long defaultMaxSessionIdleTimeout = -1;
+    private long defaultMaxSessionIdleTimeout = -1; // TODO: this should probably be policy.idleTimeout
 
     public JavaxWebSocketContainer(WebSocketPolicy containerPolicy)
     {
         this.containerPolicy = containerPolicy;
         this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.localEndpointFactory = new JavaxWebSocketFrameHandlerFactory();
+        this.frameHandlerFactory = new JavaxWebSocketFrameHandlerFactory(this);
         this.bufferPool = new MappedByteBufferPool(); // TODO: obtain from / sync with websocket-core on container setup
     }
 
@@ -141,6 +146,12 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         return extensionRegistry;
     }
 
+    @Override
+    public DecoratedObjectFactory getObjectFactory()
+    {
+        return null;
+    }
+
     /**
      * {@inheritDoc}
      *
@@ -160,11 +171,6 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         return ret;
     }
 
-    public JavaxWebSocketFrameHandlerFactory getLocalEndpointFactory()
-    {
-        return localEndpointFactory;
-    }
-
     /**
      * Used in {@link javax.websocket.Session#getOpenSessions()}
      *
@@ -180,14 +186,6 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         return containerPolicy;
     }
 
-    public void removeSession(JavaxWebSocketSession session) throws Exception
-    {
-        if (removeBean(session))
-        {
-            session.stop();
-        }
-    }
-
     /**
      * {@inheritDoc}
      *
@@ -200,7 +198,8 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
         this.asyncSendTimeout = timeoutmillis;
     }
 
-    public abstract ByteBufferPool getBufferPool();
-
-    public abstract Executor getExecutor();
+    public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse, CompletableFuture<Session> futureSession)
+    {
+        return frameHandlerFactory.newJavaxFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse, futureSession);
+    }
 }

@@ -23,12 +23,13 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.security.Principal;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.websocket.CloseReason;
@@ -40,15 +41,16 @@ import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.common.HandshakeRequest;
+import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
@@ -62,49 +64,55 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
 
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
     private final JavaxWebSocketContainer container;
-    private final WebSocketChannel channel;
-    private final JavaxWebSocketUpgradeRequest upgradeRequest;
-    private final JavaxWebSocketUpgradeResponse upgradeResponse;
+    private final FrameHandler.Channel channel;
+    private final HandshakeRequest upgradeRequest;
+    private final HandshakeResponse upgradeResponse;
     private final JavaxWebSocketFrameHandler frameHandler;
     private final WebSocketPolicy policy;
+    private final EndpointConfig config;
     private final String id;
-
-    private EndpointConfig config;
-    private AvailableDecoders availableDecoders;
-    private AvailableEncoders availableEncoders;
+    private final AvailableDecoders availableDecoders;
+    private final AvailableEncoders availableEncoders;
+    private final Map<String, String> pathParameters;
+    private Map<String,Object> userProperties;
 
     private Set<MessageHandler> messageHandlerSet;
-
     private List<Extension> negotiatedExtensions;
-    private Map<String, String> pathParameters = Collections.emptyMap();
     private JavaxWebSocketAsyncRemote asyncRemote;
     private JavaxWebSocketBasicRemote basicRemote;
-    /**
-     * Optional Future to trigger when the session is opened (or fails to onOpen).
-     * Most commonly used from client implementations that want a future to
-     * base connect + onOpen success against (like JSR-356 client)
-     */
-    private CompletableFuture<JavaxWebSocketSession> openFuture;
 
     public JavaxWebSocketSession(JavaxWebSocketContainer container,
-                                 JavaxWebSocketUpgradeRequest upgradeRequest,
-                                 JavaxWebSocketUpgradeResponse upgradeResponse,
+                                 FrameHandler.Channel channel,
                                  JavaxWebSocketFrameHandler frameHandler,
+                                 HandshakeRequest upgradeRequest,
+                                 HandshakeResponse upgradeResponse,
                                  String id,
-                                 WebSocketPolicy policy,
-                                 WebSocketChannel channel)
+                                 EndpointConfig endpointConfig)
     {
         this.container = container;
         this.channel = channel;
+        this.frameHandler = frameHandler;
         this.upgradeRequest = upgradeRequest;
         this.upgradeResponse = upgradeResponse;
-        this.frameHandler = frameHandler;
+        this.policy = frameHandler.getPolicy();
         this.id = id;
-        this.policy = policy;
 
-        // Container tracks sessions
-        // If container is stopped, then session and channel are stopped. TODO: how is the websocket-core channel stopped/closed?
-        this.container.addManaged(this);
+        this.config = endpointConfig == null ? new BasicEndpointConfig() : endpointConfig;
+
+        this.availableDecoders = new AvailableDecoders(this.config);
+        this.availableEncoders = new AvailableEncoders(this.config);
+
+        if (this.config instanceof PathParamProvider)
+        {
+            PathParamProvider pathParamProvider = (PathParamProvider) this.config;
+            this.pathParameters = new HashMap<>(pathParamProvider.getPathParams());
+        }
+        else
+        {
+            this.pathParameters = Collections.emptyMap();
+        }
+
+        this.userProperties = new HashMap<>(this.config.getUserProperties());
     }
 
     /**
@@ -257,12 +265,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         return basicRemote;
     }
 
-    public BatchMode getBatchMode()
-    {
-        // JSR 356 specification mandates default batch mode to be off.
-        return BatchMode.OFF;
-    }
-
     /**
      * {@inheritDoc}
      *
@@ -275,9 +277,9 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         return this.container;
     }
 
-    public ByteBufferPool getContainerBufferPool()
+    public WebSocketContainerContext getContainerContext()
     {
-        return this.container.getBufferPool();
+        return container;
     }
 
     public AvailableDecoders getDecoders()
@@ -341,7 +343,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public long getMaxIdleTimeout()
     {
-        return getPolicy().getIdleTimeout();
+        return channel.getIdleTimeout(TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -354,7 +356,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public void setMaxIdleTimeout(long milliseconds)
     {
         getPolicy().setIdleTimeout(milliseconds);
-        channel.getConnection().setMaxIdleTimeout(milliseconds);
+        channel.setIdleTimeout(milliseconds, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -459,11 +461,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         return pathParameters;
     }
 
-    public void setPathParameters(Map<String, String> pathParams)
-    {
-        this.pathParameters = Collections.unmodifiableMap(pathParams);
-    }
-
     public WebSocketPolicy getPolicy()
     {
         return policy;
@@ -552,7 +549,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public Map<String, Object> getUserProperties()
     {
-        return config.getUserProperties();
+        return this.userProperties;
     }
 
     /**
@@ -591,39 +588,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
             getJsrEndpointFunctions().removeMessageHandler(handler);
             */
         }
-    }
-
-    public void setOpenFuture(CompletableFuture<JavaxWebSocketSession> future)
-    {
-        this.openFuture = future;
-    }
-
-    public void setWebSocketEndpoint(Object websocket, WebSocketPolicy policy, JavaxWebSocketFrameHandler localEndpoint, JavaxWebSocketRemoteEndpoint remoteEndpoint)
-    {
-        final Object endpoint;
-
-        if (websocket instanceof ConfiguredEndpoint)
-        {
-            ConfiguredEndpoint configuredEndpoint = (ConfiguredEndpoint) websocket;
-            endpoint = configuredEndpoint.getRawEndpoint();
-            this.config = configuredEndpoint.getConfig();
-        }
-        else
-        {
-            endpoint = websocket;
-            this.config = new BasicEndpointConfig();
-        }
-
-        this.availableDecoders = new AvailableDecoders(this.config);
-        this.availableEncoders = new AvailableEncoders(this.config);
-
-        if (this.config instanceof PathParamProvider)
-        {
-            PathParamProvider pathParamProvider = (PathParamProvider) this.config;
-            pathParameters.putAll(pathParamProvider.getPathParams());
-        }
-
-        // super.setWebSocketEndpoint(endpoint, policy, localEndpoint, remoteEndpoint);
     }
 
     @Override
