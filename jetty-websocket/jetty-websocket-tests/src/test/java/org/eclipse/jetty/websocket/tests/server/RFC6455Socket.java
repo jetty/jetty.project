@@ -29,7 +29,6 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 @WebSocket
 public class RFC6455Socket
@@ -46,9 +45,7 @@ public class RFC6455Socket
         // echo the message back.
         ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
         RemoteEndpoint remote = session.getRemote();
-        remote.sendBytes(data, null);
-        if (remote.getBatchMode() == BatchMode.ON)
-            remote.flush();
+        remote.sendBinary(data);
     }
 
     @OnWebSocketConnect
@@ -70,9 +67,7 @@ public class RFC6455Socket
 
         // echo the message back.
         RemoteEndpoint remote = session.getRemote();
-        remote.sendString(message, null);
-        if (remote.getBatchMode() == BatchMode.ON)
-            remote.flush();
+        remote.sendText(message, null);
     }
     
     @OnWebSocketError

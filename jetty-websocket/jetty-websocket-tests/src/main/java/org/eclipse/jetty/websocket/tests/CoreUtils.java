@@ -18,16 +18,22 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-public final class Defaults
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+
+public class CoreUtils
 {
-    public static final long CONNECT_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
-    public static final long OPEN_EVENT_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
-    public static final long CLOSE_EVENT_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
-
-    public static String getStaticWebSocketKey()
+    public static void close(FrameHandler.Channel channel, long timeout, TimeUnit timeoutUnit) throws InterruptedException, ExecutionException, TimeoutException
     {
-        return "dGhlIHNhbXBsZSBub25jZQ==";
+        if(channel == null)
+            return;
+
+        FutureCallback blocking = new FutureCallback();
+        channel.close(blocking);
+        blocking.get(timeout, timeoutUnit);
     }
 }

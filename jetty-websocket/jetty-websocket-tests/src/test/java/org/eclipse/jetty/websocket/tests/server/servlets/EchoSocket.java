@@ -24,9 +24,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
  * Example of a basic blocking echo socket.
@@ -46,10 +44,7 @@ public class EchoSocket extends WebSocketAdapter
         try
         {
             // echo the data back
-            RemoteEndpoint remote = getRemote();
-            remote.sendString(message);
-            if (remote.getBatchMode() == BatchMode.ON)
-                remote.flush();
+            getRemote().sendText(message);
         }
         catch (IOException e)
         {
@@ -68,10 +63,7 @@ public class EchoSocket extends WebSocketAdapter
         try
         {
             // echo the data back
-            RemoteEndpoint remote = getRemote();
-            remote.sendBytes(ByteBuffer.wrap(payload, offset, len));
-            if (remote.getBatchMode() == BatchMode.ON)
-                remote.flush();
+            getRemote().sendBinary(ByteBuffer.wrap(payload, offset, len));
         }
         catch (IOException e)
         {

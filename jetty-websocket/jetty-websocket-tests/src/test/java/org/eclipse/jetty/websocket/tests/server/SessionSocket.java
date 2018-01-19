@@ -18,18 +18,15 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 @WebSocket
 public class SessionSocket
@@ -64,7 +61,7 @@ public class SessionSocket
                 
                 if (values == null)
                 {
-                    sendString("<null>");
+                    session.getRemote().sendText("<null>");
                     return;
                 }
                 
@@ -82,38 +79,30 @@ public class SessionSocket
                 }
                 valueStr.append(']');
                 LOG.debug("valueStr = {}", valueStr);
-                sendString(valueStr.toString());
+                session.getRemote().sendText(valueStr.toString());
                 return;
             }
             
             if ("session.isSecure".equals(message))
             {
                 String issecure = String.format("session.isSecure=%b", session.isSecure());
-                sendString(issecure);
+                session.getRemote().sendText(issecure);
                 return;
             }
             
             if ("session.upgradeRequest.requestURI".equals(message))
             {
                 String response = String.format("session.upgradeRequest.requestURI=%s", session.getHandshakeRequest().getRequestURI().toASCIIString());
-                sendString(response);
+                session.getRemote().sendText(response);
                 return;
             }
             
             // echo the message back.
-            sendString(message);
+            session.getRemote().sendText(message);
         }
         catch (Throwable t)
         {
             LOG.warn(t);
         }
-    }
-    
-    protected void sendString(String text) throws IOException
-    {
-        RemoteEndpoint remote = session.getRemote();
-        remote.sendString(text, null);
-        if (remote.getBatchMode() == BatchMode.ON)
-            remote.flush();
     }
 }
