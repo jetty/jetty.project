@@ -30,8 +30,8 @@ import java.lang.annotation.Target;
  * Acceptable method patterns.<br>
  * Note: {@code methodName} can be any name you want to use.
  * <ol>
- * <li><code>public void methodName({@link org.eclipse.jetty.websocket.api.Frame} frame)</code></li>
- * <li><code>public void methodName({@link org.eclipse.jetty.websocket.api.Session} session, {@link org.eclipse.jetty.websocket.api.Frame} frame)</code></li>
+ * <li><code>public void methodName({@link org.eclipse.jetty.websocket.core.Frame} frame)</code></li>
+ * <li><code>public void methodName({@link org.eclipse.jetty.websocket.api.Session} session, {@link org.eclipse.jetty.websocket.core.Frame} frame)</code></li>
  * </ol>
  */
 @Documented

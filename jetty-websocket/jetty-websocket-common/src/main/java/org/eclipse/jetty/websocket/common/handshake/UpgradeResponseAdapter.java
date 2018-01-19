@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.common.handshake;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -176,7 +175,7 @@ public class UpgradeResponseAdapter implements UpgradeResponse
      * <p>
      * Notes:
      * <ul>
-     * <li>Per the spec you cannot add extensions that have not been seen in the {@link UpgradeRequest}, just remove entries you don't want to use</li>
+     * <li>Per the spec you cannot add extensions that have not been seen in the {@link org.eclipse.jetty.websocket.api.UpgradeRequest}, just remove entries you don't want to use</li>
      * <li>If this is unused, or a null is passed, then the list negotiation will follow default behavior and use the complete list of extensions that are
      * available in this WebSocket server implementation.</li>
      * </ul>
