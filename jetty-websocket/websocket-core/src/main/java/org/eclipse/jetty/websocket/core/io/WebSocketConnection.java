@@ -86,6 +86,22 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
                                ByteBufferPool bufferPool,
                                WebSocketChannel channel)
     {
+        this(endp, executor, bufferPool, channel, true);
+    }
+
+    /**
+     * Create a WSConnection.
+     * <p>
+     * It is assumed that the WebSocket Upgrade Handshake has already
+     * completed successfully before creating this connection.
+     * </p>
+     */
+    public WebSocketConnection(EndPoint endp,
+                               Executor executor,
+                               ByteBufferPool bufferPool,
+                               WebSocketChannel channel,
+                               boolean validating)
+    {
         super(endp, executor);
 
         Objects.requireNonNull(endp, "EndPoint");
@@ -98,7 +114,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         this.policy = channel.getPolicy();
         this.channel = channel;
 
-        this.generator = new Generator(policy, bufferPool);
+        this.generator = new Generator(policy, bufferPool, validating);
         this.parser = new Parser(policy, bufferPool, this);
         this.suspendToken = new AtomicBoolean(false);
         this.flusher = new Flusher(policy.getOutputBufferSize(), generator, endp);

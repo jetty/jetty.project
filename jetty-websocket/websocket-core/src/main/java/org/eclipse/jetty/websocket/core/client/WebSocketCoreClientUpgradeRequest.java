@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
@@ -41,6 +42,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -51,12 +53,30 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.UpgradeException;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 
 public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpConnectionUpgrader
 {
+    public static class Static extends WebSocketCoreClientUpgradeRequest
+    {
+        private final FrameHandler frameHandler;
+
+        public Static(WebSocketCoreClient webSocketClient, URI requestURI, FrameHandler frameHandler)
+        {
+            super(webSocketClient, requestURI);
+            this.frameHandler = frameHandler;
+        }
+
+        @Override
+        public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
+        {
+            return frameHandler;
+        }
+    }
+
     private static final Logger LOG = Log.getLogger(WebSocketCoreClientUpgradeRequest.class);
     private final CompletableFuture<FrameHandler.Channel> fut;
     private final WebSocketCoreClient wsClient;
@@ -256,14 +276,8 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
 
         FrameHandler frameHandler = getFrameHandler(wsClient, response);
 
-        WebSocketChannel wsChannel = new WebSocketChannel(frameHandler, wsClient.getPolicy(), extensionStack, negotiatedSubProtocol);
-
-        WebSocketConnection wsConnection = new WebSocketConnection(
-                endp,
-                httpClient.getExecutor(),
-                httpClient.getByteBufferPool(),
-                wsChannel);
-
+        WebSocketChannel wsChannel = newWebSocketChannel(frameHandler, wsClient.getPolicy(), extensionStack, negotiatedSubProtocol);
+        WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getByteBufferPool(), wsChannel);
         wsChannel.setWebSocketConnection(wsConnection);
 
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
@@ -272,6 +286,19 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
         endp.upgrade(wsConnection);
 
         fut.complete(wsChannel);
+    }
+
+    protected WebSocketConnection newWebSocketConnection(EndPoint endp, Executor executor, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
+    {
+        return new WebSocketConnection(endp, executor, byteBufferPool, wsChannel);
+    }
+
+    protected WebSocketChannel newWebSocketChannel(FrameHandler handler,
+                                                   WebSocketPolicy policy,
+                                                   ExtensionStack extensionStack,
+                                                   String negotiatedSubProtocol)
+    {
+        return new WebSocketChannel(handler, policy, extensionStack, negotiatedSubProtocol);
     }
 
     public abstract FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response);
