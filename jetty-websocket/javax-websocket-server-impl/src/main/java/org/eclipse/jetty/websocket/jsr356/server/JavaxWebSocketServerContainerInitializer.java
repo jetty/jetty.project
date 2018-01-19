@@ -72,7 +72,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
             if (sce.getServletContext() instanceof ContextHandler.Context)
             {
                 ContextHandler handler = ((ContextHandler.Context)sce.getServletContext()).getContextHandler();
-                ServerContainer bean = handler.getBean(ServerContainer.class);
+                JavaxServerContainer bean = handler.getBean(JavaxServerContainer.class);
                 if (bean != null)
                     handler.removeBean(bean);
             }
@@ -139,7 +139,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
      * @return the created websocket server container
      * @throws ServletException if unable to create the websocket server container
      */
-    public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
+    public static JavaxServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
         ServletContextWebSocketContainer wsContextContainer = ServletContextWebSocketContainer.get(context.getServletContext());
 
@@ -154,10 +154,13 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
         }
         
         // Create the Jetty ServerContainer implementation
-        ServerContainer jettyContainer = new ServerContainer(wsContextContainer, httpClient);
+        JavaxServerContainer jettyContainer = new JavaxServerContainer(wsContextContainer, nativeWebSocketConfiguration, httpClient);
         context.addBean(jettyContainer);
-        
-        // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
+
+        // Add FrameHandlerFactory to servlet container for this JSR container
+        wsContextContainer.addFrameHandlerFactory(jettyContainer.getFrameHandlerFactory());
+
+        // Store a reference to the ServerContainer per - javax.websocket spec 1.0 final - section 6.4: Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
     
         // Create Filter
@@ -180,11 +183,11 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
      * @deprecated use {@link #configureContext(ServletContextHandler)} instead
      * @param context not used
      * @param jettyContext the {@link ServletContextHandler} to use
-     * @return a configured {@link ServerContainer} instance
+     * @return a configured {@link JavaxServerContainer} instance
      * @throws ServletException if the {@link WebSocketUpgradeFilter} cannot be configured
      */
     @Deprecated
-    public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
+    public static JavaxServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
     {
         return configureContext(jettyContext);
     }
@@ -215,7 +218,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
         try(ThreadClassLoaderScope scope = new ThreadClassLoaderScope(context.getClassLoader()))
         {
             // Create the Jetty ServerContainer implementation
-            ServerContainer jettyContainer = configureContext(jettyContext);
+            JavaxServerContainer jettyContainer = configureContext(jettyContext);
             context.addListener(new ContextDestroyListener()); // make sure context is cleaned up when the context stops
             
             if (LOG.isDebugEnabled())

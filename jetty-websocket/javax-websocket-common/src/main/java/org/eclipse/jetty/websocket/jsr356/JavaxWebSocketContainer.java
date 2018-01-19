@@ -40,7 +40,6 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
 {
     private final WebSocketPolicy containerPolicy;
     private final WebSocketExtensionRegistry extensionRegistry;
-    private final JavaxWebSocketFrameHandlerFactory frameHandlerFactory;
     private ByteBufferPool bufferPool;
     private long asyncSendTimeout = -1;
     private long defaultMaxSessionIdleTimeout = -1; // TODO: this should probably be policy.idleTimeout
@@ -49,9 +48,10 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
     {
         this.containerPolicy = containerPolicy;
         this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.frameHandlerFactory = new JavaxWebSocketFrameHandlerFactory(this);
         this.bufferPool = new MappedByteBufferPool(); // TODO: obtain from / sync with websocket-core on container setup
     }
+
+    protected abstract JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory();
 
     /**
      * {@inheritDoc}
@@ -200,6 +200,6 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
 
     public JavaxWebSocketFrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse, CompletableFuture<Session> futureSession)
     {
-        return frameHandlerFactory.newJavaxFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse, futureSession);
+        return getFrameHandlerFactory().newJavaxFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse, futureSession);
     }
 }

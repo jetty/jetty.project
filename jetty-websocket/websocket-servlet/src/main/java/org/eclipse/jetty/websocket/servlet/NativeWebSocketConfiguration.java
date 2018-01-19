@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
  * Only applicable if using {@link WebSocketUpgradeFilter}
  * </p>
  */
-public class NativeWebSocketConfiguration extends ContainerLifeCycle
+public class NativeWebSocketConfiguration extends ContainerLifeCycle implements MappedWebSocketServletNegotiator
 {
     private final WebSocketServletFactory factory;
     private final PathMappings<WebSocketServletNegotiator> mappings = new PathMappings<>();
@@ -54,51 +54,6 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle
         this.factory = webSocketServletFactory;
         addBean(this.factory);
         addBean(this.mappings);
-    }
-
-    @Override
-    public void doStop() throws Exception
-    {
-        mappings.removeIf((mapped) -> !(mapped.getResource() instanceof WebSocketServletNegotiator));
-        super.doStop();
-    }
-
-    /**
-     * Get WebSocketServletFactory being used.
-     *
-     * @return the WebSocketServletFactory being used.
-     */
-    public WebSocketServletFactory getFactory()
-    {
-        return this.factory;
-    }
-
-    /**
-     * Get the matching {@link MappedResource} for the provided target.
-     *
-     * @param target the target path
-     * @return the matching resource, or null if no match.
-     */
-    public MappedResource<WebSocketServletNegotiator> getMatch(String target)
-    {
-        MappedResource<WebSocketServletNegotiator> mapping = this.mappings.getMatch(target);
-        if (mapping == null)
-        {
-            return null;
-        }
-
-        return mapping;
-    }
-
-    /**
-     * Used to configure the Default {@link WebSocketPolicy} used by all endpoints that
-     * don't redeclare the values.
-     *
-     * @return the default policy for all WebSockets
-     */
-    public WebSocketPolicy getPolicy()
-    {
-        return this.factory.getPolicy();
     }
 
     /**
@@ -132,8 +87,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator)
     {
         WebSocketCreator wsCreator = creator;
-        WebSocketServletNegotiator negotiator =
-                new WebSocketServletNegotiator(factory, wsCreator);
+        WebSocketServletNegotiator negotiator = new WebSocketServletNegotiator(factory, wsCreator);
         if (!isRunning())
         {
             negotiator = new PersistedWebSocketServletNegotiator(negotiator);
@@ -162,50 +116,125 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle
         });
     }
 
-    public void addMapping(String rawspec, WebSocketCreator creator)
+    public void addMapping(String rawSpec, WebSocketCreator creator)
     {
-        PathSpec spec = toPathSpec(rawspec);
-        addMapping(spec, creator);
+        addMapping(parsePathSpec(rawSpec), creator);
     }
 
-    private PathSpec toPathSpec(String rawspec)
+    /**
+     * Manually add a WebSocket mapping.
+     *
+     * @param rawSpec the pathspec to map to (see {@link #addMapping(String, WebSocketCreator)} for syntax details)
+     * @param endpointClass the endpoint class to use for new upgrade requests on the provided pathspec
+     */
+    public void addMapping(String rawSpec, final Class<?> endpointClass)
     {
-        // Determine what kind of path spec we are working with
-        if (rawspec.charAt(0) == '/' || rawspec.startsWith("*.") || rawspec.startsWith("servlet|"))
-        {
-            return new ServletPathSpec(rawspec);
-        }
-        else if (rawspec.charAt(0) == '^' || rawspec.startsWith("regex|"))
-        {
-            return new RegexPathSpec(rawspec);
-        }
-        else if (rawspec.startsWith("uri-template|"))
-        {
-            return new UriTemplatePathSpec(rawspec.substring("uri-template|".length()));
-        }
-
-        // TODO: add ability to load arbitrary jetty-http PathSpec implementation
-        // TODO: perhaps via "fully.qualified.class.name|spec" style syntax
-
-        throw new IllegalArgumentException("Unrecognized path spec syntax [" + rawspec + "]");
+        addMapping(parsePathSpec(rawSpec), endpointClass);
     }
 
-    public WebSocketServletNegotiator getMapping(String rawspec)
+    @Override
+    public void doStop() throws Exception
     {
-        PathSpec pathSpec = toPathSpec(rawspec);
+        mappings.removeIf((mapped) -> !(mapped.getResource() instanceof PersistedWebSocketServletNegotiator));
+        super.doStop();
+    }
+
+    /**
+     * Get WebSocketServletFactory being used.
+     *
+     * @return the WebSocketServletFactory being used.
+     */
+    public WebSocketServletFactory getFactory()
+    {
+        return this.factory;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public WebSocketServletNegotiator getMapping(PathSpec pathSpec)
+    {
         for (MappedResource<WebSocketServletNegotiator> mapping : mappings)
         {
             if (mapping.getPathSpec().equals(pathSpec))
             {
+                if (mapping.getResource() instanceof PersistedWebSocketServletNegotiator)
+                {
+                    return ((PersistedWebSocketServletNegotiator) mapping.getResource()).delegate;
+                }
                 return mapping.getResource();
             }
         }
         return null;
     }
 
-    public boolean removeMapping(String rawspec)
+    public WebSocketServletNegotiator getMapping(String rawSpec)
     {
-        PathSpec pathSpec = toPathSpec(rawspec);
+        return getMapping(parsePathSpec(rawSpec));
+    }
+
+    /**
+     * Get the matching {@link MappedResource} for the provided target.
+     *
+     * @param target the target path
+     * @return the matching resource, or null if no match.
+     */
+    @Override
+    public MappedResource<WebSocketServletNegotiator> getMatch(String target)
+    {
+        MappedResource<WebSocketServletNegotiator> mapping = this.mappings.getMatch(target);
+        if (mapping == null)
+        {
+            return null;
+        }
+
+        return mapping;
+    }
+
+    /**
+     * Used to configure the Default {@link WebSocketPolicy} used by all endpoints that
+     * don't redeclare the values.
+     *
+     * @return the default policy for all WebSockets
+     */
+    public WebSocketPolicy getPolicy()
+    {
+        return this.factory.getPolicy();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PathSpec parsePathSpec(String rawSpec)
+    {
+        // Determine what kind of path spec we are working with
+        if (rawSpec.charAt(0) == '/' || rawSpec.startsWith("*.") || rawSpec.startsWith("servlet|"))
+        {
+            return new ServletPathSpec(rawSpec);
+        }
+        else if (rawSpec.charAt(0) == '^' || rawSpec.startsWith("regex|"))
+        {
+            return new RegexPathSpec(rawSpec);
+        }
+        else if (rawSpec.startsWith("uri-template|"))
+        {
+            return new UriTemplatePathSpec(rawSpec.substring("uri-template|".length()));
+        }
+
+        // TODO: add ability to load arbitrary jetty-http PathSpec implementation
+        // TODO: perhaps via "fully.qualified.class.name|spec" style syntax
+
+        throw new IllegalArgumentException("Unrecognized path spec syntax [" + rawSpec + "]");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean removeMapping(PathSpec pathSpec)
+    {
         boolean removed = false;
         for (Iterator<MappedResource<WebSocketServletNegotiator>> iterator = mappings.iterator(); iterator.hasNext(); )
         {
@@ -219,23 +248,19 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle
         return removed;
     }
 
-    /**
-     * Manually add a WebSocket mapping.
-     *
-     * @param rawspec the pathspec to map to (see {@link #addMapping(String, WebSocketCreator)} for syntax details)
-     * @param endpointClass the endpoint class to use for new upgrade requests on the provided pathspec
-     */
-    public void addMapping(String rawspec, final Class<?> endpointClass)
+    public boolean removeMapping(String rawSpec)
     {
-        PathSpec pathSpec = toPathSpec(rawspec);
-        addMapping(pathSpec, endpointClass);
+        return removeMapping(parsePathSpec(rawSpec));
     }
 
     private class PersistedWebSocketServletNegotiator extends WebSocketServletNegotiator
     {
+        final WebSocketServletNegotiator delegate;
+
         public PersistedWebSocketServletNegotiator(WebSocketServletNegotiator negotiator)
         {
             super(negotiator.getFactory(), negotiator.getCreator(), negotiator.getFrameHandlerFactory());
+            this.delegate = negotiator;
         }
 
         @Override

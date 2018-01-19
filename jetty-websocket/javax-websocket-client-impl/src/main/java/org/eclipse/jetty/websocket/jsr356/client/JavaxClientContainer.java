@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
@@ -38,8 +37,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
@@ -56,10 +53,7 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 @ManagedObject("JSR356 Client Container")
 public class JavaxClientContainer extends JavaxWebSocketContainer implements javax.websocket.WebSocketContainer
 {
-    private static final Logger LOG = Log.getLogger(JavaxClientContainer.class);
-
     private final WebSocketCoreClient coreClient;
-    private final int id = ThreadLocalRandom.current().nextInt();
     private final JavaxWebSocketFrameHandlerFactory frameHandlerFactory;
     private ClassLoader contextClassLoader;
     private DecoratedObjectFactory objectFactory;
@@ -83,6 +77,12 @@ public class JavaxClientContainer extends JavaxWebSocketContainer implements jav
         this.objectFactory = new DecoratedObjectFactory();
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.frameHandlerFactory = new JavaxWebSocketFrameHandlerFactory(this);
+    }
+
+    @Override
+    public JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory()
+    {
+        return frameHandlerFactory;
     }
 
     protected HttpClient getHttpClient()

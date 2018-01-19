@@ -23,6 +23,8 @@ import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
 
+import org.eclipse.jetty.websocket.jsr356.server.sockets.echo.BasicEchoSocket;
+
 /**
  * Example of adding a server socket (annotated) programmatically directly with no config
  */

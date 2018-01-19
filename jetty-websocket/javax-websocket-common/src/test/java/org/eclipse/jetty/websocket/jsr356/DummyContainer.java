@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -46,6 +47,7 @@ public class DummyContainer extends JavaxWebSocketContainer implements WebSocket
     private final WebSocketExtensionRegistry extensionRegistry;
     private final DecoratedObjectFactory objectFactory;
     private final WebSocketPolicy policy;
+    private JavaxWebSocketFrameHandlerFactory frameHandlerFactory;
 
     public DummyContainer(WebSocketPolicy policy)
     {
@@ -116,5 +118,17 @@ public class DummyContainer extends JavaxWebSocketContainer implements WebSocket
     public WebSocketPolicy getPolicy()
     {
         return policy;
+    }
+
+    @Override
+    protected JavaxWebSocketFrameHandlerFactory getFrameHandlerFactory()
+    {
+        Objects.requireNonNull(frameHandlerFactory, "JavaxWebSocketFrameHandlerFactory not specified in DummyContainer properly");
+        return frameHandlerFactory;
+    }
+
+    public void setFrameHandlerFactory(JavaxWebSocketFrameHandlerFactory frameHandlerFactory)
+    {
+        this.frameHandlerFactory = frameHandlerFactory;
     }
 }

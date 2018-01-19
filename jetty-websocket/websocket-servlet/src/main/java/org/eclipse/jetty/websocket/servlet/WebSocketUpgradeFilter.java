@@ -56,6 +56,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     public static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
     public static final String CONFIG_ATTRIBUTE_KEY = "configAttributeKey";
 
+    private ServletContextWebSocketContainer servletContextWebSocketContainer;
+
     /**
      * @param context the {@link ServletContextHandler} to use
      * @return a configured {@link WebSocketUpgradeFilter} instance

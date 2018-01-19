@@ -27,6 +27,8 @@ import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
 import javax.websocket.server.ServerEndpointConfig.Configurator;
 
+import org.eclipse.jetty.websocket.jsr356.server.sockets.pong.PongMessageEndpoint;
+
 public class PongContextListener implements ServletContextListener
 {
     public static class Config extends ServerEndpointConfig.Configurator

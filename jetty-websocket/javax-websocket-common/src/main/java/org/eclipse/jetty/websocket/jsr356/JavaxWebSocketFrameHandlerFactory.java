@@ -43,8 +43,10 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
+import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.messages.ByteArrayMessageSink;
@@ -56,7 +58,7 @@ import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 
-public class JavaxWebSocketFrameHandlerFactory
+public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
 {
     private static final AtomicLong IDGEN = new AtomicLong(0);
     private final JavaxWebSocketContainer container;
@@ -96,17 +98,24 @@ public class JavaxWebSocketFrameHandlerFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
+    @Override
+    public FrameHandler newFrameHandler(Object websocketPojo, WebSocketPolicy policy, HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse)
+    {
+        return newJavaxFrameHandler(websocketPojo, policy, handshakeRequest, handshakeResponse, new CompletableFuture<>());
+    }
+
     public JavaxWebSocketFrameHandler newJavaxFrameHandler(Object endpointInstance, WebSocketPolicy policy, HandshakeRequest upgradeRequest, HandshakeResponse upgradeResponse, CompletableFuture<Session> futureSession)
     {
         Object endpoint;
         EndpointConfig config;
 
-        if(endpointInstance instanceof ConfiguredEndpoint)
+        if (endpointInstance instanceof ConfiguredEndpoint)
         {
             ConfiguredEndpoint configuredEndpoint = (ConfiguredEndpoint) endpointInstance;
             endpoint = configuredEndpoint.getRawEndpoint();
             config = configuredEndpoint.getConfig();
-        } else
+        }
+        else
         {
             endpoint = endpointInstance;
             config = new BasicEndpointConfig();
@@ -142,7 +151,7 @@ public class JavaxWebSocketFrameHandlerFactory
 
         // TODO: or handle decoders in createMessageSink?
         CompletableFuture<Session> future = futureSession;
-        if(future == null)
+        if (future == null)
             future = new CompletableFuture<>();
 
         String id = String.format("%s-%s-%d", upgradeRequest.getLocalSocketAddress(),
@@ -213,7 +222,7 @@ public class JavaxWebSocketFrameHandlerFactory
         }
     }
 
-    private JavaxWebSocketFrameHandlerMetadata createEndpointMetadata(Class<?> endpointClass)
+    protected JavaxWebSocketFrameHandlerMetadata createEndpointMetadata(Class<?> endpointClass)
     {
         JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata();
 
@@ -246,6 +255,11 @@ public class JavaxWebSocketFrameHandlerFactory
         metadata.setEncoders(anno.encoders());
         metadata.setSubProtocols(anno.subprotocols());
 
+        return discoverJavaxFrameHandlerMetadata(endpointClass, metadata);
+    }
+
+    protected JavaxWebSocketFrameHandlerMetadata discoverJavaxFrameHandlerMetadata(Class<?> endpointClass, JavaxWebSocketFrameHandlerMetadata metadata)
+    {
         Method onmethod;
 
         // OnOpen [0..1]

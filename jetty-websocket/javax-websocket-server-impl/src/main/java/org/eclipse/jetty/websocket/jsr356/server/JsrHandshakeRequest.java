@@ -30,57 +30,57 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 
 public class JsrHandshakeRequest implements HandshakeRequest
 {
-    private final ServletUpgradeRequest request;
+    private final ServletUpgradeRequest delegate;
 
     public JsrHandshakeRequest(ServletUpgradeRequest req)
     {
-        this.request = req;
+        this.delegate = req;
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return request.getHeaders();
+        return delegate.getHeadersMap();
     }
 
     @Override
     public Object getHttpSession()
     {
-        return request.getSession();
+        return delegate.getSession();
     }
 
     @Override
     public Map<String, List<String>> getParameterMap()
     {
-        return request.getParameterMap();
+        return delegate.getParameterMap();
     }
 
     @Override
     public String getQueryString()
     {
-        return request.getQueryString();
+        return delegate.getQueryString();
     }
 
     public PathSpec getRequestPathSpec()
     {
-        return (PathSpec)request.getServletAttribute(PathSpec.class.getName());
+        return (PathSpec) delegate.getServletAttribute(PathSpec.class.getName());
     }
 
     @Override
     public URI getRequestURI()
     {
-        return request.getRequestURI();
+        return delegate.getRequestURI();
     }
 
     @Override
     public Principal getUserPrincipal()
     {
-        return request.getUserPrincipal();
+        return delegate.getUserPrincipal();
     }
 
     @Override
     public boolean isUserInRole(String role)
     {
-        return request.isUserInRole(role);
+        return delegate.isUserInRole(role);
     }
 }

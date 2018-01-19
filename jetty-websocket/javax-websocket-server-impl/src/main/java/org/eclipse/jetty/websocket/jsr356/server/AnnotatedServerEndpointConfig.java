@@ -33,8 +33,6 @@ import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-
 public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 {
     private final Class<?> endpointClass;
@@ -47,12 +45,12 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
     private Map<String, Object> userProperties;
     private List<Extension> extensions;
     
-    public AnnotatedServerEndpointConfig(WebSocketContainerScope containerScope, Class<?> endpointClass, ServerEndpoint anno) throws DeploymentException
+    public AnnotatedServerEndpointConfig(JavaxServerContainer containerScope, Class<?> endpointClass, ServerEndpoint anno) throws DeploymentException
     {
         this(containerScope, endpointClass, anno, null);
     }
     
-    public AnnotatedServerEndpointConfig(WebSocketContainerScope containerScope, Class<?> endpointClass, ServerEndpoint anno, EndpointConfig baseConfig) throws DeploymentException
+    public AnnotatedServerEndpointConfig(JavaxServerContainer containerScope, Class<?> endpointClass, ServerEndpoint anno, EndpointConfig baseConfig) throws DeploymentException
     {
         ServerEndpointConfig baseServerConfig = null;
         

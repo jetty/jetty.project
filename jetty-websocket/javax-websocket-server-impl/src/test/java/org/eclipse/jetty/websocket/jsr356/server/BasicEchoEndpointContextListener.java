@@ -24,7 +24,7 @@ import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.websocket.jsr356.sockets.pong.PongMessageEndpoint;
+import org.eclipse.jetty.websocket.jsr356.server.sockets.pong.PongMessageEndpoint;
 
 /**
  * Example of adding a server WebSocket (extending {@link javax.websocket.Endpoint}) programmatically directly.

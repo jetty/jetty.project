@@ -18,23 +18,34 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+
 import javax.websocket.server.PathParam;
 
-import org.eclipse.jetty.websocket.common.reflect.Arg;
-import org.eclipse.jetty.websocket.common.reflect.ArgIdentifier;
+import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 
 /**
  * Method argument identifier for {@link javax.websocket.server.PathParam} annotations.
  */
 @SuppressWarnings("unused")
-public class PathParamArgIdentifier implements ArgIdentifier
+public class PathParamArgIdentifier implements InvokerUtils.ParamIdentifier
 {
     @Override
-    public Arg apply(Arg arg)
+    public InvokerUtils.Arg getParamArg(Method method, Class<?> paramType, int idx)
     {
-        PathParam pathParam = arg.getAnnotation(PathParam.class);
-        if (pathParam != null)
-            arg.setTag(pathParam.value());
-        return arg;
+        Annotation annos[] = method.getParameterAnnotations()[idx];
+        if (annos != null || (annos.length > 0))
+        {
+            for (Annotation anno : annos)
+            {
+                if (anno.annotationType().equals(PathParam.class))
+                {
+                    PathParam pathParam = (PathParam) anno;
+                    return new InvokerUtils.Arg(paramType, pathParam.value());
+                }
+            }
+        }
+        return new InvokerUtils.Arg(paramType);
     }
 }

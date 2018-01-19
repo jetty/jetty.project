@@ -26,7 +26,7 @@ import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.util.IO;
 
 @ServerEndpoint("/echo")
 public class StreamingEchoSocket

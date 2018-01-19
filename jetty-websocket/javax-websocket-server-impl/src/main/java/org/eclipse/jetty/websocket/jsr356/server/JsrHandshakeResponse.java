@@ -27,16 +27,16 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 
 public class JsrHandshakeResponse implements HandshakeResponse
 {
-    private final ServletUpgradeResponse response;
+    private final ServletUpgradeResponse delegate;
 
     public JsrHandshakeResponse(ServletUpgradeResponse resp)
     {
-        this.response = resp;
+        this.delegate = resp;
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return response.getHeaders();
+        return delegate.getHeadersMap();
     }
 }
