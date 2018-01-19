@@ -74,6 +74,7 @@ public interface FrameHandler
     interface Channel extends OutgoingFrames // TODO: want AutoCloseable (easier testing)
     {
         /**
+         * TODO: might be redundant (evaluate API usage, possible to access from HandshakeResponse concepts)
          * The negotiated WebSocket Subprotocol for this channel.
          *
          * @return the negotiated WebSocket Subprotocol for this channel.
@@ -81,7 +82,7 @@ public interface FrameHandler
         String getSubprotocol();
 
         /**
-         * TODO: need support for this too
+         * TODO: might be redundant (evaluate API usage, possible to access from HandshakeResponse concepts)
          * The negotiated WebSocket Extension Configurations for this channel.
          *
          * @return the list of Extension Configurations for this channel.
@@ -109,6 +110,8 @@ public interface FrameHandler
         WebSocketBehavior getBehavior();
 
         boolean isOpen();
+
+        // TODO: possible configurable for AsyncSendTimeout (JSR356-ism for async write)
 
         /**
          * Get the Idle Timeout in the unit provided.
