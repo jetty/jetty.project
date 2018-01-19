@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.annotation.Name;
  * A {@link WebAppContext} is configured by the application of one or more {@link Configuration}
  * instances.  Typically each implemented Configuration is responsible for an aspect of the 
  * servlet specification (eg {@link WebXmlConfiguration}, {@link FragmentConfiguration}, etc.)
- * or feature (eg {@link WebSocketConfiguration}, {@link JmxConfiguration} etc.)
+ * or feature (eg {@code WebSocketConfiguration}, {@lcode JmxConfiguration} etc.)
  * </p>
  * <p>Configuration instances are discovered by the {@link Configurations} class using either the 
  * {@link ServiceLoader} mechanism or by an explicit call to {@link Configurations#setKnown(String...)}.
