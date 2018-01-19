@@ -20,11 +20,11 @@ package org.eclipse.jetty.embedded;
 
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
+import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 
 /**
