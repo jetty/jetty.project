@@ -71,7 +71,7 @@ public interface FrameHandler
      */
     void onError(Throwable cause) throws Exception;
 
-    interface Channel extends OutgoingFrames
+    interface Channel extends OutgoingFrames // TODO: want AutoCloseable (easier testing)
     {
         /**
          * The negotiated WebSocket Subprotocol for this channel.
