@@ -25,9 +25,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryStreamSocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedTextSocket;
@@ -48,7 +45,11 @@ import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.hamcrest.Matcher;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -56,15 +57,29 @@ import org.junit.rules.TestName;
 
 public class LocalEndpointMetadataTest
 {
-    private Executor executor = Executors.newFixedThreadPool(10);
     public static final Matcher<Object> EXISTS = notNullValue();
+    public static DummyContainer container;
+
+    @BeforeClass
+    public static void startContainer() throws Exception
+    {
+        container = new DummyContainer(new WebSocketPolicy(WebSocketBehavior.SERVER));
+        container.start();
+    }
+
+    @AfterClass
+    public static void stopContainer() throws Exception
+    {
+        container.stop();
+    }
+
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
     @Rule
     public TestName testname = new TestName();
 
-    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(executor);
+    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
 
     private JettyWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass)
     {

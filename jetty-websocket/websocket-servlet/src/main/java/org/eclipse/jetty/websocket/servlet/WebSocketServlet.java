@@ -36,13 +36,13 @@ import org.eclipse.jetty.websocket.core.server.HandshakerFactory;
  * appropriate conditions.
  * <p>
  * The most basic implementation would be as follows.
- * 
+ * <p>
  * <pre>
  * package my.example;
- * 
+ *
  * import WebSocketServlet;
  * import WebSocketServletFactory;
- * 
+ *
  * public class MyEchoServlet extends WebSocketServlet
  * {
  *     &#064;Override
@@ -55,24 +55,24 @@ import org.eclipse.jetty.websocket.core.server.HandshakerFactory;
  *     }
  * }
  * </pre>
- * 
+ * <p>
  * Note: that only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketServletFactory} handling of creating
  * WebSockets.<br>
  * All other requests are treated as normal servlet requests.
- * 
+ * <p>
  * <p>
  * <b>Configuration / Init-Parameters:</b><br>
- *
+ * <p>
  * <dl>
  * <dt>maxIdleTime</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
- * 
+ * <p>
  * <dt>maxTextMessageSize</dt>
  * <dd>set the size in UTF-8 bytes that a websocket may be accept as a Text Message before closing<br>
- * 
+ * <p>
  * <dt>maxBinaryMessageSize</dt>
  * <dd>set the size in bytes that a websocket may be accept as a Binary Message before closing<br>
- * 
+ * <p>
  * <dt>inputBufferSize</dt>
  * <dd>set the size in bytes of the buffer used to read raw bytes from the network layer<br>
  * </dl>
@@ -123,10 +123,14 @@ public abstract class WebSocketServlet extends HttpServlet
 
             configure(factory); // Let user modify factory, policy, creator, extensions, etc..
             negotiator = new WebSocketServletNegotiator(factory, factory.getCreator());
-            
-            ctx.setAttribute(WebSocketServletFactory.class.getName(),factory);
+
+            ctx.setAttribute(WebSocketServletFactory.class.getName(), factory);
         }
-        catch (Exception x)
+        catch (ServletException e)
+        {
+            throw e;
+        }
+        catch (Throwable x)
         {
             throw new ServletException(x);
         }
@@ -157,6 +161,6 @@ public abstract class WebSocketServlet extends HttpServlet
         }
 
         // All other processing
-        super.service(request,response);
+        super.service(request, response);
     }
 }

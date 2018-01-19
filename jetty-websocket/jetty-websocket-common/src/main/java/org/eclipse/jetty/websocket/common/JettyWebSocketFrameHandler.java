@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.common;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.websocket.core.frames.ReadOnlyDelegatedFrame;
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
     private final Logger log;
+    private final WebSocketContainerContext container;
     private final Object endpointInstance;
     private final WebSocketPolicy policy;
     private final MethodHandle openHandle;
@@ -60,14 +60,14 @@ public class JettyWebSocketFrameHandler implements FrameHandler
      * Immutable HandshakeResponse available via Session
      */
     private final HandshakeResponse handshakeResponse;
-    private final Executor executor; // TODO: should come from WebSocket Container
     private final CompletableFuture<Session> futureSession;
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
     private WebSocketSessionImpl session;
 
-    public JettyWebSocketFrameHandler(Object endpointInstance, WebSocketPolicy endpointPolicy,
+    public JettyWebSocketFrameHandler(WebSocketContainerContext container,
+                                      Object endpointInstance, WebSocketPolicy endpointPolicy,
                                       HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse,
                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                       MethodHandle textHandle, MethodHandle binaryHandle,
@@ -75,11 +75,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                                       Class<? extends MessageSink> binarySinkClass,
                                       MethodHandle frameHandle,
                                       MethodHandle pingHandle, MethodHandle pongHandle,
-                                      CompletableFuture<Session> futureSession,
-                                      Executor executor)
+                                      CompletableFuture<Session> futureSession)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 
+        this.container = container;
         this.endpointInstance = endpointInstance;
         this.policy = endpointPolicy;
         this.handshakeRequest = handshakeRequest;
@@ -97,7 +97,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         this.pongHandle = pongHandle;
 
         this.futureSession = futureSession;
-        this.executor = executor;
     }
 
     public WebSocketPolicy getPolicy()
@@ -188,18 +187,18 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     public void onOpen(Channel channel) throws Exception
     {
         JettyWebSocketRemoteEndpoint remote = new JettyWebSocketRemoteEndpoint(channel);
-        session = new WebSocketSessionImpl(remote, handshakeRequest, handshakeResponse);
+        session = new WebSocketSessionImpl(container, remote, handshakeRequest, handshakeResponse);
 
         if (textHandle != null)
         {
             MethodHandle handle = JettyWebSocketFrameHandlerFactory.bindTo(textHandle, session);
-            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(handle, textSinkClass, getPolicy(), executor);
+            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(handle, textSinkClass, getPolicy(), container.getExecutor());
         }
 
         if (binaryHandle != null)
         {
             MethodHandle handle = JettyWebSocketFrameHandlerFactory.bindTo(binaryHandle, session);
-            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(handle, binarySinkClass, getPolicy(), executor);
+            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(handle, binarySinkClass, getPolicy(), container.getExecutor());
         }
 
         if (openHandle != null)

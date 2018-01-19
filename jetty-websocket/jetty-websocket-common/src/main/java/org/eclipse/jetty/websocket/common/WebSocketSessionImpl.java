@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -30,14 +31,17 @@ import org.eclipse.jetty.websocket.core.io.SuspendToken;
 
 public class WebSocketSessionImpl implements Session
 {
+    private final WebSocketContainerContext container;
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final HandshakeRequest handshakeRequest;
     private final HandshakeResponse handshakeResponse;
 
-    public WebSocketSessionImpl(JettyWebSocketRemoteEndpoint remoteEndpoint,
+    public WebSocketSessionImpl(WebSocketContainerContext container,
+                                JettyWebSocketRemoteEndpoint remoteEndpoint,
                                 HandshakeRequest handshakeRequest,
                                 HandshakeResponse handshakeResponse)
     {
+        this.container = container;
         this.remoteEndpoint = remoteEndpoint;
         this.handshakeRequest = handshakeRequest;
         this.handshakeResponse = handshakeResponse;
@@ -83,6 +87,12 @@ public class WebSocketSessionImpl implements Session
     public SocketAddress getLocalSocketAddress()
     {
         return handshakeRequest.getLocalSocketAddress();
+    }
+
+    @Override
+    public Collection<Session> getOpenSessions()
+    {
+        return container.getBeans(Session.class);
     }
 
     @Override

@@ -24,10 +24,13 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
@@ -41,19 +44,39 @@ import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 /**
  * Working with WebSocket's within a ServletContext
  */
-public class ServletContextWebSocketContainer implements WebSocketContainerContext
+public class ServletContextWebSocketContainer extends ContainerLifeCycle implements WebSocketContainerContext
 {
-    public static ServletContextWebSocketContainer get(ServletContext context)
+    public static ServletContextWebSocketContainer get(ServletContext context) throws ServletException
     {
-        final String ATTR = ServletContextWebSocketContainer.class.getName();
-
-        ServletContextWebSocketContainer wsContainer = (ServletContextWebSocketContainer) context.getAttribute(ATTR);
-        if (wsContainer == null)
+        try
         {
-            wsContainer = new ServletContextWebSocketContainer(context);
-            context.setAttribute(ATTR, wsContainer);
+            final String ATTR = ServletContextWebSocketContainer.class.getName();
+
+            ServletContextWebSocketContainer wsContainer = (ServletContextWebSocketContainer) context.getAttribute(ATTR);
+            if (wsContainer == null)
+            {
+                wsContainer = new ServletContextWebSocketContainer(context);
+                context.setAttribute(ATTR, wsContainer);
+                ContextHandler contextHandler = ContextHandler.getContextHandler(context);
+                if (contextHandler != null)
+                {
+                    contextHandler.addManaged(wsContainer);
+                }
+                else
+                {
+                    wsContainer.start();
+                }
+            }
+            return wsContainer;
         }
-        return wsContainer;
+        catch (ServletException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            throw new ServletException("Unable to get ServletContextWebSocketContainer", t);
+        }
     }
 
     /** The context that the factory resides in (can only exist in 1 ServletContext at a time) */

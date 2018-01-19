@@ -26,19 +26,30 @@ import javax.servlet.ServletException;
 
 public class NativeWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
-    public static NativeWebSocketConfiguration getDefaultFrom(ServletContext context)
+    public static NativeWebSocketConfiguration getDefaultFrom(ServletContext context) throws ServletException
     {
-        final String KEY = NativeWebSocketConfiguration.class.getName();
-        
-        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getAttribute(KEY);
-        if (configuration == null)
+        try
         {
-            configuration = new NativeWebSocketConfiguration(context);
-            context.setAttribute(KEY, configuration);
+            final String KEY = NativeWebSocketConfiguration.class.getName();
+
+            NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getAttribute(KEY);
+            if (configuration == null)
+            {
+                configuration = new NativeWebSocketConfiguration(context);
+                context.setAttribute(KEY, configuration);
+            }
+            return configuration;
         }
-        return configuration;
+        catch (ServletException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ServletException("Unable to initialize NativeWebSocketConfiguration", e);
+        }
     }
-    
+
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {

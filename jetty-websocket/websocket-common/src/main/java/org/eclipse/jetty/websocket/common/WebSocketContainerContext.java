@@ -22,6 +22,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 
@@ -32,7 +33,7 @@ import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
  *     For Server usage, this is typically the ServletContextWebSocketContainer.
  * </p>
  */
-public interface WebSocketContainerContext
+public interface WebSocketContainerContext extends Container
 {
     ByteBufferPool getBufferPool();
 
@@ -45,7 +46,4 @@ public interface WebSocketContainerContext
     DecoratedObjectFactory getObjectFactory();
 
     WebSocketPolicy getPolicy();
-
-    // TODO: should it be ContainerLifeCycle?
-    // TODO: should it track open FrameHandlers? (or is that the role of websocket-core?)
 }

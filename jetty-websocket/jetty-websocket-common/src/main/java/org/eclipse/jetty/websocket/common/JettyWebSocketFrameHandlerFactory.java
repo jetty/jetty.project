@@ -78,12 +78,12 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
  */
 public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
 {
-    private final Executor executor;
+    private final WebSocketContainerContext container;
     private Map<Class<?>, JettyWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
 
-    public JettyWebSocketFrameHandlerFactory(Executor executor)
+    public JettyWebSocketFrameHandlerFactory(WebSocketContainerContext container)
     {
-        this.executor = executor;
+        this.container = container;
     }
 
     public JettyWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
@@ -171,6 +171,7 @@ public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
             future = new CompletableFuture<>();
 
         return new JettyWebSocketFrameHandler(
+                container,
                 endpointInstance,
                 endpointPolicy,
                 upgradeRequest, upgradeResponse,
@@ -178,8 +179,7 @@ public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
                 textHandle, binaryHandle,
                 textSinkClass, binarySinkClass,
                 frameHandle, pingHandle, pongHandle,
-                future,
-                executor);
+                future);
     }
 
     public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, WebSocketPolicy endpointPolicy, Executor executor)

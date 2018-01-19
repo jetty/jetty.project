@@ -25,7 +25,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.FrameHandler.Channel;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
@@ -169,10 +168,10 @@ public class AbstractFrameHandler implements FrameHandler
             utf8.reset();
 
         if (frame.hasPayload())
-            utf8.append(frame.getPayload());
+            utf8.append(frame.getPayload()); // TODO: this should trigger a bad UTF8 exception if sequence is bad which we wrap in a ProtocolException (but not on unfinished sequences)
         
         if (frame.isFin())
-            utf8.checkState();
+            utf8.checkState(); // TODO: this should not be necessary, checkState() shouldn't be necessary to use (the utf8.toString() should trigger on bad utf8 in final octets)
         else
             partial = Frame.Type.TEXT;
         

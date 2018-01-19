@@ -25,8 +25,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
@@ -45,6 +43,7 @@ import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPingPongSo
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeRequest;
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
@@ -69,7 +68,7 @@ public class JettyWebSocketFrameHandlerTest
     @BeforeClass
     public static void startContainer() throws Exception
     {
-        container = new DummyContainer();
+        container = new DummyContainer(new WebSocketPolicy(WebSocketBehavior.SERVER));
         container.start();
     }
 
@@ -79,8 +78,7 @@ public class JettyWebSocketFrameHandlerTest
         container.stop();
     }
 
-    private static Executor executor = Executors.newFixedThreadPool(10);
-    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(executor);
+    private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
     private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
     private FrameHandler.Channel channel = new DummyChannel();
 

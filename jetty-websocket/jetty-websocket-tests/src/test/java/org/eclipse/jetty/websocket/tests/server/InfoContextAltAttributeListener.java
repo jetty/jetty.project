@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.tests.server;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import javax.servlet.ServletException;
 
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -29,21 +30,28 @@ import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
 public class InfoContextAltAttributeListener implements WebSocketCreator, ServletContextListener
 {
     private static final String ATTR = "alt.config";
-    
+
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(sce.getServletContext());
-        configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-        configuration.addMapping("/info/*", this);
-        sce.getServletContext().setAttribute(ATTR, configuration);
+        try
+        {
+            NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(sce.getServletContext());
+            configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
+            configuration.addMapping("/info/*", this);
+            sce.getServletContext().setAttribute(ATTR, configuration);
+        }
+        catch (ServletException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
-    
+
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
     }
-    
+
     @Override
     public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {

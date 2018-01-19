@@ -36,6 +36,6 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
         ServletContextWebSocketContainer wsContainer = ServletContextWebSocketContainer.get(ctx);
-        wsContainer.addFrameHandlerFactory(new JettyWebSocketFrameHandlerFactory(wsContainer.getExecutor()));
+        wsContainer.addFrameHandlerFactory(new JettyWebSocketFrameHandlerFactory(wsContainer));
     }
 }

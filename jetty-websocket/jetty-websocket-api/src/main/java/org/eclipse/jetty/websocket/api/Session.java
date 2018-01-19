@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Collection;
 
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
@@ -133,6 +134,18 @@ public interface Session extends Closeable
      * @since 10.0
      */
     SocketAddress getLocalSocketAddress();
+
+    /**
+     * Get the collection of open Sessions being tracked by the websocket container.
+     * <p>
+     *     The list of sessions can include different WebSocket endpoints from the
+     *     endpoint this Session belongs to.
+     *     If you need to identify similar endpoints, use the information contained within the
+     *     {@link #getHandshakeRequest()} object.
+     * </p>
+     * @return the list of open Sessions.
+     */
+    Collection<Session> getOpenSessions();
 
     /**
      * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.

@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
@@ -79,7 +79,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         this.contextClassLoader = this.getClass().getClassLoader();
         this.objectFactory = new DecoratedObjectFactory();
         this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(getExecutor());
+        this.frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this);
     }
 
     public CompletableFuture<Session> connect(Object websocket, URI toUri) throws IOException
@@ -254,7 +254,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return objectFactory;
     }
 
-    public Set<Session> getOpenSessions()
+    public Collection<Session> getOpenSessions()
     {
         return Collections.unmodifiableSet(new HashSet<>(getBeans(Session.class)));
     }

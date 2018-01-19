@@ -41,7 +41,6 @@ import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
-import org.eclipse.jetty.websocket.servlet.ServletContextWebSocketContainer;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -89,14 +88,12 @@ public class ManyConnectionsCleanupTest
     @SuppressWarnings("serial")
     public static class CloseServlet extends WebSocketServlet implements WebSocketCreator
     {
-        private WebSocketServletFactory webSocketServletFactory;
         private AtomicInteger calls = new AtomicInteger(0);
         
         @Override
         public void configure(WebSocketServletFactory factory)
         {
             factory.setCreator(this);
-            this.webSocketServletFactory = factory;
         }
         
         @Override
@@ -116,7 +113,7 @@ public class ManyConnectionsCleanupTest
             
             if (req.hasSubProtocol("container"))
             {
-                closeSocket = new ContainerSocket(webSocketServletFactory, calls);
+                closeSocket = new ContainerSocket(calls);
                 return closeSocket;
             }
             return new RFC6455Socket();
@@ -129,13 +126,11 @@ public class ManyConnectionsCleanupTest
     public static class ContainerSocket extends AbstractCloseSocket
     {
         private static final Logger LOG = Log.getLogger(ManyConnectionsCleanupTest.ContainerSocket.class);
-        private final ServletContextWebSocketContainer container;
         private final AtomicInteger calls;
         private Session session;
         
-        public ContainerSocket(WebSocketServletFactory servletFactory, AtomicInteger calls)
+        public ContainerSocket(AtomicInteger calls)
         {
-            this.container = servletFactory.getContainer();
             this.calls = calls;
         }
         
@@ -146,12 +141,12 @@ public class ManyConnectionsCleanupTest
             calls.incrementAndGet();
             if (message.equalsIgnoreCase("openSessions"))
             {
-                Collection<WebSocketSessionImpl> sessions = container.getOpenSessions();
+                Collection<Session> sessions = session.getOpenSessions();
                 
                 StringBuilder ret = new StringBuilder();
                 ret.append("openSessions.size=").append(sessions.size()).append('\n');
                 int idx = 0;
-                for (WebSocketSessionImpl sess : sessions)
+                for (Session sess : sessions)
                 {
                     ret.append('[').append(idx++).append("] ").append(sess.toString()).append('\n');
                 }

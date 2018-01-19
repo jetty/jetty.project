@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.tests.server;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import javax.servlet.ServletException;
 
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -31,10 +32,17 @@ public class InfoContextListener implements WebSocketCreator, ServletContextList
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(sce.getServletContext());
-        configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-        configuration.addMapping("/info/*", this);
-        sce.getServletContext().setAttribute(NativeWebSocketConfiguration.class.getName(), configuration);
+        try
+        {
+            NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(sce.getServletContext());
+            configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
+            configuration.addMapping("/info/*", this);
+            sce.getServletContext().setAttribute(NativeWebSocketConfiguration.class.getName(), configuration);
+        }
+        catch (ServletException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
     
     @Override
