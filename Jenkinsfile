@@ -101,6 +101,7 @@ node {
     throw e
   }
 
+  /*
   try
   {
     stage 'Compact3'
@@ -114,6 +115,7 @@ node {
     notifyBuild("Compact3 Failure")
     throw e
   }
+  */
 }
 
 // True if this build is part of the "active" branches
