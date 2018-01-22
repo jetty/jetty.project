@@ -1,0 +1,36 @@
+maven_jar(
+     name = "jetty_alpn_server",
+     artifact = "org.eclipse.jetty:jetty-alpn-server:9.4.8.v20171121",
+     sha1 = "5871fb60dc68d67da54a663c3fd636a10a532948",
+)
+
+maven_jar(
+     name = "jetty_server",
+     artifact = "org.eclipse.jetty:jetty-server:9.4.8.v20171121",
+     sha1 = "5871fb60dc68d67da54a663c3fd636a10a532948",
+)
+
+
+maven_jar(
+     name = "jetty_http",
+     artifact = "org.eclipse.jetty:jetty-http:9.4.8.v20171121",
+     sha1 = "5871fb60dc68d67da54a663c3fd636a10a532948",
+)
+
+maven_jar(
+     name = "jetty_util",
+     artifact = "org.eclipse.jetty:jetty-util:9.4.8.v20171121",
+     sha1 = "5871fb60dc68d67da54a663c3fd636a10a532948",
+)
+
+maven_jar(
+     name = "jetty_io",
+     artifact = "org.eclipse.jetty:jetty-io:9.4.8.v20171121",
+     sha1 = "5871fb60dc68d67da54a663c3fd636a10a532948",
+)
+
+maven_jar(
+     name = "javax_sevlet_api",
+     artifact = "javax.servlet:javax.servlet-api:3.1.0",
+     sha1 = "5871fb60dc68d67da54a663c3fd636a10a532948",
+)
