@@ -18,6 +18,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>  
+    <dependency>
       <groupId>com.sun.net.httpserver</groupId>
       <artifactId>http</artifactId>
       <version>20070405</version>

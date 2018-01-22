@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,6 +49,7 @@ public class MultiReleaseJarFile implements Closeable
     /**
      * Construct a multi release jar file for the current JVM version, ignoring directories.
      * @param file The file to open
+     * @throws IOException if the jar file cannot be read
      */
     public MultiReleaseJarFile(File file) throws IOException
     {
@@ -237,7 +238,7 @@ public class MultiReleaseJarFile implements Closeable
         boolean isApplicable()
         {
             if (multiRelease)
-               return this.version>=0 && this.version <= platform && name.length()>0;
+               return ( this.version==0 || this.version == platform ) && name.length()>0;
             return this.version==0;
         }
 

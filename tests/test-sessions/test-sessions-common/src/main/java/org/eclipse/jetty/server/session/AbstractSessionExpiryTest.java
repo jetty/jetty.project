@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,6 +41,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.Test;
 
 /**
@@ -182,8 +183,10 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
         server1.addContext(contextPath).addServlet(holder, servletMapping);
 
         HttpClient client = new HttpClient();
+        
         try
         {
+            Log.getLogger(org.eclipse.jetty.util.thread.QueuedThreadPool.class).setDebugEnabled(true);
             server1.start();
             int port1 = server1.getPort();
 
@@ -213,6 +216,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
         }
         finally
         {
+            Log.getLogger(org.eclipse.jetty.util.thread.QueuedThreadPool.class).setDebugEnabled(false);
             client.stop();
             server1.stop();
         }

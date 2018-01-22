@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import java.util.List;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -396,6 +397,17 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         return !_delayedForContent;
     }
 
+    boolean onIdleTimeout(Throwable timeout)
+    {
+        if (_delayedForContent)
+        {
+            _delayedForContent = false;
+            getRequest().getHttpInput().onIdleTimeout(timeout);
+            execute(this);
+            return false;
+        }
+        return true;
+    }
 
     /**
      * <p>Attempts to perform a HTTP/1.1 upgrade.</p>
@@ -502,7 +514,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public void onComplianceViolation(HttpCompliance compliance, HttpCompliance required, String reason)
+    public void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String reason)
     {
         if (_httpConnection.isRecordHttpComplianceViolations())
         {
@@ -510,10 +522,11 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             {
                 _complianceViolations = new ArrayList<>();
             }
-            String violation = String.format("%s<%s: %s for %s", compliance, required, reason, getHttpTransport());
-            _complianceViolations.add(violation);
+            String record = String.format("%s (see %s) in mode %s for %s in %s", 
+                violation.getDescription(), violation.getURL(), compliance, reason, getHttpTransport());
+            _complianceViolations.add(record);
             if (LOG.isDebugEnabled())
-                LOG.debug(violation);
+                LOG.debug(record);
         }
     }
 }

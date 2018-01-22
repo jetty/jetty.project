@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -62,6 +63,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private long _selectorIndex;
     private int _reservedThreads = -1;
     private ThreadPoolBudget.Lease _lease;
+    private ReservedThreadExecutor _reservedThreadExecutor;
 
     private static int defaultSelectors(Executor executor)
     {
@@ -296,7 +298,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     protected void doStart() throws Exception
     {
-        addBean(new ReservedThreadExecutor(getExecutor(),_reservedThreads,this),true);
+        _reservedThreadExecutor = new ReservedThreadExecutor(getExecutor(),_reservedThreads,this);
+        addBean(_reservedThreadExecutor,true);
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _selectors.length);
         for (int i = 0; i < _selectors.length; i++)
         {
@@ -321,11 +324,25 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     protected void doStop() throws Exception
     {
-        super.doStop();
-        for (ManagedSelector selector : _selectors)
-            removeBean(selector);
-        if (_lease != null)
-            _lease.close();
+        try
+        {
+            super.doStop();
+        }
+        finally
+        {
+            // Cleanup
+            for (ManagedSelector selector : _selectors)
+            {
+                if (selector!=null)
+                    removeBean(selector);
+            }
+            Arrays.fill(_selectors,null);
+            if (_reservedThreadExecutor!=null)
+                removeBean(_reservedThreadExecutor);
+            _reservedThreadExecutor = null;
+            if (_lease != null)
+                _lease.close();
+        }
     }
 
     /**

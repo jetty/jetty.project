@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -315,16 +315,19 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
 
     public boolean onStreamTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
-        boolean result = false;
-        if (isRequestIdle())
-        {
+        boolean delayed = _delayedUntilContent;
+        _delayedUntilContent = false;
+
+        boolean result = isRequestIdle();
+        if (result)
             consumeInput();
-            result = true;
-        }
 
         getHttpTransport().onStreamTimeout(failure);
-        if (getRequest().getHttpInput().onIdleTimeout(failure))
+        if (getRequest().getHttpInput().onIdleTimeout(failure) || delayed)
+        {
             consumer.accept(this::handleWithContext);
+            result = false;
+        }
 
         return result;
     }

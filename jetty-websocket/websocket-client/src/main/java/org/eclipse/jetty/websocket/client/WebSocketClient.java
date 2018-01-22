@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -263,6 +263,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *            the Container Scope
      * @param sessionFactory
      *            the SessionFactory to use
+     * @param httpClient
+     *            the httpClient to use
      */
     public WebSocketClient(final WebSocketContainerScope scope, SessionFactory sessionFactory, HttpClient httpClient)
     {
@@ -462,6 +464,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     
     /**
      * @deprecated not used, no replacement
+     * @return a {@link RandomMasker} instance
      */
     @Deprecated
     public Masker getMasker()
@@ -649,6 +652,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     
     /**
      * @deprecated not used, configure threading in HttpClient instead
+     * @param daemon do nothing
      */
     @Deprecated
     public void setDaemon(boolean daemon)
@@ -669,6 +673,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     
     /**
      * @deprecated not used, no replacement
+     * @param masker do nothing
      */
     @Deprecated
     public void setMasker(Masker masker)

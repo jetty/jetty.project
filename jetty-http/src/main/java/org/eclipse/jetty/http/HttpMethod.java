@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
@@ -132,7 +133,15 @@ public enum HttpMethod
     }
 
     /* ------------------------------------------------------------ */
-    public final static Trie<HttpMethod> CACHE= new ArrayTrie<>();
+    public final static Trie<HttpMethod> INSENSITIVE_CACHE= new ArrayTrie<>();
+    static
+    {
+        for (HttpMethod method : HttpMethod.values())
+            INSENSITIVE_CACHE.put(method.toString(),method);
+    }
+
+    /* ------------------------------------------------------------ */
+    public final static Trie<HttpMethod> CACHE= new ArrayTernaryTrie<>(false);
     static
     {
         for (HttpMethod method : HttpMethod.values())

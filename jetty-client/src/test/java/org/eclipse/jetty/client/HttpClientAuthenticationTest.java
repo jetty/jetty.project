@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,6 +41,7 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
@@ -58,6 +59,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -463,13 +465,48 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
+    
     @Test
     public void test_RequestFailsAfterResponse() throws Exception
-    {
-        startBasic(new EmptyServerHandler());
+    {        
+        startBasic(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request,
+                                   HttpServletResponse response) throws IOException, ServletException
+            {
+                IO.readBytes(jettyRequest.getInputStream());              
+            }
+        });
+        
+        CountDownLatch authLatch = new CountDownLatch(1);
+        client.getProtocolHandlers().remove(WWWAuthenticationProtocolHandler.NAME);
+        client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(client)
+        {
+            @Override
+            public Listener getResponseListener()
+            {
+                Response.Listener listener = super.getResponseListener();
+                return new Listener.Adapter()
+                {
+                    @Override
+                    public void onSuccess(Response response)
+                    {
+                        authLatch.countDown();
+                    }
 
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        listener.onComplete(result);
+                    }
+                };
+            }
+        });
+        
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
         URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+
         BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "basic");
         authenticationStore.addAuthentication(authentication);
 
@@ -486,8 +523,13 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                     if (fail.compareAndSet(true, false))
                     {
                         // Wait for the 401 response to arrive
-                        // to the authentication protocol handler.
-                        sleep(1000);
+                        try
+                        {
+                            authLatch.await();
+                        }
+                        catch(InterruptedException e)
+                        {}
+                        
                         // Trigger request failure.
                         throw new RuntimeException();
                     }
@@ -495,6 +537,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                     {
                         return null;
                     }
+                    
                 default:
                     throw new IllegalStateException();
             }
@@ -504,6 +547,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 .scheme(scheme)
                 .path("/secure")
                 .content(content)
+                .onResponseSuccess(r->authLatch.countDown())
                 .send(result ->
                 {
                     if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
@@ -511,18 +555,6 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 });
 
         Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    private void sleep(long time)
-    {
-        try
-        {
-            Thread.sleep(time);
-        }
-        catch (InterruptedException x)
-        {
-            throw new RuntimeException(x);
-        }
     }
 
     private static class GeneratingContentProvider implements ContentProvider

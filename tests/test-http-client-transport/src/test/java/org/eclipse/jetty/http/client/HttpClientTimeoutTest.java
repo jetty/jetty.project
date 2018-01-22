@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,10 +16,11 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.client;
+package org.eclipse.jetty.http.client;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -35,49 +36,47 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
-public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
+public class HttpClientTimeoutTest extends AbstractTest
 {
-    public HttpClientTimeoutTest(SslContextFactory sslContextFactory)
+    public HttpClientTimeoutTest(Transport transport)
     {
-        super(sslContextFactory);
+        super(transport);
     }
 
-    @Slow
     @Test(expected = TimeoutException.class)
     public void testTimeoutOnFuture() throws Exception
     {
         long timeout = 1000;
         start(new TimeoutHandler(2 * timeout));
 
-        client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+        client.newRequest(newURI())
                 .timeout(timeout, TimeUnit.MILLISECONDS)
                 .send();
     }
 
-    @Slow
     @Test
     public void testTimeoutOnListener() throws Exception
     {
@@ -85,22 +84,16 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         start(new TimeoutHandler(2 * timeout));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+        Request request = client.newRequest(newURI())
                 .timeout(timeout, TimeUnit.MILLISECONDS);
-        request.send(new Response.CompleteListener()
+        request.send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                Assert.assertTrue(result.isFailed());
-                latch.countDown();
-            }
+            Assert.assertTrue(result.isFailed());
+            latch.countDown();
         });
         Assert.assertTrue(latch.await(3 * timeout, TimeUnit.MILLISECONDS));
     }
 
-    @Slow
     @Test
     public void testTimeoutOnQueuedRequest() throws Exception
     {
@@ -112,32 +105,22 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
         // The first request has a long timeout
         final CountDownLatch firstLatch = new CountDownLatch(1);
-        Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+        Request request = client.newRequest(newURI())
                 .timeout(4 * timeout, TimeUnit.MILLISECONDS);
-        request.send(new Response.CompleteListener()
+        request.send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                Assert.assertFalse(result.isFailed());
-                firstLatch.countDown();
-            }
+            Assert.assertFalse(result.isFailed());
+            firstLatch.countDown();
         });
 
         // Second request has a short timeout and should fail in the queue
         final CountDownLatch secondLatch = new CountDownLatch(1);
-        request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+        request = client.newRequest(newURI())
                 .timeout(timeout, TimeUnit.MILLISECONDS);
-        request.send(new Response.CompleteListener()
+        request.send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                Assert.assertTrue(result.isFailed());
-                secondLatch.countDown();
-            }
+            Assert.assertTrue(result.isFailed());
+            secondLatch.countDown();
         });
 
         Assert.assertTrue(secondLatch.await(2 * timeout, TimeUnit.MILLISECONDS));
@@ -146,7 +129,6 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         Assert.assertTrue(firstLatch.await(5 * timeout, TimeUnit.MILLISECONDS));
     }
 
-    @Slow
     @Test
     public void testTimeoutIsCancelledOnSuccess() throws Exception
     {
@@ -155,8 +137,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         final byte[] content = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+        Request request = client.newRequest(newURI())
                 .content(new InputStreamContentProvider(new ByteArrayInputStream(content)))
                 .timeout(2 * timeout, TimeUnit.MILLISECONDS);
         request.send(new BufferingResponseListener()
@@ -177,62 +158,56 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         Assert.assertNull(request.getAbortCause());
     }
 
-    @Slow
     @Test
     public void testTimeoutOnListenerWithExplicitConnection() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+        NetworkConnector network_connector = (NetworkConnector)connector;
+        
         long timeout = 1000;
         start(new TimeoutHandler(2 * timeout));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
+        Destination destination = client.getDestination(getScheme(), "localhost", network_connector.getLocalPort());
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            Request request = client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scheme)
+            Request request = client.newRequest(newURI())
                     .timeout(timeout, TimeUnit.MILLISECONDS);
-            connection.send(request, new Response.CompleteListener()
+            connection.send(request, result ->
             {
-                @Override
-                public void onComplete(Result result)
-                {
-                    Assert.assertTrue(result.isFailed());
-                    latch.countDown();
-                }
+                Assert.assertTrue(result.isFailed());
+                latch.countDown();
             });
 
             Assert.assertTrue(latch.await(3 * timeout, TimeUnit.MILLISECONDS));
         }
     }
 
-    @Slow
     @Test
     public void testTimeoutIsCancelledOnSuccessWithExplicitConnection() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+        NetworkConnector network_connector = (NetworkConnector)connector;   
+        
         long timeout = 1000;
         start(new TimeoutHandler(timeout));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
+        Destination destination = client.getDestination(getScheme(), "localhost", network_connector.getLocalPort());
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            Request request = client.newRequest(destination.getHost(), destination.getPort())
-                    .scheme(scheme)
+            Request request = client.newRequest(newURI())
                     .timeout(2 * timeout, TimeUnit.MILLISECONDS);
-            connection.send(request, new Response.CompleteListener()
+            connection.send(request, result ->
             {
-                @Override
-                public void onComplete(Result result)
-                {
-                    Response response = result.getResponse();
-                    Assert.assertEquals(200, response.getStatus());
-                    Assert.assertFalse(result.isFailed());
-                    latch.countDown();
-                }
+                Response response = result.getResponse();
+                Assert.assertEquals(200, response.getStatus());
+                Assert.assertFalse(result.isFailed());
+                latch.countDown();
             });
 
             Assert.assertTrue(latch.await(3 * timeout, TimeUnit.MILLISECONDS));
@@ -243,14 +218,14 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         }
     }
 
-    @Test
+    @Test(expected = TimeoutException.class)
     public void testIdleTimeout() throws Throwable
     {
         long timeout = 1000;
-        start(new TimeoutHandler(2 * timeout));
-        client.stop();
-        final AtomicBoolean sslIdle = new AtomicBoolean();
-        client = new HttpClient(sslContextFactory)
+        startServer(new TimeoutHandler(2 * timeout));
+
+        AtomicBoolean sslIdle = new AtomicBoolean();
+        client = new HttpClient(provideClientTransport(transport), sslContextFactory)
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
@@ -263,10 +238,10 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
                         return new SslConnection(byteBufferPool, executor, endPoint, engine)
                         {
                             @Override
-                            protected boolean onReadTimeout()
+                            protected boolean onReadTimeout(Throwable timeout)
                             {
                                 sslIdle.set(true);
-                                return super.onReadTimeout();
+                                return super.onReadTimeout(timeout);
                             }
                         };
                     }
@@ -278,26 +253,23 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
         try
         {
-            client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scheme)
+            client.newRequest(newURI())
                     .send();
             Assert.fail();
         }
         catch (Exception x)
         {
             Assert.assertFalse(sslIdle.get());
-            Assert.assertThat(x.getCause(), Matchers.instanceOf(TimeoutException.class));
+            throw x;
         }
     }
 
-    @Slow
     @Test
     public void testBlockingConnectTimeoutFailsRequest() throws Exception
     {
         testConnectTimeoutFailsRequest(true);
     }
 
-    @Slow
     @Test
     public void testNonBlockingConnectTimeoutFailsRequest() throws Exception
     {
@@ -306,6 +278,8 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
     private void testConnectTimeoutFailsRequest(boolean blocking) throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+
         String host = "10.255.255.1";
         int port = 80;
         int connectTimeout = 1000;
@@ -319,25 +293,21 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest(host, port);
-        request.scheme(scheme)
-                .send(new Response.CompleteListener()
+        request.scheme(getScheme())
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isFailed())
-                            latch.countDown();
-                    }
+                    if (result.isFailed())
+                        latch.countDown();
                 });
 
         Assert.assertTrue(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
         Assert.assertNotNull(request.getAbortCause());
     }
 
-    @Slow
     @Test
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
         String host = "10.255.255.1";
         int port = 80;
         int connectTimeout = 2000;
@@ -351,16 +321,12 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         final AtomicInteger completes = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(2);
         Request request = client.newRequest(host, port);
-        request.scheme(scheme)
+        request.scheme(getScheme())
                 .timeout(connectTimeout / 2, TimeUnit.MILLISECONDS)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        completes.incrementAndGet();
-                        latch.countDown();
-                    }
+                    completes.incrementAndGet();
+                    latch.countDown();
                 });
 
         Assert.assertFalse(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
@@ -371,6 +337,8 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
     @Test
     public void retryAfterConnectTimeout() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+
         final String host = "10.255.255.1";
         final int port = 80;
         int connectTimeout = 1000;
@@ -383,27 +351,19 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest(host, port);
-        request.scheme(scheme)
-                .send(new Response.CompleteListener()
+        request.scheme(getScheme())
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
+                    if (result.isFailed())
                     {
-                        if (result.isFailed())
-                        {
-                            // Retry
-                            client.newRequest(host, port)
-                                    .scheme(scheme)
-                                    .send(new Response.CompleteListener()
-                                    {
-                                        @Override
-                                        public void onComplete(Result result)
-                                        {
-                                            if (result.isFailed())
-                                                latch.countDown();
-                                        }
-                                    });
-                        }
+                        // Retry
+                        client.newRequest(host, port)
+                                .scheme(getScheme())
+                                .send(retryResult ->
+                                {
+                                    if (retryResult.isFailed())
+                                        latch.countDown();
+                                });
                     }
                 });
 
@@ -417,17 +377,9 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         start(new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+        client.newRequest(newURI())
                 .timeout(1, TimeUnit.MILLISECONDS) // Very short timeout
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        latch.countDown();
-                    }
-                });
+                .send(result -> latch.countDown());
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -435,24 +387,21 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
     @Test
     public void testTimeoutCancelledWhenSendingThrowsException() throws Exception
     {
+        Assume.assumeTrue(connector instanceof NetworkConnector);
+        NetworkConnector network_connector = (NetworkConnector)connector;
+        
         start(new EmptyServerHandler());
 
         long timeout = 1000;
-        Request request = client.newRequest("badscheme://localhost:" + connector.getLocalPort());
+        Request request = client.newRequest("badscheme://localhost:" + network_connector.getLocalPort());
 
         try
         {
             request.timeout(timeout, TimeUnit.MILLISECONDS)
-                    .send(new Response.CompleteListener()
-                    {
-                        @Override
-                        public void onComplete(Result result)
-                        {
-                        }
-                    });
+                    .send(result -> {});
             Assert.fail();
         }
-        catch (Exception expected)
+        catch (Exception ignored)
         {
         }
 
@@ -462,7 +411,49 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         Assert.assertNull(request.getAbortCause());
     }
 
-    private void assumeConnectTimeout(String host, int port, int connectTimeout) throws IOException
+    @Test
+    public void testFirstRequestTimeoutAfterSecondRequestCompletes() throws Exception
+    {
+        long timeout = 2000;
+        start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                if (request.getRequestURI().startsWith("/one"))
+                {
+                    try
+                    {
+                        Thread.sleep(3 * timeout);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        throw new InterruptedIOException();
+                    }
+                }
+            }
+        });
+
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest(newURI())
+                .path("/one")
+                .timeout(2 * timeout, TimeUnit.MILLISECONDS)
+                .send(result ->
+                {
+                    if (result.isFailed() && result.getFailure() instanceof TimeoutException)
+                        latch.countDown();
+                });
+
+        ContentResponse response = client.newRequest(newURI())
+                .path("/two")
+                .timeout(timeout, TimeUnit.MILLISECONDS)
+                .send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    private void assumeConnectTimeout(String host, int port, int connectTimeout)
     {
         try (Socket socket = new Socket())
         {

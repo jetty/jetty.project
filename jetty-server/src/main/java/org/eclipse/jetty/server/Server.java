@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
@@ -416,9 +417,6 @@ public class Server extends HandlerWrapper implements Attributes
                 }
             }
 
-            if (isDumpAfterStart())
-                dumpStdErr();
-
             mex.ifExceptionThrow();
             LOG.info(String.format("Started @%dms",Uptime.getUptime()));
         }
@@ -439,6 +437,11 @@ public class Server extends HandlerWrapper implements Attributes
                 _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(NetworkConnector::close);
             }
             throw e1;
+        }
+        finally
+        {
+            if (isDumpAfterStart())
+                dumpStdErr();
         }
     }
 

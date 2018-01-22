@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -60,6 +60,8 @@ import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -113,7 +115,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         final AtomicLong requestTime = new AtomicLong();
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest(newURI())
                 .scheme(getScheme())
                 .file(upload)
                 .onRequestSuccess(request -> requestTime.set(System.nanoTime()))
@@ -146,7 +148,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -187,7 +189,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -234,7 +236,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -286,7 +288,7 @@ public class HttpClientStreamTest extends AbstractTest
         // Close the stream immediately.
         stream.close();
 
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .content(new BytesContentProvider(new byte[]{0, 1, 2, 3}))
                 .send(listener);
@@ -328,7 +330,7 @@ public class HttpClientStreamTest extends AbstractTest
                 });
             }
         };
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .send(listener);
 
@@ -385,7 +387,7 @@ public class HttpClientStreamTest extends AbstractTest
                 contentLatch.countDown();
             }
         };
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -437,7 +439,7 @@ public class HttpClientStreamTest extends AbstractTest
                 contentLatch.countDown();
             }
         };
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -457,12 +459,13 @@ public class HttpClientStreamTest extends AbstractTest
     public void testInputStreamResponseListenerFailedBeforeResponse() throws Exception
     {
         start(new EmptyServerHandler());
-        int port = connector.getLocalPort();
+        //int port = connector.getLocalPort();
         server.stop();
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         // Connect to the wrong port
-        client.newRequest("localhost", port)
+        client.newRequest("localhost",
+                          (connector instanceof ServerConnector?ServerConnector.class.cast( connector ).getLocalPort():1))
                 .scheme(getScheme())
                 .send(listener);
         Result result = listener.await(5, TimeUnit.SECONDS);
@@ -483,7 +486,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         final byte[] data = new byte[]{0, 1, 2, 3};
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .content(new InputStreamContentProvider(new InputStream()
                 {
@@ -529,7 +532,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -574,7 +577,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -610,7 +613,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -649,7 +652,7 @@ public class HttpClientStreamTest extends AbstractTest
         final CountDownLatch latch = new CountDownLatch(1);
         try (DeferredContentProvider content = new DeferredContentProvider())
         {
-            client.newRequest("localhost", connector.getLocalPort())
+            client.newRequest(newURI())
                     .scheme(getScheme())
                     .content(content)
                     .send(result ->
@@ -699,7 +702,7 @@ public class HttpClientStreamTest extends AbstractTest
                 }
             });
 
-            client.newRequest("localhost", connector.getLocalPort())
+            client.newRequest(newURI())
                     .scheme(getScheme())
                     .content(content)
                     .send(result ->
@@ -739,7 +742,7 @@ public class HttpClientStreamTest extends AbstractTest
             }
         };
 
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .content(content)
                 .send(new BufferingResponseListener()
@@ -821,7 +824,7 @@ public class HttpClientStreamTest extends AbstractTest
         };
         contentRef.set(content);
 
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .content(content)
                 .send(new BufferingResponseListener()
@@ -855,7 +858,7 @@ public class HttpClientStreamTest extends AbstractTest
         final byte[] data = new byte[512];
         final CountDownLatch latch = new CountDownLatch(1);
         OutputStreamContentProvider content = new OutputStreamContentProvider();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .content(content)
                 .send(new BufferingResponseListener()
@@ -898,7 +901,7 @@ public class HttpClientStreamTest extends AbstractTest
         new Random().nextBytes(data);
         final CountDownLatch latch = new CountDownLatch(1);
         OutputStreamContentProvider content = new OutputStreamContentProvider();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .content(content)
                 .send(new BufferingResponseListener(data.length)
@@ -939,7 +942,8 @@ public class HttpClientStreamTest extends AbstractTest
         final byte[] data = new byte[512];
         final CountDownLatch latch = new CountDownLatch(1);
         OutputStreamContentProvider content = new OutputStreamContentProvider();
-        client.newRequest("0.0.0.1", connector.getLocalPort())
+        client.newRequest("http://0.0.0.1"
+                              + ((connector instanceof ServerConnector)?":"+ServerConnector.class.cast(connector).getLocalPort():""))
                 .scheme(getScheme())
                 .content(content)
                 .send(result ->
@@ -978,7 +982,7 @@ public class HttpClientStreamTest extends AbstractTest
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
         final DeferredContentProvider content = new DeferredContentProvider();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .content(content)
                 .onRequestBegin(request ->
@@ -1026,7 +1030,8 @@ public class HttpClientStreamTest extends AbstractTest
         InputStreamContentProvider content = new InputStreamContentProvider(stream);
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
-        client.newRequest("0.0.0.1", connector.getLocalPort())
+        client.newRequest("http://0.0.0.1"
+                              + ((connector instanceof ServerConnector)?":"+ServerConnector.class.cast(connector).getLocalPort():""))
                 .scheme(getScheme())
                 .content(content)
                 .send(result ->
@@ -1098,7 +1103,7 @@ public class HttpClientStreamTest extends AbstractTest
         InputStreamContentProvider provider = new InputStreamContentProvider(stream, 1);
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .content(provider)
                 .onRequestCommit(request -> commit.set(true))
@@ -1129,7 +1134,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .timeout(5, TimeUnit.SECONDS)
                 .send(listener);
@@ -1180,7 +1185,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .path("/303")
                 .followRedirects(true)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
 import org.junit.Test;
@@ -137,7 +139,10 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     public void testIdleServerIdleTimeout() throws Exception
     {
         start(new EmptyServerHandler());
-        connector.setIdleTimeout(idleTimeout);
+        if (connector instanceof AbstractConnector )
+        {
+            AbstractConnector.class.cast( connector).setIdleTimeout(idleTimeout);
+        }
 
         ContentResponse response1 = client.newRequest(newURI()).send();
         Assert.assertEquals(HttpStatus.OK_200, response1.getStatus());

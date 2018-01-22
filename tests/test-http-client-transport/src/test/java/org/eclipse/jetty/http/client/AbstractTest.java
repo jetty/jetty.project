@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.servlet.http.HttpServlet;
-
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -37,6 +31,7 @@ import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -46,15 +41,32 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.unixsocket.UnixSocketConnector;
+import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import javax.servlet.http.HttpServlet;
+
+import java.io.File;
+import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
 public abstract class AbstractTest
@@ -62,8 +74,18 @@ public abstract class AbstractTest
     @Parameterized.Parameters(name = "transport: {0}")
     public static Object[] parameters() throws Exception
     {
+        String transports = System.getProperty("org.eclipse.jetty.http.client.AbstractTest.Transports");
+
+        if (!StringUtil.isBlank(transports))
+            return Arrays.stream(transports.split("\\s*,\\s*"))
+                .map(Transport::valueOf)
+                .collect(Collectors.toList()).toArray();
+        
+        if (!OS.IS_UNIX)
+            return EnumSet.complementOf(EnumSet.of(Transport.UNIX_SOCKET)).toArray();
         return Transport.values();
     }
+
 
     @Rule
     public final TestTracker tracker = new TestTracker();
@@ -72,10 +94,11 @@ public abstract class AbstractTest
     protected final Transport transport;
     protected SslContextFactory sslContextFactory;
     protected Server server;
-    protected ServerConnector connector;
+    protected Connector connector;
     protected ServletContextHandler context;
     protected String servletPath = "/servlet";
     protected HttpClient client;
+    protected Path sockFile;
 
     public AbstractTest(Transport transport)
     {
@@ -95,6 +118,39 @@ public abstract class AbstractTest
         startClient();
     }
 
+    @Before
+    public void before() throws Exception
+    {
+        if(sockFile == null || !Files.exists( sockFile ))
+        {
+            sockFile = Files.createTempFile(new File("/tmp").toPath(),"unix", ".sock" );
+            Files.delete( sockFile );
+        }
+    }
+
+    @After
+    public void stop() throws Exception
+    {
+        stopClient();
+        stopServer();
+        if (sockFile!=null)
+        {
+            Files.deleteIfExists( sockFile );
+        }
+    }
+
+    protected void stopClient() throws Exception
+    {
+        if (client != null)
+            client.stop();
+    }
+
+    protected void stopServer() throws Exception
+    {
+        if (server != null)
+            server.stop();
+    }
+    
     protected void startServer(HttpServlet servlet) throws Exception
     {
         context = new ServletContextHandler();
@@ -123,11 +179,24 @@ public abstract class AbstractTest
         connector = newServerConnector(server);
         server.addConnector(connector);
         server.setHandler(handler);
-        server.start();
+        try
+        {
+            server.start();
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
     }
 
-    protected ServerConnector newServerConnector(Server server)
+    protected Connector newServerConnector(Server server) throws Exception
     {
+        if (transport == Transport.UNIX_SOCKET)
+        {
+            UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, provideServerConnectionFactory( transport ));
+            unixSocketConnector.setUnixSocket( sockFile.toString() );
+            return unixSocketConnector;
+        }
         return new ServerConnector(server, provideServerConnectionFactory(transport));
     }
 
@@ -149,6 +218,7 @@ public abstract class AbstractTest
         List<ConnectionFactory> result = new ArrayList<>();
         switch (transport)
         {
+            case UNIX_SOCKET:
             case HTTP:
             {
                 result.add(new HttpConnectionFactory(httpConfig));
@@ -211,6 +281,10 @@ public abstract class AbstractTest
             {
                 return new HttpClientTransportOverFCGI(1, false, "");
             }
+            case UNIX_SOCKET:
+            {
+                return new HttpClientTransportOverUnixSockets( sockFile.toString() );
+            }
             default:
             {
                 throw new IllegalArgumentException();
@@ -237,13 +311,18 @@ public abstract class AbstractTest
 
     protected String newURI()
     {
-        return getScheme() + "://localhost:" + connector.getLocalPort();
+        if (connector instanceof  ServerConnector)
+        {
+            return getScheme() + "://localhost:" + ServerConnector.class.cast( connector ).getLocalPort();
+        }
+        return getScheme() + "://localhost";
     }
 
     protected boolean isTransportSecure()
     {
         switch (transport)
         {
+            case UNIX_SOCKET:
             case HTTP:
             case H2C:
             case FCGI:
@@ -256,27 +335,8 @@ public abstract class AbstractTest
         }
     }
 
-    @After
-    public void stop() throws Exception
-    {
-        stopClient();
-        stopServer();
-    }
-
-    protected void stopClient() throws Exception
-    {
-        if (client != null)
-            client.stop();
-    }
-
-    protected void stopServer() throws Exception
-    {
-        if (server != null)
-            server.stop();
-    }
-
     protected enum Transport
     {
-        HTTP, HTTPS, H2C, H2, FCGI
+        HTTP, HTTPS, H2C, H2, FCGI, UNIX_SOCKET;
     }
 }

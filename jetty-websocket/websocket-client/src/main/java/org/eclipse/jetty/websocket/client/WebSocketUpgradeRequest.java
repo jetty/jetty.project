@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -362,7 +362,8 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
      * Exists for internal use of HttpClient by WebSocketClient.
      * <p>
      * Maintained for Backward compatibility and also for JSR356 WebSocket ClientContainer use.
-     * 
+     *
+     * @param wsClient the WebSocketClient that this request uses
      * @param httpClient the HttpClient that this request uses
      * @param request the ClientUpgradeRequest (backward compat) to base this request from
      */
@@ -374,7 +375,8 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
     /**
      * Initiating a WebSocket Upgrade using HTTP/1.1
-     * 
+     *
+     * @param wsClient the WebSocketClient that this request uses
      * @param httpClient the HttpClient that this request uses
      * @param localEndpoint the local endpoint (following Jetty WebSocket Client API rules) to use for incoming
      * WebSocket events

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -58,7 +58,7 @@ public class ConfigurationAssert
     {
         assertConfiguration(baseHome, args, null, MavenTestingUtils.getTestResourceFile(filename));
     }
-    
+
     /**
      * Given a provided StartArgs, assert that the configuration it has determined is valid based on values in a assert text file.
      *
@@ -73,7 +73,7 @@ public class ConfigurationAssert
     {
         assertConfiguration(baseHome, args, output, MavenTestingUtils.getTestResourceFile(filename));
     }
-    
+
     /**
      * Given a provided StartArgs, assert that the configuration it has determined is valid based on values in a assert text file.
      *
@@ -91,7 +91,7 @@ public class ConfigurationAssert
         }
         Path testResourcesDir = MavenTestingUtils.getTestResourcesDir().toPath().toRealPath();
         TextFile textFile = new TextFile(file.toPath());
-        
+
         // Validate XMLs (order is important)
         List<String> expectedXmls = new ArrayList<>();
         for (String line : textFile)
@@ -107,7 +107,7 @@ public class ConfigurationAssert
             actualXmls.add(shorten(baseHome, xml, testResourcesDir));
         }
         assertOrdered("XML Resolution Order", expectedXmls, actualXmls);
-        
+
         // Validate LIBs (order is not important)
         List<String> expectedLibs = new ArrayList<>();
         for (String line : textFile)
@@ -123,7 +123,7 @@ public class ConfigurationAssert
             actualLibs.add(shorten(baseHome, path.toPath(), testResourcesDir));
         }
         assertContainsUnordered("Libs", expectedLibs, actualLibs);
-        
+
         // Validate PROPERTIES (order is not important)
         Set<String> expectedProperties = new HashSet<>();
         for (String line : textFile)
@@ -137,11 +137,11 @@ public class ConfigurationAssert
         for (Prop prop : args.getProperties())
         {
             String name = prop.key;
-            if ("jetty.home".equals(name) || 
+            if ("jetty.home".equals(name) ||
                 "jetty.base".equals(name) ||
-                "jetty.home.uri".equals(name) || 
+                "jetty.home.uri".equals(name) ||
                 "jetty.base.uri".equals(name) ||
-                "user.dir".equals(name) || 
+                "user.dir".equals(name) ||
                 prop.origin.equals(Props.ORIGIN_SYSPROP) ||
                 name.startsWith("java."))
             {
@@ -151,7 +151,7 @@ public class ConfigurationAssert
             actualProperties.add(prop.key + "=" + args.getProperties().expand(prop.value));
         }
         assertContainsUnordered("Properties", expectedProperties, actualProperties);
-        
+
         // Validate PROPERTIES (order is not important)
         for (String line : textFile)
         {
@@ -162,7 +162,7 @@ public class ConfigurationAssert
                 assertThat("System property "+expected[0],actual,Matchers.equalTo(expected[1]));
             }
         }
-        
+
         // Validate Downloads
         List<String> expectedDownloads = new ArrayList<>();
         for (String line : textFile)
@@ -195,7 +195,7 @@ public class ConfigurationAssert
                 PathAssert.assertFileExists("Required File", path);
             }
         });
-        
+
         // Output Validation
         streamOf(textFile, "OUTPUT").forEach(regex ->
         {
@@ -204,7 +204,7 @@ public class ConfigurationAssert
             assertTrue("Output [\n" + output + "]\nContains Regex Match: " + pat.pattern(), mat.find());
         });
     }
-    
+
     private static String shorten(BaseHome baseHome, Path path, Path testResourcesDir)
     {
         String value = baseHome.toShortForm(path);
@@ -212,7 +212,7 @@ public class ConfigurationAssert
         {
             return value;
         }
-        
+
         if (path.startsWith(testResourcesDir))
         {
             int len = testResourcesDir.toString().length();
@@ -235,9 +235,9 @@ public class ConfigurationAssert
             System.err.println("Actual  : " + actualSet.stream().sorted().collect(Collectors.toList()));
             throw e;
         }
-        
+
     }
-    
+
     @SuppressWarnings("Duplicates")
     public static void assertOrdered(String msg, List<String> expectedList, List<String> actualList)
     {
@@ -254,13 +254,13 @@ public class ConfigurationAssert
             throw e;
         }
     }
-    
+
     private static Stream<String> streamOf(TextFile textFile, String key)
     {
         return textFile.stream()
                 .filter(s -> s.startsWith(key + "|")).map(f -> getValue(f));
     }
-    
+
     private static String getValue(String arg)
     {
         int idx = arg.indexOf('|');

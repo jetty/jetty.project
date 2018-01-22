@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -245,7 +245,7 @@ public class HttpConnectionTest
     @Test
     public void test_0_9() throws Exception
     {
-        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
         LocalEndPoint endp = connector.executeRequest("GET /R1\n");
         endp.waitUntilClosed();
         String response=BufferUtil.toString(endp.takeOutput());

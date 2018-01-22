@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -148,6 +148,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
     /**
      * Aborts the active session abruptly.
+     * @param statusCode the status code
+     * @param reason the raw reason code
      */
     public void abort(int statusCode, String reason)
     {

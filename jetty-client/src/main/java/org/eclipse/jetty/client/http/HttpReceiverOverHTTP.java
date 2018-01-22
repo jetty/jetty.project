@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
@@ -38,13 +39,14 @@ import org.eclipse.jetty.util.CompletableCallback;
 
 public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler
 {
-    private final HttpParser parser = new HttpParser(this);
+    private final HttpParser parser;
     private ByteBuffer buffer;
     private boolean shutdown;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
+        parser = new HttpParser(this, -1, channel.getHttpDestination().getHttpClient().getHttpCompliance());
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,9 +52,11 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -147,6 +149,8 @@ public class HttpClient extends ContainerLifeCycle
     private boolean removeIdleDestinations = false;
     private boolean connectBlocking = false;
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
+    private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
+    private String defaultRequestContentType = "application/octet-stream";
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -551,7 +555,7 @@ public class HttpClient extends ContainerLifeCycle
     protected boolean removeDestination(HttpDestination destination)
     {
         removeBean(destination);
-        return destinations.remove(destination.getOrigin()) != null;
+        return destinations.remove(destination.getOrigin(), destination);
     }
 
     /**
@@ -973,6 +977,25 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Gets the http compliance mode for parsing http responses.
+     * The default http compliance level is {@link HttpCompliance#RFC7230} which is the latest HTTP/1.1 specification
+     */
+    public HttpCompliance getHttpCompliance()
+    {
+        return httpCompliance;
+    }
+
+    /**
+     * Sets the http compliance mode for parsing http responses.
+     * This affect how weak the {@link HttpParser} parses http responses and which http protocol level is supported
+     * @param httpCompliance The compliance level which is used to actually parse http responses
+     */
+    public void setHttpCompliance(HttpCompliance httpCompliance)
+    {
+        this.httpCompliance = httpCompliance;
+    }
+
+    /**
      * @return whether request events must be strictly ordered
      * @see #setStrictEventOrdering(boolean)
      */
@@ -1062,6 +1085,23 @@ public class HttpClient extends ContainerLifeCycle
     public void setConnectBlocking(boolean connectBlocking)
     {
         this.connectBlocking = connectBlocking;
+    }
+
+    /**
+     * @return the default content type for request content
+     */
+    @ManagedAttribute("The default content type for request content")
+    public String getDefaultRequestContentType()
+    {
+        return defaultRequestContentType;
+    }
+
+    /**
+     * @param contentType the default content type for request content
+     */
+    public void setDefaultRequestContentType(String contentType)
+    {
+        this.defaultRequestContentType = contentType;
     }
 
     /**

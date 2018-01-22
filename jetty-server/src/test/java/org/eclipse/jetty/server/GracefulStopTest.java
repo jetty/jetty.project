@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,12 +25,15 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeTrue;
 
+import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.nio.channels.ClosedChannelException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -41,14 +44,21 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -265,6 +275,169 @@ public class GracefulStopTest
         }
     }
 
+    
+    public void testSlowClose(long stopTimeout, long closeWait, Matcher<Long> stopTimeMatcher) throws Exception
+    {
+        Server server= new Server();
+        server.setStopTimeout(stopTimeout);
+
+        CountDownLatch closed = new CountDownLatch(1);
+        ServerConnector connector = new ServerConnector(server, 2, 2, new HttpConnectionFactory() 
+        {
+
+            @Override
+            public Connection newConnection(Connector connector, EndPoint endPoint)
+            {
+                // Slow closing connection
+                HttpConnection conn = new HttpConnection(getHttpConfiguration(), connector, endPoint, getHttpCompliance(), isRecordHttpComplianceViolations())
+                {
+                    @Override
+                    public void close()
+                    {
+                        try
+                        {
+                            new Thread(()->
+                            {
+                                try
+                                {
+                                    Thread.sleep(closeWait);
+                                }
+                                catch (InterruptedException e)
+                                {
+                                }
+                                finally
+                                {
+                                    super.close();
+                                }
+
+                            }).start();
+                        }
+                        catch(Exception e)
+                        {
+                            // e.printStackTrace();
+                        }
+                        finally
+                        {
+                            closed.countDown();
+                        }
+                    }
+                };
+                return configure(conn, connector, endPoint);
+            }
+            
+        });
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        NoopHandler handler = new NoopHandler();
+        server.setHandler(handler);
+
+        server.start();
+        final int port=connector.getLocalPort();
+        Socket client = new Socket("127.0.0.1", port);
+        client.setSoTimeout(10000);
+        client.getOutputStream().write((
+                "GET / HTTP/1.1\r\n"+
+                "Host: localhost:"+port+"\r\n" +
+                "Content-Type: plain/text\r\n" +
+                "\r\n"
+                ).getBytes());
+        client.getOutputStream().flush();
+        handler.latch.await();
+
+        // look for a response
+        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream() ,StandardCharsets.ISO_8859_1));
+        while(true)
+        {
+            String line = in.readLine();
+            if (line==null)
+                Assert.fail();
+            if (line.length()==0)
+                break;
+        }
+
+        long start = System.nanoTime();
+        try
+        {
+            server.stop();
+            Assert.assertTrue(stopTimeout==0 || stopTimeout>closeWait);  
+        }
+        catch(Exception e)
+        {
+            Assert.assertTrue(stopTimeout>0 && stopTimeout<closeWait);                
+        }
+        long stop = System.nanoTime();
+        
+        // Check stop time was correct
+        assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),stopTimeMatcher);
+
+        // Connection closed
+        while(true)
+        {
+            int r = client.getInputStream().read();
+            if (r==-1)
+                break;
+        }
+
+        // onClose Thread interrupted or completed
+        if (stopTimeout>0)
+            Assert.assertTrue(closed.await(1000,TimeUnit.MILLISECONDS));
+        
+        if (!client.isClosed())
+            client.close();
+    }
+
+    /**
+     * Test of non graceful stop when a connection close is slow
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testSlowCloseNotGraceful() throws Exception
+    {        
+        Log.getLogger(QueuedThreadPool.class).info("Expect some threads can't be stopped");
+        testSlowClose(0,5000,lessThan(750L));
+    }
+
+    /**
+     * Test of graceful stop when close is slower than timeout
+     * @throws Exception on test failure
+     */
+    @Test
+    @Ignore // TODO disable while #2046 is fixed
+    public void testSlowCloseTinyGraceful() throws Exception
+    {
+        Log.getLogger(QueuedThreadPool.class).info("Expect some threads can't be stopped");
+        testSlowClose(1,5000,lessThan(1500L));
+    }
+
+    /**
+     * Test of graceful stop when close is faster than timeout;
+     * @throws Exception on test failure
+     */
+    @Test
+    @Ignore // TODO disable while #2046 is fixed
+    public void testSlowCloseGraceful() throws Exception
+    {
+        testSlowClose(5000,1000,Matchers.allOf(greaterThan(750L),lessThan(4999L)));
+    }
+    
+    
+    static class NoopHandler extends AbstractHandler 
+    {           
+        final CountDownLatch latch = new CountDownLatch(1);
+        
+        NoopHandler()
+        {
+        }
+        
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                        throws IOException, ServletException 
+        {
+            baseRequest.setHandled(true);
+            latch.countDown();
+        }
+    }
 
     static class TestHandler extends AbstractHandler 
     {		
