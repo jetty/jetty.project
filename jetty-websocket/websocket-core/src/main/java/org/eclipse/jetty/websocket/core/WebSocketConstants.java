@@ -40,7 +40,7 @@ public final class WebSocketConstants
     public static final String SEC_WEBSOCKET_PROTOCOL = HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString();
     public static final String SEC_WEBSOCKET_VERSION = HttpHeader.SEC_WEBSOCKET_VERSION.asString();
     public static final String SEC_WEBSOCKET_ACCEPT = HttpHeader.SEC_WEBSOCKET_ACCEPT.asString();
-    public static final String SEC_WEBSOCKET_ORIGIN = "Sec-WebSocket-Origin";
+    public static final String ORIGIN = HttpHeader.ORIGIN.toString();
     public static final String SEC_WEBSOCKET_KEY = HttpHeader.SEC_WEBSOCKET_KEY.asString();
 
     // Supported Spec Version
