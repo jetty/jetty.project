@@ -33,11 +33,11 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 
 public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
 {
-    private final JavaxClientContainer containerContext;
+    private final JavaxWebSocketClientContainer containerContext;
     private final Object websocketPojo;
     private CompletableFuture<Session> futureSession = new CompletableFuture<>();
 
-    public ClientUpgradeRequestImpl(JavaxClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
+    public ClientUpgradeRequestImpl(JavaxWebSocketClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);
         this.containerContext = clientContainer;

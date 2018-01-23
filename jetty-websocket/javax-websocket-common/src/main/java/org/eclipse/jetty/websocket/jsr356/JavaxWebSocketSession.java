@@ -65,7 +65,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
     private final JavaxWebSocketContainer container;
     private final FrameHandler.Channel channel;
-    private final HandshakeRequest upgradeRequest;
+    private final HandshakeRequest handshakeRequest;
     private final HandshakeResponse upgradeResponse;
     private final JavaxWebSocketFrameHandler frameHandler;
     private final WebSocketPolicy policy;
@@ -84,16 +84,16 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public JavaxWebSocketSession(JavaxWebSocketContainer container,
                                  FrameHandler.Channel channel,
                                  JavaxWebSocketFrameHandler frameHandler,
-                                 HandshakeRequest upgradeRequest,
-                                 HandshakeResponse upgradeResponse,
+                                 HandshakeRequest handshakeRequest,
+                                 HandshakeResponse handshakeResponse,
                                  String id,
                                  EndpointConfig endpointConfig)
     {
         this.container = container;
         this.channel = channel;
         this.frameHandler = frameHandler;
-        this.upgradeRequest = upgradeRequest;
-        this.upgradeResponse = upgradeResponse;
+        this.handshakeRequest = handshakeRequest;
+        this.upgradeResponse = handshakeResponse;
         this.policy = frameHandler.getPolicy();
         this.id = id;
 
@@ -292,6 +292,11 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         return availableEncoders;
     }
 
+    public Object getEndpoint()
+    {
+        return frameHandler.getEndpoint();
+    }
+
     public EndpointConfig getEndpointConfig()
     {
         return config;
@@ -475,7 +480,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public String getProtocolVersion()
     {
-        return upgradeRequest.getProtocolVersion();
+        return handshakeRequest.getProtocolVersion();
     }
 
     /**
@@ -487,7 +492,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public String getQueryString()
     {
-        return upgradeRequest.getRequestURI().getQuery();
+        return handshakeRequest.getRequestURI().getQuery();
     }
 
     /**
@@ -499,7 +504,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public Map<String, List<String>> getRequestParameterMap()
     {
-        return upgradeRequest.getParameterMap();
+        return handshakeRequest.getParameterMap();
     }
 
     /**
@@ -511,7 +516,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public URI getRequestURI()
     {
-        return upgradeRequest.getRequestURI();
+        return handshakeRequest.getRequestURI();
     }
 
     /**
@@ -525,8 +530,8 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     {
         try
         {
-            Method method = upgradeRequest.getClass().getMethod("getUserPrincipal");
-            return (Principal) method.invoke(upgradeRequest);
+            Method method = handshakeRequest.getClass().getMethod("getUserPrincipal");
+            return (Principal) method.invoke(handshakeRequest);
         }
         catch (NoSuchMethodException e)
         {
@@ -573,7 +578,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public boolean isSecure()
     {
-        return upgradeRequest.isSecure();
+        return handshakeRequest.isSecure();
     }
 
     @Override

@@ -54,7 +54,7 @@ public class UpgradeUtils
         headers.put("Connection", "Upgrade");
         headers.put("Upgrade", "WebSocket");
         headers.put(WebSocketConstants.SEC_WEBSOCKET_KEY, "dGhlIHNhbXBsZSBub25jZQ==");
-        headers.put(WebSocketConstants.SEC_WEBSOCKET_ORIGIN, "ws://local/");
+        headers.put(WebSocketConstants.ORIGIN, "ws://local/");
         // headers.put(WSConstants.SEC_WEBSOCKET_PROTOCOL, "echo");
         headers.put(WebSocketConstants.SEC_WEBSOCKET_VERSION, "13");
         return headers;

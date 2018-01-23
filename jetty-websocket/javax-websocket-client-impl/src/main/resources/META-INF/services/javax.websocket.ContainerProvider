@@ -1,1 +1,1 @@
-org.eclipse.jetty.websocket.jsr356.client.JavaxClientContainerProvider
+org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainerProvider

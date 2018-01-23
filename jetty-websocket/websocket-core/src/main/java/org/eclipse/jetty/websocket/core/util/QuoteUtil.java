@@ -26,7 +26,7 @@ import java.util.NoSuchElementException;
 /**
  * Provide some consistent Http header value and Extension configuration parameter quoting support.
  * <p>
- * While QuotedStringTokenizer exists in jetty-util, and works great with http header values, using it in websocket-api is undesired.
+ * While QuotedStringTokenizer exists in jetty-util, and works great with http header values, using it in websocket-core is undesired.
  * <ul>
  * <li>Using QuotedStringTokenizer would introduce a dependency to jetty-util that would need to be exposed via the WebAppContext classloader</li>
  * <li>ABNF defined extension parameter parsing requirements of RFC-6455 (WebSocket) ABNF, is slightly different than the ABNF parsing defined in RFC-2616

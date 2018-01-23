@@ -37,7 +37,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.websocket.jsr356.server.JavaxServerContainer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 
 /**
@@ -80,7 +80,7 @@ public class JsrBrowserDebugTool
 
     private Server server;
 
-    private JavaxServerContainer setupServer(int port) throws DeploymentException, ServletException, URISyntaxException, MalformedURLException, IOException
+    private JavaxWebSocketServerContainer setupServer(int port) throws DeploymentException, ServletException, URISyntaxException, MalformedURLException, IOException
     {
         server = new Server();
         
@@ -106,7 +106,7 @@ public class JsrBrowserDebugTool
         holder.setInitParameter("dirAllowed","true");
         server.setHandler(context);
 
-        JavaxServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(context);
+        JavaxWebSocketServerContainer container = JavaxWebSocketServerContainerInitializer.configureContext(context);
         container.addEndpoint(JsrBrowserSocket.class);
 
         LOG.info("{} setup on port {}",this.getClass().getName(),port);

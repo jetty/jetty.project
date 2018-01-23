@@ -104,6 +104,16 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         this.futureSession = futureSession;
     }
 
+    public Object getEndpoint()
+    {
+        return endpointInstance;
+    }
+
+    public EndpointConfig getEndpointConfig()
+    {
+        return endpointConfig;
+    }
+
     public WebSocketPolicy getPolicy()
     {
         return this.policy;

@@ -28,9 +28,7 @@
         <module>javax-websocket-common</module>
         <module>javax-websocket-client-impl</module>
         <module>javax-websocket-server-impl</module>
-        <!-- temp disabled
-        <module>websocket-tests</module>
-          -->
+        <module>javax-websocket-tests</module>
     </modules>
 
     <build>

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +50,18 @@ public class DummyChannel implements FrameHandler.Channel
 
     @Override
     public WebSocketBehavior getBehavior()
+    {
+        return null;
+    }
+
+    @Override
+    public SocketAddress getLocalAddress()
+    {
+        return null;
+    }
+
+    @Override
+    public SocketAddress getRemoteAddress()
     {
         return null;
     }

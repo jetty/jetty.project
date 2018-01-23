@@ -72,7 +72,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
             if (sce.getServletContext() instanceof ContextHandler.Context)
             {
                 ContextHandler handler = ((ContextHandler.Context)sce.getServletContext()).getContextHandler();
-                JavaxServerContainer bean = handler.getBean(JavaxServerContainer.class);
+                JavaxWebSocketServerContainer bean = handler.getBean(JavaxWebSocketServerContainer.class);
                 if (bean != null)
                     handler.removeBean(bean);
             }
@@ -139,7 +139,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
      * @return the created websocket server container
      * @throws ServletException if unable to create the websocket server container
      */
-    public static JavaxServerContainer configureContext(ServletContextHandler context) throws ServletException
+    public static JavaxWebSocketServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
         ServletContextWebSocketContainer wsContextContainer = ServletContextWebSocketContainer.get(context.getServletContext());
 
@@ -154,7 +154,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
         }
         
         // Create the Jetty ServerContainer implementation
-        JavaxServerContainer jettyContainer = new JavaxServerContainer(wsContextContainer, nativeWebSocketConfiguration, httpClient);
+        JavaxWebSocketServerContainer jettyContainer = new JavaxWebSocketServerContainer(wsContextContainer, nativeWebSocketConfiguration, httpClient);
         context.addBean(jettyContainer);
 
         // Add FrameHandlerFactory to servlet container for this JSR container
@@ -183,11 +183,11 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
      * @deprecated use {@link #configureContext(ServletContextHandler)} instead
      * @param context not used
      * @param jettyContext the {@link ServletContextHandler} to use
-     * @return a configured {@link JavaxServerContainer} instance
+     * @return a configured {@link JavaxWebSocketServerContainer} instance
      * @throws ServletException if the {@link WebSocketUpgradeFilter} cannot be configured
      */
     @Deprecated
-    public static JavaxServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
+    public static JavaxWebSocketServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
     {
         return configureContext(jettyContext);
     }
@@ -218,7 +218,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
         try(ThreadClassLoaderScope scope = new ThreadClassLoaderScope(context.getClassLoader()))
         {
             // Create the Jetty ServerContainer implementation
-            JavaxServerContainer jettyContainer = configureContext(jettyContext);
+            JavaxWebSocketServerContainer jettyContainer = configureContext(jettyContext);
             context.addListener(new ContextDestroyListener()); // make sure context is cleaned up when the context stops
             
             if (LOG.isDebugEnabled())
