@@ -28,12 +28,12 @@ ____
 It is available in both zip and gzip formats; download the one most appropriate for your system.
 When you download and unpack the binary, it is extracted into a directory called `jetty-distribution-VERSION.`
 Put this directory in a convenient location.
-The rest of the instructions in this documentation refer to this location as either `JETTY_HOME` or as `$(jetty.home).`
+The rest of the instructions in this documentation refer to this location as either `$JETTY_HOME` or as `$(jetty.home).`
 
 _____
 [IMPORTANT]
-It is important that only stable releases are used in production environments.
-Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are not suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
+It is important that *only* stable releases are used in production environments.
+Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
 _____
 
 [[distribution-content]]

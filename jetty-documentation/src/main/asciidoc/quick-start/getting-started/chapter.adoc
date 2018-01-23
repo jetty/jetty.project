@@ -22,4 +22,5 @@ This guide covers the latter, a standalone distribution suitable for deploying w
 
 include::jetty-installing.adoc[]
 include::jetty-running.adoc[]
+include::jetty-common-configuration.adoc[]
 include::jetty-deploying.adoc[]

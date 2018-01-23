@@ -102,7 +102,7 @@ We will work backwards from an ini file to the associated module and then the XM
 
 First up, the `http.ini` file.
 If we take a look at it's contents, we will see the following:
-//TODO - Check for updates in final release version
+
 [source, screen, subs="{sub-order}"]
 ----
 $ cat start.d/http.ini
@@ -156,7 +156,7 @@ Those will some scripting/coding experience might notice that most of the lines 
 When a module is enabled and an `ini` file is created, all of the properties you see here were set to these defaults - the server is already using the values shown
 If you wanted to change one of the properties though, say `jetty.http.port`, you'd simply uncomment the line and change the value.
 For example:
-//TODO - Check for updates in final release version
+
 [source, screen, subs="{sub-order}"]
 ----
 $ cat start.d/http.ini
@@ -178,9 +178,9 @@ jetty.http.port=1234
 ...
 ----
 
-As we said before, these properties were populated in this ini file based on a related module.
+As seen before, these properties were populated in this ini file based on a related module.
 Standard Jetty modules live in the Home of the Jetty Distribution in the aptly named `modules` directory.
-So let's take a quick look at the `$JETTY_HOME/modules/http.mod` file:
+So let's take a quick look at the associated `$JETTY_HOME/modules/http.mod` file:
 
 [source, screen, subs="{sub-order}"]
 ----
