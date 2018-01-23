@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
@@ -96,6 +97,16 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     public void setIdleTimeout(long timeout, TimeUnit units)
     {
         getConnection().getEndPoint().setIdleTimeout(units.toMillis(timeout));
+    }
+
+    public SocketAddress getLocalAddress()
+    {
+        return getConnection().getEndPoint().getLocalAddress();
+    }
+
+    public SocketAddress getRemoteAddress()
+    {
+        return getConnection().getEndPoint().getRemoteAddress();
     }
     
     @Override

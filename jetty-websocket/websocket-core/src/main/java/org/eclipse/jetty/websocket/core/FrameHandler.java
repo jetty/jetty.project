@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -26,6 +27,10 @@ import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
 /**
  * Interface for local WebSocket Endpoint Frame handling.
+ *
+ * <p>
+ * This is the receiver of Parsed WebSocketFrames.
+ * </p>
  */
 public interface FrameHandler
 {
@@ -71,6 +76,9 @@ public interface FrameHandler
      */
     void onError(Throwable cause) throws Exception;
 
+    /**
+     * Represents the outgoing WebSocketFrames.
+     */
     interface Channel extends OutgoingFrames // TODO: want AutoCloseable (easier testing)
     {
         /**
@@ -108,6 +116,20 @@ public interface FrameHandler
         void abort();
         
         WebSocketBehavior getBehavior();
+
+        /**
+         * Get the Local Address associated with raw Channel
+         *
+         * @return the local address
+         */
+        SocketAddress getLocalAddress();
+
+        /**
+         * Get the Remote Address associated with the raw Channel.
+         *
+         * @return the remote address
+         */
+        SocketAddress getRemoteAddress();
 
         boolean isOpen();
 
