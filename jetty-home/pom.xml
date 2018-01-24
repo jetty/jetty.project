@@ -12,6 +12,7 @@
 
   <properties>
     <assembly-directory>${basedir}/target/jetty-home</assembly-directory>
+    <source-assembly-directory>${basedir}/target/jetty-home-sources</source-assembly-directory>
     <jetty-setuid-version>1.0.3</jetty-setuid-version>
   </properties>
 
@@ -148,6 +149,25 @@
               </excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <excludeGroupIds>
+                org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs
+              </excludeGroupIds>
+              <excludeArtifactIds>
+                jetty-all,apache-jsp,apache-jstl,jetty-start,jetty-spring
+              </excludeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -322,18 +342,34 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
-          <descriptors>
-            <descriptor>src/main/assembly/jetty-assembly.xml</descriptor>
-          </descriptors>
           <tarLongFileMode>posix</tarLongFileMode>
           <appendAssemblyId>false</appendAssemblyId>
         </configuration>
         <executions>
           <execution>
+            <id>binary</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/jetty-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+          <execution>
+            <id>sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/jetty-source-assembly.xml</descriptor>
+              </descriptors>
+              <appendAssemblyId>true</appendAssemblyId>
+            </configuration>
           </execution>
         </executions>
       </plugin>
