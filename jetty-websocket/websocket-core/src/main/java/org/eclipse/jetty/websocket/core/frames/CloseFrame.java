@@ -63,6 +63,59 @@ public class CloseFrame extends ControlFrame
         return setPayload(closeStatus.getCode(), closeStatus.getReason());
     }
 
+    @Override
+    public CloseFrame setPayload(ByteBuffer buf)
+    {
+        // RFC-6455 Spec Required Close Frame validation.
+        ByteBuffer data = buf.slice();
+        if (data.remaining() == 1)
+        {
+            throw new ProtocolException("Invalid 1 byte payload");
+        }
+
+        if (data.remaining() > ControlFrame.MAX_CONTROL_PAYLOAD)
+        {
+            throw new ProtocolException("Invalid control frame length of " + data.remaining() + " bytes");
+        }
+
+        if (data.remaining() >= 2)
+        {
+            // Status Code
+            int statusCode = 0; // start with 0
+            statusCode |= (data.get() & 0xFF) << 8;
+            statusCode |= (data.get() & 0xFF);
+
+            if (!isTransmittableStatusCode(statusCode))
+            {
+                throw new ProtocolException("Invalid Close Code: " + statusCode);
+            }
+
+            if (data.remaining() > 0)
+            {
+                // Reason (trimmed to max reason size)
+                int len = Math.min(data.remaining(), CloseStatus.MAX_REASON_PHRASE);
+                byte reasonBytes[] = new byte[len];
+                data.get(reasonBytes, 0, len);
+
+                // Spec Requirement : throw BadPayloadException on invalid UTF8
+                try
+                {
+                    Utf8StringBuilder utf = new Utf8StringBuilder();
+                    // if this throws, we know we have bad UTF8
+                    utf.append(reasonBytes, 0, reasonBytes.length);
+                    utf.toString();
+                }
+                catch (Utf8Appendable.NotUtf8Exception e)
+                {
+                    throw new BadPayloadException("Invalid Close Reason", e);
+                }
+            }
+        }
+
+        super.setPayload(buf);
+        return this;
+    }
+
     /**
      * Parse the Payload Buffer into a CloseStatus object
      *
@@ -208,7 +261,17 @@ public class CloseFrame extends ControlFrame
         }
 
         // Specifically called out as not-transmittable?
-        if ((statusCode == WebSocketConstants.NO_CLOSE) || (statusCode == WebSocketConstants.NO_CODE) || (statusCode == WebSocketConstants.FAILED_TLS_HANDSHAKE))
+        if ( (statusCode == WebSocketConstants.NO_CLOSE) ||
+             (statusCode == WebSocketConstants.NO_CODE) ||
+             (statusCode == WebSocketConstants.FAILED_TLS_HANDSHAKE))
+        {
+            return false;
+        }
+
+        // Reserved / not yet allocated
+        if ( (statusCode == 1004) || // Reserved in RFC6455
+             ( (statusCode >= 1016) && (statusCode <= 2999) ) || // Reserved in RFC6455
+             (statusCode >= 5000) ) // RFC6455 Not allowed to be used for any purpose
         {
             return false;
         }

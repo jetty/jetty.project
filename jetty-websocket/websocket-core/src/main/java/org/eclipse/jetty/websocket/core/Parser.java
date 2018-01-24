@@ -62,7 +62,7 @@ public class Parser
         PAYLOAD
     }
 
-    private final Logger LOG;
+    private static final Logger LOG = Log.getLogger(Parser.class);
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
     private final Parser.Handler parserHandler;
@@ -95,8 +95,6 @@ public class Parser
         this.bufferPool = bufferPool;
         this.policy = wspolicy;
         this.parserHandler = parserHandler;
-    
-        LOG = Log.getLogger(Parser.class.getName() + wspolicy.getBehavior());
     }
     
     private void assertSanePayloadLength(long len)
@@ -184,7 +182,7 @@ public class Parser
             while (buffer.hasRemaining() && parseFrame(buffer))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Parsed Frame: {} : {}", frame, BufferUtil.toDetailString(buffer));
+                    LOG.debug("{} Parsed Frame: {} : {}", getPolicy().getBehavior(), frame, BufferUtil.toDetailString(buffer));
     
                 assertBehavior();
     
@@ -197,13 +195,13 @@ public class Parser
                 {
                     // Do not parse any more
                     if(LOG.isDebugEnabled())
-                        LOG.debug("Parser.BackPressure [{} bytes remaining]", buffer.remaining());
+                        LOG.debug("{} Parser.BackPressure [{} bytes remaining]", getPolicy().getBehavior(), buffer.remaining());
                     return false;
                 }
             }
     
             if (LOG.isDebugEnabled())
-                LOG.debug("Parsed Complete: [{} bytes left in read buffer]", buffer.remaining());
+                LOG.debug("{} Parsed Complete: [{} bytes left in read buffer]", getPolicy().getBehavior(), buffer.remaining());
             
             // parsing is free to continue
             return !buffer.hasRemaining();
@@ -211,7 +209,7 @@ public class Parser
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Parsed Error: [" + buffer.remaining() + " bytes left in read buffer]", t);
+                LOG.debug(getPolicy().getBehavior() + " Parsed Error: [" + buffer.remaining() + " bytes left in read buffer]", t);
             
             buffer.position(buffer.limit()); // consume remaining
             
@@ -274,7 +272,7 @@ public class Parser
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Parsing {}", BufferUtil.toDetailString(buffer));
+            LOG.debug("{} Parsing {}", getPolicy().getBehavior(), BufferUtil.toDetailString(buffer));
         }
         
         while (buffer.hasRemaining())
@@ -297,7 +295,8 @@ public class Parser
                     }
                     
                     if (LOG.isDebugEnabled())
-                        LOG.debug("OpCode {}, fin={} rsv={}{}{}",
+                        LOG.debug("{} OpCode {}, fin={} rsv={}{}{}",
+                                getPolicy().getBehavior(),
                                 OpCode.name(opcode),
                                 fin,
                                 (((b & 0x40) != 0)?'1':'.'),
@@ -378,7 +377,7 @@ public class Parser
                                 String err = "RSV1 not allowed to be set";
                                 if(LOG.isDebugEnabled())
                                 {
-                                    LOG.debug(err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
+                                    LOG.debug(getPolicy().getBehavior() + " " + err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
                                 }
                                 throw new ProtocolException(err);
                             }
@@ -392,7 +391,7 @@ public class Parser
                                 String err = "RSV2 not allowed to be set";
                                 if(LOG.isDebugEnabled())
                                 {
-                                    LOG.debug(err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
+                                    LOG.debug(getPolicy().getBehavior() + " " + err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
                                 }
                                 throw new ProtocolException(err);
                             }
@@ -406,7 +405,7 @@ public class Parser
                                 String err = "RSV3 not allowed to be set";
                                 if(LOG.isDebugEnabled())
                                 {
-                                    LOG.debug(err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
+                                    LOG.debug(getPolicy().getBehavior() + " " + err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
                                 }
                                 throw new ProtocolException(err);
                             }
@@ -539,12 +538,6 @@ public class Parser
                     frame.assertValid();
                     if (parsePayload(buffer))
                     {
-                        // special check for close
-//                        if (frame.getOpCode() == OpCode.CLOSE)
-//                        {
-//                            // TODO: yuck. Don't create an object to do validation checks!
-//                            new CloseStatus().frame);
-//                        }
                         state = State.START;
                         // we have a frame!
                         return true;
@@ -588,7 +581,7 @@ public class Parser
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("Raw Payload: {}",BufferUtil.toDetailString(window));
+                LOG.debug("{} Raw Payload: {}",getPolicy().getBehavior(), BufferUtil.toDetailString(window));
             }
 
             deMasker.process(window);
