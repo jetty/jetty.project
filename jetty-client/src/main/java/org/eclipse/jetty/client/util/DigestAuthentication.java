@@ -212,7 +212,7 @@ public class DigestAuthentication extends AbstractAuthentication
             String hashA1 = toHexString(digester.digest(A1.getBytes(StandardCharsets.ISO_8859_1)));
 
             URI uri = request.getURI();
-            String A2 = request.getMethod() + ":" + uri;
+            String A2 = request.getMethod() + ":" + uri.getPath();
             if ("auth-int".equals(qop))
                 A2 += ":" + toHexString(digester.digest(content));
             String hashA2 = toHexString(digester.digest(A2.getBytes(StandardCharsets.ISO_8859_1)));
@@ -241,7 +241,7 @@ public class DigestAuthentication extends AbstractAuthentication
             if (opaque != null)
                 value.append(", opaque=\"").append(opaque).append("\"");
             value.append(", algorithm=\"").append(algorithm).append("\"");
-            value.append(", uri=\"").append(uri).append("\"");
+            value.append(", uri=\"").append(uri.getPath()).append("\"");
             if (qop != null)
             {
                 value.append(", qop=\"").append(qop).append("\"");
