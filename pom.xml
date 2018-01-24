@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty</groupId>
+  <groupId>org.eclipse.jetty.babis</groupId>
   <artifactId>jetty-project</artifactId>
   <version>9.4.9-SNAPSHOT</version>
   <name>Jetty :: Project</name>
