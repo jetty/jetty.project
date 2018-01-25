@@ -62,11 +62,15 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     public JavaxWebSocketClientContainer()
     {
         this(new WebSocketCoreClient());
+        // We created WebSocketCoreClient, let lifecycle be managed by us
+        addManaged(coreClient);
     }
 
     public JavaxWebSocketClientContainer(HttpClient httpClient)
     {
         this(new WebSocketCoreClient(httpClient));
+        // We created WebSocketCoreClient, let lifecycle be managed by us
+        addManaged(coreClient);
     }
 
     public JavaxWebSocketClientContainer(WebSocketCoreClient coreClient)

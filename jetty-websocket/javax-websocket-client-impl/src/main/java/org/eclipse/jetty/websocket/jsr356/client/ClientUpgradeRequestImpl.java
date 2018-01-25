@@ -35,13 +35,22 @@ public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
 {
     private final JavaxWebSocketClientContainer containerContext;
     private final Object websocketPojo;
-    private CompletableFuture<Session> futureSession = new CompletableFuture<>();
+    private final CompletableFuture<Session> onOpenFuture;
+    private final CompletableFuture<Session> futureSession;
 
     public ClientUpgradeRequestImpl(JavaxWebSocketClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);
         this.containerContext = clientContainer;
         this.websocketPojo = websocketPojo;
+        this.onOpenFuture = new CompletableFuture<>();
+        this.futureSession = super.fut.thenCombine(onOpenFuture, (channel, session) -> session);
+    }
+
+    protected void handleException(Throwable failure)
+    {
+        super.handleException(failure);
+        onOpenFuture.completeExceptionally(failure);
     }
 
     @Override
@@ -51,7 +60,7 @@ public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
         HandshakeResponse handshakeResponse = new DelegatedClientHandshakeResponse(response);
 
         JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, containerContext.getPolicy(),
-                handshakeRequest, handshakeResponse, futureSession);
+                handshakeRequest, handshakeResponse, onOpenFuture);
 
         return frameHandler;
     }
