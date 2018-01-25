@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata;
@@ -45,7 +44,8 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrame
             return createServerEndpointMetadata(websocket, endpointClass);
         }
 
-        throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
+        // Unrecognized
+        return null;
     }
 
     private JavaxWebSocketFrameHandlerMetadata createServerEndpointMetadata(javax.websocket.server.ServerEndpoint anno, Class<?> endpointClass)
