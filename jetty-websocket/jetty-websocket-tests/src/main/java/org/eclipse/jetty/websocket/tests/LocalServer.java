@@ -116,18 +116,23 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     {
         return getLocalConnector().connect();
     }
+
+    public Fuzzer newNetworkFuzzer() throws Exception
+    {
+        return new NetworkFuzzer(this);
+    }
     
-    public LocalFuzzer newLocalFuzzer() throws Exception
+    public Fuzzer newLocalFuzzer() throws Exception
     {
         return new LocalFuzzer(this);
     }
     
-    public LocalFuzzer newLocalFuzzer(CharSequence requestPath) throws Exception
+    public Fuzzer newLocalFuzzer(CharSequence requestPath) throws Exception
     {
         return new LocalFuzzer(this, requestPath);
     }
-    
-    public LocalFuzzer newLocalFuzzer(CharSequence requestPath, Map<String,String> upgradeRequest) throws Exception
+
+    public Fuzzer newLocalFuzzer(CharSequence requestPath, Map<String,String> upgradeRequest) throws Exception
     {
         return new LocalFuzzer(this, requestPath, upgradeRequest);
     }

@@ -26,7 +26,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.junit.Test;
 
@@ -49,7 +49,7 @@ public class FirefoxTest extends AbstractLocalServerCase
         // REGRESSION TEST - Odd Connection Header value seen in Firefox
         upgradeHeaders.put("Connection", "keep-alive, Upgrade");
     
-        try (LocalFuzzer session = server.newLocalFuzzer("/", upgradeHeaders))
+        try (Fuzzer session = server.newLocalFuzzer("/", upgradeHeaders))
         {
             session.sendBulk(send);
             session.expect(expect);

@@ -69,7 +69,7 @@ public class WebSocketOverSSLTest
     @Test
     public void testEcho() throws Exception
     {
-        Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
+        Assert.assertThat("server scheme",server.getWsUri().getScheme(),is("wss"));
         HttpClient httpClient = new HttpClient(server.getSslContextFactory());
         WebSocketClient client = new WebSocketClient(httpClient);
         client.addManaged(httpClient);
@@ -78,7 +78,7 @@ public class WebSocketOverSSLTest
             client.start();
 
             TrackingEndpoint clientSocket = new TrackingEndpoint("Client");
-            URI requestUri = server.getServerUri();
+            URI requestUri = server.getWsUri();
             Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
@@ -109,7 +109,7 @@ public class WebSocketOverSSLTest
     @Test
     public void testServerSessionIsSecure() throws Exception
     {
-        Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
+        Assert.assertThat("server scheme",server.getWsUri().getScheme(),is("wss"));
         HttpClient httpClient = new HttpClient(server.getSslContextFactory());
         WebSocketClient client = new WebSocketClient(httpClient);
         client.addManaged(httpClient);
@@ -119,7 +119,7 @@ public class WebSocketOverSSLTest
             client.start();
     
             TrackingEndpoint clientSocket = new TrackingEndpoint("Client");
-            URI requestUri = server.getServerUri();
+            URI requestUri = server.getWsUri();
             Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
@@ -149,7 +149,7 @@ public class WebSocketOverSSLTest
     @Test
     public void testServerSessionRequestURI() throws Exception
     {
-        Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
+        Assert.assertThat("server scheme",server.getWsUri().getScheme(),is("wss"));
         HttpClient httpClient = new HttpClient(server.getSslContextFactory());
         WebSocketClient client = new WebSocketClient(httpClient);
         client.addManaged(httpClient);
@@ -159,7 +159,7 @@ public class WebSocketOverSSLTest
             client.start();
     
             TrackingEndpoint clientSocket = new TrackingEndpoint("Client");
-            URI requestUri = server.getServerUri().resolve("/deep?a=b");
+            URI requestUri = server.getWsUri().resolve("/deep?a=b");
             Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect

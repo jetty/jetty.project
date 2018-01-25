@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -160,7 +160,7 @@ public class Text_InvalidUtf8Test extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);

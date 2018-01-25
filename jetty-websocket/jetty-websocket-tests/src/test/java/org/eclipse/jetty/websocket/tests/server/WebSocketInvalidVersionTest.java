@@ -86,7 +86,7 @@ public class WebSocketInvalidVersionTest
     @Test
     public void testRequestVersion29() throws Exception
     {
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
     
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();

@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -136,7 +136,7 @@ public class Text_GoodUtf8Test extends AbstractLocalServerCase
         expect.add(new TextFrame().setPayload(DataUtils.copyOf(msg)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try (LocalFuzzer session = server.newLocalFuzzer())
+        try (Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);

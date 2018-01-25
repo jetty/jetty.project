@@ -89,9 +89,9 @@ public class AnnotatedMaxMessageSizeTest
     public static void startServer() throws Exception
     {
         server = new LocalServer();
-        server.registerWebSocket("/", (req,resp) -> new BigEchoSocket());
         server.start();
-        
+        server.registerWebSocket("/", (req,resp) -> new BigEchoSocket());
+
         serverUri = server.getWsUri();
     }
     

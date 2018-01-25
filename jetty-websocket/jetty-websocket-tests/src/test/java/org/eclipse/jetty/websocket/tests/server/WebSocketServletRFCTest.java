@@ -119,7 +119,7 @@ public class WebSocketServletRFCTest
     {
         TrackingFrameHandler clientTracking = new TrackingFrameHandler(testname.getMethodName());
 
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
 
         Future<FrameHandler.Channel> clientConnectFuture = client.connect(clientTracking, wsUri);
 
@@ -208,7 +208,7 @@ public class WebSocketServletRFCTest
     public void testInternalError() throws Exception
     {
         TrackingFrameHandler clientTracking = new TrackingFrameHandler(testname.getMethodName());
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
 
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking);
         Future<FrameHandler.Channel> channelFuture = client.connect(upgradeRequest);
@@ -239,7 +239,7 @@ public class WebSocketServletRFCTest
     public void testLowercaseUpgrade() throws Exception
     {
         TrackingFrameHandler clientTracking = new TrackingFrameHandler(testname.getMethodName());
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
 
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking);
         upgradeRequest.header("upgrade", "websocket");
@@ -267,7 +267,7 @@ public class WebSocketServletRFCTest
     public void testUppercaseUpgrade() throws Exception
     {
         TrackingFrameHandler clientTracking = new TrackingFrameHandler(testname.getMethodName());
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
 
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking);
         upgradeRequest.header("UPGRADE", "WEBSOCKET");
@@ -307,7 +307,7 @@ public class WebSocketServletRFCTest
     public void testTextNotUTF8() throws Exception
     {
         TrackingFrameHandler clientTracking = new TrackingFrameHandler(testname.getMethodName());
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
 
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking)
         {

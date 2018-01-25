@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.junit.After;
 import org.junit.Rule;
@@ -72,7 +72,7 @@ public abstract class WebSocketUpgradeFilterTest
     @Test
     public void testNormalConfiguration() throws Exception
     {
-        try (LocalFuzzer session = server.newLocalFuzzer("/info/"))
+        try (Fuzzer session = server.newLocalFuzzer("/info/"))
         {
             session.sendFrames(
                     new TextFrame().setPayload("hello"),
@@ -93,7 +93,7 @@ public abstract class WebSocketUpgradeFilterTest
     @Test
     public void testStopStartOfHandler() throws Exception
     {
-        try (LocalFuzzer session = server.newLocalFuzzer("/info/"))
+        try (Fuzzer session = server.newLocalFuzzer("/info/"))
         {
             session.sendFrames(
                     new TextFrame().setPayload("hello 1"),
@@ -115,7 +115,7 @@ public abstract class WebSocketUpgradeFilterTest
         
         // Make request again (server should have retained websocket configuration)
         
-        try (LocalFuzzer session = server.newLocalFuzzer("/info/"))
+        try (Fuzzer session = server.newLocalFuzzer("/info/"))
         {
             session.sendFrames(
                     new TextFrame().setPayload("hello 2"),

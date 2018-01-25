@@ -264,7 +264,7 @@ public class ClientDisconnectedTest
 
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
 
-        URI wsUri = server.getServerUri().resolve("/");
+        URI wsUri = server.getWsUri().resolve("/");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
 
         expectedException.expect(ExecutionException.class);
@@ -286,7 +286,7 @@ public class ClientDisconnectedTest
 
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
 
-        URI wsUri = server.getServerUri().resolve("/");
+        URI wsUri = server.getWsUri().resolve("/");
 
         try(StacklessLogging ignore = new StacklessLogging(OpenFailSocket.class))
         {
@@ -328,7 +328,7 @@ public class ClientDisconnectedTest
 
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
 
-        URI wsUri = server.getServerUri().resolve("/");
+        URI wsUri = server.getWsUri().resolve("/");
         client.setMaxIdleTimeout(3000);
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
 
@@ -369,7 +369,7 @@ public class ClientDisconnectedTest
 
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
 
-        URI wsUri = server.getServerUri().resolve("/");
+        URI wsUri = server.getWsUri().resolve("/");
         client.setMaxIdleTimeout(3000);
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
 
@@ -410,7 +410,7 @@ public class ClientDisconnectedTest
 
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
 
-        URI wsUri = server.getServerUri().resolve("/");
+        URI wsUri = server.getWsUri().resolve("/");
         client.setMaxIdleTimeout(3000);
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
 

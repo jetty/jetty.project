@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
+import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEndpointTracker;
@@ -71,7 +71,7 @@ public class ConfiguratorTest
         }
     }
 
-    @ClientEndpoint
+    @ServerEndpoint("/echo")
     public static class EchoSocket
     {
         @OnMessage
@@ -87,8 +87,8 @@ public class ConfiguratorTest
     public static void startServer() throws Exception
     {
         server = new LocalServer();
-        server.registerWebSocket("/", (req,resp) -> new EchoSocket());
         server.start();
+        server.registerWebSocket("/", (req,resp) -> new EchoSocket());
     }
 
     @AfterClass
@@ -111,7 +111,7 @@ public class ConfiguratorTest
                 .build();
 
         // Connect
-        Session session = container.connectToServer(clientSocket,config,server.getServerUri());
+        Session session = container.connectToServer(clientSocket,config,server.getWsUri().resolve("/echo"));
 
         // Send Simple Message
         session.getBasicRemote().sendText("Echo");

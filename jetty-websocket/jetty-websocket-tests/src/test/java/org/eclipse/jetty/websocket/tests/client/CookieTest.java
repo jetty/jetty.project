@@ -85,8 +85,8 @@ public class CookieTest
     public void startServer() throws Exception
     {
         server = new LocalServer();
-        server.registerWebSocket("/cookies", (req, resp) -> new EchoCookiesSocket(req));
         server.start();
+        server.registerWebSocket("/cookies", (req, resp) -> new EchoCookiesSocket(req));
     }
 
     @After

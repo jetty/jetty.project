@@ -150,7 +150,7 @@ public class PerMessageDeflateExtensionTest
         Assume.assumeTrue("Server has permessage-deflate registered",
                 server.getWebSocketServletFactory().getExtensionRegistry().isAvailable("permessage-deflate"));
         
-        Assert.assertThat("server scheme", server.getServerUri().getScheme(), is(scheme));
+        Assert.assertThat("server scheme", server.getWsUri().getScheme(), is(scheme));
         
         int binBufferSize = (int) (msgSize * 1.5);
         
@@ -182,7 +182,7 @@ public class PerMessageDeflateExtensionTest
             request.addExtensions("permessage-deflate");
             request.setSubProtocols("echo");
             
-            Future<Session> fut = client.connect(clientSocket, server.getServerUri(), request);
+            Future<Session> fut = client.connect(clientSocket, server.getWsUri(), request);
             
             // Wait for connect
             Session session = fut.get(30, TimeUnit.SECONDS);

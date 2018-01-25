@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -85,7 +85,7 @@ public class IdleTimeoutTest
     @Test
     public void testIdleTimeout() throws Exception
     {
-        try (LocalFuzzer session = server.newLocalFuzzer())
+        try (Fuzzer session = server.newNetworkFuzzer())
         {
             // wait 1 second to allow timeout to fire off
             TimeUnit.SECONDS.sleep(1);

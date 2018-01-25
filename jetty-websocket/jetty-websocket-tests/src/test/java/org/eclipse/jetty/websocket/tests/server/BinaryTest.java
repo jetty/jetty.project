@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.junit.Test;
 
 /**
@@ -59,7 +59,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -88,7 +88,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -117,7 +117,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -142,7 +142,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -167,7 +167,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -192,7 +192,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -217,7 +217,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -242,7 +242,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -267,7 +267,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -292,7 +292,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -317,7 +317,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -342,7 +342,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -371,7 +371,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -399,7 +399,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(DataUtils.copyOf(data)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -428,7 +428,7 @@ public class BinaryTest extends AbstractLocalServerCase
         expect.add(new BinaryFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);

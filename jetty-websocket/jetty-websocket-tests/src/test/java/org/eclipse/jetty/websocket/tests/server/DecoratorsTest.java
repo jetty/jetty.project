@@ -48,7 +48,7 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.junit.After;
 import org.junit.Test;
@@ -218,7 +218,7 @@ public class DecoratorsTest
     @Test
     public void testAccessRequestCookies() throws Exception
     {
-        try (LocalFuzzer session = server.newLocalFuzzer("/"))
+        try (Fuzzer session = server.newLocalFuzzer("/"))
         {
             session.sendFrames(
                     new TextFrame().setPayload("info"),

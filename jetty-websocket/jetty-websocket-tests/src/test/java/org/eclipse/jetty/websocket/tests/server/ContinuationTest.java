@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
 import org.junit.Test;
 
@@ -58,7 +58,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -84,7 +84,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendFrames(send);
             session.expect(expect);
@@ -110,7 +110,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendSegmented(send,1 );
             session.expect(expect);
@@ -136,7 +136,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -165,7 +165,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -191,7 +191,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendFrames(send);
             session.expect(expect);
@@ -221,7 +221,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -247,7 +247,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendSegmented(send,1);
             session.expect(expect);
@@ -277,7 +277,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -303,7 +303,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -329,7 +329,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -355,7 +355,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -382,7 +382,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -409,7 +409,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendFrames(send);
             session.expect(expect);
@@ -444,7 +444,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -471,7 +471,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendSegmented(send,1);
             session.expect(expect);
@@ -500,7 +500,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -529,7 +529,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendFrames(send);
             session.expect(expect);
@@ -558,7 +558,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendSegmented(send,1);
             session.expect(expect);

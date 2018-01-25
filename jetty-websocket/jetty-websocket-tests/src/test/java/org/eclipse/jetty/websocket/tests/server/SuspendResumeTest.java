@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -125,7 +125,7 @@ public class SuspendResumeTest
         expect.add(new TextFrame().setPayload("echo2"));
         expect.add(new CloseFrame());
         
-        try (LocalFuzzer session = server.newLocalFuzzer())
+        try (Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -145,7 +145,7 @@ public class SuspendResumeTest
         expect.add(new TextFrame().setPayload("echo2"));
         expect.add(new CloseFrame());
         
-        try (LocalFuzzer session = server.newLocalFuzzer())
+        try (Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendSegmented(send, 2);
             session.expect(expect);
@@ -165,7 +165,7 @@ public class SuspendResumeTest
         expect.add(new TextFrame().setPayload("echo2"));
         expect.add(new CloseFrame());
 
-        try (LocalFuzzer session = server.newLocalFuzzer())
+        try (Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendFrames(send);
             session.expect(expect);

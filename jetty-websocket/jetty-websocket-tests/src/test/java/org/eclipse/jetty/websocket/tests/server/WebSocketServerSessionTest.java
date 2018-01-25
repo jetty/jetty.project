@@ -24,7 +24,7 @@ import java.util.List;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -69,7 +69,7 @@ public class WebSocketServerSessionTest
         expect.add(new TextFrame().setPayload("<null>"));
         send.add(new CloseFrame());
         
-        try (LocalFuzzer session = server.newLocalFuzzer(requestPath))
+        try (Fuzzer session = server.newLocalFuzzer(requestPath))
         {
             session.sendFrames(send);
             session.expect(expect);

@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
 import org.junit.Test;
 
@@ -68,13 +68,13 @@ public class TextTest extends AbstractLocalServerCase
         expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
-        try(LocalFuzzer session = server.newLocalFuzzer())
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Echo 1MB text message (1 frame)
      * <p>
@@ -89,22 +89,22 @@ public class TextTest extends AbstractLocalServerCase
         byte utf[] = new byte[1 * MBYTE];
         Arrays.fill(utf,(byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(buf));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Echo 256KB text message (1 frame)
      * <p>
@@ -118,22 +118,22 @@ public class TextTest extends AbstractLocalServerCase
         byte utf[] = new byte[256 * KBYTE];
         Arrays.fill(utf,(byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(buf));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Send 4MB text message in multiple frames.
      * <p>
@@ -147,18 +147,18 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 16 * KBYTE);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Send 4MB text message in multiple frames.
      * <p>
@@ -172,18 +172,18 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 1 * KBYTE);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Send 4MB text message in multiple frames.
      * <p>
@@ -197,18 +197,18 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 1 * MBYTE);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Send 4MB text message in multiple frames.
      * <p>
@@ -222,18 +222,18 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 256);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Send 4MB text message in multiple frames.
      * <p>
@@ -247,18 +247,18 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 256 * KBYTE);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Send 4MB text message in multiple frames.
      * <p>
@@ -272,18 +272,18 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 4 * KBYTE);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Send 4MB text message in multiple frames.
      * <p>
@@ -297,18 +297,18 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 4 * MBYTE);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Send 4MB text message in multiple frames.
      * <p>
@@ -322,18 +322,18 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4*MBYTE, 64);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Send 4MB text message in multiple frames.
      * <p>
@@ -347,18 +347,18 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 64 * KBYTE);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(payload));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Echo 4MB text message (1 frame)
      * <p>
@@ -372,22 +372,22 @@ public class TextTest extends AbstractLocalServerCase
         byte utf[] = new byte[4 * MBYTE];
         Arrays.fill(utf,(byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(buf));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Echo 64KB text message (1 frame)
      * <p>
@@ -401,22 +401,22 @@ public class TextTest extends AbstractLocalServerCase
         byte utf[] = new byte[64 * KBYTE];
         Arrays.fill(utf,(byte)'y');
         String msg = StringUtil.toUTF8String(utf,0,utf.length);
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(msg));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(msg));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * Echo 8MB text message (1 frame)
      * <p>
@@ -430,22 +430,22 @@ public class TextTest extends AbstractLocalServerCase
         byte utf[] = new byte[8 * MBYTE];
         Arrays.fill(utf,(byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(buf));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try(LocalFuzzer session = server.newLocalFuzzer())
+
+        try(Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * invalid utf8 text message, many fragments (1 byte each)
      * <p>
@@ -457,22 +457,22 @@ public class TextTest extends AbstractLocalServerCase
     public void testText_BadUtf8_Bulk() throws Exception
     {
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         fragmentText(send, invalid);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
-    
+
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * invalid text message, 1 frame/fragment (slowly, and split within code points)
      * <p>
@@ -492,20 +492,20 @@ public class TextTest extends AbstractLocalServerCase
             payload.put(TypeUtil.fromHexString("f4908080")); // INVALID
             payload.put(TypeUtil.fromHexString("656469746564")); // good
             BufferUtil.flipToFlush(payload, 0);
-            
+
             List<WebSocketFrame> send = new ArrayList<>();
             send.add(new TextFrame().setPayload(payload));
             send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-            
+
             List<WebSocketFrame> expect = new ArrayList<>();
             expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
-    
-            try (LocalFuzzer session = server.newLocalFuzzer())
+
+            try (Fuzzer session = server.newNetworkFuzzer())
             {
                 ByteBuffer net = session.asNetworkBuffer(send);
-                
+
                 int splits[] = {17, 21, net.limit()};
-                
+
                 ByteBuffer part1 = net.slice(); // Header + good UTF
                 part1.limit(splits[0]);
                 ByteBuffer part2 = net.slice(); // invalid UTF
@@ -514,19 +514,19 @@ public class TextTest extends AbstractLocalServerCase
                 ByteBuffer part3 = net.slice(); // good UTF
                 part3.position(splits[1]);
                 part3.limit(splits[2]);
-                
+
                 session.send(part1); // the header + good utf
                 TimeUnit.MILLISECONDS.sleep(500);
                 session.send(part2); // the bad UTF
                 TimeUnit.MILLISECONDS.sleep(500);
                 session.send(part3); // the rest (shouldn't work)
                 session.eof();
-                
+
                 session.expect(expect);
             }
         }
     }
-    
+
     /**
      * invalid text message, 3 fragments.
      * <p>
@@ -546,23 +546,23 @@ public class TextTest extends AbstractLocalServerCase
         byte part1[] = StringUtil.getUtf8Bytes("\u03BA\u1F79\u03C3\u03BC\u03B5");
         byte part2[] = Hex.asByteArray("F4908080"); // invalid
         byte part3[] = StringUtil.getUtf8Bytes("edited");
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(ByteBuffer.wrap(part1)).setFin(false));
         send.add(new ContinuationFrame().setPayload(ByteBuffer.wrap(part2)).setFin(false));
         send.add(new ContinuationFrame().setPayload(ByteBuffer.wrap(part3)).setFin(true));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
-    
+
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendFrames(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * invalid text message, 3 fragments.
      * <p>
@@ -585,23 +585,23 @@ public class TextTest extends AbstractLocalServerCase
         byte part1[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F4"); // split code point
         byte part2[] = Hex.asByteArray("90"); // continue code point & invalid
         byte part3[] = Hex.asByteArray("8080656469746564"); // continue code point & finish
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(ByteBuffer.wrap(part1)).setFin(false));
         send.add(new ContinuationFrame().setPayload(ByteBuffer.wrap(part2)).setFin(false));
         send.add(new ContinuationFrame().setPayload(ByteBuffer.wrap(part3)).setFin(true));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
-    
+
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendFrames(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * invalid text message, 1 frame/fragment (slowly, and split within code points)
      * <p>
@@ -613,27 +613,27 @@ public class TextTest extends AbstractLocalServerCase
     public void testText_BadUtf8_SegmentWise() throws Exception
     {
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(ByteBuffer.wrap(invalid)));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
-    
+
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
-             LocalFuzzer session = server.newLocalFuzzer())
+             Fuzzer session = server.newNetworkFuzzer())
         {
             ByteBuffer net = session.asNetworkBuffer(send);
             session.send(net, 6);
             session.send(net, 11);
             session.send(net, 1);
             session.send(net, 100); // the rest
-            
+
             session.expect(expect);
         }
     }
-    
+
     /**
      * text message, small length, 3 fragments (only middle frame has payload)
      * <p>
@@ -649,18 +649,18 @@ public class TextTest extends AbstractLocalServerCase
         send.add(new ContinuationFrame().setPayload("middle").setFin(false));
         send.add(new ContinuationFrame().setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("middle"));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try (LocalFuzzer session = server.newLocalFuzzer())
+
+        try (Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * text message, 0 length, 3 fragments
      * <p>
@@ -676,18 +676,18 @@ public class TextTest extends AbstractLocalServerCase
         send.add(new ContinuationFrame().setFin(false));
         send.add(new ContinuationFrame().setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame());
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try (LocalFuzzer session = server.newLocalFuzzer())
+
+        try (Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * text message, 1 frame, 0 length
      * <p>
@@ -701,18 +701,18 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame());
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame());
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try (LocalFuzzer session = server.newLocalFuzzer())
+
+        try (Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * valid utf8 text message, many fragments (1 byte each)
      * <p>
@@ -724,22 +724,22 @@ public class TextTest extends AbstractLocalServerCase
     public void testText_Utf8ContinuationsNotOnCodePoints() throws Exception
     {
         byte msg[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5");
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         fragmentText(send, msg);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(ByteBuffer.wrap(msg)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try (LocalFuzzer session = server.newLocalFuzzer())
+
+        try (Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * valid utf8 text message, many fragments (1 byte each)
      * <p>
@@ -752,22 +752,22 @@ public class TextTest extends AbstractLocalServerCase
     {
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
         byte msg[] = StringUtil.getUtf8Bytes(utf8);
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         fragmentText(send, msg);
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(ByteBuffer.wrap(msg)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try (LocalFuzzer session = server.newLocalFuzzer())
+
+        try (Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * valid utf8 text message, 2 fragments (on UTF8 code point boundary)
      * <p>
@@ -780,15 +780,15 @@ public class TextTest extends AbstractLocalServerCase
     {
         String utf1 = "Hello-\uC2B5@\uC39F\uC3A4";
         String utf2 = "\uC3BC\uC3A0\uC3A1-UTF-8!!";
-        
+
         ByteBuffer b1 = ByteBuffer.wrap(StringUtil.getUtf8Bytes(utf1));
         ByteBuffer b2 = ByteBuffer.wrap(StringUtil.getUtf8Bytes(utf2));
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(b1).setFin(false));
         send.add(new ContinuationFrame().setPayload(b2).setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         ByteBuffer e1 = ByteBuffer.allocate(100);
         e1.put(StringUtil.getUtf8Bytes(utf1));
@@ -796,8 +796,8 @@ public class TextTest extends AbstractLocalServerCase
         e1.flip();
         expect.add(new TextFrame().setPayload(e1));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
-    
-        try (LocalFuzzer session = server.newLocalFuzzer())
+
+        try (Fuzzer session = server.newNetworkFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
