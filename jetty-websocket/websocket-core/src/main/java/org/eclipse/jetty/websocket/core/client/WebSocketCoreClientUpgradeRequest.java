@@ -78,7 +78,7 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
     }
 
     private static final Logger LOG = Log.getLogger(WebSocketCoreClientUpgradeRequest.class);
-    private final CompletableFuture<FrameHandler.Channel> fut;
+    protected final CompletableFuture<FrameHandler.Channel> fut;
     private final WebSocketCoreClient wsClient;
     private List<UpgradeListener> upgradeListeners = new ArrayList<>();
     /** Offered Extensions */
@@ -91,6 +91,8 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
         super(webSocketClient.getHttpClient(), new HttpConversation(), requestURI);
         this.wsClient = webSocketClient;
         this.fut = new CompletableFuture<>();
+        method(HttpMethod.GET);
+        version(HttpVersion.HTTP_1_1);
     }
 
     public void addListener(UpgradeListener listener)
@@ -205,7 +207,7 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
         }
     }
 
-    private void handleException(Throwable failure)
+    protected void handleException(Throwable failure)
     {
         fut.completeExceptionally(failure);
     }
