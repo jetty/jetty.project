@@ -27,7 +27,7 @@ public abstract class AbstractPartialFrameHandler extends AbstractFrameTypeHandl
     protected byte dataType = -1;
 
     @Override
-    public void onFrame(Frame frame, Callback callback) throws Exception
+    public final /* prevent override */ void onFrame(Frame frame, Callback callback) throws Exception
     {
         super.onFrame(frame, callback);
         if (frame.isFin())
@@ -46,7 +46,7 @@ public abstract class AbstractPartialFrameHandler extends AbstractFrameTypeHandl
     }
 
     @Override
-    public void onContinuation(Frame frame, Callback callback)
+    public final /* prevent override */ void onContinuation(Frame frame, Callback callback)
     {
         switch (dataType)
         {
