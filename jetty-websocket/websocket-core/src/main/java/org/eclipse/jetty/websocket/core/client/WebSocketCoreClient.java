@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.core.client;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Locale;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpResponse;
@@ -78,7 +78,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         this.objectFactory = new DecoratedObjectFactory();
     }
 
-    public Future<FrameHandler.Channel> connect(FrameHandler frameHandler, URI wsUri) throws IOException
+    public CompletableFuture<FrameHandler.Channel> connect(FrameHandler frameHandler, URI wsUri) throws IOException
     {
         WebSocketCoreClientUpgradeRequest request = new WebSocketCoreClientUpgradeRequest(this, wsUri) {
             @Override
@@ -90,7 +90,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         return connect(request);
     }
 
-    public Future<FrameHandler.Channel> connect(WebSocketCoreClientUpgradeRequest request) throws IOException
+    public CompletableFuture<FrameHandler.Channel> connect(WebSocketCoreClientUpgradeRequest request) throws IOException
     {
         if (!isStarted())
         {

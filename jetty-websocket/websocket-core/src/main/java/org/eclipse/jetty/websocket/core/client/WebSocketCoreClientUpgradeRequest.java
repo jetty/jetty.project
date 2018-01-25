@@ -282,6 +282,7 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
 
         // We can upgrade
         EndPoint endp = httpConnection.getEndPoint();
+        customize(endp);
 
         FrameHandler frameHandler = getFrameHandler(wsClient, response);
 
@@ -295,6 +296,14 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
         endp.upgrade(wsConnection);
 
         fut.complete(wsChannel);
+    }
+
+    /**
+     * Allow for overridden customization of endpoint (such as special transport level properties: e.g. TCP keepAlive)
+     * @see <a href="https://github.com/eclipse/jetty.project/issues/1811">Issue #1811 - Customization of WebSocket Connections via WebSocketPolicy</a>
+     */
+    protected void customize(EndPoint endp)
+    {
     }
 
     protected WebSocketConnection newWebSocketConnection(EndPoint endp, Executor executor, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
