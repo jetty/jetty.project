@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
@@ -30,17 +29,18 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.AbstractPartialFrameHandler;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.frames.PongFrame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 
-public class JavaxWebSocketFrameHandler implements FrameHandler
+public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
 {
     private final Logger log;
     private final JavaxWebSocketContainer container;
@@ -170,32 +170,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onFrame(Frame frame, Callback callback) throws Exception
-    {
-        switch (frame.getOpCode())
-        {
-            case OpCode.CLOSE:
-                onClose(frame, callback);
-                break;
-            case OpCode.PING:
-                onPing(frame, callback);
-                break;
-            case OpCode.PONG:
-                onPong(frame, callback);
-                break;
-            case OpCode.TEXT:
-                onText(frame, callback);
-                break;
-            case OpCode.BINARY:
-                onBinary(frame, callback);
-                break;
-            case OpCode.CONTINUATION:
-                onContinuation(frame, callback);
-                break;
-        }
-    }
-
-    @Override
     public void onOpen(Channel channel) throws Exception
     {
         session = new JavaxWebSocketSession(container, channel, this, handshakeRequest, handshakeResponse, id, endpointConfig);
@@ -246,7 +220,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             activeMessageSink = null;
     }
 
-    private void onBinary(Frame frame, Callback callback)
+    @Override
+    public void onBinary(Frame frame, Callback callback)
     {
         if (activeMessageSink == null)
             activeMessageSink = binarySink;
@@ -254,7 +229,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         acceptMessage(frame, callback);
     }
 
-    private void onClose(Frame frame, Callback callback)
+    @Override
+    public void onClose(Frame frame, Callback callback)
     {
         if (closeHandle != null)
         {
@@ -271,27 +247,22 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         callback.succeeded();
     }
 
-    private void onContinuation(Frame frame, Callback callback)
+    @Override
+    public void onPing(Frame frame, Callback callback)
     {
-        acceptMessage(frame, callback);
-    }
+        ByteBuffer payload = BufferUtil.EMPTY_BUFFER;
 
-    private void onPing(Frame frame, Callback callback) throws IOException
-    {
         if (frame.hasPayload())
         {
-            ByteBuffer copy = ByteBuffer.allocate(frame.getPayloadLength());
-            BufferUtil.put(frame.getPayload(), copy);
-            getSession().getBasicRemote().sendPong(copy);
+            payload = ByteBuffer.allocate(frame.getPayloadLength());
+            BufferUtil.put(frame.getPayload(), payload);
         }
-        else
-        {
-            getSession().getBasicRemote().sendPong(BufferUtil.EMPTY_BUFFER);
-        }
+        channel.sendFrame(new PongFrame().setPayload(payload), Callback.NOOP, BatchMode.OFF);
         callback.succeeded();
     }
 
-    private void onPong(Frame frame, Callback callback)
+    @Override
+    public void onPong(Frame frame, Callback callback)
     {
         if (pongHandle != null)
         {
@@ -311,7 +282,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         callback.succeeded();
     }
 
-    private void onText(Frame frame, Callback callback)
+    @Override
+    public void onText(Frame frame, Callback callback)
     {
         if (activeMessageSink == null)
             activeMessageSink = textSink;

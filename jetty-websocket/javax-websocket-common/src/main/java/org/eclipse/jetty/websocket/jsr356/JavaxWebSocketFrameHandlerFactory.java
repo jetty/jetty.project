@@ -76,7 +76,10 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
         if (metadata == null)
         {
             metadata = createMetadata(endpointClass);
-            metadataMap.put(endpointClass, metadata);
+            if(metadata != null)
+            {
+                metadataMap.put(endpointClass, metadata);
+            }
         }
 
         return metadata;
@@ -122,6 +125,11 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
         }
 
         JavaxWebSocketFrameHandlerMetadata metadata = getMetadata(endpoint.getClass());
+
+        if (metadata == null)
+        {
+            return null;
+        }
 
         WebSocketPolicy endpointPolicy = policy.clonePolicy();
 
@@ -418,11 +426,14 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
             return;
         }
 
-        StringBuilder err = new StringBuilder();
-        err.append("@").append(annotationClass.getSimpleName());
-        err.append(" return must be void: ");
-        ReflectUtils.append(err, endpointClass, method);
-        throw new InvalidSignatureException(err.toString());
+        if (!OnMessage.class.isAssignableFrom(annotationClass))
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("@").append(annotationClass.getSimpleName());
+            err.append(" return must be void: ");
+            ReflectUtils.append(err, endpointClass, method);
+            throw new InvalidSignatureException(err.toString());
+        }
     }
 
 }
