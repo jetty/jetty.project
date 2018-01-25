@@ -1591,11 +1591,9 @@ public class ParserTest
     {       
         ByteBuffer buf = BufferUtil.toBuffer(TypeUtil.fromHexString("8882c2887e61c164"));
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        expectedException.expect(ProtocolException.class);
+        expectedException.expectMessage("Invalid Close Code: 1004");
         ParserCapture capture = parse(policy, buf);
-        
-        capture.assertHasFrame(OpCode.CLOSE,1);
-        CloseFrame frame = (CloseFrame)capture.framesQueue.poll();
-        Assert.assertThat(frame.getCloseStatus().getCode(),is(1004));
     }
 
     @Test

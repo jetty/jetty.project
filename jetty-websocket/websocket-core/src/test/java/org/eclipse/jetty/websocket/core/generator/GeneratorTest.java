@@ -44,6 +44,7 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.ControlFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
@@ -363,10 +364,25 @@ public class GeneratorTest
     public void testGenerate_Close_1BytePayload()
     {
         CloseFrame closeFrame = new CloseFrame();
+        expectedException.expect(ProtocolException.class);
+        // CloseFrame.setPayload() triggers ProtocolException
         closeFrame.setPayload(Hex.asByteBuffer("00"));
+    }
+
+    /**
+     * From Autobahn WebSocket Client Testcase 7.3.2
+     */
+    @Test
+    public void testGenerate_Close_1BytePayload_Anonymous()
+    {
+        WebSocketFrame frame = new ControlFrame(OpCode.CLOSE)
+        {
+        };
+        frame.setPayload(Hex.asByteBuffer("00"));
 
         expectedException.expect(ProtocolException.class);
-        unitGenerator.generate(closeFrame);
+        // Generator.generate() triggers ProtocolException
+        unitGenerator.generate(frame);
     }
 
     @Test
