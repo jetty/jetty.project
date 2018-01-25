@@ -24,6 +24,7 @@ import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -65,7 +66,7 @@ public class SubProtocolTest
         @OnWebSocketMessage
         public void onMsg(String msg)
         {
-            session.getRemote().sendStringByFuture("acceptedSubprotocol=" + acceptedProtocol);
+            session.getRemote().sendText("acceptedSubprotocol=" + acceptedProtocol, Callback.NOOP);
         }
     }
     
@@ -144,7 +145,7 @@ public class SubProtocolTest
     
     private void testSubProtocol(String[] requestProtocols, String acceptedSubProtocols) throws Exception
     {
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
         client.setMaxIdleTimeout(1000);
         
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());

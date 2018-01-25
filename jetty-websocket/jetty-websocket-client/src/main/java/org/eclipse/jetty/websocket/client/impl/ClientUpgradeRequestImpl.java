@@ -38,7 +38,8 @@ public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
 {
     private final WebSocketClient containerContext;
     private final Object websocketPojo;
-    private CompletableFuture<Session> futureSession = new CompletableFuture<>();
+    private final CompletableFuture<Session> onOpenFuture;
+    private final CompletableFuture<Session> futureSession;
 
     public ClientUpgradeRequestImpl(WebSocketClient clientContainer, WebSocketCoreClient coreClient, UpgradeRequest request, URI requestURI, Object websocketPojo)
     {
@@ -46,14 +47,35 @@ public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
         this.containerContext = clientContainer;
         this.websocketPojo = websocketPojo;
 
+        this.onOpenFuture = new CompletableFuture<>();
+        this.futureSession = super.fut.thenCombine(onOpenFuture, (channel, session) -> session);
+
         if (request != null)
         {
             // Copy request details into actual request
             HttpFields fields = getHeaders();
             request.getHeadersMap().forEach((name, values) -> fields.put(name, values));
-            method(request.getMethod());
-            version(HttpVersion.fromString(request.getHttpVersion()));
+
+            // Copy sub-protocols
+            setSubProtocols(request.getSubProtocols());
+
+            // Copy extensions
+            setExtensions(request.getExtensions());
+
+            // Copy method from upgradeRequest object
+            if (request.getMethod() != null)
+                method(request.getMethod());
+
+            // Copy version from upgradeRequest object
+            if (request.getHttpVersion() != null)
+                version(HttpVersion.fromString(request.getHttpVersion()));
         }
+    }
+
+    protected void handleException(Throwable failure)
+    {
+        super.handleException(failure);
+        onOpenFuture.completeExceptionally(failure);
     }
 
     @Override
@@ -63,7 +85,7 @@ public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
         HandshakeResponse handshakeResponse = new DelegatedClientHandshakeResponse(response);
 
         JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, containerContext.getPolicy(),
-                handshakeRequest, handshakeResponse, futureSession);
+                handshakeRequest, handshakeResponse, onOpenFuture);
 
         return frameHandler;
     }

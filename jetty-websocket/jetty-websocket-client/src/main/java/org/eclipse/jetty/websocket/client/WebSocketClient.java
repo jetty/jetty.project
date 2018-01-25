@@ -61,6 +61,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient()
     {
         this(new WebSocketCoreClient());
+        // We created WebSocketCoreClient, let lifecycle be managed by us
+        addManaged(coreClient);
     }
 
     /**
@@ -71,6 +73,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient(HttpClient httpClient)
     {
         this(new WebSocketCoreClient(httpClient));
+        // We created WebSocketCoreClient, let lifecycle be managed by us
+        addManaged(coreClient);
     }
 
     private WebSocketClient(WebSocketCoreClient coreClient)

@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import java.util.Collections;
 import java.util.Set;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletContextWebSocketContainer;
 
@@ -32,6 +35,38 @@ import org.eclipse.jetty.websocket.servlet.ServletContextWebSocketContainer;
  */
 public class JettyWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
+    public static class JettyWebSocketEmbeddedStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
+    {
+        private ServletContainerInitializer sci;
+        private ServletContextHandler context;
+
+        public JettyWebSocketEmbeddedStarter(ServletContainerInitializer sci, ServletContextHandler context)
+        {
+            this.sci = sci;
+            this.context = context;
+        }
+
+        public void doStart()
+        {
+            try
+            {
+                Set<Class<?>> c = Collections.emptySet();
+                sci.onStartup(c, context.getServletContext());
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static void configure(ServletContextHandler contextHandler)
+    {
+        JettyWebSocketServletContainerInitializer sci = new JettyWebSocketServletContainerInitializer();
+        JettyWebSocketEmbeddedStarter starter = new JettyWebSocketEmbeddedStarter(sci, contextHandler);
+        contextHandler.addBean(starter);
+    }
+
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {

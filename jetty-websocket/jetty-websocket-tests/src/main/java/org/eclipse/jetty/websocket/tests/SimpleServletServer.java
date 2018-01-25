@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 
@@ -37,6 +38,7 @@ public class SimpleServletServer extends LocalServer implements LocalFuzzer.Prov
 
     protected void configureServletContextHandler(ServletContextHandler context)
     {
+        JettyWebSocketServletContainerInitializer.configure(context);
         // Serve capture servlet
         context.addServlet(new ServletHolder(servlet),"/*");
     }
