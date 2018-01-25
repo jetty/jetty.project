@@ -54,6 +54,7 @@ public class DigestAuthentication extends AbstractAuthentication
 
     private final String user;
     private final String password;
+    private boolean onlyUriPathInAuthHeader;
 
     /**
      * @param uri the URI to match for the authentication
@@ -66,6 +67,15 @@ public class DigestAuthentication extends AbstractAuthentication
         super(uri, realm);
         this.user = user;
         this.password = password;
+        this.onlyUriPathInAuthHeader = false;
+    }
+
+    public DigestAuthentication(URI uri, String realm, String user, String password, boolean onlyUriPathInAuthHeader)
+    {
+        super(uri, realm);
+        this.user = user;
+        this.password = password;
+        this.onlyUriPathInAuthHeader = onlyUriPathInAuthHeader;
     }
 
     @Override
@@ -73,6 +83,8 @@ public class DigestAuthentication extends AbstractAuthentication
     {
         return "Digest";
     }
+
+    public boolean isOnlyUriPathInAuthHeader(){return this.onlyUriPathInAuthHeader;}
 
     @Override
     public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
@@ -212,7 +224,9 @@ public class DigestAuthentication extends AbstractAuthentication
             String hashA1 = toHexString(digester.digest(A1.getBytes(StandardCharsets.ISO_8859_1)));
 
             URI uri = request.getURI();
-            String A2 = request.getMethod() + ":" + uri.getPath();
+            String authUri = isOnlyUriPathInAuthHeader() ? request.getPath() : uri.toString();
+            String A2 = request.getMethod() + ":" + authUri;
+
             if ("auth-int".equals(qop))
                 A2 += ":" + toHexString(digester.digest(content));
             String hashA2 = toHexString(digester.digest(A2.getBytes(StandardCharsets.ISO_8859_1)));
@@ -241,7 +255,7 @@ public class DigestAuthentication extends AbstractAuthentication
             if (opaque != null)
                 value.append(", opaque=\"").append(opaque).append("\"");
             value.append(", algorithm=\"").append(algorithm).append("\"");
-            value.append(", uri=\"").append(uri.getPath()).append("\"");
+            value.append(", uri=\"").append(authUri).append("\"");
             if (qop != null)
             {
                 value.append(", qop=\"").append(qop).append("\"");
