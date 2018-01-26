@@ -31,6 +31,8 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
@@ -79,6 +81,7 @@ public class ServletContextWebSocketContainer extends ContainerLifeCycle impleme
         }
     }
 
+    private static final Logger LOG = Log.getLogger(ServletContextWebSocketContainer.class);
     /** The context that the factory resides in (can only exist in 1 ServletContext at a time) */
     private final ServletContext context;
     private WebSocketPolicy policy;
@@ -173,6 +176,12 @@ public class ServletContextWebSocketContainer extends ContainerLifeCycle impleme
         Objects.requireNonNull(websocketPojo, "WebSocket Class cannot be null");
 
         FrameHandler frameHandler = null;
+
+        if (getFrameHandlerFactories().isEmpty())
+        {
+            LOG.warn("There are no {} instances registered", FrameHandlerFactory.class);
+            return null;
+        }
 
         for (FrameHandlerFactory factory : getFrameHandlerFactories())
         {
