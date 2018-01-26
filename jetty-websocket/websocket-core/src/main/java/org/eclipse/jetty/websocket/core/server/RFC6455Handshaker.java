@@ -149,8 +149,7 @@ public final class RFC6455Handshaker implements Handshaker
         // Check for handler
         if (handler==null)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded no channel {}", baseRequest);
+            LOG.warn("not upgraded: no channel {}", baseRequest);
             return false;
         }
 
@@ -161,11 +160,19 @@ public final class RFC6455Handshaker implements Handshaker
         
         // Check if subprotocol negotiated
         String subprotocol = negotiation.getSubprotocol();
-        if (negotiation.getOfferedSubprotocols().size()>0 && subprotocol==null)
+        if (negotiation.getOfferedSubprotocols().size()>0)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded no subprotocol from {} {}", negotiation.getOfferedSubprotocols(), baseRequest);
-            return false;
+            if(subprotocol == null)
+            {
+                LOG.warn("not upgraded: no subprotocol selected from offered subprotocols {}: {}", negotiation.getOfferedSubprotocols(), baseRequest);
+                return false;
+            }
+
+            if(!negotiation.getOfferedSubprotocols().contains(subprotocol))
+            {
+                LOG.warn("not upgraded: selected subprotocol {} not present in offered subprotocols {}: {}", subprotocol, negotiation.getOfferedSubprotocols(), baseRequest);
+                return false;
+            }
         }
         
         // Set up extensions
@@ -205,11 +212,11 @@ public final class RFC6455Handshaker implements Handshaker
         // Create a connection
         WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(),connector.getExecutor(),connector.getByteBufferPool(),channel);  
         if (LOG.isDebugEnabled())
-            LOG.debug("connection {}", connection);              
+            LOG.debug("connection {}", connection);
         if (connection==null)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded no connection {}", baseRequest);
+            LOG.warn("not upgraded: no connection {}", baseRequest);
+            return false;
         }
         
         channel.setWebSocketConnection(connection);
