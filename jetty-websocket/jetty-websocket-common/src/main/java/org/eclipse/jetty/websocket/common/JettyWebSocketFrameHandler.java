@@ -42,16 +42,16 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private final WebSocketContainerContext container;
     private final Object endpointInstance;
     private final WebSocketPolicy policy;
-    private final MethodHandle openHandle;
-    private final MethodHandle closeHandle;
-    private final MethodHandle errorHandle;
-    private final MethodHandle textHandle;
+    private MethodHandle openHandle;
+    private MethodHandle closeHandle;
+    private MethodHandle errorHandle;
+    private MethodHandle textHandle;
     private final Class<? extends MessageSink> textSinkClass;
-    private final MethodHandle binaryHandle;
+    private MethodHandle binaryHandle;
     private final Class<? extends MessageSink> binarySinkClass;
-    private final MethodHandle frameHandle;
-    private final MethodHandle pingHandle;
-    private final MethodHandle pongHandle;
+    private MethodHandle frameHandle;
+    private MethodHandle pingHandle;
+    private MethodHandle pongHandle;
     /**
      * Immutable HandshakeRequest available via Session
      */
@@ -184,25 +184,30 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         JettyWebSocketRemoteEndpoint remote = new JettyWebSocketRemoteEndpoint(channel);
         session = new WebSocketSessionImpl(container, remote, handshakeRequest, handshakeResponse);
 
+        frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
+        openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);
+        closeHandle = JettyWebSocketFrameHandlerFactory.bindTo(closeHandle, session);
+        errorHandle = JettyWebSocketFrameHandlerFactory.bindTo(errorHandle, session);
+        textHandle = JettyWebSocketFrameHandlerFactory.bindTo(textHandle, session);
+        binaryHandle = JettyWebSocketFrameHandlerFactory.bindTo(binaryHandle, session);
+        pingHandle = JettyWebSocketFrameHandlerFactory.bindTo(pingHandle, session);
+        pongHandle = JettyWebSocketFrameHandlerFactory.bindTo(pongHandle, session);
+
         if (textHandle != null)
         {
-            MethodHandle handle = JettyWebSocketFrameHandlerFactory.bindTo(textHandle, session);
-            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(handle, textSinkClass, getPolicy(), container.getExecutor());
+            textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, getPolicy(), container.getExecutor());
         }
 
         if (binaryHandle != null)
         {
-            MethodHandle handle = JettyWebSocketFrameHandlerFactory.bindTo(binaryHandle, session);
-            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(handle, binarySinkClass, getPolicy(), container.getExecutor());
+            binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, getPolicy(), container.getExecutor());
         }
 
         if (openHandle != null)
         {
-            MethodHandle handle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);
-
             try
             {
-                handle.invoke();
+                openHandle.invoke();
             }
             catch (Throwable cause)
             {
