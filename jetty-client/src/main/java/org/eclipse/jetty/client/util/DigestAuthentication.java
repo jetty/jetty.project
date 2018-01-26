@@ -211,8 +211,8 @@ public class DigestAuthentication extends AbstractAuthentication
             String A1 = user + ":" + realm + ":" + password;
             String hashA1 = toHexString(digester.digest(A1.getBytes(StandardCharsets.ISO_8859_1)));
 
-            URI uri = request.getURI();
-            String A2 = request.getMethod() + ":" + uri;
+            String uri = (request.getQuery() == null) ? request.getPath() : String.format("%s?%s", request.getPath(), request.getQuery());
+            String A2 = String.format("%s:%s", request.getMethod(), uri);
             if ("auth-int".equals(qop))
                 A2 += ":" + toHexString(digester.digest(content));
             String hashA2 = toHexString(digester.digest(A2.getBytes(StandardCharsets.ISO_8859_1)));
