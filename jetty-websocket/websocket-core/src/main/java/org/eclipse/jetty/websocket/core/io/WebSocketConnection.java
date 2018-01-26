@@ -123,8 +123,8 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
 
         this.parser.configureFromExtensions(channel.getExtensionStack().getExtensions());
         this.generator.configureFromExtensions(channel.getExtensionStack().getExtensions());
-        
-        this.random = this.policy.getBehavior()==WebSocketBehavior.CLIENT?new Random(endp.hashCode()):null;
+
+        this.random = this.policy.getBehavior() == WebSocketBehavior.CLIENT ? new Random(endp.hashCode()) : null;
     }
 
     @Override
