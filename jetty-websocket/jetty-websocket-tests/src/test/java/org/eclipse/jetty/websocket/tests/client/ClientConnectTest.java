@@ -117,9 +117,11 @@ public class ClientConnectTest
     @Test
     public void testUpgradeRequest() throws Exception
     {
+        server.registerWebSocket("/simple", (req, resp) -> new TextMessageSocket("hello world"));
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
 
-        URI wsUri = server.getWsUri();
+        URI wsUri = server.getWsUri().resolve("/simple");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
 
         Session sess = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);

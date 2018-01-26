@@ -43,6 +43,7 @@ public interface Fuzzer extends AutoCloseable
 
     /**
      * For some Fuzzers implementations, this triggers a send EOF.
+     * TODO: should probably be called shutdownOutput()
      */
     void eof();
 

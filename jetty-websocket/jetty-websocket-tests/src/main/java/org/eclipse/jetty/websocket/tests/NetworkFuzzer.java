@@ -39,95 +39,16 @@ import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
-    public static class RawWebSocketClient extends WebSocketCoreClient
-    {
-    }
-
-    public static class RawUpgradeRequest extends WebSocketCoreClientUpgradeRequest
-    {
-        private final CompletableFuture<FrameCapture> futureCapture;
-        private EndPoint endPoint;
-
-        public RawUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI, CompletableFuture<FrameCapture> futureCapture)
-        {
-            super(webSocketClient, requestURI);
-            this.futureCapture = futureCapture;
-        }
-
-        @Override
-        protected void handleException(Throwable failure)
-        {
-            futureCapture.completeExceptionally(failure);
-            super.handleException(failure);
-        }
-
-        @Override
-        protected void customize(EndPoint endp)
-        {
-            this.endPoint = endp;
-        }
-
-        @Override
-        public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
-        {
-            FrameCapture frameCapture = new FrameCapture(this.endPoint);
-            futureCapture.complete(frameCapture);
-            return frameCapture;
-        }
-    }
-
-    public static class FrameCapture implements FrameHandler
-    {
-        private final BlockingQueue<WebSocketFrame> receivedFrames = new LinkedBlockingQueue<>();
-        private final EndPoint endPoint;
-        private final SharedBlockingCallback blockingCallback = new SharedBlockingCallback();
-        private Channel channel;
-
-        public FrameCapture(EndPoint endPoint)
-        {
-            this.endPoint = endPoint;
-        }
-
-        public void writeRaw(ByteBuffer buffer) throws IOException
-        {
-            try (SharedBlockingCallback.Blocker blocker = blockingCallback.acquire())
-            {
-                this.endPoint.write(blocker, buffer);
-            }
-        }
-
-        @Override
-        public void onOpen(Channel channel) throws Exception
-        {
-            this.channel = channel;
-        }
-
-        @Override
-        public void onFrame(Frame frame, Callback callback) throws Exception
-        {
-            receivedFrames.offer(WebSocketFrame.copy(frame));
-            callback.succeeded();
-        }
-
-        @Override
-        public void onClosed(CloseStatus closeStatus) throws Exception
-        {
-        }
-
-        @Override
-        public void onError(Throwable cause) throws Exception
-        {
-        }
-    }
-
     private final LocalServer server;
     private final RawWebSocketClient rawClient;
     private final RawUpgradeRequest upgradeRequest;
     private final UnitGenerator generator;
     private final FrameCapture frameCapture;
+    private SharedBlockingCallback sharedBlockingCallback = new SharedBlockingCallback();
 
     public NetworkFuzzer(LocalServer server) throws Exception
     {
@@ -212,8 +133,10 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     {
         for (WebSocketFrame f : frames)
         {
-            ByteBuffer buffer = generator.generate(f);
-            frameCapture.writeRaw(buffer);
+            try(SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
+            {
+                frameCapture.channel.sendFrame(f, blocker, BatchMode.OFF);
+            }
         }
     }
 
@@ -222,8 +145,10 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     {
         for (WebSocketFrame f : frames)
         {
-            ByteBuffer buffer = generator.generate(f);
-            frameCapture.writeRaw(buffer);
+            try(SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
+            {
+                frameCapture.channel.sendFrame(f, blocker, BatchMode.OFF);
+            }
         }
     }
 
@@ -235,6 +160,87 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         while (buffer.remaining() > 0)
         {
             send(buffer, segmentSize);
+        }
+    }
+
+    public static class RawWebSocketClient extends WebSocketCoreClient
+    {
+    }
+
+    public static class RawUpgradeRequest extends WebSocketCoreClientUpgradeRequest
+    {
+        private final CompletableFuture<FrameCapture> futureCapture;
+        private EndPoint endPoint;
+
+        public RawUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI, CompletableFuture<FrameCapture> futureCapture)
+        {
+            super(webSocketClient, requestURI);
+            this.futureCapture = futureCapture;
+        }
+
+        @Override
+        public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
+        {
+            FrameCapture frameCapture = new FrameCapture(this.endPoint);
+            futureCapture.complete(frameCapture);
+            return frameCapture;
+        }
+
+        @Override
+        protected void customize(EndPoint endp)
+        {
+            this.endPoint = endp;
+        }
+
+        @Override
+        protected void handleException(Throwable failure)
+        {
+            futureCapture.completeExceptionally(failure);
+            super.handleException(failure);
+        }
+    }
+
+    public static class FrameCapture implements FrameHandler
+    {
+        private final BlockingQueue<WebSocketFrame> receivedFrames = new LinkedBlockingQueue<>();
+        private final EndPoint endPoint;
+        private final SharedBlockingCallback blockingCallback = new SharedBlockingCallback();
+        private Channel channel;
+
+        public FrameCapture(EndPoint endPoint)
+        {
+            this.endPoint = endPoint;
+        }
+
+        @Override
+        public void onClosed(CloseStatus closeStatus) throws Exception
+        {
+        }
+
+        @Override
+        public void onError(Throwable cause) throws Exception
+        {
+        }
+
+        @Override
+        public void onFrame(Frame frame, Callback callback) throws Exception
+        {
+            receivedFrames.offer(WebSocketFrame.copy(frame));
+            callback.succeeded();
+        }
+
+        @Override
+        public void onOpen(Channel channel) throws Exception
+        {
+            this.channel = channel;
+        }
+
+        public void writeRaw(ByteBuffer buffer) throws IOException
+        {
+            try (SharedBlockingCallback.Blocker blocker = blockingCallback.acquire())
+            {
+                this.endPoint.write(blocker, buffer);
+            }
         }
     }
 }

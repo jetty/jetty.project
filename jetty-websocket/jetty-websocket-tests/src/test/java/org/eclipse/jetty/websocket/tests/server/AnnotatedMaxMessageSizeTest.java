@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -56,7 +55,7 @@ public class AnnotatedMaxMessageSizeTest
     public static class BigEchoSocket
     {
         private static final Logger LOG = Log.getLogger(BigEchoSocket.class);
-        
+
         @OnWebSocketMessage
         public void onBinary(Session session, byte buf[], int offset, int length) throws IOException
         {
@@ -65,10 +64,9 @@ public class AnnotatedMaxMessageSizeTest
                 LOG.warn("Session is closed");
                 return;
             }
-            RemoteEndpoint remote = session.getRemote();
-            remote.sendBinary(ByteBuffer.wrap(buf, offset, length));
+            session.getRemote().sendBinary(ByteBuffer.wrap(buf, offset, length));
         }
-        
+
         @OnWebSocketMessage
         public void onText(Session session, String message) throws IOException
         {
@@ -77,90 +75,93 @@ public class AnnotatedMaxMessageSizeTest
                 LOG.warn("Session is closed");
                 return;
             }
-            RemoteEndpoint remote = session.getRemote();
-            remote.sendText(message);
+            session.getRemote().sendText(message);
         }
     }
-    
+
     private static LocalServer server;
-    private static URI serverUri;
-    
+
     @BeforeClass
     public static void startServer() throws Exception
     {
         server = new LocalServer();
         server.start();
-        server.registerWebSocket("/", (req,resp) -> new BigEchoSocket());
-
-        serverUri = server.getWsUri();
+        server.registerWebSocket("/echo", (req, resp) -> {
+            if (req.hasSubProtocol("echo"))
+            {
+                resp.setAcceptedSubProtocol("echo");
+                return new BigEchoSocket();
+            }
+            return null;
+        });
     }
-    
+
     @AfterClass
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Rule
     public TestName testname = new TestName();
-    
+
     private WebSocketClient client;
-    
+
     @Before
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
-    
+
     @After
     public void stopClient() throws Exception
     {
         client.stop();
     }
-    
+
     @Test
     public void testEchoGood() throws Exception
     {
-        URI wsUri = serverUri.resolve("/");
-        
+        URI wsUri = server.getWsUri().resolve("/echo");
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        
+
         // Message
         String msg = "this is an echo ... cho ... ho ... o";
         clientSession.getRemote().sendText(msg);
-        
+
         // Read message
         String incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         Assert.assertThat("Incoming Message", incomingMsg, is(msg));
-        
+
         clientSession.close();
     }
-    
+
     @Test(timeout = 60000)
     public void testEchoTooBig() throws Exception
     {
-        URI wsUri = serverUri.resolve("/");
-    
+        URI wsUri = server.getWsUri().resolve("/echo");
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-    
+
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        
+
         // Big Message
         int size = 120 * 1024;
         byte buf[] = new byte[size]; // buffer bigger than maxMessageSize
         Arrays.fill(buf, (byte) 'x');
         String msg = new String(buf, StandardCharsets.UTF_8);
         clientSession.getRemote().sendText(msg);
-    
+
         // Read message
         clientSocket.awaitCloseEvent("Client");
         clientSocket.assertCloseStatus("Client", StatusCode.MESSAGE_TOO_LARGE, anything());

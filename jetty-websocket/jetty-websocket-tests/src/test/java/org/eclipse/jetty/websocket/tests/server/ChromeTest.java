@@ -86,12 +86,11 @@ public class ChromeTest
         Assume.assumeTrue("Server has x-webkit-deflate-frame registered",
                 server.getWebSocketServletFactory().getExtensionRegistry().isAvailable("x-webkit-deflate-frame"));
         
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
         
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("x-webkit-deflate-frame");
-        upgradeRequest.setSubProtocols("chat");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
         
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);

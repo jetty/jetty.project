@@ -269,7 +269,7 @@ public class ClientDisconnectedTest
 
         expectedException.expect(ExecutionException.class);
         expectedException.expectCause(instanceOf(HttpResponseException.class));
-        expectedException.expectMessage(containsString("503 Endpoint Creation Failed"));
+        expectedException.expectMessage(containsString("503 WebSocket Endpoint Creation Refused"));
         clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
     }
 
