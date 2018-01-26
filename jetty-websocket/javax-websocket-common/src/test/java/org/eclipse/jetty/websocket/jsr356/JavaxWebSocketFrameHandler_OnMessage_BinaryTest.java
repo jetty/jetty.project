@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.allOf;
 import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
@@ -34,11 +36,12 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
-public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryTest extends AbstractJavaxWebSocketLocalEndpointTest
+public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
-    private void assertOnMessageInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
+    private void assertOnMessageInvocation(TrackingSocket socket, Matcher<String> eventMatcher) throws Exception
     {
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
         
@@ -51,7 +54,7 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryTest extends AbstractJa
         ByteBuffer byteBuffer = ByteBuffer.wrap("Hello World".getBytes(StandardCharsets.UTF_8));
         localEndpoint.onFrame(new BinaryFrame().setPayload(byteBuffer).setFin(true), Callback.NOOP);
         String event = socket.events.poll(1, TimeUnit.SECONDS);
-        assertThat("Event", event, is(String.format(expectedEventFormat, args)));
+        assertThat("Event", event, eventMatcher);
     }
     
     @ClientEndpoint
@@ -70,7 +73,7 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryTest extends AbstractJa
     public void testInvokeMessage() throws Exception
     {
         expectedException.expect(InvalidSignatureException.class);
-        assertOnMessageInvocation(new MessageSocket(), "onMessage()");
+        assertOnMessageInvocation(new MessageSocket(), containsString("onMessage()"));
     }
     
     @ClientEndpoint
@@ -86,7 +89,7 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryTest extends AbstractJa
     @Test
     public void testInvokeMessageByteBuffer() throws Exception
     {
-        assertOnMessageInvocation(new MessageByteBufferSocket(), "onMessage(Hello World)");
+        assertOnMessageInvocation(new MessageByteBufferSocket(), containsString("onMessage(Hello World)"));
     }
     
     @ClientEndpoint
@@ -105,8 +108,10 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryTest extends AbstractJa
     {
         expectedException.expect(InvalidSignatureException.class);
         assertOnMessageInvocation(new MessageSessionSocket(),
-                "onMessage(JavaxWebSocketSession[CLIENT,%s,DummyConnection])",
-                MessageSessionSocket.class.getName());
+                allOf(
+                        containsString("onMessage(JavaxWebSocketSession@"),
+                        containsString(MessageSessionSocket.class.getName())
+                ));
     }
     
     @ClientEndpoint
@@ -123,7 +128,9 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryTest extends AbstractJa
     public void testInvokeMessageSessionByteBuffer() throws Exception
     {
         assertOnMessageInvocation(new MessageSessionByteBufferSocket(),
-                "onMessage(JavaxWebSocketSession[CLIENT,%s,DummyConnection], Hello World)",
-                MessageSessionByteBufferSocket.class.getName());
+                allOf(
+                        containsString("onMessage(JavaxWebSocketSession@"),
+                        containsString(MessageSessionByteBufferSocket.class.getName())
+                ));
     }
 }

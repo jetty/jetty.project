@@ -35,7 +35,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
-public abstract class AbstractJavaxWebSocketLocalEndpointTest
+public abstract class AbstractJavaxWebSocketFrameHandlerTest
 {
     protected static WebSocketPolicy clientPolicy = WebSocketPolicy.newClientPolicy();
     protected static DummyContainer container;
@@ -62,7 +62,7 @@ public abstract class AbstractJavaxWebSocketLocalEndpointTest
     protected EndpointConfig endpointConfig;
     protected FrameHandler.Channel channel = new DummyChannel();
     
-    public AbstractJavaxWebSocketLocalEndpointTest()
+    public AbstractJavaxWebSocketFrameHandlerTest()
     {
         endpointConfig = new BasicEndpointConfig();
         encoders = new AvailableEncoders(endpointConfig);

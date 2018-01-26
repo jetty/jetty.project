@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
+import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 
@@ -257,7 +258,8 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
             try
             {
                 CloseStatus close = CloseFrame.toCloseStatus(frame.getPayload());
-                closeHandle.invoke(close.getCode(), close.getReason());
+                CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(close.getCode()), close.getReason());
+                closeHandle.invoke(closeReason);
             }
             catch (Throwable cause)
             {

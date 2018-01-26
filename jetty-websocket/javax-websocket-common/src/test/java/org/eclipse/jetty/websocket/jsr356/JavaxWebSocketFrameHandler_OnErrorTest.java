@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
 import java.util.concurrent.TimeUnit;
@@ -28,13 +29,14 @@ import javax.websocket.OnError;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
-public class JavaxWebSocketLocalEndpoint_OnErrorTest extends AbstractJavaxWebSocketLocalEndpointTest
+public class JavaxWebSocketFrameHandler_OnErrorTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     private static final String EXPECTED_THROWABLE = "java.lang.RuntimeException: From Testcase";
     
-    private void assertOnErrorInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
+    private void assertOnErrorInvocation(TrackingSocket socket, Matcher<String> eventMatcher) throws Exception
     {
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
@@ -42,7 +44,7 @@ public class JavaxWebSocketLocalEndpoint_OnErrorTest extends AbstractJavaxWebSoc
         localEndpoint.onOpen(channel);
         localEndpoint.onError(new RuntimeException("From Testcase"));
         String event = socket.events.poll(1, TimeUnit.SECONDS);
-        assertThat("Event", event, is(String.format(expectedEventFormat, args)));
+        assertThat("Event", event, eventMatcher);
     }
 
     @ClientEndpoint
@@ -59,8 +61,11 @@ public class JavaxWebSocketLocalEndpoint_OnErrorTest extends AbstractJavaxWebSoc
     public void testInvokeErrorSessionThrowable() throws Exception
     {
         assertOnErrorInvocation(new ErrorSessionThrowableSocket(),
-                "onError(JavaxWebSocketSession[CLIENT,%s,DummyConnection], %s)",
-                ErrorSessionThrowableSocket.class.getName(), EXPECTED_THROWABLE);
+                allOf(
+                        containsString("onError(JavaxWebSocketSession@"),
+                        containsString(ErrorSessionThrowableSocket.class.getName()),
+                        containsString(EXPECTED_THROWABLE)
+                ));
     }
 
     @ClientEndpoint
@@ -77,7 +82,10 @@ public class JavaxWebSocketLocalEndpoint_OnErrorTest extends AbstractJavaxWebSoc
     public void testInvokeErrorThrowable() throws Exception
     {
         assertOnErrorInvocation(new ErrorThrowableSocket(),
-                "onError(%s)", EXPECTED_THROWABLE);
+                allOf(
+                        containsString("onError("),
+                        containsString(EXPECTED_THROWABLE)
+                ));
     }
 
     @ClientEndpoint
@@ -94,8 +102,10 @@ public class JavaxWebSocketLocalEndpoint_OnErrorTest extends AbstractJavaxWebSoc
     public void testInvokeErrorThrowableSession() throws Exception
     {
         assertOnErrorInvocation(new ErrorThrowableSessionSocket(),
-                "onError(%s, JavaxWebSocketSession[CLIENT,%s,DummyConnection])",
-                EXPECTED_THROWABLE,
-                ErrorThrowableSessionSocket.class.getName());
+                allOf(
+                        containsString("onError("),
+                        containsString(ErrorThrowableSessionSocket.class.getName()),
+                        containsString(EXPECTED_THROWABLE)
+                ));
     }
 }

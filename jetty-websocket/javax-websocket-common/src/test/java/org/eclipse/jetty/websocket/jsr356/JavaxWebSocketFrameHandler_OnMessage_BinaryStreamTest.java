@@ -22,7 +22,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -31,11 +32,11 @@ import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.junit.Test;
 
-public class JavaxWebSocketLocalEndpoint_OnMessage_TextStreamTest extends AbstractJavaxWebSocketLocalEndpointTest
+public class JavaxWebSocketFrameHandler_OnMessage_BinaryStreamTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     @SuppressWarnings("Duplicates")
     private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<JavaxWebSocketFrameHandler, Void> func) throws Exception
@@ -54,11 +55,11 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_TextStreamTest extends Abstra
     public static class MessageStreamSocket extends TrackingSocket
     {
         @OnMessage
-        public void onMessage(Reader stream)
+        public void onMessage(InputStream stream)
         {
             try
             {
-                String msg = IO.toString(stream);
+                String msg = IO.toString(stream, StandardCharsets.UTF_8);
                 addEvent("onMessage(%s) = \"%s\"", stream.getClass().getSimpleName(), msg);
             }
             catch (IOException e)
@@ -75,7 +76,7 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_TextStreamTest extends Abstra
         {
             try
             {
-                endpoint.onFrame(new TextFrame().setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(new BinaryFrame().setPayload("Hello World").setFin(true), Callback.NOOP);
             }
             catch (Exception e)
             {
@@ -83,7 +84,8 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_TextStreamTest extends Abstra
             }
             return null;
         });
+        
         String event = socket.events.poll(1, TimeUnit.SECONDS);
-        assertThat("Event", event, is("onMessage(MessageReader) = \"Hello World\""));
+        assertThat("event", event, is("onMessage(MessageInputStream) = \"Hello World\""));
     }
 }

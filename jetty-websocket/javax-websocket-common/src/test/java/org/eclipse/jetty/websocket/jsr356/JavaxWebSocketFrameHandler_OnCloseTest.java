@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
 import java.util.concurrent.TimeUnit;
@@ -28,51 +29,53 @@ import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
-public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSocketLocalEndpointTest
+public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     private static final String EXPECTED_REASON = "CloseReason[1000,Normal]";
     
-    private void assertOnCloseInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
+    private void assertOnCloseInvocation(TrackingSocket socket, Matcher<String> eventMatcher) throws Exception
     {
         JavaxWebSocketFrameHandler localEndpoint = newJavaxFrameHandler(socket);
 
         // These invocations are the same for all tests
         localEndpoint.onOpen(channel);
-        CloseStatus closeInfo = new CloseStatus(WebSocketConstants.NORMAL, "Normal");
-        localEndpoint.onClosed(closeInfo);
+        CloseFrame closeFrame = new CloseFrame().setPayload(WebSocketConstants.NORMAL, "Normal");
+        localEndpoint.onFrame(closeFrame, Callback.NOOP);
         
         String event = socket.events.poll(1, TimeUnit.SECONDS);
-        assertThat("Event", event, is(String.format(expectedEventFormat, args)));
+        assertThat("Event", event, eventMatcher);
     }
 
     @ClientEndpoint
     public static class CloseSocket extends TrackingSocket
     {
         @OnClose
-        public void OnClose()
+        public void onClose()
         {
-            addEvent("OnClose()");
+            addEvent("onClose()");
         }
     }
 
     @Test
     public void testInvokeClose() throws Exception
     {
-        assertOnCloseInvocation(new CloseSocket(), "OnClose()");
+        assertOnCloseInvocation(new CloseSocket(), containsString("onClose()"));
     }
 
     @ClientEndpoint
     public static class CloseSessionSocket extends TrackingSocket
     {
         @OnClose
-        public void OnClose(Session session)
+        public void onClose(Session session)
         {
-            addEvent("OnClose(%s)", session);
+            addEvent("onClose(%s)", session);
         }
     }
 
@@ -80,17 +83,19 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
     public void testInvokeCloseSession() throws Exception
     {
         assertOnCloseInvocation(new CloseSessionSocket(),
-                "OnClose(JavaxWebSocketSession[CLIENT,%s,DummyConnection])",
-                CloseSessionSocket.class.getName());
+                allOf(
+                        containsString("onClose(JavaxWebSocketSession@"),
+                        containsString(CloseSessionSocket.class.getName())
+                ));
     }
 
     @ClientEndpoint
     public static class CloseReasonSocket extends TrackingSocket
     {
         @OnClose
-        public void OnClose(CloseReason reason)
+        public void onClose(CloseReason reason)
         {
-            addEvent("OnClose(%s)", reason);
+            addEvent("onClose(%s)", reason);
         }
     }
 
@@ -98,16 +103,16 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
     public void testInvokeCloseReason() throws Exception
     {
         assertOnCloseInvocation(new CloseReasonSocket(),
-                "OnClose(%s)", EXPECTED_REASON);
+                containsString("onClose(" + EXPECTED_REASON + ")"));
     }
 
     @ClientEndpoint
     public static class CloseSessionReasonSocket extends TrackingSocket
     {
         @OnClose
-        public void OnClose(Session session, CloseReason reason)
+        public void onClose(Session session, CloseReason reason)
         {
-            addEvent("OnClose(%s, %s)", session, reason);
+            addEvent("onClose(%s, %s)", session, reason);
         }
     }
 
@@ -115,17 +120,19 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
     public void testInvokeCloseSessionReason() throws Exception
     {
         assertOnCloseInvocation(new CloseSessionReasonSocket(),
-                "OnClose(JavaxWebSocketSession[CLIENT,%s,DummyConnection], %s)",
-                CloseSessionReasonSocket.class.getName(), EXPECTED_REASON);
+                allOf(
+                        containsString("onClose(JavaxWebSocketSession@"),
+                        containsString(CloseSessionReasonSocket.class.getName())
+                ));
     }
 
     @ClientEndpoint
     public static class CloseReasonSessionSocket extends TrackingSocket
     {
         @OnClose
-        public void OnClose(CloseReason reason, Session session)
+        public void onClose(CloseReason reason, Session session)
         {
-            addEvent("OnClose(%s, %s)", reason, session);
+            addEvent("onClose(%s, %s)", reason, session);
         }
     }
 
@@ -133,7 +140,9 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
     public void testInvokeCloseReasonSession() throws Exception
     {
         assertOnCloseInvocation(new CloseReasonSessionSocket(),
-                "OnClose(%s, JavaxWebSocketSession[CLIENT,%s,DummyConnection])",
-                EXPECTED_REASON, CloseReasonSessionSocket.class.getName());
+                allOf(
+                        containsString("onClose(" + EXPECTED_REASON),
+                        containsString(CloseReasonSessionSocket.class.getName())
+                ));
     }
 }

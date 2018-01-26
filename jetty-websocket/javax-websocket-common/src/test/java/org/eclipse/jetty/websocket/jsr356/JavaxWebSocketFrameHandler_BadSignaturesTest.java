@@ -30,7 +30,7 @@ import javax.websocket.Session;
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.junit.Test;
 
-public class JavaxWebSocketLocalEndpoint_BadSignaturesTest extends AbstractJavaxWebSocketLocalEndpointTest
+public class JavaxWebSocketFrameHandler_BadSignaturesTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     private void assertBadSocket(Object socket, String expectedString) throws Exception
     {

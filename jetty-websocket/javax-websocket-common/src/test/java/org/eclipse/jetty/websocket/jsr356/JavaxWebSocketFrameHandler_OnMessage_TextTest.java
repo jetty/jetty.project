@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
-public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavaxWebSocketLocalEndpointTest
+public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     private void onText(TrackingSocket socket, String msg) throws Exception
     {
