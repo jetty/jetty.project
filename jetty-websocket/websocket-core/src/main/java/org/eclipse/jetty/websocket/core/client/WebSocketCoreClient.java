@@ -82,7 +82,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     {
         WebSocketCoreClientUpgradeRequest request = new WebSocketCoreClientUpgradeRequest(this, wsUri) {
             @Override
-            public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
+            public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
             {
                 return frameHandler;
             }
