@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -118,16 +119,26 @@ public interface FrameHandler
         WebSocketBehavior getBehavior();
 
         /**
-         * Get the Local Address associated with raw Channel
+         * The Local Socket Address for the connection
+         * <p>
+         *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
+         *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
+         *     without supporting {@link InetSocketAddress}
+         * </p>
          *
-         * @return the local address
+         * @return the SocketAddress for the local connection, or null if not supported by Channel
          */
         SocketAddress getLocalAddress();
 
         /**
-         * Get the Remote Address associated with the raw Channel.
+         * The Remote Socket Address for the connection
+         * <p>
+         *     Do not assume that this will return a {@link InetSocketAddress} in all cases.
+         *     Use of various proxies, and even UnixSockets can result a SocketAddress being returned
+         *     without supporting {@link InetSocketAddress}
+         * </p>
          *
-         * @return the remote address
+         * @return the SocketAddress for the remote connection, or null if not supported by Channel
          */
         SocketAddress getRemoteAddress();
 
