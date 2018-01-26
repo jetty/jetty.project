@@ -46,14 +46,14 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     private final JavaxWebSocketContainer container;
     private final Object endpointInstance;
     private final WebSocketPolicy policy;
-    private final MethodHandle openHandle;
-    private final MethodHandle closeHandle;
-    private final MethodHandle errorHandle;
-    private final MethodHandle textHandle;
+    private MethodHandle openHandle;
+    private MethodHandle closeHandle;
+    private MethodHandle errorHandle;
+    private MethodHandle textHandle;
     private final Class<? extends MessageSink> textSinkClass;
-    private final MethodHandle binaryHandle;
+    private MethodHandle binaryHandle;
     private final Class<? extends MessageSink> binarySinkClass;
-    private final MethodHandle pongHandle;
+    private MethodHandle pongHandle;
     /**
      * Immutable HandshakeRequest available via Session
      */
@@ -71,7 +71,7 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     private JavaxWebSocketSession session;
 
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
-                                      Object endpointInstance, WebSocketPolicy endpointPolicy,
+                                      Object endpointInstance, WebSocketPolicy upgradePolicy,
                                       HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse,
                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                       MethodHandle textHandle, MethodHandle binaryHandle,
@@ -86,7 +86,7 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
 
         this.container = container;
         this.endpointInstance = endpointInstance;
-        this.policy = endpointPolicy;
+        this.policy = upgradePolicy;
         this.handshakeRequest = handshakeRequest;
         this.handshakeResponse = handshakeResponse;
 
@@ -174,25 +174,28 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     {
         session = new JavaxWebSocketSession(container, channel, this, handshakeRequest, handshakeResponse, id, endpointConfig);
 
+        openHandle = JavaxWebSocketFrameHandlerFactory.bindTo(openHandle, session);
+        closeHandle = JavaxWebSocketFrameHandlerFactory.bindTo(closeHandle, session);
+        errorHandle = JavaxWebSocketFrameHandlerFactory.bindTo(errorHandle, session);
+        textHandle = JavaxWebSocketFrameHandlerFactory.bindTo(textHandle, session);
+        binaryHandle = JavaxWebSocketFrameHandlerFactory.bindTo(binaryHandle, session);
+        pongHandle = JavaxWebSocketFrameHandlerFactory.bindTo(pongHandle, session);
+
         if (textHandle != null)
         {
-            MethodHandle handle = JavaxWebSocketFrameHandlerFactory.bindTo(textHandle, session);
-            textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(handle, textSinkClass, getPolicy(), container.getExecutor());
+            textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, getPolicy(), container.getExecutor());
         }
 
         if (binaryHandle != null)
         {
-            MethodHandle handle = JavaxWebSocketFrameHandlerFactory.bindTo(binaryHandle, session);
-            binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(handle, binarySinkClass, getPolicy(), container.getExecutor());
+            binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, getPolicy(), container.getExecutor());
         }
 
         if (openHandle != null)
         {
-            MethodHandle handle = JavaxWebSocketFrameHandlerFactory.bindTo(openHandle, session);
-
             try
             {
-                handle.invoke();
+                openHandle.invoke();
             }
             catch (Throwable cause)
             {
@@ -205,7 +208,24 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
 
     public String toString()
     {
-        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), this.hashCode(), endpointInstance.getClass().getName());
+        StringBuilder ret = new StringBuilder();
+        ret.append(this.getClass().getSimpleName());
+        ret.append('@').append(Integer.toHexString(this.hashCode()));
+        ret.append("[endpoint=");
+        if (endpointInstance == null)
+        {
+            ret.append("<null>");
+        }
+        else if (endpointInstance instanceof ConfiguredEndpoint)
+        {
+            ret.append(((ConfiguredEndpoint) endpointInstance).getRawEndpoint().getClass().getName());
+        }
+        else
+        {
+            ret.append(endpointInstance.getClass().getName());
+        }
+        ret.append(']');
+        return ret.toString();
     }
 
     private void acceptMessage(Frame frame, Callback callback)

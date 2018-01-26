@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.junit.Test;
 
-public class JavaxWebSocketLocalEndpoint_OnCloseTest extends AbstractJavaxWebSocketLocalEndpointTest
+public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSocketLocalEndpointTest
 {
     private static final String EXPECTED_REASON = "CloseReason[1000,Normal]";
     

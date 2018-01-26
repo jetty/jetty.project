@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
@@ -33,11 +33,12 @@ import javax.websocket.Session;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
+import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
-public class JavaxWebSocketLocalEndpoint_OnMessage_TextTest extends AbstractJavaxWebSocketLocalEndpointTest
+public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavaxWebSocketLocalEndpointTest
 {
     private void onText(TrackingSocket socket, String msg) throws Exception
     {
@@ -50,11 +51,11 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_TextTest extends AbstractJava
         localEndpoint.onFrame(new TextFrame().setPayload(payload).setFin(true), Callback.NOOP);
     }
 
-    private void assertOnMessageInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
+    private void assertOnMessageInvocation(TrackingSocket socket, Matcher<String> eventMatcher) throws Exception
     {
         onText(socket, "Hello World");
         String event = socket.events.poll(1, TimeUnit.SECONDS);
-        assertThat("Event", event, is(String.format(expectedEventFormat, args)));
+        assertThat("Event", event, eventMatcher);
     }
     
     @ClientEndpoint
@@ -93,7 +94,7 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_TextTest extends AbstractJava
     @Test
     public void testInvokeMessageText() throws Exception
     {
-        assertOnMessageInvocation(new MessageTextSocket(), "onMessage(Hello World)");
+        assertOnMessageInvocation(new MessageTextSocket(), containsString("onMessage(Hello World)"));
     }
 
     @ClientEndpoint
@@ -133,7 +134,10 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_TextTest extends AbstractJava
     public void testInvokeMessageSessionText() throws Exception
     {
         assertOnMessageInvocation(new MessageSessionTextSocket(),
-                "onMessage(JavaxWebSocketSession[CLIENT,%s,DummyConnection], Hello World)",
-                MessageSessionTextSocket.class.getName());
+                allOf(
+                    containsString("onMessage(JavaxWebSocketSession@"),
+                    containsString(MessageSessionTextSocket.class.getName()),
+                    containsString(", Hello World)")
+                ));
     }
 }
