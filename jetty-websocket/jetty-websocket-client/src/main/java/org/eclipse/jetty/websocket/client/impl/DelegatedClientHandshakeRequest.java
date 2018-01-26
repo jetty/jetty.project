@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.net.HttpCookie;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -32,6 +34,9 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
@@ -43,6 +48,8 @@ import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 public class DelegatedClientHandshakeRequest implements HandshakeRequest
 {
     private final WebSocketCoreClientUpgradeRequest delegate;
+    private SocketAddress localSocketAddress;
+    private SocketAddress remoteSocketAddress;
 
     public DelegatedClientHandshakeRequest(WebSocketCoreClientUpgradeRequest delegate)
     {
@@ -109,15 +116,19 @@ public class DelegatedClientHandshakeRequest implements HandshakeRequest
     @Override
     public SocketAddress getLocalSocketAddress()
     {
-        // TODO: figure out how to obtain / update from Jetty HttpClient
-        return null;
+        return localSocketAddress;
     }
 
     @Override
     public SocketAddress getRemoteSocketAddress()
     {
-        // TODO: figure out how to obtain / update from Jetty HttpClient
-        return null;
+        return remoteSocketAddress;
+    }
+
+    public void configure(EndPoint endpoint)
+    {
+        this.localSocketAddress = endpoint.getLocalAddress();
+        this.remoteSocketAddress = endpoint.getRemoteAddress();
     }
 
     @Override
@@ -158,8 +169,12 @@ public class DelegatedClientHandshakeRequest implements HandshakeRequest
     @Override
     public Map<String, List<String>> getParameterMap()
     {
-        // TODO: parse query
-        return null;
+        if (getQueryString() == null)
+            return Collections.emptyMap();
+
+        MultiMap<String> params = new MultiMap<>();
+        UrlEncoded.decodeTo(getQueryString(), params, UTF_8);
+        return params;
     }
 
     @Override

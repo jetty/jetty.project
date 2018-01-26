@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
@@ -54,12 +55,12 @@ public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
     }
 
     @Override
-    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
+    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
     {
         HandshakeRequest handshakeRequest = new DelegatedClientHandshakeRequest(this);
         HandshakeResponse handshakeResponse = new DelegatedClientHandshakeResponse(response);
 
-        JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, containerContext.getPolicy(),
+        JavaxWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradePolicy,
                 handshakeRequest, handshakeResponse, onOpenFuture);
 
         return frameHandler;

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.tests;
 import java.net.URI;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -70,27 +71,27 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     {
         this.ssl = ssl;
     }
-    
+
     public LocalConnector getLocalConnector()
     {
         return localConnector;
     }
-    
+
     public WebSocketPolicy getServerDefaultPolicy()
     {
         return serverPolicy;
     }
-    
+
     public URI getServerUri()
     {
         return serverUri;
     }
-    
+
     public ServletContextHandler getServletContextHandler()
     {
         return servletContextHandler;
     }
-    
+
     public SslContextFactory getSslContextFactory()
     {
         return sslContextFactory;
@@ -105,13 +106,13 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     {
         return ssl;
     }
-    
+
     @Override
     public Parser newClientParser(Parser.Handler parserHandler)
     {
         return new Parser(WebSocketPolicy.newClientPolicy(), bufferPool, parserHandler);
     }
-    
+
     @Override
     public LocalConnector.LocalEndPoint newLocalConnection()
     {
@@ -122,22 +123,22 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     {
         return new NetworkFuzzer(this);
     }
-    
+
     public Fuzzer newLocalFuzzer() throws Exception
     {
         return new LocalFuzzer(this);
     }
-    
+
     public Fuzzer newLocalFuzzer(CharSequence requestPath) throws Exception
     {
         return new LocalFuzzer(this, requestPath);
     }
 
-    public Fuzzer newLocalFuzzer(CharSequence requestPath, Map<String,String> upgradeRequest) throws Exception
+    public Fuzzer newLocalFuzzer(CharSequence requestPath, Map<String, String> upgradeRequest) throws Exception
     {
         return new LocalFuzzer(this, requestPath, upgradeRequest);
     }
-    
+
     protected Handler createRootHandler(Server server) throws Exception
     {
         servletContextHandler = new ServletContextHandler(server, "/", true, false);
@@ -146,18 +147,18 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         configureServletContextHandler(servletContextHandler);
         return servletContextHandler;
     }
-    
+
     protected void configureServletContextHandler(ServletContextHandler context) throws Exception
     {
         /* override to change context handler */
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setName("qtp-LocalServer");
-        
+
         // Configure Server
         server = new Server(threadPool);
         if (ssl)
@@ -171,7 +172,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             http_config.setResponseHeaderSize(8192);
             http_config.setSendServerVersion(true);
             http_config.setSendDateHeader(false);
-            
+
             sslContextFactory = new SslContextFactory();
             sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
             sslContextFactory.setKeyStorePassword("storepwd");
@@ -179,11 +180,11 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA", "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
                     "SSL_RSA_EXPORT_WITH_RC4_40_MD5", "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA", "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                     "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-            
+
             // SSL HTTP Configuration
             HttpConfiguration https_config = new HttpConfiguration(http_config);
             https_config.addCustomizer(new SecureRequestCustomizer());
-            
+
             // SSL Connector
             connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()), new HttpConnectionFactory(https_config));
             connector.setPort(0);
@@ -196,19 +197,19 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         }
         // Add network connector
         server.addConnector(connector);
-        
+
         // Add Local Connector
         localConnector = new LocalConnector(server);
         server.addConnector(localConnector);
-        
+
         Handler rootHandler = createRootHandler(server);
         server.setHandler(rootHandler);
-        
+
         // Start Server
         addBean(server);
-        
+
         super.doStart();
-        
+
         // Establish the Server URI
         String host = connector.getHost();
         if (host == null)
@@ -218,7 +219,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         int port = connector.getLocalPort();
         serverUri = new URI(String.format("%s://%s:%d/", ssl ? "https" : "http", host, port));
         wsUri = WSURI.toWebsocket(serverUri);
-        
+
         // Some debugging
         if (LOG.isDebugEnabled())
         {
@@ -234,12 +235,17 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
 
     public void registerWebSocket(String urlPattern, WebSocketCreator creator)
     {
+        registerWebSocket(urlPattern, (factory -> factory.setCreator(creator)));
+    }
+
+    public void registerWebSocket(String urlPattern, Consumer<WebSocketServletFactory> configureFactoryConsumer)
+    {
         ServletHolder holder = new ServletHolder(new WebSocketServlet()
         {
             @Override
             public void configure(WebSocketServletFactory factory)
             {
-                factory.setCreator(creator);
+                configureFactoryConsumer.accept(factory);
             }
         });
         servletContextHandler.addServlet(holder, urlPattern);

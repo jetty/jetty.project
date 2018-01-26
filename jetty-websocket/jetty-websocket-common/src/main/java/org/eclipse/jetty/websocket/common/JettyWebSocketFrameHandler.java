@@ -67,7 +67,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private WebSocketSessionImpl session;
 
     public JettyWebSocketFrameHandler(WebSocketContainerContext container,
-                                      Object endpointInstance, WebSocketPolicy endpointPolicy,
+                                      Object endpointInstance, WebSocketPolicy upgradePolicy,
                                       HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse,
                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                       MethodHandle textHandle, MethodHandle binaryHandle,
@@ -81,7 +81,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
         this.container = container;
         this.endpointInstance = endpointInstance;
-        this.policy = endpointPolicy;
+        this.policy = upgradePolicy;
         this.handshakeRequest = handshakeRequest;
         this.handshakeResponse = handshakeResponse;
 

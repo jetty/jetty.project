@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.Generator;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
@@ -179,7 +180,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         }
 
         @Override
-        public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
+        public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
         {
             FrameCapture frameCapture = new FrameCapture(this.endPoint);
             futureCapture.complete(frameCapture);

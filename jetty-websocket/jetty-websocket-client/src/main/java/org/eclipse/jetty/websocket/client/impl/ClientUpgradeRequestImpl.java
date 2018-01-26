@@ -24,13 +24,14 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
 
@@ -40,6 +41,7 @@ public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
     private final Object websocketPojo;
     private final CompletableFuture<Session> onOpenFuture;
     private final CompletableFuture<Session> futureSession;
+    private final DelegatedClientHandshakeRequest handshakeRequest;
 
     public ClientUpgradeRequestImpl(WebSocketClient clientContainer, WebSocketCoreClient coreClient, UpgradeRequest request, URI requestURI, Object websocketPojo)
     {
@@ -48,7 +50,10 @@ public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
         this.websocketPojo = websocketPojo;
 
         this.onOpenFuture = new CompletableFuture<>();
-        this.futureSession = super.fut.thenCombine(onOpenFuture, (channel, session) -> session);
+        this.futureSession = super.fut.thenCombine(onOpenFuture, (channel, session) -> {
+            containerContext.addBean(session, true);
+            return session;
+        });
 
         if (request != null)
         {
@@ -70,6 +75,15 @@ public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
             if (request.getHttpVersion() != null)
                 version(HttpVersion.fromString(request.getHttpVersion()));
         }
+
+        handshakeRequest = new DelegatedClientHandshakeRequest(this);
+    }
+
+    @Override
+    protected void customize(EndPoint endp)
+    {
+        super.customize(endp);
+        handshakeRequest.configure(endp);
     }
 
     protected void handleException(Throwable failure)
@@ -79,12 +93,11 @@ public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
     }
 
     @Override
-    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, HttpResponse response)
+    public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
     {
-        HandshakeRequest handshakeRequest = new DelegatedClientHandshakeRequest(this);
         HandshakeResponse handshakeResponse = new DelegatedClientHandshakeResponse(response);
 
-        JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, containerContext.getPolicy(),
+        JettyWebSocketFrameHandler frameHandler = containerContext.newFrameHandler(websocketPojo, upgradePolicy,
                 handshakeRequest, handshakeResponse, onOpenFuture);
 
         return frameHandler;
