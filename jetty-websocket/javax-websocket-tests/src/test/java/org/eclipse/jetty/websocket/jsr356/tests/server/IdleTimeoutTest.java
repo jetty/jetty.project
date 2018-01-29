@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.IdleTimeoutOnOpenEndpoint;
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.IdleTimeoutOnOpenSocket;
@@ -71,7 +71,7 @@ public class IdleTimeoutTest
     
     private void assertConnectionTimeout(String requestPath) throws Exception
     {
-        try (LocalFuzzer session = server.newLocalFuzzer(requestPath))
+        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             // wait 1 second to allow timeout to fire off
             TimeUnit.SECONDS.sleep(1);

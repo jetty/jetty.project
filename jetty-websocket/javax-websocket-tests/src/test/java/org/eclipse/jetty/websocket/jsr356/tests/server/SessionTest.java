@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -40,7 +41,7 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.After;
 import org.junit.Test;
@@ -176,43 +177,45 @@ public class SessionTest
         }
     }
     
-    private interface Case
+    private static class Case
     {
-        void customize(ServletContextHandler context);
+        public final String description;
+        public Consumer<ServletContextHandler> customizer;
+
+        public Case(String description, Consumer<ServletContextHandler> customizer)
+        {
+            this.description = description;
+            this.customizer = customizer;
+        }
+
+        @Override
+        public String toString()
+        {
+            return this.description;
+        }
     }
 
-    @Parameters
+    private static class Cases extends ArrayList<Case[]>
+    {
+        public void addCase(String description, Consumer<ServletContextHandler> customizer)
+        {
+            this.add(new Case[]{new Case(description, customizer)});
+        }
+    }
+
+    @Parameters(name="{0}")
     public static Collection<Case[]> data()
     {
-        List<Case[]> cases = new ArrayList<>();
-        cases.add(new Case[]
-        {context ->
-        {
-            // no customization
-        }});
-        cases.add(new Case[]
-        {context ->
-        {
-            // Test with DefaultServlet only
-            context.addServlet(DefaultServlet.class,"/");
-        }});
-        cases.add(new Case[]
-        {context ->
-        {
-            // Test with Servlet mapped to "/*"
-            context.addServlet(DefaultServlet.class,"/*");
-        }});
-        cases.add(new Case[]
-        {context ->
-        {
-            // Test with Servlet mapped to "/info/*"
-            context.addServlet(DefaultServlet.class,"/info/*");
-        }});
+        Cases cases = new Cases();
+        cases.addCase("Default ServletContextHandler", context -> { });
+        cases.addCase("With DefaultServlet only", context -> context.addServlet(DefaultServlet.class, "/"));
+        cases.addCase("With Servlet Mapped to '/*'", context -> context.addServlet(DefaultServlet.class, "/*"));
+        cases.addCase("With Servlet Mapped to '/info/*'", context -> context.addServlet(DefaultServlet.class, "/info/*"));
         return cases;
     }
     
     private LocalServer server;
-    
+
     @After
     public void stopServer() throws Exception
     {
@@ -222,7 +225,8 @@ public class SessionTest
     public SessionTest(final Case testcase) throws Exception
     {
         server = new LocalServer();
-        testcase.customize(server.getServletContextHandler());
+        server.start();
+        testcase.customizer.accept(server.getServletContextHandler());
         ServerContainer container = server.getServerContainer();
         container.addEndpoint(SessionInfoSocket.class); // default behavior
         Class<?> endpointClass = SessionInfoSocket.class;
@@ -236,7 +240,6 @@ public class SessionTest
         container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/{a}/{b}/").build());
         container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/{a}/{b}/{c}/").build());
         container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/{a}/{b}/{c}/{d}/").build());
-        server.start();
     }
     
     private void assertResponse(String requestPath, String requestMessage,
@@ -250,7 +253,7 @@ public class SessionTest
         expect.add(new TextFrame().setPayload(expectedResponse));
         expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
     
-        try (LocalFuzzer session = server.newLocalFuzzer(requestPath))
+        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -317,14 +320,15 @@ public class SessionTest
     public void testRequestUri_Annotated_Basic() throws Exception
     {
         assertResponse("/info/","requestUri",
-                "requestUri=ws://local/info/");
+                "requestUri=" + server.getWsUri().toASCIIString() + "/info/");
     }
 
     @Test
     public void testRequestUri_Annotated_WithPathParam() throws Exception
     {
         assertResponse("/info/apple/banana/","requestUri",
-                "requestUri=ws://local/info/apple/banana/");
+                "requestUri=" + server.getWsUri().toASCIIString() +
+                        "info/apple/banana/");
     }
 
     @Test
@@ -332,21 +336,22 @@ public class SessionTest
     {
         assertResponse("/info/apple/banana/?fruit=fresh&store=grandmasfarm",
                 "requestUri",
-                "requestUri=ws://local/info/apple/banana/?fruit=fresh&store=grandmasfarm");
+                "requestUri=" + server.getWsUri().toASCIIString() +
+                        "/info/apple/banana/?fruit=fresh&store=grandmasfarm");
     }
 
     @Test
     public void testRequestUri_Endpoint_Basic() throws Exception
     {
         assertResponse("/einfo/","requestUri",
-                "requestUri=ws://local/einfo/");
+                "requestUri=" + server.getWsUri().toASCIIString() + "/einfo/");
     }
 
     @Test
     public void testRequestUri_Endpoint_WithPathParam() throws Exception
     {
         assertResponse("/einfo/apple/banana/","requestUri",
-                "requestUri=ws://local/einfo/apple/banana/");
+                "requestUri=" + server.getWsUri().toASCIIString() + "/einfo/apple/banana/");
     }
 
     @Test
@@ -354,6 +359,7 @@ public class SessionTest
     {
         assertResponse("/einfo/apple/banana/?fruit=fresh&store=grandmasfarm",
                 "requestUri",
-                "requestUri=ws://local/einfo/apple/banana/?fruit=fresh&store=grandmasfarm");
+                "requestUri=" + server.getWsUri().toASCIIString() +
+                        "/einfo/apple/banana/?fruit=fresh&store=grandmasfarm");
     }
 }

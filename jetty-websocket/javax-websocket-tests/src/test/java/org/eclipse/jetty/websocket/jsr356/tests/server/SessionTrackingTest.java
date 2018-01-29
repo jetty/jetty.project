@@ -30,7 +30,7 @@ import javax.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -83,15 +83,15 @@ public class SessionTrackingTest
     @Test
     public void testAddRemoveSessions() throws Exception
     {
-        try (LocalFuzzer session1 = server.newLocalFuzzer("/1"))
+        try (Fuzzer session1 = server.newNetworkFuzzer("/1"))
         {
             sendTextFrameToAll("openSessions|in-1", session1);
             
-            try (LocalFuzzer session2 = server.newLocalFuzzer("/2"))
+            try (Fuzzer session2 = server.newNetworkFuzzer("/2"))
             {
                 sendTextFrameToAll("openSessions|in-2", session1, session2);
                 
-                try (LocalFuzzer session3 = server.newLocalFuzzer("/3"))
+                try (Fuzzer session3 = server.newNetworkFuzzer("/3"))
                 {
                     sendTextFrameToAll("openSessions|in-3", session1, session2, session3);
                     sendTextFrameToAll("openSessions|lvl-3", session1, session2, session3);
@@ -132,9 +132,9 @@ public class SessionTrackingTest
         }
     }
     
-    private void sendTextFrameToAll(String msg, LocalFuzzer... sessions)
+    private void sendTextFrameToAll(String msg, Fuzzer... sessions) throws IOException
     {
-        for (LocalFuzzer session : sessions)
+        for (Fuzzer session : sessions)
         {
             session.sendFrames(new TextFrame().setPayload(msg));
         }

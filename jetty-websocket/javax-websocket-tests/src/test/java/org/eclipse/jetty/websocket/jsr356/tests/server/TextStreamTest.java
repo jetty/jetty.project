@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.jsr356.tests.DataUtils;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -102,7 +102,7 @@ public class TextStreamTest
     
         ByteBuffer expectedMessage = DataUtils.copyOf(data);
     
-        try (LocalFuzzer session = server.newLocalFuzzer("/echo"))
+        try (Fuzzer session = server.newNetworkFuzzer("/echo"))
         {
             session.sendBulk(send);
             BlockingQueue<WebSocketFrame> receivedFrames = session.getOutputFrames();
@@ -122,7 +122,7 @@ public class TextStreamTest
     
         ByteBuffer expectedMessage = DataUtils.copyOf(data);
     
-        try (LocalFuzzer session = server.newLocalFuzzer("/echo"))
+        try (Fuzzer session = server.newNetworkFuzzer("/echo"))
         {
             session.sendBulk(send);
             BlockingQueue<WebSocketFrame> receivedFrames = session.getOutputFrames();

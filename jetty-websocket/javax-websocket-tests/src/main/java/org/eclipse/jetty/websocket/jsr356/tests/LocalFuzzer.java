@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
@@ -31,23 +31,16 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.hamcrest.Matchers;
 
-public class LocalFuzzer implements AutoCloseable
+public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
-    private static final Logger LOG = Log.getLogger(LocalFuzzer.class);
     public final Provider provider;
     public final UnitGenerator generator;
     public final LocalConnector.LocalEndPoint endPoint;
@@ -65,6 +58,7 @@ public class LocalFuzzer implements AutoCloseable
 
     public LocalFuzzer(Provider provider, CharSequence requestPath, Map<String, String> headers) throws Exception
     {
+        super();
         this.provider = provider;
         String upgradeRequest = UpgradeUtils.generateUpgradeRequest(requestPath, headers);
         LOG.debug("Request: {}", upgradeRequest);
@@ -86,24 +80,6 @@ public class LocalFuzzer implements AutoCloseable
         }
     }
 
-    public void expectMessage(BlockingQueue<WebSocketFrame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage) throws InterruptedException
-    {
-        ByteBuffer actualPayload = ByteBuffer.allocate(expectedMessage.remaining());
-
-        WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Initial Frame.opCode", frame.getOpCode(), is(expectedDataOp));
-
-        actualPayload.put(frame.getPayload());
-        while (!frame.isFin())
-        {
-            frame = framesQueue.poll(1, TimeUnit.SECONDS);
-            assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CONTINUATION));
-            actualPayload.put(frame.getPayload());
-        }
-        actualPayload.flip();
-        ByteBufferAssert.assertEquals("Actual Message Payload", actualPayload, expectedMessage);
-    }
-
     public ByteBuffer asNetworkBuffer(List<WebSocketFrame> frames)
     {
         int bufferLength = 0;
@@ -122,57 +98,7 @@ public class LocalFuzzer implements AutoCloseable
         return buffer;
     }
 
-    public void assertExpected(BlockingQueue<WebSocketFrame> framesQueue, List<WebSocketFrame> expect) throws InterruptedException
-    {
-        int expectedCount = expect.size();
-
-        String prefix;
-        for (int i = 0; i < expectedCount; i++)
-        {
-            prefix = "Frame[" + i + "]";
-
-            WebSocketFrame expected = expect.get(i);
-            WebSocketFrame actual = framesQueue.poll(3, TimeUnit.SECONDS);
-            assertThat(prefix + ".poll", actual, notNullValue());
-
-            if (LOG.isDebugEnabled())
-            {
-                if (actual.getOpCode() == OpCode.CLOSE)
-                    LOG.debug("{} CloseFrame: {}", prefix, CloseFrame.toCloseStatus(actual.getPayload()));
-                else
-                    LOG.debug("{} {}", prefix, actual);
-            }
-
-            assertThat(prefix + ".opcode", OpCode.name(actual.getOpCode()), Matchers.is(OpCode.name(expected.getOpCode())));
-            prefix += "(op=" + actual.getOpCode() + "," + (actual.isFin() ? "" : "!") + "fin)";
-            if (expected.getOpCode() == OpCode.CLOSE)
-            {
-                CloseStatus expectedClose = CloseFrame.toCloseStatus(expected.getPayload());
-                CloseStatus actualClose = CloseFrame.toCloseStatus(actual.getPayload());
-                assertThat(prefix + ".code", actualClose.getCode(), Matchers.is(expectedClose.getCode()));
-            }
-            else if (expected.hasPayload())
-            {
-                if (expected.getOpCode() == OpCode.TEXT)
-                {
-                    String expectedText = expected.getPayloadAsUTF8();
-                    String actualText = actual.getPayloadAsUTF8();
-                    assertThat(prefix + ".text-payload", actualText, is(expectedText));
-                }
-                else
-                {
-                    assertThat(prefix + ".payloadLength", actual.getPayloadLength(), Matchers.is(expected.getPayloadLength()));
-                    ByteBufferAssert.assertEquals(prefix + ".payload", expected.getPayload(), actual.getPayload());
-                }
-            }
-            else
-            {
-                assertThat(prefix + ".payloadLength", actual.getPayloadLength(), Matchers.is(0));
-            }
-        }
-    }
-
-
+    @Override
     public void close() throws Exception
     {
         endPoint.close();
@@ -186,6 +112,7 @@ public class LocalFuzzer implements AutoCloseable
         endPoint.addInputEOF();
     }
 
+    @Override
     public void expect(List<WebSocketFrame> expected) throws InterruptedException
     {
         // Get incoming frames
@@ -249,6 +176,7 @@ public class LocalFuzzer implements AutoCloseable
      *
      * @param frames the list of frames to send
      */
+    @Override
     public void sendBulk(List<WebSocketFrame> frames)
     {
         int bufferLength = 0;
@@ -278,6 +206,7 @@ public class LocalFuzzer implements AutoCloseable
      *
      * @param frames the list of frames to send
      */
+    @Override
     public void sendFrames(List<WebSocketFrame> frames)
     {
         boolean eof = false;

@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -94,7 +94,7 @@ public class QuotesDecoderTextStreamTest
         List<WebSocketFrame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
         
-        try (LocalFuzzer session = server.newLocalFuzzer("/quotes/echo/string"))
+        try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {
             session.sendBulk(send);
             
@@ -115,7 +115,7 @@ public class QuotesDecoderTextStreamTest
         List<WebSocketFrame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
         
-        try (LocalFuzzer session = server.newLocalFuzzer("/quotes/echo/string"))
+        try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {
             session.sendSegmented(send, 3);
             
@@ -136,7 +136,7 @@ public class QuotesDecoderTextStreamTest
         List<WebSocketFrame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
         
-        try (LocalFuzzer session = server.newLocalFuzzer("/quotes/echo/string"))
+        try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {
             session.sendFrames(send);
             

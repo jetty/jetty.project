@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -147,7 +147,7 @@ public class PartialEchoTest
         expect.add(new TextFrame().setPayload("('Hello',false)(', ',false)('World',true)"));
         expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
         
-        try (LocalFuzzer session = server.newLocalFuzzer(requestPath))
+        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -169,7 +169,7 @@ public class PartialEchoTest
         expect.add(new TextFrame().setPayload("('Hello',false)(', ',false)('World',true)"));
         expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
         
-        try (LocalFuzzer session = server.newLocalFuzzer(requestPath))
+        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);
             session.expect(expect);

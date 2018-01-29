@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.echo.BasicEchoSocket;
 import org.junit.Rule;
@@ -76,7 +76,7 @@ public class AltFilterTest
             expect.add(new TextFrame().setPayload("Hello Echo"));
             expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
             
-            try(LocalFuzzer session = wsb.newLocalFuzzer("/app/echo;jsession=xyz"))
+            try(Fuzzer session = wsb.newNetworkFuzzer("/app/echo;jsession=xyz"))
             {
                 session.sendFrames(send);
                 session.expect(expect);

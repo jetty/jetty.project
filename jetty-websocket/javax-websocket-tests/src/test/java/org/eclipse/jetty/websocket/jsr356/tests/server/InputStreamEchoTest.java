@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -90,9 +90,9 @@ public class InputStreamEchoTest
     public static void startServer() throws Exception
     {
         server = new LocalServer();
+        server.start();
         server.getServerContainer().addEndpoint(InputStreamSocket.class);
         server.getServerContainer().addEndpoint(InputStreamParamSocket.class);
-        server.start();
     }
     
     @AfterClass
@@ -114,7 +114,7 @@ public class InputStreamEchoTest
         expect.add(new TextFrame().setPayload("Hello World"));
         expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
         
-        try (LocalFuzzer session = server.newLocalFuzzer(requestPath))
+        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -134,7 +134,7 @@ public class InputStreamEchoTest
         expect.add(new TextFrame().setPayload("Hello World|Every Person"));
         expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
         
-        try (LocalFuzzer session = server.newLocalFuzzer(requestPath))
+        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendBulk(send);
             session.expect(expect);

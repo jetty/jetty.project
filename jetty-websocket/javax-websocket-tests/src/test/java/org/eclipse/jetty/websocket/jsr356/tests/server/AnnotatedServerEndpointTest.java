@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.jsr356.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.UpgradeUtils;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.coders.DateDecoder;
@@ -84,7 +84,7 @@ public class AnnotatedServerEndpointTest
         expect.add(new TextFrame().setPayload(expectedText));
         expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
         
-        try (LocalFuzzer session = server.newLocalFuzzer("/app/echo", upgradeRequest))
+        try (Fuzzer session = server.newNetworkFuzzer("/app/echo", upgradeRequest))
         {
             session.sendFrames(send);
             session.expect(expect);
