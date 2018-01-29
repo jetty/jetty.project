@@ -37,6 +37,7 @@ public interface FrameHandler
 {
     // TODO: have conversation about "throws Exception" vs "throws WebSocketException" vs "throws Throwable" in below signatures.
 
+
     /**
      * Connection is being opened.
      * <p>
@@ -90,6 +91,10 @@ public interface FrameHandler
          */
         String getSubprotocol();
 
+        // TODO: would like a .fail(Throwable cause) to fail the channel.
+        // This should result in a FrameHandler.onError() and/or onClosed()
+        // It should be smart about the Exception type (eg: oejwc.CloseException)
+
         /**
          * TODO: might be redundant (evaluate API usage, possible to access from HandshakeResponse concepts)
          * The negotiated WebSocket Extension Configurations for this channel.
@@ -99,7 +104,7 @@ public interface FrameHandler
         List<ExtensionConfig> getExtensionConfig();
 
         /**
-         * TODO: need implementation
+         * TODO: need implementation - has small overlap with .fail(Throwable) proposed above
          *
          * Issue a harsh abort of the underlying connection.
          * <p>
