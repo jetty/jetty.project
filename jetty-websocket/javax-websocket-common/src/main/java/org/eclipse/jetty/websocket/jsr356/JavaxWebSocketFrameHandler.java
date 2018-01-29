@@ -43,7 +43,7 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
 {
-    private final Logger log;
+    private final Logger LOG;
     private final JavaxWebSocketContainer container;
     private final Object endpointInstance;
     private final WebSocketPolicy policy;
@@ -83,9 +83,15 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
                                       EndpointConfig endpointConfig,
                                       CompletableFuture<Session> futureSession)
     {
-        this.log = Log.getLogger(endpointInstance.getClass());
+        this.LOG = Log.getLogger(endpointInstance.getClass());
 
         this.container = container;
+        if(endpointInstance instanceof ConfiguredEndpoint)
+        {
+            RuntimeException oops = new RuntimeException("ConfiguredEndpoint needs to be unwrapped");
+            LOG.warn(oops);
+            throw oops;
+        }
         this.endpointInstance = endpointInstance;
         this.policy = upgradePolicy;
         this.handshakeRequest = handshakeRequest;
@@ -125,11 +131,6 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
         return session;
     }
 
-    public Logger getLog()
-    {
-        return this.log;
-    }
-
     public boolean hasTextSink()
     {
         return this.textSink != null;
@@ -154,7 +155,7 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
 
         if (errorHandle == null)
         {
-            log.warn("Unhandled Error: Endpoint " + endpointInstance.getClass().getName() + " missing onError handler", cause);
+            LOG.warn("Unhandled Error: Endpoint " + endpointInstance.getClass().getName() + " missing onError handler", cause);
             return;
         }
 
@@ -175,7 +176,7 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     {
         session = new JavaxWebSocketSession(container, channel, this, handshakeRequest, handshakeResponse, id, endpointConfig);
 
-        openHandle = JavaxWebSocketFrameHandlerFactory.bindTo(openHandle, session);
+        openHandle = JavaxWebSocketFrameHandlerFactory.bindTo(openHandle, session, endpointConfig);
         closeHandle = JavaxWebSocketFrameHandlerFactory.bindTo(closeHandle, session);
         errorHandle = JavaxWebSocketFrameHandlerFactory.bindTo(errorHandle, session);
         textHandle = JavaxWebSocketFrameHandlerFactory.bindTo(textHandle, session);
@@ -184,11 +185,13 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
 
         if (textHandle != null)
         {
+            textHandle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(textHandle, session);
             textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, getPolicy(), container.getExecutor());
         }
 
         if (binaryHandle != null)
         {
+            binaryHandle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(binaryHandle, session);
             binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, getPolicy(), container.getExecutor());
         }
 
@@ -216,10 +219,6 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
         if (endpointInstance == null)
         {
             ret.append("<null>");
-        }
-        else if (endpointInstance instanceof ConfiguredEndpoint)
-        {
-            ret.append(((ConfiguredEndpoint) endpointInstance).getRawEndpoint().getClass().getName());
         }
         else
         {

@@ -23,6 +23,7 @@ import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -167,7 +168,7 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
 
         return new JavaxWebSocketFrameHandler(
                 container,
-                endpointInstance,
+                endpoint,
                 endpointPolicy,
                 upgradeRequest, upgradeResponse,
                 openHandle, closeHandle, errorHandle,
@@ -179,6 +180,7 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
                 future);
     }
 
+    @SuppressWarnings("Duplicates")
     public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass,
                                                 WebSocketPolicy endpointPolicy, Executor executor)
     {
@@ -216,6 +218,23 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
             }
         }
         return ret;
+    }
+
+    public static MethodHandle wrapNonVoidReturnType(final MethodHandle handle, JavaxWebSocketSession session) throws NoSuchMethodException, IllegalAccessException
+    {
+        if (handle == null)
+            return null;
+
+        if (handle.type().returnType() == Void.TYPE)
+            return handle;
+
+        MethodHandle returnFilter = MethodHandles.lookup().findVirtual(JavaxWebSocketSession.class, "filterReturnType", MethodType.methodType(Object.class, Object.class));
+        returnFilter = returnFilter.bindTo(session);
+
+        MethodHandle filteredHandle = handle.asType(handle.type().changeReturnType(Object.class));
+        filteredHandle = MethodHandles.filterReturnValue(filteredHandle, returnFilter);
+
+        return filteredHandle;
     }
 
     private MethodHandle toMethodHandle(MethodHandles.Lookup lookup, Method method)
@@ -276,7 +295,8 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
         {
             assertSignatureValid(endpointClass, onmethod, OnOpen.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION);
+            final InvokerUtils.Arg ENDPOINT_CONFIG = new InvokerUtils.Arg(EndpointConfig.class);
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, ENDPOINT_CONFIG);
             metadata.setOpenHandler(methodHandle, onmethod);
         }
 

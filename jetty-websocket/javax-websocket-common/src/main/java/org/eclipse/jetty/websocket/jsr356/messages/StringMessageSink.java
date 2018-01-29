@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -32,26 +31,17 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.MessageSinkImpl;
-import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 
 public class StringMessageSink extends MessageSinkImpl
 {
     private static final Logger LOG = Log.getLogger(StringMessageSink.class);
     private Utf8StringBuilder utf;
-    private int size = 0;
+    private int size;
 
     public StringMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
     {
         super(policy, executor, methodHandle);
-
-        // Validate onMessageMethod
         Objects.requireNonNull(methodHandle, "MethodHandle");
-        MethodType onMessageType = MethodType.methodType(Void.TYPE, String.class);
-        if (methodHandle.type() != onMessageType)
-        {
-            throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
-
         this.size = 0;
     }
 

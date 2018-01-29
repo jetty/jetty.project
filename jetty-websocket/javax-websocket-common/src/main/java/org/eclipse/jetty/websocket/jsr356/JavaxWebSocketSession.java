@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.security.Principal;
@@ -231,6 +232,31 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         {
             channel.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), blocker);
         }
+    }
+
+    /**
+     * Access for MethodHandle implementations to filter the return value of user provided TEXT/BINARY
+     * based message handling methods.
+     *
+     * @param obj the return object
+     * @return the same return object (to satisfy {@link java.lang.invoke.MethodHandles#filterReturnValue(MethodHandle, MethodHandle)} rules
+     */
+    @SuppressWarnings("unused") // used by JavaxWebSocketFrameHandlerFactory via MethodHandle
+    public Object filterReturnType(Object obj)
+    {
+        if(obj != null)
+        {
+            try
+            {
+                getBasicRemote().sendObject(obj);
+            }
+            catch (Throwable cause)
+            {
+                // TODO: need way to fail Channel.
+                frameHandler.onError(cause);
+            }
+        }
+        return obj;
     }
 
     /**
