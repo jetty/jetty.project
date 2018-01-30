@@ -65,14 +65,14 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 {
     private static final Logger LOG = Log.getLogger(EatWhatYouKill.class);
 
-    private enum State { IDLE, PENDING, PRODUCING, REPRODUCING }
+    private enum State { IDLE, PRODUCING, REPRODUCING }
     
     /* The modes this strategy can work in */
     private enum Mode 
     { 
         PRODUCE_CONSUME, 
         PRODUCE_INVOKE_CONSUME, // This is PRODUCE_CONSUME an EITHER task with NON_BLOCKING invocation
-        PRODUCE_EXCECUTE_CONSUME, 
+        PRODUCE_EXECUTE_CONSUME, 
         EXECUTE_PRODUCE_CONSUME // Eat What You Kill!
     }; 
     
@@ -84,6 +84,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
     private State _state = State.IDLE;
+    private boolean _pending;
 
     public EatWhatYouKill(Producer producer, Executor executor)
     {
@@ -105,8 +106,11 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             switch(_state)
             {
                 case IDLE:
-                    execute = true;
-                    _state = State.PENDING;
+                    if (!_pending)
+                    {
+                        _pending = true;
+                        execute = true;
+                    }
                     break;
 
                 case PRODUCING:
@@ -128,7 +132,28 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} run", this);
-        produce();
+        
+        synchronized(this)
+        {
+            _pending = false;
+            switch (_state)
+            {
+                case IDLE:
+                    // Enter PRODUCING
+                    _state = State.PRODUCING;
+                    break;
+
+                case PRODUCING:
+                    // Keep other Thread producing
+                    _state = State.REPRODUCING;
+                    return;
+
+                default:
+                    return;
+            }
+        }
+
+        doProduce();
     }
 
     @Override
@@ -139,7 +164,6 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             switch (_state)
             {
                 case IDLE:
-                case PENDING:
                     // Enter PRODUCING
                     _state = State.PRODUCING;
                     break;
@@ -154,6 +178,12 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             }
         }
         
+        doProduce();
+    }
+    
+
+    public void doProduce()
+    {       
         boolean non_blocking = Invocable.isNonBlockingInvocation();
         while (isRunning())
         {
@@ -205,7 +235,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                         break;
 
                     default:
-                        mode = Mode.PRODUCE_EXCECUTE_CONSUME;
+                        mode = Mode.PRODUCE_EXECUTE_CONSUME;
                 }
             }
             else
@@ -223,15 +253,20 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                         // between EPC and PEC based on the availability of a reserved thread.
                         synchronized(this)
                         {
-                            if (_tryExecutor.tryExecute(this))
+                            if (_pending)
                             {
-                                // EPC mode!
-                                _state = State.PENDING;
+                                _state = State.IDLE;
+                                mode = Mode.EXECUTE_PRODUCE_CONSUME;
+                            }
+                            else if (_tryExecutor.tryExecute(this))
+                            {
+                                _pending = true;
+                                _state = State.IDLE;
                                 mode = Mode.EXECUTE_PRODUCE_CONSUME;
                             }
                             else
                             {
-                                mode = Mode.PRODUCE_EXCECUTE_CONSUME;
+                                mode = Mode.PRODUCE_EXECUTE_CONSUME;
                             }   
                             break;
                         }
@@ -242,10 +277,15 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                         // between EPC and PC based on the availability of a reserved thread.
                         synchronized(this)
                         {
-                            if (_tryExecutor.tryExecute(this))
+                            if (_pending)
                             {
-                                // Normal EPC mode!
-                                _state = State.PENDING;
+                                _state = State.IDLE;
+                                mode = Mode.EXECUTE_PRODUCE_CONSUME;
+                            }
+                            else if (_tryExecutor.tryExecute(this))
+                            {
+                                _pending = true;
+                                _state = State.IDLE;
                                 mode = Mode.EXECUTE_PRODUCE_CONSUME;
                             }
                             else
@@ -281,7 +321,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                         Invocable.invokeNonBlocking(task);
                         break;
 
-                    case PRODUCE_EXCECUTE_CONSUME:
+                    case PRODUCE_EXECUTE_CONSUME:
                         _pecMode.increment();
                         _executor.execute(task);
                         break;
@@ -289,7 +329,23 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                     case EXECUTE_PRODUCE_CONSUME:
                         _epcMode.increment();
                         task.run();
-                        return;
+                        
+                        // Try to produce again?
+                        synchronized(this)
+                        {
+                            switch (_state)
+                            {
+                                case IDLE:
+                                    // Enter PRODUCING
+                                    _state = State.PRODUCING;
+                                    break;
+
+                                default:
+                                    return;
+                            }
+                        }
+                        
+                        break;
                 }
             }
             catch (RejectedExecutionException e)
@@ -298,6 +354,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                     LOG.warn(e);
                 else
                     LOG.ignore(e);
+                
                 if (task instanceof Closeable)
                 {
                     try
@@ -356,6 +413,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         _pcMode.reset();
         _epcMode.reset();
         _pecMode.reset();
+        _picMode.reset();
     }
 
     public String toString()
@@ -387,6 +445,8 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     private void getState(StringBuilder builder)
     {
         builder.append(_state);
+        builder.append("/p=");
+        builder.append(_pending);
         builder.append('/');
         builder.append(_tryExecutor);
         builder.append("[pc=");
