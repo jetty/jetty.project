@@ -7,6 +7,9 @@ ext
 resources
 logging
 
+[depend]
+threadpool
+
 [lib]
 lib/servlet-api-3.1.jar
 lib/jetty-schemas-3.1.jar
@@ -20,18 +23,8 @@ lib/jetty-io-${jetty.version}.jar
 etc/jetty.xml
 
 [ini-template]
-### ThreadPool configuration
-## Minimum number of threads
-# jetty.threadPool.minThreads=10
-
-## Maximum number of threads
-# jetty.threadPool.maxThreads=200
-
 ## number of reserved threads (-1 for heuristic)
 # jetty.threadPool.reservedThreads=-1
-
-## Thread idle timeout (in milliseconds)
-# jetty.threadPool.idleTimeout=60000
 
 ### Common HTTP configuration
 ## Scheme to use to build URIs for secure redirects

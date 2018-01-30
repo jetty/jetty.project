@@ -19,12 +19,10 @@
 package org.eclipse.jetty.util;
 
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.lang.reflect.Field;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -1096,8 +1094,8 @@ public class BufferUtil
     private static void appendContentChar(StringBuilder buf, byte b)
     {
         if (b == '\\')
-            buf.append("\\\\");   
-        else if (b >= ' ')
+            buf.append("\\\\");
+        else if ((b >= 0x20) && (b<=0x7E)) // limit to 7-bit printable US-ASCII character space
             buf.append((char)b);
         else if (b == '\r')
             buf.append("\\r");
