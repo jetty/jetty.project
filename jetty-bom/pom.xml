@@ -2,7 +2,7 @@
   <groupId>org.eclipse.jetty</groupId>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-bom</artifactId>
-  <version>9.4.8.v20171121</version>
+  <version>9.4.9-SNAPSHOT</version>
   <name>Jetty :: Bom</name>
   <description>Jetty BOM artifact</description>
   <url>http://www.eclipse.org/jetty</url>

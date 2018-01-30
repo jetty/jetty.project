@@ -91,11 +91,12 @@ public class XmlConfiguration
     private static final XmlParser __parser = initParser();
     private static XmlParser initParser()
     {
+        ClassLoader loader = XmlConfiguration.class.getClassLoader();
         XmlParser parser = new XmlParser();
-        URL config60 = Loader.getResource("org/eclipse/jetty/xml/configure_6_0.dtd");
-        URL config76 = Loader.getResource("org/eclipse/jetty/xml/configure_7_6.dtd");
-        URL config90 = Loader.getResource("org/eclipse/jetty/xml/configure_9_0.dtd");
-        URL config93 = Loader.getResource("org/eclipse/jetty/xml/configure_9_3.dtd");
+        URL config60 = loader.getResource("org/eclipse/jetty/xml/configure_6_0.dtd");
+        URL config76 = loader.getResource("org/eclipse/jetty/xml/configure_7_6.dtd");
+        URL config90 = loader.getResource("org/eclipse/jetty/xml/configure_9_0.dtd");
+        URL config93 = loader.getResource("org/eclipse/jetty/xml/configure_9_3.dtd");
         parser.redirectEntity("configure.dtd",config90);
         parser.redirectEntity("configure_1_0.dtd",config60);
         parser.redirectEntity("configure_1_1.dtd",config60);
