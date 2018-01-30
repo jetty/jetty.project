@@ -41,7 +41,9 @@ public class AvailableDecoders implements Predicate<Class<?>>
 {
     public static class RegisteredDecoder
     {
+        // The user supplied Decoder class
         public final Class<? extends Decoder> decoder;
+        // The javax.websocket.Decoder.* type (eg: Decoder.Binary, Decoder.BinaryStream, Decoder.Text, Decoder.TextStream)
         public final Class<? extends Decoder> interfaceType;
         public final Class<?> objectType;
         public final boolean primitive;
@@ -171,7 +173,8 @@ public class AvailableDecoders implements Predicate<Class<?>>
             throw new InvalidSignatureException("Not a valid Decoder class: " + decoder.getName() + " implements no " + Decoder.class.getName() + " interfaces");
         }
     }
-    
+
+    // TODO: consider removing (if not used)
     public void registerAll(Class<? extends Decoder>[] decoders)
     {
         if (decoders == null)
@@ -232,7 +235,8 @@ public class AvailableDecoders implements Predicate<Class<?>>
             registeredDecoders.addFirst(new RegisteredDecoder(decoder, interfaceClass, objectType));
         }
     }
-    
+
+    // TODO: consider removing (if not used)
     public List<RegisteredDecoder> supporting(Class<? extends Decoder> interfaceType)
     {
         return registeredDecoders.stream()
@@ -245,9 +249,10 @@ public class AvailableDecoders implements Predicate<Class<?>>
         return registeredDecoders.stream()
                 .filter(registered -> registered.isType(type))
                 .findFirst()
-                .get();
+                .orElse(null);
     }
-    
+
+    // TODO: consider removing (if not used)
     public Class<? extends Decoder> getDecoderFor(Class<?> type)
     {
         try
@@ -291,7 +296,8 @@ public class AvailableDecoders implements Predicate<Class<?>>
             throw new InvalidWebSocketException("No Decoder found for type " + type);
         }
     }
-    
+
+    // TODO: consider removing (if not used)
     public static Object decodePrimitive(String value, Class<?> type) throws DecodeException
     {
         if (value == null)
