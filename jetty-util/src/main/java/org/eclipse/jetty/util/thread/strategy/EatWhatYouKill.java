@@ -72,7 +72,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     { 
         PRODUCE_CONSUME, 
         PRODUCE_INVOKE_CONSUME, // This is PRODUCE_CONSUME an EITHER task with NON_BLOCKING invocation
-        PRODUCE_EXCECUTE_CONSUME, 
+        PRODUCE_EXECUTE_CONSUME, 
         EXECUTE_PRODUCE_CONSUME // Eat What You Kill!
     }; 
     
@@ -244,7 +244,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                         break;
 
                     default:
-                        mode = Mode.PRODUCE_EXCECUTE_CONSUME;
+                        mode = Mode.PRODUCE_EXECUTE_CONSUME;
                 }
             }
             else
@@ -264,7 +264,8 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                         {
                             if (_pending)
                             {
-                                mode = Mode.PRODUCE_CONSUME;
+                                _state = State.IDLE;
+                                mode = Mode.EXECUTE_PRODUCE_CONSUME;
                             }
                             else if (_producers.tryExecute(this))
                             {
@@ -274,7 +275,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                             }
                             else
                             {
-                                mode = Mode.PRODUCE_EXCECUTE_CONSUME;
+                                mode = Mode.PRODUCE_EXECUTE_CONSUME;
                             }   
                             break;
                         }
@@ -287,7 +288,8 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                         {
                             if (_pending)
                             {
-                                mode = Mode.PRODUCE_CONSUME;
+                                _state = State.IDLE;
+                                mode = Mode.EXECUTE_PRODUCE_CONSUME;
                             }
                             else if (_producers.tryExecute(this))
                             {
@@ -328,7 +330,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                         Invocable.invokeNonBlocking(task);
                         break;
 
-                    case PRODUCE_EXCECUTE_CONSUME:
+                    case PRODUCE_EXECUTE_CONSUME:
                         _pecMode.increment();
                         _executor.execute(task);
                         break;
