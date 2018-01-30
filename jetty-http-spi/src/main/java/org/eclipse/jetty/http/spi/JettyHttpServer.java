@@ -106,9 +106,15 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
         ServerConnector connector = new ServerConnector(_server);
         connector.setPort(addr.getPort());
         connector.setHost(addr.getHostName());
+
         _server.addConnector(connector);
 
         _connectors.put(addr.getHostName() + addr.getPort(), connector);
+    }
+    
+    protected Server getServer()
+    {
+        return _server;
     }
 
     protected ServerConnector newServerConnector(InetSocketAddress addr,int backlog)
