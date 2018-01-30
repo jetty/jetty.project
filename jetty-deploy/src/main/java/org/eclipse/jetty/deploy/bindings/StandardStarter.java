@@ -40,7 +40,7 @@ public class StandardStarter implements AppLifeCycle.Binding
 
         ContextHandler handler = app.getContextHandler();
 
-        if (contexts.isRunning() && !handler.isRunning())
+        if (contexts.isStarted() && handler.isStopped())
         {
             // start the handler manually
             handler.start();

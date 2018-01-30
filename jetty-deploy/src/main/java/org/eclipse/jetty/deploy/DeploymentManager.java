@@ -507,6 +507,17 @@ public class DeploymentManager extends ContainerLifeCycle
         catch (Throwable t)
         {
             LOG.warn("Unable to reach node goal: " + nodeName,t);
+            // migrate to FAILED node
+            Node failed = _lifecycle.getNodeByName(AppLifeCycle.FAILED);
+            appentry.setLifeCycleNode(failed);
+            try
+            {
+                _lifecycle.runBindings(failed, appentry.app, this);
+            }
+            catch (Throwable ignore)
+            {
+                // The runBindings failed for 'failed' node, no point doing anything else here.
+            }
         }
     }
 
