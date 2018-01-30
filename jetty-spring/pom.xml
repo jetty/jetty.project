@@ -24,6 +24,17 @@
           <skip>true</skip>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+            <configuration>
+              <instructions>
+                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.xml.ConfigurationProcessorFactory</Provide-Capability>
+              </instructions>
+            </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
