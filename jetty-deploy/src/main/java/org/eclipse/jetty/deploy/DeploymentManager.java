@@ -516,7 +516,8 @@ public class DeploymentManager extends ContainerLifeCycle
             }
             catch (Throwable ignore)
             {
-                // The runBindings failed for 'failed' node, no point doing anything else here.
+                // The runBindings failed for 'failed' node
+                LOG.ignore(ignore);
             }
         }
     }
