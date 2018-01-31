@@ -24,9 +24,7 @@
 <!-- configuration that may be set here.                             -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-
     <Arg name="threadpool"><Ref refid="threadPool"/></Arg>
-      <Set name="reservedThreads" type="int"><Property name="jetty.threadPool.reservedThreads" default="-1"/></Set>
 
     <!-- =========================================================== -->
     <!-- Add shared Scheduler instance                               -->
