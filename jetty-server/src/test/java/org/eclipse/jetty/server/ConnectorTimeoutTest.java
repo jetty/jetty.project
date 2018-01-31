@@ -723,8 +723,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             e.printStackTrace();
         }
         int duration = (int)(System.currentTimeMillis() - start);
-        Assert.assertThat(duration,Matchers.greaterThanOrEqualTo(MAX_IDLE_TIME));
-        Assert.assertThat(duration,Matchers.lessThan(maximumTestRuntime));
+        Assert.assertThat(duration+100,Matchers.greaterThanOrEqualTo(MAX_IDLE_TIME));
+        Assert.assertThat(duration-100,Matchers.lessThan(maximumTestRuntime));
     }
     
     
