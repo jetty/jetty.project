@@ -46,10 +46,10 @@ Here's the absolute minimal set of Jetty jars:
 |jetty-osgi-servlet-api |org.eclipse.jetty.osgi-servlet-api
 |===================================================
 
-You *should also install the Aries SpiFly bundles*, because many parts of jetty - for example ALPN, websocket, annotations - use the ServiceLoader mechanism, which requires an OSGi Service Loader Mediator like SpiFly:
+You *must also install the Apache Aries SPI Fly bundles* as  many parts of Jetty - for example ALPN, websocket, annotations - use the `ServiceLoader` mechanism, which requires an OSGi Service Loader Mediator like SPI Fly:
 
 [[spifly]]
-.SpiFly Bundles
+.SPI Fly Bundles
 [cols=",,",options="header",]
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
@@ -703,12 +703,12 @@ For the JSTL library, we recommend the use of the implementation from Glassfish,
 .Jars Required for Glassfish JSTL
 [cols=",,",options="header",]
 |=======================================================================
-|Jar |Bundle Symbolic Name 
-|The link:#osgi-jsp[jsp jars]| 
+|Jar |Bundle Symbolic Name
+|The link:#osgi-jsp[jsp jars]|
 
-|org.eclipse.jetty.orbit:javax.servlet.jsp.jstl-1.2.0.v201105211821.jar| javax.servlet.jsp.jstl 
+|org.eclipse.jetty.orbit:javax.servlet.jsp.jstl-1.2.0.v201105211821.jar| javax.servlet.jsp.jstl
 
-|org.glassfish.web:javax.servlet.jsp.jstl-1.2.2.jar|org.glassfish.web.javax.servlet.jsp.jstl 
+|org.glassfish.web:javax.servlet.jsp.jstl-1.2.2.jar|org.glassfish.web.javax.servlet.jsp.jstl
 |=======================================================================
 
 However, if you wish, you may use the JSTL implementation from Apache instead, although you will need to source some dependency jars with suitable OSGi manifests:
@@ -874,12 +874,12 @@ ____
 Even if your webapp itself does not not use annotations, you may need to deploy these jars because your webapp depends on a Jetty module or a 3rd party library that uses a http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerInitializer].
 This interface requires annotation support.
 It is implemented by providers of code that extend the capabilities of the container.
-An xample of this is the Jetty JSR356 Websocket implementation, although it is being used increasingly commonly in popular libraries like link:http://projects.spring.io/spring-framework/[Spring], link:https://jersey.java.net/[Jersey] and JSP containers.
+An example of this is the Jetty JSR356 Websocket implementation, although it is being used increasingly commonly in popular libraries like link:http://projects.spring.io/spring-framework/[Spring], link:https://jersey.java.net/[Jersey] and JSP containers.
 
 To find `ServletContainerInitializers` on the classpath, Jetty uses the Java http://docs.oracle.com/javase/7/docs/api/java/util/ServiceLoader.html[`ServiceLoader`]
 mechanism.
 For this to function in OSGi, you will need an OSGi R5 compatible container, and have support for the http://blog.osgi.org/2013/02/javautilserviceloader-in-osgi.html[Service Loader Mediator].
-Jetty has been tested with the http://aries.apache.org/modules/spi-fly.html[Aries SpiFly] module,which is the reference implementation of the Service Loader Mediator, and is listed in the jars above.
+Jetty has been tested with the http://aries.apache.org/modules/spi-fly.html[Aries SpiFly] module, which is the reference implementation of the Service Loader Mediator, and is listed in the jars above.
 
 ==== OSGi Containers
 
