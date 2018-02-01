@@ -15,7 +15,7 @@
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
     <surefireVersion>2.20.1</surefireVersion>
     <it.debug>false</it.debug>
-    <jetty.stopKey>FOOBEER</jetty.stopKey>
+    <jetty.stopKey>FREEBEER</jetty.stopKey>
     <jetty.jvmArgs></jetty.jvmArgs>
   </properties>
   <build>
