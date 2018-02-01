@@ -120,37 +120,40 @@ for (def jdk in jdks) {
     }
   }
 
-  // True if this build is part of the "active" branches
-  // for Jetty.
-  def isActiveBranch()
+}
+
+
+// True if this build is part of the "active" branches
+// for Jetty.
+def isActiveBranch()
+{
+  def branchName = "${env.BRANCH_NAME}"
+  return ( branchName == "master" ||
+          branchName.startsWith("jetty-") );
+}
+
+// Test if the Jenkins Pipeline or Step has marked the
+// current build as unstable
+def isUnstable()
+{
+  return currentBuild.result == "UNSTABLE"
+}
+
+// Send a notification about the build status
+def notifyBuild(String buildStatus)
+{
+  if ( !isActiveBranch() )
   {
-    def branchName = "${env.BRANCH_NAME}"
-    return ( branchName == "master" ||
-            branchName.startsWith("jetty-") );
+    // don't send notifications on transient branches
+    return
   }
 
-  // Test if the Jenkins Pipeline or Step has marked the
-  // current build as unstable
-  def isUnstable()
-  {
-    return currentBuild.result == "UNSTABLE"
-  }
+  // default the value
+  buildStatus = buildStatus ?: "UNKNOWN"
 
-  // Send a notification about the build status
-  def notifyBuild(String buildStatus)
-  {
-    if ( !isActiveBranch() )
-    {
-      // don't send notifications on transient branches
-      return
-    }
-
-    // default the value
-    buildStatus = buildStatus ?: "UNKNOWN"
-
-    def email = "${env.EMAILADDRESS}"
-    def summary = "${env.JOB_NAME}#${env.BUILD_NUMBER} - ${buildStatus}"
-    def detail = """<h4>Job: <a href='${env.JOB_URL}'>${env.JOB_NAME}</a> [#${env.BUILD_NUMBER}]</h4>
+  def email = "${env.EMAILADDRESS}"
+  def summary = "${env.JOB_NAME}#${env.BUILD_NUMBER} - ${buildStatus}"
+  def detail = """<h4>Job: <a href='${env.JOB_URL}'>${env.JOB_NAME}</a> [#${env.BUILD_NUMBER}]</h4>
     <p><b>${buildStatus}</b></p>
     <table>
       <tr><td>Build</td><td><a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></td><tr>
@@ -159,11 +162,11 @@ for (def jdk in jdks) {
     </table>
     """
 
-    emailext (
-            to: email,
-            subject: summary,
-            body: detail
-    )
-  }
+  emailext (
+          to: email,
+          subject: summary,
+          body: detail
+  )
 }
+
 // vim: et:ts=2:sw=2:ft=groovy
