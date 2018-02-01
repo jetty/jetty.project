@@ -24,6 +24,8 @@
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
     <conscrypt.version>1.0.0.RC11</conscrypt.version>
+    <jmh.version>1.20</jmh.version>
+    <jmhjar.name>benchmarks</jmhjar.name>
   </properties>
 
   <licenses>

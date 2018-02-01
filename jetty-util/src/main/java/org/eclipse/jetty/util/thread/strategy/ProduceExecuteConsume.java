@@ -92,7 +92,6 @@ public class ProduceExecuteConsume implements ExecutionStrategy
             }
 
             // Execute the task.
-            
             if (Invocable.getInvocationType(task)==InvocationType.NON_BLOCKING)
                 task.run();
             else
