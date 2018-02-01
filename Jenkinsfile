@@ -28,7 +28,7 @@ for (def jdk in jdks) {
       stage('Compile') {
         withEnv(mvnEnv) {
           timeout(time: 15, unit: 'MINUTES') {
-            sh "mvn -B clean install -Dtest=None"
+            sh "mvn -V -B clean install -Dtest=None"
           }
         }
       }
@@ -42,7 +42,7 @@ for (def jdk in jdks) {
       stage('Javadoc') {
         withEnv(mvnEnv) {
           timeout(time: 20, unit: 'MINUTES') {
-            sh "mvn -B javadoc:javadoc"
+            sh "mvn -V -B javadoc:javadoc"
           }
         }
       }
@@ -57,7 +57,7 @@ for (def jdk in jdks) {
         withEnv(mvnEnv) {
           timeout(time: 90, unit: 'MINUTES') {
             // Run test phase / ignore test failures
-            sh "mvn -B install -Dmaven.test.failure.ignore=true -Prun-its"
+            sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its"
             // Report failures in the jenkins UI
             step([$class: 'JUnitResultArchiver',
                   testResults: '**/target/surefire-reports/TEST-*.xml'])
@@ -111,7 +111,7 @@ for (def jdk in jdks) {
 
       dir("aggregates/jetty-all-compact3") {
         withEnv(mvnEnv) {
-          sh "mvn -B -Pcompact3 clean install"
+          sh "mvn -V -B -Pcompact3 clean install"
         }
       }
     } catch(Exception e) {
