@@ -1,6 +1,7 @@
-
 #!groovy
+
 def jdks = ["jdk8", "jdk9"]
+
 for (def jdk in jdks) {
 
   node {
