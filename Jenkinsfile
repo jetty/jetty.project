@@ -4,8 +4,8 @@ def jdks = ["jdk8", "jdk9"]
 def builds = [:]
 for (def jdk in jdks) {
   builds[jdk] = getFullBuild( jdk )
-  parallel builds
 }
+parallel builds
 
 def getFullBuild(jdk) {
   return {
