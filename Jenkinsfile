@@ -1,8 +1,7 @@
-#!groovy
 
+#!groovy
 def jdks = ["jdk8", "jdk9"]
-for (def jdk in jdks)
-{
+for (def jdk in jdks) {
 
   node {
     // System Dependent Locations
@@ -11,102 +10,97 @@ for (def jdk in jdks)
 
     // Environment
     List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
-    mvnEnv.add( "MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true" )
+    mvnEnv.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
 
     try
     {
-      stage( 'Checkout' ) {
+      stage('Checkout') {
         checkout scm
       }
-    } catch ( Exception e ) {
-      notifyBuild( "Checkout Failure" )
+    } catch (Exception e) {
+      notifyBuild("Checkout Failure")
       throw e
     }
 
     try
     {
-      stage( 'Compile' ) {
-        withEnv( mvnEnv ) {
-          timeout( time: 15, unit: 'MINUTES' ) {
+      stage('Compile') {
+        withEnv(mvnEnv) {
+          timeout(time: 15, unit: 'MINUTES') {
             sh "mvn -B clean install -Dtest=None"
           }
         }
       }
-    }
-    catch ( Exception e )
-    {
-      notifyBuild( "Compile Failure" )
+    } catch(Exception e) {
+      notifyBuild("Compile Failure")
       throw e
     }
 
     try
     {
-      stage( 'Javadoc' ) {
-        withEnv( mvnEnv ) {
-          timeout( time: 20, unit: 'MINUTES' ) {
+      stage('Javadoc') {
+        withEnv(mvnEnv) {
+          timeout(time: 20, unit: 'MINUTES') {
             sh "mvn -B javadoc:javadoc"
           }
         }
       }
-    }
-    catch ( Exception e )
-    {
-      notifyBuild( "Javadoc Failure" )
+    } catch(Exception e) {
+      notifyBuild("Javadoc Failure")
       throw e
     }
 
     try
     {
-      stage( 'Test' ) {
-        withEnv( mvnEnv ) {
-          timeout( time: 90, unit: 'MINUTES' ) {
+      stage('Test') {
+        withEnv(mvnEnv) {
+          timeout(time: 90, unit: 'MINUTES') {
             // Run test phase / ignore test failures
             sh "mvn -B install -Dmaven.test.failure.ignore=true -Prun-its"
             // Report failures in the jenkins UI
-            step( [$class     : 'JUnitResultArchiver',
-                   testResults: '**/target/surefire-reports/TEST-*.xml'] )
+            step([$class: 'JUnitResultArchiver',
+                  testResults: '**/target/surefire-reports/TEST-*.xml'])
             // Collect up the jacoco execution results
             def jacocoExcludes =
                     // build tools
-                "**/org/eclipse/jetty/ant/**" +
-                ",**/org/eclipse/jetty/maven/**" +
-                ",**/org/eclipse/jetty/jspc/**" +
-                // example code / documentation
-                ",**/org/eclipse/jetty/embedded/**" +
-                ",**/org/eclipse/jetty/asyncrest/**" +
-                ",**/org/eclipse/jetty/demo/**" +
-                // special environments / late integrations
-                ",**/org/eclipse/jetty/gcloud/**" +
-                ",**/org/eclipse/jetty/infinispan/**" +
-                ",**/org/eclipse/jetty/osgi/**" +
-                ",**/org/eclipse/jetty/spring/**" +
-                ",**/org/eclipse/jetty/http/spi/**" +
-                // test classes
-                ",**/org/eclipse/jetty/tests/**" +
-                ",**/org/eclipse/jetty/test/**";
-            step([$clas          s: 'JacocoPublisher',
+                    "**/org/eclipse/jetty/ant/**" +
+                            ",**/org/eclipse/jetty/maven/**" +
+                            ",**/org/eclipse/jetty/jspc/**" +
+                            // example code / documentation
+                            ",**/org/eclipse/jetty/embedded/**" +
+                            ",**/org/eclipse/jetty/asyncrest/**" +
+                            ",**/org/eclipse/jetty/demo/**" +
+                            // special environments / late integrations
+                            ",**/org/eclipse/jetty/gcloud/**" +
+                            ",**/org/eclipse/jetty/infinispan/**" +
+                            ",**/org/eclipse/jetty/osgi/**" +
+                            ",**/org/eclipse/jetty/spring/**" +
+                            ",**/org/eclipse/jetty/http/spi/**" +
+                            // test classes
+                            ",**/org/eclipse/jetty/tests/**" +
+                            ",**/org/eclipse/jetty/test/**";
+            step([$class: 'JacocoPublisher',
                   inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                   exclusionPattern: jacocoExcludes,
-                  execPatter     n: '**/target/jacoco.exec',
-                  classPatter    n: '**/target/classes',
-                  sourcePatter   n: '**/src/main/java'])
+                  execPattern: '**/target/jacoco.exec',
+                  classPattern: '**/target/classes',
+                  sourcePattern: '**/src/main/java'])
             // Report on Maven and Javadoc warnings
-            step([$clas        s: 'WarningsPublisher',
+            step([$class: 'WarningsPublisher',
                   consoleParsers: [
-                    [parserName: 'Maven'],
-                    [parserName: 'JavaDoc'],
-                    [parserName: 'JavaC']
-                ]])
+                          [parserName: 'Maven'],
+                          [parserName: 'JavaDoc'],
+                          [parserName: 'JavaC']
+                  ]])
           }
-          i f (isUnstable())
+          if(isUnstable())
           {
-            notifyBuild( "Unstable / Test Errors ")
+            notifyBuild("Unstable / Test Errors")
           }
         }
       }
-    } catc h (Exception e)
-    {
-      notifyBuild( "Test Failure" )
+    } catch(Exception e) {
+      notifyBuild("Test Failure")
       throw e
     }
 
@@ -114,15 +108,13 @@ for (def jdk in jdks)
     {
       stage 'Compact3'
 
-      dir( "aggregates/jetty-all-compact3" ) {
-        withEnv( mvnEnv ) {
+      dir("aggregates/jetty-all-compact3") {
+        withEnv(mvnEnv) {
           sh "mvn -B -Pcompact3 clean install"
         }
       }
-    }
-    catch ( Exception e )
-    {
-      notifyBuild( "Compact3 Failure" )
+    } catch(Exception e) {
+      notifyBuild("Compact3 Failure")
       throw e
     }
   }
@@ -132,7 +124,8 @@ for (def jdk in jdks)
   def isActiveBranch()
   {
     def branchName = "${env.BRANCH_NAME}"
-    return ( branchName == "master" || branchName.startsWith( "jetty-" ) );
+    return ( branchName == "master" ||
+            branchName.startsWith("jetty-") );
   }
 
   // Test if the Jenkins Pipeline or Step has marked the
@@ -143,7 +136,7 @@ for (def jdk in jdks)
   }
 
   // Send a notification about the build status
-  def notifyBuild( String buildStatus )
+  def notifyBuild(String buildStatus)
   {
     if ( !isActiveBranch() )
     {
@@ -165,9 +158,11 @@ for (def jdk in jdks)
     </table>
     """
 
-    emailext( to: email,
-              subject: summary,
-              body: detail )
+    emailext (
+            to: email,
+            subject: summary,
+            body: detail
+    )
   }
 }
 // vim: et:ts=2:sw=2:ft=groovy
