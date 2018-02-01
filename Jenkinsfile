@@ -112,11 +112,12 @@ def getFullBuild(jdk) {
 
       try
       {
-        stage 'Compact3'
+        stage ('Compact3') {
 
-        dir("aggregates/jetty-all-compact3") {
-          withEnv(mvnEnv) {
-            sh "mvn -V -B -Pcompact3 clean install"
+          dir("aggregates/jetty-all-compact3") {
+            withEnv(mvnEnv) {
+              sh "mvn -V -B -Pcompact3 clean install"
+            }
           }
         }
       } catch(Exception e) {
