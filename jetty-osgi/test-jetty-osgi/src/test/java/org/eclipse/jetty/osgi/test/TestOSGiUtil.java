@@ -100,13 +100,13 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-servlet" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-server" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-client" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "javax.websocket" ).artifactId( "javax.websocket-api" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "javax-websocket-client-impl").versionAsInProject().start());
+        res.add(mavenBundle().groupId( "javax.websocket" ).artifactId( "javax.websocket-api" ).versionAsInProject().noStart());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "javax-websocket-client-impl").versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "javax-websocket-server-impl").versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject().start());
         return res;
     }
-    
+
     public static List<Option> consoleDependencies()
     {
         List<Option> res = new ArrayList<Option>();
