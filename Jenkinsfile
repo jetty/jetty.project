@@ -19,7 +19,7 @@ for (def jdk in jdks) {
         checkout scm
       }
     } catch (Exception e) {
-      notifyBuild("Checkout Failure")
+      notifyBuild("Checkout Failure", jdk)
       throw e
     }
 
@@ -33,7 +33,7 @@ for (def jdk in jdks) {
         }
       }
     } catch(Exception e) {
-      notifyBuild("Compile Failure")
+      notifyBuild("Compile Failure", jdk)
       throw e
     }
 
@@ -47,7 +47,7 @@ for (def jdk in jdks) {
         }
       }
     } catch(Exception e) {
-      notifyBuild("Javadoc Failure")
+      notifyBuild("Javadoc Failure", jdk)
       throw e
     }
 
@@ -96,12 +96,12 @@ for (def jdk in jdks) {
           }
           if(isUnstable())
           {
-            notifyBuild("Unstable / Test Errors")
+            notifyBuild("Unstable / Test Errors", jdk)
           }
         }
       }
     } catch(Exception e) {
-      notifyBuild("Test Failure")
+      notifyBuild("Test Failure", jdk)
       throw e
     }
 
@@ -115,7 +115,7 @@ for (def jdk in jdks) {
         }
       }
     } catch(Exception e) {
-      notifyBuild("Compact3 Failure")
+      notifyBuild("Compact3 Failure", jdk)
       throw e
     }
   }
@@ -140,7 +140,7 @@ def isUnstable()
 }
 
 // Send a notification about the build status
-def notifyBuild(String buildStatus)
+def notifyBuild(String buildStatus, String jdk)
 {
   if ( !isActiveBranch() )
   {
@@ -152,7 +152,7 @@ def notifyBuild(String buildStatus)
   buildStatus = buildStatus ?: "UNKNOWN"
 
   def email = "${env.EMAILADDRESS}"
-  def summary = "${env.JOB_NAME}#${env.BUILD_NUMBER} - ${buildStatus}"
+  def summary = "${env.JOB_NAME}#${env.BUILD_NUMBER} - ${buildStatus} with jdk ${jdk}"
   def detail = """<h4>Job: <a href='${env.JOB_URL}'>${env.JOB_NAME}</a> [#${env.BUILD_NUMBER}]</h4>
     <p><b>${buildStatus}</b></p>
     <table>
