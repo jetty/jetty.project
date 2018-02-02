@@ -29,10 +29,6 @@ import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill0;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill1;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill2;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill3;
 import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 import org.eclipse.jetty.util.thread.strategy.ProduceConsume;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -44,11 +40,6 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.profile.CompilerProfiler;
-import org.openjdk.jmh.profile.LinuxPerfAsmProfiler;
-import org.openjdk.jmh.profile.LinuxPerfNormProfiler;
-import org.openjdk.jmh.profile.LinuxPerfProfiler;
-import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -62,7 +53,7 @@ public class EWYKBenchmark
     static ReservedThreadExecutor reserved;
     static File directory;
 
-    @Param({"PC","PEC","EWYK","EWYK0","EWYK1","EWYK2","EWYK3"})
+    @Param({"PC","PEC","EWYK"})
     public static String strategyName;
     
     @Param({"true","false"})
@@ -122,22 +113,6 @@ public class EWYKBenchmark
                     strategy = new EatWhatYouKill(connection,server);
                     break;
                     
-                case "EWYK0":
-                    strategy = new EatWhatYouKill0(connection,server);
-                    break;
-                    
-                case "EWYK1":
-                    strategy = new EatWhatYouKill1(connection,server);
-                    break;
-                    
-                case "EWYK2":
-                    strategy = new EatWhatYouKill2(connection,server);
-                    break;
-                    
-                case "EWYK3":
-                    strategy = new EatWhatYouKill3(connection,server);
-                    break;
-
                 default:
                     throw new IllegalStateException();
             }

@@ -129,38 +129,26 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
     @Override
     public void run()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} run", this);
-        
-        synchronized(this)
-        {
-            _pending = false;
-            switch (_state)
-            {
-                case IDLE:
-                    // Enter PRODUCING
-                    _state = State.PRODUCING;
-                    break;
-
-                case PRODUCING:
-                    // Keep other Thread producing
-                    _state = State.REPRODUCING;
-                    return;
-
-                default:
-                    return;
-            }
-        }
-
-        doProduce();
+    { 
+        tryProduce(true);
     }
 
     @Override
     public void produce()
-    {       
+    {
+        tryProduce(false);
+    }
+    
+    private void tryProduce(boolean wasPending)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} tryProduce {}", this, wasPending);
+
         synchronized(this)
         {
+            if (wasPending)
+                _pending = false;
+            
             switch (_state)
             {
                 case IDLE:
@@ -177,201 +165,215 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                     return;
             }
         }
+
+        final boolean non_blocking = Invocable.isNonBlockingInvocation();
         
-        doProduce();
+        while(isRunning())
+        {
+            try
+            {
+                if (doProduce(non_blocking))
+                    continue;
+                return;
+            }
+            catch (Throwable th)
+            {
+                LOG.warn(th);
+            }
+        }        
     }
     
 
-    public void doProduce()
+    public boolean doProduce(boolean non_blocking)
     {       
-        boolean non_blocking = Invocable.isNonBlockingInvocation();
-        while (isRunning())
+        Runnable task = produceTask();
+
+        if (task==null)
         {
-            Runnable task;
-            try
+            synchronized(this)
             {
-                task = _producer.produce();
-            }
-            catch (Throwable e)
-            {
-                LOG.warn(e);
-                task = null;
-            }
-
-            if (task==null)
-            {
-                synchronized(this)
+                // Could another task just have been queued with a produce call?
+                switch (_state)
                 {
-                    // Could another task just have been queued with a produce call?
-                    switch (_state)
-                    {
-                        case PRODUCING:
-                            _state = State.IDLE;
-                            return;
-                           
-                        case REPRODUCING:
-                            _state = State.PRODUCING;
-                            continue;
-                            
-                        default:
-                            throw new IllegalStateException(toStringLocked());
-                    }                    
-                }
-            }
+                    case PRODUCING:
+                        _state = State.IDLE;
+                        return false;
 
-            Mode mode;
-            if (non_blocking)
-            {
-                // The calling thread cannot block, so we only have a choice between PC and PEC modes,
-                // based on the invocation type of the task
-                switch(Invocable.getInvocationType(task))
-                {
-                    case NON_BLOCKING:
-                        mode = Mode.PRODUCE_CONSUME;
-                        break;
-
-                    case EITHER:
-                        mode = Mode.PRODUCE_INVOKE_CONSUME;
-                        break;
+                    case REPRODUCING:
+                        _state = State.PRODUCING;
+                        return true;
 
                     default:
-                        mode = Mode.PRODUCE_EXECUTE_CONSUME;
-                }
-            }
-            else
-            {
-                // The calling thread can block, so we can choose between PC, PEC and EPC: modes,
-                // based on the invocation type of the task and if a reserved thread is available
-                switch(Invocable.getInvocationType(task))
-                {
-                    case NON_BLOCKING:
-                        mode = Mode.PRODUCE_CONSUME;
-                        break;
-
-                    case BLOCKING:
-                        // The task is blocking, so PC is not an option. Thus we choose 
-                        // between EPC and PEC based on the availability of a reserved thread.
-                        synchronized(this)
-                        {
-                            if (_pending)
-                            {
-                                _state = State.IDLE;
-                                mode = Mode.EXECUTE_PRODUCE_CONSUME;
-                            }
-                            else if (_tryExecutor.tryExecute(this))
-                            {
-                                _pending = true;
-                                _state = State.IDLE;
-                                mode = Mode.EXECUTE_PRODUCE_CONSUME;
-                            }
-                            else
-                            {
-                                mode = Mode.PRODUCE_EXECUTE_CONSUME;
-                            }   
-                            break;
-                        }
-
-                    case EITHER:
-                    {
-                        // The task may be non blocking, so PC is an option. Thus we choose 
-                        // between EPC and PC based on the availability of a reserved thread.
-                        synchronized(this)
-                        {
-                            if (_pending)
-                            {
-                                _state = State.IDLE;
-                                mode = Mode.EXECUTE_PRODUCE_CONSUME;
-                            }
-                            else if (_tryExecutor.tryExecute(this))
-                            {
-                                _pending = true;
-                                _state = State.IDLE;
-                                mode = Mode.EXECUTE_PRODUCE_CONSUME;
-                            }
-                            else
-                            {
-                                // PC mode, but we must consume with non-blocking invocation
-                                // as we may be the last thread and we cannot block
-                                mode = Mode.PRODUCE_INVOKE_CONSUME;
-                            }
-                        }
-                    }
-                    break;
-
-                    default:
-                        throw new IllegalStateException();
-                }
-            }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} m={} t={}/{}", this, mode, task,Invocable.getInvocationType(task));
-
-            // Consume or execute task
-            try
-            {
-                switch(mode)
-                {
-                    case PRODUCE_CONSUME:
-                        _pcMode.increment();
-                        task.run();
-                        break;
-
-                    case PRODUCE_INVOKE_CONSUME:
-                        _picMode.increment();
-                        Invocable.invokeNonBlocking(task);
-                        break;
-
-                    case PRODUCE_EXECUTE_CONSUME:
-                        _pecMode.increment();
-                        _executor.execute(task);
-                        break;
-
-                    case EXECUTE_PRODUCE_CONSUME:
-                        _epcMode.increment();
-                        task.run();
-                        
-                        // Try to produce again?
-                        synchronized(this)
-                        {
-                            switch (_state)
-                            {
-                                case IDLE:
-                                    // Enter PRODUCING
-                                    _state = State.PRODUCING;
-                                    break;
-
-                                default:
-                                    return;
-                            }
-                        }
-                        
-                        break;
-                }
-            }
-            catch (RejectedExecutionException e)
-            {
-                if (isRunning())
-                    LOG.warn(e);
-                else
-                    LOG.ignore(e);
-                
-                if (task instanceof Closeable)
-                {
-                    try
-                    {
-                        ((Closeable)task).close();
-                    }
-                    catch (Throwable e2)
-                    {
-                        LOG.ignore(e2);
-                    }
-                }
-            }
-            catch (Throwable e)
-            {
-                LOG.warn(e);
+                        throw new IllegalStateException(toStringLocked());
+                }                    
             }
         }
+
+        Mode mode;
+        if (non_blocking)
+        {
+            // The calling thread cannot block, so we only have a choice between PC and PEC modes,
+            // based on the invocation type of the task
+            switch(Invocable.getInvocationType(task))
+            {
+                case NON_BLOCKING:
+                    mode = Mode.PRODUCE_CONSUME;
+                    break;
+
+                case EITHER:
+                    mode = Mode.PRODUCE_INVOKE_CONSUME;
+                    break;
+
+                default:
+                    mode = Mode.PRODUCE_EXECUTE_CONSUME;
+            }
+        }
+        else
+        {
+            // The calling thread can block, so we can choose between PC, PEC and EPC: modes,
+            // based on the invocation type of the task and if a reserved thread is available
+            switch(Invocable.getInvocationType(task))
+            {
+                case NON_BLOCKING:
+                    mode = Mode.PRODUCE_CONSUME;
+                    break;
+
+                case BLOCKING:
+                    // The task is blocking, so PC is not an option. Thus we choose 
+                    // between EPC and PEC based on the availability of a reserved thread.
+                    synchronized(this)
+                    {
+                        if (_pending)
+                        {
+                            _state = State.IDLE;
+                            mode = Mode.EXECUTE_PRODUCE_CONSUME;
+                        }
+                        else if (_tryExecutor.tryExecute(this))
+                        {
+                            _pending = true;
+                            _state = State.IDLE;
+                            mode = Mode.EXECUTE_PRODUCE_CONSUME;
+                        }
+                        else
+                        {
+                            mode = Mode.PRODUCE_EXECUTE_CONSUME;
+                        }   
+                        break;
+                    }
+
+                case EITHER:
+                {
+                    // The task may be non blocking, so PC is an option. Thus we choose 
+                    // between EPC and PC based on the availability of a reserved thread.
+                    synchronized(this)
+                    {
+                        if (_pending)
+                        {
+                            _state = State.IDLE;
+                            mode = Mode.EXECUTE_PRODUCE_CONSUME;
+                        }
+                        else if (_tryExecutor.tryExecute(this))
+                        {
+                            _pending = true;
+                            _state = State.IDLE;
+                            mode = Mode.EXECUTE_PRODUCE_CONSUME;
+                        }
+                        else
+                        {
+                            // PC mode, but we must consume with non-blocking invocation
+                            // as we may be the last thread and we cannot block
+                            mode = Mode.PRODUCE_INVOKE_CONSUME;
+                        }
+                    }
+                }
+                break;
+
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} m={} t={}/{}", this, mode, task,Invocable.getInvocationType(task));
+
+        // Consume or execute task
+        switch(mode)
+        {
+            case PRODUCE_CONSUME:
+                _pcMode.increment();
+                task.run();
+                return true;
+
+            case PRODUCE_INVOKE_CONSUME:
+                _picMode.increment();
+                Invocable.invokeNonBlocking(task);
+                return true;
+
+            case PRODUCE_EXECUTE_CONSUME:
+                _pecMode.increment();
+                execute(task);
+                return true;
+
+            case EXECUTE_PRODUCE_CONSUME:
+                _epcMode.increment();
+                task.run();
+
+                // Try to produce again?
+                synchronized(this)
+                {
+                    if (_state==State.IDLE)
+                    {
+                        // We beat the pending producer, so we will become the producer instead
+                        _state = State.PRODUCING;
+                        return true;
+                    }
+                }
+                return false;
+
+            default:
+                throw new IllegalStateException();
+        }
+    }
+    
+    private Runnable produceTask()
+    {
+        try
+        {
+            return _producer.produce();
+        }
+        catch (Throwable e)
+        {
+            LOG.warn(e);
+        }
+        return null;
+    }
+    
+    private void execute(Runnable task)
+    {
+        try
+        {
+            _executor.execute(task);
+        }
+        catch (RejectedExecutionException e)
+        {
+            if (isRunning())
+                LOG.warn(e);
+            else
+                LOG.ignore(e);
+            
+            if (task instanceof Closeable)
+            {
+                try
+                {
+                    ((Closeable)task).close();
+                }
+                catch (Throwable e2)
+                {
+                    LOG.ignore(e2);
+                }
+            }
+        }
+
     }
 
     @ManagedAttribute(value = "number of non tasks consumed with PC", readonly = true)
