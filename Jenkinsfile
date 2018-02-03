@@ -13,7 +13,7 @@ parallel builds
 
 def getFullBuild(jdk, os) {
   return {
-    node {
+    node(os) {
       // System Dependent Locations
       def mvntool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
       def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
