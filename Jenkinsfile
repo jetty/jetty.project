@@ -135,7 +135,7 @@ def isActiveBranch()
 {
   def branchName = "${env.BRANCH_NAME}"
   return ( branchName == "master" ||
-          branchName.startsWith("jetty-") );
+          ( branchName.startsWith("jetty-") && branchName.endsWith(".x") ) );
 }
 
 // Test if the Jenkins Pipeline or Step has marked the
