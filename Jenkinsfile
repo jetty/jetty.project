@@ -1,13 +1,17 @@
 #!groovy
 
 def jdks = ["jdk8", "jdk9"]
+def oss = ["linux"] //windows?
 def builds = [:]
-for (def jdk in jdks) {
-  builds[jdk] = getFullBuild( jdk )
+for (def os in oss) {
+  for (def jdk in jdks) {
+    builds[os+"_"+jdk] = getFullBuild( jdk, os )
+  }
 }
+
 parallel builds
 
-def getFullBuild(jdk) {
+def getFullBuild(jdk, os) {
   return {
     node {
       // System Dependent Locations
