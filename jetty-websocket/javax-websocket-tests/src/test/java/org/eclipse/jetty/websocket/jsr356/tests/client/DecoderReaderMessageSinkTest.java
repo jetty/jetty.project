@@ -27,35 +27,21 @@ import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedReaderMessageSink;
 import org.eclipse.jetty.websocket.jsr356.tests.CompletableFutureMethodHandle;
-import org.junit.AfterClass;
 import org.junit.Test;
 
-public class DecoderReaderMessageSinkTest
+public class DecoderReaderMessageSinkTest extends AbstractClientSessionTest
 {
-    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(5, 5, 0L, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<>());
-    
-    @AfterClass
-    public static void stopExecutor()
-    {
-        executor.shutdown();
-    }
-    
     public static class Lines extends ArrayList<String>
     {
     }
@@ -96,10 +82,9 @@ public class DecoderReaderMessageSinkTest
         Decoder.TextStream<Lines> decoder = new LinesDecoder();
         
         CompletableFuture<Lines> futureLines = new CompletableFuture<>();
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         MethodHandle methodHandle = CompletableFutureMethodHandle.of(Lines.class, futureLines);
 
-        DecodedReaderMessageSink sink = new DecodedReaderMessageSink(policy, executor, decoder, methodHandle);
+        DecodedReaderMessageSink sink = new DecodedReaderMessageSink(session, decoder, methodHandle);
 
         CompletableFutureCallback callback1 = new CompletableFutureCallback();
         CompletableFutureCallback callback2 = new CompletableFutureCallback();

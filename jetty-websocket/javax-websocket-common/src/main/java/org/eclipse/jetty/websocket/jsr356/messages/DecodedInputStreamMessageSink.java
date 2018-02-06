@@ -22,15 +22,20 @@ import java.lang.invoke.MethodHandle;
 
 import javax.websocket.Decoder;
 
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
-public class DecodedInputStreamMessageSink extends InputStreamMessageSink
+public class DecodedInputStreamMessageSink<T> extends InputStreamMessageSink
 {
+    private final Decoder.BinaryStream<T> decoder;
+
     public DecodedInputStreamMessageSink(JavaxWebSocketSession session,
-                                         Decoder.BinaryStream decoder,
+                                         Decoder.BinaryStream<T> decoder,
                                          MethodHandle methodHandle)
     {
-        super(session.getPolicy(), session.getContainerContext().getExecutor(), methodHandle);
+        super(session, methodHandle);
+        this.decoder = decoder;
         /*(reader) ->
         {
             try
@@ -53,5 +58,11 @@ public class DecodedInputStreamMessageSink extends InputStreamMessageSink
                 throw new WebSocketException(e);
             }
         });*/
+    }
+
+    @Override
+    public void accept(Frame frame, Callback callback)
+    {
+        super.accept(frame, callback);
     }
 }

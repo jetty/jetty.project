@@ -22,14 +22,16 @@ import java.lang.invoke.MethodHandle;
 
 import javax.websocket.Decoder;
 
-import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
-public class DecodedBinaryMessageSink extends ByteBufferMessageSink
+public class DecodedBinaryMessageSink<T> extends ByteBufferMessageSink
 {
-    public DecodedBinaryMessageSink(JavaxWebSocketSession session, JavaxWebSocketFrameHandler frameHandler, Decoder.Binary decoder, MethodHandle methodHandle)
+    private final Decoder.Binary<T> decoder;
+
+    public DecodedBinaryMessageSink(JavaxWebSocketSession session, Decoder.Binary<T> decoder, MethodHandle methodHandle)
     {
-        super(session.getPolicy(), session.getContainerContext().getExecutor(), methodHandle);
+        super(session, methodHandle);
+        this.decoder = decoder;
         /*(byteBuf) ->
         {
             try

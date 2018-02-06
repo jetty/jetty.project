@@ -16,25 +16,25 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.messages;
 
-import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
+import java.lang.invoke.MethodHandle;
+import java.util.Objects;
 
-/**
- * Thrown when a duplicate coder is encountered when attempting to identify a Endpoint's metadata ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder})
- * TODO: is this still needed?
- */
-public class DuplicateCoderException extends InvalidWebSocketException
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
+import org.eclipse.jetty.websocket.jsr356.MessageSink;
+
+public abstract class AbstractMessageSink implements MessageSink
 {
-    private static final long serialVersionUID = -3049181444035417170L;
+    protected final WebSocketPolicy policy;
+    protected final MethodHandle methodHandle;
 
-    public DuplicateCoderException(String message)
+    public AbstractMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
     {
-        super(message);
-    }
-
-    public DuplicateCoderException(String message, Throwable cause)
-    {
-        super(message,cause);
+        Objects.requireNonNull(session, "JavaxWebSocketSession");
+        Objects.requireNonNull(methodHandle, "MethodHandle");
+        this.policy = session.getPolicy();
+        this.methodHandle = methodHandle;
     }
 }

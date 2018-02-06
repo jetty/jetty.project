@@ -18,22 +18,50 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.Reader;
 import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
-public class ReaderMessageSink extends DispatchedMessageSink<Reader>
+public class PartialByteBufferMessageSink extends AbstractMessageSink
 {
-    public ReaderMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
+    public PartialByteBufferMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
-    public MessageReader newSink(Frame frame)
+    public void accept(Frame frame, Callback callback)
     {
-        return new MessageReader(new MessageInputStream());
+        try
+        {
+            ByteBuffer buffer;
+
+            if (frame.hasPayload())
+            {
+                ByteBuffer payload = frame.getPayload();
+                // copy buffer here
+                buffer = ByteBuffer.allocate(payload.remaining());
+                BufferUtil.clearToFill(buffer);
+                BufferUtil.put(payload, buffer);
+                BufferUtil.flipToFlush(buffer, 0);
+            }
+            else
+            {
+                buffer = BufferUtil.EMPTY_BUFFER;
+            }
+
+            methodHandle.invoke(buffer, frame.isFin());
+
+            callback.succeeded();
+        }
+        catch (Throwable t)
+        {
+            callback.failed(t);
+        }
     }
 }

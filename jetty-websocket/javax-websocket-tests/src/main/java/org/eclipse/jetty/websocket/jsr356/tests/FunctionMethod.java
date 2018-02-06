@@ -16,13 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.tests;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.function.Function;
 
+/**
+ * Utility to obtain the {@link Function#apply(Object)} method as a {@link MethodHandle}
+ */
 public class FunctionMethod
 {
     private static final Method functionApplyMethod;

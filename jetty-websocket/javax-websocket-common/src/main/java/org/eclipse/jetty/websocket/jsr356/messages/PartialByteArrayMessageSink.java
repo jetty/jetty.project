@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
@@ -30,20 +29,15 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 
-public class ByteArrayMessageSink extends AbstractMessageSink
+public class PartialByteArrayMessageSink extends AbstractMessageSink
 {
-    private static final byte EMPTY_BUFFER[] = new byte[0];
-    private static final int BUFFER_SIZE = 65535;
-    private ByteArrayOutputStream out;
-    private int size;
-
-    public ByteArrayMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
+    public PartialByteArrayMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
 
         Objects.requireNonNull(methodHandle, "MethodHandle");
         // byte[] buf, int offset, int length
-        MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
+        MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class, boolean.class);
         if (methodHandle.type() != onMessageType)
         {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
@@ -56,43 +50,28 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     {
         try
         {
+            byte[] buffer;
+            int offset = 0;
+            int length = 0;
+
             if (frame.hasPayload())
             {
                 ByteBuffer payload = frame.getPayload();
-                policy.assertValidBinaryMessageSize(size + payload.remaining());
-                size += payload.remaining();
-
-                if (out == null)
-                    out = new ByteArrayOutputStream(BUFFER_SIZE);
-
-                BufferUtil.writeTo(payload, out);
+                length = payload.remaining();
+                buffer = BufferUtil.toArray(payload);
             }
-
-            if (frame.isFin())
+            else
             {
-                if (out != null)
-                {
-                    byte buf[] = out.toByteArray();
-                    methodHandle.invoke(buf, 0, buf.length);
-                }
-                else
-                    methodHandle.invoke(EMPTY_BUFFER, 0, 0);
+                buffer = new byte[0];
             }
+
+            methodHandle.invoke(buffer, offset, length, frame.isFin());
 
             callback.succeeded();
         }
         catch (Throwable t)
         {
             callback.failed(t);
-        }
-        finally
-        {
-            if (frame.isFin())
-            {
-                // reset
-                out = null;
-                size = 0;
-            }
         }
     }
 }

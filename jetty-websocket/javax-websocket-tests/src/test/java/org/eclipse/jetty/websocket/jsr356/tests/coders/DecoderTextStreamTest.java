@@ -29,41 +29,29 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
-import org.eclipse.jetty.websocket.jsr356.FunctionMethod;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedReaderMessageSink;
-import org.junit.AfterClass;
+import org.eclipse.jetty.websocket.jsr356.tests.FunctionMethod;
+import org.eclipse.jetty.websocket.jsr356.tests.client.AbstractClientSessionTest;
 import org.junit.Test;
 
 /**
  * Test various {@link javax.websocket.Decoder.TextStream} scenarios
  */
-public class DecoderTextStreamTest
+public class DecoderTextStreamTest extends AbstractClientSessionTest
 {
-    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(5, 5, 0L, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<>());
-    
-    @AfterClass
-    public static void stopExecutor()
-    {
-        executor.shutdown();
-    }
-    
     @Test
     public void testQuotes_Decoder_Direct() throws Exception
     {
         Decoder.TextStream<Quotes> decoder = new QuotesDecoder();
-        
+
         Path quotesPath = MavenTestingUtils.getTestResourcePath("quotes-ben.txt");
         try (Reader reader = Files.newBufferedReader(quotesPath))
         {
@@ -73,14 +61,14 @@ public class DecoderTextStreamTest
             assertThat("Decoded Quotes.quotes.size", quotes.getQuotes().size(), is(3));
         }
     }
-    
+
     @Test
     public void testQuotes_DecodedReaderMessageSink() throws Exception
     {
         Decoder.TextStream<Quotes> decoder = new QuotesDecoder();
         CompletableFuture<Quotes> futureQuotes = new CompletableFuture<>();
         MethodHandle functionHandle = FunctionMethod.getFunctionApplyMethodHandle();
-        MethodHandle quoteHandle = functionHandle.bindTo((Function<Quotes,Void>)(quotes) ->
+        MethodHandle quoteHandle = functionHandle.bindTo((Function<Quotes, Void>) (quotes) ->
         {
             try
             {
@@ -93,10 +81,9 @@ public class DecoderTextStreamTest
             return null;
         });
 
-        DecodedReaderMessageSink sink = new DecodedReaderMessageSink(
-                WebSocketPolicy.newClientPolicy(),
-                executor, decoder, quoteHandle);
-        
+
+        DecodedReaderMessageSink sink = new DecodedReaderMessageSink(session, decoder, quoteHandle);
+
         List<CompletableFutureCallback> callbacks = new ArrayList<>();
         CompletableFutureCallback finCallback = null;
         List<WebSocketFrame> frames = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
@@ -110,7 +97,7 @@ public class DecoderTextStreamTest
             callbacks.add(callback);
             sink.accept(frame, callback);
         }
-        
+
         assertThat("Should have found finCallback", finCallback, notNullValue());
         finCallback.get(1, TimeUnit.SECONDS); // wait for fin
         Quotes quotes = futureQuotes.get(1, TimeUnit.SECONDS);

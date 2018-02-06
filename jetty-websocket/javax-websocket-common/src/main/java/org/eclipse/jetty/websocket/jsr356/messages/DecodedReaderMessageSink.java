@@ -19,25 +19,18 @@
 package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.lang.invoke.MethodHandle;
-import java.util.concurrent.Executor;
 
 import javax.websocket.Decoder;
 
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
-public class DecodedReaderMessageSink extends ReaderMessageSink
+public class DecodedReaderMessageSink<T> extends ReaderMessageSink
 {
-    private final Decoder.TextStream decoder;
+    private final Decoder.TextStream<T> decoder;
 
-    public DecodedReaderMessageSink(JavaxWebSocketSession session, Decoder.TextStream decoder, MethodHandle methodHandle)
+    public DecodedReaderMessageSink(JavaxWebSocketSession session, Decoder.TextStream<T> decoder, MethodHandle methodHandle)
     {
-        this(session.getPolicy(), session.getContainerContext().getExecutor(), decoder, methodHandle);
-    }
-
-    public DecodedReaderMessageSink(WebSocketPolicy policy, Executor executor, Decoder.TextStream decoder, MethodHandle methodHandle)
-    {
-        super(policy, executor, methodHandle);
+        super(session, methodHandle);
         this.decoder = decoder;
 
         /*super(executor, (reader) ->

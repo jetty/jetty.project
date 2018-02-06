@@ -25,18 +25,8 @@ public class InitException extends IllegalStateException
 {
     private static final long serialVersionUID = -4691138423037387558L;
 
-    public InitException(String s)
-    {
-        super(s);
-    }
-
     public InitException(String message, Throwable cause)
     {
         super(message,cause);
-    }
-
-    public InitException(Throwable cause)
-    {
-        super(cause);
     }
 }

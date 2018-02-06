@@ -18,21 +18,33 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.lang.invoke.MethodHandle;
-import java.util.concurrent.Executor;
+import javax.websocket.MessageHandler;
 
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-
-public abstract class MessageSinkImpl implements MessageSink
+public class RegisteredMessageHandler
 {
-    protected final WebSocketPolicy policy;
-    protected final Executor executor;
-    protected final MethodHandle methodHandle;
+    private byte websocketMessageType;
+    private Class<?> handlerType;
+    private MessageHandler messageHandler;
 
-    public MessageSinkImpl(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public RegisteredMessageHandler(byte websocketMessageType, Class<?> handlerType, MessageHandler messageHandler)
     {
-        this.policy = policy;
-        this.executor = executor;
-        this.methodHandle = methodHandle;
+        this.websocketMessageType = websocketMessageType;
+        this.handlerType = handlerType;
+        this.messageHandler = messageHandler;
+    }
+
+    public byte getWebsocketMessageType()
+    {
+        return websocketMessageType;
+    }
+
+    public Class<?> getHandlerType()
+    {
+        return handlerType;
+    }
+
+    public MessageHandler getMessageHandler()
+    {
+        return messageHandler;
     }
 }

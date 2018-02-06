@@ -24,9 +24,8 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.MessageSink;
-import org.eclipse.jetty.websocket.jsr356.MessageSinkImpl;
 
 /**
  * Centralized logic for Dispatched Message Handling.
@@ -98,20 +97,18 @@ import org.eclipse.jetty.websocket.jsr356.MessageSinkImpl;
  * </pre>
  *
  * @param <T> the type of object to give to user function
- * @param <R> the type of object that user function will return
  */
-public abstract class DispatchedMessageSink<T, R> extends MessageSinkImpl
+@SuppressWarnings("Duplicates")
+public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
 {
     private final Executor executor;
-    private final MethodHandle methodHandle;
     private CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;
 
-    public DispatchedMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public DispatchedMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
-        this.executor = executor;
-        this.methodHandle = methodHandle;
+        super(session, methodHandle);
+        this.executor = session.getContainerContext().getExecutor();
     }
 
     public abstract MessageSink newSink(Frame frame);

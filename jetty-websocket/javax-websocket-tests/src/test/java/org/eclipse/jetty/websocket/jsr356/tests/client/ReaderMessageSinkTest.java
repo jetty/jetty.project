@@ -28,41 +28,27 @@ import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
 import org.eclipse.jetty.websocket.jsr356.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
-import org.junit.AfterClass;
 import org.junit.Test;
 
-public class ReaderMessageSinkTest
+public class ReaderMessageSinkTest extends AbstractClientSessionTest
 {
-    private static ThreadPoolExecutor executor = new ThreadPoolExecutor(5, 5, 0L, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<>());
-    
-    @AfterClass
-    public static void stopExecutor()
-    {
-        executor.shutdown();
-    }
-    
     @Test
     public void testReader_SingleFrame() throws InterruptedException, ExecutionException, TimeoutException
     {
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         ReaderCopy copy = new ReaderCopy(copyFuture);
         MethodHandle copyHandle = toMethodHandle(copy, "apply", Reader.class);
-        ReaderMessageSink sink = new ReaderMessageSink(policy, executor, copyHandle);
+        ReaderMessageSink sink = new ReaderMessageSink(session, copyHandle);
     
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
         sink.accept(new TextFrame().setPayload("Hello World"), finCallback);
@@ -77,10 +63,9 @@ public class ReaderMessageSinkTest
     public void testReader_MultiFrame() throws InterruptedException, ExecutionException, TimeoutException
     {
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         ReaderCopy copy = new ReaderCopy(copyFuture);
         MethodHandle copyHandle = toMethodHandle(copy, "apply", Reader.class);
-        ReaderMessageSink sink = new ReaderMessageSink(policy, executor, copyHandle);
+        ReaderMessageSink sink = new ReaderMessageSink(session, copyHandle);
         
         CompletableFutureCallback callback1 = new CompletableFutureCallback();
         CompletableFutureCallback callback2 = new CompletableFutureCallback();

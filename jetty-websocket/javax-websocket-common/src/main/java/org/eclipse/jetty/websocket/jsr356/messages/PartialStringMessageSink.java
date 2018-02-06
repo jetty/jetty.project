@@ -18,36 +18,29 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
-import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 
-public class ByteArrayMessageSink extends AbstractMessageSink
+public class PartialStringMessageSink extends AbstractMessageSink
 {
-    private static final byte EMPTY_BUFFER[] = new byte[0];
-    private static final int BUFFER_SIZE = 65535;
-    private ByteArrayOutputStream out;
+    private static final Logger LOG = Log.getLogger(PartialStringMessageSink.class);
+    private Utf8StringBuilder utf;
     private int size;
 
-    public ByteArrayMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
+    public PartialStringMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
-
         Objects.requireNonNull(methodHandle, "MethodHandle");
-        // byte[] buf, int offset, int length
-        MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
-        if (methodHandle.type() != onMessageType)
-        {
-            throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
+        this.size = 0;
     }
 
     @SuppressWarnings("Duplicates")
@@ -59,24 +52,30 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             if (frame.hasPayload())
             {
                 ByteBuffer payload = frame.getPayload();
-                policy.assertValidBinaryMessageSize(size + payload.remaining());
+                policy.assertValidTextMessageSize(size + payload.remaining());
                 size += payload.remaining();
 
-                if (out == null)
-                    out = new ByteArrayOutputStream(BUFFER_SIZE);
+                if (utf == null)
+                    utf = new Utf8StringBuilder(1024);
 
-                BufferUtil.writeTo(payload, out);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Raw Payload {}", BufferUtil.toDetailString(payload));
+
+                // allow for fast fail of BAD utf
+                utf.append(payload);
             }
 
             if (frame.isFin())
             {
-                if (out != null)
-                {
-                    byte buf[] = out.toByteArray();
-                    methodHandle.invoke(buf, 0, buf.length);
-                }
-                else
-                    methodHandle.invoke(EMPTY_BUFFER, 0, 0);
+                // Using toString to trigger failure on incomplete UTF-8
+                methodHandle.invoke(utf.toString(), true);
+                // reset
+                size = 0;
+                utf = null;
+            }
+            else
+            {
+                methodHandle.invoke(utf.takePartialString(), false);
             }
 
             callback.succeeded();
@@ -84,15 +83,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
         catch (Throwable t)
         {
             callback.failed(t);
-        }
-        finally
-        {
-            if (frame.isFin())
-            {
-                // reset
-                out = null;
-                size = 0;
-            }
         }
     }
 }

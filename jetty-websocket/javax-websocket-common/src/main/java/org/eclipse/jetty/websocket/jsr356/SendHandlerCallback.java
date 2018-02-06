@@ -23,6 +23,9 @@ import javax.websocket.SendResult;
 
 import org.eclipse.jetty.util.Callback;
 
+/**
+ * Wrapper of user provided {@link SendHandler} to Jetty internal {@link Callback}
+ */
 public class SendHandlerCallback implements Callback
 {
     private final SendHandler sendHandler;

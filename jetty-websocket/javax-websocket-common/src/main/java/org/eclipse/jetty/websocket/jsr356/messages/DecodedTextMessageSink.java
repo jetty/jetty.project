@@ -24,11 +24,14 @@ import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
-public class DecodedTextMessageSink extends StringMessageSink
+public class DecodedTextMessageSink<T> extends StringMessageSink
 {
-    public DecodedTextMessageSink(JavaxWebSocketSession session, Decoder.Text decoder, MethodHandle methodHandle)
+    private final Decoder.Text<T> decoder;
+
+    public DecodedTextMessageSink(JavaxWebSocketSession session, Decoder.Text<T> decoder, MethodHandle methodHandle)
     {
-        super(session.getPolicy(), session.getContainerContext().getExecutor(), methodHandle);
+        super(session, methodHandle);
+        this.decoder = decoder;
 
         /*super(policy, (message) ->
         {

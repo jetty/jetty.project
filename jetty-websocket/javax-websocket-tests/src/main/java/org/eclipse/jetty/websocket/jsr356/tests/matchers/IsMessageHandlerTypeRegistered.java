@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.matchers;
 
-import java.util.Set;
+import java.util.Map;
 
 import javax.websocket.Decoder;
 import javax.websocket.MessageHandler;
 import javax.websocket.PongMessage;
 
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
+import org.eclipse.jetty.websocket.jsr356.RegisteredMessageHandler;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.tests.MessageType;
-import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.TypeSafeMatcher;
@@ -51,33 +51,18 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JavaxWebSock
     @Override
     protected boolean matchesSafely(JavaxWebSocketSession session)
     {
-        Set<MessageHandler> handlerSet = session.getMessageHandlers();
+        Map<Byte,RegisteredMessageHandler> handlerMap = session.getFrameHandler().getMessageHandlerMap();
 
-        if (handlerSet == null)
+        if (handlerMap == null)
         {
             return false;
         }
 
-        for (MessageHandler messageHandler : handlerSet)
+        for (RegisteredMessageHandler registeredMessageHandler : handlerMap.values())
         {
-            Class<? extends MessageHandler> handlerClass = messageHandler.getClass();
-            Class<?> onMessageClass = null;
+            Class<?> onMessageType = registeredMessageHandler.getHandlerType();
 
-            if (MessageHandler.Whole.class.isAssignableFrom(handlerClass))
-            {
-                onMessageClass = ReflectUtils.findGenericClassFor(handlerClass, MessageHandler.Whole.class);
-            }
-            else if (MessageHandler.Partial.class.isAssignableFrom(handlerClass))
-            {
-                onMessageClass = ReflectUtils.findGenericClassFor(handlerClass, MessageHandler.Partial.class);
-            }
-
-            if (onMessageClass == null)
-            {
-                continue;
-            }
-
-            AvailableDecoders.RegisteredDecoder registeredDecoder = session.getDecoders().getRegisteredDecoderFor(onMessageClass);
+            AvailableDecoders.RegisteredDecoder registeredDecoder = session.getDecoders().getRegisteredDecoderFor(onMessageType);
             if (registeredDecoder == null)
             {
                 continue;
@@ -92,18 +77,18 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JavaxWebSock
 
             if (expectedType == MessageType.BINARY)
             {
-                if (Decoder.Binary.class.isAssignableFrom(registeredDecoder.interfaceType))
+                if (registeredDecoder.implementsInterface(Decoder.Binary.class))
                     return true;
-                if (Decoder.BinaryStream.class.isAssignableFrom(registeredDecoder.interfaceType))
+                if (registeredDecoder.implementsInterface(Decoder.BinaryStream.class))
                     return true;
                 continue;
             }
 
             if (expectedType == MessageType.TEXT)
             {
-                if (Decoder.Text.class.isAssignableFrom(registeredDecoder.interfaceType))
+                if (registeredDecoder.implementsInterface(Decoder.Text.class))
                     return true;
-                if (Decoder.TextStream.class.isAssignableFrom(registeredDecoder.interfaceType))
+                if (registeredDecoder.implementsInterface(Decoder.TextStream.class))
                     return true;
                 continue;
             }
@@ -115,11 +100,11 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JavaxWebSock
     @Override
     protected void describeMismatchSafely(JavaxWebSocketSession session, Description mismatchDescription)
     {
-        Set<MessageHandler> handlerSet = session.getMessageHandlers();
+        Map<Byte,RegisteredMessageHandler> handlerMap = session.getFrameHandler().getMessageHandlerMap();
 
         mismatchDescription.appendText(".getMessageHandlers()");
 
-        if (handlerSet == null)
+        if (handlerMap == null)
         {
             mismatchDescription.appendText(" is <null>");
             return;
@@ -127,35 +112,27 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JavaxWebSock
 
         mismatchDescription.appendText(" contains [");
         boolean delim = false;
-        for (MessageHandler messageHandler : handlerSet)
+        for (RegisteredMessageHandler registeredMessageHandler : handlerMap.values())
         {
-            Class<? extends MessageHandler> handlerClass = messageHandler.getClass();
+            Class<? extends MessageHandler> handlerClass = registeredMessageHandler.getMessageHandler().getClass();
             if (delim)
             {
                 mismatchDescription.appendText(", ");
             }
             delim = true;
             mismatchDescription.appendText(handlerClass.getName());
-            Class<?> onMessageClass = null;
 
-            if (MessageHandler.Whole.class.isAssignableFrom(handlerClass))
-            {
-                onMessageClass = ReflectUtils.findGenericClassFor(handlerClass, MessageHandler.Whole.class);
-            }
-            else if (MessageHandler.Partial.class.isAssignableFrom(handlerClass))
-            {
-                onMessageClass = ReflectUtils.findGenericClassFor(handlerClass, MessageHandler.Partial.class);
-            }
+            Class<?> onMessageType = registeredMessageHandler.getHandlerType();
 
-            if (onMessageClass == null)
+            if (onMessageType == null)
             {
                 mismatchDescription.appendText("<UnknownType>");
                 continue;
             }
 
-            mismatchDescription.appendText("<" + onMessageClass.getName() + ">");
+            mismatchDescription.appendText("<" + onMessageType.getName() + ">");
 
-            AvailableDecoders.RegisteredDecoder registeredDecoder = session.getDecoders().getRegisteredDecoderFor(onMessageClass);
+            AvailableDecoders.RegisteredDecoder registeredDecoder = session.getDecoders().getRegisteredDecoderFor(onMessageType);
             if (registeredDecoder == null)
             {
                 mismatchDescription.appendText("(!NO-DECODER!)");

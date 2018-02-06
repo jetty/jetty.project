@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -29,18 +28,17 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.jsr356.MessageSinkImpl;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
-public class StringMessageSink extends MessageSinkImpl
+public class StringMessageSink extends AbstractMessageSink
 {
     private static final Logger LOG = Log.getLogger(StringMessageSink.class);
     private Utf8StringBuilder utf;
     private int size;
 
-    public StringMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public StringMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
+        super(session, methodHandle);
         Objects.requireNonNull(methodHandle, "MethodHandle");
         this.size = 0;
     }

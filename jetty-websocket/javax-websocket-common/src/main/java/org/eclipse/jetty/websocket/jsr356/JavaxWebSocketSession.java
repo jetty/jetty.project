@@ -25,7 +25,6 @@ import java.net.URI;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -75,9 +74,8 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     private final AvailableDecoders availableDecoders;
     private final AvailableEncoders availableEncoders;
     private final Map<String, String> pathParameters;
-    private Map<String,Object> userProperties;
+    private Map<String, Object> userProperties;
 
-    private Set<MessageHandler> messageHandlerSet;
     private List<Extension> negotiatedExtensions;
     private JavaxWebSocketAsyncRemote asyncRemote;
     private JavaxWebSocketBasicRemote basicRemote;
@@ -128,20 +126,10 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         Objects.requireNonNull(handler, "MessageHandler.Partial cannot be null");
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("MessageHandler.Partial class: {}", handler.getClass());
+            LOG.debug("Add MessageHandler.Partial: {}", handler);
         }
 
-        /*
-        TODO: which type? (TEXT or BINARY)
-        TODO: which decoder?
-        TODO: create message sink
-        TODO: localEndpoint.set(Text|Binary)Sink(sink)
-        MessageSink partialSink = container.getMessageSink(clazz, handler);
-        localEndpoint.set
-
-        getJsrEndpointFunctions().setMessageHandler(clazz, handler);
-        */
-        registerMessageHandler(handler);
+        frameHandler.addMessageHandler(this, clazz, handler);
     }
 
     /**
@@ -156,17 +144,12 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         Objects.requireNonNull(handler, "MessageHandler.Whole cannot be null");
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("MessageHandler.Whole class: {}", handler.getClass());
+            LOG.debug("Add MessageHandler.Whole: {}", handler);
         }
 
-        /*
-        TODO: which type? (TEXT, BINARY, or PongMessage)
-        TODO: which decoder? (if not PongMessage)
-        TODO: create message sink
-        TODO: localEndpoint.set(Text|Binary)Sink(sink)
-        getJsrEndpointFunctions().setMessageHandler(clazz, handler);
-         */
-        registerMessageHandler(handler);
+        frameHandler.addMessageHandler(this, clazz, handler);
+
+
     }
 
     /**
@@ -244,7 +227,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @SuppressWarnings("unused") // used by JavaxWebSocketFrameHandlerFactory via MethodHandle
     public Object filterReturnType(Object obj)
     {
-        if(obj != null)
+        if (obj != null)
         {
             try
             {
@@ -323,9 +306,9 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         return frameHandler.getEndpoint();
     }
 
-    public EndpointConfig getEndpointConfig()
+    public JavaxWebSocketFrameHandler getFrameHandler()
     {
-        return config;
+        return frameHandler;
     }
 
     /**
@@ -424,13 +407,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public Set<MessageHandler> getMessageHandlers()
     {
-        if (messageHandlerSet == null)
-        {
-            return Collections.emptySet();
-        }
-
-        // Always return copy of set, as it is common to iterate and remove from the real set.
-        return new HashSet<>(messageHandlerSet);
+        return frameHandler.getMessageHandlers();
     }
 
     /**
@@ -610,15 +587,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public synchronized void removeMessageHandler(MessageHandler handler)
     {
-        if (messageHandlerSet != null && messageHandlerSet.remove(handler))
-        {
-            // remove from endpoint functions too
-            /*
-            TODO: find associated type (TEXT / BINARY / PongMessage)
-            TODO: remove from localEndpoint the appropriate
-            getJsrEndpointFunctions().removeMessageHandler(handler);
-            */
-        }
+        frameHandler.removeMessageHandler(handler);
     }
 
     @Override
@@ -631,14 +600,5 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     protected SharedBlockingCallback getBlocking()
     {
         return blocking;
-    }
-
-    protected synchronized void registerMessageHandler(MessageHandler handler)
-    {
-        if (messageHandlerSet == null)
-        {
-            messageHandlerSet = new HashSet<>();
-        }
-        messageHandlerSet.add(handler);
     }
 }

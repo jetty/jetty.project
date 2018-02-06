@@ -20,17 +20,16 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.MessageSink;
 
-public class InputStreamMessageSink extends DispatchedMessageSink<InputStream, Void>
+public class InputStreamMessageSink extends DispatchedMessageSink<InputStream>
 {
-    public InputStreamMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public InputStreamMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
+        super(session, methodHandle);
     }
 
     @Override

@@ -20,34 +20,22 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.util.Objects;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.jsr356.MessageSinkImpl;
-import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
-public class ByteBufferMessageSink extends MessageSinkImpl
+public class ByteBufferMessageSink extends AbstractMessageSink
 {
     private static final int BUFFER_SIZE = 65535;
     private ByteArrayOutputStream out;
     private int size;
 
-    public ByteBufferMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
+    public ByteBufferMessageSink(JavaxWebSocketSession session, MethodHandle methodHandle)
     {
-        super(policy, executor, methodHandle);
-        // Validate onMessageMethod
-        Objects.requireNonNull(methodHandle, "MethodHandle");
-        MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);
-        if (methodHandle.type() != onMessageType)
-        {
-            throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
+        super(session, methodHandle);
     }
 
     @SuppressWarnings("Duplicates")
