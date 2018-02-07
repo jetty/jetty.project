@@ -249,39 +249,57 @@
       </plugin>
       <plugin>
         <inherited>false</inherited>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <version>1.10.b1</version>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>3.0</version>
         <configuration>
-          <header>header-template.txt</header>
           <failIfMissing>true</failIfMissing>
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
              <copyright-range>${project.inceptionYear}-2018</copyright-range>
           </properties>
-          <mapping>
-            <java>DOUBLESLASH_STYLE</java>
-          </mapping>
-          <includes>
-            <include>**/*.java</include>
-          </includes>
-          <excludes>
-            <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
-            <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
-            <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
-            <exclude>jetty-ant/**</exclude>
-            <exclude>jetty-infinispan/**</exclude>
-            <exclude>tests/test-sessions/test-infinispan-sessions/**</exclude>
-          </excludes>
         </configuration>
         <executions>
           <execution>
-            <id>check-headers</id>
+            <id>check-java-headers</id>
             <phase>verify</phase>
             <goals>
               <goal>check</goal>
             </goals>
+            <configuration>
+              <header>header-template.txt</header>
+              <mapping>
+                <java>DOUBLESLASH_STYLE</java>
+              </mapping>
+              <includes>
+                <include>**/*.java</include>
+              </includes>
+              <excludes>
+                <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
+                <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
+                <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
+                <exclude>jetty-ant/**</exclude>
+                <exclude>jetty-infinispan/**</exclude>
+                <exclude>tests/test-sessions/test-infinispan-sessions/**</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>check-doc-headers</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <header>doc-header-template.txt</header>
+              <mapping>
+                <adoc>DOUBLESLASH_STYLE</adoc>
+              </mapping>
+              <includes>
+                <include>**/*.adoc</include>
+              </includes>
+            </configuration>
           </execution>
         </executions>
       </plugin>
