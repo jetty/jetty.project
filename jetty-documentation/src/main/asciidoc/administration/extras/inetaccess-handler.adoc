@@ -1,3 +1,4 @@
+//
 //  ========================================================================
 //  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
@@ -13,6 +14,7 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
+//
 
 [[inetaccess-handler]]
 === InetAccess Handler
@@ -27,7 +29,7 @@
 [[inetaccess-handler-usage]]
 ==== Usage
 
-Controls access to the wrapped handler using the real remote IP. Control is provided by and `IncludeExcludeSet` over a `InetAddressSet`. 
+Controls access to the wrapped handler using the real remote IP. Control is provided by and `IncludeExcludeSet` over a `InetAddressSet`.
 This handler uses the real internet address of the connection, not one reported in the forwarded for headers, as this cannot be as easily forged.
 
 ==== Usage in Standard Distribution
