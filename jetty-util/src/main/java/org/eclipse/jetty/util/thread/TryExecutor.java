@@ -23,7 +23,6 @@ import java.util.concurrent.RejectedExecutionException;
 
 /** 
  * A variation of Executor that can confirm if a thread is available immediately 
- * 
  */
 public interface TryExecutor extends Executor
 {

@@ -83,7 +83,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
         LOG.debug("{}",this);
     }
-    
+
     /**
      * @param executor The executor to use to obtain threads
      * @param capacity The number of threads to preallocate, If less than 0 then capacity
@@ -100,7 +100,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         if (executor instanceof ThreadPool.SizedThreadPool)
         {
             int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
-            return Math.max(1, Math.min(cpus, threads / 8));
+            return Math.max(1, Math.min(cpus, threads / 10));
         }
         return cpus;
     }

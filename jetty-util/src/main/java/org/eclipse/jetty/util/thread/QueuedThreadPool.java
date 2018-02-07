@@ -131,9 +131,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     protected void doStart() throws Exception
     {
-        int reservedThreads = _reservedThreads==-1?Math.max(1,getMaxThreads()/10):_reservedThreads;
-        if (reservedThreads>0)
-            _tryExecutor = new ReservedThreadExecutor(this,_reservedThreads);
+        _tryExecutor = new ReservedThreadExecutor(this,_reservedThreads);
         addBean(_tryExecutor);
         
         super.doStart();
@@ -145,6 +143,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     protected void doStop() throws Exception
     {
+        removeBean(_tryExecutor);
         _tryExecutor = TryExecutor.NO_TRY;
         
         super.doStop();
@@ -214,8 +213,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (_budget!=null)
             _budget.reset();
 
-        removeBean(_tryExecutor);
-        
         synchronized (_joinLock)
         {
             _joinLock.notifyAll();
@@ -448,10 +445,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     public boolean tryExecute(Runnable task)
     {
-        return _tryExecutor!=null && _tryExecutor.tryExecute(task);
+        TryExecutor tryExecutor = _tryExecutor;
+        return tryExecutor!=null && tryExecutor.tryExecute(task);
     }
-    
-    
+
     /**
      * Blocks until the thread pool is {@link LifeCycle#stop stopped}.
      */
@@ -554,7 +551,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
-    {        
+    {
         List<Object> threads = new ArrayList<>(getMaxThreads());
         for (final Thread thread : _threads)
         {
@@ -620,8 +617,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         List<Runnable> jobs = Collections.emptyList();
         if (isDetailedDump())
             jobs = new ArrayList<>(getQueue());
-                
-        dumpBeans(out,indent, threads, Collections.singletonList(new DumpableCollection("jobs",jobs)));
+
+        dumpBeans(out, indent, threads, Collections.singletonList(new DumpableCollection("jobs", jobs)));
     }
 
     @Override

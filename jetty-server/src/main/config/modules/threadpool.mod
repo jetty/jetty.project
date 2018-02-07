@@ -13,6 +13,9 @@ etc/jetty-threadpool.xml
 ## Maximum Number of Threads
 #jetty.threadPool.maxThreads=200
 
+## Number of reserved threads (-1 for heuristic)
+# jetty.threadPool.reservedThreads=-1
+
 ## Thread Idle Timeout (in milliseconds)
 #jetty.threadPool.idleTimeout=60000
 
