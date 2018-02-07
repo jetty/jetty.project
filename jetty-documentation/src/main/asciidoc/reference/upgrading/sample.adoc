@@ -14,7 +14,10 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[upgrading-jetty]]
-== Upgrading Jetty
+= Sample Title
 
-include::upgrading-9.3-to-9.4.adoc[]
+This is a sample paragraph.
+
+== Sample Subsection
+
+More sample text.
