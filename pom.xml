@@ -268,7 +268,7 @@
               <goal>check</goal>
             </goals>
             <configuration>
-              <header>header-template.txt</header>
+              <header>header-template-java.txt</header>
               <mapping>
                 <java>DOUBLESLASH_STYLE</java>
               </mapping>
@@ -292,7 +292,7 @@
               <goal>check</goal>
             </goals>
             <configuration>
-              <header>doc-header-template.txt</header>
+              <header>header-template-doc.txt</header>
               <mapping>
                 <adoc>DOUBLESLASH_STYLE</adoc>
               </mapping>
