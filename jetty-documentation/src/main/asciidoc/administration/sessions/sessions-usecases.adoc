@@ -1,3 +1,4 @@
+//
 //  ========================================================================
 //  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
@@ -13,6 +14,7 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
+//
 
 [[sessions-usecases]]
 === Session Use Cases
@@ -88,6 +90,6 @@ The example above functions in either a `jetty-web.xml` file or a link:#using-ba
 
 ____
 [NOTE]
-If you explicitly configure the `SessionCache` and `SessionDataStore` for a `SessionHandler` in a context xml file or `jetty-web.xml` file, any session modules you already have enabled are ignored. 
+If you explicitly configure the `SessionCache` and `SessionDataStore` for a `SessionHandler` in a context xml file or `jetty-web.xml` file, any session modules you already have enabled are ignored.
 So, for example, if you had enabled the `session-store-gcloud module` for your sever, you could force a particular webapp to use the `FileSessionDataStore` by explicitly configuring it in either a context xml file or a `jetty-web.xml` file as shown above.
 ____

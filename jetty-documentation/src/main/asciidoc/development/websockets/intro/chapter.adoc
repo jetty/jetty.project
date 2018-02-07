@@ -1,3 +1,4 @@
+//
 //  ========================================================================
 //  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
@@ -13,6 +14,7 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
+//
 
 [[websocket-intro]]
 == WebSocket Introduction
