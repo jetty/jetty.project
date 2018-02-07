@@ -34,7 +34,9 @@ import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.ReadOnlyDelegatedFrame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
@@ -281,6 +283,14 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             {
                 throw new WebSocketException(endpointInstance.getClass().getName() + " PING method error: " + cause.getMessage(), cause);
             }
+        }
+        else
+        {
+            // Automatically respond
+            PongFrame pong = new PongFrame();
+            if (frame.hasPayload())
+                pong.setPayload(frame.getPayload());
+            getSession().getRemote().getChannel().sendFrame(pong, Callback.NOOP, BatchMode.OFF);
         }
         callback.succeeded();
     }
