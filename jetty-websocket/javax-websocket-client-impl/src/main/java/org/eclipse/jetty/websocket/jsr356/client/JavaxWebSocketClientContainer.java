@@ -62,6 +62,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     public JavaxWebSocketClientContainer()
     {
         this(new WebSocketCoreClient());
+        this.coreClient.getHttpClient().setName("Javax-WebSocketClient");
         // We created WebSocketCoreClient, let lifecycle be managed by us
         addManaged(coreClient);
     }

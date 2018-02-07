@@ -61,6 +61,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient()
     {
         this(new WebSocketCoreClient());
+        this.coreClient.getHttpClient().setName("Jetty-WebSocketClient");
         // We created WebSocketCoreClient, let lifecycle be managed by us
         addManaged(coreClient);
     }

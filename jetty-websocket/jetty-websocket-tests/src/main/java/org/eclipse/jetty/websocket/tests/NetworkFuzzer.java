@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -32,6 +37,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -44,6 +51,8 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
+    private final static Logger LOG = Log.getLogger(NetworkFuzzer.class);
+
     private final LocalServer server;
     private final RawWebSocketClient rawClient;
     private final RawUpgradeRequest upgradeRequest;
@@ -94,8 +103,8 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     @Override
     public void expect(List<WebSocketFrame> expected) throws InterruptedException
     {
-        // TODO Wait for server to close?
-        // frameCapture.waitUntilClosed();
+        // Wait for server to close?
+        frameCapture.waitUntilClosed();
 
         // Get the server send echo bytes
         assertExpected(frameCapture.receivedFrames, expected);
@@ -134,7 +143,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     {
         for (WebSocketFrame f : frames)
         {
-            try(SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
+            try (SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
                 frameCapture.channel.sendFrame(f, blocker, BatchMode.OFF);
             }
@@ -146,7 +155,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     {
         for (WebSocketFrame f : frames)
         {
-            try(SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
+            try (SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
                 frameCapture.channel.sendFrame(f, blocker, BatchMode.OFF);
             }
@@ -166,6 +175,11 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
 
     public static class RawWebSocketClient extends WebSocketCoreClient
     {
+        public RawWebSocketClient()
+        {
+            super();
+            getHttpClient().setName("RawWebSocketClient");
+        }
     }
 
     public static class RawUpgradeRequest extends WebSocketCoreClientUpgradeRequest
@@ -206,6 +220,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         private final BlockingQueue<WebSocketFrame> receivedFrames = new LinkedBlockingQueue<>();
         private final EndPoint endPoint;
         private final SharedBlockingCallback blockingCallback = new SharedBlockingCallback();
+        private final CountDownLatch closedLatch = new CountDownLatch(1);
         private Channel channel;
 
         public FrameCapture(EndPoint endPoint)
@@ -216,16 +231,31 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         @Override
         public void onClosed(CloseStatus closeStatus) throws Exception
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("onClosed(): {}", closeStatus);
+            }
+            // TODO: Fake the close frame (if WebSocketChannel doesn't)
+            // receivedFrames.offer(new CloseFrame().setPayload(closeStatus));
+
+            // Notify awaiting threads of closed state
+            closedLatch.countDown();
         }
 
         @Override
         public void onError(Throwable cause) throws Exception
         {
+            LOG.warn("onError()", cause);
         }
 
         @Override
         public void onFrame(Frame frame, Callback callback) throws Exception
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("onFrame(): {} {}", frame, BufferUtil.toDetailString(frame.getPayload()));
+            }
+
             receivedFrames.offer(WebSocketFrame.copy(frame));
             callback.succeeded();
         }
@@ -233,7 +263,32 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         @Override
         public void onOpen(Channel channel) throws Exception
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("onOpen(): {}", channel);
+            }
             this.channel = channel;
+        }
+
+        public void waitUntilClosed()
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("waitUntilClosed()");
+            }
+
+            try
+            {
+                assertThat("Closed within a reasonable time", closedLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), is(true));
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("waitUntilClosed() - complete");
+                }
+            }
+            catch (InterruptedException e)
+            {
+                fail("Failed on wait for client onClosed()");
+            }
         }
 
         public void writeRaw(ByteBuffer buffer) throws IOException
