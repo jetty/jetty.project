@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,8 @@
 [[contributing-documentation]]
 === Documentation
 
-This document is produced using a combination of maven, git, and asciidoc. 
-We welcome anyone and everyone to contribute to the content of this book. 
+This document is produced using a combination of maven, git, and asciidoc.
+We welcome anyone and everyone to contribute to the content of this book.
 Below is the information on how to obtain the source of this book and to build it as well as information on how to contribute back to it.
 
 Note: All contributions to this documentation are under the EPLv1 and the copyright is assigned to Mort Bay.
@@ -30,7 +30,7 @@ You will need:
 git::
   This documentation is part of the Jetty project so all contributions must be through the normal Jetty contribution process.
 +
-You can go one of two ways for using git, if you are familiar with SCM's and the command line interface feel free to install and use git from there. 
+You can go one of two ways for using git, if you are familiar with SCM's and the command line interface feel free to install and use git from there.
 Otherwise we would recommend you use the github client itself as it will help with some of the workflow involved with working with git.
 All contributions much be signed and can be pulled into Jetty through the normal pull request process.
 
@@ -39,7 +39,7 @@ maven 3::
 
 ==== Render Chain
 
-The Jetty documentation is all written in asciidoc which is used as the origin format.  
+The Jetty documentation is all written in asciidoc which is used as the origin format.
 The maven build uses the asciidoctor-maven-plugin to process all of the .adoc files into a single docbook file which is then used to produce the final output.
 We use this intermediary step in order to primarily produce chunked html which we then deploy to the Eclipse Jetty website.
 However we can also use this docbook output to produce pdf files, epub books or even Eclipse Help files should we so desire.
@@ -60,14 +60,14 @@ Now we move on to building it.
 
 [source, screen, subs="{sub-order}"]
 ....
-$ cd jetty.project/jetty-documentation 
+$ cd jetty.project/jetty-documentation
 $ mvn install
 ....
 
-While maven is running you may see a lot of files being downloaded. 
+While maven is running you may see a lot of files being downloaded.
 If you are not familiar with maven, then what you are seeing is maven setting up the execution environment for generating the documentation.
 This build will first produce docbook xml and then through the docbkx-maven-plugin generate the chunked html output.
-The downloads are all of the java dependencies that are required to make this build work. 
+The downloads are all of the java dependencies that are required to make this build work.
 After a while the downloading will stop and you should see the execution of the asciidoctor-maven-plugin followed by the docbkx-maven-plugin.
 
 [source, screen, subs="{sub-order}"]
@@ -92,10 +92,10 @@ The build is finished once you see a message akin to this:
 [INFO] Total time: 7.014s
 [INFO] Finished at: Tue Oct 25 14:15:37 CDT 2011
 [INFO] Final Memory: 14M/229M
-[INFO] ------------------------------------------------------------------------  
+[INFO] ------------------------------------------------------------------------
 ....
 
-You may now open your web browser and browse to the first page of the html output to see what you have produced! 
+You may now open your web browser and browse to the first page of the html output to see what you have produced!
 Generally you can do this with File -> Open File -> which will open a file system browsing screen, navigate to your jetty-documentation directory and then further into target/docbkx/html/index/index.html which is the first page of the produced documentation.
 
 ____
@@ -105,28 +105,28 @@ ____
 
 ==== Making Changes
 
-Now that you have built the documentation, you want to edit it and make some changes. 
-We'll now have to take a bit of as step back and look at how git and github works. 
-In the above example you have cloned directly from our canonical documentation repository. 
-Obviously we can not allow anyone immediate access to this repository so you must make a fork of it for your own and then issue back pull requests to build up documentation karma. 
+Now that you have built the documentation, you want to edit it and make some changes.
+We'll now have to take a bit of as step back and look at how git and github works.
+In the above example you have cloned directly from our canonical documentation repository.
+Obviously we can not allow anyone immediate access to this repository so you must make a fork of it for your own and then issue back pull requests to build up documentation karma.
 In English that means that you would go to the url of the documentation in github:
 
 ....
 https://github.com/eclipse/jetty.project
 ....
 
-When you are on this page you will see a little button called 'Fork' which you can click and you will be taken back to your main page on github where you have a new repository. 
-When you checkout this repository you are free to commit to your heart's delight all the changes you so direly wish to see in the Jetty documentation. 
-You can clone it to your local machine and build it the same way as above. 
-So let's start small with a little example. 
-Find some paragraph in the documentation that you think needs changed. Locate that in the local checkout and make the change. 
-Now follow the process to push that change back into Jetty proper. 
+When you are on this page you will see a little button called 'Fork' which you can click and you will be taken back to your main page on github where you have a new repository.
+When you checkout this repository you are free to commit to your heart's delight all the changes you so direly wish to see in the Jetty documentation.
+You can clone it to your local machine and build it the same way as above.
+So let's start small with a little example.
+Find some paragraph in the documentation that you think needs changed. Locate that in the local checkout and make the change.
+Now follow the process to push that change back into Jetty proper.
 Do make sure the change works and the build isn't broken though so make sure you run maven and check the output.
 Then commit the change.
 
 [source, screen, subs="{sub-order}"]
 ....
-$ git commit -s -m "Tweaked the introduction to fix a horrid misspelled word." src/main/asciidoc/quickstart/introduction/topic.xml  
+$ git commit -s -m "Tweaked the introduction to fix a horrid misspelled word." src/main/asciidoc/quickstart/introduction/topic.xml
 ....
 
 ____
@@ -135,7 +135,7 @@ In order for us to accept your commit into the Jetty repository you must have an
 Please check out the link:#contributing-cla[patches] section for more information.
 ____
 
-This will commit the change in your local repository. 
+This will commit the change in your local repository.
 You can then push the change up to your repository on github.
 
 [source, screen, subs="{sub-order}"]
@@ -143,18 +143,18 @@ You can then push the change up to your repository on github.
 $ git push
 ....
 
-Now you'll see some output showing that your change has been propagated to your repository on github. 
-In fact if you navigate to that repository at the top of the files list you should see your comment there. 
-Success, your change is now positioned for notifying us about it! 
-If you click on the commit message itself you'll be taken to a screen that shows what files were changed in that commit. In the upper right corner is a button for 'Pull Request'. 
+Now you'll see some output showing that your change has been propagated to your repository on github.
+In fact if you navigate to that repository at the top of the files list you should see your comment there.
+Success, your change is now positioned for notifying us about it!
+If you click on the commit message itself you'll be taken to a screen that shows what files were changed in that commit. In the upper right corner is a button for 'Pull Request'.
 When you select this and follow the workflow we will then be notified of your contribution and will be able to apply it to our git repository upon review.
 
-Thats it! You have successfully contributed to the documentation efforts of the Jetty project. 
+Thats it! You have successfully contributed to the documentation efforts of the Jetty project.
 After enough of these sorts of contributions and building up good community karma, you may be asked to join us as a committer on the documentation.
 
 ==== Conventions
 
-Below is list of conventions that should be followed when developing documentation within this framework. 
+Below is list of conventions that should be followed when developing documentation within this framework.
 These are not set in stone and should be updated as we learn more.
 
 ventilated prose::
@@ -165,13 +165,13 @@ ventilated prose::
   Enabling Soft Line Wrap in your favorite editor can make this a bit easier to stomach.
 
 id's::
-  Critically important for being able to generate url's that can be used in a persistent fashion. 
+  Critically important for being able to generate url's that can be used in a persistent fashion.
   Without sane id's the chapters and sections will have generated id which are rooted in some obscure location based
-  voodoo. 
-  A url using these 'e12c8673' type links will not be durable across generations of the documentation. 
+  voodoo.
+  A url using these 'e12c8673' type links will not be durable across generations of the documentation.
   These id's need to be used on chapters and sections two deep, and anywhere that you intend to cross link deeper.
 +
-The id values go into a global namespace so they must be unique across the entire document or the last example will win and any cross links will go there. 
+The id values go into a global namespace so they must be unique across the entire document or the last example will win and any cross links will go there.
 Below is an example of an id.
 
 ....
@@ -184,13 +184,13 @@ link vs xref::
 
 version differences::
   In general differences in functionality within a release should go into nested sections and use titles like 'Prior to: ##' or 'In version: ##'.
-  
+
 license blocks::
-  Each adoc file should contain the license block that exists in the index.adoc file and a copy has been added to the bottom of this page as well for reference. 
+  Each adoc file should contain the license block that exists in the index.adoc file and a copy has been added to the bottom of this page as well for reference.
 
 ....
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -236,5 +236,4 @@ ________________________________________________________________________________
 
 ==== Oddities
 
-* If an included file ends with a list entry, it needs to have two empty lines at the end of the file in order for the section rendering to work correctly. 
-
+* If an included file ends with a list entry, it needs to have two empty lines at the end of the file in order for the section rendering to work correctly.
