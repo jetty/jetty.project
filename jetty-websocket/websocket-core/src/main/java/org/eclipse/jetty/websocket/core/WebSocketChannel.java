@@ -349,7 +349,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("incomingFrame({}, {}) - connectionState={}, handler={}",
+                    LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}",
                               frame, callback, state, handler);
                 
                 if (state.isInOpen())
@@ -359,6 +359,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
                     {
                         if (state.onCloseIn(((CloseFrame)frame).getCloseStatus()))
                         {
+                            handler.onFrame(frame, callback); // handler should know about received frame
                             handler.onClosed(state.getCloseStatus());
                             connection.close();
                             return;
@@ -410,21 +411,25 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
         public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
         {
             // TODO This needs to be reviewed against RFC for possible interleavings
-            switch(partial)
+            if (OpCode.isDataFrame(frame.getOpCode()))
             {
-                case OpCode.BINARY:
-                case OpCode.TEXT:
-                    if (frame.getOpCode()!=OpCode.CONTINUATION)
-                        callback.failed(new IllegalStateException());
-                    if (frame.isFin())
-                        partial = -1;
-                    break;
-                case -1:
-                    if (!frame.isFin())
-                        partial = frame.getOpCode();
-                    break;
-                default:
-                    callback.failed(new IllegalStateException());       
+                // Only valid for Data Frames
+                switch (partial)
+                {
+                    case OpCode.BINARY:
+                    case OpCode.TEXT:
+                        if (frame.getOpCode() != OpCode.CONTINUATION)
+                            callback.failed(new IllegalStateException("Frame " + OpCode.name(frame.getOpCode()) + " != " + OpCode.name(OpCode.CONTINUATION)));
+                        if (frame.isFin())
+                            partial = -1;
+                        break;
+                    case -1:
+                        if (!frame.isFin())
+                            partial = frame.getOpCode();
+                        break;
+                    default:
+                        callback.failed(new IllegalStateException("Unexpected partial state: " + OpCode.name(partial)));
+                }
             }
             
             connection.sendFrame(frame,callback,batchMode);
