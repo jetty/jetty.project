@@ -128,6 +128,11 @@ public interface Fuzzer extends AutoCloseable
                 prefix = "Frame[" + i + "]";
 
                 WebSocketFrame expected = expect.get(i);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("assertExpected() - {} poll", prefix);
+                }
+
                 WebSocketFrame actual = framesQueue.poll(3, TimeUnit.SECONDS);
                 assertThat(prefix + ".poll", actual, notNullValue());
 
