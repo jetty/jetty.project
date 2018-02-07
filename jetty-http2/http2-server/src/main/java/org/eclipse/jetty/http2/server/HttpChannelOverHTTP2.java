@@ -428,5 +428,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
                 callback.failed(x);
             }
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s]", getClass().getName(), hashCode(), failure);
+        }
     }
 }
