@@ -19,45 +19,55 @@
 package org.eclipse.jetty.websocket.core;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.AcceptHash;
-import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class AcceptHashTest
 {
-    @Test
-    public void testHash()
+    private static String hexAsKey(String hex)
     {
-        byte key[] = TypeUtil.fromHexString("00112233445566778899AABBCCDDEEFF");
-        Assert.assertThat("Key size",key.length,is(16));
-
-        // what the client sends
-        String clientKey = String.valueOf(B64Code.encode(key));
-        // what the server responds with
-        String serverHash = AcceptHash.hashKey(clientKey);
-
-        // how the client validates
-        Assert.assertThat(serverHash,is("mVL6JKtNRC4tluIaFAW2hhMffgE="));
+        byte key[] = TypeUtil.fromHexString(hex);
+        assertThat("Key size of hex:[" + hex + "]", key.length, is(16));
+        return String.valueOf(B64Code.encode(key));
     }
 
-    /**
-     * Test of values present in RFC-6455.
-     * <p>
-     * Note: client key bytes are "7468652073616d706c65206e6f6e6365"
-     */
-    @Test
-    public void testRfcHashExample()
+    @Parameterized.Parameters
+    public static List<String[]> data()
     {
-        // What the client sends in the RFC
-        String clientKey = "dGhlIHNhbXBsZSBub25jZQ==";
+        List<String[]> cases = new ArrayList<>();
 
-        // What the server responds with
+        cases.add(new String[]{hexAsKey("00112233445566778899AABBCCDDEEFF"), "mVL6JKtNRC4tluIaFAW2hhMffgE="});
+
+        // Test values present in RFC6455
+        // Note: client key bytes are "7468652073616d706c65206e6f6e6365"
+        cases.add(new String[]{hexAsKey("7468652073616d706c65206e6f6e6365"), "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="});
+        cases.add(new String[]{"dGhlIHNhbXBsZSBub25jZQ==", "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="});
+
+        // Real World Captured values (from functional browser sessions)
+        cases.add(new String[]{"xo++9aD2ivkaFaRNKcOrwQ==", "eYTC3DAl9qX36VRW2fZ/LPwTFZU="});
+
+        return cases;
+    }
+
+    @Parameterized.Parameter(0)
+    public String clientKey;
+
+    @Parameterized.Parameter(1)
+    public String expectedHash;
+
+    @Test
+    public void testHashKey()
+    {
         String serverAccept = AcceptHash.hashKey(clientKey);
-        String expectedHash = "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=";
-
-        Assert.assertThat(serverAccept,is(expectedHash));
+        assertThat("Hashed Key", serverAccept, is(expectedHash));
     }
 }
