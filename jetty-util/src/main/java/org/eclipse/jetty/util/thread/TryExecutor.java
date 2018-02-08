@@ -66,6 +66,12 @@ public interface TryExecutor extends Executor
         {
             return false;
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), executor);
+        }
     }
 
     public static final TryExecutor NO_TRY = task -> false;
