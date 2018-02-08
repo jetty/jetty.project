@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
@@ -55,7 +56,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
 
     public WebSocketCoreClient()
     {
-        this(new HttpClient());
+        this(new HttpClient(new SslContextFactory()));
         this.httpClient.setName("WebSocketCoreClient");
         // Internally created, let websocket client's lifecycle manage it.
         this.addManaged(httpClient);
