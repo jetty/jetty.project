@@ -231,7 +231,7 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
 
         if (expectedHash.equalsIgnoreCase(respHash) == false)
         {
-            throw new HttpResponseException("Invalid Sec-WebSocket-Accept hash", response);
+            throw new HttpResponseException("Invalid Sec-WebSocket-Accept hash (was:" + respHash + ", expected:" + expectedHash + ")", response);
         }
 
         // Verify the Negotiated Extensions
