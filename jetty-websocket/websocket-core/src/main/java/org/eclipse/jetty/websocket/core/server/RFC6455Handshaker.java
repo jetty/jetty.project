@@ -164,12 +164,14 @@ public final class RFC6455Handshaker implements Handshaker
         {
             if(subprotocol == null)
             {
+                // TODO: this message needs to be returned to Http Client
                 LOG.warn("not upgraded: no subprotocol selected from offered subprotocols {}: {}", negotiation.getOfferedSubprotocols(), baseRequest);
                 return false;
             }
 
             if(!negotiation.getOfferedSubprotocols().contains(subprotocol))
             {
+                // TODO: this message needs to be returned to Http Client
                 LOG.warn("not upgraded: selected subprotocol {} not present in offered subprotocols {}: {}", subprotocol, negotiation.getOfferedSubprotocols(), baseRequest);
                 return false;
             }
