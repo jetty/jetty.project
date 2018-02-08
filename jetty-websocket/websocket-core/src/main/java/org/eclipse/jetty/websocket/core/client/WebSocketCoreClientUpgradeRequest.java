@@ -337,22 +337,30 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
         version(HttpVersion.HTTP_1_1);
 
         // The Upgrade Headers
-        header(HttpHeader.UPGRADE, "websocket");
-        header(HttpHeader.CONNECTION, "Upgrade");
+        setHeaderIfNotPresent(HttpHeader.UPGRADE, "websocket");
+        setHeaderIfNotPresent(HttpHeader.CONNECTION, "Upgrade");
 
         // The WebSocket Headers
-        header(HttpHeader.SEC_WEBSOCKET_KEY, genRandomKey());
-        header(HttpHeader.SEC_WEBSOCKET_VERSION, "13");
+        setHeaderIfNotPresent(HttpHeader.SEC_WEBSOCKET_KEY, genRandomKey());
+        setHeaderIfNotPresent(HttpHeader.SEC_WEBSOCKET_VERSION, "13");
 
         // (Per the hybi list): Add no-cache headers to avoid compatibility issue.
         // There are some proxies that rewrite "Connection: upgrade"
         // to "Connection: close" in the response if a request doesn't contain
         // these headers.
-        header(HttpHeader.PRAGMA, "no-cache");
-        header(HttpHeader.CACHE_CONTROL, "no-cache");
+        setHeaderIfNotPresent(HttpHeader.PRAGMA, "no-cache");
+        setHeaderIfNotPresent(HttpHeader.CACHE_CONTROL, "no-cache");
 
         // Notify upgrade hooks
         notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
+    }
+
+    private void setHeaderIfNotPresent(HttpHeader header, String value)
+    {
+        if (!getHeaders().contains(header))
+        {
+            getHeaders().put(header, value);
+        }
     }
 
     private void notifyUpgradeListeners(Consumer<UpgradeListener> action)
