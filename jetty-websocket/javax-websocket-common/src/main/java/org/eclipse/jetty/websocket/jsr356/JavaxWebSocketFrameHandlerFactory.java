@@ -24,7 +24,6 @@ import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -32,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.websocket.ClientEndpoint;
@@ -181,8 +179,7 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
     }
 
     @SuppressWarnings("Duplicates")
-    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass,
-                                                WebSocketPolicy endpointPolicy, Executor executor)
+    public static MessageSink createMessageSink(JavaxWebSocketSession session, MethodHandle msgHandle, Class<? extends MessageSink> sinkClass)
     {
         if (msgHandle == null)
             return null;
@@ -191,8 +188,8 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
 
         try
         {
-            Constructor sinkConstructor = sinkClass.getConstructor(WebSocketPolicy.class, Executor.class, MethodHandle.class);
-            MessageSink messageSink = (MessageSink) sinkConstructor.newInstance(endpointPolicy, executor, msgHandle);
+            MethodHandle ctorHandle = MethodHandles.lookup().findConstructor(sinkClass, MethodType.methodType(void.class, JavaxWebSocketSession.class, MethodHandle.class));
+            MessageSink messageSink = (MessageSink) ctorHandle.invoke(session, msgHandle);
             return messageSink;
         }
         catch (NoSuchMethodException e)
@@ -202,6 +199,14 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
         catch (IllegalAccessException | InstantiationException | InvocationTargetException e)
         {
             throw new RuntimeException("Unable to create MessageSink: " + sinkClass.getName(), e);
+        }
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            throw new RuntimeException(t);
         }
     }
 

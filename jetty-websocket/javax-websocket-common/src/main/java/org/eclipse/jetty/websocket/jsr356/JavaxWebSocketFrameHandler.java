@@ -209,13 +209,13 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
         if (textHandle != null)
         {
             textHandle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(textHandle, session);
-            textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, getPolicy(), container.getExecutor());
+            textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, textHandle, textSinkClass);
         }
 
         if (binaryHandle != null)
         {
             binaryHandle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(binaryHandle, session);
-            binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, getPolicy(), container.getExecutor());
+            binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, binaryHandle, binarySinkClass);
         }
 
         if (openHandle != null)
