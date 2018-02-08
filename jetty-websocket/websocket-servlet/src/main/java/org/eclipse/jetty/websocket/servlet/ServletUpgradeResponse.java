@@ -60,6 +60,12 @@ public class ServletUpgradeResponse implements HandshakeResponse
         response.setHeader(name, value);
     }
 
+    public void setHeader(String name, List<String> values)
+    {
+        response.setHeader(name, null); // clear it out first
+        values.forEach((value)->response.addHeader(name, value));
+    }
+
     @Override
     public String getAcceptedSubProtocol()
     {

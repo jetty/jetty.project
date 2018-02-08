@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,15 +29,23 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 public class JsrHandshakeResponse implements HandshakeResponse
 {
     private final ServletUpgradeResponse delegate;
+    private Map<String, List<String>> headerMap;
 
     public JsrHandshakeResponse(ServletUpgradeResponse resp)
     {
         this.delegate = resp;
+        this.headerMap = new HashMap<>();
+        this.headerMap.putAll(resp.getHeadersMap());
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return delegate.getHeadersMap();
+        return headerMap;
+    }
+
+    public void setHeaders(Map<String, List<String>> headers)
+    {
+        headers.forEach((key, values) -> delegate.setHeader(key, values));
     }
 }
