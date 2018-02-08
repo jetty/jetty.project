@@ -173,24 +173,6 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         return new NetworkFuzzer(this, getWsUri().resolve(requestPath.toString()), upgradeRequest);
     }
 
-    @Deprecated
-    public Fuzzer newLocalFuzzer() throws Exception
-    {
-        return new LocalFuzzer(this);
-    }
-
-    @Deprecated
-    public Fuzzer newLocalFuzzer(CharSequence requestPath) throws Exception
-    {
-        return new LocalFuzzer(this, requestPath);
-    }
-
-    @Deprecated
-    public Fuzzer newLocalFuzzer(CharSequence requestPath, Map<String,String> upgradeRequest) throws Exception
-    {
-        return new LocalFuzzer(this, requestPath, upgradeRequest);
-    }
-    
     protected Handler createRootHandler(Server server) throws Exception
     {
         servletContextHandler = new ServletContextHandler(server, "/", true, false);
