@@ -1016,7 +1016,7 @@
               <artifactId>jacoco-maven-plugin</artifactId>
               <version>0.8.1-SNAPSHOT</version>
               <configuration>
-                <skip>true</skip>
+                <skip>false</skip>
               </configuration>
             </plugin>
             <plugin>
