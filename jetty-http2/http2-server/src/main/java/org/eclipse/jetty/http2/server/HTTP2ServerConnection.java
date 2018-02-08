@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -58,7 +59,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
 {
@@ -94,7 +94,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final HttpConfiguration httpConfig;
     private boolean recycleHttpChannels;
 
-    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, ReservedThreadExecutor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
         super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
         this.listener = listener;

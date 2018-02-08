@@ -44,9 +44,6 @@ basehome:modules/ssl/keystore|etc/keystore
 ## Thread priority delta to give to acceptor threads
 # jetty.ssl.acceptorPriorityDelta=0
 
-## Preallocated producer threads (0 disables EatWhatYouKill scheduling)
-# jetty.ssl.reservedThreads=-1
-
 ## Connect Timeout in milliseconds
 # jetty.ssl.connectTimeout=15000
 
