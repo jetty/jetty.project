@@ -1009,6 +1009,7 @@
   </dependencyManagement>
 
   <profiles>
+    <!-- disable until jacoco release > 0.8.0 released -->
     <profile>
       <id>jdk10</id>
       <activation>
