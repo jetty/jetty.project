@@ -1002,7 +1002,7 @@
   </dependencyManagement>
 
   <profiles>
-    <!-- disable until jacoco release > 0.8.0 released -->
+    <!-- use last snapshot of jacoco and failsafe for jdk10 -->
     <profile>
       <id>jdk10</id>
       <activation>
