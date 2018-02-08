@@ -69,7 +69,7 @@ public class WebSocketServerSessionTest
         expect.add(new TextFrame().setPayload("<null>"));
         send.add(new CloseFrame());
         
-        try (Fuzzer session = server.newLocalFuzzer(requestPath))
+        try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
             session.sendFrames(send);
             session.expect(expect);

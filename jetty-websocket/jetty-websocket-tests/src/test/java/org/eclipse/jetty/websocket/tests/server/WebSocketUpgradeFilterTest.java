@@ -72,7 +72,7 @@ public abstract class WebSocketUpgradeFilterTest
     @Test
     public void testNormalConfiguration() throws Exception
     {
-        try (Fuzzer session = server.newLocalFuzzer("/info/"))
+        try (Fuzzer session = server.newNetworkFuzzer("/info/"))
         {
             session.sendFrames(
                     new TextFrame().setPayload("hello"),
@@ -93,7 +93,7 @@ public abstract class WebSocketUpgradeFilterTest
     @Test
     public void testStopStartOfHandler() throws Exception
     {
-        try (Fuzzer session = server.newLocalFuzzer("/info/"))
+        try (Fuzzer session = server.newNetworkFuzzer("/info/"))
         {
             session.sendFrames(
                     new TextFrame().setPayload("hello 1"),
@@ -115,7 +115,7 @@ public abstract class WebSocketUpgradeFilterTest
         
         // Make request again (server should have retained websocket configuration)
         
-        try (Fuzzer session = server.newLocalFuzzer("/info/"))
+        try (Fuzzer session = server.newNetworkFuzzer("/info/"))
         {
             session.sendFrames(
                     new TextFrame().setPayload("hello 2"),

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -33,6 +34,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -62,11 +64,36 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
 
     public NetworkFuzzer(LocalServer server) throws Exception
     {
+        this(server, server.getWsUri(), null);
+    }
+
+    public NetworkFuzzer(LocalServer server, CharSequence requestPath) throws Exception
+    {
+        this(server, server.getWsUri().resolve(requestPath.toString()), null);
+    }
+
+    public NetworkFuzzer(LocalServer server, CharSequence requestPath, Map<String, String> upgradeRequestHeaders) throws Exception
+    {
+        this(server, server.getWsUri().resolve(requestPath.toString()), upgradeRequestHeaders);
+    }
+
+    public NetworkFuzzer(LocalServer server, URI wsUri, Map<String, String> upgradeRequestHeaders) throws Exception
+    {
         super();
         this.server = server;
         this.rawClient = new RawWebSocketClient();
         CompletableFuture<FrameCapture> futureOnCapture = new CompletableFuture<>();
-        this.upgradeRequest = new RawUpgradeRequest(rawClient, server.getWsUri(), futureOnCapture);
+        this.upgradeRequest = new RawUpgradeRequest(rawClient, wsUri, futureOnCapture);
+        if (upgradeRequestHeaders != null)
+        {
+            HttpFields headers = this.upgradeRequest.getHeaders();
+            upgradeRequestHeaders.entrySet()
+                    .forEach((entry) -> {
+                        headers.remove(entry.getKey());
+                        if (entry.getValue() != null)
+                            headers.put(entry.getKey(), entry.getValue());
+                    });
+        }
         this.rawClient.start();
         this.generator = new UnitGenerator(rawClient.getPolicy());
 

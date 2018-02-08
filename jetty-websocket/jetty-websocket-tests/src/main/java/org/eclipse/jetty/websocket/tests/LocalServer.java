@@ -124,20 +124,30 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         return new NetworkFuzzer(this);
     }
 
-    public Fuzzer newLocalFuzzer() throws Exception
+    public Fuzzer newNetworkFuzzer(CharSequence requestPath) throws Exception
     {
-        return new LocalFuzzer(this);
+        return new NetworkFuzzer(this, requestPath);
     }
 
-    public Fuzzer newLocalFuzzer(CharSequence requestPath) throws Exception
+    public Fuzzer newNetworkFuzzer(CharSequence requestPath, Map<String, String> upgradeRequest) throws Exception
     {
-        return new LocalFuzzer(this, requestPath);
+        return new NetworkFuzzer(this, requestPath, upgradeRequest);
     }
 
-    public Fuzzer newLocalFuzzer(CharSequence requestPath, Map<String, String> upgradeRequest) throws Exception
-    {
-        return new LocalFuzzer(this, requestPath, upgradeRequest);
-    }
+//    public Fuzzer newLocalFuzzer() throws Exception
+//    {
+//        return new LocalFuzzer(this);
+//    }
+//
+//    public Fuzzer newLocalFuzzer(CharSequence requestPath) throws Exception
+//    {
+//        return new LocalFuzzer(this, requestPath);
+//    }
+//
+//    public Fuzzer newLocalFuzzer(CharSequence requestPath, Map<String, String> upgradeRequest) throws Exception
+//    {
+//        return new LocalFuzzer(this, requestPath, upgradeRequest);
+//    }
 
     protected Handler createRootHandler(Server server) throws Exception
     {

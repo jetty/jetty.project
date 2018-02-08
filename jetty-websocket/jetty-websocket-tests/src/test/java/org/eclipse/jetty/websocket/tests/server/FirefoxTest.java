@@ -49,7 +49,7 @@ public class FirefoxTest extends AbstractLocalServerCase
         // REGRESSION TEST - Odd Connection Header value seen in Firefox
         upgradeHeaders.put("Connection", "keep-alive, Upgrade");
     
-        try (Fuzzer session = server.newLocalFuzzer("/", upgradeHeaders))
+        try (Fuzzer session = server.newNetworkFuzzer("/", upgradeHeaders))
         {
             session.sendBulk(send);
             session.expect(expect);

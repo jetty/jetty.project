@@ -269,7 +269,7 @@ public class ManyConnectionsCleanupTest
             }
         }
         
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
         
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();

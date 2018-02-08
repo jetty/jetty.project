@@ -246,7 +246,6 @@ public class WebSocketServletRFCTest
         upgradeRequest.header("connection", "upgrade");
         upgradeRequest.header("sec-websocket-key", Defaults.getStaticWebSocketKey());
         upgradeRequest.header("sec-websocket-origin", wsUri.toASCIIString());
-        upgradeRequest.header("sec-websocket-protocol", "echo");
         upgradeRequest.header("sec-websocket-version", "13");
 
         Future<FrameHandler.Channel> channelFuture = client.connect(upgradeRequest);
@@ -274,7 +273,6 @@ public class WebSocketServletRFCTest
         upgradeRequest.header("CONNECTION", "UPGRADE");
         upgradeRequest.header("SEC-WEBSOCKET-KEY", Defaults.getStaticWebSocketKey());
         upgradeRequest.header("SEC-WEBSOCKET-ORIGIN", wsUri.toASCIIString());
-        upgradeRequest.header("SEC-WEBSOCKET-PROTOCOL", "ECHO");
         upgradeRequest.header("SEC-WEBSOCKET-VERSION", "13");
 
         Future<FrameHandler.Channel> channelFuture = client.connect(upgradeRequest);
@@ -318,8 +316,6 @@ public class WebSocketServletRFCTest
                 return new WebSocketConnection(endp, executor, byteBufferPool, wsChannel, false);
             }
         };
-
-        upgradeRequest.setSubProtocols("other");
 
         Future<FrameHandler.Channel> channelFuture = client.connect(upgradeRequest);
 

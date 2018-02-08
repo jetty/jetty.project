@@ -218,7 +218,7 @@ public class DecoratorsTest
     @Test
     public void testAccessRequestCookies() throws Exception
     {
-        try (Fuzzer session = server.newLocalFuzzer("/"))
+        try (Fuzzer session = server.newNetworkFuzzer("/"))
         {
             session.sendFrames(
                     new TextFrame().setPayload("info"),

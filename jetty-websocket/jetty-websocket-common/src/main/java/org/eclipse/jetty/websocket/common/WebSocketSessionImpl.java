@@ -32,16 +32,19 @@ import org.eclipse.jetty.websocket.core.io.SuspendToken;
 public class WebSocketSessionImpl implements Session
 {
     private final WebSocketContainerContext container;
+    private final WebSocketPolicy sessionPolicy;
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final HandshakeRequest handshakeRequest;
     private final HandshakeResponse handshakeResponse;
 
     public WebSocketSessionImpl(WebSocketContainerContext container,
+                                WebSocketPolicy sessionPolicy,
                                 JettyWebSocketRemoteEndpoint remoteEndpoint,
                                 HandshakeRequest handshakeRequest,
                                 HandshakeResponse handshakeResponse)
     {
         this.container = container;
+        this.sessionPolicy = sessionPolicy;
         this.remoteEndpoint = remoteEndpoint;
         this.handshakeRequest = handshakeRequest;
         this.handshakeResponse = handshakeResponse;
@@ -98,7 +101,7 @@ public class WebSocketSessionImpl implements Session
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return null;
+        return sessionPolicy;
     }
 
     @Override

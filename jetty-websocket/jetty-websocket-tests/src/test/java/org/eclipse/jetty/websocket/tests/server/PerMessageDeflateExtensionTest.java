@@ -65,7 +65,7 @@ public class PerMessageDeflateExtensionTest
             {
                 byte buf[] = BufferUtil.toArray(data);
                 String sha1 = Sha1Sum.calculate(buf);
-                session.getRemote().sendString(String.format("binary[sha1=%s]", sha1));
+                session.getRemote().sendText(String.format("binary[sha1=%s]", sha1));
             }
             catch (Throwable t)
             {
@@ -164,6 +164,7 @@ public class PerMessageDeflateExtensionTest
 
         HttpClient httpClient = new HttpClient(server.getSslContextFactory());
         WebSocketClient client = new WebSocketClient(httpClient);
+        client.addManaged(httpClient);
         WebSocketPolicy clientPolicy = client.getPolicy();
         clientPolicy.setMaxBinaryMessageSize(binBufferSize);
         if (inputBufferSize > 0)
@@ -180,8 +181,7 @@ public class PerMessageDeflateExtensionTest
             TrackingEndpoint clientSocket = new TrackingEndpoint("Client");
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             request.addExtensions("permessage-deflate");
-            request.setSubProtocols("echo");
-            
+
             Future<Session> fut = client.connect(clientSocket, server.getWsUri(), request);
             
             // Wait for connect

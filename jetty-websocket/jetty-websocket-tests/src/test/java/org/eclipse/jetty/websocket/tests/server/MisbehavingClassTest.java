@@ -159,10 +159,12 @@ public class MisbehavingClassTest
         {
             if (req.hasSubProtocol("listener-runtime-connect"))
             {
+                resp.setAcceptedSubProtocol("listener-runtime-connect");
                 return this.listenerRuntimeConnect;
             }
             else if (req.hasSubProtocol("annotated-runtime-connect"))
             {
+                resp.setAcceptedSubProtocol("annotated-runtime-connect");
                 return this.annotatedRuntimeConnect;
             }
             
@@ -214,7 +216,7 @@ public class MisbehavingClassTest
             socket.reset();
     
             client.setMaxIdleTimeout(TimeUnit.SECONDS.toMillis(1));
-            URI wsUri = server.getServerUri();
+            URI wsUri = server.getWsUri();
     
             TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
             ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
@@ -239,7 +241,7 @@ public class MisbehavingClassTest
             socket.reset();
 
             client.setMaxIdleTimeout(TimeUnit.SECONDS.toMillis(1));
-            URI wsUri = server.getServerUri();
+            URI wsUri = server.getWsUri();
     
             TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
             ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();

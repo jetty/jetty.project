@@ -184,7 +184,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     public void onOpen(Channel channel) throws Exception
     {
         JettyWebSocketRemoteEndpoint remote = new JettyWebSocketRemoteEndpoint(channel);
-        session = new WebSocketSessionImpl(container, remote, handshakeRequest, handshakeResponse);
+        session = new WebSocketSessionImpl(container, policy, remote, handshakeRequest, handshakeResponse);
 
         frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
         openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);
