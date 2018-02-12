@@ -51,7 +51,7 @@ import org.junit.Test;
 public class AnnotatedEndpointConfigTest
 {
     @ClientEndpoint(
-            subprotocols = { "chat", "echo" },
+            subprotocols = { "chat", "echo-whole" },
             decoders = { DateDecoder.class },
             encoders = { TimeEncoder.class },
             configurator = AnnotatedEndpointConfigurator.class)
@@ -165,7 +165,7 @@ public class AnnotatedEndpointConfigTest
     public void testSubProtocols() throws Exception
     {
         List<String> subprotocols = ceconfig.getPreferredSubprotocols();
-        assertThat("Client Preferred SubProtocols",subprotocols, contains("chat","echo"));
+        assertThat("Client Preferred SubProtocols",subprotocols, contains("chat","echo-whole"));
     }
 
     @Test
