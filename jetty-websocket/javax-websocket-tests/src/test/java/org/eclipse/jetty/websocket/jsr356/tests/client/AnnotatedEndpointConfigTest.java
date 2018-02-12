@@ -51,35 +51,35 @@ import org.junit.Test;
 public class AnnotatedEndpointConfigTest
 {
     @ClientEndpoint(
-            subprotocols = { "chat", "echo-whole" },
-            decoders = { DateDecoder.class },
-            encoders = { TimeEncoder.class },
+            subprotocols = {"chat", "echo-whole"},
+            decoders = {DateDecoder.class},
+            encoders = {TimeEncoder.class},
             configurator = AnnotatedEndpointConfigurator.class)
     public static class AnnotatedEndpointClient
     {
         public Session session;
         public EndpointConfig config;
-        
+
         @OnOpen
         public void onOpen(Session session, EndpointConfig config)
         {
             this.session = session;
             this.config = config;
         }
-        
+
         @OnMessage(maxMessageSize = 111222)
         public void onText(String msg)
         {
-        /* do nothing */
+            /* do nothing */
         }
-        
+
         @OnMessage(maxMessageSize = 333444)
         public void onBinary(ByteBuffer buf)
         {
-        /* do nothing */
+            /* do nothing */
         }
     }
-    
+
     public static class AnnotatedEndpointConfigurator extends ClientEndpointConfig.Configurator
     {
         @Override
@@ -89,12 +89,12 @@ public class AnnotatedEndpointConfigTest
             super.afterResponse(hr);
         }
     }
-    
+
     private static CoreServer server;
     private static ClientEndpointConfig ceconfig;
     private static EndpointConfig config;
     private static Session session;
-    private static AnnotatedEndpointClient socket;
+    private static AnnotatedEndpointClient clientEndpoint;
 
     @BeforeClass
     public static void startEnv() throws Exception
@@ -108,17 +108,17 @@ public class AnnotatedEndpointConfigTest
         // Connect client
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         server.addBean(container); // allow to shutdown with server
-        socket = new AnnotatedEndpointClient();
+        clientEndpoint = new AnnotatedEndpointClient();
 
-        session = container.connectToServer(socket,server.getWsUri());
-        assertThat("Session",session, notNullValue());
+        session = container.connectToServer(clientEndpoint, server.getWsUri());
+        assertThat("Session", session, notNullValue());
 
-        config = socket.config;
-        assertThat("EndpointConfig",config, notNullValue());
-        assertThat("EndpointConfig",config, instanceOf(ClientEndpointConfig.class));
+        config = clientEndpoint.config;
+        assertThat("EndpointConfig", config, notNullValue());
+        assertThat("EndpointConfig", config, instanceOf(ClientEndpointConfig.class));
 
-        ceconfig = (ClientEndpointConfig)config;
-        assertThat("EndpointConfig",ceconfig, notNullValue());
+        ceconfig = (ClientEndpointConfig) config;
+        assertThat("EndpointConfig", ceconfig, notNullValue());
     }
 
     @AfterClass
@@ -149,30 +149,30 @@ public class AnnotatedEndpointConfigTest
     public void testTextMax() throws Exception
     {
         assertThat("Client Text Max",
-                socket.session.getMaxTextMessageBufferSize(),
+                clientEndpoint.session.getMaxTextMessageBufferSize(),
                 is(111222));
     }
-    
+
     @Test
     public void testBinaryMax() throws Exception
     {
         assertThat("Client Binary Max",
-                socket.session.getMaxBinaryMessageBufferSize(),
+                clientEndpoint.session.getMaxBinaryMessageBufferSize(),
                 is(333444));
     }
-    
+
     @Test
     public void testSubProtocols() throws Exception
     {
         List<String> subprotocols = ceconfig.getPreferredSubprotocols();
-        assertThat("Client Preferred SubProtocols",subprotocols, contains("chat","echo-whole"));
+        assertThat("Client Preferred SubProtocols", subprotocols, contains("chat", "echo-whole"));
     }
 
     @Test
     public void testDecoders() throws Exception
     {
         List<Class<? extends Decoder>> decoders = config.getDecoders();
-        assertThat("Decoders",decoders, notNullValue());
+        assertThat("Decoders", decoders, notNullValue());
 
         Class<?> expectedClass = DateDecoder.class;
         boolean hasExpectedDecoder = false;
@@ -184,14 +184,14 @@ public class AnnotatedEndpointConfigTest
             }
         }
 
-        assertTrue("Client Decoders has " + expectedClass.getName(),hasExpectedDecoder);
+        assertTrue("Client Decoders has " + expectedClass.getName(), hasExpectedDecoder);
     }
 
     @Test
     public void testEncoders() throws Exception
     {
         List<Class<? extends Encoder>> encoders = config.getEncoders();
-        assertThat("AvailableEncoders",encoders, notNullValue());
+        assertThat("AvailableEncoders", encoders, notNullValue());
 
         Class<?> expectedClass = TimeEncoder.class;
         boolean hasExpectedEncoder = false;
@@ -203,14 +203,14 @@ public class AnnotatedEndpointConfigTest
             }
         }
 
-        assertTrue("Client AvailableEncoders has " + expectedClass.getName(),hasExpectedEncoder);
+        assertTrue("Client AvailableEncoders has " + expectedClass.getName(), hasExpectedEncoder);
     }
 
     @Test
     public void testConfigurator() throws Exception
     {
-        ClientEndpointConfig ceconfig = (ClientEndpointConfig)config;
+        ClientEndpointConfig ceconfig = (ClientEndpointConfig) config;
 
-        assertThat("Client Configurator",ceconfig.getConfigurator(), instanceOf(AnnotatedEndpointConfigurator.class));
+        assertThat("Client Configurator", ceconfig.getConfigurator(), instanceOf(AnnotatedEndpointConfigurator.class));
     }
 }

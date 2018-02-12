@@ -132,6 +132,11 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
 
         WebSocketPolicy endpointPolicy = policy.clonePolicy();
 
+        if(metadata.isMaxTextMessageSizeSet())
+            endpointPolicy.setMaxTextMessageSize(metadata.getMaxTextMessageSize());
+        if(metadata.isMaxBinaryMessageSizeSet())
+            endpointPolicy.setMaxBinaryMessageSize(metadata.getMaxBinaryMessageSize());
+
         // TODO: encoders?
         // TODO: decoders?
         // TODO: subprotocols?
@@ -365,6 +370,7 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
             for (Method onMsg : onMessages)
             {
                 assertSignatureValid(endpointClass, onMsg, OnMessage.class);
+                OnMessage onMessageAnno = onMsg.getAnnotation(OnMessage.class);
 
                 MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, textCallingArgs);
                 if (methodHandle != null)
@@ -372,6 +378,7 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
                     // Normal Text Message
                     assertSignatureValid(endpointClass, onMsg, OnMessage.class);
                     metadata.setTextHandler(StringMessageSink.class, methodHandle, onMsg);
+                    metadata.setMaxTextMessageSize(onMessageAnno.maxMessageSize());
                     continue onmessageloop;
                 }
 
@@ -381,6 +388,7 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
                     // ByteBuffer Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnMessage.class);
                     metadata.setBinaryHandle(ByteBufferMessageSink.class, methodHandle, onMsg);
+                    metadata.setMaxBinaryMessageSize(onMessageAnno.maxMessageSize());
                     continue onmessageloop;
                 }
 
@@ -390,6 +398,7 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
                     // byte[] Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnMessage.class);
                     metadata.setBinaryHandle(ByteArrayMessageSink.class, methodHandle, onMsg);
+                    metadata.setMaxBinaryMessageSize(onMessageAnno.maxMessageSize());
                     continue onmessageloop;
                 }
 
@@ -399,6 +408,7 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
                     // InputStream Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnMessage.class);
                     metadata.setBinaryHandle(InputStreamMessageSink.class, methodHandle, onMsg);
+                    metadata.setMaxBinaryMessageSize(onMessageAnno.maxMessageSize());
                     continue onmessageloop;
                 }
 
@@ -408,6 +418,7 @@ public class JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
                     // Reader Text Message
                     assertSignatureValid(endpointClass, onMsg, OnMessage.class);
                     metadata.setTextHandler(ReaderMessageSink.class, methodHandle, onMsg);
+                    metadata.setMaxTextMessageSize(onMessageAnno.maxMessageSize());
                     continue onmessageloop;
                 }
                 else

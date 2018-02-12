@@ -51,6 +51,11 @@ public class JavaxWebSocketFrameHandlerMetadata
     // ServerEndpointConfig entries
     private Class<? extends ServerEndpointConfig.Configurator> serverConfigurator;
 
+    // OnMessage Settings (-1 means unset)
+    public static long UNSET = -2L;
+    private long maxTextMessageSize = UNSET;
+    private long maxBinaryMessageSize = UNSET;
+
     public void setBinaryHandle(Class<? extends MessageSink> sinkClass, MethodHandle binary, Object origin)
     {
         assertNotSet(this.binaryHandle, "BINARY Handler", origin);
@@ -177,6 +182,36 @@ public class JavaxWebSocketFrameHandlerMetadata
     public Class<? extends MessageSink> getTextSink()
     {
         return textSink;
+    }
+
+    public long getMaxBinaryMessageSize()
+    {
+        return maxBinaryMessageSize;
+    }
+
+    public boolean isMaxBinaryMessageSizeSet()
+    {
+        return (maxBinaryMessageSize != UNSET) && (maxBinaryMessageSize != 0);
+    }
+
+    public void setMaxBinaryMessageSize(long maxBinaryMessageSize)
+    {
+        this.maxBinaryMessageSize = maxBinaryMessageSize;
+    }
+
+    public long getMaxTextMessageSize()
+    {
+        return maxTextMessageSize;
+    }
+
+    public boolean isMaxTextMessageSizeSet()
+    {
+        return (maxTextMessageSize != UNSET) && (maxTextMessageSize != 0);
+    }
+
+    public void setMaxTextMessageSize(long maxTextMessageSize)
+    {
+        this.maxTextMessageSize = maxTextMessageSize;
     }
 
     private void assertNotSet(Object val, String role, Object origin)
