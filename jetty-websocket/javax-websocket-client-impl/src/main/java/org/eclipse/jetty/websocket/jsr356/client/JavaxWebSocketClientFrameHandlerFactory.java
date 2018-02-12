@@ -16,19 +16,19 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.jsr356.client;
 
+import javax.websocket.ClientEndpoint;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
-import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata;
 
-public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
+public class JavaxWebSocketClientFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
 {
-    public JavaxWebSocketServerFrameHandlerFactory(JavaxWebSocketContainer container)
+    public JavaxWebSocketClientFrameHandlerFactory(JavaxWebSocketContainer container)
     {
         super(container);
     }
@@ -41,7 +41,7 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrame
             return createEndpointMetadata((Class<? extends Endpoint>) endpointClass, endpointConfig);
         }
 
-        if (endpointClass.getAnnotation(ServerEndpoint.class) == null)
+        if (endpointClass.getAnnotation(ClientEndpoint.class) == null)
         {
             return null;
         }

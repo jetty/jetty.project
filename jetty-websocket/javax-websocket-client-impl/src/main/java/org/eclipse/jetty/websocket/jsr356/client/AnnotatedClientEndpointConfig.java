@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 
 public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
 {
+    private final ClientEndpoint annotation;
     private final List<Class<? extends Decoder>> decoders;
     private final List<Class<? extends Encoder>> encoders;
     private final List<Extension> extensions;
@@ -43,6 +44,7 @@ public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
 
     public AnnotatedClientEndpointConfig(ClientEndpoint anno)
     {
+        this.annotation = anno;
         this.decoders = Collections.unmodifiableList(Arrays.asList(anno.decoders()));
         this.encoders = Collections.unmodifiableList(Arrays.asList(anno.encoders()));
         this.preferredSubprotocols = Collections.unmodifiableList(Arrays.asList(anno.subprotocols()));
@@ -72,6 +74,11 @@ public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
                 throw new InvalidWebSocketException(err.toString(),e);
             }
         }
+    }
+
+    public ClientEndpoint getAnnotation()
+    {
+        return annotation;
     }
 
     @Override

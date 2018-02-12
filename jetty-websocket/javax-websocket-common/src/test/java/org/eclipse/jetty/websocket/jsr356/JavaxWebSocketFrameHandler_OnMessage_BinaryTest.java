@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
@@ -48,7 +48,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
         // This invocation is the same for all tests
         localEndpoint.onOpen(channel);
         
-        assertThat("Has BinarySink", localEndpoint.hasBinarySink(), is(true));
+        assertThat("Has Binary Metadata", localEndpoint.getBinaryMetadata(), notNullValue());
         
         // This invocation is the same for all tests
         ByteBuffer byteBuffer = ByteBuffer.wrap("Hello World".getBytes(StandardCharsets.UTF_8));

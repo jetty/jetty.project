@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import javax.websocket.ClientEndpoint;
@@ -68,7 +69,7 @@ public class AnnotatedEndpointConfigTest
         }
 
         @OnMessage(maxMessageSize = 111222)
-        public void onText(String msg)
+        public void onText(Date date)
         {
             /* do nothing */
         }

@@ -198,6 +198,7 @@ public class JettyWebSocketFrameHandlerMetadata
         return textSink;
     }
 
+    @SuppressWarnings("Duplicates")
     private void assertNotSet(Object val, String role, Object origin)
     {
         if (val == null)

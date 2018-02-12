@@ -19,41 +19,62 @@
 package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
+import javax.websocket.CloseReason;
+import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 
+import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
+import org.eclipse.jetty.websocket.jsr356.MessageSink;
 
-public class DecodedTextMessageSink<T> extends StringMessageSink
+public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T>>
 {
-    private final Decoder.Text<T> decoder;
-
-    public DecodedTextMessageSink(JavaxWebSocketSession session, Decoder.Text<T> decoder, MethodHandle methodHandle)
+    public DecodedTextMessageSink(JavaxWebSocketSession session,
+                                  Decoder.Text<T> decoder,
+                                  MethodHandle methodHandle)
+            throws NoSuchMethodException, IllegalAccessException
     {
-        super(session, methodHandle);
-        this.decoder = decoder;
+        super(session, decoder, methodHandle);
+    }
 
-        /*super(policy, (message) ->
+    @Override
+    protected MethodHandle newRawMethodHandle() throws NoSuchMethodException, IllegalAccessException
+    {
+        return MethodHandles.lookup().findVirtual(DecodedTextMessageSink.class,
+                "onWholeMessage", MethodType.methodType(void.class, String.class))
+                .bindTo(this);
+    }
+
+    @Override
+    protected MessageSink newRawMessageSink(JavaxWebSocketSession session, MethodHandle rawMethodHandle)
+    {
+        return new StringMessageSink(session, rawMethodHandle);
+    }
+
+    @SuppressWarnings("Duplicates")
+    public void onWholeMessage(String wholeMessage)
+    {
+        if (!getDecoder().willDecode(wholeMessage))
         {
-            try
-            {
-                Object decoded = decoder.decode(message);
-                
-                // notify event
-                Object ret = onMessageFunction.apply(decoded);
-                
-                if (ret != null)
-                {
-                    // send response
-                    frameHandler.getSession().getBasicRemote().sendObject(ret);
-                }
-                
-                return null;
-            }
-            catch (DecodeException | EncodeException | IOException e)
-            {
-                throw new WebSocketException(e);
-            }
-        }); */
+            LOG.warn("Message lost, decoder " + getDecoder().getClass().getName() + "#willDecode() has rejected it.");
+            return;
+        }
+
+        try
+        {
+            T obj = getDecoder().decode(wholeMessage);
+            methodHandle.invoke(obj);
+        }
+        catch (DecodeException e)
+        {
+            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
+        }
+        catch (Throwable t)
+        {
+            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
+        }
     }
 }

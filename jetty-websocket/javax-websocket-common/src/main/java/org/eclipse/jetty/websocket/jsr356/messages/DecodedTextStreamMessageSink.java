@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
+import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
 
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
@@ -31,11 +31,11 @@ import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.MessageSink;
 
-public class DecodedBinaryMessageSink<T> extends DecodedMessageSink<Decoder.Binary<T>>
+public class DecodedTextStreamMessageSink<T> extends DecodedMessageSink<Decoder.TextStream<T>>
 {
-    public DecodedBinaryMessageSink(JavaxWebSocketSession session,
-                                    Decoder.Binary<T> decoder,
-                                    MethodHandle methodHandle)
+    public DecodedTextStreamMessageSink(JavaxWebSocketSession session,
+                                        Decoder.TextStream<T> decoder,
+                                        MethodHandle methodHandle)
             throws NoSuchMethodException, IllegalAccessException
     {
         super(session, decoder, methodHandle);
@@ -44,29 +44,23 @@ public class DecodedBinaryMessageSink<T> extends DecodedMessageSink<Decoder.Bina
     @Override
     protected MethodHandle newRawMethodHandle() throws NoSuchMethodException, IllegalAccessException
     {
-        return MethodHandles.lookup().findVirtual(DecodedBinaryMessageSink.class,
-                "onWholeMessage", MethodType.methodType(void.class, ByteBuffer.class))
+        return MethodHandles.lookup().findVirtual(DecodedTextStreamMessageSink.class,
+                "onStreamStart", MethodType.methodType(void.class, Reader.class))
                 .bindTo(this);
     }
 
     @Override
     protected MessageSink newRawMessageSink(JavaxWebSocketSession session, MethodHandle rawMethodHandle)
     {
-        return new ByteBufferMessageSink(session, rawMethodHandle);
+        return new ReaderMessageSink(session, rawMethodHandle);
     }
 
     @SuppressWarnings("Duplicates")
-    public void onWholeMessage(ByteBuffer wholeMessage)
+    public void onStreamStart(Reader reader)
     {
-        if (!getDecoder().willDecode(wholeMessage))
-        {
-            LOG.warn("Message lost, decoder " + getDecoder().getClass().getName() + "#willDecode() has rejected it.");
-            return;
-        }
-
         try
         {
-            T obj = getDecoder().decode(wholeMessage);
+            T obj = getDecoder().decode(reader);
             methodHandle.invoke(obj);
         }
         catch (DecodeException e)

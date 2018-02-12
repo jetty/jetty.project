@@ -289,6 +289,17 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
 
         FrameHandler frameHandler = getFrameHandler(wsClient, upgradePolicy, response);
 
+        if (frameHandler == null)
+        {
+            StringBuilder err = new StringBuilder();
+            err.append("FrameHandler is null for request ").append(this.getURI().toASCIIString());
+            if (negotiatedSubProtocol != null)
+            {
+                err.append(" [subprotocol: ").append(negotiatedSubProtocol).append("]");
+            }
+            throw new WebSocketException(err.toString());
+        }
+
         WebSocketChannel wsChannel = newWebSocketChannel(frameHandler, upgradePolicy, extensionStack, negotiatedSubProtocol);
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getByteBufferPool(), wsChannel);
         wsChannel.setWebSocketConnection(wsConnection);

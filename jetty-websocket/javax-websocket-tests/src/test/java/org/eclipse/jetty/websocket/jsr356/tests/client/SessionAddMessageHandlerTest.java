@@ -49,6 +49,7 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.websocket.jsr356.tests.DummyChannel;
 import org.eclipse.jetty.websocket.jsr356.tests.HandshakeRequestAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.HandshakeResponseAdapter;
@@ -86,7 +87,7 @@ public class SessionAddMessageHandlerTest
         HandshakeRequestAdapter handshakeRequest = new HandshakeRequestAdapter();
         HandshakeResponseAdapter handshakeResponse = new HandshakeResponseAdapter();
 
-        JavaxWebSocketFrameHandlerFactory frameHandlerFactory = new JavaxWebSocketFrameHandlerFactory(container);
+        JavaxWebSocketFrameHandlerFactory frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(container);
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
         frameHandler = frameHandlerFactory.newJavaxFrameHandler(ei, policy, handshakeRequest, handshakeResponse, futureSession);
         frameHandler.onOpen(new DummyChannel());

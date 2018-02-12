@@ -54,7 +54,7 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer implements javax.websocket.WebSocketContainer
 {
     private final WebSocketCoreClient coreClient;
-    private final JavaxWebSocketFrameHandlerFactory frameHandlerFactory;
+    private final JavaxWebSocketClientFrameHandlerFactory frameHandlerFactory;
     private ClassLoader contextClassLoader;
     private DecoratedObjectFactory objectFactory;
     private WebSocketExtensionRegistry extensionRegistry;
@@ -81,7 +81,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         this.contextClassLoader = this.getClass().getClassLoader();
         this.objectFactory = new DecoratedObjectFactory();
         this.extensionRegistry = new WebSocketExtensionRegistry();
-        this.frameHandlerFactory = new JavaxWebSocketFrameHandlerFactory(this);
+        this.frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(this);
     }
 
     @Override

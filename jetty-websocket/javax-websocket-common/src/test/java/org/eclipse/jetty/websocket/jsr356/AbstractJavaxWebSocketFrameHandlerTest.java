@@ -72,7 +72,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
     
     protected JavaxWebSocketFrameHandler newJavaxFrameHandler(Object websocket)
     {
-        JavaxWebSocketFrameHandlerFactory factory = new JavaxWebSocketFrameHandlerFactory(container);
+        JavaxWebSocketFrameHandlerFactory factory = new JavaxWebSocketCommonFrameHandlerFactory(container);
         BasicEndpointConfig config = new BasicEndpointConfig();
         ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket, config);
         HandshakeRequest handshakeRequest = new HandshakeRequestAdapter();

@@ -20,57 +20,53 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.lang.invoke.MethodHandle;
 
-import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Decoder;
 import javax.websocket.Encoder;
-import javax.websocket.server.ServerEndpointConfig;
+import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 
 public class JavaxWebSocketFrameHandlerMetadata
 {
+    // EndpointConfig entries
+    private final EndpointConfig endpointConfig;
+    private final AvailableDecoders availableDecoders;
+    private final AvailableEncoders availableEncoders;
+
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
 
-    private MethodHandle textHandle;
-    private Class<? extends MessageSink> textSink;
-    private MethodHandle binaryHandle;
-    private Class<? extends MessageSink> binarySink;
+    // @OnMessage Settings (-2 means unset, -1 means no-limit)
+    public static long UNSET = -2L;
+    private MessageMetadata textMetadata;
+    private MessageMetadata binaryMetadata;
 
     private MethodHandle pongHandle;
 
-    // EndpointConfig entries
-    private Class<? extends Decoder>[] decoders;
-    private Class<? extends Encoder>[] encoders;
-
-    // ClientEndpointConfig entries
-    private Class<? extends ClientEndpointConfig.Configurator> clientConfigurator;
-    private String subProtocols[];
-
-    // ServerEndpointConfig entries
-    private Class<? extends ServerEndpointConfig.Configurator> serverConfigurator;
-
-    // OnMessage Settings (-1 means unset)
-    public static long UNSET = -2L;
-    private long maxTextMessageSize = UNSET;
-    private long maxBinaryMessageSize = UNSET;
-
-    public void setBinaryHandle(Class<? extends MessageSink> sinkClass, MethodHandle binary, Object origin)
+    public JavaxWebSocketFrameHandlerMetadata(EndpointConfig endpointConfig)
     {
-        assertNotSet(this.binaryHandle, "BINARY Handler", origin);
-        this.binaryHandle = binary;
-        this.binarySink = sinkClass;
+        this.endpointConfig = endpointConfig;
+        this.availableDecoders = new AvailableDecoders(endpointConfig);
+        this.availableEncoders = new AvailableEncoders(endpointConfig);
     }
 
-    public MethodHandle getBinaryHandle()
+    public boolean hasBinaryMetdata()
     {
-        return binaryHandle;
+        return (binaryMetadata != null);
     }
 
-    public Class<? extends MessageSink> getBinarySink()
+    public void setBinaryMetadata(MessageMetadata metadata, Object origin)
     {
-        return binarySink;
+        assertNotSet(this.binaryMetadata, "BINARY Message Metadata", origin);
+        this.binaryMetadata = metadata;
+    }
+
+    public MessageMetadata getBinaryMetadata()
+    {
+        return binaryMetadata;
     }
 
     public void setCloseHandler(MethodHandle close, Object origin)
@@ -95,54 +91,24 @@ public class JavaxWebSocketFrameHandlerMetadata
         return errorHandle;
     }
 
-    public void setClientConfigurator(Class<? extends ClientEndpointConfig.Configurator> clientConfigurator)
-    {
-        this.clientConfigurator = clientConfigurator;
-    }
-
-    public Class<? extends ClientEndpointConfig.Configurator> getClientConfigurator()
-    {
-        return clientConfigurator;
-    }
-
-    public String[] getSubProtocols()
-    {
-        return subProtocols;
-    }
-
-    public void setSubProtocols(String[] subprotocols)
-    {
-        this.subProtocols = subprotocols;
-    }
-
-    public Class<? extends ServerEndpointConfig.Configurator> getServerConfigurator()
-    {
-        return serverConfigurator;
-    }
-
-    public void setServerConfigurator(Class<? extends ServerEndpointConfig.Configurator> serverConfigurator)
-    {
-        this.serverConfigurator = serverConfigurator;
-    }
-
     public void setEncoders(Class<? extends Encoder>[] encoders)
     {
-        this.encoders = encoders;
+        this.availableEncoders.registerAll(encoders);
     }
 
-    public Class<? extends Encoder>[] getEncoders()
+    public AvailableEncoders getAvailableEncoders()
     {
-        return encoders;
+        return availableEncoders;
     }
 
     public void setDecoders(Class<? extends Decoder>[] decoders)
     {
-        this.decoders = decoders;
+        this.availableDecoders.registerAll(decoders);
     }
 
-    public Class<? extends Decoder>[] getDecoders()
+    public AvailableDecoders getAvailableDecoders()
     {
-        return decoders;
+        return availableDecoders;
     }
 
     public void setOpenHandler(MethodHandle open, Object origin)
@@ -167,53 +133,23 @@ public class JavaxWebSocketFrameHandlerMetadata
         return pongHandle;
     }
 
-    public void setTextHandler(Class<? extends MessageSink> sinkClass, MethodHandle text, Object origin)
+    public boolean hasTextMetdata()
     {
-        assertNotSet(this.textHandle, "TEXT Handler", origin);
-        this.textHandle = text;
-        this.textSink = sinkClass;
+        return (textMetadata != null);
     }
 
-    public MethodHandle getTextHandle()
+    public void setTextMetadata(MessageMetadata metadata, Object origin)
     {
-        return textHandle;
+        assertNotSet(this.textMetadata, "TEXT Messsage Metadata", origin);
+        this.textMetadata = metadata;
     }
 
-    public Class<? extends MessageSink> getTextSink()
+    public MessageMetadata getTextMetadata()
     {
-        return textSink;
+        return textMetadata;
     }
 
-    public long getMaxBinaryMessageSize()
-    {
-        return maxBinaryMessageSize;
-    }
-
-    public boolean isMaxBinaryMessageSizeSet()
-    {
-        return (maxBinaryMessageSize != UNSET) && (maxBinaryMessageSize != 0);
-    }
-
-    public void setMaxBinaryMessageSize(long maxBinaryMessageSize)
-    {
-        this.maxBinaryMessageSize = maxBinaryMessageSize;
-    }
-
-    public long getMaxTextMessageSize()
-    {
-        return maxTextMessageSize;
-    }
-
-    public boolean isMaxTextMessageSizeSet()
-    {
-        return (maxTextMessageSize != UNSET) && (maxTextMessageSize != 0);
-    }
-
-    public void setMaxTextMessageSize(long maxTextMessageSize)
-    {
-        this.maxTextMessageSize = maxTextMessageSize;
-    }
-
+    @SuppressWarnings("Duplicates")
     private void assertNotSet(Object val, String role, Object origin)
     {
         if (val == null)
@@ -237,5 +173,32 @@ public class JavaxWebSocketFrameHandlerMetadata
         }
 
         return obj.toString();
+    }
+
+    public static class MessageMetadata
+    {
+        public MethodHandle handle;
+        public Class<? extends MessageSink> sinkClass;
+        public AvailableDecoders.RegisteredDecoder registeredDecoder;
+        public long maxMessageSize = UNSET;
+
+        public static MessageMetadata copyOf(MessageMetadata metadata)
+        {
+            if (metadata == null)
+                return null;
+
+            MessageMetadata copy = new MessageMetadata();
+            copy.handle = metadata.handle;
+            copy.sinkClass = metadata.sinkClass;
+            copy.registeredDecoder = metadata.registeredDecoder;
+            copy.maxMessageSize = metadata.maxMessageSize;
+
+            return copy;
+        }
+
+        public boolean isMaxMessageSizeSet()
+        {
+            return (maxMessageSize != UNSET) && (maxMessageSize != 0);
+        }
     }
 }

@@ -136,7 +136,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
                 throw new DeploymentException(String.format("Class must be @%s annotated: %s",
                         ServerEndpoint.class.getName(), endpointClass.getName()));
             }
-            
+
             ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
             addEndpointMapping(config);
         }
@@ -185,22 +185,10 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     
     private void addEndpointMapping(ServerEndpointConfig config) throws DeploymentException
     {
-        assertIsValidEndpoint(config);
+        frameHandlerFactory.createMetadata(config.getEndpointClass(), config);
         
         JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, this.containerContext.getExtensionRegistry());
         this.mappedWebSocketServletNegotiator.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
-    }
-
-    private void assertIsValidEndpoint(ServerEndpointConfig config) throws DeploymentException
-    {
-        try
-        {
-            frameHandlerFactory.createMetadata(config.getEndpointClass());
-        }
-        catch (Exception e)
-        {
-            throw new DeploymentException("Unable add endpoint: " + config.getEndpointClass().getName(), e);
-        }
     }
 
     @Override

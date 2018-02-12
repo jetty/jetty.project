@@ -21,11 +21,11 @@ package org.eclipse.jetty.websocket.jsr356.decoders;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.websocket.DecodeException;
@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.jsr356.InitException;
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 
-public class AvailableDecoders implements Predicate<Class<?>>
+public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredDecoder>
 {
     public static class RegisteredDecoder
     {
@@ -379,13 +379,10 @@ public class AvailableDecoders implements Predicate<Class<?>>
             throw new DecodeException(value, "Unable to decode as type " + type.getName(), e);
         }
     }
-    
+
     @Override
-    public boolean test(Class<?> type)
+    public Iterator<RegisteredDecoder> iterator()
     {
-        return registeredDecoders.stream()
-                .filter(registered -> registered.isType(type))
-                .findFirst()
-                .isPresent();
+        return registeredDecoders.iterator();
     }
 }

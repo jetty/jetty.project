@@ -37,7 +37,7 @@ import javax.websocket.Decoder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
-import org.eclipse.jetty.websocket.jsr356.messages.DecodedReaderMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.tests.FunctionMethod;
 import org.eclipse.jetty.websocket.jsr356.tests.client.AbstractClientSessionTest;
 import org.junit.Test;
@@ -82,7 +82,7 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
         });
 
 
-        DecodedReaderMessageSink sink = new DecodedReaderMessageSink(session, decoder, quoteHandle);
+        DecodedTextStreamMessageSink sink = new DecodedTextStreamMessageSink(session, decoder, quoteHandle);
 
         List<CompletableFutureCallback> callbacks = new ArrayList<>();
         CompletableFutureCallback finCallback = null;

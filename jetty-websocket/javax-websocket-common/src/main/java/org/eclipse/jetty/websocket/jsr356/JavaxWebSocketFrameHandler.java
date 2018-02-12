@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -54,8 +56,8 @@ import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryMessageSink;
-import org.eclipse.jetty.websocket.jsr356.messages.DecodedInputStreamMessageSink;
-import org.eclipse.jetty.websocket.jsr356.messages.DecodedReaderMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryStreamMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialByteArrayMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialByteBufferMessageSink;
@@ -70,10 +72,8 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
-    private MethodHandle textHandle;
-    private Class<? extends MessageSink> textSinkClass;
-    private MethodHandle binaryHandle;
-    private Class<? extends MessageSink> binarySinkClass;
+    private MessageMetadata textMetadata;
+    private MessageMetadata binaryMetadata;
     // TODO: need pingHandle ?
     private MethodHandle pongHandle;
     /**
@@ -97,9 +97,8 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
                                       Object endpointInstance, WebSocketPolicy upgradePolicy,
                                       HandshakeRequest handshakeRequest, HandshakeResponse handshakeResponse,
                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-                                      MethodHandle textHandle, MethodHandle binaryHandle,
-                                      Class<? extends MessageSink> textSinkClass,
-                                      Class<? extends MessageSink> binarySinkClass,
+                                      MessageMetadata textMetadata,
+                                      MessageMetadata binaryMetadata,
                                       MethodHandle pongHandle,
                                       String id,
                                       EndpointConfig endpointConfig,
@@ -122,10 +121,8 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
         this.errorHandle = errorHandle;
-        this.textHandle = textHandle;
-        this.binaryHandle = binaryHandle;
-        this.textSinkClass = textSinkClass;
-        this.binarySinkClass = binarySinkClass;
+        this.textMetadata = textMetadata;
+        this.binaryMetadata = binaryMetadata;
         this.pongHandle = pongHandle;
 
         this.id = id;
@@ -152,16 +149,6 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     public JavaxWebSocketSession getSession()
     {
         return session;
-    }
-
-    public boolean hasTextSink()
-    {
-        return this.textSink != null;
-    }
-
-    public boolean hasBinarySink()
-    {
-        return this.binarySink != null;
     }
 
     @Override
@@ -202,20 +189,24 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
         openHandle = JavaxWebSocketFrameHandlerFactory.bindTo(openHandle, session, endpointConfig);
         closeHandle = JavaxWebSocketFrameHandlerFactory.bindTo(closeHandle, session);
         errorHandle = JavaxWebSocketFrameHandlerFactory.bindTo(errorHandle, session);
-        textHandle = JavaxWebSocketFrameHandlerFactory.bindTo(textHandle, session);
-        binaryHandle = JavaxWebSocketFrameHandlerFactory.bindTo(binaryHandle, session);
+
+        MessageMetadata actualTextMetadata = MessageMetadata.copyOf(textMetadata);
+        MessageMetadata actualBinaryMetadata = MessageMetadata.copyOf(binaryMetadata);
+
+        actualTextMetadata.handle = JavaxWebSocketFrameHandlerFactory.bindTo(actualTextMetadata.handle, endpointConfig, session);
+        actualBinaryMetadata.handle = JavaxWebSocketFrameHandlerFactory.bindTo(actualBinaryMetadata.handle, endpointConfig, session);
         pongHandle = JavaxWebSocketFrameHandlerFactory.bindTo(pongHandle, session);
 
-        if (textHandle != null)
+        if (textMetadata != null)
         {
-            textHandle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(textHandle, session);
-            textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, textHandle, textSinkClass);
+            textMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(textMetadata.handle, session);
+            textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, textMetadata);
         }
 
-        if (binaryHandle != null)
+        if (binaryMetadata != null)
         {
-            binaryHandle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(binaryHandle, session);
-            binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, binaryHandle, binarySinkClass);
+            binaryMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(binaryMetadata.handle, session);
+            binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, binaryMetadata);
         }
 
         if (openHandle != null)
@@ -232,6 +223,7 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
 
         futureSession.complete(session);
     }
+
 
     public Set<MessageHandler> getMessageHandlers()
     {
@@ -251,9 +243,19 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
         return messageHandlerMap;
     }
 
-    private void assertBasicTypeNotRegistered(byte basicWebSocketType, MethodHandle handle, String replacement)
+    public MessageMetadata getBinaryMetadata()
     {
-        if (handle != null)
+        return binaryMetadata;
+    }
+
+    public MessageMetadata getTextMetadata()
+    {
+        return textMetadata;
+    }
+
+    private void assertBasicTypeNotRegistered(byte basicWebSocketType, Object messageImpl, String replacement)
+    {
+        if (messageImpl != null)
         {
             throw new IllegalStateException("Cannot register " + replacement + ": Basic WebSocket type " + OpCode.name(basicWebSocketType) + " is already registered");
         }
@@ -271,24 +273,33 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
             // MessageHandler.Partial has no decoder support!
             if (byte[].class.isAssignableFrom(clazz))
             {
-                assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryHandle, handler.getClass().getName());
+                assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
                 MessageSink messageSink = new PartialByteArrayMessageSink(session, partialMessageHandler);
                 this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
-                this.binaryHandle = partialMessageHandler;
+                MessageMetadata metadata = new MessageMetadata();
+                metadata.handle = partialMessageHandler;
+                metadata.sinkClass = PartialByteArrayMessageSink.class;
+                this.binaryMetadata = metadata;
             }
             else if (ByteBuffer.class.isAssignableFrom(clazz))
             {
-                assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryHandle, handler.getClass().getName());
+                assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
                 MessageSink messageSink = new PartialByteBufferMessageSink(session, partialMessageHandler);
                 this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
-                this.binaryHandle = partialMessageHandler;
+                MessageMetadata metadata = new MessageMetadata();
+                metadata.handle = partialMessageHandler;
+                metadata.sinkClass = PartialByteBufferMessageSink.class;
+                this.binaryMetadata = metadata;
             }
             else if (String.class.isAssignableFrom(clazz))
             {
-                assertBasicTypeNotRegistered(OpCode.TEXT, this.textHandle, handler.getClass().getName());
+                assertBasicTypeNotRegistered(OpCode.TEXT, this.textMetadata, handler.getClass().getName());
                 MessageSink messageSink = new PartialStringMessageSink(session, partialMessageHandler);
                 this.textSink = registerMessageHandler(OpCode.TEXT, clazz, handler, messageSink);
-                this.textHandle = partialMessageHandler;
+                MessageMetadata metadata = new MessageMetadata();
+                metadata.handle = partialMessageHandler;
+                metadata.sinkClass = PartialStringMessageSink.class;
+                this.textMetadata = metadata;
             }
             else
             {
@@ -322,6 +333,10 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
                 throw new IllegalStateException("Unable to find Decoder for type: " + clazz);
             }
 
+            MessageMetadata metadata = new MessageMetadata();
+            metadata.handle = wholeMsgMethodHandle;
+            metadata.registeredDecoder = registeredDecoder;
+
             if (PongMessage.class.isAssignableFrom(clazz))
             {
                 assertBasicTypeNotRegistered(OpCode.PONG, this.pongHandle, handler.getClass().getName());
@@ -330,35 +345,39 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
             }
             else if (registeredDecoder.implementsInterface(Decoder.Binary.class))
             {
-                assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryHandle, handler.getClass().getName());
+                assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
                 Decoder.Binary<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
                 MessageSink messageSink = new DecodedBinaryMessageSink(session, decoder, wholeMsgMethodHandle);
+                metadata.sinkClass = messageSink.getClass();
                 this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
-                this.binaryHandle = wholeMsgMethodHandle;
+                this.binaryMetadata = metadata;
             }
             else if (registeredDecoder.implementsInterface(Decoder.BinaryStream.class))
             {
-                assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryHandle, handler.getClass().getName());
+                assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
                 Decoder.BinaryStream<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
-                MessageSink messageSink = new DecodedInputStreamMessageSink(session, decoder, wholeMsgMethodHandle);
+                MessageSink messageSink = new DecodedBinaryStreamMessageSink(session, decoder, wholeMsgMethodHandle);
+                metadata.sinkClass = messageSink.getClass();
                 this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
-                this.binaryHandle = wholeMsgMethodHandle;
+                this.binaryMetadata = metadata;
             }
             else if (registeredDecoder.implementsInterface(Decoder.Text.class))
             {
-                assertBasicTypeNotRegistered(OpCode.TEXT, this.textHandle, handler.getClass().getName());
+                assertBasicTypeNotRegistered(OpCode.TEXT, this.textMetadata, handler.getClass().getName());
                 Decoder.Text<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
                 MessageSink messageSink = new DecodedTextMessageSink(session, decoder, wholeMsgMethodHandle);
+                metadata.sinkClass = messageSink.getClass();
                 this.textSink = registerMessageHandler(OpCode.TEXT, clazz, handler, messageSink);
-                this.textHandle = wholeMsgMethodHandle;
+                this.textMetadata = metadata;
             }
             else if (registeredDecoder.implementsInterface(Decoder.TextStream.class))
             {
-                assertBasicTypeNotRegistered(OpCode.TEXT, this.textHandle, handler.getClass().getName());
+                assertBasicTypeNotRegistered(OpCode.TEXT, this.textMetadata, handler.getClass().getName());
                 Decoder.TextStream<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
-                MessageSink messageSink = new DecodedReaderMessageSink(session, decoder, wholeMsgMethodHandle);
+                MessageSink messageSink = new DecodedTextStreamMessageSink(session, decoder, wholeMsgMethodHandle);
+                metadata.sinkClass = messageSink.getClass();
                 this.textSink = registerMessageHandler(OpCode.TEXT, clazz, handler, messageSink);
-                this.textHandle = wholeMsgMethodHandle;
+                this.textMetadata = metadata;
             }
             else
             {
@@ -413,14 +432,12 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
                         this.pongHandle = null;
                         break;
                     case OpCode.TEXT:
-                        this.textHandle = null;
+                        this.textMetadata = null;
                         this.textSink = null;
-                        this.textSinkClass = null;
                         break;
                     case OpCode.BINARY:
-                        this.binaryHandle = null;
+                        this.binaryMetadata = null;
                         this.binarySink = null;
-                        this.binarySinkClass = null;
                         break;
                 }
             }

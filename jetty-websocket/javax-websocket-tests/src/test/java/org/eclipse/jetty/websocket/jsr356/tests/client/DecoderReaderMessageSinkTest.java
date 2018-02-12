@@ -36,7 +36,7 @@ import javax.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
-import org.eclipse.jetty.websocket.jsr356.messages.DecodedReaderMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.tests.CompletableFutureMethodHandle;
 import org.junit.Test;
 
@@ -84,7 +84,7 @@ public class DecoderReaderMessageSinkTest extends AbstractClientSessionTest
         CompletableFuture<Lines> futureLines = new CompletableFuture<>();
         MethodHandle methodHandle = CompletableFutureMethodHandle.of(Lines.class, futureLines);
 
-        DecodedReaderMessageSink sink = new DecodedReaderMessageSink(session, decoder, methodHandle);
+        DecodedTextStreamMessageSink sink = new DecodedTextStreamMessageSink(session, decoder, methodHandle);
 
         CompletableFutureCallback callback1 = new CompletableFutureCallback();
         CompletableFutureCallback callback2 = new CompletableFutureCallback();

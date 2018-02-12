@@ -23,46 +23,42 @@ import java.lang.invoke.MethodHandle;
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
+import org.eclipse.jetty.websocket.jsr356.MessageSink;
 
-public class DecodedInputStreamMessageSink<T> extends InputStreamMessageSink
+public abstract class DecodedMessageSink<T extends Decoder> extends AbstractMessageSink
 {
-    private final Decoder.BinaryStream<T> decoder;
+    protected final Logger LOG;
+    private final T decoder;
+    private final MethodHandle rawMethodHandle;
+    private final MessageSink rawMessageSink;
 
-    public DecodedInputStreamMessageSink(JavaxWebSocketSession session,
-                                         Decoder.BinaryStream<T> decoder,
-                                         MethodHandle methodHandle)
+    public DecodedMessageSink(JavaxWebSocketSession session, T decoder, MethodHandle methodHandle)
+            throws NoSuchMethodException, IllegalAccessException
     {
         super(session, methodHandle);
+        this.LOG = Log.getLogger(this.getClass());
         this.decoder = decoder;
-        /*(reader) ->
-        {
-            try
-            {
-                Object decoded = decoder.decode(reader);
-            
-                // notify event
-                Object ret = onMessageFunction.apply(decoded);
-            
-                if (ret != null)
-                {
-                    // send response
-                    endpointFunctions.getSession().getBasicRemote().sendObject(ret);
-                }
-            
-                return null;
-            }
-            catch (DecodeException | EncodeException | IOException e)
-            {
-                throw new WebSocketException(e);
-            }
-        });*/
+        this.rawMethodHandle = newRawMethodHandle();
+        this.rawMessageSink = newRawMessageSink(session, methodHandle);
+    }
+
+    protected abstract MethodHandle newRawMethodHandle()
+            throws NoSuchMethodException, IllegalAccessException;
+
+    protected abstract MessageSink newRawMessageSink(JavaxWebSocketSession session, MethodHandle rawMethodHandle);
+
+    public T getDecoder()
+    {
+        return decoder;
     }
 
     @Override
     public void accept(Frame frame, Callback callback)
     {
-        super.accept(frame, callback);
+        this.rawMessageSink.accept(frame, callback);
     }
 }
