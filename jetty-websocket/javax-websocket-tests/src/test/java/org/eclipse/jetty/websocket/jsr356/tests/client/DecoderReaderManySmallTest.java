@@ -42,8 +42,10 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.AbstractWholeMessageHandler;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 import org.junit.After;
@@ -139,7 +141,21 @@ public class DecoderReaderManySmallTest
     @Before
     public void startTest() throws Exception
     {
-        server = new CoreServer(negotiation -> new EventIdFrameHandler());
+        server = new CoreServer(new CoreServer.BaseNegotiator()
+        {
+            @Override
+            public FrameHandler negotiate(Negotiation negotiation) throws IOException
+            {
+                List<String> offeredSubProtocols = negotiation.getOfferedSubprotocols();
+
+                if (!offeredSubProtocols.isEmpty())
+                {
+                    negotiation.setSubprotocol(offeredSubProtocols.get(0));
+                }
+
+                return new EventIdFrameHandler();
+            }
+        });
         server.start();
 
         client = ContainerProvider.getWebSocketContainer();
