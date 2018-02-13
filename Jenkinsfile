@@ -68,8 +68,7 @@ def getFullBuild(jdk, os) {
               // Run test phase / ignore test failures
               sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its"
               // Report failures in the jenkins UI
-              step([$class: 'JUnitResultArchiver',
-                    testResults: '**/target/surefire-reports/TEST-*.xml'])
+              junit testResults:'**/target/surefire-reports/TEST-*.xml'
               // Collect up the jacoco execution results
               def jacocoExcludes =
                       // build tools
