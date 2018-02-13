@@ -49,14 +49,14 @@ public class PartialStringMessageSink extends AbstractMessageSink
     {
         try
         {
+            if (utf == null)
+                utf = new Utf8StringBuilder(1024);
+
             if (frame.hasPayload())
             {
                 ByteBuffer payload = frame.getPayload();
                 policy.assertValidTextMessageSize(size + payload.remaining());
                 size += payload.remaining();
-
-                if (utf == null)
-                    utf = new Utf8StringBuilder(1024);
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Raw Payload {}", BufferUtil.toDetailString(payload));

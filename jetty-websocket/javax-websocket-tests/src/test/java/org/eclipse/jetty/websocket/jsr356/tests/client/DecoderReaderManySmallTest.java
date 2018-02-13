@@ -56,6 +56,70 @@ import org.junit.rules.TestName;
 
 public class DecoderReaderManySmallTest
 {
+    @Rule
+    public TestName testname = new TestName();
+    private CoreServer server;
+    private WebSocketContainer client;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        server = new CoreServer(new CoreServer.BaseNegotiator()
+        {
+            @Override
+            public FrameHandler negotiate(Negotiation negotiation) throws IOException
+            {
+                List<String> offeredSubProtocols = negotiation.getOfferedSubprotocols();
+
+                if (!offeredSubProtocols.isEmpty())
+                {
+                    negotiation.setSubprotocol(offeredSubProtocols.get(0));
+                }
+
+                return new EventIdFrameHandler();
+            }
+        });
+        server.start();
+
+        client = ContainerProvider.getWebSocketContainer();
+        server.addBean(client, true); // allow client to stop with server
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        server.stop();
+    }
+
+    @Test
+    public void testManyIds() throws Exception
+    {
+        URI wsUri = server.getWsUri().resolve("/eventids");
+        EventIdSocket clientSocket = new EventIdSocket(testname.getMethodName());
+        Session clientSession = client.connectToServer(clientSocket, wsUri);
+
+        final int from = 1000;
+        final int to = 2000;
+
+        clientSession.getAsyncRemote().sendText("seq|" + from + "|" + to);
+
+        // collect seen ids
+        List<Integer> seen = new ArrayList<>();
+        for (int i = from; i < to; i++)
+        {
+            // validate that ids don't repeat.
+            EventId receivedId = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+            assertFalse("Already saw ID: " + receivedId.eventId, seen.contains(receivedId.eventId));
+            seen.add(receivedId.eventId);
+        }
+
+        // validate that all expected ids have been seen (order is irrelevant here)
+        for (int expected = from; expected < to; expected++)
+        {
+            assertTrue("Has expected id:" + expected, seen.contains(expected));
+        }
+    }
+
     public static class EventId
     {
         public int eventId;
@@ -63,16 +127,6 @@ public class DecoderReaderManySmallTest
 
     public static class EventIdDecoder implements Decoder.TextStream<EventId>
     {
-        @Override
-        public void init(EndpointConfig config)
-        {
-        }
-
-        @Override
-        public void destroy()
-        {
-        }
-
         @Override
         public EventId decode(Reader reader) throws DecodeException, IOException
         {
@@ -86,6 +140,16 @@ public class DecoderReaderManySmallTest
                 }
             }
             return id;
+        }
+
+        @Override
+        public void destroy()
+        {
+        }
+
+        @Override
+        public void init(EndpointConfig config)
+        {
         }
     }
 
@@ -123,71 +187,6 @@ public class DecoderReaderManySmallTest
                     channel.sendFrame(new TextFrame().setPayload(Integer.toString(id)), Callback.NOOP, BatchMode.OFF);
                 }
             }
-        }
-    }
-
-    @Rule
-    public TestName testname = new TestName();
-
-    private CoreServer server;
-    private WebSocketContainer client;
-
-    @After
-    public void stopTest() throws Exception
-    {
-        server.stop();
-    }
-
-    @Before
-    public void startTest() throws Exception
-    {
-        server = new CoreServer(new CoreServer.BaseNegotiator()
-        {
-            @Override
-            public FrameHandler negotiate(Negotiation negotiation) throws IOException
-            {
-                List<String> offeredSubProtocols = negotiation.getOfferedSubprotocols();
-
-                if (!offeredSubProtocols.isEmpty())
-                {
-                    negotiation.setSubprotocol(offeredSubProtocols.get(0));
-                }
-
-                return new EventIdFrameHandler();
-            }
-        });
-        server.start();
-
-        client = ContainerProvider.getWebSocketContainer();
-        server.addBean(client, true); // allow client to stop with server
-    }
-
-    @Test
-    public void testManyIds() throws Exception
-    {
-        URI wsUri = server.getWsUri().resolve("/eventids");
-        EventIdSocket clientSocket = new EventIdSocket(testname.getMethodName());
-        Session clientSession = client.connectToServer(clientSocket, wsUri);
-
-        final int from = 1000;
-        final int to = 2000;
-
-        clientSession.getAsyncRemote().sendText("seq|" + from + "|" + to);
-
-        // collect seen ids
-        List<Integer> seen = new ArrayList<>();
-        for (int i = from; i < to; i++)
-        {
-            // validate that ids don't repeat.
-            EventId receivedId = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertFalse("Already saw ID: " + receivedId.eventId, seen.contains(receivedId.eventId));
-            seen.add(receivedId.eventId);
-        }
-
-        // validate that all expected ids have been seen (order is irrelevant here)
-        for (int expected = from; expected < to; expected++)
-        {
-            assertTrue("Has expected id:" + expected, seen.contains(expected));
         }
     }
 }
