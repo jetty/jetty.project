@@ -24,7 +24,7 @@ def getFullBuild(jdk, os) {
 
       try
       {
-        stage('Checkout') {
+        stage('Checkout-'+os+'-'+jdk) {
           checkout scm
         }
       } catch (Exception e) {
@@ -34,7 +34,7 @@ def getFullBuild(jdk, os) {
 
       try
       {
-        stage('Compile') {
+        stage('Compile-'+os+'-'+jdk) {
           withEnv(mvnEnv) {
             timeout(time: 15, unit: 'MINUTES') {
               sh "mvn -V -B clean install -Dtest=None"
@@ -48,7 +48,7 @@ def getFullBuild(jdk, os) {
 
       try
       {
-        stage('Javadoc') {
+        stage('Javadoc-'+os+'-'+jdk) {
           withEnv(mvnEnv) {
             timeout(time: 20, unit: 'MINUTES') {
               sh "mvn -V -B javadoc:javadoc"
@@ -62,7 +62,7 @@ def getFullBuild(jdk, os) {
 
       try
       {
-        stage('Test') {
+        stage('Test-'+os+'-'+jdk) {
           withEnv(mvnEnv) {
             timeout(time: 90, unit: 'MINUTES') {
               // Run test phase / ignore test failures
@@ -116,7 +116,7 @@ def getFullBuild(jdk, os) {
 
       try
       {
-        stage ('Compact3') {
+        stage ('Compact3-'+os+'-'+jdk) {
 
           dir("aggregates/jetty-all-compact3") {
             withEnv(mvnEnv) {
