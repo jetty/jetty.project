@@ -44,10 +44,14 @@ public abstract class AbstractWholeMessageHandler extends AbstractPartialFrameHa
     public void onText(Frame frame, Callback callback)
     {
         super.onText(frame, callback);
+
         // handle below here
         if (frame.getOpCode() == OpCode.TEXT)
             textMessage.reset();
-        textMessage.append(frame.getPayload());
+
+        if(frame.hasPayload())
+            textMessage.append(frame.getPayload());
+
         if (frame.isFin())
             onWholeText(textMessage.toString(), callback);
         else
@@ -58,14 +62,17 @@ public abstract class AbstractWholeMessageHandler extends AbstractPartialFrameHa
     public void onBinary(Frame frame, Callback callback)
     {
         super.onBinary(frame, callback);
+
         // handle below here
         if (frame.getOpCode() == OpCode.BINARY)
             binaryMessage = ByteBuffer.allocate(frame.getPayloadLength());
+
         if (frame.hasPayload())
         {
             BufferUtil.ensureCapacity(binaryMessage, binaryMessage.remaining() + frame.getPayloadLength());
             BufferUtil.put(frame.getPayload(), binaryMessage);
         }
+
         if (frame.isFin())
             onWholeBinary(binaryMessage, callback);
         else
