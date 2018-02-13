@@ -22,9 +22,9 @@ import javax.websocket.ClientEndpoint;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 
-public class JavaxWebSocketCommonFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
+public class DummyFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
 {
-    public JavaxWebSocketCommonFrameHandlerFactory(JavaxWebSocketContainer container)
+    public DummyFrameHandlerFactory(JavaxWebSocketContainer container)
     {
         super(container);
     }

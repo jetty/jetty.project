@@ -75,6 +75,7 @@ public class StreamTest
     public static void startServer() throws Exception
     {
         server = new LocalServer();
+        server.start();
         ServerContainer container = server.getServerContainer();
 
         // Prepare Server Side Output directory for uploaded files
@@ -85,7 +86,6 @@ public class StreamTest
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(UploadSocket.class,"/upload/{filename}")
                 .configurator(new ServerUploadConfigurator(outputDir)).build();
         container.addEndpoint(config);
-        server.start();
     }
 
     @AfterClass

@@ -137,10 +137,10 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
 
         // TODO: handle parameterized @PathParam entries?
 
-        openHandle = bindTo(openHandle, endpoint);
-        closeHandle = bindTo(closeHandle, endpoint);
-        errorHandle = bindTo(errorHandle, endpoint);
-        pongHandle = bindTo(pongHandle, endpoint);
+        openHandle = InvokerUtils.bindTo(openHandle, endpoint);
+        closeHandle = InvokerUtils.bindTo(closeHandle, endpoint);
+        errorHandle = InvokerUtils.bindTo(errorHandle, endpoint);
+        pongHandle = InvokerUtils.bindTo(pongHandle, endpoint);
 
         // TODO: or handle decoders in createMessageSink?
         CompletableFuture<Session> future = futureSession;
@@ -201,21 +201,6 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
         {
             throw new RuntimeException(t);
         }
-    }
-
-    public static MethodHandle bindTo(MethodHandle methodHandle, Object... objs)
-    {
-        if (methodHandle == null)
-            return null;
-        MethodHandle ret = methodHandle;
-        for (Object obj : objs)
-        {
-            if (ret.type().parameterType(0).isAssignableFrom(obj.getClass()))
-            {
-                ret = ret.bindTo(obj);
-            }
-        }
-        return ret;
     }
 
     public static MethodHandle wrapNonVoidReturnType(final MethodHandle handle, JavaxWebSocketSession session) throws NoSuchMethodException, IllegalAccessException

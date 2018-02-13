@@ -71,13 +71,14 @@ public class AnnotatedEndpointConfigTest
         @OnMessage(maxMessageSize = 111222)
         public void onText(Date date)
         {
-            /* do nothing */
+            /* do nothing - just a test of DateDecoder wiring */
         }
 
         @OnMessage(maxMessageSize = 333444)
-        public void onBinary(ByteBuffer buf)
+        public Date onBinary(ByteBuffer buf)
         {
-            /* do nothing */
+            /* do nothing - just a test of TimeEncoder wiring */
+            return null;
         }
     }
 

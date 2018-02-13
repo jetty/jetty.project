@@ -37,6 +37,7 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
+import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
@@ -58,16 +59,30 @@ public class QuotesEncoderTest
             super(id);
         }
 
-        @OnOpen public void onOpen(Session session) { super.onWsOpen(session); }
-        @OnClose public void onClose(CloseReason closeReason) { super.onWsClose(closeReason); }
-        @OnError public void onError(Throwable cause) { super.onWsError(cause); }
+        @OnOpen
+        public void onOpen(Session session)
+        {
+            super.onWsOpen(session);
+        }
+
+        @OnClose
+        public void onClose(CloseReason closeReason)
+        {
+            super.onWsClose(closeReason);
+        }
+
+        @OnError
+        public void onError(Throwable cause)
+        {
+            super.onWsError(cause);
+        }
 
         @OnMessage
         public void onMessage(String message)
         {
             super.onWsText(message);
         }
-        
+
         public void write(Quotes quotes) throws IOException, EncodeException
         {
             if (LOG.isDebugEnabled())
@@ -75,32 +90,43 @@ public class QuotesEncoderTest
             this.session.getBasicRemote().sendObject(quotes);
         }
     }
-    
+
+    @ServerEndpoint(value = "/test/{testName}/{testMethod}", subprotocols = "echo")
+    public static class EchoQuotesSocket
+    {
+        @OnMessage
+        public String onMessage(String msg)
+        {
+            return msg;
+        }
+    }
+
     @Rule
     public TestName testname = new TestName();
-    
+
     private LocalServer server;
     private WebSocketContainer client;
-    
+
     @Before
     public void initClient()
     {
         client = ContainerProvider.getWebSocketContainer();
     }
-    
+
     @Before
     public void startServer() throws Exception
     {
         server = new LocalServer();
         server.start();
+        server.getServerContainer().addEndpoint(EchoQuotesSocket.class);
     }
-    
+
     @After
     public void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     private void assertReceivedQuotes(String result, Quotes quotes)
     {
         assertThat("Quote Author", result, Matchers.containsString("Author: " + quotes.getAuthor()));
@@ -109,12 +135,11 @@ public class QuotesEncoderTest
             assertThat("Quote", result, Matchers.containsString("Quote: " + quote));
         }
     }
-    
-    @SuppressWarnings("Duplicates")
+
     private Quotes getQuotes(String filename) throws IOException
     {
         Quotes quotes = new Quotes();
-        
+
         // read file
         File qfile = MavenTestingUtils.getTestResourceFile(filename);
         try (FileReader reader = new FileReader(qfile); BufferedReader buf = new BufferedReader(reader))
@@ -133,10 +158,10 @@ public class QuotesEncoderTest
                 }
             }
         }
-        
+
         return quotes;
     }
-    
+
     private void close(Session session) throws IOException
     {
         if (session != null)
@@ -144,21 +169,21 @@ public class QuotesEncoderTest
             session.close();
         }
     }
-    
+
     @Test
     public void testSingleQuotes() throws Exception
     {
         URI wsUri = server.getTestWsUri(this.getClass(), testname);
         QuotesSocket quoter = new QuotesSocket(testname.getMethodName());
-        
+
         Session session = null;
         try
         {
             session = client.connectToServer(quoter, wsUri);
-            
+
             Quotes ben = getQuotes("quotes-ben.txt");
             quoter.write(ben);
-            
+
             String incomingMessage = quoter.messageQueue.poll(5, TimeUnit.SECONDS);
             assertReceivedQuotes(incomingMessage, ben);
         }
@@ -167,28 +192,28 @@ public class QuotesEncoderTest
             close(session);
         }
     }
-    
+
     @Test
     public void testTwoQuotes() throws Exception
     {
         URI wsUri = server.getTestWsUri(this.getClass(), testname);
         QuotesSocket quoter = new QuotesSocket(testname.getMethodName());
-    
+
         Session session = null;
         try
         {
             session = client.connectToServer(quoter, wsUri);
-    
+
             Quotes ben = getQuotes("quotes-ben.txt");
             Quotes twain = getQuotes("quotes-twain.txt");
             quoter.write(ben);
             quoter.write(twain);
-    
+
             String incomingQuote;
-            
+
             incomingQuote = quoter.messageQueue.poll(5, TimeUnit.SECONDS);
             assertReceivedQuotes(incomingQuote, ben);
-    
+
             incomingQuote = quoter.messageQueue.poll(5, TimeUnit.SECONDS);
             assertReceivedQuotes(incomingQuote, twain);
         }

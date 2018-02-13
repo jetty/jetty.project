@@ -97,6 +97,28 @@ public class InvokerUtils
     public static final ParamIdentifier PARAM_IDENTITY = new ParamIdentity();
 
     /**
+     * Bind optional arguments to provided method handle
+     *
+     * @param methodHandle the method handle to bind to
+     * @param objs the list of optional objects to bind to.
+     * @return the bound MethodHandle, or null if the provided {@code methodHandle} was null.
+     */
+    public static MethodHandle bindTo(MethodHandle methodHandle, Object... objs)
+    {
+        if (methodHandle == null)
+            return null;
+        MethodHandle ret = methodHandle;
+        for (Object obj : objs)
+        {
+            if (ret.type().parameterType(0).isAssignableFrom(obj.getClass()))
+            {
+                ret = ret.bindTo(obj);
+            }
+        }
+        return ret;
+    }
+
+    /**
      * Build a MethodHandle that can call the method with the calling args provided.
      * <p>
      * Might need to drop calling args and/or reorder the calling args to fit

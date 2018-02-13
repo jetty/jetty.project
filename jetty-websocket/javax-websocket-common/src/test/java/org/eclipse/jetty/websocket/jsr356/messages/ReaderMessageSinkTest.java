@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.tests.client;
+package org.eclipse.jetty.websocket.jsr356.messages;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -25,29 +25,26 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandle;
-import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
-import org.eclipse.jetty.websocket.jsr356.messages.ReaderMessageSink;
-import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
-import org.eclipse.jetty.websocket.jsr356.util.ReflectUtils;
 import org.junit.Test;
 
-public class ReaderMessageSinkTest extends AbstractClientSessionTest
+public class ReaderMessageSinkTest extends AbstractMessageSinkTest
 {
     @Test
-    public void testReader_SingleFrame() throws InterruptedException, ExecutionException, TimeoutException
+    public void testReader_1_Frame() throws InterruptedException, ExecutionException, TimeoutException
     {
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
-        MethodHandle copyHandle = toMethodHandle(copy, "apply", Reader.class);
+        MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
         ReaderMessageSink sink = new ReaderMessageSink(session, copyHandle);
     
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
@@ -60,11 +57,11 @@ public class ReaderMessageSinkTest extends AbstractClientSessionTest
     }
     
     @Test
-    public void testReader_MultiFrame() throws InterruptedException, ExecutionException, TimeoutException
+    public void testReader_3_Frames() throws InterruptedException, ExecutionException, TimeoutException
     {
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
-        MethodHandle copyHandle = toMethodHandle(copy, "apply", Reader.class);
+        MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
         ReaderMessageSink sink = new ReaderMessageSink(session, copyHandle);
         
         CompletableFutureCallback callback1 = new CompletableFutureCallback();
@@ -83,20 +80,7 @@ public class ReaderMessageSinkTest extends AbstractClientSessionTest
         assertThat("Writer contents", writer.getBuffer().toString(), is("Hello, World"));
     }
 
-    private MethodHandle toMethodHandle(Object obj, String methodName, Class<?> ... params)
-    {
-        Method method = ReflectUtils.findMethod(obj.getClass(), methodName, params);
-        InvokerUtils.Arg args[] = new InvokerUtils.Arg[params.length];
-        int i=0;
-        for(Class<?> param: params)
-        {
-            args[i++] = new InvokerUtils.Arg(param);
-        }
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(obj.getClass(), method, args);
-        return methodHandle.bindTo(obj);
-    }
-
-    public static class ReaderCopy
+    public static class ReaderCopy implements Consumer<Reader>
     {
         private CompletableFuture<StringWriter> copyFuture;
         
@@ -104,8 +88,9 @@ public class ReaderMessageSinkTest extends AbstractClientSessionTest
         {
             this.copyFuture = copyFuture;
         }
-        
-        public void apply(Reader reader)
+
+        @Override
+        public void accept(Reader reader)
         {
             try
             {

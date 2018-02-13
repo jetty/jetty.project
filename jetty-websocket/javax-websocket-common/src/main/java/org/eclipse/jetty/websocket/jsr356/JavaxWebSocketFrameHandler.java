@@ -62,6 +62,7 @@ import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialByteArrayMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 
 public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
 {
@@ -186,27 +187,31 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     {
         session = new JavaxWebSocketSession(container, channel, this, handshakeRequest, handshakeResponse, id, endpointConfig);
 
-        openHandle = JavaxWebSocketFrameHandlerFactory.bindTo(openHandle, session, endpointConfig);
-        closeHandle = JavaxWebSocketFrameHandlerFactory.bindTo(closeHandle, session);
-        errorHandle = JavaxWebSocketFrameHandlerFactory.bindTo(errorHandle, session);
+        openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
+        closeHandle = InvokerUtils.bindTo(closeHandle, session);
+        errorHandle = InvokerUtils.bindTo(errorHandle, session);
 
         MessageMetadata actualTextMetadata = MessageMetadata.copyOf(textMetadata);
         MessageMetadata actualBinaryMetadata = MessageMetadata.copyOf(binaryMetadata);
 
-        actualTextMetadata.handle = JavaxWebSocketFrameHandlerFactory.bindTo(actualTextMetadata.handle, endpointConfig, session);
-        actualBinaryMetadata.handle = JavaxWebSocketFrameHandlerFactory.bindTo(actualBinaryMetadata.handle, endpointConfig, session);
-        pongHandle = JavaxWebSocketFrameHandlerFactory.bindTo(pongHandle, session);
+        pongHandle = InvokerUtils.bindTo(pongHandle, session);
 
-        if (textMetadata != null)
+        if (actualTextMetadata != null)
         {
-            textMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(textMetadata.handle, session);
-            textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, textMetadata);
+            actualTextMetadata.handle = InvokerUtils.bindTo(actualTextMetadata.handle, endpointInstance, endpointConfig, session);
+            actualTextMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(actualTextMetadata.handle, session);
+            textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, actualTextMetadata);
+
+            textMetadata = actualTextMetadata;
         }
 
-        if (binaryMetadata != null)
+        if (actualBinaryMetadata != null)
         {
-            binaryMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(binaryMetadata.handle, session);
-            binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, binaryMetadata);
+            actualBinaryMetadata.handle = InvokerUtils.bindTo(actualBinaryMetadata.handle, endpointInstance, endpointConfig, session);
+            actualBinaryMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(actualBinaryMetadata.handle, session);
+            binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, actualBinaryMetadata);
+
+            binaryMetadata = actualBinaryMetadata;
         }
 
         if (openHandle != null)

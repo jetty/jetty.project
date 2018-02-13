@@ -57,10 +57,10 @@ public class TextStreamTest
     public static void startServer() throws Exception
     {
         server = new LocalServer();
+        server.start();
         container = server.getServerContainer();
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ServerTextStreamer.class, PATH).build();
         container.addEndpoint(config);
-        server.start();
     }
 
     @AfterClass

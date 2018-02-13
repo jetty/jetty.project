@@ -70,8 +70,8 @@ public class SessionTrackingTest
     public static void startServer() throws Exception
     {
         server = new LocalServer();
-        server.getServerContainer().addEndpoint(SessionTrackingSocket.class);
         server.start();
+        server.getServerContainer().addEndpoint(SessionTrackingSocket.class);
     }
     
     @AfterClass

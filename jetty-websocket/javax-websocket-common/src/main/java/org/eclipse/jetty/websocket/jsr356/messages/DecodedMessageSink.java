@@ -43,7 +43,7 @@ public abstract class DecodedMessageSink<T extends Decoder> extends AbstractMess
         this.LOG = Log.getLogger(this.getClass());
         this.decoder = decoder;
         this.rawMethodHandle = newRawMethodHandle();
-        this.rawMessageSink = newRawMessageSink(session, methodHandle);
+        this.rawMessageSink = newRawMessageSink(session, rawMethodHandle);
     }
 
     protected abstract MethodHandle newRawMethodHandle()
