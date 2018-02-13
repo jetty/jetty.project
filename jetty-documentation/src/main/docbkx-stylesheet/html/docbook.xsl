@@ -129,7 +129,7 @@ xmlns:date="http://exslt.org/dates-and-times"
         
         </td>
         <td style="width: 50%">
-          <script type="text/javascript">  (function() {
+<!--          <script type="text/javascript">  (function() {
             var cx = '016459005284625897022:obd4lsai2ds';
             var gcse = document.createElement('script');
             gcse.type = 'text/javascript';
@@ -140,7 +140,7 @@ xmlns:date="http://exslt.org/dates-and-times"
             s.parentNode.insertBefore(gcse, s);
             })();
           </script>
-          <gcse:search></gcse:search>
+          <gcse:search></gcse:search>-->
         </td>
       </tr>
     </table>
