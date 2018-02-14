@@ -45,4 +45,10 @@ public class Quotes
     {
         return quotes;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("Quotes[%s,quotes.size=%d]", author, quotes.size());
+    }
 }

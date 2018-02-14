@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
@@ -43,10 +44,9 @@ import org.junit.Test;
 public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
 {
     @Test
-    public void testInputStream_1_Frame() throws InterruptedException, ExecutionException, TimeoutException
+    public void testInputStream_1_Message_1_Frame() throws InterruptedException, ExecutionException, TimeoutException
     {
-        CompletableFuture<ByteArrayOutputStream> copyFuture = new CompletableFuture<>();
-        InputStreamCopy copy = new InputStreamCopy(copyFuture);
+        InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
         InputStreamMessageSink sink = new InputStreamMessageSink(session, copyHandle);
 
@@ -55,16 +55,41 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
         sink.accept(new BinaryFrame().setPayload(data), finCallback);
 
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
-        ByteArrayOutputStream byteStream = copyFuture.get(1, TimeUnit.SECONDS);
+        ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
         assertThat("FinCallback.done", finCallback.isDone(), is(true));
         assertThat("Writer.contents", new String(byteStream.toByteArray(), UTF_8), is("Hello World"));
     }
 
     @Test
-    public void testInputStream_3_Frames() throws InterruptedException, ExecutionException, TimeoutException
+    public void testInputStream_2_Messages_2_Frames() throws InterruptedException, ExecutionException, TimeoutException
     {
-        CompletableFuture<ByteArrayOutputStream> copyFuture = new CompletableFuture<>();
-        InputStreamCopy copy = new InputStreamCopy(copyFuture);
+        InputStreamCopy copy = new InputStreamCopy();
+        MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session, copyHandle);
+
+        CompletableFutureCallback fin1Callback = new CompletableFutureCallback();
+        ByteBuffer data1 = BufferUtil.toBuffer("Hello World", UTF_8);
+        sink.accept(new BinaryFrame().setPayload(data1).setFin(true), fin1Callback);
+
+        fin1Callback.get(1, TimeUnit.SECONDS); // wait for callback (can't sent next message until this callback finishes)
+        ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
+        assertThat("FinCallback.done", fin1Callback.isDone(), is(true));
+        assertThat("Writer.contents", new String(byteStream.toByteArray(), UTF_8), is("Hello World"));
+
+        CompletableFutureCallback fin2Callback = new CompletableFutureCallback();
+        ByteBuffer data2 = BufferUtil.toBuffer("Greetings Earthling", UTF_8);
+        sink.accept(new BinaryFrame().setPayload(data2).setFin(true), fin2Callback);
+
+        fin2Callback.get(1, TimeUnit.SECONDS); // wait for callback
+        byteStream = copy.poll(1, TimeUnit.SECONDS);
+        assertThat("FinCallback.done", fin2Callback.isDone(), is(true));
+        assertThat("Writer.contents", new String(byteStream.toByteArray(), UTF_8), is("Greetings Earthling"));
+    }
+
+    @Test
+    public void testInputStream_1_Message_3_Frames() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
         InputStreamMessageSink sink = new InputStreamMessageSink(session, copyHandle);
 
@@ -77,7 +102,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
         sink.accept(new ContinuationFrame().setPayload("World").setFin(true), finCallback);
 
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
-        ByteArrayOutputStream byteStream = copyFuture.get(1, TimeUnit.SECONDS);
+        ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
         assertThat("Callback1.done", callback1.isDone(), is(true));
         assertThat("Callback2.done", callback2.isDone(), is(true));
         assertThat("finCallback.done", finCallback.isDone(), is(true));
@@ -85,28 +110,58 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
         assertThat("Writer.contents", new String(byteStream.toByteArray(), UTF_8), is("Hello, World"));
     }
 
+    @Test
+    public void testInputStream_1_Message_4_Frames_Empty_Fin() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        InputStreamCopy copy = new InputStreamCopy();
+        MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
+        InputStreamMessageSink sink = new InputStreamMessageSink(session, copyHandle);
+
+        CompletableFutureCallback callback1 = new CompletableFutureCallback();
+        CompletableFutureCallback callback2 = new CompletableFutureCallback();
+        CompletableFutureCallback callback3 = new CompletableFutureCallback();
+        CompletableFutureCallback finCallback = new CompletableFutureCallback();
+
+        sink.accept(new BinaryFrame().setPayload("Greetings").setFin(false), callback1);
+        sink.accept(new ContinuationFrame().setPayload(", ").setFin(false), callback2);
+        sink.accept(new ContinuationFrame().setPayload("Earthling").setFin(false), callback3);
+        sink.accept(new ContinuationFrame().setPayload(new byte[0]).setFin(true), finCallback);
+
+        finCallback.get(5, TimeUnit.SECONDS); // wait for callback
+        ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
+        assertThat("Callback1.done", callback1.isDone(), is(true));
+        assertThat("Callback2.done", callback2.isDone(), is(true));
+        assertThat("Callback3.done", callback3.isDone(), is(true));
+        assertThat("finCallback.done", finCallback.isDone(), is(true));
+
+        assertThat("Writer.contents", new String(byteStream.toByteArray(), UTF_8), is("Greetings, Earthling"));
+    }
+
     public static class InputStreamCopy implements Consumer<InputStream>
     {
-        private final CompletableFuture<ByteArrayOutputStream> copyFuture;
-
-        public InputStreamCopy(CompletableFuture<ByteArrayOutputStream> copyFuture)
-        {
-            this.copyFuture = copyFuture;
-        }
+        private final BlockingArrayQueue<CompletableFuture<ByteArrayOutputStream>> streams = new BlockingArrayQueue<>();
 
         @Override
         public void accept(InputStream in)
         {
+            CompletableFuture<ByteArrayOutputStream> entry = new CompletableFuture<>();
             try
             {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 IO.copy(in, out);
-                copyFuture.complete(out);
+                entry.complete(out);
+                streams.offer(entry);
             }
             catch (IOException e)
             {
-                copyFuture.completeExceptionally(e);
+                entry.completeExceptionally(e);
+                streams.offer(entry);
             }
+        }
+
+        public ByteArrayOutputStream poll(long time, TimeUnit unit) throws InterruptedException, ExecutionException
+        {
+            return streams.poll(time, unit).get();
         }
     }
 }

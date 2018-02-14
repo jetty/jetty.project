@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.DataFrame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.util.TextUtil;
@@ -59,12 +60,6 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
     public Writer getSendWriter() throws IOException
     {
         return newMessageWriter();
-    }
-
-    public boolean isFirstDataFrame()
-    {
-        // TODO: needs information from WebSocketChannel.OutgoingState.partial to function properly
-        return true;
     }
 
     @Override
@@ -92,14 +87,21 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
         {
             DataFrame frame;
-            if (isFirstDataFrame())
+            switch(messageType)
             {
-                frame = new BinaryFrame();
+                case -1:
+                    // New message!
+                    frame = new BinaryFrame();
+                    break;
+                case OpCode.TEXT:
+                    throw new IllegalStateException("Cannot send a partial BINARY message: TEXT message in progress");
+                case OpCode.BINARY:
+                    frame = new ContinuationFrame();
+                    break;
+                default:
+                    throw new IllegalStateException("Cannot send a partial BINARY message: unrecognized active message type " + OpCode.name(messageType));
             }
-            else
-            {
-                frame = new ContinuationFrame();
-            }
+
             frame.setPayload(partialByte);
             frame.setFin(isLast);
             sendFrame(frame, b, BatchMode.OFF);
@@ -140,14 +142,21 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
         {
             DataFrame frame;
-            if (isFirstDataFrame())
+            switch(messageType)
             {
-                frame = new TextFrame();
+                case -1:
+                    // New message!
+                    frame = new TextFrame();
+                    break;
+                case OpCode.TEXT:
+                    frame = new ContinuationFrame();
+                    break;
+                case OpCode.BINARY:
+                    throw new IllegalStateException("Cannot send a partial TEXT message: BINARY message in progress");
+                default:
+                    throw new IllegalStateException("Cannot send a partial TEXT message: unrecognized active message type " + OpCode.name(messageType));
             }
-            else
-            {
-                frame = new ContinuationFrame();
-            }
+
             frame.setPayload(BufferUtil.toBuffer(partialMessage, UTF_8));
             frame.setFin(isLast);
             sendFrame(frame, b, BatchMode.OFF);

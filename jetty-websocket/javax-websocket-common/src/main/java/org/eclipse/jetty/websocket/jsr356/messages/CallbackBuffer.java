@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -30,6 +31,7 @@ public class CallbackBuffer
     
     public CallbackBuffer(Callback callback, ByteBuffer buffer)
     {
+        Objects.requireNonNull(buffer, "buffer");
         this.callback = callback;
         this.buffer = buffer;
     }

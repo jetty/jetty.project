@@ -64,19 +64,32 @@ public class MessageInputStream extends InputStream implements MessageSink
             callback.succeeded();
             return;
         }
-        
+
         synchronized (buffers)
         {
-            ByteBuffer payload = frame.getPayload();
-            buffers.offer(new CallbackBuffer(callback, payload));
-            
+            boolean notify = false;
+            if (frame.hasPayload())
+            {
+                buffers.offer(new CallbackBuffer(callback, frame.getPayload()));
+                notify = true;
+            }
+            else
+            {
+                // We cannot wake up blocking read for a zero length frame.
+                callback.succeeded();
+            }
+
             if (frame.isFin())
             {
                 buffers.offer(EOF);
+                notify = true;
             }
-            
-            // notify other thread
-            buffers.notify();
+
+            if (notify)
+            {
+                // notify other thread
+                buffers.notify();
+            }
         }
     }
     
@@ -180,10 +193,10 @@ public class MessageInputStream extends InputStream implements MessageSink
         }
         
         CallbackBuffer result = getActiveFrame();
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("result = {}", result);
-        
+
         if (result == EOF)
         {
             if (LOG.isDebugEnabled())
@@ -191,7 +204,7 @@ public class MessageInputStream extends InputStream implements MessageSink
             shutdown();
             return -1;
         }
-        
+
         // We have content
         int fillLen = Math.min(result.buffer.remaining(), len);
         result.buffer.get(b, off, fillLen);

@@ -38,12 +38,8 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -52,23 +48,12 @@ import org.junit.rules.TestName;
 
 public class QuotesDecoderTest
 {
-    public static class QuoteServingCreator implements WebSocketCreator
-    {
-        @Override
-        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
-        {
-            QuoterServerEndpoint endpoint = new QuoterServerEndpoint(WebSocketBehavior.SERVER.name());
-            resp.setAcceptedSubProtocol("quotes");
-            return endpoint;
-        }
-    }
-
-    @ServerEndpoint(value = "/quoter")
+    @ServerEndpoint(value = "/quoter", subprotocols = "quotes")
     public static class QuoterServerEndpoint extends WSEventTracker
     {
-        public QuoterServerEndpoint(String id)
+        public QuoterServerEndpoint()
         {
-            super(id);
+            super("quoter");
         }
 
         @OnOpen
@@ -87,6 +72,7 @@ public class QuotesDecoderTest
         public void onOpenResource(String filename)
         {
             super.onWsText(filename);
+            QuotesDecoderTest.LOG.debug("onOpenResource({})", filename);
             try
             {
                 RemoteEndpoint.Basic remote = session.getBasicRemote();
@@ -99,7 +85,7 @@ public class QuotesDecoderTest
             }
             catch (Exception e)
             {
-                LOG.warn("Unable to send quotes", e);
+                QuotesDecoderTest.LOG.warn("Unable to send quotes", e);
             }
         }
     }
@@ -134,7 +120,7 @@ public class QuotesDecoderTest
     @Test
     public void testSingleQuotes() throws Exception
     {
-        server.registerWebSocket("/quoter", new QuoteServingCreator());
+        server.getServerContainer().addEndpoint(QuoterServerEndpoint.class);
 
         URI wsUri = server.getWsUri().resolve("/quoter");
         QuotesSocket clientSocket = new QuotesSocket(testname.getMethodName());
@@ -151,7 +137,7 @@ public class QuotesDecoderTest
     @Test
     public void testTwoQuotes() throws Exception
     {
-        server.registerWebSocket("/quoter", new QuoteServingCreator());
+        server.getServerContainer().addEndpoint(QuoterServerEndpoint.class);
 
         URI wsUri = server.getWsUri().resolve("/quoter");
         QuotesSocket clientSocket = new QuotesSocket(testname.getMethodName());
