@@ -20,13 +20,11 @@ package org.eclipse.jetty.websocket.core.client;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -100,25 +98,6 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         }
 
         // TODO: add HttpClient delayed/on-demand start - See Issue #1516
-
-        URI toUri = request.getURI();
-
-        // Validate websocket URI
-        if (!toUri.isAbsolute())
-        {
-            throw new IllegalArgumentException("WebSocket URI must be absolute");
-        }
-
-        if (StringUtil.isBlank(toUri.getScheme()))
-        {
-            throw new IllegalArgumentException("WebSocket URI must include a scheme");
-        }
-
-        String scheme = toUri.getScheme().toLowerCase(Locale.ENGLISH);
-        if (("ws".equals(scheme) == false) && ("wss".equals(scheme) == false))
-        {
-            throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
-        }
 
         // Validate Requested Extensions
         for (ExtensionConfig reqExt : request.getExtensions())

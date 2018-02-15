@@ -22,6 +22,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AcceptHash;
@@ -89,6 +91,29 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
     public WebSocketCoreClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
     {
         super(webSocketClient.getHttpClient(), new HttpConversation(), requestURI);
+
+        // Validate websocket URI
+        if (!requestURI.isAbsolute())
+        {
+            throw new IllegalArgumentException("WebSocket URI must be absolute");
+        }
+
+        if (StringUtil.isBlank(requestURI.getScheme()))
+        {
+            throw new IllegalArgumentException("WebSocket URI must include a scheme");
+        }
+
+        String scheme = requestURI.getScheme().toLowerCase(Locale.ENGLISH);
+        if (("ws".equals(scheme) == false) && ("wss".equals(scheme) == false))
+        {
+            throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
+        }
+
+        if (requestURI.getHost() == null)
+        {
+            throw new IllegalArgumentException("Invalid WebSocket URI: host not present");
+        }
+
         this.wsClient = webSocketClient;
         this.fut = new CompletableFuture<>();
         method(HttpMethod.GET);
