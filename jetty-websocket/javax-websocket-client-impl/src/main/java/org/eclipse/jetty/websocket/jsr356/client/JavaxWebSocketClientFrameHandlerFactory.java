@@ -25,12 +25,13 @@ import javax.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata;
+import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
 
 public class JavaxWebSocketClientFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
 {
     public JavaxWebSocketClientFrameHandlerFactory(JavaxWebSocketContainer container)
     {
-        super(container);
+        super(container, InvokerUtils.PARAM_IDENTITY);
     }
 
     @Override

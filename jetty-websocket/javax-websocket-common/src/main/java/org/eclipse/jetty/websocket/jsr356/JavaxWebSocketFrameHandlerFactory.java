@@ -61,6 +61,9 @@ import org.eclipse.jetty.websocket.jsr356.messages.DecodedMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.PartialByteArrayMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.StringMessageSink;
 import org.eclipse.jetty.websocket.jsr356.util.InvalidSignatureException;
@@ -71,11 +74,13 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
 {
     private static final AtomicLong IDGEN = new AtomicLong(0);
     protected final JavaxWebSocketContainer container;
+    protected final InvokerUtils.ParamIdentifier paramIdentifier;
     private Map<Class<?>, JavaxWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
 
-    public JavaxWebSocketFrameHandlerFactory(JavaxWebSocketContainer container)
+    public JavaxWebSocketFrameHandlerFactory(JavaxWebSocketContainer container, InvokerUtils.ParamIdentifier paramIdentifier)
     {
         this.container = container;
+        this.paramIdentifier = paramIdentifier;
     }
 
     public JavaxWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
@@ -297,10 +302,15 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
         if (onMessages != null && onMessages.length > 0)
         {
             // The different kind of @OnWebSocketMessage method parameter signatures expected
-
             Arg textCallingArgs[] = new Arg[]{
                     new Arg(Session.class),
                     new Arg(String.class).required()
+            };
+
+            Arg textPartialCallingArgs[] = new Arg[]{
+                    new Arg(Session.class),
+                    new Arg(String.class).required(),
+                    new Arg(boolean.class).required()
             };
 
             Arg binaryBufferCallingArgs[] = new Arg[]{
@@ -308,11 +318,21 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     new Arg(ByteBuffer.class).required()
             };
 
+            Arg binaryPartialBufferCallingArgs[] = new Arg[]{
+                    new Arg(Session.class),
+                    new Arg(ByteBuffer.class).required(),
+                    new Arg(boolean.class).required()
+            };
+
             Arg binaryArrayCallingArgs[] = new Arg[]{
                     new Arg(Session.class),
+                    new Arg(byte[].class).required()
+            };
+
+            Arg binaryPartialArrayCallingArgs[] = new Arg[]{
+                    new Arg(Session.class),
                     new Arg(byte[].class).required(),
-                    new Arg(int.class), // offset
-                    new Arg(int.class) // length
+                    new Arg(boolean.class).required()
             };
 
             Arg inputStreamCallingArgs[] = new Arg[]{
@@ -378,10 +398,10 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 MessageMetadata msgMetadata = new MessageMetadata();
                 msgMetadata.maxMessageSize = onMessageAnno.maxMessageSize();
 
-                MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, textCallingArgs);
+                MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, textCallingArgs);
                 if (methodHandle != null)
                 {
-                    // Normal Text Message
+                    // Whole Text Message
                     assertSignatureValid(endpointClass, onMsg, OnMessage.class);
                     msgMetadata.sinkClass = StringMessageSink.class;
                     msgMetadata.handle = methodHandle;
@@ -389,10 +409,21 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, binaryBufferCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, textPartialCallingArgs);
                 if (methodHandle != null)
                 {
-                    // ByteBuffer Binary Message
+                    // Partial Text Message
+                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
+                    msgMetadata.sinkClass = PartialStringMessageSink.class;
+                    msgMetadata.handle = methodHandle;
+                    metadata.setTextMetadata(msgMetadata, onMsg);
+                    continue onmessageloop;
+                }
+
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, binaryBufferCallingArgs);
+                if (methodHandle != null)
+                {
+                    // Whole ByteBuffer Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnMessage.class);
                     msgMetadata.sinkClass = ByteBufferMessageSink.class;
                     msgMetadata.handle = methodHandle;
@@ -400,10 +431,21 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, binaryArrayCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, binaryPartialBufferCallingArgs);
                 if (methodHandle != null)
                 {
-                    // byte[] Binary Message
+                    // Partial ByteBuffer Binary Message
+                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
+                    msgMetadata.sinkClass = PartialByteBufferMessageSink.class;
+                    msgMetadata.handle = methodHandle;
+                    metadata.setBinaryMetadata(msgMetadata, onMsg);
+                    continue onmessageloop;
+                }
+
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, binaryArrayCallingArgs);
+                if (methodHandle != null)
+                {
+                    // Whole byte[] Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnMessage.class);
                     msgMetadata.sinkClass = ByteArrayMessageSink.class;
                     msgMetadata.handle = methodHandle;
@@ -411,7 +453,18 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, inputStreamCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, binaryPartialArrayCallingArgs);
+                if (methodHandle != null)
+                {
+                    // Partial byte[] Binary Message
+                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
+                    msgMetadata.sinkClass = PartialByteArrayMessageSink.class;
+                    msgMetadata.handle = methodHandle;
+                    metadata.setBinaryMetadata(msgMetadata, onMsg);
+                    continue onmessageloop;
+                }
+
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, inputStreamCallingArgs);
                 if (methodHandle != null)
                 {
                     // InputStream Binary Message
@@ -422,7 +475,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, readerCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, readerCallingArgs);
                 if (methodHandle != null)
                 {
                     // Reader Text Message
@@ -438,7 +491,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 // Decoder.Text
                 for (DecodedArgs decodedArgs : decodedTextCallingArgs)
                 {
-                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, decodedArgs.args);
+                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Text Message
@@ -454,7 +507,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 // Decoder.Binary
                 for (DecodedArgs decodedArgs : decodedBinaryCallingArgs)
                 {
-                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, decodedArgs.args);
+                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Binary Message
@@ -470,7 +523,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 // Decoder.TextStream
                 for (DecodedArgs decodedArgs : decodedTextStreamCallingArgs)
                 {
-                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, decodedArgs.args);
+                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Text Stream
@@ -486,7 +539,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 // Decoder.BinaryStream
                 for (DecodedArgs decodedArgs : decodedBinaryStreamCallingArgs)
                 {
-                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, decodedArgs.args);
+                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Binary Stream

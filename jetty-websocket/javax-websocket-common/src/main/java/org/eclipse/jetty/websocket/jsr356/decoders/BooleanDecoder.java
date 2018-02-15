@@ -44,6 +44,6 @@ public class BooleanDecoder extends AbstractDecoder implements Decoder.Text<Bool
         {
             return false;
         }
-        return (s.equalsIgnoreCase("true") || s.equalsIgnoreCase("false"));
+        return true;
     }
 }

@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
  * Method argument identifier for {@link javax.websocket.server.PathParam} annotations.
  */
 @SuppressWarnings("unused")
-public class PathParamArgIdentifier implements InvokerUtils.ParamIdentifier
+public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
 {
     @Override
     public InvokerUtils.Arg getParamArg(Method method, Class<?> paramType, int idx)

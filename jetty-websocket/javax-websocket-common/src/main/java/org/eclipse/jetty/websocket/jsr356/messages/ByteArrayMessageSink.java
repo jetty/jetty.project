@@ -42,9 +42,9 @@ public class ByteArrayMessageSink extends AbstractMessageSink
         super(session, methodHandle);
 
         Objects.requireNonNull(methodHandle, "MethodHandle");
-        // byte[] buf, int offset, int length
-        MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
-        if (methodHandle.type() != onMessageType)
+        // byte[] buf
+        MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class);
+        if (methodHandle.type().changeReturnType(void.class) != onMessageType.changeReturnType(void.class))
         {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
         }
@@ -73,10 +73,10 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 if (out != null)
                 {
                     byte buf[] = out.toByteArray();
-                    methodHandle.invoke(buf, 0, buf.length);
+                    methodHandle.invoke(buf);
                 }
                 else
-                    methodHandle.invoke(EMPTY_BUFFER, 0, 0);
+                    methodHandle.invoke(EMPTY_BUFFER);
             }
 
             callback.succeeded();

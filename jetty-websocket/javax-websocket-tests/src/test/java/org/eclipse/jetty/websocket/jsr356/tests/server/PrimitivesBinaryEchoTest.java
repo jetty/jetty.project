@@ -113,9 +113,9 @@ public class PrimitivesBinaryEchoTest
     public static void startServer() throws Exception
     {
         server = new LocalServer();
+        server.start();
         server.getServerContainer().addEndpoint(ByteBufferEchoSocket.class);
         server.getServerContainer().addEndpoint(ByteArrayEchoSocket.class);
-        server.start();
     }
     
     @AfterClass

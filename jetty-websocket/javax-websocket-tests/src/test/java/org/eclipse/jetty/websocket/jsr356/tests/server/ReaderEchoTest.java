@@ -89,9 +89,9 @@ public class ReaderEchoTest
     public static void startServer() throws Exception
     {
         server = new LocalServer();
+        server.start();
         server.getServerContainer().addEndpoint(ReaderSocket.class);
         server.getServerContainer().addEndpoint(ReaderParamSocket.class);
-        server.start();
     }
     
     @AfterClass

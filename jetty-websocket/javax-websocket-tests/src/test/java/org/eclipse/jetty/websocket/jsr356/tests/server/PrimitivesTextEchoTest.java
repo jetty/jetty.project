@@ -348,6 +348,7 @@ public class PrimitivesTextEchoTest
     public static void startServer() throws Exception
     {
         server = new LocalServer();
+        server.start();
         ServerContainer container = server.getServerContainer();
         container.addEndpoint(BooleanEchoSocket.class);
         container.addEndpoint(BooleanObjEchoSocket.class);
@@ -366,7 +367,6 @@ public class PrimitivesTextEchoTest
         container.addEndpoint(LongEchoSocket.class);
         container.addEndpoint(LongObjEchoSocket.class);
         container.addEndpoint(StringEchoSocket.class);
-        server.start();
     }
     
     @AfterClass

@@ -30,7 +30,7 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrame
 {
     public JavaxWebSocketServerFrameHandlerFactory(JavaxWebSocketContainer container)
     {
-        super(container);
+        super(container, new PathParamIdentifier());
     }
 
     @Override
