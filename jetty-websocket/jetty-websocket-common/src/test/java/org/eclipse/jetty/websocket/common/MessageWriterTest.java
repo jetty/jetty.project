@@ -59,7 +59,7 @@ public class MessageWriterTest
     @Test
     public void testMultipleWrites() throws Exception
     {
-        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferSize, bufferPool))
+        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferSize))
         {
             stream.write("Hello");
             stream.write(" ");
@@ -74,7 +74,7 @@ public class MessageWriterTest
     @Test
     public void testSingleWrite() throws Exception
     {
-        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferSize, bufferPool))
+        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferSize))
         {
             stream.append("Hello World");
         }
@@ -94,7 +94,7 @@ public class MessageWriterTest
         Arrays.fill(buf,'x');
         buf[size - 1] = 'o'; // mark last entry for debugging
 
-        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferSize, bufferPool))
+        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferSize))
         {
             stream.write(buf);
         }

@@ -181,6 +181,7 @@ public interface Fuzzer extends AutoCloseable
                     {
                         String expectedText = expected.getPayloadAsUTF8();
                         String actualText = actual.getPayloadAsUTF8();
+                        assertThat(prefix + ".payloadLength", actual.getPayloadLength(), Matchers.is(expected.getPayloadLength()));
                         assertThat(prefix + ".text-payload", actualText, is(expectedText));
                     }
                     else

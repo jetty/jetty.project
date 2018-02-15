@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.AbstractWholeMessageHandler;
+import org.eclipse.jetty.websocket.core.AbstractWholeMessageHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;

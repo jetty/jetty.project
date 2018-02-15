@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.tests.framehandlers;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.common.AbstractWholeMessageHandler;
+import org.eclipse.jetty.websocket.core.AbstractWholeMessageHandler;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;

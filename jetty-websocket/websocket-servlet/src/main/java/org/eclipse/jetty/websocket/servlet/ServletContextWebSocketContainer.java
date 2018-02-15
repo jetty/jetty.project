@@ -114,10 +114,13 @@ public class ServletContextWebSocketContainer extends ContainerLifeCycle impleme
             this.objectFactory = new DecoratedObjectFactory();
         if (this.extensionRegistry == null)
             this.extensionRegistry = new WebSocketExtensionRegistry();
-        if (this.executor == null)
-            this.executor = new QueuedThreadPool();
         if (this.bufferPool == null)
             this.bufferPool = new MappedByteBufferPool();
+        if (this.executor == null)
+        {
+            this.executor = new QueuedThreadPool();
+            addBean(this.executor, true);
+        }
     }
 
     public void addFrameHandlerFactory(FrameHandlerFactory frameHandlerFactory)
@@ -192,5 +195,11 @@ public class ServletContextWebSocketContainer extends ContainerLifeCycle impleme
 
         // No factory worked!
         return frameHandler;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), hashCode(), getState());
     }
 }

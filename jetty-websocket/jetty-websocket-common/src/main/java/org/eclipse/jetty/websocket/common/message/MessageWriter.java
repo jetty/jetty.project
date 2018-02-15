@@ -18,17 +18,20 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CodingErrorAction;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.util.Utf8CharBuffer;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
@@ -42,25 +45,24 @@ public class MessageWriter extends Writer
 {
     private static final Logger LOG = Log.getLogger(MessageWriter.class);
 
+    private final CharsetEncoder utf8Encoder = UTF_8.newEncoder()
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
+            .onMalformedInput(CodingErrorAction.REPORT);
+
     private final FrameHandler.Channel channel;
-    private final ByteBufferPool bufferPool;
     private final SharedBlockingCallback blocker;
     private long frameCount;
     private TextFrame frame;
-    private ByteBuffer buffer;
-    private Utf8CharBuffer utf;
+    private CharBuffer buffer;
     private Callback callback;
     private boolean closed;
 
-    public MessageWriter(FrameHandler.Channel outgoing, int bufferSize, ByteBufferPool bufferPool)
+    public MessageWriter(FrameHandler.Channel channel, int bufferSize)
     {
-        this.channel = outgoing;
-        this.bufferPool = bufferPool;
+        this.channel = channel;
         this.blocker = new SharedBlockingCallback();
-        this.buffer = bufferPool.acquire(bufferSize, true);
-        BufferUtil.flipToFill(buffer);
+        this.buffer = CharBuffer.allocate(bufferSize);
         this.frame = new TextFrame();
-        this.utf = Utf8CharBuffer.wrap(buffer);
     }
 
     @Override
@@ -114,7 +116,6 @@ public class MessageWriter extends Writer
         try
         {
             flush(true);
-            bufferPool.release(buffer);
             if (LOG.isDebugEnabled())
                 LOG.debug("Stream closed, {} frames sent", frameCount);
             // Notify without holding locks.
@@ -137,10 +138,13 @@ public class MessageWriter extends Writer
 
             closed = fin;
 
-            ByteBuffer data = utf.getByteBuffer();
+            buffer.flip();
+            ByteBuffer payload = utf8Encoder.encode(buffer);
+            buffer.flip();
+
             if (LOG.isDebugEnabled())
-                LOG.debug("flush({}): {}", fin, BufferUtil.toDetailString(buffer));
-            frame.setPayload(data);
+                LOG.debug("flush({}): {}", fin, BufferUtil.toDetailString(payload));
+            frame.setPayload(payload);
             frame.setFin(fin);
 
             try (SharedBlockingCallback.Blocker b = blocker.acquire())
@@ -152,8 +156,6 @@ public class MessageWriter extends Writer
             ++frameCount;
             // Any flush after the first will be a CONTINUATION frame.
             frame.setIsContinuation();
-
-            utf.clear();
         }
     }
 
@@ -164,16 +166,21 @@ public class MessageWriter extends Writer
             if (closed)
                 throw new IOException("Stream is closed");
 
-            while (length > 0)
+            CharBuffer source = CharBuffer.wrap(chars, offset, length);
+
+            int remaining = length;
+
+            while (remaining > 0)
             {
-                // There may be no space available, we want
-                // to handle correctly when space == 0.
-                int space = utf.remaining();
-                int size = Math.min(space, length);
-                utf.append(chars, offset, size);
-                offset += size;
-                length -= size;
-                if (length > 0)
+                int read = source.read(buffer);
+                if (read == -1)
+                {
+                    return;
+                }
+
+                remaining -= read;
+
+                if (remaining > 0)
                 {
                     // If we could not write everything, it means
                     // that the buffer was full, so flush it.

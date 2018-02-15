@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executor;
 
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
@@ -32,13 +33,17 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.servlet.MappedWebSocketServletNegotiator;
 
@@ -89,9 +94,45 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     }
 
     @Override
+    public ByteBufferPool getBufferPool()
+    {
+        return this.containerContext.getBufferPool();
+    }
+
+    @Override
+    public ClassLoader getContextClassloader()
+    {
+        return this.containerContext.getContextClassloader();
+    }
+
+    @Override
+    public Executor getExecutor()
+    {
+        return this.containerContext.getExecutor();
+    }
+
+    @Override
+    public WebSocketExtensionRegistry getExtensionRegistry()
+    {
+        return this.containerContext.getExtensionRegistry();
+    }
+
+    @Override
     public JavaxWebSocketServerFrameHandlerFactory getFrameHandlerFactory()
     {
         return frameHandlerFactory;
+    }
+
+    @Override
+    public DecoratedObjectFactory getObjectFactory()
+    {
+        return this.containerContext.getObjectFactory();
+    }
+
+    @Override
+    public WebSocketPolicy getPolicy()
+    {
+        return this.containerContext.getPolicy();
     }
 
     @Override

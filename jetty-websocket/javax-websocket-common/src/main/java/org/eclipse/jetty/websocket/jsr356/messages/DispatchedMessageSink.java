@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.lang.invoke.MethodHandle;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -109,6 +110,7 @@ public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
     {
         super(session, methodHandle);
         this.executor = session.getContainerContext().getExecutor();
+        Objects.requireNonNull(this.executor, "Executor");
     }
 
     public abstract MessageSink newSink(Frame frame);
@@ -119,20 +121,19 @@ public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
         {
             typeSink = newSink(frame);
             // Dispatch to end user function (will likely start with blocking for data/accept)
-            dispatchComplete = CompletableFuture.supplyAsync(() ->
-            {
+            dispatchComplete = new CompletableFuture<>();
+            executor.execute(() -> {
                 final T dispatchedType = (T) typeSink;
                 try
                 {
-                     methodHandle.invoke(dispatchedType);
+                    methodHandle.invoke(dispatchedType);
+                    dispatchComplete.complete(null);
                 }
                 catch (Throwable throwable)
                 {
-                    // TODO: handle error somehow?
-                    throwable.printStackTrace();
+                    dispatchComplete.completeExceptionally(throwable);
                 }
-                return null;
-            }, executor);
+            });
         }
         
         final Callback frameCallback;
