@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common.message;
 
 import java.lang.invoke.MethodHandle;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -102,44 +103,40 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
  */
 public abstract class DispatchedMessageSink<T, R> extends MessageSinkImpl
 {
-    private final Executor executor;
-    private final MethodHandle methodHandle;
     private CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;
 
     public DispatchedMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
     {
         super(policy, executor, methodHandle);
-        this.executor = executor;
-        this.methodHandle = methodHandle;
+        Objects.requireNonNull(this.executor, "Executor");
     }
 
     public abstract MessageSink newSink(Frame frame);
-    
+
     public void accept(Frame frame, final Callback callback)
     {
         if (typeSink == null)
         {
             typeSink = newSink(frame);
             // Dispatch to end user function (will likely start with blocking for data/accept)
-            dispatchComplete = CompletableFuture.supplyAsync(() ->
-            {
+            dispatchComplete = new CompletableFuture<>();
+            executor.execute(() -> {
                 final T dispatchedType = (T) typeSink;
                 try
                 {
-                     methodHandle.invoke(dispatchedType);
+                    methodHandle.invoke(dispatchedType);
+                    dispatchComplete.complete(null);
                 }
                 catch (Throwable throwable)
                 {
-                    // TODO: handle error somehow?
-                    throwable.printStackTrace();
+                    dispatchComplete.completeExceptionally(throwable);
                 }
-                return null;
-            }, executor);
+            });
         }
-        
+
         final Callback frameCallback;
-        
+
         if (frame.isFin())
         {
             CompletableFuture<Void> finComplete = new CompletableFuture<>();
@@ -150,7 +147,7 @@ public abstract class DispatchedMessageSink<T, R> extends MessageSinkImpl
                 {
                     finComplete.completeExceptionally(cause);
                 }
-                
+
                 @Override
                 public void succeeded()
                 {
@@ -173,7 +170,7 @@ public abstract class DispatchedMessageSink<T, R> extends MessageSinkImpl
             // Non-fin-frame
             frameCallback = callback;
         }
-        
+
         typeSink.accept(frame, frameCallback);
     }
 }
