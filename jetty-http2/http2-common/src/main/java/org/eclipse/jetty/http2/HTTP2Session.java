@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -404,7 +403,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
      * <li>NOT_CLOSED: we move to REMOTELY_CLOSED and queue a disconnect, so
      * that the content of the queue is written, and then the connection
      * closed. We notify the application after being terminated.
-     * See <code>HTTP2Session.ControlEntry#succeeded()</code></li>
+     * See {@code HTTP2Session.ControlEntry#succeeded()}</li>
      * <li>In all other cases, we do nothing since other methods are already
      * performing their actions.</li>
      * </ul>
@@ -598,14 +597,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 {
                     if (closed.compareAndSet(current, CloseState.LOCALLY_CLOSED))
                     {
-                        byte[] payload = null;
-                        if (reason != null)
-                        {
-                            // Trim the reason to avoid attack vectors.
-                            reason = reason.substring(0, Math.min(reason.length(), 32));
-                            payload = reason.getBytes(StandardCharsets.UTF_8);
-                        }
-                        GoAwayFrame frame = new GoAwayFrame(lastStreamId.get(), error, payload);
+                        GoAwayFrame frame = newGoAwayFrame(error, reason);
                         control(null, callback, frame);
                         return true;
                     }
@@ -620,6 +612,18 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 }
             }
         }
+    }
+
+    private GoAwayFrame newGoAwayFrame(int error, String reason)
+    {
+        byte[] payload = null;
+        if (reason != null)
+        {
+            // Trim the reason to avoid attack vectors.
+            reason = reason.substring(0, Math.min(reason.length(), 32));
+            payload = reason.getBytes(StandardCharsets.UTF_8);
+        }
+        return new GoAwayFrame(lastStreamId.get(), error, payload);
     }
 
     @Override
@@ -771,9 +775,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public Collection<Stream> getStreams()
     {
-        List<Stream> result = new ArrayList<>();
-        result.addAll(streams.values());
-        return result;
+        return new ArrayList<>(streams.values());
     }
 
     @ManagedAttribute("The number of active streams")
@@ -1251,6 +1253,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             }
             super.succeeded();
         }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (frame.getType() == FrameType.DISCONNECT)
+                terminate(new ClosedChannelException());
+            super.failed(x);
+        }
     }
 
     private class DataEntry extends HTTP2Flusher.Entry
@@ -1441,7 +1451,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         private void complete()
         {
-            control(null, Callback.NOOP, new DisconnectFrame());
+            frames(null, Callback.NOOP, newGoAwayFrame(ErrorCode.NO_ERROR.code, null), new DisconnectFrame());
         }
     }
 

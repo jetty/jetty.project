@@ -23,7 +23,6 @@ import java.util.concurrent.RejectedExecutionException;
 
 /** 
  * A variation of Executor that can confirm if a thread is available immediately 
- * 
  */
 public interface TryExecutor extends Executor
 {
@@ -66,6 +65,12 @@ public interface TryExecutor extends Executor
         public boolean tryExecute(Runnable task)
         {
             return false;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), executor);
         }
     }
 

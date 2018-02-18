@@ -1,5 +1,6 @@
+//
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +14,7 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
+//
 
 [[alpn]]
 === Introducing ALPN
@@ -99,6 +101,13 @@ To use ALPN in an OSGi environment, in addition to what described above, you wil
 This jar contains a `Fragment-Host` directive that ensures the ALPN classes will be available from the system bundle.
 
 You can download the http://central.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-alpn/[jetty-osgi-alpn jar] from Maven Central.
+
+____
+[NOTE]
+OSGi *requires* a `ServiceLoader` implementation for Jetty to function properly.
+OSGi leverages http://aries.apache.org/modules/spi-fly.html[Apache Aries SPI Fly] for this functionality.
+You can read more about OSGi and `ServiceLoader` http://blog.osgi.org/2013/02/javautilserviceloader-in-osgi.html[here.]
+____
 
 [[alpn-troubleshooting]]
 ==== ALPN Troubleshooting
@@ -259,7 +268,7 @@ You can enable debug logging for the ALPN implementation in this way:
 ALPN.debug = true;
 ....
 
-Since the ALPN class is in the boot classpath, we chose not to use logging libraries because we do not want to override application logging library choices; therefore thelogging is performed directly on `System.err`.
+Since the ALPN class is in the boot classpath, we chose not to use logging libraries because we do not want to override application logging library choices; therefore the logging is performed directly on `System.err`.
 
 [[alpn-openjdk8-license-details]]
 ==== License Details

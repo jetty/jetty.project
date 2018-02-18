@@ -302,4 +302,10 @@ public class QueuedThreadPoolTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testConstructorMinMaxThreadsValidation()
+    {
+        new QueuedThreadPool(4, 8);
+    }
 }

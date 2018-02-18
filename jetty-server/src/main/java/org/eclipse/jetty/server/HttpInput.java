@@ -744,7 +744,6 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public void setReadListener(ReadListener readListener)
     {
-        readListener = Objects.requireNonNull(readListener);
         boolean woken = false;
         try
         {
@@ -753,7 +752,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 if (_listener != null)
                     throw new IllegalStateException("ReadListener already set");
                
-                _listener = readListener;
+                _listener = Objects.requireNonNull(readListener);
                 
                 Content content = produceNextContext();
                 if (content!=null)
