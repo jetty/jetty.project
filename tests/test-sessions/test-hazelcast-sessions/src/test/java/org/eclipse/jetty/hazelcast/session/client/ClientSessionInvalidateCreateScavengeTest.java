@@ -41,7 +41,7 @@ public class ClientSessionInvalidateCreateScavengeTest
         throws Exception
     {
         Config config = new Config().addMapConfig( new MapConfig().setName( MAP_NAME ) ) //
-            .setInstanceName( "beer" );
+            .setInstanceName( Long.toString( System.currentTimeMillis() ) );
         // start Hazelcast instance
         hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance( config );
     }
