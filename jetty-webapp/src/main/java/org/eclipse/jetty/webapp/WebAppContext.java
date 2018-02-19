@@ -606,7 +606,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             String displayName = getDisplayName();
             if (displayName == null)
-                displayName = "WebApp@"+connectors.hashCode();
+                displayName = "WebApp@"+Arrays.hashCode(connectors);
 
             LOG.info(displayName + " at http://" + connectors[i].toString() + getContextPath());
         }
