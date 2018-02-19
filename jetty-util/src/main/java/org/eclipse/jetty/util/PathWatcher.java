@@ -50,6 +50,7 @@ import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -1029,35 +1030,34 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         register(dir,config);
         
         final MultiException me = new MultiException();
-        Files.list(dir).forEach(p->
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("registerTree? {}",p);
+        try (Stream<Path> stream = Files.list( dir)) {
+            stream.forEach( p -> {
+                if ( LOG.isDebugEnabled() ) LOG.debug( "registerTree? {}", p );
 
-            try
-            {
-                if (notify && config.test(p))
-                    pending.put(p,new PathWatchEvent(p,PathWatchEventType.ADDED,config));
-
-                switch(config.handleDir(p))
+                try
                 {
-                    case ENTER:
-                        registerTree(p,config.asSubConfig(p),notify);
-                        break;
-                    case WATCH:
-                        registerDir(p,config);
-                        break;
-                    case IGNORE:
-                    default:
-                        break;
+                    if ( notify && config.test( p ) )
+                        pending.put( p, new PathWatchEvent( p, PathWatchEventType.ADDED, config ) );
+
+                    switch ( config.handleDir( p ) )
+                    {
+                        case ENTER:
+                            registerTree( p, config.asSubConfig( p ), notify );
+                            break;
+                        case WATCH:
+                            registerDir( p, config );
+                            break;
+                        case IGNORE:
+                        default:
+                            break;
+                    }
                 }
-            }
-            catch(IOException e)
-            {
-                me.add(e);
-            }
-        });
-        
+                catch ( IOException e )
+                {
+                    me.add( e );
+                }
+            } );
+        }
         try
         {
             me.ifExceptionThrow();
