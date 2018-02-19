@@ -66,6 +66,7 @@ public class SchedulerTest
     @Before
     public void before() throws Exception
     {
+        System.gc();
         _scheduler.start();
     }
 

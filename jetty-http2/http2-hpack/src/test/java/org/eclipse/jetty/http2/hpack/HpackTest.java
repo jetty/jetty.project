@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.DateGenerator;
@@ -42,7 +43,7 @@ public class HpackTest
 {
     final static HttpField ServerJetty = new PreEncodedHttpField(HttpHeader.SERVER,"jetty");
     final static HttpField XPowerJetty = new PreEncodedHttpField(HttpHeader.X_POWERED_BY,"jetty");
-    final static HttpField Date = new PreEncodedHttpField(HttpHeader.DATE,DateGenerator.formatDate(System.currentTimeMillis()));
+    final static HttpField Date = new PreEncodedHttpField(HttpHeader.DATE,DateGenerator.formatDate(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())));
     
     @Test
     public void encodeDecodeResponseTest()

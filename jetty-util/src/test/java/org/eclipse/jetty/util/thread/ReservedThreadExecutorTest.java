@@ -30,6 +30,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -58,6 +59,7 @@ public class ReservedThreadExecutorTest
     @Before
     public void before() throws Exception
     {
+        System.gc();
         _executor = new TestExecutor();
         _reservedExecutor = new ReservedThreadExecutor(_executor, SIZE);
         _reservedExecutor.start();
@@ -152,46 +154,30 @@ public class ReservedThreadExecutorTest
         _reservedExecutor.setIdleTimeout(IDLE,TimeUnit.MILLISECONDS);
         _reservedExecutor.start();
 
-        // Reserved threads are lazily started.
-        assertThat(_executor._queue.size(), is(0));
-
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(false));
+        TimeUnit.MILLISECONDS.sleep(IDLE/2);
+        _reservedExecutor.tryExecute(NOOP);
         _executor.execute();
-        waitForNoPending();
-
-        CountDownLatch latch = new CountDownLatch(1);
-        Runnable waitForLatch = ()->{try {latch.await();} catch(Exception e){}};
-        assertThat(_reservedExecutor.tryExecute(waitForLatch),is(true));
+        TimeUnit.MILLISECONDS.sleep(IDLE/2);
+        _reservedExecutor.tryExecute(NOOP);
         _executor.execute();
-
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(false));
+        TimeUnit.MILLISECONDS.sleep(IDLE/2);
+        _reservedExecutor.tryExecute(NOOP);
         _executor.execute();
-        waitForNoPending();
-
-        latch.countDown();
-        waitForAvailable(2);
-
-        // Check that regular moderate activity keeps the pool a moderate size
         TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(true));
-        waitForAvailable(2);
+        _reservedExecutor.tryExecute(NOOP);
+        _executor.execute();
         TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(true));
+        _reservedExecutor.tryExecute(NOOP);
+        _executor.execute();
+       
         waitForAvailable(1);
+        int available = _reservedExecutor.getAvailable();
+         
+        assertThat(available,Matchers.greaterThan(0));
         TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(true));
-        waitForAvailable(1);
         TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(true));
-        waitForAvailable(1);
         TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(true));
-        waitForAvailable(1);
-
-        // check fully idle goes to zero
-        TimeUnit.MILLISECONDS.sleep(IDLE);
-        assertThat(_reservedExecutor.getAvailable(),is(0));
-
+        assertThat(_reservedExecutor.getAvailable(),Matchers.lessThan(available));
     }
 
     protected void waitForNoPending() throws InterruptedException

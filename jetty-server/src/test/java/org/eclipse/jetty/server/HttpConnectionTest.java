@@ -722,9 +722,9 @@ public class HttpConnectionTest
         "5;\r\n"+
         "12345\r\n";
 
-        long start=System.currentTimeMillis();
+        long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         String response = connector.getResponse(requests, 2000, TimeUnit.MILLISECONDS);
-        if ((System.currentTimeMillis()-start)>=2000)
+        if ((TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start)>=2000)
             Assert.fail();
 
         offset = checkContains(response,offset,"HTTP/1.1 200");

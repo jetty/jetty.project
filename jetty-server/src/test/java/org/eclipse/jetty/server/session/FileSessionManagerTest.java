@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Collections;
@@ -189,7 +186,7 @@ public class FileSessionManagerTest
         //not be removed by the startup process
         exp = System.currentTimeMillis() - 1000L;
         String name6 = Long.toString(exp)+"_foo_0.0.0.0_abcdefg";
-        File f6 = new File(testDir, name5);
+        File f6 = new File(testDir, name6);
         if (f6.exists())
             Assert.assertTrue(f6.delete());       
         f6.createNewFile();
@@ -237,7 +234,7 @@ public class FileSessionManagerTest
         long now =  System.currentTimeMillis();
         
         //create a file for session abc that expired 5sec ago
-        long exp = now -5000L; 
+        long exp = now - 5000L; 
         String name1 =  Long.toString(exp)+"__0.0.0.0_abc";    
         File f1 = new File(testDir, name1);
         if (f1.exists())
@@ -285,7 +282,7 @@ public class FileSessionManagerTest
       
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         FS.ensureEmpty(testDir);
-        String expectedFilename = (System.currentTimeMillis()+ 10000)+"__0.0.0.0_validFile123";
+        String expectedFilename = (System.currentTimeMillis() + 10000)+"__0.0.0.0_validFile123";
         
         Assert.assertTrue(new File(testDir, expectedFilename).createNewFile());
         Assert.assertTrue("File should exist!", new File(testDir, expectedFilename).exists());
@@ -299,7 +296,7 @@ public class FileSessionManagerTest
         ds.setStoreDir(testDir);
         handler.start();
 
-        Session session = handler.getSession("validFile123");
+        handler.getSession("validFile123");
 
         Assert.assertTrue("File shouldn't exist!", !new File(testDir,expectedFilename).exists());
     }

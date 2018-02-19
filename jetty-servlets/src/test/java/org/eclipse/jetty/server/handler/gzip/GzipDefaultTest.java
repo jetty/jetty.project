@@ -283,7 +283,7 @@ public class GzipDefaultTest
         try
         {
             tester.start();
-            HttpTester.Response http = tester.assertIsResponseGzipCompressed("GET","file.txt",System.currentTimeMillis() - 4000);
+            HttpTester.Response http = tester.assertIsResponseGzipCompressed("GET","file.txt",TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - 4000);
             Assert.assertEquals("Accept-Encoding, User-Agent",http.get("Vary"));
         }
         finally
@@ -304,7 +304,7 @@ public class GzipDefaultTest
         try
         {
             tester.start();
-            HttpTester.Response http = tester.assertIsResponseGzipCompressed("GET","test.svg",System.currentTimeMillis() - 4000);
+            HttpTester.Response http = tester.assertIsResponseGzipCompressed("GET","test.svg",TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - 4000);
             Assert.assertEquals("Accept-Encoding, User-Agent",http.get("Vary"));
         }
         finally
