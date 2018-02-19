@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
@@ -108,9 +109,9 @@ public class DataRateLimitedServletTest
             }
         }
         
-        long start=System.currentTimeMillis();
+        long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         String response = connector.getResponse("GET /context/stream/content.txt HTTP/1.0\r\n\r\n");
-        long duration=System.currentTimeMillis()-start;
+        long duration=TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start;
         
         assertThat("Response",response,containsString("200 OK"));
         assertThat("Response Length",response.length(),greaterThan(1024*1024));

@@ -192,7 +192,7 @@ public class DigestPostTest
         int n=result.indexOf("nonce=");
         String nonce=result.substring(n+7,result.indexOf('"',n+7));
         MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] b= md.digest(String.valueOf(System.currentTimeMillis()).getBytes(org.eclipse.jetty.util.StringUtil.__ISO_8859_1));            
+        byte[] b= md.digest(String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())).getBytes(org.eclipse.jetty.util.StringUtil.__ISO_8859_1));            
         String cnonce=encode(b);
         String digest="Digest username=\"testuser\" realm=\"test\" nonce=\""+nonce+"\" uri=\"/test/\" algorithm=MD5 response=\""+
         newResponse("POST","/test/",cnonce,"testuser","test","password",nonce,"auth")+
@@ -244,7 +244,7 @@ public class DigestPostTest
         int n=result.indexOf("nonce=");
         String nonce=result.substring(n+7,result.indexOf('"',n+7));
         MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] b= md.digest(String.valueOf(System.currentTimeMillis()).getBytes(StringUtil.__ISO_8859_1));            
+        byte[] b= md.digest(String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())).getBytes(StringUtil.__ISO_8859_1));            
         String cnonce=encode(b);
         String digest="Digest username=\"testuser\" realm=\"test\" nonce=\""+nonce+"\" uri=\"/test/\" algorithm=MD5 response=\""+
         newResponse("POST","/test/",cnonce,"testuser","test","password",nonce,"auth")+
