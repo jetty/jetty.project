@@ -20,8 +20,10 @@ package org.eclipse.jetty.io;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedInputStream;
@@ -94,6 +96,7 @@ public class SelectChannelEndPointTest
     @Before
     public void startManager() throws Exception
     {
+        System.gc();
         _writeCount = 1;
         _lastEndPoint = null;
         _lastEndPointLatch = new CountDownLatch(1);
@@ -431,7 +434,7 @@ public class SelectChannelEndPointTest
     @Test
     public void testIdle() throws Exception
     {
-        int idleTimeout = 1000;
+        int idleTimeout = 2000;
         
         Socket client = newClient();
 
@@ -461,11 +464,11 @@ public class SelectChannelEndPointTest
         int b = client.getInputStream().read();
         assertEquals(-1, b);
         long idle = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-        assertTrue(idle > idleTimeout / 2);
-        assertTrue(idle < idleTimeout * 2);
+        assertThat(idle, greaterThan(idleTimeout / 2L));
+        assertThat(idle, lessThan(idleTimeout * 2L));
 
         // But endpoint may still be open for a little bit.
-        for (int i = 0; i < 10; ++i)
+        for (int i = 0; i < 20; ++i)
         {
             if (_lastEndPoint.isOpen())
                 Thread.sleep(2 * idleTimeout / 10);
