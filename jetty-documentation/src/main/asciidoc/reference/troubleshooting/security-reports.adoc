@@ -27,11 +27,11 @@ If you would like to report a security issue please follow these link:#security-
 [width="99%",cols="11%,19%,14%,9%,14%,14%,19%",options="header",]
 |=======================================================================
 |yyyy/mm/dd |ID |Exploitable |Severity |Affects |Fixed Version |Comment
-|2016/05/31 |CVE-2016-4800 |high |high |>= 9.3.0, < = 9.3.8 |9.3.9
-|http://www.ocert.org/advisories/ocert-2016-001.html[Alias vulnerability allowing access to protected resources within a webapp on Windows.]
+|2016/05/31 |http://www.ocert.org/advisories/ocert-2016-001.html[CVE-2016-4800] |high |high |>= 9.3.0, < = 9.3.8 |9.3.9
+|Alias vulnerability allowing access to protected resources within a webapp on Windows.
 
-|2015/02/24 |CVE-2015-2080 |high |high |>=9.2.3 <9.2.9 |9.2.9
-|http://blog.gdssecurity.com/labs/2015/2/25/jetleak-vulnerability-remote-leakage-of-shared-buffers-in-je.html[JetLeak exposure of past buffers during HttpParser error]
+|2015/02/24 |http://blog.gdssecurity.com/labs/2015/2/25/jetleak-vulnerability-remote-leakage-of-shared-buffers-in-je.html[CVE-2015-2080] |high |high |>=9.2.3 <9.2.9 |9.2.9
+|JetLeak exposure of past buffers during HttpParser error
 
 |2013/11/27 |http://en.securitylab.ru/lab/PT-2013-65[PT-2013-65] |medium
 |high |>=9.0.0 <9.0.5 |9.0.6
@@ -55,7 +55,7 @@ https://bugs.eclipse.org/bugs/show_bug.cgi?id=367638[Jetty-367638]
 around by turning off SSL renegotiation in Jetty. If using JVM > 1.6u19
 setAllowRenegotiate(true) may be called on connectors.
 
-|2009/06/18 |http://jira.codehaus.org/browse/JETTY-1042[Jetty-1042] |low
+|2009/06/18 |Jetty-1042 |low
 |high |< = 6.1.18, < = 7.0.0.M4 |6.1.19, 7.0.0.Rc0 |Cookie leak between
 requests sharing a connection.
 
@@ -63,7 +63,7 @@ requests sharing a connection.
 |high |< = 6.1.16, < = 7.0.0.M2 a|
 5.1.15, 6.1.18, 7.0.0.M2
 
-http://jira.codehaus.org/browse/JETTY-1004[Jetty-1004]
+Jetty-1004
 
  |View arbitrary disk content in some specific configurations.
 
@@ -72,7 +72,7 @@ http://jira.codehaus.org/browse/JETTY-1004[Jetty-1004]
 |high |medium |6.1.rrc0-6.1.6 a|
 6.1.7
 
-http://jira.codehaus.org/browse/JETTY-386[CERT553235]
+CERT553235
 
  |Static content visible in WEB-INF and past security constraints.
 
