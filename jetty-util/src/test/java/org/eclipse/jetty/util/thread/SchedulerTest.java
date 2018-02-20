@@ -164,9 +164,9 @@ public class SchedulerTest
             }
         },2000,TimeUnit.MILLISECONDS);
 
-        Thread.sleep(1600);
+        Thread.sleep(100);
         Assert.assertTrue(task.cancel());
-        Thread.sleep(1000);
+        Thread.sleep(2500);
         Assert.assertEquals(0,executed.get());
     }
 

@@ -455,7 +455,7 @@ public class AsyncIOServletTest extends AbstractTest
 
                         // Wait for the failure to arrive to
                         // the server while we are about to write.
-                        sleep(1000);
+                        sleep(2000);
 
                         out.write(data);
                     }
@@ -485,8 +485,8 @@ public class AsyncIOServletTest extends AbstractTest
                         clientLatch.countDown();
                 });
 
-        assertTrue(errorLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(errorLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
