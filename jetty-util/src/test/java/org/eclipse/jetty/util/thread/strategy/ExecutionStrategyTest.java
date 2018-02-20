@@ -150,7 +150,7 @@ public class ExecutionStrategyTest
     public void blockingProducerTest() throws Exception
     {
         final int TASKS = 3*_threads.getMaxThreads();
-        final BlockingQueue<CountDownLatch> q = new ArrayBlockingQueue<>(500);
+        final BlockingQueue<CountDownLatch> q = new ArrayBlockingQueue<>(_threads.getMaxThreads());
         
         Producer producer = new TestProducer()
         {
@@ -163,7 +163,7 @@ public class ExecutionStrategyTest
                 {
                     try
                     {
-                        final CountDownLatch latch = q.poll(10,TimeUnit.SECONDS);
+                        final CountDownLatch latch = q.take();
 
                         if (latch!=null)
                         {
@@ -215,6 +215,6 @@ public class ExecutionStrategyTest
             }
         });
 
-        assertTrue(latch.await(10,TimeUnit.SECONDS));
+        assertTrue(latch.await(30,TimeUnit.SECONDS));
     }
 }
