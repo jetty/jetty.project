@@ -220,9 +220,9 @@ public class QueuedThreadPoolTest
             }
         });
 
-        long beforeStop = System.currentTimeMillis();
+        long beforeStop = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         tp.stop();
-        long afterStop = System.currentTimeMillis();
+        long afterStop = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         assertTrue(tp.isStopped());
         assertTrue(afterStop - beforeStop < 1000);
     }
@@ -230,7 +230,7 @@ public class QueuedThreadPoolTest
 
     private void waitForIdle(QueuedThreadPool tp, int idle)
     {
-        long now=System.currentTimeMillis();
+        long now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         long start=now;
         while (tp.getIdleThreads()!=idle && (now-start)<10000)
         {
@@ -240,14 +240,14 @@ public class QueuedThreadPoolTest
             }
             catch(InterruptedException e)
             {}
-            now=System.currentTimeMillis();
+            now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
         Assert.assertEquals(idle, tp.getIdleThreads());
     }
 
     private void waitForThreads(QueuedThreadPool tp, int threads)
     {
-        long now=System.currentTimeMillis();
+        long now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         long start=now;
         while (tp.getThreads()!=threads && (now-start)<10000)
         {
@@ -257,7 +257,7 @@ public class QueuedThreadPoolTest
             }
             catch(InterruptedException e)
             {}
-            now=System.currentTimeMillis();
+            now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
         assertEquals(threads,tp.getThreads());
     }
@@ -301,5 +301,11 @@ public class QueuedThreadPoolTest
         });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testConstructorMinMaxThreadsValidation()
+    {
+        new QueuedThreadPool(4, 8);
     }
 }

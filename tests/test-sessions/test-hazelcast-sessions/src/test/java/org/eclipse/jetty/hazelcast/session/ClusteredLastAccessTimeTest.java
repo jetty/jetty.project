@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.server.session.AbstractClusteredLastAccessTimeTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.After;
@@ -35,7 +37,7 @@ public class ClusteredLastAccessTimeTest
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         factory = new HazelcastSessionDataStoreFactory();
-        factory.setMapName( Long.toString( System.currentTimeMillis() ) );
+        factory.setMapName( Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) ) );
         return factory;
     }
 

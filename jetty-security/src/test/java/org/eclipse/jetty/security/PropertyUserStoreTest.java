@@ -79,9 +79,9 @@ public class PropertyUserStoreTest
 
         public void awaitCount(int expectedCount) throws InterruptedException
         {
-            long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+            long timeout = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + TimeUnit.SECONDS.toMillis(10);
             
-            while (userCount.get() != expectedCount && (System.currentTimeMillis() < timeout))
+            while (userCount.get() != expectedCount && (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) < timeout))
             {
                 TimeUnit.MILLISECONDS.sleep(100);
             }

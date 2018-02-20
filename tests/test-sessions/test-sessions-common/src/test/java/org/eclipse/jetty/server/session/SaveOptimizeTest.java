@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -532,7 +533,7 @@ public class SaveOptimizeTest
             {
                 HttpSession session = request.getSession(false);
                 assertNotNull(session);
-                session.setAttribute("ttt", new Long(System.currentTimeMillis()));
+                session.setAttribute("ttt", new Long(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())));
             }
             else if ("max".equalsIgnoreCase(action))
             {

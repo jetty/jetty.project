@@ -25,6 +25,7 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -90,7 +91,7 @@ public class ExtendedServerTest extends HttpServerTestBase
         @Override
         public Runnable onSelected()
         {
-            _lastSelected=System.currentTimeMillis();
+            _lastSelected=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             return super.onSelected();
         }
 
@@ -131,11 +132,11 @@ public class ExtendedServerTest extends HttpServerTestBase
         {
             OutputStream os = client.getOutputStream();
 
-            long start=System.currentTimeMillis();
+            long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             os.write("GET / HTTP/1.0\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
             Thread.sleep(200);
-            long end=System.currentTimeMillis();
+            long end=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             os.write("\r\n".getBytes(StandardCharsets.ISO_8859_1));
             
             // Read the response.

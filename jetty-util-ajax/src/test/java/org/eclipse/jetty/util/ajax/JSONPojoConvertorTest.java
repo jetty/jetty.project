@@ -23,6 +23,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
 
 
@@ -41,7 +43,7 @@ public class JSONPojoConvertorTest
         // json.addConvertor(Enum.class, new JSONEnumConvertor(true));
 
         Foo foo = new Foo();
-        foo._name = "Foo @ " + System.currentTimeMillis();
+        foo._name = "Foo @ " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         foo._int1 = 1;
         foo._int2 = new Integer(2);
         foo._long1 = 1000001l;
@@ -89,7 +91,7 @@ public class JSONPojoConvertorTest
                 new String[]{"boolean2"}));
 
         Foo foo = new Foo();
-        foo._name = "Foo @ " + System.currentTimeMillis();
+        foo._name = "Foo @ " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         foo._int1 = 1;
         foo._int2 = new Integer(2);
         foo._long1 = 1000001l;

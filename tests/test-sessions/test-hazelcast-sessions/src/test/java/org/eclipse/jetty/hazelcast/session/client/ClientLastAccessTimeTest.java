@@ -22,6 +22,9 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.AbstractClusteredLastAccessTimeTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
@@ -32,7 +35,7 @@ public class ClientLastAccessTimeTest
     extends AbstractClusteredLastAccessTimeTest
 {
 
-    private static final String MAP_NAME = Long.toString( System.currentTimeMillis() );
+    private static final String MAP_NAME = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
 
     private HazelcastInstance hazelcastInstance;
 

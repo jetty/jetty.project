@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -145,7 +146,7 @@ public class AttributeNameTest
             if ("init".equals(action))
             {
                 Session session = (Session)request.getSession(true);
-                session.setAttribute("a.b.c",System.currentTimeMillis());               
+                session.setAttribute("a.b.c",TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));               
                 sendResult(session,httpServletResponse.getWriter());
 
             }

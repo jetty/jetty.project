@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.parser.Parser;
@@ -35,7 +36,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
+import org.eclipse.jetty.util.thread.TryExecutor;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 public class HTTP2Connection extends AbstractConnection implements WriteFlusher.Listener
@@ -51,14 +52,15 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private final int bufferSize;
     private final ExecutionStrategy strategy;
 
-    public HTTP2Connection(ByteBufferPool byteBufferPool, ReservedThreadExecutor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
-        super(endPoint, executor.getExecutor());
+        super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.strategy = new EatWhatYouKill(producer, executor.getExecutor(), executor);
+        // TODO HTTP2 cannot use EWYK without fix for #1803
+        this.strategy = new EatWhatYouKill(producer, new TryExecutor.NoTryExecutor(executor));
         LifeCycle.start(strategy);
     }
 

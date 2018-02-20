@@ -46,7 +46,16 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PingFrame;
+import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.http2.parser.ServerParser;
+import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -678,6 +687,70 @@ public class HTTP2Test extends AbstractTest
         Assert.assertFalse(failureLatch.await(1, TimeUnit.SECONDS));
     }
 
+    @Test
+    public void testGoAwayRespondedWithGoAway() throws Exception
+    {
+        ServerSessionListener.Adapter serverListener = new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, true);
+                stream.headers(response, Callback.NOOP);
+                stream.getSession().close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
+                return null;
+            }
+        };
+        CountDownLatch goAwayLatch = new CountDownLatch(1);
+        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), serverListener)
+        {
+            @Override
+            protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener)
+            {
+                return super.newServerParser(connector, new ServerParserListenerWrapper(listener)
+                {
+                    @Override
+                    public void onGoAway(GoAwayFrame frame)
+                    {
+                        super.onGoAway(frame);
+                        goAwayLatch.countDown();
+                    }
+                });
+            }
+        };
+        prepareServer(connectionFactory);
+        server.start();
+
+        prepareClient();
+        client.start();
+
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public void onClose(Session session, GoAwayFrame frame)
+            {
+                closeLatch.countDown();
+            }
+        });
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        HeadersFrame request = new HeadersFrame(metaData, null, true);
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        session.newStream(request, new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                responseLatch.countDown();
+            }
+        });
+
+        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(goAwayLatch.await(5, TimeUnit.SECONDS));
+    }
+
     private static void sleep(long time)
     {
         try
@@ -687,6 +760,82 @@ public class HTTP2Test extends AbstractTest
         catch (InterruptedException x)
         {
             throw new RuntimeException();
+        }
+    }
+
+    private static class ServerParserListenerWrapper implements ServerParser.Listener
+    {
+        private final ServerParser.Listener listener;
+
+        private ServerParserListenerWrapper(ServerParser.Listener listener)
+        {
+            this.listener = listener;
+        }
+
+        @Override
+        public void onPreface()
+        {
+            listener.onPreface();
+        }
+
+        @Override
+        public void onData(DataFrame frame)
+        {
+            listener.onData(frame);
+        }
+
+        @Override
+        public void onHeaders(HeadersFrame frame)
+        {
+            listener.onHeaders(frame);
+        }
+
+        @Override
+        public void onPriority(PriorityFrame frame)
+        {
+            listener.onPriority(frame);
+        }
+
+        @Override
+        public void onReset(ResetFrame frame)
+        {
+            listener.onReset(frame);
+        }
+
+        @Override
+        public void onSettings(SettingsFrame frame)
+        {
+            listener.onSettings(frame);
+        }
+
+        @Override
+        public void onPushPromise(PushPromiseFrame frame)
+        {
+            listener.onPushPromise(frame);
+        }
+
+        @Override
+        public void onPing(PingFrame frame)
+        {
+            listener.onPing(frame);
+        }
+
+        @Override
+        public void onGoAway(GoAwayFrame frame)
+        {
+            listener.onGoAway(frame);
+        }
+
+        @Override
+        public void onWindowUpdate(WindowUpdateFrame frame)
+        {
+            listener.onWindowUpdate(frame);
+        }
+
+        @Override
+        public void onConnectionFailure(int error, String reason)
+        {
+            listener.onConnectionFailure(error, reason);
         }
     }
 }

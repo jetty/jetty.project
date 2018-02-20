@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -239,7 +240,7 @@ public class ScannerTest
 
 
         // Create a new file by writing to it.
-        long now = System.currentTimeMillis();
+        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         File file = new File(_directory,"st");
         try (OutputStream out = new FileOutputStream(file,true))
         {
@@ -300,7 +301,7 @@ public class ScannerTest
     {
         File file = new File(_directory,string);
         if (file.exists())
-            file.setLastModified(System.currentTimeMillis());
+            file.setLastModified(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
         else
             file.createNewFile();
     }

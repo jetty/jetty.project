@@ -49,7 +49,7 @@ public class MessageQueue extends BlockingArrayQueue<String>
             {
                 /* ignore */
             }
-            if (!LOG.isDebugEnabled() && (System.currentTimeMillis() > expireOn))
+            if (!LOG.isDebugEnabled() && (System.currentTimeMillis() > expireOn) && this.size() < expectedMessageCount)
             {
                 throw new TimeoutException(String.format("Timeout reading all %d expected messages. (managed to only read %d messages)",expectedMessageCount,
                         this.size()));

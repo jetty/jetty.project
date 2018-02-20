@@ -1561,13 +1561,13 @@ public class RequestTest
                     "\r\n"+
                     buf;
 
-            long start=System.currentTimeMillis();
+            long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             String rawResponse = _connector.getResponse(request);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response.status", response.getStatus(), is(400));
             assertThat("Response body content", response.getContent(),containsString(BadMessageException.class.getName()));
             assertThat("Response body content", response.getContent(),containsString(IllegalStateException.class.getName()));
-            long now=System.currentTimeMillis();
+            long now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             assertTrue((now-start)<5000);
         }
     }
@@ -1605,13 +1605,13 @@ public class RequestTest
                     "\r\n"+
                     buf;
 
-            long start=System.currentTimeMillis();
+            long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             String rawResponse = _connector.getResponse(request);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response.status", response.getStatus(), is(400));
             assertThat("Response body content", response.getContent(),containsString(BadMessageException.class.getName()));
             assertThat("Response body content", response.getContent(),containsString(IllegalStateException.class.getName()));
-            long now=System.currentTimeMillis();
+            long now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             assertTrue((now-start)<5000);
         }
     }

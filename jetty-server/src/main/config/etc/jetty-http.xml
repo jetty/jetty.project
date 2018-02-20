@@ -42,7 +42,6 @@
         <Set name="acceptQueueSize"><Property name="jetty.http.acceptQueueSize" deprecated="http.acceptQueueSize" default="0"/></Set>
         <Get name="SelectorManager">
           <Set name="connectTimeout"><Property name="jetty.http.connectTimeout" default="15000"/></Set>
-          <Set name="reservedThreads"><Property name="jetty.http.reservedThreads" default="-2"/></Set>
         </Get>
       </New>
     </Arg>

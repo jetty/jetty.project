@@ -82,7 +82,11 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Override
     protected Socket newSocket(String host, int port) throws Exception
     {
-        return __sslContext.getSocketFactory().createSocket(host,port);
+        Socket socket =  __sslContext.getSocketFactory().createSocket(host,port);
+        socket.setSoTimeout(10000);
+        socket.setTcpNoDelay(true);
+        socket.setSoLinger(false,0);
+        return socket;
     }
 
     @Override
