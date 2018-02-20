@@ -174,9 +174,7 @@ public class ReservedThreadExecutorTest
         int available = _reservedExecutor.getAvailable();
          
         assertThat(available,Matchers.greaterThan(0));
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
+        TimeUnit.MILLISECONDS.sleep(2*IDLE);
         assertThat(_reservedExecutor.getAvailable(),Matchers.lessThan(available));
     }
 
