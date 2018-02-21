@@ -79,6 +79,17 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
     }
 
     
+    /** 
+     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#checkPackagingConfiguration()
+     */
+    @Override
+    public void checkPackagingConfiguration() throws MojoExecutionException
+    { 
+        if ( !"war".equals( project.getPackaging() ))
+            throw new MojoExecutionException("Not war packaging");
+    }
+    
+    
     /**
      * 
      * @see AbstractJettyMojo#checkPomConfiguration()
