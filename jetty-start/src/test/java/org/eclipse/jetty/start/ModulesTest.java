@@ -70,7 +70,8 @@ public class ModulesTest
         modules.registerAll();
 
         // Check versions
-        assertThat("java.version.platform", args.getProperties().getString("java.version.platform"),anyOf(equalTo("8"),equalTo("9")));
+        assertThat("java.version.platform", args.getProperties().getString("java.version.platform"), //
+                   anyOf(equalTo("8"),equalTo("9"),equalTo( "10" )));
 
         List<String> moduleNames = new ArrayList<>();
         for (Module mod : modules)
