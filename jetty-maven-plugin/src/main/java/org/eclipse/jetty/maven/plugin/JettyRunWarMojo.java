@@ -61,10 +61,6 @@ public class JettyRunWarMojo extends AbstractJettyMojo
      */
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        if ( !"war".equals( project.getPackaging() ) || skip )
-        {
-            return;
-        }
         super.execute();  
     }
 
@@ -96,7 +92,18 @@ public class JettyRunWarMojo extends AbstractJettyMojo
        return;        
     }
 
+    
 
+    
+    /** 
+     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#checkPackagingConfiguration()
+     */
+    @Override
+    public void checkPackagingConfiguration() throws MojoExecutionException
+    { 
+        if ( !"war".equals( project.getPackaging() ))
+            throw new MojoExecutionException("Not war packaging");
+    }
 
     
     /**
