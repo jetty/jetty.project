@@ -50,6 +50,3 @@ Users are always welcome to come join our IRC channels and talk with us, other u
 irc.freenode.org - #jetty::
   Our primary location, we recommend that if your looking to find folks on IRC you try here.
   We also have commit notifications coming to this channel on the bottom and top of the hour.
-irc.codehaus.org - #jetty::
-  Our prior location before the move to the eclipse foundation.
-  We are idle on here.
