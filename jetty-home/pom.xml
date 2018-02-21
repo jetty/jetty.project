@@ -184,6 +184,20 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-lib-websocket-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>javax.websocket,org.eclipse.jetty.websocket</includeGroupIds>
+              <excludeArtifactIds>javax.websocket-client-api</excludeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/websocket</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-http2-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -194,6 +208,20 @@
               <includeArtifactIds>http2-hpack,http2-common,http2-server</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/http2</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-http2-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.http2</includeGroupIds>
+              <includeArtifactIds>http2-hpack,http2-common,http2-server</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/http2</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -209,6 +237,19 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-lib-fcgi-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.fcgi</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/fcgi</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-spring-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -219,6 +260,20 @@
               <includeArtifactIds>jetty-spring</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/spring</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-spring-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <includeArtifactIds>jetty-spring</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/spring</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -262,6 +317,20 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-annotations-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>javax.annotation,org.eclipse.jetty.orbit,org.ow2.asm</includeGroupIds>
+              <includeArtifactIds>javax.annotation-api,asm,asm-commons</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/annotations</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-apache-jsp-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -275,6 +344,23 @@
               <includeTypes>jar</includeTypes>
               <prependGroupId>true</prependGroupId>
               <outputDirectory>${assembly-directory}/lib/apache-jsp</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-apache-jsp-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>
+                org.eclipse.jetty,org.eclipse.jetty.toolchain,org.mortbay.jasper,org.eclipse.jdt
+              </includeGroupIds>
+              <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <prependGroupId>true</prependGroupId>
+              <outputDirectory>${source-assembly-directory}/lib/apache-jsp</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -292,6 +378,21 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-apache-jstl-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <excludeGroupIds>org.glassfish.web</excludeGroupIds>
+              <includeArtifactIds>taglibs-standard-spec,taglibs-standard-impl</includeArtifactIds>
+              <prependGroupId>true</prependGroupId>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/apache-jstl</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-jaspi-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -302,6 +403,20 @@
               <includeArtifactIds>javax.security.auth.message</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jaspi</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-jaspi-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>javax.security.auth.message</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/jaspi</outputDirectory>
             </configuration>
           </execution>
           <execution>
