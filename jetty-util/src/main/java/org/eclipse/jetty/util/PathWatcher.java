@@ -1030,9 +1030,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         register(dir,config);
         
         final MultiException me = new MultiException();
-        try (Stream<Path> stream = Files.list( dir)) {
+        try (Stream<Path> stream = Files.list( dir))
+        {
             stream.forEach( p -> {
-                if ( LOG.isDebugEnabled() ) LOG.debug( "registerTree? {}", p );
+                if ( LOG.isDebugEnabled() )
+                    LOG.debug( "registerTree? {}", p );
 
                 try
                 {
