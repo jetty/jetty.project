@@ -457,10 +457,10 @@ public class SelectChannelEndPointTest
         }
 
         Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         _lastEndPoint.setIdleTimeout(idleTimeout);
 
         // read until idle shutdown received
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         int b = client.getInputStream().read();
         assertEquals(-1, b);
         long idle = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
