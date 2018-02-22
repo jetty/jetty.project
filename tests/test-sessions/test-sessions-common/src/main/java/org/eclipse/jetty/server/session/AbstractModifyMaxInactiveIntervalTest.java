@@ -33,7 +33,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.After;
 import org.junit.Test;
 
 
@@ -45,18 +44,14 @@ import org.junit.Test;
  */
 public abstract class AbstractModifyMaxInactiveIntervalTest extends AbstractTestBase
 {
-
-
     public static int newMaxInactive = 20;
     public static int __scavenge = 1;
-
 
     @Test
     public void testReduceMaxInactiveInterval() throws Exception
     {
-        int oldMaxInactive = 3;
+        int oldMaxInactive = 30;
         int newMaxInactive = 1;
-        int sleep = (int)(oldMaxInactive * 0.8);
         
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
@@ -83,14 +78,17 @@ public abstract class AbstractModifyMaxInactiveIntervalTest extends AbstractTest
                 assertTrue(sessionCookie != null);
 
                 //do another request to reduce the maxinactive interval
-                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive+"&wait="+sleep);
+                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 
-                //do another request using the cookie to ensure the session is still there
+                // Wait for the session to expire
+                Thread.sleep(1500*newMaxInactive);
+                
+                //do another request using the cookie to ensure the session is NOT there
                 request= client.newRequest("http://localhost:" + port + "/mod/test?action=test&val="+newMaxInactive);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,response.getStatus());
                 
             }
             finally
@@ -107,11 +105,9 @@ public abstract class AbstractModifyMaxInactiveIntervalTest extends AbstractTest
     
     @Test
     public void testIncreaseMaxInactiveInterval() throws Exception
-    {
-        
-        int oldMaxInactive = 3;
-        int newMaxInactive = 5;
-        int sleep = (int)(oldMaxInactive * 0.8);
+    {        
+        int oldMaxInactive = 1;
+        int newMaxInactive = 10;
         
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
@@ -137,10 +133,13 @@ public abstract class AbstractModifyMaxInactiveIntervalTest extends AbstractTest
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
-                //do another request to increase the maxinactive interval, first waiting until the old expiration should have passed
-                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive+"&wait="+sleep);
+                //do another request to increase the maxinactive interval
+                Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                
+                // wait until the old inactive interval should have expired
+                Thread.sleep(1100*oldMaxInactive);
                 
                 //do another request using the cookie to ensure the session is still there
                 request= client.newRequest("http://localhost:" + port + "/mod/test?action=test&val="+newMaxInactive);
@@ -411,7 +410,7 @@ public abstract class AbstractModifyMaxInactiveIntervalTest extends AbstractTest
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                                
                 //wait for longer than the old inactive interval
-                Thread.currentThread().sleep(sleep*1000L);
+                Thread.sleep(sleep*1000L);
                 
                 //do another request using the cookie to ensure the session is still there
                 request= client.newRequest("http://localhost:" + port + "/mod/test?action=test&val="+newMaxInactive);
@@ -503,7 +502,7 @@ public abstract class AbstractModifyMaxInactiveIntervalTest extends AbstractTest
                 int wait = (tmp==null?0:Integer.parseInt(tmp));
                 if (wait >0)
                 {
-                    try { Thread.currentThread().sleep(wait*1000);}catch (Exception e) {throw new ServletException(e);}
+                    try { Thread.sleep(wait*1000);}catch (Exception e) {throw new ServletException(e);}
                 }
                 HttpSession session = request.getSession(false);
                 if (session == null)
@@ -532,7 +531,7 @@ public abstract class AbstractModifyMaxInactiveIntervalTest extends AbstractTest
 
                 if (interval > 0) 
                 {
-                    try{Thread.currentThread().sleep(interval*1000);}catch (Exception e) {throw new ServletException(e);}
+                    try{Thread.sleep(interval*1000);}catch (Exception e) {throw new ServletException(e);}
                 }
 
                 session = request.getSession(false);
@@ -546,7 +545,10 @@ public abstract class AbstractModifyMaxInactiveIntervalTest extends AbstractTest
             {
                 HttpSession session = request.getSession(false);
                 if (session == null)
-                    throw new ServletException("Session does not exist");
+                {
+                    response.sendError(500,"Session does not exist");
+                    return;
+                }
                 String tmp = request.getParameter("val");
                 int interval = 0;
                 interval = (tmp==null?0:Integer.parseInt(tmp));
