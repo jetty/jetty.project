@@ -615,13 +615,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s,c=%b,a=%s,uri=%s}",
+        long timeStamp = _request.getTimeStamp();
+        return String.format("%s@%x{r=%s,c=%b,a=%s,uri=%s,age=%d}",
                 getClass().getSimpleName(),
                 hashCode(),
                 _requests,
                 _committed.get(),
                 _state.getState(),
-                _request.getHttpURI());
+                _request.getHttpURI(),
+                timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
     }
 
     public void onRequest(MetaData.Request request)
