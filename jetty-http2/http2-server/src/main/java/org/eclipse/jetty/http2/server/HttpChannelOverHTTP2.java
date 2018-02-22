@@ -393,10 +393,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     public String toString()
     {
         IStream stream = getStream();
-        long streamId = -1;
-        if (stream != null)
-            streamId = stream.getId();
-        return String.format("%s#%d", super.toString(), getStream() == null ? -1 : streamId);
+        long streamId = stream == null ? -1 : stream.getId();
+        return String.format("%s#%d", super.toString(), streamId);
     }
 
     private class FailureTask implements Runnable
