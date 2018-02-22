@@ -68,13 +68,11 @@ public class ConnectionStatisticsTest extends AbstractTest
             @Override
             public void onOpened(Connection connection)
             {             
-                System.err.println("onOpened: "+connection);
             }
 
             @Override
             public void onClosed(Connection connection)
             {
-                System.err.println("onClosed: "+connection);
                 closed.countDown();
             }
         };
