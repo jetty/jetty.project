@@ -62,9 +62,7 @@ public class JettyStopMojo extends AbstractMojo
      * @parameter
      */
     protected int stopWait;
-    
- 
-    
+
     
     
 

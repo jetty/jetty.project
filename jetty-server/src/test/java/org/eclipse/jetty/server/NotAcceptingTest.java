@@ -183,7 +183,7 @@ public class NotAcceptingTest
                     try
                     {
                         uri = handler.exchange.exchange("delayed connection",500,TimeUnit.MILLISECONDS);
-                        Assert.fail(uri);
+                        Assert.fail("Expected TimeoutException from exchange failed for URI: " + uri);
                     }
                     catch(TimeoutException e)
                     {
@@ -329,12 +329,14 @@ public class NotAcceptingTest
             Socket async2 = new Socket("localhost",asyncConnector.getLocalPort());
             )
         {
+            String expectedContent = "Hello" + System.lineSeparator();
+
             for (LocalEndPoint client: new LocalEndPoint[] {local0,local1,local2})
             {
                 client.addInputAndExecute(BufferUtil.toBuffer("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n"));
                 HttpTester.Response response = HttpTester.parseResponse(client.getResponse());
                 assertThat(response.getStatus(),is(200));
-                assertThat(response.getContent(),is("Hello\n"));
+                assertThat(response.getContent(),is(expectedContent));
             }
             
             for (Socket client : new Socket[]{blocking0,blocking1,blocking2,async0,async1,async2})
@@ -343,7 +345,7 @@ public class NotAcceptingTest
                 client.getOutputStream().write("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n".getBytes());
                 HttpTester.Response response = HttpTester.parseResponse(in);
                 assertThat(response.getStatus(),is(200));
-                assertThat(response.getContent(),is("Hello\n"));
+                assertThat(response.getContent(),is(expectedContent));
             }
             
             assertThat(localConnector.isAccepting(),is(false));
@@ -356,7 +358,7 @@ public class NotAcceptingTest
                 async1.getOutputStream().write("GET /test HTTP/1.1\r\nHost:localhost\r\nConnection: close\r\n\r\n".getBytes());
                 HttpTester.Response response = HttpTester.parseResponse(in);
                 assertThat(response.getStatus(),is(200));
-                assertThat(response.getContent(),is("Hello\n"));
+                assertThat(response.getContent(),is(expectedContent));
             }
             
             // make a new connection and request
@@ -366,7 +368,7 @@ public class NotAcceptingTest
                 blocking3.getOutputStream().write("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n".getBytes());
                 HttpTester.Response response = HttpTester.parseResponse(in);
                 assertThat(response.getStatus(),is(200));
-                assertThat(response.getContent(),is("Hello\n"));
+                assertThat(response.getContent(),is(expectedContent));
             }
         }
 

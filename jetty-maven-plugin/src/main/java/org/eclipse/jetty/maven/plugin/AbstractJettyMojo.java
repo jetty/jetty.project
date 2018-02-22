@@ -293,8 +293,9 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     public abstract void restartWebApp(boolean reconfigureScanner) throws Exception;
 
     
-    public abstract void checkPomConfiguration() throws MojoExecutionException;    
+    public abstract void checkPomConfiguration() throws MojoExecutionException;
     
+    public abstract void checkPackagingConfiguration() throws MojoExecutionException;  
     
     public abstract void configureScanner () throws MojoExecutionException;
     
@@ -323,11 +324,15 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         
         configurePluginClasspath();
         PluginLog.setLog(getLog());
-        checkPomConfiguration();
+        checkConfiguration();
         startJetty();
     }
     
-    
+    public void checkConfiguration() throws MojoExecutionException
+    {
+        checkPackagingConfiguration();
+        checkPomConfiguration();
+    }
     
     
     public void configurePluginClasspath() throws MojoExecutionException

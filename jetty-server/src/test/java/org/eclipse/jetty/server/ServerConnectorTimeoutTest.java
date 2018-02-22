@@ -126,7 +126,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
             long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             String response = IO.toString(inputStream);
             long timeElapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-            Assert.assertTrue("Time elapsed should be at least MAX_IDLE_TIME",timeElapsed > MAX_IDLE_TIME);
+            Assert.assertThat(timeElapsed,Matchers.greaterThanOrEqualTo(MAX_IDLE_TIME-100L));
             return response;
         }
     }

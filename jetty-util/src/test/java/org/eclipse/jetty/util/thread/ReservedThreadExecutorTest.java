@@ -30,7 +30,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -88,7 +87,7 @@ public class ReservedThreadExecutorTest
         assertThat(_executor._queue.size(), is(SIZE));
 
         for (int i = 0; i < SIZE; i++)
-            _executor.execute();
+            _executor.startThread();
         assertThat(_executor._queue.size(), is(0));
 
         waitForAllAvailable();
@@ -114,7 +113,7 @@ public class ReservedThreadExecutorTest
         assertThat(_executor._queue.size(), is(SIZE));
 
         for (int i = 0; i < SIZE; i++)
-            _executor.execute();
+            _executor.startThread();
         assertThat(_executor._queue.size(), is(0));
 
         waitForAllAvailable();
@@ -143,8 +142,7 @@ public class ReservedThreadExecutorTest
 
         waitForAllAvailable();
     }
-
-
+    
     @Test
     public void testShrink() throws Exception
     {
@@ -153,29 +151,20 @@ public class ReservedThreadExecutorTest
         _reservedExecutor.stop();
         _reservedExecutor.setIdleTimeout(IDLE,TimeUnit.MILLISECONDS);
         _reservedExecutor.start();
+        assertThat(_reservedExecutor.getAvailable(),is(0));
+        
+        assertThat(_reservedExecutor.tryExecute(NOOP),is(false));
+        assertThat(_reservedExecutor.tryExecute(NOOP),is(false));
+        
+        _executor.startThread();
+        _executor.startThread();
 
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        _reservedExecutor.tryExecute(NOOP);
-        _executor.execute();
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        _reservedExecutor.tryExecute(NOOP);
-        _executor.execute();
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        _reservedExecutor.tryExecute(NOOP);
-        _executor.execute();
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        _reservedExecutor.tryExecute(NOOP);
-        _executor.execute();
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        _reservedExecutor.tryExecute(NOOP);
-        _executor.execute();
-       
-        waitForAvailable(1);
+        waitForAvailable(2);
+        
         int available = _reservedExecutor.getAvailable();
-         
-        assertThat(available,Matchers.greaterThan(0));
-        TimeUnit.MILLISECONDS.sleep(2*IDLE);
-        assertThat(_reservedExecutor.getAvailable(),Matchers.lessThan(available));
+        assertThat(available,is(2));
+        Thread.sleep((5*IDLE)/2);
+        assertThat(_reservedExecutor.getAvailable(),is(0));
     }
 
     protected void waitForNoPending() throws InterruptedException
@@ -219,7 +208,7 @@ public class ReservedThreadExecutorTest
             _queue.addLast(task);
         }
 
-        public void execute()
+        public void startThread()
         {
             Runnable task = _queue.pollFirst();
             if (task != null)
