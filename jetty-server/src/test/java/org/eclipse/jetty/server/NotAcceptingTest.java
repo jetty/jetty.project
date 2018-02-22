@@ -183,7 +183,7 @@ public class NotAcceptingTest
                     try
                     {
                         uri = handler.exchange.exchange("delayed connection",500,TimeUnit.MILLISECONDS);
-                        Assert.fail(uri);
+                        Assert.fail("Expected TimeoutException from exchange failed for URI: " + uri);
                     }
                     catch(TimeoutException e)
                     {
