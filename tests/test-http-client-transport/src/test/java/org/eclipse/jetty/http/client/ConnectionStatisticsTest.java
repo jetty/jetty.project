@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -27,7 +28,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -47,7 +50,7 @@ public class ConnectionStatisticsTest extends AbstractTest
     @Test
     public void testConnectionStatistics() throws Exception
     {
-        Assume.assumeThat(transport, Matchers.isOneOf( Transport.HTTP, Transport.H2C, Transport.H2));
+        Assume.assumeThat(transport, Matchers.isOneOf( Transport.HTTP, Transport.H2C));
 
         start(new AbstractHandler()
         {
@@ -59,33 +62,47 @@ public class ConnectionStatisticsTest extends AbstractTest
             }
         });
 
+        CountDownLatch closed = new CountDownLatch(2);
+        Connection.Listener closer = new Connection.Listener()
+        {
+            @Override
+            public void onOpened(Connection connection)
+            {             
+                System.err.println("onOpened: "+connection);
+            }
+
+            @Override
+            public void onClosed(Connection connection)
+            {
+                System.err.println("onClosed: "+connection);
+                closed.countDown();
+            }
+        };
+        
         ConnectionStatistics serverStats = new ConnectionStatistics();
         connector.addBean(serverStats);
+        connector.addBean(closer);
         serverStats.start();
 
         ConnectionStatistics clientStats = new ConnectionStatistics();
         client.addBean(clientStats);
+        client.addBean(closer);
         clientStats.start();
+        
+        client.setIdleTimeout(1000);
 
         byte[] content = new byte[3072];
         long contentLength = content.length;
         ContentResponse response = client.newRequest(newURI())
+                .header(HttpHeader.CONNECTION,"close")
                 .content(new BytesContentProvider(content))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
         Assert.assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
 
-        // The bytes have already arrived, but give time to
-        // the server to finish to run the response logic.
-        Thread.sleep(1000);
-
-        // Close all connections.
-        stop();
-
-        // Give some time to process the stop event.
-        Thread.sleep(1000);
-
+        closed.await();
+        
         Assert.assertThat(serverStats.getConnectionsMax(), Matchers.greaterThan(0L));
         Assert.assertThat(serverStats.getReceivedBytes(), Matchers.greaterThan(contentLength));
         Assert.assertThat(serverStats.getSentBytes(), Matchers.greaterThan(contentLength));
