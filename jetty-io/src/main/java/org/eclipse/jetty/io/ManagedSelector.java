@@ -499,7 +499,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             _keys.clear();
         }
 
-
         @Override
         public String toString()
         {

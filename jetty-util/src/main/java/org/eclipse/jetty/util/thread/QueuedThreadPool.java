@@ -218,8 +218,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (_budget!=null)
             _budget.reset();
 
-        removeBean(_tryExecutor);
-        
         synchronized (_joinLock)
         {
             _joinLock.notifyAll();
@@ -558,7 +556,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
-    {        
+    {
         List<Object> threads = new ArrayList<>(getMaxThreads());
         for (final Thread thread : _threads)
         {
@@ -624,7 +622,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         List<Runnable> jobs = Collections.emptyList();
         if (isDetailedDump())
             jobs = new ArrayList<>(getQueue());
-                
+
         dumpBeans(out, indent, threads, Collections.singletonList(new DumpableCollection("jobs", jobs)));
     }
 

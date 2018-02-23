@@ -18,14 +18,7 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.io.Closeable;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
-
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
@@ -49,7 +42,7 @@ public interface Invocable
         BLOCKING, NON_BLOCKING, EITHER
     }
 
-    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<Boolean>();
+    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 
     /**
      * Test if the current thread has been tagged as non blocking
@@ -83,7 +76,7 @@ public interface Invocable
     /**
      * Get the invocation type of an Object.
      * @param o The object to check the invocation type of.
-     * @return If the object is a {@link Invocable}, it is coerced and the {@link #getInvocationType()}
+     * @return If the object is an Invocable, it is coerced and the {@link #getInvocationType()}
      * used, otherwise {@link InvocationType#BLOCKING} is returned.
      */
     public static InvocationType getInvocationType(Object o)
@@ -100,14 +93,4 @@ public interface Invocable
     {
         return InvocationType.BLOCKING;
     }
-    
-    public abstract class NonBlocking implements Runnable, Invocable
-    {
-        @Override
-        public final InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-    }
-
 }

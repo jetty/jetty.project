@@ -74,7 +74,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         PRODUCE_INVOKE_CONSUME, // This is PRODUCE_CONSUME an EITHER task with NON_BLOCKING invocation
         PRODUCE_EXECUTE_CONSUME, 
         EXECUTE_PRODUCE_CONSUME // Eat What You Kill!
-    }; 
+    }
     
     private final LongAdder _pcMode = new LongAdder();
     private final LongAdder _picMode = new LongAdder();
@@ -373,10 +373,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 }
             }
         }
-
     }
 
-    @ManagedAttribute(value = "number of non tasks consumed with PC", readonly = true)
+    @ManagedAttribute(value = "number of tasks consumed with PC mode", readonly = true)
     public long getPCTasksConsumed()
     {
         return _pcMode.longValue();

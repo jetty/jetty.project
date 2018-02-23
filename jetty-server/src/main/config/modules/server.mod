@@ -23,9 +23,6 @@ lib/jetty-io-${jetty.version}.jar
 etc/jetty.xml
 
 [ini-template]
-## number of reserved threads (-1 for heuristic)
-# jetty.threadPool.reservedThreads=-1
-
 ### Common HTTP configuration
 ## Scheme to use to build URIs for secure redirects
 # jetty.httpConfig.secureScheme=https
