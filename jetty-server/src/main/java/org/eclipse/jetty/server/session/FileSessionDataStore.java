@@ -145,7 +145,8 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @param filename name of the file containing the session's information
      * 
      * @return true if file was deleted, false otherwise
-     * @throws Exception
+     * @throws Exception indicating delete failure
+     *
      */
     public boolean deleteFile (String filename) throws Exception
     {
@@ -255,7 +256,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @param now the time now in msec
      * @param p the file to check
      * 
-     * @throws Exception
+     * @throws Exception indicating error in sweep
      */
     public void sweepFile (long now, Path p)
     throws Exception
@@ -380,7 +381,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * be kept and the rest deleted. At the same time, any files - for any context -
      * that expired a long time ago will be cleaned up.
      * 
-     * @throws IllegalStateException if storeDir doesn't exist, isn't readable/writeable
+     * @throws Exception if storeDir doesn't exist, isn't readable/writeable
      * or contains 2 files with the same lastmodify time for the same session. Throws IOException
      * if the lastmodifytimes can't be read.
      */

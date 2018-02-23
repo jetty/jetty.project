@@ -70,7 +70,7 @@ public class BasicAuthentication extends AbstractAuthentication
      * Basic authentication result.
      * <p>
      * Application may utilize this class directly via
-     * {@link org.eclipse.jetty.client.api.AuthenticationStore#addAuthenticationResult(Result)}
+     * {@link org.eclipse.jetty.client.api.AuthenticationStore#addAuthenticationResult(.Result)}
      * to perform preemptive authentication, that is immediately
      * sending the authorization header based on the fact that the
      * URI is known to require authentication and that username
