@@ -53,6 +53,7 @@ public class WarURLConnection extends URLConnection
      * @param newmanifest The new manifest
      * @param rawIn The file input stream or equivalent. not the jar input stream.
      * @throws IOException if an I/O error occurs.
+     * @return InputStream of the replaced manifest file
      */
     public static InputStream substitueManifest(final Manifest newmanifest,
             final InputStream rawIn) throws IOException
