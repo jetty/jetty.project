@@ -18,6 +18,15 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.SocketTimeoutException;
@@ -69,14 +78,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 public class ClientCloseTest
 {
@@ -490,7 +491,11 @@ public class ClientCloseTest
 
         // client reads -1 (EOF)
         // client triggers close event on client ws-endpoint
-        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.ABNORMAL),containsString("EOF"));
+        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.ABNORMAL),
+                anyOf(
+                        containsString("EOF"),
+                        containsString("Disconnected")
+                ));
     }
 
     @Test
