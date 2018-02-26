@@ -101,7 +101,16 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         }
         catch (SocketException e)
         {
+            // TODO This needs to be investigated #2244 
             Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
+        }
+        catch (SSLException e)
+        {
+            // TODO This needs to be investigated #2244 
+            if (e.getCause() instanceof SocketException)
+                Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
+            else
+                throw e;
         }
     }
 
