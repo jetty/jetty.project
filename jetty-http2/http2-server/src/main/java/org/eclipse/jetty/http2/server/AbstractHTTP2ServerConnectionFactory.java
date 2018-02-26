@@ -142,7 +142,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     /**
      * @return -1
-     * @deprecated not used anymore
+     * @deprecated feature removed, no replacement
      */
     @Deprecated
     public int getReservedThreads()
@@ -152,7 +152,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     /**
      * @param threads ignored
-     * @deprecated not used anymore
+     * @deprecated feature removed, no replacement
      * @throws UnsupportedOperationException when invoked
      */
     @Deprecated
