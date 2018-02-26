@@ -22,13 +22,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.server.SessionIdManager;
@@ -188,6 +193,57 @@ public class JdbcTestHelper
         }
     }
     
+    
+    public static void insertSession (String id, String contextPath, String vhost, 
+                                      String lastNode, long created, long accessed, 
+                                      long lastAccessed, long maxIdle, long expiry,
+                                      Map<String,Object> attributes)
+    throws Exception
+    {
+        Class.forName(DRIVER_CLASS);
+        try (Connection con=DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
+        {
+            PreparedStatement statement = con.prepareStatement("insert into "+TABLE+
+                                                               " ("+ID_COL+", "+CONTEXT_COL+", virtualHost, "+LAST_NODE_COL+
+                                                               ", "+ACCESS_COL+", "+LAST_ACCESS_COL+", "+CREATE_COL+", "+COOKIE_COL+
+                                                               ", "+LAST_SAVE_COL+", "+EXPIRY_COL+", "+MAP_COL+" ) "+
+                                                               " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+           
+            statement.setString(1, id);
+            statement.setString(2, contextPath);
+            statement.setString(3,  vhost);
+            statement.setString(4, lastNode);
+            
+            statement.setLong(5, accessed);
+            statement.setLong(6, lastAccessed);
+            statement.setLong(7, created);
+            statement.setLong(8, created);
+
+            statement.setLong(9, System.currentTimeMillis());
+            statement.setLong(10, expiry);
+
+            if (attributes != null)
+            {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                Map<String,Object> emptyMap = Collections.emptyMap();
+                oos.writeObject(emptyMap);
+                oos.flush();
+                byte[] bytes = baos.toByteArray();
+
+                ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+                statement.setBinaryStream(11, bais, bytes.length);//attribute map as blob
+            }
+            else
+                statement.setBinaryStream(11, new ByteArrayInputStream("".getBytes()), 0);
+            
+            statement.execute();
+            assertEquals(1,statement.getUpdateCount());
+        }     
+    }
+    
+    
+
     
     public static Set<String> getSessionIds ()
     throws Exception
