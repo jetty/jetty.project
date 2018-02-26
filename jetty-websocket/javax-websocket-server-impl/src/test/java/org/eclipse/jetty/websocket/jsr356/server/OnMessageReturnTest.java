@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.net.URI;
-import java.util.Queue;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -28,6 +28,8 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.EchoReturnEndpoint;
 import org.junit.Assert;
@@ -44,7 +46,7 @@ public class OnMessageReturnTest
     @Test
     public void testEchoReturn() throws Exception
     {
-        WSServer wsb = new WSServer(testdir,"app");
+        WSServer wsb = new WSServer(testdir, "app");
         wsb.copyWebInf("empty-web.xml");
         wsb.copyClass(EchoReturnEndpoint.class);
 
@@ -60,13 +62,13 @@ public class OnMessageReturnTest
             try
             {
                 client.start();
-                JettyEchoSocket clientEcho = new JettyEchoSocket();
-                Future<Session> future = client.connect(clientEcho,uri.resolve("echoreturn"));
+                ClientEchoSocket clientEcho = new ClientEchoSocket();
+                Future<Session> future = client.connect(clientEcho, uri.resolve("echoreturn"));
                 // wait for connect
-                future.get(1,TimeUnit.SECONDS);
-                clientEcho.sendMessage("Hello World");
-                Queue<String> msgs = clientEcho.awaitMessages(1);
-                Assert.assertEquals("Expected message","Hello World",msgs.poll());
+                Session session = future.get(1, TimeUnit.SECONDS);
+                session.getRemote().sendString("Hello World");
+                String msg = clientEcho.messages.poll(2, TimeUnit.SECONDS);
+                Assert.assertEquals("Expected message", "Hello World", msg);
             }
             finally
             {
@@ -79,4 +81,15 @@ public class OnMessageReturnTest
         }
     }
 
+    @WebSocket
+    public static class ClientEchoSocket
+    {
+        public LinkedBlockingQueue<String> messages = new LinkedBlockingQueue<>();
+
+        @OnWebSocketMessage
+        public void onText(String msg)
+        {
+            messages.offer(msg);
+        }
+    }
 }
