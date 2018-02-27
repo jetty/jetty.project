@@ -1,7 +1,7 @@
 #!groovy
 
 def jdks = ["jdk8", "jdk9"]
-def oss = ["linux"] //windows?
+def oss = ["linux"] //windows?  ,"linux-docker"
 def builds = [:]
 for (def os in oss) {
   for (def jdk in jdks) {
@@ -37,7 +37,14 @@ def getFullBuild(jdk, os) {
         stage('Compile') {
           withEnv(mvnEnv) {
             timeout(time: 15, unit: 'MINUTES') {
-              sh "mvn -V -B clean install -Dtest=None"
+              withMaven(
+                      maven: 'maven3',
+                      jdk: "$jdk",
+                      options: disableMvnReporters(),
+                      mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
+                sh "mvn -V -B clean install -Dtest=None -T6"
+              }
+
             }
           }
         }
@@ -51,7 +58,13 @@ def getFullBuild(jdk, os) {
         stage('Javadoc') {
           withEnv(mvnEnv) {
             timeout(time: 20, unit: 'MINUTES') {
-              sh "mvn -V -B javadoc:javadoc"
+              withMaven(
+                      maven: 'maven3',
+                      jdk: "$jdk",
+                      options: disableMvnReporters(),
+                      mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
+                sh "mvn -V -B javadoc:javadoc -T5"
+              }
             }
           }
         }
@@ -66,41 +79,42 @@ def getFullBuild(jdk, os) {
           withEnv(mvnEnv) {
             timeout(time: 90, unit: 'MINUTES') {
               // Run test phase / ignore test failures
-              sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its"
+              withMaven(
+                      maven: 'maven3',
+                      jdk: "$jdk",
+                      options: disableMvnReporters(),
+                      mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
+                //
+                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T3 -e -Dmaven.repo.local=${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
+              }
+              // withMaven doesn't label..
               // Report failures in the jenkins UI
               junit testResults:'**/target/surefire-reports/TEST-*.xml'
               // Collect up the jacoco execution results
               def jacocoExcludes =
                       // build tools
-                      "**/org/eclipse/jetty/ant/**" +
-                              ",**/org/eclipse/jetty/maven/**" +
+                      "**/org/eclipse/jetty/ant/**" + ",**/org/eclipse/jetty/maven/**" +
                               ",**/org/eclipse/jetty/jspc/**" +
                               // example code / documentation
-                              ",**/org/eclipse/jetty/embedded/**" +
-                              ",**/org/eclipse/jetty/asyncrest/**" +
+                              ",**/org/eclipse/jetty/embedded/**" + ",**/org/eclipse/jetty/asyncrest/**" +
                               ",**/org/eclipse/jetty/demo/**" +
                               // special environments / late integrations
-                              ",**/org/eclipse/jetty/gcloud/**" +
-                              ",**/org/eclipse/jetty/infinispan/**" +
-                              ",**/org/eclipse/jetty/osgi/**" +
-                              ",**/org/eclipse/jetty/spring/**" +
+                              ",**/org/eclipse/jetty/gcloud/**" + ",**/org/eclipse/jetty/infinispan/**" +
+                              ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +
                               ",**/org/eclipse/jetty/http/spi/**" +
                               // test classes
-                              ",**/org/eclipse/jetty/tests/**" +
-                              ",**/org/eclipse/jetty/test/**";
-              step([$class: 'JacocoPublisher',
-                    inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                    exclusionPattern: jacocoExcludes,
-                    execPattern: '**/target/jacoco.exec',
-                    classPattern: '**/target/classes',
-                    sourcePattern: '**/src/main/java'])
+                              ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
+              step( [$class          : 'JacocoPublisher',
+                     inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+                     exclusionPattern: jacocoExcludes,
+                     execPattern     : '**/target/jacoco.exec',
+                     classPattern    : '**/target/classes',
+                     sourcePattern   : '**/src/main/java'] )
               // Report on Maven and Javadoc warnings
-              step([$class: 'WarningsPublisher',
-                    consoleParsers: [
-                            [parserName: 'Maven'],
-                            [parserName: 'JavaDoc'],
-                            [parserName: 'JavaC']
-                    ]])
+              step( [$class        : 'WarningsPublisher',
+                     consoleParsers: [[parserName: 'Maven'],
+                                      [parserName: 'JavaDoc'],
+                                      [parserName: 'JavaC']]] )
             }
             if(isUnstable())
             {
@@ -119,7 +133,13 @@ def getFullBuild(jdk, os) {
 
           dir("aggregates/jetty-all-compact3") {
             withEnv(mvnEnv) {
-              sh "mvn -V -B -Pcompact3 clean install"
+              withMaven(
+                      maven: 'maven3',
+                      jdk: "$jdk",
+                      options: disableMvnReporters(),
+                      mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
+                sh "mvn -V -B -Pcompact3 clean install -T5"
+              }
             }
           }
         }
@@ -176,6 +196,19 @@ def notifyBuild(String buildStatus, String jdk)
           subject: summary,
           body: detail
   )
+}
+
+def disableMvnReporters() {
+  return [
+          concordionPublisher(disabled: true),
+          dependenciesFingerprintPublisher(disabled: true),
+          findbugsPublisher(disabled: true),
+          artifactsPublisher(disabled: true),
+          invokerPublisher(disabled: true),
+          jgivenPublisher(disabled: true),
+          junitPublisher(disabled: true),
+          pipelineGraphPublisher(disabled: true),
+          openTasksPublisher(disabled: true)];
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
