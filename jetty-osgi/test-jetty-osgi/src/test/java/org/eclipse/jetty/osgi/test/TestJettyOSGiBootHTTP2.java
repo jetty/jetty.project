@@ -72,7 +72,7 @@ public class TestJettyOSGiBootHTTP2
     {
         ArrayList<Option> options = new ArrayList<Option>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(TestJettyOSGiBootWithJsp.configureJettyHomeAndPort(true,"jetty-http2.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true,"jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
@@ -98,8 +98,6 @@ public class TestJettyOSGiBootHTTP2
     {
         List<Option> res = new ArrayList<Option>();
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
-        res.add(CoreOptions.systemProperty("jetty.http.port").value("0"));
-        res.add(CoreOptions.systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
 
         String alpnBoot = System.getProperty("mortbay-alpn-boot");
         if (alpnBoot == null) { throw new IllegalStateException("Define path to alpn boot jar as system property -Dmortbay-alpn-boot"); }

@@ -69,7 +69,7 @@ public class TestJettyOSGiBootContextAsService
     {
         ArrayList<Option> options = new ArrayList<Option>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort("jetty-http-boot-context-as-service.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-context-as-service.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
         options.addAll(TestOSGiUtil.coreJettyDependencies());
 
@@ -82,25 +82,7 @@ public class TestJettyOSGiBootContextAsService
         return options.toArray(new Option[options.size()]);
     }
 
-    public static List<Option> configureJettyHomeAndPort(String jettySelectorFileName)
-    {
-        File etc = new File("src/test/config/etc");
-        StringBuffer xmlConfigs = new StringBuffer();
-        xmlConfigs.append(new File(etc, "jetty.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc,"jetty-deployer.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
-        
-        List<Option> options = new ArrayList<Option>();
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
-        options.add(systemProperty("jetty.http.port").value("0"));
-        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
-        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
-        return options;
-    }
+
 
     @Ignore
     @Test
