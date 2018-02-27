@@ -62,7 +62,7 @@ public class TestJettyOSGiBootWithJsp
     {
         ArrayList<Option> options = new ArrayList<Option>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort(false,"jetty-http-boot-with-jsp.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false,"jetty-http-boot-with-jsp.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
@@ -76,38 +76,7 @@ public class TestJettyOSGiBootWithJsp
         return options.toArray(new Option[options.size()]);
     }
 
-    public static List<Option> configureJettyHomeAndPort(boolean ssl,String jettySelectorFileName)
-    {
-        File etc = new File(OS.separators("src/test/config/etc"));
-        
-        List<Option> options = new ArrayList<Option>();
-        StringBuffer xmlConfigs = new StringBuffer();
-        xmlConfigs.append(new File(etc, "jetty.xml").toURI());
-        xmlConfigs.append(";");
-        if (ssl)
-        {
 
-            xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-alpn.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
-            xmlConfigs.append(";");
-
-        }
-        xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-deployer.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
-
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
-        options.add(systemProperty("jetty.http.port").value("0"));
-        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
-        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
-        options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
-        return options;
-    }
 
     public static List<Option> jspDependencies()
     {
