@@ -25,6 +25,8 @@
     <alpn.version>undefined</alpn.version>
     <conscrypt.version>1.0.0.RC11</conscrypt.version>
     <asm.version>6.0</asm.version>
+    <jmh.version>1.20</jmh.version>
+    <jmhjar.name>benchmarks</jmhjar.name>
   </properties>
 
   <licenses>
