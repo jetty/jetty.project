@@ -261,6 +261,7 @@ public class B64Code
      * @throws IllegalArgumentException if the input is not a valid
      *         B64 encoding.
      */
+	@SuppressWarnings("DefaultCharset")
     public static String decode(String encoded,String charEncoding)
     {
         byte[] decoded=decode(encoded);
@@ -279,6 +280,7 @@ public class B64Code
      * @throws IllegalArgumentException if the input is not a valid
      *         B64 encoding.
      */
+	@SuppressWarnings("DefaultCharset")
     public static String decode(String encoded, Charset charEncoding)
     {
         byte[] decoded=decode(encoded);
