@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.servlets;
 
-import java.io.File;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -182,8 +185,8 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request+request,2,1100,1100,last);
 
-        Assert.assertEquals(2,count(responses,"DoSFilter: delayed"));
-        Assert.assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
+        assertThat(count(responses,"DoSFilter: delayed"), greaterThanOrEqualTo(2));
+        assertThat(count(responses,"HTTP/1.1 200 OK"), is(11));
     }
 
     @Test
