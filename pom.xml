@@ -18,6 +18,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support-version>1.4</build-support-version>
     <slf4j-version>1.6.6</slf4j-version>
+    <log4j2-version>2.9.0</log4j2-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
     <jsp.version>8.5.24.1</jsp.version>
@@ -977,6 +978,11 @@
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>${log4j2-version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
