@@ -1066,6 +1066,7 @@
                 <forceJavacCompilerUse>true</forceJavacCompilerUse>
                 <compilerArgs>
                   <arg>-XepAllErrorsAsWarnings</arg>
+                  <arg>-Xep:OperatorPrecedence:OFF</arg>
                 </compilerArgs>
               </configuration>
               <dependencies>
