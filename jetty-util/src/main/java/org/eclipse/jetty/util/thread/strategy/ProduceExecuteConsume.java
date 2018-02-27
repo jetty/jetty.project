@@ -23,6 +23,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Locker.Lock;
@@ -91,7 +92,10 @@ public class ProduceExecuteConsume implements ExecutionStrategy
             }
 
             // Execute the task.
-            _executor.execute(task);
+            if (Invocable.getInvocationType(task)==InvocationType.NON_BLOCKING)
+                task.run();
+            else
+                _executor.execute(task);
         }        
     }
 

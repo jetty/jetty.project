@@ -42,7 +42,10 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 public class HTTP2Connection extends AbstractConnection implements WriteFlusher.Listener
 {
     protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
-
+    
+    // TODO remove this once we are sure EWYK is OK for http2
+    private static final boolean PEC_MODE = Boolean.getBoolean("org.eclipse.jetty.http2.PEC_MODE");
+    
     private final Queue<Runnable> tasks = new ArrayDeque<>();
     private final HTTP2Producer producer = new HTTP2Producer();
     private final AtomicLong bytesIn = new AtomicLong();
@@ -59,8 +62,9 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        // TODO HTTP2 cannot use EWYK without fix for #1803
-        this.strategy = new EatWhatYouKill(producer, new TryExecutor.NoTryExecutor(executor));
+        if (PEC_MODE)
+            executor = new TryExecutor.NoTryExecutor(executor);
+        this.strategy = new EatWhatYouKill(producer, executor);
         LifeCycle.start(strategy);
     }
 
@@ -283,9 +287,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         @Override
         public InvocationType getInvocationType()
         {
-            // TODO: see also AbstractHTTP2ServerConnectionFactory.reservedThreads.
-            // TODO: it's non blocking here because reservedThreads=0.
-            return InvocationType.NON_BLOCKING;
+            return InvocationType.EITHER;
         }
     }
 }
