@@ -1,3 +1,5 @@
+jetty-9.3.24-SNAPSHOT
+
 jetty-9.3.23.v20180228 - 28 February 2018
  + 347 Avoid sending request using a connection that is idle timing out
  + 1782 Using assembly.tarLongFileMode=posix for jetty-home and
