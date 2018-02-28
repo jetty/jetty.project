@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +33,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,7 +59,7 @@ public class TestJettyOSGiBootWithAnnotations
     @Configuration
     public static Option[] configure()
     {
-        ArrayList<Option> options = new ArrayList<Option>();
+        ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-annotations.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
@@ -72,7 +70,6 @@ public class TestJettyOSGiBootWithAnnotations
         options.addAll(TestOSGiUtil.coreJettyDependencies());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
-        // options.addAll(TestJettyOSGiBootCore.consoleDependencies());
         options.addAll(jspDependencies());
         options.addAll(annotationDependencies());
         options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-fragment").versionAsInProject().noStart());
@@ -87,7 +84,7 @@ public class TestJettyOSGiBootWithAnnotations
 
     public static List<Option> annotationDependencies()
     {
-        List<Option> res = new ArrayList<Option>();
+        List<Option> res = new ArrayList<>();
         res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.mail.glassfish" ).version( "1.4.1.v201005082020" ).noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-container-initializer").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-mock-resources").versionAsInProject());
@@ -114,23 +111,22 @@ public class TestJettyOSGiBootWithAnnotations
         try
         {
             client.start();
-            String tmp = System.getProperty("boot.annotations.port");
-            assertNotNull(tmp);
-            int port = Integer.valueOf(tmp.trim()).intValue();
+            String port = System.getProperty("boot.annotations.port");
+            assertNotNull(port);
             
             ContentResponse response = client.GET("http://127.0.0.1:" + port + "/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            String content = new String(response.getContent());
+            String content = response.getContentAsString();
             assertTrue(content.contains("<h1>Servlet 3.1 Test WebApp</h1>"));
             
             Request req = client.POST("http://127.0.0.1:" + port + "/test");
             response = req.send();
-            content = new String(response.getContent());
+            content = response.getContentAsString();
             assertTrue(content.contains("<p><b>Result: <span class=\"pass\">PASS</span></p>"));
             
             response = client.GET("http://127.0.0.1:" + port + "/frag.html");
-            content = new String(response.getContent());
+            content = response.getContentAsString();
             assertTrue(content.contains("<h1>FRAGMENT</h1>"));
         }
         finally
