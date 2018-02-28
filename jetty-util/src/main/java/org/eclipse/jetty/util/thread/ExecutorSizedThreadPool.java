@@ -56,6 +56,11 @@ public class ExecutorSizedThreadPool extends ContainerLifeCycle implements Threa
         this(200, 8);
     }
 
+    public ExecutorSizedThreadPool(int maxThreads)
+    {
+        this(maxThreads, Math.min(8, maxThreads));
+    }
+    
     public ExecutorSizedThreadPool(int maxThreads, int minThreads)
     {
         this(new ThreadPoolExecutor(maxThreads, maxThreads, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>()), minThreads, -1, null);
