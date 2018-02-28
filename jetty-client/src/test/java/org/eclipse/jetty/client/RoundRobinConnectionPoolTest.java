@@ -74,7 +74,7 @@ public class RoundRobinConnectionPoolTest extends AbstractHttpClientServerTest
             int base = i % maxConnections;
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
-            Assert.assertThat(expected, Matchers.equalTo(candidate));
+            Assert.assertThat(client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
             if (i > 0)
                 Assert.assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
