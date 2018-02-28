@@ -478,7 +478,7 @@
     <profile>
       <id>jdk8</id>
       <activation>
-        <jdk>[1.8,1.9)</jdk>
+        <jdk>[1.8,9]</jdk>
       </activation>
       <dependencies>
         <dependency>
@@ -554,9 +554,9 @@
          <artifactId>maven-surefire-plugin</artifactId>
          <configuration>
            <skipTests>false</skipTests>
-           <includes>
-              <include>**/*JDK9</include>
-           </includes>
+           <excludes>
+             <exclude>**/TestJettyOSGiBootHTTP2</exclude>  
+           </excludes>
          </configuration>
        </plugin>
       </plugins>
