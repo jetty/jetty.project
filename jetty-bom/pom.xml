@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-bom</artifactId>
-  <version>9.3.22-SNAPSHOT</version>
+  <version>9.3.24-SNAPSHOT</version>
   <name>Jetty :: Bom</name>
   <description>Jetty BOM artifact</description>
   <url>http://www.eclipse.org/jetty</url>
@@ -103,17 +103,17 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>cdi-core</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>cdi-servlet</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>cdi-websocket</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -138,12 +138,12 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-gcloud-memcached-session-manager</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-gcloud-session-manager</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -228,17 +228,17 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-osgi-boot</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-osgi-boot-jsp</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-osgi-boot-warurl</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -303,37 +303,37 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-client-impl</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-server-impl</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-api</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-client</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-common</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-server</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-servlet</artifactId>
-        <version>9.3.22-SNAPSHOT</version>
+        <version>9.3.24-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
