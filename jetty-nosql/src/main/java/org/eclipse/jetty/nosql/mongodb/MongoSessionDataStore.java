@@ -19,16 +19,6 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.MongoException;
-import com.mongodb.WriteConcern;
-import com.mongodb.WriteResult;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,7 +28,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
@@ -48,6 +37,16 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoException;
+import com.mongodb.WriteConcern;
+import com.mongodb.WriteResult;
 
 /**
  * MongoSessionDataStore
@@ -108,12 +107,12 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     /**
      * Special attribute for a session that is context-specific
      */
-    private final static String __METADATA = "__metadata__";
+    public final static String __METADATA = "__metadata__";
 
     /**
      * Name of nested document field containing 1 sub document per context for which the session id is in use
      */
-    private final static String __CONTEXT = "context";   
+    public final static String __CONTEXT = "context";   
     
     /**
      * Special attribute per session per context, incremented each time attributes are modified
@@ -131,6 +130,9 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
      */
     public final static String __ACCESSED = "accessed";
     
+    
+    public final static String __LAST_ACCESSED = "lastAccessed";
+    
     /**
      * Time this session will expire, based on last access time and maxIdle
      */
@@ -144,7 +146,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     /**
      * Time of session creation
      */
-    private final static String __CREATED = "created";
+    public final static String __CREATED = "created";
     
     /**
      * Whether or not session is valid
@@ -217,6 +219,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
                     Long created = (Long)sessionDocument.get(__CREATED);
                     Long accessed = (Long)sessionDocument.get(__ACCESSED);
+                    Long lastAccessed = (Long)sessionDocument.get(__LAST_ACCESSED);
                     Long maxInactive = (Long)sessionDocument.get(__MAX_IDLE);
                     Long expiry = (Long)sessionDocument.get(__EXPIRY);          
                     
@@ -233,7 +236,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                             LOG.debug("Session {} present for context {}", id, _context);
 
                         //only load a session if it exists for this context
-                        data = (NoSqlSessionData)newSessionData(id, created, accessed, accessed, maxInactive);
+                        data = (NoSqlSessionData)newSessionData(id, created, accessed, (lastAccessed == null? accessed:lastAccessed), maxInactive);
                         data.setVersion(version);
                         data.setExpiry(expiry);
                         data.setContextPath(_context.getCanonicalContextPath());
@@ -497,6 +500,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         }
 
         sets.put(__ACCESSED, nsqd.getAccessed());
+        sets.put(__LAST_ACCESSED, nsqd.getLastAccessed());
 
         Set<String> names = nsqd.takeDirtyAttributes();
 

@@ -23,9 +23,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jetty.util.IO;
 
@@ -46,6 +52,8 @@ public class FileTestHelper
         _tmpDir.delete();
         _tmpDir.mkdirs();
         _tmpDir.deleteOnExit();
+        
+        System.err.println("TMP DIR="+_tmpDir.getAbsolutePath());
     }
     
     
@@ -139,6 +147,44 @@ public class FileTestHelper
         File file = new File (_tmpDir, filename);
         Files.deleteIfExists(file.toPath());
         file.createNewFile();
+    }
+    
+    
+
+    public static void createFile (String id, String contextPath, String vhost, 
+                                   String lastNode, long created, long accessed, 
+                                   long lastAccessed, long maxIdle, long expiry,
+                                   Map<String,Object> attributes)
+    throws Exception
+    {
+        String filename = ""+expiry+"_"+contextPath+"_"+vhost+"_"+id;
+        File file = new File(_tmpDir, filename);
+        try(FileOutputStream fos = new FileOutputStream(file,false))
+        {
+            DataOutputStream out = new DataOutputStream(fos);
+            out.writeUTF(id);
+            out.writeUTF(contextPath);
+            out.writeUTF(vhost);
+            out.writeUTF(lastNode);
+            out.writeLong(created);
+            out.writeLong(accessed);
+            out.writeLong(lastAccessed);
+            out.writeLong(System.currentTimeMillis());
+            out.writeLong(expiry);
+            out.writeLong(maxIdle);
+
+            if (attributes != null)
+            {
+                List<String> keys = new ArrayList<String>(attributes.keySet());
+                out.writeInt(keys.size());
+                ObjectOutputStream oos = new ObjectOutputStream(out);
+                for (String name:keys)
+                {
+                    oos.writeUTF(name);
+                    oos.writeObject(attributes.get(name));
+                }
+            }
+        }
     }
     
     

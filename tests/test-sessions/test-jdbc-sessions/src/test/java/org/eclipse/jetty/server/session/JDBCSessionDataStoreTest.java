@@ -20,15 +20,23 @@
 package org.eclipse.jetty.server.session;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
- * SessionDataStoreTest
+ * JDBCSessionDataStoreTest
  *
  *
  */
-public class SessionDataStoreTest extends AbstractSessionDataStoreTest
+public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+    
+    @Before
+    public void setUp() throws Exception
+    {
+        JdbcTestHelper.prepareTables();
+    }
+    
     
     @After
     public void tearDown() throws Exception 
@@ -88,43 +96,5 @@ public class SessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         return JdbcTestHelper.existsInSessionTable(data.getId(), false);
     }
-
-
-    @Test
-    public  void testLoadSessionExists() throws Exception
-    {
-        super.testLoadSessionExists();
-    }
     
-    
-    
-    @Test
-    public void testLoadSessionExpired() throws Exception
-    {
-        super.testLoadSessionExpired();
-    }
-    
-    @Test
-    public  void testLoadSessionDoesNotExist() throws Exception
-    {
-        super.testLoadSessionDoesNotExist();
-    }
-    
-    @Test
-    public void testLoadSessionFails() throws Exception
-    {
-        super.testLoadSessionFails();
-    }
-    
-    @Test
-    public void testDeleteSessionExists() throws Exception
-    {
-        super.testDeleteSessionExists();
-    }
-    
-    @Test
-    public void testDeleteSessionDoesNotExist() throws Exception
-    {
-        super.testDeleteSessionDoesNotExist();
-    }
 }

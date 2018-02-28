@@ -23,7 +23,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
@@ -58,13 +64,18 @@ public abstract class AbstractSessionDataStoreTest
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");       
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec((int)TimeUnit.HOURS.toSeconds(2));
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        store.initialize(new SessionContext("foo", context.getServletContext()));
-        store.start();
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
         
         //persist a session that is not expired
         long now = System.currentTimeMillis();
-        persistSession(store.newSessionData("1234", 100, now, now-1, -1)); //never expires
+        SessionData data = store.newSessionData("1234", 100, now, now-1, -1);//never expires
+        data.setLastNode(sessionContext.getWorkerName());
+        persistSession(data); 
+        
+        store.start();
         
         //test that we can retrieve it
         SessionData loaded = store.load("1234");
@@ -89,25 +100,29 @@ public abstract class AbstractSessionDataStoreTest
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");       
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec((int)TimeUnit.HOURS.toSeconds(2));
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        store.initialize(new SessionContext("foo", context.getServletContext()));
-        store.start();
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
         
         
         //persist a session that is expired
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("678", 100, now, now-1, 10);//10 sec max idle
-        data.setExpiry(102); //make it expired long ago
+        SessionData data = store.newSessionData("678", 100, now-20, now-30, 10);//10 sec max idle
+        data.setLastNode(sessionContext.getWorkerName());
+        data.setExpiry(now-2); //make it expired recently
         persistSession(data);
+        
+        store.start();
         
         //test we can retrieve it
         SessionData loaded = store.load("678");
         assertNotNull(loaded);
         assertEquals("678", loaded.getId());
         assertEquals(100, loaded.getCreated());
-        assertEquals(now, loaded.getAccessed());
-        assertEquals(now-1, loaded.getLastAccessed());
-        assertEquals(102, loaded.getExpiry());
+        assertEquals(now-20, loaded.getAccessed());
+        assertEquals(now-30, loaded.getLastAccessed());
+        assertEquals(now-2, loaded.getExpiry());
     }
     
     
@@ -122,8 +137,10 @@ public abstract class AbstractSessionDataStoreTest
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");       
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec((int)TimeUnit.HOURS.toSeconds(2));
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        store.initialize(new SessionContext("foo", context.getServletContext()));
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
         store.start();
         
         //test we can't retrieve a non-existent session
@@ -142,13 +159,19 @@ public abstract class AbstractSessionDataStoreTest
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");       
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec((int)TimeUnit.HOURS.toSeconds(2));
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        store.initialize(new SessionContext("foo", context.getServletContext()));
-        store.start();
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+
 
         //persist a session that is damaged and cannot be read
         long now = System.currentTimeMillis();
-        persistUnreadableSession(store.newSessionData("222", 100, now, now-1, -1));
+        SessionData data = store.newSessionData("222", 100, now, now-1, -1);
+        data.setLastNode(sessionContext.getWorkerName());
+        persistUnreadableSession(data);
+        
+        store.start();
 
         //test that we can retrieve it
         try
@@ -176,14 +199,18 @@ public abstract class AbstractSessionDataStoreTest
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");       
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec((int)TimeUnit.HOURS.toSeconds(2));
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        store.initialize(new SessionContext("foo", context.getServletContext()));
-        store.start();
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
         
         //persist a session that is not expired
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", 100, now, now-1, -1);
+        data.setLastNode(sessionContext.getWorkerName());
         persistSession(data);
+        
+        store.start();
         
         //delete the session via the store
         store.delete("1234");
@@ -204,6 +231,7 @@ public abstract class AbstractSessionDataStoreTest
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");       
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec((int)TimeUnit.HOURS.toSeconds(2));
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
         store.initialize(new SessionContext("foo", context.getServletContext()));
         store.start();
@@ -222,7 +250,34 @@ public abstract class AbstractSessionDataStoreTest
      */
     public void testGetExpiredPersistedAndExpired() throws Exception
     {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec((int)TimeUnit.HOURS.toSeconds(2));
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
         
+        //persist a session that is expired
+        SessionData data = store.newSessionData("1234", 100, 101, 101, 10);
+        data.setLastNode(sessionContext.getWorkerName());
+        data.setExpiry(102); //make it expired long ago
+        persistSession(data);
+        
+        //persist another session that is expired
+        SessionData data2 = store.newSessionData("5678", 100, 100, 101, 30);
+        data2.setLastNode(sessionContext.getWorkerName());
+        data2.setExpiry(102); //make it expired long ago
+        persistSession(data2);
+        
+        store.start();
+        
+        Set<String> candidates = new HashSet<>(Arrays.asList(new String[] {"1234", "5678"}));
+        Set<String> expiredIds = store.getExpired(candidates);
+        assertEquals(2, expiredIds.size());
+        assertTrue(expiredIds.contains("1234"));
+        assertTrue(expiredIds.contains("5678"));
     }
     
 
@@ -233,7 +288,31 @@ public abstract class AbstractSessionDataStoreTest
      */
     public void testGetExpiredPersistedNotExpired() throws Exception
     {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec((int)TimeUnit.HOURS.toSeconds(2));
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
         
+        long now = System.currentTimeMillis();
+        //persist a session that is not expired
+        SessionData data = store.newSessionData("1234", 100, now, now-1, 30);
+        data.setLastNode(sessionContext.getWorkerName());
+        persistSession(data);
+        
+        //persist another session that is not expired
+        SessionData data2 = store.newSessionData("5678", 100, now, now-1, 30);
+        data2.setLastNode(sessionContext.getWorkerName());
+        persistSession(data2);
+        
+        store.start();
+        
+        Set<String> candidates = new HashSet<>(Arrays.asList(new String[] {"1234", "5678"}));
+        Set<String> expiredIds = store.getExpired(candidates);
+        assertEquals(0, expiredIds.size());
     }
     
     /**
@@ -244,7 +323,21 @@ public abstract class AbstractSessionDataStoreTest
      */
     public void testGetExpiredNotPersisted() throws Exception
     {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec((int)TimeUnit.HOURS.toSeconds(2));
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+        store.start();
         
+        Set<String> candidates = new HashSet<>(Arrays.asList(new String[] {"1234", "5678"}));
+        Set<String> expiredIds = store.getExpired(candidates);
+        assertEquals(2, expiredIds.size());
+        assertTrue(expiredIds.contains("1234"));
+        assertTrue(expiredIds.contains("5678"));
     }
     
     /**
@@ -256,6 +349,33 @@ public abstract class AbstractSessionDataStoreTest
      */
     public void testGetExpiredPersistedAndExpiredOnly() throws Exception
     {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec((int)TimeUnit.HOURS.toSeconds(2));
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
         
+        //persist a session that is expired
+        SessionData data = store.newSessionData("1234", 100, 101, 100, 30);
+        data.setLastNode(sessionContext.getWorkerName());
+        data.setExpiry(1000);
+        persistSession(data);
+        
+        //persist another session that is expired
+        SessionData data2 = store.newSessionData("5678", 100, 101, 100, 30);
+        data2.setLastNode(sessionContext.getWorkerName());
+        data2.setExpiry(1000);
+        persistSession(data2);
+        
+        store.start();
+        
+        Set<String> candidates = new HashSet<>();
+        Set<String> expiredIds = store.getExpired(candidates);
+        assertEquals(2, expiredIds.size());
+        assertTrue(expiredIds.contains("1234"));
+        assertTrue(expiredIds.contains("5678"));
     }
 }

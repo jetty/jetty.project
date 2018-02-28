@@ -129,6 +129,18 @@ public class JdbcTestHelper
        sessionTableSchema.setMaxIntervalColumn(MAX_IDLE_COL);
        return sessionTableSchema;
    }
+   
+   
+   public static void prepareTables () throws SQLException
+   {
+       DatabaseAdaptor da = new DatabaseAdaptor();
+       da.setDriverInfo(DRIVER_CLASS, DEFAULT_CONNECTION_URL);
+       JDBCSessionDataStore.SessionTableSchema sessionTableSchema = newSessionTableSchema();
+       sessionTableSchema.setDatabaseAdaptor(da);
+       
+       sessionTableSchema.prepareTables();
+       
+   }
     
     public static boolean existsInSessionTable(String id, boolean verbose)
     throws Exception
