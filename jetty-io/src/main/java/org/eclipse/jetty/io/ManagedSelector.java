@@ -441,7 +441,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     Object attachment = key.attachment();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("selected {} {} ",key,attachment);
+                        LOG.debug("selected {} {} {} ",key.readyOps(),key,attachment);
                     try
                     {
                         if (attachment instanceof Selectable)

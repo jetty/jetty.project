@@ -161,12 +161,11 @@ public class ExecutionStrategyTest
                 final int id = --tasks;
                 if (id>=0)
                 {
-                    try
+                    while(_threads.isRunning())
                     {
-                        final CountDownLatch latch = q.take();
-
-                        if (latch!=null)
+                        try
                         {
+                            final CountDownLatch latch = q.take();
                             return new Runnable()
                             {
                                 @Override
@@ -177,10 +176,10 @@ public class ExecutionStrategyTest
                                 }
                             };
                         }
-                    }
-                    catch(InterruptedException e)
-                    {
-                        e.printStackTrace();
+                        catch(InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
                     }
                 }
 
@@ -189,8 +188,7 @@ public class ExecutionStrategyTest
         };
         
         newExecutionStrategy(producer,_threads);
-        _threads.execute(()->_strategy.produce());
-        
+        _strategy.dispatch();
         
         
         final CountDownLatch latch = new CountDownLatch(TASKS);

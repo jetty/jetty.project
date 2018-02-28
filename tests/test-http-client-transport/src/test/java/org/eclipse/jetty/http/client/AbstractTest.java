@@ -18,6 +18,17 @@
 
 package org.eclipse.jetty.http.client;
 
+import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServlet;
+
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -41,7 +52,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
@@ -55,18 +65,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import javax.servlet.http.HttpServlet;
-
-import java.io.File;
-import java.lang.management.ManagementFactory;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
 public abstract class AbstractTest
@@ -125,7 +123,7 @@ public abstract class AbstractTest
     {
         if(sockFile == null || !Files.exists( sockFile ))
         {
-            sockFile = Files.createTempFile(new File("/tmp").toPath(),"unix", ".sock" );
+            sockFile = Files.createTempFile("unix", ".sock" );
             Files.delete( sockFile );
         }
     }
