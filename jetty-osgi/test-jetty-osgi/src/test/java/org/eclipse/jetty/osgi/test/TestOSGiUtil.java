@@ -21,6 +21,7 @@ package org.eclipse.jetty.osgi.test;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
@@ -36,6 +37,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.ops4j.pax.exam.CoreOptions;
@@ -50,17 +53,44 @@ import org.osgi.service.http.HttpService;
  */
 public class TestOSGiUtil
 {
-    
-    public static final int DEFAULT_SSL_PORT=TestOSGiUtil.findFreePort("jetty.ssl.port");
 
+    public static List<Option> configureJettyHomeAndPort(boolean ssl,String jettySelectorFileName)
+    {
+        File etc = new File(OS.separators("src/test/config/etc"));
+        
+        List<Option> options = new ArrayList<Option>();
+        StringBuffer xmlConfigs = new StringBuffer();
+        xmlConfigs.append(new File(etc, "jetty.xml").toURI());
+        xmlConfigs.append(";");
+        if (ssl)
+        {
+            options.add(CoreOptions.systemProperty("jetty.ssl.port").value("0"));
+            xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
+            xmlConfigs.append(";");
+            xmlConfigs.append(new File(etc, "jetty-alpn.xml").toURI());
+            xmlConfigs.append(";");
+            xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
+            xmlConfigs.append(";");
 
+        }
+        xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
+        xmlConfigs.append(";");
+        xmlConfigs.append(new File(etc, "jetty-deployer.xml").toURI());
+        xmlConfigs.append(";");
+        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
+
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
+        options.add(systemProperty("jetty.http.port").value("0"));
+        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
+        return options;
+    }
 
     public static List<Option> provisionCoreJetty()
     { 
         List<Option> res = new ArrayList<Option>();
         // get the jetty home config from the osgi boot bundle.
-        res.add(CoreOptions.systemProperty("jetty.http.port").value("0"));
-        res.add(CoreOptions.systemProperty("jetty.ssl.port").value(String.valueOf(DEFAULT_SSL_PORT)));
+
         res.add(CoreOptions.systemProperty("jetty.home.bundle").value("org.eclipse.jetty.osgi.boot"));
         res.addAll(coreJettyDependencies());
         return res;

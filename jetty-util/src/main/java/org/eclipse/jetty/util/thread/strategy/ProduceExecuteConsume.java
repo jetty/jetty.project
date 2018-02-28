@@ -102,7 +102,7 @@ public class ProduceExecuteConsume implements ExecutionStrategy
     @Override
     public void dispatch()
     {
-        produce();
+        _executor.execute(()->produce());
     }
 
     private enum State
