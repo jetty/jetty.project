@@ -416,7 +416,9 @@ public class FileResource extends Resource
             return false;
 
         FileResource f=(FileResource)o;
-        return f._file == _file || (null != _file && _file.equals(f._file));
+        @SuppressWarnings("ReferenceEquality")
+        boolean sameFile = f._file==_file;
+        return sameFile || (null != _file && _file.equals(f._file));
     }
 
     /* ------------------------------------------------------------ */

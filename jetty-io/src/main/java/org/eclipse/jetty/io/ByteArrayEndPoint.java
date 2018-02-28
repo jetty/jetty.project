@@ -202,7 +202,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 throw new ClosedChannelException();
 
             ByteBuffer in = _inQ.peek();
-            if (BufferUtil.hasContent(in) || in==EOF)
+            if (BufferUtil.hasContent(in) || isEOF(in))
                 execute(_runFillable);
         }
     }
@@ -224,7 +224,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         boolean fillable=false;
         try(Locker.Lock lock = _locker.lock())
         {
-            if (_inQ.peek()==EOF)
+            if (isEOF(_inQ.peek()))
                 throw new RuntimeIOException(new EOFException());
             boolean was_empty=_inQ.isEmpty();
             if (in==null)
@@ -248,7 +248,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         boolean fillable=false;
         try(Locker.Lock lock = _locker.lock())
         {
-            if (_inQ.peek()==EOF)
+            if (isEOF(_inQ.peek()))
                 throw new RuntimeIOException(new EOFException());
             boolean was_empty=_inQ.isEmpty();
             if (in==null)
@@ -415,7 +415,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                     break;
 
                 ByteBuffer in= _inQ.peek();
-                if (in==EOF)
+                if (isEOF(in))
                 {
                     filled=-1;
                     break;
@@ -549,4 +549,16 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return String.format("%s[q=%d,q[0]=%s,o=%s]",super.toString(),q,b,o);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Compares a ByteBuffer Object to EOF by Reference
+     * @param buffer the input ByteBuffer to be compared to EOF
+     * @return Whether the reference buffer is equal to that of EOF
+     */
+    private static boolean isEOF(ByteBuffer buffer)
+    {
+        @SuppressWarnings("ReferenceEquality")
+        boolean is_EOF = (buffer==EOF);
+        return is_EOF;
+    }
 }

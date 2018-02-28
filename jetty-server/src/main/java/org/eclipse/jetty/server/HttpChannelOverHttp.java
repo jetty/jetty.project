@@ -427,7 +427,10 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade {} {}", this, _upgrade);
 
-        if (_upgrade != PREAMBLE_UPGRADE_H2C && (_connection == null || !_connection.contains("upgrade")))
+        @SuppressWarnings("ReferenceEquality")
+        boolean isUpgraded_H2C = (_upgrade == PREAMBLE_UPGRADE_H2C);
+
+        if (!isUpgraded_H2C && (_connection == null || !_connection.contains("upgrade")))
             throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
         // Find the upgrade factory
@@ -464,7 +467,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         // Send 101 if needed
         try
         {
-            if (_upgrade != PREAMBLE_UPGRADE_H2C)
+            if (!isUpgraded_H2C)
                 sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.SWITCHING_PROTOCOLS_101, response101, 0), null, true);
         }
         catch (IOException e)

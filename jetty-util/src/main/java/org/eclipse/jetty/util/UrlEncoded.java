@@ -221,7 +221,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
         if (charset==null)
             charset=ENCODING;
 
-        if (charset==StandardCharsets.UTF_8)
+        if (StandardCharsets.UTF_8.equals(charset))
         {
             decodeUtf8To(content,0,content.length(),map);
             return;

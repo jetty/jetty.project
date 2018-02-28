@@ -211,7 +211,9 @@ public class StdErrLog extends AbstractLogger
      */
     public StdErrLog(String name, Properties props)
     {
-        if (props!=null && props!=Log.__props)
+        @SuppressWarnings("ReferenceEquality")
+        boolean sameObject = (props!=Log.__props);
+        if (props!=null && sameObject)
             Log.__props.putAll(props);
         _name = name == null?"":name;
         _abbrevname = condensePackageString(this._name);

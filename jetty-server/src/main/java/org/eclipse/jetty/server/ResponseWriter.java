@@ -456,11 +456,29 @@ public class ResponseWriter extends PrintWriter
     { 
         try 
         {
+            
+            if(l==null) 
+                l = _locale;
+            
             synchronized (lock) 
             {
                 isOpen();
-                if ((_formatter == null) || (_formatter.locale() != l))
+
+                if(_formatter == null)
+                {
                     _formatter = new Formatter(this, l);
+                } 
+                else if(_formatter.locale() != null) 
+                {
+                    if(!_formatter.locale().equals(l))
+                        _formatter = new Formatter(this, l);
+                } 
+                else 
+                {
+                    if(l != null)
+                        _formatter = new Formatter(this, l);
+                }
+                
                 _formatter.format(l, format, args);
             }
         } 
