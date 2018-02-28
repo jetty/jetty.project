@@ -62,6 +62,7 @@ public class LoggerLog extends AbstractLogger
         }
     }
 
+    @Override
     public String getName()
     {
         try
@@ -75,6 +76,7 @@ public class LoggerLog extends AbstractLogger
         }
     }
 
+    @Override
     public void warn(String msg, Object... args)
     {
         try
@@ -87,11 +89,13 @@ public class LoggerLog extends AbstractLogger
         }
     }
 
+    @Override
     public void warn(Throwable thrown)
     {
         warn("", thrown);
     }
 
+    @Override
     public void warn(String msg, Throwable thrown)
     {
         try
@@ -104,6 +108,7 @@ public class LoggerLog extends AbstractLogger
         }
     }
 
+    @Override
     public void info(String msg, Object... args)
     {
         try
@@ -116,11 +121,13 @@ public class LoggerLog extends AbstractLogger
         }
     }
 
+    @Override
     public void info(Throwable thrown)
     {
         info("", thrown);
     }
 
+    @Override
     public void info(String msg, Throwable thrown)
     {
         try
@@ -133,11 +140,13 @@ public class LoggerLog extends AbstractLogger
         }
     }
 
+    @Override
     public boolean isDebugEnabled()
     {
         return _debug;
     }
 
+    @Override
     public void setDebugEnabled(boolean enabled)
     {
         try
@@ -152,6 +161,7 @@ public class LoggerLog extends AbstractLogger
     }
 
     
+    @Override
     public void debug(String msg, Object... args)
     {
         if (!_debug)

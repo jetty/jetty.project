@@ -162,6 +162,7 @@ public class FragmentDescriptor extends WebDescriptor
         return _otherType;
     }
     
+    @Override
     public List<String> getOrdering()
     {
         return null; //only used for absolute-ordering in Descriptor

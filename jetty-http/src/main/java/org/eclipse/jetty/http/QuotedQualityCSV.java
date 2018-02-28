@@ -135,6 +135,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         }
     }
 
+    @Override
     public List<String> getValues()
     {
         if (!_sorted)

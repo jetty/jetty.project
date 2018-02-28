@@ -46,6 +46,7 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
     /** 
      * @see org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler#doHandle(java.lang.Class)
      */
+    @Override
     public void doHandle(Class clazz)
     {
         if (!Servlet.class.isAssignableFrom(clazz))

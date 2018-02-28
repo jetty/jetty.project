@@ -333,6 +333,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             return path;
         }
         
+        @Override
         public boolean test(Path path)
         {
             if (excludeHidden && isHidden(path))

@@ -44,6 +44,7 @@ public class ClassInheritanceHandler extends AbstractHandler
         _inheritanceMap = map;
     }
 
+    @Override
     public void handle(ClassInfo classInfo)
     {
         try

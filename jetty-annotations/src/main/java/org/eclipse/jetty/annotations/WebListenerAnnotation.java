@@ -58,6 +58,7 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
     /**
      * @see DiscoveredAnnotation#apply()
      */
+    @Override
     public void apply()
     {
         Class<? extends java.util.EventListener> clazz = (Class<? extends EventListener>)getTargetClass();

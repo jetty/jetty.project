@@ -20,26 +20,32 @@ package org.eclipse.jetty.webapp;
 
 public class AbstractConfiguration implements Configuration
 {
+    @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
     }
 
+    @Override
     public void configure(WebAppContext context) throws Exception
     {
     }
 
+    @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
     }
 
+    @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
     }
 
+    @Override
     public void destroy(WebAppContext context) throws Exception
     {
     }
 
+    @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
     }

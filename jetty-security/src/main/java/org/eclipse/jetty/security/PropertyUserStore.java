@@ -321,6 +321,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
      *
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();
@@ -358,6 +359,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();

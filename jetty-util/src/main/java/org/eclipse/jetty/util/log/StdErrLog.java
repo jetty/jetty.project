@@ -240,7 +240,9 @@ public class StdErrLog extends AbstractLogger
         }        
     }
 
+    @Override
     public String getName()
+    @Override
     {
         return _name;
     }
@@ -288,6 +290,8 @@ public class StdErrLog extends AbstractLogger
         _source = source;
     }
 
+    @Override
+    @Override
     public void warn(String msg, Object... args)
     {
         if (_level <= LEVEL_WARN)
@@ -298,11 +302,16 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
+    @Override
+    @Override
     public void warn(Throwable thrown)
     {
         warn("",thrown);
     }
 
+@Override
+
+    @Override
     public void warn(String msg, Throwable thrown)
     {
         if (_level <= LEVEL_WARN)
@@ -311,8 +320,10 @@ public class StdErrLog extends AbstractLogger
             format(buffer,":WARN:",msg,thrown);
             (_stderr==null?System.err:_stderr).println(buffer);
         }
+    @Override
     }
 
+    @Override
     public void info(String msg, Object... args)
     {
         if (_level <= LEVEL_INFO)
@@ -320,25 +331,31 @@ public class StdErrLog extends AbstractLogger
             StringBuilder buffer = new StringBuilder(64);
             format(buffer,":INFO:",msg,args);
             (_stderr==null?System.err:_stderr).println(buffer);
+        @Override
         }
     }
 
+    @Override
     public void info(Throwable thrown)
+    @Override
     {
         info("",thrown);
     }
 
+    @Override
     public void info(String msg, Throwable thrown)
     {
         if (_level <= LEVEL_INFO)
         {
             StringBuilder buffer = new StringBuilder(64);
             format(buffer,":INFO:",msg,thrown);
+            @Override
             (_stderr==null?System.err:_stderr).println(buffer);
         }
     }
 
     @ManagedAttribute("is debug enabled for root logger Log.LOG")
+    @Override
     public boolean isDebugEnabled()
     {
         return (_level <= LEVEL_DEBUG);
@@ -392,14 +409,18 @@ public class StdErrLog extends AbstractLogger
         this._level = level;
     }
 
+@Override
+
     public void setStdErrStream(PrintStream stream)
     {
         this._stderr = stream==System.err?null:stream;
     }
 
+    @Override
     public void debug(String msg, Object... args)
     {
         if (_level <= LEVEL_DEBUG)
+        @Override
         {
             StringBuilder buffer = new StringBuilder(64);
             format(buffer,":DBUG:",msg,args);
@@ -407,21 +428,26 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
+    @Override
     public void debug(String msg, long arg)
     {
+        @Override
         if (isDebugEnabled())
         {
             StringBuilder buffer = new StringBuilder(64);
             format(buffer,":DBUG:",msg,arg);
             (_stderr==null?System.err:_stderr).println(buffer);
+        @Override
         }
     }
     
+    @Override
     public void debug(Throwable thrown)
     {
         debug("",thrown);
     }
 
+    @Override
     public void debug(String msg, Throwable thrown)
     {
         if (_level <= LEVEL_DEBUG)
@@ -662,6 +688,7 @@ public class StdErrLog extends AbstractLogger
             case LEVEL_INFO:
                 s.append("INFO");
                 break;
+            @Override
             case LEVEL_WARN:
                 s.append("WARN");
                 break;
