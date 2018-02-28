@@ -254,8 +254,8 @@ public class Fields implements Iterable<Fields.Field>
         public boolean equals(Field that, boolean caseSensitive)
         {
             @SuppressWarnings("ReferenceEquality")
-            boolean isCurrentObject = (this == that);
-            if (isCurrentObject)
+            boolean isThisInstance = (this == that);
+            if (isThisInstance)
                 return true;
             if (that == null)
                 return false;

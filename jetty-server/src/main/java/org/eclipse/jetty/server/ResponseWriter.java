@@ -452,13 +452,15 @@ public class ResponseWriter extends PrintWriter
     }
 
     @Override
-    public PrintWriter format(Locale l, String format, Object... args)
+    public PrintWriter format(Locale locale, String format, Object... args)
     { 
         try 
         {
             
-            if(l==null) 
-                l = _locale;
+            /* If the passed locale is null then 
+            use any locale set on the response as the default. */
+            if(locale == null) 
+                locale = _locale;
             
             synchronized (lock) 
             {
@@ -466,20 +468,19 @@ public class ResponseWriter extends PrintWriter
 
                 if(_formatter == null)
                 {
-                    _formatter = new Formatter(this, l);
+                    _formatter = new Formatter(this, locale);
                 } 
-                else if(_formatter.locale() != null) 
+                else if(_formatter.locale()==null)
                 {
-                    if(!_formatter.locale().equals(l))
-                        _formatter = new Formatter(this, l);
-                } 
-                else 
+                    if(locale != null)
+                        _formatter = new Formatter(this, locale);
+                }
+                else if (!_formatter.locale().equals(locale))
                 {
-                    if(l != null)
-                        _formatter = new Formatter(this, l);
+                    _formatter = new Formatter(this, locale);
                 }
                 
-                _formatter.format(l, format, args);
+                _formatter.format(locale, format, args);
             }
         } 
         catch (InterruptedIOException ex)
