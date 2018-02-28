@@ -115,6 +115,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     /**
      * @param houseKeeper the housekeeper
      */
+    @Override
     public void setSessionHouseKeeper (HouseKeeper houseKeeper)
     {
         updateBean(_houseKeeper, houseKeeper);
@@ -126,6 +127,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     /**
      * @return the housekeeper
      */
+    @Override
     public HouseKeeper getSessionHouseKeeper()
     {
         return _houseKeeper;

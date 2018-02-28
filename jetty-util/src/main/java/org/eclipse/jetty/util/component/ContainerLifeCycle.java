@@ -859,6 +859,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      * @param <T> the Bean type
      */
     @Override
+    @Override
     public <T> Collection<T> getContainedBeans(Class<T> clazz)
     {
         Set<T> beans = new HashSet<>();

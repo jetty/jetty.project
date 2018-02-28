@@ -155,6 +155,7 @@ public abstract class LifeCycleCallback
         }
     }
 
+    @Override
     public boolean equals (Object o)
     {
         if (o==null)

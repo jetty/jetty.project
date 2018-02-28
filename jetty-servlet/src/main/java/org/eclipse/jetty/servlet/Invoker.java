@@ -79,6 +79,7 @@ public class Invoker extends HttpServlet
     private boolean _verbose;
 
     /* ------------------------------------------------------------ */
+    @Override
     public void init()
     {
         ServletContext config=getServletContext();
@@ -112,6 +113,7 @@ public class Invoker extends HttpServlet
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void service(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
@@ -265,6 +267,7 @@ public class Invoker extends HttpServlet
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String getServletPath()
         {
             if (_included)
@@ -273,6 +276,7 @@ public class Invoker extends HttpServlet
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String getPathInfo()
         {
             if (_included)
@@ -281,6 +285,7 @@ public class Invoker extends HttpServlet
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public Object getAttribute(String name)
         {
             if (_included)

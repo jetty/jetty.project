@@ -147,6 +147,7 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
             _address=address;
         }
 
+        @Override
         public boolean test(InetAddress address, byte[] raw)
         {
             return _address.equals(address);
@@ -197,6 +198,7 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
             }
         }
 
+        @Override
         public boolean test(InetAddress item, byte[] raw)
         {
             if (raw.length!=_min.length)
@@ -258,6 +260,7 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
                     throw new IllegalArgumentException("CIDR bits non zero: "+pattern);
         }
 
+        @Override
         public boolean test(InetAddress item, byte[] raw)
         {
             if (raw.length!=_raw.length)
@@ -303,6 +306,7 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
             }
         }
 
+        @Override
         public boolean test(InetAddress item, byte[] raw)
         {
             if (raw.length!=4)

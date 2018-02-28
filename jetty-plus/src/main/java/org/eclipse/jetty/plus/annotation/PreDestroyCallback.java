@@ -42,6 +42,7 @@ public class PreDestroyCallback extends LifeCycleCallback
      * - not static
      * @see org.eclipse.jetty.plus.annotation.LifeCycleCallback#validate(java.lang.Class, java.lang.reflect.Method)
      */
+    @Override
     public void validate(Class<?> clazz, Method method)
     {        
 
@@ -57,6 +58,7 @@ public class PreDestroyCallback extends LifeCycleCallback
     }
 
     
+    @Override
     public void callback(Object instance)
     {
         try
@@ -69,6 +71,7 @@ public class PreDestroyCallback extends LifeCycleCallback
         }
     }
     
+    @Override
     public boolean equals(Object o)
     {
         if (super.equals(o) && (o instanceof PreDestroyCallback))

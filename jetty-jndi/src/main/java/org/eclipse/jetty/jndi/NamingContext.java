@@ -144,6 +144,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return copy of this NamingContext
      * @exception CloneNotSupportedException if an error occurs
      */
+    @Override
     public Object clone ()
         throws CloneNotSupportedException
     {
@@ -211,6 +212,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param obj object to bind
      * @exception NamingException if an error occurs
      */
+    @Override
     public void bind(Name name, Object obj)
         throws NamingException
     {
@@ -311,6 +313,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param obj an <code>Object</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public void bind(String name, Object obj)
         throws NamingException
     {
@@ -326,6 +329,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return a <code>Context</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public Context createSubcontext (Name name)
         throws NamingException
     {
@@ -409,6 +413,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return a <code>Context</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public Context createSubcontext (String name)
         throws NamingException
     {
@@ -424,6 +429,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param name name of subcontext to remove
      * @exception NamingException if an error occurs
      */
+    @Override
     public void destroySubcontext (String name)
         throws NamingException
     {
@@ -439,6 +445,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param name name of subcontext to remove
      * @exception NamingException if an error occurs
      */
+    @Override
     public void destroySubcontext (Name name)
         throws NamingException
     {
@@ -452,6 +459,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param name name of bound object
      * @exception NamingException if an error occurs
      */
+    @Override
     public Object lookup(Name name)
         throws NamingException
     {
@@ -572,6 +580,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return object bound to name
      * @exception NamingException if an error occurs
      */
+    @Override
     public Object lookup (String name)
         throws NamingException
     {
@@ -588,6 +597,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return LinkRef or plain object bound at name
      * @exception NamingException if an error occurs
      */
+    @Override
     public Object lookupLink (Name name)
         throws NamingException
     {
@@ -685,6 +695,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return LinkRef or plain object bound at name
      * @exception NamingException if an error occurs
      */
+    @Override
     public Object lookupLink (String name)
         throws NamingException
     {
@@ -700,6 +711,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return a <code>NamingEnumeration</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public NamingEnumeration list(Name name)
         throws NamingException
     {
@@ -770,6 +782,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return a <code>NamingEnumeration</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public NamingEnumeration list(String name)
         throws NamingException
     {
@@ -786,6 +799,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return a <code>NamingEnumeration</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public NamingEnumeration listBindings(Name name)
         throws NamingException
     {
@@ -855,6 +869,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return a <code>NamingEnumeration</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public NamingEnumeration listBindings(String name)
         throws NamingException
     {
@@ -870,6 +885,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param obj an <code>Object</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public void rebind(Name name,
                        Object obj)
         throws NamingException
@@ -956,6 +972,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param obj an <code>Object</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public void rebind (String name,
                         Object obj)
         throws NamingException
@@ -970,6 +987,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param name a <code>String</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public void unbind (String name)
         throws NamingException
     {
@@ -983,6 +1001,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param name a <code>String</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public void unbind (Name name)
         throws NamingException
     {
@@ -1062,6 +1081,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param newName a <code>Name</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public void rename(Name oldName,
                        Name newName)
         throws NamingException
@@ -1077,6 +1097,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param oldName a <code>Name</code> value
      * @param newName a <code>Name</code> value
      * @exception NamingException if an error occurs
+     @Override
      */    public void rename(String oldName,
                               String newName)
      throws NamingException
@@ -1095,6 +1116,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return a <code>Name</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public Name composeName(Name name,
                             Name prefix)
         throws NamingException
@@ -1120,6 +1142,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return a <code>Name</code> value
      * @exception NamingException if an error occurs
      */
+    @Override
     public String composeName (String name,
                                String prefix)
         throws NamingException
@@ -1141,6 +1164,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      *
      * @exception NamingException if an error occurs
      */
+    @Override
     public void close ()
         throws NamingException
     {
@@ -1154,6 +1178,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param name a <code>Name</code> value
      * @return a <code>NameParser</code> value
      */
+    @Override
     public NameParser getNameParser (Name name)
     {
         return _parser;
@@ -1166,6 +1191,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param name a <code>Name</code> value
      * @return a <code>NameParser</code> value
      */
+    @Override
     public NameParser getNameParser (String name)
     {
         return _parser;
@@ -1183,6 +1209,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return the full name of this Context
      * @exception NamingException if an error occurs
      */
+    @Override
     public String getNameInNamespace ()
         throws NamingException
     {
@@ -1209,6 +1236,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return propVal or previous value of the property
      * @exception NamingException if an error occurs
      */
+    @Override
     public Object addToEnvironment(String propName,
                                    Object propVal)
         throws NamingException
@@ -1228,6 +1256,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @return value of property or null if it didn't exist
      * @exception NamingException if an error occurs
      */
+    @Override
     public Object removeFromEnvironment(String propName)
         throws NamingException
     {
@@ -1244,6 +1273,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      *
      * @return a copy of the environment of this Context.
      */
+    @Override
     public Hashtable getEnvironment ()
     {
         return (Hashtable)_env.clone();
@@ -1372,6 +1402,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public String dump()
     {
         StringBuilder buf = new StringBuilder();
@@ -1388,6 +1419,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public void dump(Appendable out,String indent) throws IOException
     {
         out.append(this.getClass().getSimpleName()).append("@").append(Long.toHexString(this.hashCode())).append("\n");
