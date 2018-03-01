@@ -61,11 +61,13 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
         this._jettyXml = jettyXml;
     }
 
+    @Override
     public String[] getBindingTargets()
     {
         return new String[]  { "deploying" };
     }
 
+    @Override
     public void processBinding(Node node, App app) throws Exception
     {
         ContextHandler handler = app.getContextHandler();

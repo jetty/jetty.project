@@ -58,6 +58,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
     /**
      * @see DiscoveredAnnotation#apply()
      */
+    @Override
     public void apply()
     {
         // TODO verify against rules for annotation v descriptor

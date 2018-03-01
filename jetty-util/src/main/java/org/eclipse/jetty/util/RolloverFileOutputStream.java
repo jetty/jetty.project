@@ -361,6 +361,7 @@ public class RolloverFileOutputStream extends OutputStream
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void write(int b) throws IOException
     {
         synchronized(this)
@@ -392,6 +393,7 @@ public class RolloverFileOutputStream extends OutputStream
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void flush() throws IOException
     {
         synchronized(this)

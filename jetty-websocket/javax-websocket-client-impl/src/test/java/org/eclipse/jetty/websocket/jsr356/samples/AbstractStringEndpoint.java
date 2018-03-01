@@ -46,6 +46,7 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
         this.config = config;
     }
 
+    @Override
     public void onClose(Session session, CloseReason closeReason)
     {
         if (LOG.isDebugEnabled())
@@ -53,6 +54,7 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
         this.session = null;
     }
 
+    @Override
     public void onError(Session session, Throwable thr)
     {
         LOG.warn("onError()",thr);

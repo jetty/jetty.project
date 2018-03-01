@@ -84,6 +84,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
      * @param userName user info to load
      * @exception Exception if unable to get the user info
      */
+    @Override
     public UserInfo getUserInfo (String userName)
         throws Exception
     {
@@ -146,6 +147,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
     
 
 
+    @Override
     public void initialize(Subject subject,
             CallbackHandler callbackHandler,
             Map<String,?> sharedState,

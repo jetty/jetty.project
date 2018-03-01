@@ -79,6 +79,7 @@ public class DerivedManaged extends Base implements Signature
     }
 
     @ManagedAttribute(value = "The full name of something", name = "fname", setter = "setFullName")
+    @Override
     public String getFullName()
     {
         return fname;
@@ -90,6 +91,7 @@ public class DerivedManaged extends Base implements Signature
     }
 
     @ManagedOperation("publish something")
+    @Override
     public void publish()
     {
         System.err.println("publish");

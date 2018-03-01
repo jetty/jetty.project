@@ -92,16 +92,19 @@ public interface UserIdentity
     /* ------------------------------------------------------------ */
     public static final UserIdentity UNAUTHENTICATED_IDENTITY = new UnauthenticatedUserIdentity()
     {
+        @Override
         public Subject getSubject()
         {
             return null;
         }
 
+        @Override
         public Principal getUserPrincipal()
         {
             return null;
         }
 
+        @Override
         public boolean isUserInRole(String role, Scope scope)
         {
             return false;

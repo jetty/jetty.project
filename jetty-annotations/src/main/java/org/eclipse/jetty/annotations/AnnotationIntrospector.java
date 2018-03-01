@@ -61,6 +61,7 @@ public class AnnotationIntrospector
             _introspectAncestors = introspectAncestors;
         }
         
+        @Override
         public void handle(Class<?> clazz)
         {
             Class<?> c = clazz;

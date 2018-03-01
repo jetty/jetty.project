@@ -40,33 +40,39 @@ public class SimpleAuthConfig implements ServerAuthConfig
         this._serverAuthContext = serverAuthContext;
     }
 
+    @Override
     public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject, Map properties) throws AuthException
     {
         return _serverAuthContext;
     }
 
     // supposed to be of form host-name<space>context-path
+    @Override
     public String getAppContext()
     {
         return _appContext;
     }
 
     // not used yet
+    @Override
     public String getAuthContextID(MessageInfo messageInfo) throws IllegalArgumentException
     {
         return null;
     }
 
+    @Override
     public String getMessageLayer()
     {
         return HTTP_SERVLET;
     }
 
+    @Override
     public boolean isProtected()
     {
         return true;
     }
 
+    @Override
     public void refresh() 
     {
     }

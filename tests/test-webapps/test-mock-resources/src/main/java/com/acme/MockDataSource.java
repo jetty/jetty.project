@@ -36,6 +36,7 @@ public class MockDataSource implements DataSource
     /**
      * NOTE: JDK7+ new feature
      */
+    @Override
     public Logger getParentLogger() 
     {
         return null;
@@ -44,6 +45,7 @@ public class MockDataSource implements DataSource
     /** 
      * @see javax.sql.DataSource#getConnection()
      */
+    @Override
     public Connection getConnection() throws SQLException
     {
         return null;
@@ -52,6 +54,7 @@ public class MockDataSource implements DataSource
     /** 
      * @see javax.sql.DataSource#getConnection(java.lang.String, java.lang.String)
      */
+    @Override
     public Connection getConnection(String username, String password)
             throws SQLException
     {
@@ -61,6 +64,7 @@ public class MockDataSource implements DataSource
     /** 
      * @see javax.sql.DataSource#getLogWriter()
      */
+    @Override
     public PrintWriter getLogWriter() throws SQLException
     {
         return null;
@@ -69,6 +73,7 @@ public class MockDataSource implements DataSource
     /** 
      * @see javax.sql.DataSource#getLoginTimeout()
      */
+    @Override
     public int getLoginTimeout() throws SQLException
     {
         return 0;
@@ -77,6 +82,7 @@ public class MockDataSource implements DataSource
     /** 
      * @see javax.sql.DataSource#setLogWriter(java.io.PrintWriter)
      */
+    @Override
     public void setLogWriter(PrintWriter out) throws SQLException
     {
     }
@@ -84,15 +90,18 @@ public class MockDataSource implements DataSource
     /** 
      * @see javax.sql.DataSource#setLoginTimeout(int)
      */
+    @Override
     public void setLoginTimeout(int seconds) throws SQLException
     {
     }
 
+    @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException
     {
         return false;
     }
 
+    @Override
     public <T> T unwrap(Class<T> iface) throws SQLException
     {
         return null;

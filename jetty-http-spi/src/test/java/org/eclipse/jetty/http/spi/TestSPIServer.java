@@ -74,6 +74,7 @@ public class TestSPIServer
                                                                  new HttpHandler()
             {
 
+                @Override
                 public void handle(HttpExchange exchange) throws IOException
                 {
                     Headers responseHeaders = exchange.getResponseHeaders();
@@ -163,6 +164,7 @@ public class TestSPIServer
                                                                  new HttpHandler()
             {
 
+                @Override
                 public void handle(HttpExchange exchange) throws IOException
                 {
                     Headers responseHeaders = exchange.getResponseHeaders();

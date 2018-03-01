@@ -29,6 +29,7 @@ public class ClusteredInvalidationSessionTest extends AbstractClusteredInvalidat
 {
 
     @Test
+    @Override
     public void testInvalidation() throws Exception
     {
         super.testInvalidation();

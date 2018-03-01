@@ -63,16 +63,19 @@ public class ScannerTest
         _scanner.setScanInterval(0);
         _scanner.addListener(new Scanner.DiscreteListener()
         {
+            @Override
             public void fileRemoved(String filename) throws Exception
             {
                 _queue.add(new Event(filename,Notification.REMOVED));
             }
 
+            @Override
             public void fileChanged(String filename) throws Exception
             {
                 _queue.add(new Event(filename,Notification.CHANGED));
             }
 
+            @Override
             public void fileAdded(String filename) throws Exception
             {
                 _queue.add(new Event(filename,Notification.ADDED));
@@ -80,6 +83,7 @@ public class ScannerTest
         });
         _scanner.addListener(new Scanner.BulkListener()
         {
+            @Override
             public void filesChanged(List<String> filenames) throws Exception
             {
                 _bulk.add(filenames);

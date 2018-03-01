@@ -494,6 +494,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     /**
      *
      */
+    @Override
     public void reset()
     {
         try(Locker.Lock lock = _locker.lock())

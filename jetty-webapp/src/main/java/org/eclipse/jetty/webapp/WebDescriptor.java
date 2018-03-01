@@ -205,6 +205,7 @@ public class WebDescriptor extends Descriptor
         super(xml);
     }
 
+    @Override
     public void parse ()
     throws Exception
     {
@@ -319,6 +320,7 @@ public class WebDescriptor extends Descriptor
         return _distributable;
     }
 
+    @Override
     public void setValidating (boolean validating)
     {
        _validating = validating;

@@ -45,6 +45,7 @@ public class MultiPartTest extends HttpServlet
     private ServletConfig config;
     
     
+    @Override
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
@@ -54,6 +55,7 @@ public class MultiPartTest extends HttpServlet
     
     
     /* ------------------------------------------------------------ */
+    @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
 
@@ -95,6 +97,7 @@ public class MultiPartTest extends HttpServlet
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {      
         try

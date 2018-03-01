@@ -37,6 +37,7 @@ public class RoleRunAsToken implements RunAsToken
         return _runAsRole;
     }
 
+    @Override
     public String toString()
     {
         return "RoleRunAsToken("+_runAsRole+")";

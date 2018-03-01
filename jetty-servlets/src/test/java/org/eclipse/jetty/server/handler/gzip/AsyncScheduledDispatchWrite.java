@@ -73,6 +73,7 @@ public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
         this.originalReqResp = originalReqResp;
     }
 
+    @Override
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);

@@ -52,6 +52,7 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
      * @param sharedState the shared state map
      * @param options the option map
      */
+    @Override
     public void initialize(Subject subject,
                            CallbackHandler callbackHandler,
                            Map<String,?> sharedState,
@@ -79,6 +80,7 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
      * @return the connection for the datasource
      * @throws Exception if unable to get the connection
      */
+    @Override
     public Connection getConnection ()
     throws Exception
     {

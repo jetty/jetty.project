@@ -54,6 +54,7 @@ public class TestAnnotationInheritance
         public final List<String> annotatedMethods = new ArrayList<String>();
         public final List<String> annotatedFields = new ArrayList<String>();
 
+        @Override
         public void handle(ClassInfo info, String annotation)
         {
             if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
@@ -62,6 +63,7 @@ public class TestAnnotationInheritance
             annotatedClassNames.add(info.getClassName());
         }
 
+        @Override
         public void handle(FieldInfo info, String annotation)
         {   
             if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
@@ -69,6 +71,7 @@ public class TestAnnotationInheritance
             annotatedFields.add(info.getClassInfo().getClassName()+"."+info.getFieldName());
         }
 
+        @Override
         public void handle(MethodInfo info, String annotation)
         {
             if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))

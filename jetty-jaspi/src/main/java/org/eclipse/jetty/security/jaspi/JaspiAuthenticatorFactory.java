@@ -88,6 +88,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
     {
         Authenticator authenticator=null;
@@ -96,6 +97,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
             AuthConfigFactory authConfigFactory = AuthConfigFactory.getFactory();
             RegistrationListener listener = new RegistrationListener()
             {
+                @Override
                 public void notify(String layer, String appContext)
                 {}
             };

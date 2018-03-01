@@ -105,6 +105,7 @@ public class WebAppClassLoaderUrlStreamTest extends WebAppClassLoaderTest
     }
     
     @Before
+    @Override
     public void init() throws Exception
     {
         super.init();

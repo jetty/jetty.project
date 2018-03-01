@@ -745,6 +745,7 @@ public class SelectChannelEndPointTest
         {
             new Thread()
             {
+                @Override
                 public void run()
                 {
                     try(Socket client = newClient();)

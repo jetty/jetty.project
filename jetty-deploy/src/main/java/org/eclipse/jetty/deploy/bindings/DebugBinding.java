@@ -40,11 +40,13 @@ public class DebugBinding implements AppLifeCycle.Binding
         _targets=targets;
     }
     
+    @Override
     public String[] getBindingTargets()
     {
         return _targets;
     }
 
+    @Override
     public void processBinding(Node node, App app) throws Exception
     {
         LOG.info("processBinding {} {}",node,app.getContextHandler());

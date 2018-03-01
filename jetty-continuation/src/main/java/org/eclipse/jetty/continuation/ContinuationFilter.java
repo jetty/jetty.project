@@ -60,6 +60,7 @@ public class ContinuationFilter implements Filter
     ServletContext _context;
     private boolean _debug;
 
+    @Override
     public void init(FilterConfig filterConfig) throws ServletException
     {
         filterConfig.getServletContext().log("WARNING: " + this.getClass().getName() + " is now DEPRECATED, use Servlet 3.0 AsyncContext instead.");
@@ -88,6 +89,7 @@ public class ContinuationFilter implements Filter
         _initialized=true;
     }
 
+    @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
         if (_filtered)
@@ -155,6 +157,7 @@ public class ContinuationFilter implements Filter
         }
     }
 
+    @Override
     public void destroy()
     {
     }

@@ -35,6 +35,7 @@ import java.util.Enumeration;
 public class StrictRoleCheckPolicy implements RoleCheckPolicy
 {
 
+    @Override
     public boolean checkRole (String roleName, Principal runAsRole, Group roles)
     {
         //check if this user has had any temporary role pushed onto

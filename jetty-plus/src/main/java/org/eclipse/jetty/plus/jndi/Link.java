@@ -42,6 +42,7 @@ public class Link extends NamingEntry
         _link=link;
     }
 
+    @Override
     public void bindToENC(String localName) throws NamingException
     {
         throw new UnsupportedOperationException("Method not supported for Link objects");

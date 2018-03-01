@@ -83,6 +83,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             accessAttribute = false;
         }
         
+        @Override
         public void sessionDestroyed(HttpSessionEvent se)
         {
             destroyedSessions.add(se.getSession().getId());
@@ -100,6 +101,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             }
         }
 
+        @Override
         public void sessionCreated(HttpSessionEvent se)
         {
             createdSessions.add(se.getSession().getId());

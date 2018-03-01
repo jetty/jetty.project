@@ -332,6 +332,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             SortedSet<CachedHttpContent> sorted= new TreeSet<CachedHttpContent>(
                     new Comparator<CachedHttpContent>()
                     {
+                        @Override
                         public int compare(CachedHttpContent c1, CachedHttpContent c2)
                         {
                             if (c1._lastAccessed<c2._lastAccessed)

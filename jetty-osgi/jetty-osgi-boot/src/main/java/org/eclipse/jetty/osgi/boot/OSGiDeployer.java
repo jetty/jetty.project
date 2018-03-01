@@ -45,6 +45,7 @@ public class OSGiDeployer extends StandardDeployer
     
     
     /* ------------------------------------------------------------ */
+    @Override
     public void processBinding(Node node, App app) throws Exception
     {
         //TODO  how to NOT send this event if its not a webapp: 
