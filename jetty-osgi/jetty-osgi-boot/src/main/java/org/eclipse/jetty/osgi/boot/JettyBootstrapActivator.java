@@ -79,7 +79,7 @@ public class JettyBootstrapActivator implements BundleActivator
         _jettyServerServiceTracker.open();
         
         // Create a default jetty instance right now.
-        Server defaultServer = DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
+        DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
     }
 
 

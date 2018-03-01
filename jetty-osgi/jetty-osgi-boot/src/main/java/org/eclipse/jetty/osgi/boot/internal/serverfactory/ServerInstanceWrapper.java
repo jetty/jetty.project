@@ -72,7 +72,7 @@ public class ServerInstanceWrapper
     public static final String PROPERTY_THIS_JETTY_XML_FOLDER_URL = "this.jetty.xml.parent.folder.url";
     
     
-    private static Collection<TldBundleDiscoverer> __containerTldBundleDiscoverers = new ArrayList<TldBundleDiscoverer>();
+    private static Collection<TldBundleDiscoverer> __containerTldBundleDiscoverers = new ArrayList<>();
 
     private static Logger LOG = Log.getLogger(ServerInstanceWrapper.class.getName());
     
@@ -114,12 +114,12 @@ public class ServerInstanceWrapper
 
     
     /* ------------------------------------------------------------ */
-    public static Server configure(Server server, List<URL> jettyConfigurations, Dictionary props) throws Exception
+    public static Server configure(Server server, List<URL> jettyConfigurations, Dictionary<String, Object> props) throws Exception
     {
        
         if (jettyConfigurations == null || jettyConfigurations.isEmpty()) { return server; }
         
-        Map<String, Object> id_map = new HashMap<String, Object>();
+        Map<String, Object> id_map = new HashMap<>();
         if (server != null)
         {
             //Put in a mapping for the id "Server" and the name of the server as the instance being configured
@@ -127,18 +127,16 @@ public class ServerInstanceWrapper
             id_map.put((String)props.get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME), server);
         }
 
-        Map<String, String> properties = new HashMap<String, String>();
+        Map<String, String> properties = new HashMap<>();
         if (props != null)
         {
-            Enumeration<Object> en = props.keys();
+            Enumeration<String> en = props.keys();
             while (en.hasMoreElements())
             {
-                Object key = en.nextElement();
+                String key = en.nextElement();
                 Object value = props.get(key);
-                String keyStr = String.valueOf(key);
-                String valStr = String.valueOf(value);
-                properties.put(keyStr, valStr);
-                if (server != null) server.setAttribute(keyStr, valStr);
+                properties.put(key, value.toString());
+                if (server != null) server.setAttribute(key, value);
             }
         }
 
@@ -153,7 +151,7 @@ public class ServerInstanceWrapper
         			throw new IllegalStateException("No such jetty server config file: "+r);
         		}
 
-        		XmlConfiguration config = new XmlConfiguration(r.getURL());
+        		XmlConfiguration config = new XmlConfiguration(r.getURI().toURL());
 
         		config.getIdMap().putAll(id_map);
         		config.getProperties().putAll(properties);
@@ -243,7 +241,7 @@ public class ServerInstanceWrapper
     }
     
     /* ------------------------------------------------------------ */
-    public void start(Server server, Dictionary props) throws Exception
+    public void start(Server server, Dictionary<String,Object> props) throws Exception
     {
         _server = server;
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
@@ -274,7 +272,7 @@ public class ServerInstanceWrapper
             //as on the webapp classpath.
             if (!__containerTldBundleDiscoverers.isEmpty())
             {
-                Set<URL> urls = new HashSet<URL>();
+                Set<URL> urls = new HashSet<>();
                 //discover bundles with tlds that need to be on the container's classpath as URLs
                 for (TldBundleDiscoverer d:__containerTldBundleDiscoverers)
                 {
@@ -350,7 +348,7 @@ public class ServerInstanceWrapper
         if (_ctxtCollection == null) 
             throw new IllegalStateException("ERROR: No ContextHandlerCollection configured in Server");
         
-        List<String> providerClassNames = new ArrayList<String>();
+        List<String> providerClassNames = new ArrayList<>();
         
         // get a deployerManager and some providers
         Collection<DeploymentManager> deployers = _server.getBeans(DeploymentManager.class);
@@ -372,7 +370,7 @@ public class ServerInstanceWrapper
         }
 
         _deploymentManager.setUseStandardBindings(false);
-        List<AppLifeCycle.Binding> deploymentLifeCycleBindings = new ArrayList<AppLifeCycle.Binding>();
+        List<AppLifeCycle.Binding> deploymentLifeCycleBindings = new ArrayList<>();
         deploymentLifeCycleBindings.add(new OSGiDeployer(this));
         deploymentLifeCycleBindings.add(new StandardStarter());
         deploymentLifeCycleBindings.add(new StandardStopper());
@@ -446,7 +444,7 @@ public class ServerInstanceWrapper
     private List<File> extractFiles(String propertyValue)
     {
         StringTokenizer tokenizer = new StringTokenizer(propertyValue, ",;", false);
-        List<File> files = new ArrayList<File>();
+        List<File> files = new ArrayList<>();
         while (tokenizer.hasMoreTokens())
         {
             String tok = tokenizer.nextToken();

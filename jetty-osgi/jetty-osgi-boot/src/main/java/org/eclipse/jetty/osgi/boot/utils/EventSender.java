@@ -23,7 +23,6 @@ import java.util.Hashtable;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceReference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventAdmin;
 import org.osgi.util.tracker.ServiceTracker;
@@ -68,7 +67,7 @@ public class EventSender
     {        
         EventAdmin service = (EventAdmin)_serviceTracker.getService();
         if (service != null) {
-            Dictionary<String,Object> props = new Hashtable<String,Object>();
+            Dictionary<String,Object> props = new Hashtable<>();
             props.put("bundle.symbolicName", wab.getSymbolicName());
             props.put("bundle.id", wab.getBundleId());
             props.put("bundle", wab);

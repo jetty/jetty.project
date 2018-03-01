@@ -25,7 +25,6 @@ import java.util.Set;
 
 import javax.servlet.ServletContainerInitializer;
 
-
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
@@ -116,6 +115,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
             _webInfLibStats = new CounterStatistic();
         
         Bundle webbundle = (Bundle) context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
+        @SuppressWarnings("unchecked")
         Set<Bundle> fragAndRequiredBundles = (Set<Bundle>)context.getAttribute(OSGiWebInfConfiguration.FRAGMENT_AND_REQUIRED_BUNDLES);
         if (fragAndRequiredBundles != null)
         {
@@ -229,7 +229,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
                                {
 
         Resource bundleRes = parser.getResource(bundle);  
-        Set<Handler> handlers = new HashSet<Handler>();
+        Set<Handler> handlers = new HashSet<>();
         handlers.addAll(_discoverableAnnotationHandlers);
         if (_classInheritanceHandler != null)
             handlers.add(_classInheritanceHandler);

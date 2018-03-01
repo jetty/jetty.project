@@ -57,7 +57,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * when a logging framework is setup in the osgi classloaders, it can access
      * this and register the classes that must not be found in the jar.
      */
-    public static final Set<String> JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED = new HashSet<String>();
+    public static final Set<String> JAR_WITH_SUCH_CLASS_MUST_BE_EXCLUDED = new HashSet<>();
 
     public static void addClassThatIdentifiesAJarThatMustBeRejected(Class<?> zclass)
     {
@@ -149,7 +149,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
     /* ------------------------------------------------------------ */
     private List<URL> toList(Enumeration<URL> e, Enumeration<URL> e2)
     {
-        List<URL> list = new ArrayList<URL>();
+        List<URL> list = new ArrayList<>();
         while (e != null && e.hasMoreElements())
             list.add(e.nextElement());
         while (e2 != null && e2.hasMoreElements())

@@ -29,7 +29,6 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
@@ -52,7 +51,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
 { 
     private static final Logger LOG = Log.getLogger(AbstractContextProvider.class);
     
-    private Map<ServiceReference, App> _serviceMap = new HashMap<ServiceReference, App>();
+    private Map<ServiceReference, App> _serviceMap = new HashMap<>();
     
     private ServiceRegistration _serviceRegForServices;
     
@@ -168,7 +167,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
                 contextFile = (String)serviceRef.getProperty(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH); 
                   
             String[] keys = serviceRef.getPropertyKeys();
-            Dictionary properties = new Hashtable<String, Object>();
+            Dictionary<String,Object> properties = new Hashtable<>();
             if (keys != null)
             {
                 for (String key:keys)
@@ -226,7 +225,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
 
         
         //register as an osgi service for deploying contexts defined in a bundle, advertising the name of the jetty Server instance we are related to
-        Dictionary<String,String> properties = new Hashtable<String,String>();
+        Dictionary<String,String> properties = new Hashtable<>();
         properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, getServerInstanceWrapper().getManagedServerName());
         
         //register as an osgi service for deploying contexts, advertising the name of the jetty Server instance we are related to

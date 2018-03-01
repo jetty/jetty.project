@@ -19,7 +19,6 @@
 package org.eclipse.jetty.osgi.boot.utils.internal;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -88,6 +87,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * @return Its installation location as a file.
      * @throws Exception if unable to get the bundle install location
      */
+    @SuppressWarnings("resource")
     public File getBundleInstallLocation(Bundle bundle) throws Exception
     {
         // String installedBundles = System.getProperty("osgi.bundles");
@@ -249,6 +249,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             path = "/" + path;
         }
         String pattern = last != -1 && last < entryPath.length() - 2 ? entryPath.substring(last + 1) : entryPath;
+        @SuppressWarnings("unchecked")
         Enumeration<URL> enUrls = bundle.findEntries(path, pattern, false);
         return enUrls;
     }
@@ -273,7 +274,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         if (jasperLocation.isDirectory())
         {
             // try to find the jar files inside this folder
-            ArrayList<File> urls = new ArrayList<File>();
+            ArrayList<File> urls = new ArrayList<>();
             for (File f : jasperLocation.listFiles())
             {
                 if (f.getName().endsWith(".jar") && f.isFile())
@@ -327,10 +328,10 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
             if (BUNDLE_URL_CONNECTION_getLocalURL == null && match(conn.getClass().getName(), BUNDLE_URL_CONNECTION_CLASSES))
             {
-                BUNDLE_URL_CONNECTION_getLocalURL = conn.getClass().getMethod("getLocalURL", null);
+                BUNDLE_URL_CONNECTION_getLocalURL = conn.getClass().getMethod("getLocalURL");
                 BUNDLE_URL_CONNECTION_getLocalURL.setAccessible(true);
             }
-            if (BUNDLE_URL_CONNECTION_getLocalURL != null) { return (URL) BUNDLE_URL_CONNECTION_getLocalURL.invoke(conn, null); }
+            if (BUNDLE_URL_CONNECTION_getLocalURL != null) { return (URL) BUNDLE_URL_CONNECTION_getLocalURL.invoke(conn); }
         }
         return url;
     }
@@ -360,10 +361,10 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 && 
                 match (conn.getClass().getName(), BUNDLE_URL_CONNECTION_CLASSES))
             {
-                BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL", null);
+                BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL");
                 BUNDLE_URL_CONNECTION_getFileURL.setAccessible(true);
             }
-            if (BUNDLE_URL_CONNECTION_getFileURL != null) { return (URL) BUNDLE_URL_CONNECTION_getFileURL.invoke(conn, null); }
+            if (BUNDLE_URL_CONNECTION_getFileURL != null) { return (URL) BUNDLE_URL_CONNECTION_getFileURL.invoke(conn); }
 
         }
         return url;

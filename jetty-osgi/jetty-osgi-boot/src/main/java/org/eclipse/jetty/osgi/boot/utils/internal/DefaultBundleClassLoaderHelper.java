@@ -38,10 +38,10 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
     private static final Logger LOG = Log.getLogger(BundleClassLoaderHelper.class);
     private static enum OSGiContainerType {EquinoxOld, EquinoxLuna, FelixOld, Felix403, Concierge};
     private static OSGiContainerType osgiContainer;
-    private static Class Equinox_BundleHost_Class;
-    private static Class Equinox_EquinoxBundle_Class;
-    private static Class Felix_BundleImpl_Class;
-    private static Class Felix_BundleWiring_Class;
+    private static Class<?> Equinox_BundleHost_Class;
+    private static Class<?> Equinox_EquinoxBundle_Class;
+    private static Class<?> Felix_BundleImpl_Class;
+    private static Class<?> Felix_BundleWiring_Class;
     //old equinox
     private static Method Equinox_BundleHost_getBundleLoader_method;
     private static Method Equinox_BundleLoader_createClassLoader_method;
@@ -56,8 +56,8 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
     private static Method Felix_BundleWiring_getClassLoader_Method;
     
     // Concierge
-    private static Class Concierge_BundleImpl_Class;
-    private static Class Concierge_BundleWiring_Class;
+    private static Class<?> Concierge_BundleImpl_Class;
+    private static Class<?> Concierge_BundleWiring_Class;
     private static Method Concierge_BundleImpl_Adapt_Method;
     private static Method Concierge_BundleWiring_getClassLoader_Method;
     
@@ -267,6 +267,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
      * @param bundle
      * @return
      */
+    @SuppressWarnings("unchecked")
     private static ClassLoader internalGetFelixBundleClassLoader(Bundle bundle)
     {
         
