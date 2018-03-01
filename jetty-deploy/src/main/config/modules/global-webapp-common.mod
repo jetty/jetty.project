@@ -5,11 +5,11 @@ Enables Deployer to apply common configuration to all webapp deployments
 deploy
 
 [xml]
-etc/deployer-webapp-common.xml
+etc/global-webapp-common.xml
 
 [files]
-basehome:modules/deployer-webapp-common.d/deployer-webapp-common.xml|etc/deployer-webapp-common.xml
-basehome:modules/deployer-webapp-common.d/webapp-common.xml|etc/webapp-common.xml
+basehome:modules/global-webapp-common.d/global-webapp-common.xml|etc/global-webapp-common.xml
+basehome:modules/global-webapp-common.d/webapp-common.xml|etc/webapp-common.xml
 
 [ini-template]
 
