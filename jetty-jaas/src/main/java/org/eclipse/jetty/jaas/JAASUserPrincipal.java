@@ -46,6 +46,7 @@ public class JAASUserPrincipal implements Principal
     /* ------------------------------------------------ */
     /** Get the name identifying the user
      */
+    @Override
     public String getName ()
     {
         return _name;
@@ -66,6 +67,7 @@ public class JAASUserPrincipal implements Principal
         return this._loginContext;
     }
 
+    @Override
     public String toString()
     {
         return getName();

@@ -330,6 +330,7 @@ public class XmlConfiguration
         XmlParser.Node _root;
         XmlConfiguration _configuration;
 
+        @Override
         public void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
         {
             _url=url==null?null:url.toString();
@@ -337,6 +338,7 @@ public class XmlConfiguration
             _configuration=configuration;
         }
 
+        @Override
         public Object configure(Object obj) throws Exception
         {
             // Check the class of the object
@@ -353,6 +355,7 @@ public class XmlConfiguration
             return obj;
         }
 
+        @Override
         public Object configure() throws Exception
         {
             Class<?> oClass = nodeClass(_root);

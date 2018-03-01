@@ -323,6 +323,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         in = socket.getInputStream();
     }
 
+    @Override
     public void disconnect()
     {
         LOG.debug("disconnect");
@@ -487,6 +488,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         return destHttpURI;
     }
 
+    @Override
     public InetSocketAddress getLocalSocketAddress()
     {
         return (InetSocketAddress)socket.getLocalSocketAddress();
@@ -507,6 +509,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
     }
     
 
+    @Override
     public InetSocketAddress getRemoteSocketAddress()
     {
         return (InetSocketAddress)socket.getRemoteSocketAddress();
@@ -626,6 +629,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         }
     }
 
+    @Override
     public EventQueue<WebSocketFrame> readFrames(int expectedFrameCount, int timeoutDuration, TimeUnit timeoutUnit) throws Exception
     {
         frameReader.frames.awaitEventCount(expectedFrameCount,timeoutDuration,timeoutUnit);
@@ -709,6 +713,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         return req;
     }
 
+    @Override
     public void setConnectionValue(String connectionValue)
     {
         this.connectionValue = connectionValue;

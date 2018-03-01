@@ -110,6 +110,7 @@ public class PackageAdminServiceTracker implements ServiceListener
      * 
      * @param event The <code>ServiceEvent</code> object.
      */
+    @Override
     public void serviceChanged(ServiceEvent event)
     {
         if (event.getType() == ServiceEvent.REGISTERED)

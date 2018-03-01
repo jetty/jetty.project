@@ -37,17 +37,20 @@ public class BindingEnumeration implements NamingEnumeration<Binding>
         _delegate = e;
     }
 
+    @Override
     public void close()
         throws NamingException
     {
     }
 
+    @Override
     public boolean hasMore ()
         throws NamingException
     {
         return _delegate.hasNext();
     }
 
+    @Override
     public Binding next()
         throws NamingException
     {
@@ -55,11 +58,13 @@ public class BindingEnumeration implements NamingEnumeration<Binding>
         return new Binding (b.getName(), b.getClassName(), b.getObject(), true);
     }
 
+    @Override
     public boolean hasMoreElements()
     {
         return _delegate.hasNext();
     }
 
+    @Override
     public Binding nextElement()
     {
         Binding b = (Binding)_delegate.next();

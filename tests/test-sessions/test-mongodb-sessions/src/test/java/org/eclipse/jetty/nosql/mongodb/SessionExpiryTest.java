@@ -79,18 +79,21 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     }
 
     @Test
+    @Override
     public void testSessionNotExpired() throws Exception
     {
         super.testSessionNotExpired();
     }
     
     @Test
+    @Override
     public void testSessionExpiry() throws Exception
     {
         super.testSessionExpiry();
     }
     
     @Test
+    @Override
     public void testRequestForSessionWithChangedTimeout() throws Exception
     {
         super.testRequestForSessionWithChangedTimeout();

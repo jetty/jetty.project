@@ -46,6 +46,7 @@ public  class WelcomeFilter implements Filter
 {
     private String welcome;
 
+    @Override
     public void init(FilterConfig filterConfig)
     {
         welcome=filterConfig.getInitParameter("welcome");
@@ -54,6 +55,7 @@ public  class WelcomeFilter implements Filter
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doFilter(ServletRequest request,
                          ServletResponse response,
                          FilterChain chain)
@@ -66,6 +68,7 @@ public  class WelcomeFilter implements Filter
             chain.doFilter(request, response);
     }
 
+    @Override
     public void destroy() {}
 }
 

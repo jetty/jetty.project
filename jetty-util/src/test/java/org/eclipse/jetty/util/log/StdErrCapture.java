@@ -62,6 +62,7 @@ public class StdErrCapture
         Assert.assertThat(output,not(containsString(unexpectedString)));
     }
 
+    @Override
     public String toString()
     {
         err.flush();

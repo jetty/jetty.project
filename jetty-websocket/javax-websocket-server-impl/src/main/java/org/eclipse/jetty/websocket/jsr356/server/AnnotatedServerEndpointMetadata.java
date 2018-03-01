@@ -85,11 +85,13 @@ public class AnnotatedServerEndpointMetadata extends AnnotatedEndpointMetadata<S
         return endpoint;
     }
 
+    @Override
     public AnnotatedServerEndpointConfig getConfig()
     {
         return config;
     }
 
+    @Override
     public String getPath()
     {
         return config.getPath();

@@ -77,12 +77,14 @@ public class EventSourceServletTest
             {
                 return new EventSource()
                 {
+                    @Override
                     public void onOpen(Emitter emitter) throws IOException
                     {
                         emitterRef.set(emitter);
                         emitterLatch.countDown();
                     }
 
+                    @Override
                     public void onClose()
                     {
                         closeLatch.countDown();
@@ -136,12 +138,14 @@ public class EventSourceServletTest
             {
                 return new EventSource()
                 {
+                    @Override
                     public void onOpen(Emitter emitter) throws IOException
                     {
                         emitterRef.set(emitter);
                         emitterLatch.countDown();
                     }
 
+                    @Override
                     public void onClose()
                     {
                     }
@@ -195,11 +199,13 @@ public class EventSourceServletTest
             {
                 return new EventSource()
                 {
+                    @Override
                     public void onOpen(Emitter emitter) throws IOException
                     {
                         emitter.data(data);
                     }
 
+                    @Override
                     public void onClose()
                     {
                     }
@@ -244,11 +250,13 @@ public class EventSourceServletTest
             {
                 return new EventSource()
                 {
+                    @Override
                     public void onOpen(Emitter emitter) throws IOException
                     {
                         emitter.data(data);
                     }
 
+                    @Override
                     public void onClose()
                     {
                     }
@@ -289,11 +297,13 @@ public class EventSourceServletTest
             {
                 return new EventSource()
                 {
+                    @Override
                     public void onOpen(Emitter emitter) throws IOException
                     {
                         emitter.event(name, data);
                     }
 
+                    @Override
                     public void onClose()
                     {
                     }

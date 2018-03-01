@@ -45,6 +45,7 @@ public class TextFrame extends DataFrame
         return this;
     }
     
+    @Override
     public String getPayloadAsUTF8()
     {
         if (data == null)

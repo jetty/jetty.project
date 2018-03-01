@@ -916,6 +916,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         final AtomicReference<Exception> exception = new AtomicReference<Exception>();
         Runnable load = new Runnable()
         {
+            @Override
             public void run ()
             {
                 try

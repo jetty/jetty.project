@@ -159,6 +159,7 @@ public class ErrorPageTest
 
     public static class FailServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             String code=request.getParameter("code");
@@ -171,6 +172,7 @@ public class ErrorPageTest
     
     public static class FailClosedServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             response.sendError(599);
@@ -188,6 +190,7 @@ public class ErrorPageTest
     
     public static class ErrorServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             PrintWriter writer = response.getWriter();

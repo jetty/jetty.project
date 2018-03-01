@@ -40,6 +40,7 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
         _context = wac;
     }
 
+    @Override
     public void doHandle(Class clazz)
     {
         //Check that the PreDestroy is on a class that we're interested in

@@ -445,6 +445,7 @@ public class JSONTest
         {
         }
 
+        @Override
         public void fromJSON(Map object)
         {
             name=(String)object.get("name");
@@ -452,6 +453,7 @@ public class JSONTest
             number=((Number)object.get("number")).intValue();
         }
 
+        @Override
         public void toJSON(Output out)
         {
             out.addClass(Woggle.class);
@@ -460,6 +462,7 @@ public class JSONTest
             out.add("number",number);
         }
 
+        @Override
         public String toString()
         {
             return name+"<<"+nested+">>"+number;

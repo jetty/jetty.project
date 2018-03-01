@@ -66,6 +66,7 @@ public class TestJNDI
     {
         public static String myString = "xxx";
 
+        @Override
         public Object getObjectInstance(Object obj, Name name, Context nameCtx, Hashtable environment) throws Exception
         {
             return myString;
@@ -105,6 +106,7 @@ public class TestJNDI
                 private Context comp;
                 private Object testObj = new Object();
                 
+                @Override
                 public void contextInitialized(ServletContextEvent sce)
                 {
                     try
@@ -124,6 +126,7 @@ public class TestJNDI
                     }
                 }
 
+                @Override
                 public void contextDestroyed(ServletContextEvent sce)
                 {
                     try
@@ -148,6 +151,7 @@ public class TestJNDI
                 private Context comp;
                 private Object testObj = new Object();
 
+                @Override
                 public void contextInitialized(ServletContextEvent sce)
                 {
                     try
@@ -174,6 +178,7 @@ public class TestJNDI
                     }
                 }
                 
+                @Override
                 public void contextDestroyed(ServletContextEvent sce)
                 {
                     try

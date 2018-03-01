@@ -62,6 +62,7 @@ public class OSGiClassLoader extends URLClassLoader
      * 
      * Copied from WebAppClassLoader
      */
+    @Override
     public URL getResource(String name)
     {
         URL url= null;

@@ -848,6 +848,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             throw new IllegalStateException("Committed");
     }
 
+    @Override
     public HttpOutput.Interceptor getNextInterceptor()
     {
         return null;

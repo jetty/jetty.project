@@ -406,6 +406,7 @@ public class ServletUpgradeRequest implements UpgradeRequest
     /**
      * Equivalent to {@link HttpServletRequest#getUserPrincipal()}
      */
+    @Override
     public Principal getUserPrincipal()
     {
         return request.getUserPrincipal();

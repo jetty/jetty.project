@@ -51,6 +51,7 @@ public class TestLocalJNDI
         {
         }
 
+        @Override
         public Object getObjectInstance(Object obj, Name name, Context ctx, Hashtable env) throws Exception
         {
 
@@ -83,6 +84,7 @@ public class TestLocalJNDI
             fruit = f;
         }
 
+        @Override
         public Reference getReference() throws NamingException
         {
             return new Reference(
@@ -92,6 +94,7 @@ public class TestLocalJNDI
                 null);          // Factory location
         }
 
+        @Override
         public String toString()
         {
             return fruit;

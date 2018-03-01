@@ -45,6 +45,7 @@ public class ClassB extends ClassA implements InterfaceD
         System.err.println("ClassB.package");
     }
     
+    @Override
     public void l()
     {
         System.err.println("Overridden method l has no annotation");

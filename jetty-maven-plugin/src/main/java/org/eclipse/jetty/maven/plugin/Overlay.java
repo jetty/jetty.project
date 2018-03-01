@@ -58,6 +58,7 @@ public class Overlay
         return _config;
     }
     
+    @Override
     public String toString()
     {
         StringBuffer strbuff = new StringBuffer();

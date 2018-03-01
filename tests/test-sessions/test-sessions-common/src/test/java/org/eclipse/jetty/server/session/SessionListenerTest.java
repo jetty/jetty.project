@@ -52,11 +52,13 @@ public class SessionListenerTest
         boolean unbound = false;
         boolean bound = false;
         
+        @Override
         public void valueUnbound(HttpSessionBindingEvent event)
         {
             unbound = true;
         }
 
+        @Override
         public void valueBound(HttpSessionBindingEvent event)
         {
             bound = true;

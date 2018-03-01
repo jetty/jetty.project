@@ -38,6 +38,7 @@ public class PostConstructCallback extends LifeCycleCallback
      *  - cannot be static
      * @see org.eclipse.jetty.plus.annotation.LifeCycleCallback#validate(java.lang.Class, java.lang.reflect.Method)
      */
+    @Override
     public void validate(Class<?> clazz, Method method)
     {
         if (method.getExceptionTypes().length > 0)
@@ -51,12 +52,14 @@ public class PostConstructCallback extends LifeCycleCallback
     }
     
     
+    @Override
     public void callback (Object instance) 
     throws SecurityException, IllegalArgumentException, NoSuchMethodException, ClassNotFoundException, IllegalAccessException, InvocationTargetException
     {
         super.callback(instance);
     }
 
+    @Override
     public boolean equals (Object o)
     {
         if (super.equals(o) && (o instanceof PostConstructCallback))

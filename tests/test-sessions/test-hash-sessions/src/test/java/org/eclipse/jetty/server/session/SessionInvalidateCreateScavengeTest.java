@@ -32,6 +32,7 @@ public class SessionInvalidateCreateScavengeTest extends AbstractSessionInvalida
     }
     
     @Test
+    @Override
     public void testSessionScavenge() throws Exception
     {
         super.testSessionScavenge();

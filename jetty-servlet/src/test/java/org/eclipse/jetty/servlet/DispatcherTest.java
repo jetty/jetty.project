@@ -340,6 +340,7 @@ public class DispatcherTest
 
     public static class ForwardServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             RequestDispatcher dispatcher = null;
@@ -361,6 +362,7 @@ public class DispatcherTest
     
     public static class ForwardNonUTF8Servlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             RequestDispatcher dispatcher = null;
@@ -382,11 +384,13 @@ public class DispatcherTest
     {
         ServletContext servletContext;
 
+        @Override
         public void init(FilterConfig filterConfig) throws ServletException
         {
             servletContext = filterConfig.getServletContext().getContext("/context");
         }
 
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
 
@@ -416,6 +420,7 @@ public class DispatcherTest
             }
         }
 
+        @Override
         public void destroy()
         {
 
@@ -554,6 +559,7 @@ public class DispatcherTest
 
     public static class EchoURIServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             response.setContentType("text/plain");
@@ -567,6 +573,7 @@ public class DispatcherTest
 
     public static class AssertForwardServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             assertEquals( "/context/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));
@@ -596,6 +603,7 @@ public class DispatcherTest
     
     public static class AssertNonUTF8ForwardServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             byte[] cp1251_bytes = TypeUtil.fromHexString("d2e5ecefe5f0e0f2f3f0e0");
@@ -644,6 +652,7 @@ public class DispatcherTest
 
     public static class AssertIncludeServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             assertEquals( "/context/AssertIncludeServlet", request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
@@ -671,6 +680,7 @@ public class DispatcherTest
 
     public static class AssertForwardIncludeServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             // include doesn't hide forward
@@ -707,6 +717,7 @@ public class DispatcherTest
 
     public static class AssertIncludeForwardServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             // forward hides include

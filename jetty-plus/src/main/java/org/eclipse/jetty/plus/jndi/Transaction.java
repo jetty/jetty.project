@@ -68,6 +68,7 @@ public class Transaction extends NamingEntry
      * These should be in ADDITION to java:comp/UserTransaction
      * @see NamingEntry#bindToENC(java.lang.String)
      */
+    @Override
     public void bindToENC (String localName)
     throws NamingException
     {   
@@ -94,6 +95,7 @@ public class Transaction extends NamingEntry
     /**
      * Unbind this Transaction from a java:comp
      */
+    @Override
     public void unbindENC ()
     {
         try

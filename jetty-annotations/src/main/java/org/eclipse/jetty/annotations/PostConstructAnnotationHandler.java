@@ -41,6 +41,7 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
     }
 
 
+    @Override
     public void doHandle(Class clazz)
     {
         //Check that the PostConstruct is on a class that we're interested in

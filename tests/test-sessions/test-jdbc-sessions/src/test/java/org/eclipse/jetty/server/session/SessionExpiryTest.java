@@ -43,6 +43,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     
 
     @Test
+    @Override
     public void testSessionExpiry() throws Exception
     {
         try(StacklessLogging stackless=new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
@@ -55,6 +56,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
      * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#testSessionExpiresWithListener()
      */
     @Test
+    @Override
     public void testSessionExpiresWithListener() throws Exception
     {
         super.testSessionExpiresWithListener();
@@ -63,6 +65,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     
     
     @Test
+    @Override
     public void testSessionNotExpired() throws Exception
     {
         super.testSessionNotExpired();

@@ -444,6 +444,7 @@ public class JettyWebAppContext extends WebAppContext
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doStop () throws Exception
     { 
         if (_classpathFiles != null)

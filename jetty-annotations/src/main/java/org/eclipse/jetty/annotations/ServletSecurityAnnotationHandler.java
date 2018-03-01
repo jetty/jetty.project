@@ -69,6 +69,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
     /**
      * @see org.eclipse.jetty.annotations.AnnotationIntrospector.IntrospectableAnnotationHandler#handle(java.lang.Class)
      */
+    @Override
     public void doHandle(Class clazz)
     {
         if (!(_context.getSecurityHandler() instanceof ConstraintAware))

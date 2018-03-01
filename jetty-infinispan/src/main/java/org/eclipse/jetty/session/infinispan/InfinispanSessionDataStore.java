@@ -89,6 +89,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         
         Runnable load = new Runnable()
         {
+            @Override
             public void run ()
             {
                 try
@@ -269,6 +270,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
 
         Runnable load = new Runnable()
         {
+            @Override
             public void run ()
             {
                 try

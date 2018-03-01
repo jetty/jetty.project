@@ -26,6 +26,7 @@ public class NamedLiteral extends AnnotationLiteral<Named> implements Named
 {
     private final String value;
 
+    @Override
     public String value()
     {
         return value;

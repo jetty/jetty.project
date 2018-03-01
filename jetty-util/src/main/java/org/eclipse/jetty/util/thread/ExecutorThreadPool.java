@@ -137,6 +137,7 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
         }
     }
 
+    @Override
     public int getIdleThreads()
     {
         if (_executor instanceof ThreadPoolExecutor)
@@ -147,6 +148,7 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
         return -1;
     }
 
+    @Override
     public int getThreads()
     {
         if (_executor instanceof ThreadPoolExecutor)
@@ -157,6 +159,7 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
         return -1;
     }
 
+    @Override
     public boolean isLowOnThreads()
     {
         if (_executor instanceof ThreadPoolExecutor)
@@ -169,6 +172,7 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
         return false;
     }
 
+    @Override
     public void join() throws InterruptedException
     {
         _executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);

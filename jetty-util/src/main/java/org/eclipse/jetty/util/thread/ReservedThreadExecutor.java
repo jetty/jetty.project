@@ -182,6 +182,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
      * @param task The task to run
      * @return True iff a reserved thread was available and has been assigned the task to run.
      */
+    @Override
     public boolean tryExecute(Runnable task)
     {
         if (LOG.isDebugEnabled())

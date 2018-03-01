@@ -39,6 +39,7 @@ public class UserAuthentication extends AbstractUserAuthentication
         return "{User,"+getAuthMethod()+","+_userIdentity+"}";
     }
 
+    @Override
     public void logout()
     {
         SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();

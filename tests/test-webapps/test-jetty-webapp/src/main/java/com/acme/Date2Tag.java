@@ -36,6 +36,7 @@ public class Date2Tag extends SimpleTagSupport
         this.format = value;
     }
 
+    @Override
     public void doTag() throws JspException, IOException {
         String formatted =
             new SimpleDateFormat("long".equals(format)?"EEE 'the' d:MMM:yyyy":"d:MM:yy")

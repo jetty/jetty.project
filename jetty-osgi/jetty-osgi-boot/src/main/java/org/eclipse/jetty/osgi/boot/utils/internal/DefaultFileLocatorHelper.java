@@ -88,6 +88,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * @return Its installation location as a file.
      * @throws Exception if unable to get the bundle install location
      */
+    @Override
     public File getBundleInstallLocation(Bundle bundle) throws Exception
     {
         // String installedBundles = System.getProperty("osgi.bundles");
@@ -214,6 +215,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * @return file object
      * @throws Exception if unable to get the file in the bundle
      */
+    @Override
     public File getFileInBundle(Bundle bundle, String path) throws Exception
     {
         if (path != null && path.length() > 0 && path.charAt(0) == '/')
@@ -240,6 +242,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * @param entryPath the entry path
      * @return null or all the entries found for that path.
      */
+    @Override
     public Enumeration<URL> findEntries(Bundle bundle, String entryPath)
     {
         int last = entryPath.lastIndexOf('/');
@@ -267,6 +270,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * @return The jar(s) file that is either the bundle itself, either the jars
      *         embedded inside it.
      */
+    @Override
     public File[] locateJarsInsideBundle(Bundle bundle) throws Exception
     {
         File jasperLocation = getBundleInstallLocation(bundle);
@@ -317,6 +321,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * 
      * @return a URL to the bundle entry that uses a common protocol
      */
+    @Override
     public URL getLocalURL(URL url)
     throws Exception
     {
@@ -348,6 +353,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      *         </p>
      * @throws Exception if unable to get the file url 
      */
+    @Override
     public URL getFileURL(URL url) throws Exception
  
     {
