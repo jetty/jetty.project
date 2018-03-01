@@ -145,6 +145,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
     
     
     /* ------------------------------------------------------------ */
+    @Override
     public boolean serviceAdded (ServiceReference serviceRef, ContextHandler context)
     {
         if (context == null || serviceRef == null)
@@ -189,6 +190,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
     
     
     /* ------------------------------------------------------------ */
+    @Override
     public boolean serviceRemoved (ServiceReference serviceRef, ContextHandler context)
     {
 

@@ -75,6 +75,7 @@ public class FutureCallbackTest
         final CountDownLatch latch = new CountDownLatch(1);
         
         new Thread(new Runnable(){
+            @Override
             public void run()
             {
                 latch.countDown();
@@ -125,6 +126,7 @@ public class FutureCallbackTest
         final CountDownLatch latch = new CountDownLatch(1);
         
         new Thread(new Runnable(){
+            @Override
             public void run()
             {
                 latch.countDown();
@@ -181,6 +183,7 @@ public class FutureCallbackTest
         final CountDownLatch latch = new CountDownLatch(1);
         
         new Thread(new Runnable(){
+            @Override
             public void run()
             {
                 latch.countDown();

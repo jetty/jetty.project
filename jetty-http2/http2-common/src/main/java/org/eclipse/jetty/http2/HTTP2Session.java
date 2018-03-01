@@ -1158,6 +1158,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             frameBytes -= bytesFlushed;
         }
 
+        @Override
         protected boolean generate(ByteBufferPool.Lease lease)
         {
             bytes = frameBytes = generator.control(lease, frame);
@@ -1299,6 +1300,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             return dataBytes;
         }
 
+        @Override
         protected boolean generate(ByteBufferPool.Lease lease)
         {
             int dataBytes = getDataBytesRemaining();

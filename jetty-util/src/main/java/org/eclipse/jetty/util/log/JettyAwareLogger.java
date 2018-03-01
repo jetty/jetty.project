@@ -48,6 +48,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#getName()
      */
+    @Override
     public String getName()
     {
         return _logger.getName();
@@ -57,6 +58,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#isTraceEnabled()
      */
+    @Override
     public boolean isTraceEnabled()
     {
         return _logger.isTraceEnabled();
@@ -66,6 +68,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#trace(java.lang.String)
      */
+    @Override
     public void trace(String msg)
     {
         log(null, TRACE, msg, null, null);
@@ -75,6 +78,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Object)
      */
+    @Override
     public void trace(String format, Object arg)
     {
         log(null, TRACE, format, new Object[]{arg}, null);
@@ -84,6 +88,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Object, java.lang.Object)
      */
+    @Override
     public void trace(String format, Object arg1, Object arg2)
     {
         log(null, TRACE, format, new Object[]{arg1,arg2}, null);
@@ -93,6 +98,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Object[])
      */
+    @Override
     public void trace(String format, Object[] argArray)
     {
         log(null, TRACE, format, argArray, null);
@@ -102,6 +108,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#trace(java.lang.String, java.lang.Throwable)
      */
+    @Override
     public void trace(String msg, Throwable t)
     {
         log(null, TRACE, msg, null, t);
@@ -111,6 +118,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#isTraceEnabled(org.slf4j.Marker)
      */
+    @Override
     public boolean isTraceEnabled(Marker marker)
     {
         return _logger.isTraceEnabled(marker);
@@ -120,6 +128,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String)
      */
+    @Override
     public void trace(Marker marker, String msg)
     {
         log(marker, TRACE, msg, null, null);
@@ -129,6 +138,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Object)
      */
+    @Override
     public void trace(Marker marker, String format, Object arg)
     {
         log(marker, TRACE, format, new Object[]{arg}, null);
@@ -138,6 +148,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Object, java.lang.Object)
      */
+    @Override
     public void trace(Marker marker, String format, Object arg1, Object arg2)
     {
         log(marker, TRACE, format, new Object[]{arg1,arg2}, null);
@@ -147,6 +158,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Object[])
      */
+    @Override
     public void trace(Marker marker, String format, Object[] argArray)
     {
         log(marker, TRACE, format, argArray, null);
@@ -156,6 +168,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#trace(org.slf4j.Marker, java.lang.String, java.lang.Throwable)
      */
+    @Override
     public void trace(Marker marker, String msg, Throwable t)
     {
         log(marker, TRACE, msg, null, t);
@@ -165,6 +178,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#isDebugEnabled()
      */
+    @Override
     public boolean isDebugEnabled()
     {
         return _logger.isDebugEnabled();
@@ -174,6 +188,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#debug(java.lang.String)
      */
+    @Override
     public void debug(String msg)
     {
         log(null, DEBUG, msg, null, null);
@@ -183,6 +198,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#debug(java.lang.String, java.lang.Object)
      */
+    @Override
     public void debug(String format, Object arg)
     {
         log(null, DEBUG, format, new Object[]{arg}, null);
@@ -192,6 +208,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#debug(java.lang.String, java.lang.Object, java.lang.Object)
      */
+    @Override
     public void debug(String format, Object arg1, Object arg2)
     {
         log(null, DEBUG, format, new Object[]{arg1,arg2}, null);
@@ -201,6 +218,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#debug(java.lang.String, java.lang.Object[])
      */
+    @Override
     public void debug(String format, Object[] argArray)
     {
         log(null, DEBUG, format, argArray, null);
@@ -210,6 +228,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#debug(java.lang.String, java.lang.Throwable)
      */
+    @Override
     public void debug(String msg, Throwable t)
     {
         log(null, DEBUG, msg, null, t);
@@ -219,6 +238,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#isDebugEnabled(org.slf4j.Marker)
      */
+    @Override
     public boolean isDebugEnabled(Marker marker)
     {
         return _logger.isDebugEnabled(marker);
@@ -228,6 +248,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#debug(org.slf4j.Marker, java.lang.String)
      */
+    @Override
     public void debug(Marker marker, String msg)
     {
         log(marker, DEBUG, msg, null, null);
@@ -237,6 +258,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#debug(org.slf4j.Marker, java.lang.String, java.lang.Object)
      */
+    @Override
     public void debug(Marker marker, String format, Object arg)
     {
         log(marker, DEBUG, format, new Object[]{arg}, null);
@@ -246,6 +268,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#debug(org.slf4j.Marker, java.lang.String, java.lang.Object, java.lang.Object)
      */
+    @Override
     public void debug(Marker marker, String format, Object arg1, Object arg2)
     {
         log(marker, DEBUG, format, new Object[]{arg1,arg2}, null);
@@ -255,6 +278,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#debug(org.slf4j.Marker, java.lang.String, java.lang.Object[])
      */
+    @Override
     public void debug(Marker marker, String format, Object[] argArray)
     {
         log(marker, DEBUG, format, argArray, null);
@@ -264,6 +288,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#debug(org.slf4j.Marker, java.lang.String, java.lang.Throwable)
      */
+    @Override
     public void debug(Marker marker, String msg, Throwable t)
     {
         log(marker, DEBUG, msg, null, t);
@@ -273,6 +298,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#isInfoEnabled()
      */
+    @Override
     public boolean isInfoEnabled()
     {
         return _logger.isInfoEnabled();
@@ -282,6 +308,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#info(java.lang.String)
      */
+    @Override
     public void info(String msg)
     {
         log(null, INFO, msg, null, null);
@@ -291,6 +318,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#info(java.lang.String, java.lang.Object)
      */
+    @Override
     public void info(String format, Object arg)
     {
         log(null, INFO, format, new Object[]{arg}, null);
@@ -300,6 +328,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#info(java.lang.String, java.lang.Object, java.lang.Object)
      */
+    @Override
     public void info(String format, Object arg1, Object arg2)
     {
         log(null, INFO, format, new Object[]{arg1,arg2}, null);
@@ -309,6 +338,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#info(java.lang.String, java.lang.Object[])
      */
+    @Override
     public void info(String format, Object[] argArray)
     {
         log(null, INFO, format, argArray, null);
@@ -318,6 +348,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#info(java.lang.String, java.lang.Throwable)
      */
+    @Override
     public void info(String msg, Throwable t)
     {
         log(null, INFO, msg, null, t);
@@ -327,6 +358,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#isInfoEnabled(org.slf4j.Marker)
      */
+    @Override
     public boolean isInfoEnabled(Marker marker)
     {
         return _logger.isInfoEnabled(marker);
@@ -336,6 +368,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#info(org.slf4j.Marker, java.lang.String)
      */
+    @Override
     public void info(Marker marker, String msg)
     {
         log(marker, INFO, msg, null, null);
@@ -345,6 +378,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#info(org.slf4j.Marker, java.lang.String, java.lang.Object)
      */
+    @Override
     public void info(Marker marker, String format, Object arg)
     {
         log(marker, INFO, format, new Object[]{arg}, null);
@@ -354,6 +388,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#info(org.slf4j.Marker, java.lang.String, java.lang.Object, java.lang.Object)
      */
+    @Override
     public void info(Marker marker, String format, Object arg1, Object arg2)
     {
         log(marker, INFO, format, new Object[]{arg1,arg2}, null);
@@ -363,6 +398,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#info(org.slf4j.Marker, java.lang.String, java.lang.Object[])
      */
+    @Override
     public void info(Marker marker, String format, Object[] argArray)
     {
         log(marker, INFO, format, argArray, null);
@@ -372,6 +408,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#info(org.slf4j.Marker, java.lang.String, java.lang.Throwable)
      */
+    @Override
     public void info(Marker marker, String msg, Throwable t)
     {
         log(marker, INFO, msg, null, t);
@@ -381,6 +418,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#isWarnEnabled()
      */
+    @Override
     public boolean isWarnEnabled()
     {
         return _logger.isWarnEnabled();
@@ -390,6 +428,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#warn(java.lang.String)
      */
+    @Override
     public void warn(String msg)
     {
         log(null, WARN, msg, null, null);
@@ -399,6 +438,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#warn(java.lang.String, java.lang.Object)
      */
+    @Override
     public void warn(String format, Object arg)
     {
         log(null, WARN, format, new Object[]{arg}, null);
@@ -408,6 +448,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#warn(java.lang.String, java.lang.Object[])
      */
+    @Override
     public void warn(String format, Object[] argArray)
     {
         log(null, WARN, format, argArray, null);
@@ -417,6 +458,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#warn(java.lang.String, java.lang.Object, java.lang.Object)
      */
+    @Override
     public void warn(String format, Object arg1, Object arg2)
     {
         log(null, WARN, format, new Object[]{arg1,arg2}, null);
@@ -426,6 +468,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#warn(java.lang.String, java.lang.Throwable)
      */
+    @Override
     public void warn(String msg, Throwable t)
     {
         log(null, WARN, msg, null, t);
@@ -435,6 +478,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#isWarnEnabled(org.slf4j.Marker)
      */
+    @Override
     public boolean isWarnEnabled(Marker marker)
     {
         return _logger.isWarnEnabled(marker);
@@ -444,6 +488,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#warn(org.slf4j.Marker, java.lang.String)
      */
+    @Override
     public void warn(Marker marker, String msg)
     {
         log(marker, WARN, msg, null, null);
@@ -453,6 +498,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#warn(org.slf4j.Marker, java.lang.String, java.lang.Object)
      */
+    @Override
     public void warn(Marker marker, String format, Object arg)
     {
         log(marker, WARN, format, new Object[]{arg}, null);
@@ -462,6 +508,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#warn(org.slf4j.Marker, java.lang.String, java.lang.Object, java.lang.Object)
      */
+    @Override
     public void warn(Marker marker, String format, Object arg1, Object arg2)
     {
         log(marker, WARN, format, new Object[]{arg1,arg2}, null);
@@ -471,6 +518,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#warn(org.slf4j.Marker, java.lang.String, java.lang.Object[])
      */
+    @Override
     public void warn(Marker marker, String format, Object[] argArray)
     {
         log(marker, WARN, format, argArray, null);
@@ -480,6 +528,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#warn(org.slf4j.Marker, java.lang.String, java.lang.Throwable)
      */
+    @Override
     public void warn(Marker marker, String msg, Throwable t)
     {
         log(marker, WARN, msg, null, t);
@@ -489,6 +538,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#isErrorEnabled()
      */
+    @Override
     public boolean isErrorEnabled()
     {
         return _logger.isErrorEnabled();
@@ -498,6 +548,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#error(java.lang.String)
      */
+    @Override
     public void error(String msg)
     {
         log(null, ERROR, msg, null, null);
@@ -507,6 +558,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#error(java.lang.String, java.lang.Object)
      */
+    @Override
     public void error(String format, Object arg)
     {
         log(null, ERROR, format, new Object[]{arg}, null);
@@ -516,6 +568,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#error(java.lang.String, java.lang.Object, java.lang.Object)
      */
+    @Override
     public void error(String format, Object arg1, Object arg2)
     {
         log(null, ERROR, format, new Object[]{arg1,arg2}, null);
@@ -525,6 +578,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#error(java.lang.String, java.lang.Object[])
      */
+    @Override
     public void error(String format, Object[] argArray)
     {
         log(null, ERROR, format, argArray, null);
@@ -534,6 +588,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#error(java.lang.String, java.lang.Throwable)
      */
+    @Override
     public void error(String msg, Throwable t)
     {
         log(null, ERROR, msg, null, t);
@@ -543,6 +598,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#isErrorEnabled(org.slf4j.Marker)
      */
+    @Override
     public boolean isErrorEnabled(Marker marker)
     {
         return _logger.isErrorEnabled(marker);
@@ -552,6 +608,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String)
      */
+    @Override
     public void error(Marker marker, String msg)
     {
         log(marker, ERROR, msg, null, null);
@@ -561,6 +618,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Object)
      */
+    @Override
     public void error(Marker marker, String format, Object arg)
     {
         log(marker, ERROR, format, new Object[]{arg}, null);
@@ -570,6 +628,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Object, java.lang.Object)
      */
+    @Override
     public void error(Marker marker, String format, Object arg1, Object arg2)
     {
         log(marker, ERROR, format, new Object[]{arg1,arg2}, null);
@@ -579,6 +638,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Object[])
      */
+    @Override
     public void error(Marker marker, String format, Object[] argArray)
     {
         log(marker, ERROR, format, argArray, null);
@@ -588,6 +648,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     /**
      * @see org.slf4j.Logger#error(org.slf4j.Marker, java.lang.String, java.lang.Throwable)
      */
+    @Override
     public void error(Marker marker, String msg, Throwable t)
     {
         log(marker, ERROR, msg, null, t);

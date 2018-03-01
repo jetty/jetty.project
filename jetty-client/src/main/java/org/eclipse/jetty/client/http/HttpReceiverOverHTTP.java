@@ -263,6 +263,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 process();
             }
 
+            @Override
             public void abort(Throwable x)
             {
                 failAndClose(x);

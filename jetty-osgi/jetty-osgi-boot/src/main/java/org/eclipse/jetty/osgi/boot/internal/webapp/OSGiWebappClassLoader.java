@@ -123,6 +123,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * @return The <code>Bundle</code> object associated with this
      *         <code>BundleReference</code>.
      */
+    @Override
     public Bundle getBundle()
     {
         return _contributor;

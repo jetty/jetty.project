@@ -706,6 +706,7 @@ public class HttpInputIntegrationTest
             }
         }
 
+        @Override
         public Socket newSocket(String host, int port) throws IOException
         {
             SSLSocket socket = __sslContextFactory.newSslSocket();

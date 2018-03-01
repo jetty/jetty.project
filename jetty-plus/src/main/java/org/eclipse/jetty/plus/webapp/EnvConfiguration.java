@@ -98,10 +98,12 @@ public class EnvConfiguration extends AbstractConfiguration
                 final List<Bound> bindings = new ArrayList<Bound>();
                 NamingContext.Listener listener = new NamingContext.Listener()
                 {
+                    @Override
                     public void unbind(NamingContext ctx, Binding binding)
                     {
                     }
 
+                    @Override
                     public Binding bind(NamingContext ctx, Binding binding)
                     {
                         bindings.add(new Bound(ctx,binding.getName()));

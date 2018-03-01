@@ -225,6 +225,7 @@ public class FilterHolder extends Holder<Filter>
     /* ------------------------------------------------------------ */
     protected class Registration extends HolderRegistration implements FilterRegistration.Dynamic
     {
+        @Override
         public void addMappingForServletNames(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames)
         {
             illegalStateIfContextStarted();
@@ -238,6 +239,7 @@ public class FilterHolder extends Holder<Filter>
                 _servletHandler.prependFilterMapping(mapping);
         }
 
+        @Override
         public void addMappingForUrlPatterns(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... urlPatterns)
         {
             illegalStateIfContextStarted();
@@ -251,6 +253,7 @@ public class FilterHolder extends Holder<Filter>
                 _servletHandler.prependFilterMapping(mapping);
         }
 
+        @Override
         public Collection<String> getServletNameMappings()
         {
             FilterMapping[] mappings =_servletHandler.getFilterMappings();
@@ -266,6 +269,7 @@ public class FilterHolder extends Holder<Filter>
             return names;
         }
 
+        @Override
         public Collection<String> getUrlPatternMappings()
         {
             FilterMapping[] mappings =_servletHandler.getFilterMappings();
@@ -287,6 +291,7 @@ public class FilterHolder extends Holder<Filter>
     class Config extends HolderConfig implements FilterConfig
     {
         /* ------------------------------------------------------------ */
+        @Override
         public String getFilterName()
         {
             return _name;

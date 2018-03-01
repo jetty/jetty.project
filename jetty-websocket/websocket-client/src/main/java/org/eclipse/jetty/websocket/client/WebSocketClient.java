@@ -426,6 +426,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return httpClient.getBindAddress();
     }
 
+    @Override
     public ByteBufferPool getBufferPool()
     {
         return httpClient.getByteBufferPool();
@@ -452,6 +453,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return eventDriverFactory;
     }
 
+    @Override
     public Executor getExecutor()
     {
         return httpClient.getExecutor();
@@ -522,6 +524,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return getPolicy().getMaxTextMessageSize();
     }
 
+    @Override
     public DecoratedObjectFactory getObjectFactory()
     {
         return this.containerScope.getObjectFactory();
@@ -532,6 +535,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return Collections.unmodifiableSet(new HashSet<>(getBeans(WebSocketSession.class)));
     }
 
+    @Override
     public WebSocketPolicy getPolicy()
     {
         return this.containerScope.getPolicy();
@@ -551,6 +555,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @return the {@link SslContextFactory} that manages TLS encryption
      * @see #WebSocketClient(SslContextFactory)
      */
+    @Override
     public SslContextFactory getSslContextFactory()
     {
         return httpClient.getSslContextFactory();

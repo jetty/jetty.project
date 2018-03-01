@@ -36,6 +36,7 @@ public class ConsoleScanner extends Thread
         setDaemon(true);
     }
     
+    @Override
     public void run() 
     {  
         try 

@@ -582,6 +582,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         }
     }
 
+    @Override
     public WebSocketRemoteEndpoint newRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoingFrames, BatchMode batchMode)
     {
         return new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());

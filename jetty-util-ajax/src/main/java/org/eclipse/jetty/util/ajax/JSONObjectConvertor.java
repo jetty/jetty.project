@@ -58,6 +58,7 @@ public class JSONObjectConvertor implements JSON.Convertor
             _excluded=new HashSet(Arrays.asList(excluded));
     }
 
+    @Override
     public Object fromJSON(Map map)
     {
         if (_fromJSON)
@@ -65,6 +66,7 @@ public class JSONObjectConvertor implements JSON.Convertor
         return map;
     }
 
+    @Override
     public void toJSON(Object obj, Output out)
     {
         try

@@ -62,6 +62,7 @@ public class WarURLConnection extends URLConnection
         PipedInputStream pIn = new PipedInputStream(pOut);
         Runnable run = new Runnable()
         {
+            @Override
             public void run()
             {
                 JarInputStream jin = null;
@@ -124,196 +125,235 @@ public class WarURLConnection extends URLConnection
     }
     
 
+    @Override
     public InputStream getInputStream() throws IOException
     {
         return substitueManifest(_mf, _conn.getInputStream());
     }
 
+    @Override
     public void addRequestProperty(String key, String value)
     {
         _conn.addRequestProperty(key,value);
     }
 
+    @Override
     public boolean equals(Object obj)
     {
         return _conn.equals(obj);
     }
 
+    @Override
     public boolean getAllowUserInteraction()
     {
         return _conn.getAllowUserInteraction();
     }
 
+    @Override
     public int getConnectTimeout()
     {
         return _conn.getConnectTimeout();
     }
 
+    @Override
     public Object getContent() throws IOException
     {
         return _conn.getContent();
     }
 
+    @Override
     public Object getContent(Class[] classes) throws IOException
     {
         return _conn.getContent(classes);
     }
 
+    @Override
     public String getContentEncoding()
     {
         return _conn.getContentEncoding();
     }
 
+    @Override
     public int getContentLength()
     {
         return _conn.getContentLength();
     }
 
+    @Override
     public String getContentType()
     {
         return _conn.getContentType();
     }
 
+    @Override
     public long getDate()
     {
         return _conn.getDate();
     }
 
+    @Override
     public boolean getDefaultUseCaches()
     {
         return _conn.getDefaultUseCaches();
     }
 
+    @Override
     public boolean getDoInput()
     {
         return _conn.getDoInput();
     }
 
+    @Override
     public boolean getDoOutput()
     {
         return _conn.getDoOutput();
     }
 
+    @Override
     public long getExpiration()
     {
         return _conn.getExpiration();
     }
 
+    @Override
     public String getHeaderField(int n)
     {
         return _conn.getHeaderField(n);
     }
 
+    @Override
     public String getHeaderField(String name)
     {
         return _conn.getHeaderField(name);
     }
 
+    @Override
     public long getHeaderFieldDate(String name, long Default)
     {
         return _conn.getHeaderFieldDate(name,Default);
     }
 
+    @Override
     public int getHeaderFieldInt(String name, int Default)
     {
         return _conn.getHeaderFieldInt(name,Default);
     }
 
+    @Override
     public String getHeaderFieldKey(int n)
     {
         return _conn.getHeaderFieldKey(n);
     }
 
+    @Override
     public Map<String, List<String>> getHeaderFields()
     {
         return _conn.getHeaderFields();
     }
 
+    @Override
     public long getIfModifiedSince()
     {
         return _conn.getIfModifiedSince();
     }
 
+    @Override
     public long getLastModified()
     {
         return _conn.getLastModified();
     }
 
+    @Override
     public OutputStream getOutputStream() throws IOException
     {
         return _conn.getOutputStream();
     }
 
+    @Override
     public Permission getPermission() throws IOException
     {
         return _conn.getPermission();
     }
 
+    @Override
     public int getReadTimeout()
     {
         return _conn.getReadTimeout();
     }
 
+    @Override
     public Map<String, List<String>> getRequestProperties()
     {
         return _conn.getRequestProperties();
     }
 
+    @Override
     public String getRequestProperty(String key)
     {
         return _conn.getRequestProperty(key);
     }
 
+    @Override
     public URL getURL()
     {
         return _conn.getURL();
     }
 
+    @Override
     public boolean getUseCaches()
     {
         return _conn.getUseCaches();
     }
 
+    @Override
     public void setAllowUserInteraction(boolean allowuserinteraction)
     {
         _conn.setAllowUserInteraction(allowuserinteraction);
     }
 
+    @Override
     public void setConnectTimeout(int timeout)
     {
         _conn.setConnectTimeout(timeout);
     }
 
+    @Override
     public void setDefaultUseCaches(boolean defaultusecaches)
     {
         _conn.setDefaultUseCaches(defaultusecaches);
     }
 
+    @Override
     public void setDoInput(boolean doinput)
     {
         _conn.setDoInput(doinput);
     }
 
+    @Override
     public void setDoOutput(boolean dooutput)
     {
         _conn.setDoOutput(dooutput);
     }
 
+    @Override
     public void setIfModifiedSince(long ifmodifiedsince)
     {
         _conn.setIfModifiedSince(ifmodifiedsince);
     }
 
+    @Override
     public void setReadTimeout(int timeout)
     {
         _conn.setReadTimeout(timeout);
     }
 
+    @Override
     public void setRequestProperty(String key, String value)
     {
         _conn.setRequestProperty(key,value);
     }
 
+    @Override
     public void setUseCaches(boolean usecaches)
     {
         _conn.setUseCaches(usecaches);

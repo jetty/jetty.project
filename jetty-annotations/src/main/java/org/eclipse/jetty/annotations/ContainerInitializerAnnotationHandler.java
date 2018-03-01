@@ -49,6 +49,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
      * 
      * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.annotations.AnnotationParser.ClassInfo, String)
      */
+    @Override
     public void handle(ClassInfo info, String annotationName)
     {
         if (annotationName == null || !_annotation.getName().equals(annotationName))
@@ -62,6 +63,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
      * 
      * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.annotations.AnnotationParser.FieldInfo, String)
      */
+    @Override
     public void handle(FieldInfo info, String annotationName)
     {        
         if (annotationName == null || !_annotation.getName().equals(annotationName))
@@ -74,6 +76,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
      * 
      * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.annotations.AnnotationParser.MethodInfo, String)
      */
+    @Override
     public void handle(MethodInfo info, String annotationName)
     {
         if (annotationName == null || !_annotation.getName().equals(annotationName))

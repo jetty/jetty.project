@@ -1061,6 +1061,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             _error = error;
         }
 
+        @Override
         public Throwable getError()
         {
             return _error;
@@ -1126,6 +1127,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             return "EARLY_EOF";
         }
         
+        @Override
         public IOException getError()
         {
             return new EofException("Early EOF");

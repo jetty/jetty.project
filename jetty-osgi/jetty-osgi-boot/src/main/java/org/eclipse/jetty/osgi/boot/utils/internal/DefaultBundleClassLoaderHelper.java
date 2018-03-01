@@ -135,6 +135,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
      * @param bundle the bundle
      * @return classloader object
      */
+    @Override
     public ClassLoader getBundleClassLoader(Bundle bundle)
     {
         String bundleActivator = (String) bundle.getHeaders().get("Bundle-Activator");

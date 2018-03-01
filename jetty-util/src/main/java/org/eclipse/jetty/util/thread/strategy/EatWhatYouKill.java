@@ -417,6 +417,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         _picMode.reset();
     }
 
+    @Override
     public String toString()
     {
         synchronized(this)

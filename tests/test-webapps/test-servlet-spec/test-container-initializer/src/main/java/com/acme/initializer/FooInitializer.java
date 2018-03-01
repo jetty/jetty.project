@@ -92,6 +92,7 @@ public class FooInitializer implements ServletContainerInitializer
         }
         
     }
+    @Override
     public void onStartup(Set<Class<?>> classes, ServletContext context)
     {
         context.setAttribute("com.acme.Foo", new ArrayList<Class>(classes));

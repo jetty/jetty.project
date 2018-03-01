@@ -53,6 +53,7 @@ public class ServletCallbackHandler implements CallbackHandler
         _loginService = loginService;
     }
 
+    @Override
     public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
     {
         for (Callback callback : callbacks)

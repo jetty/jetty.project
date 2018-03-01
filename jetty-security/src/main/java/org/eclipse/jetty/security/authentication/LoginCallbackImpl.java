@@ -53,51 +53,61 @@ public class LoginCallbackImpl implements LoginCallback
         this.credential = credential;
     }
 
+    @Override
     public Subject getSubject()
     {
         return subject;
     }
 
+    @Override
     public String getUserName()
     {
         return userName;
     }
 
+    @Override
     public Object getCredential()
     {
         return credential;
     }
 
+    @Override
     public boolean isSuccess()
     {
         return success;
     }
 
+    @Override
     public void setSuccess(boolean success)
     {
         this.success = success;
     }
 
+    @Override
     public Principal getUserPrincipal()
     {
         return userPrincipal;
     }
 
+    @Override
     public void setUserPrincipal(Principal userPrincipal)
     {
         this.userPrincipal = userPrincipal;
     }
 
+    @Override
     public String[] getRoles()
     {
         return roles;
     }
 
+    @Override
     public void setRoles(String[] groups)
     {
         this.roles = groups;
     }
 
+    @Override
     public void clearPassword()
     {
         if (credential != null)

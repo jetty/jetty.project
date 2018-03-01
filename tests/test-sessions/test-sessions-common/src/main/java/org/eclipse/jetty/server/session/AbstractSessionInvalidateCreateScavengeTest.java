@@ -59,11 +59,13 @@ public abstract class AbstractSessionInvalidateCreateScavengeTest extends Abstra
     {
         List<Integer> destroys = new ArrayList<>();
 
+        @Override
         public void sessionCreated(HttpSessionEvent e)
         {
 
         }
 
+        @Override
         public void sessionDestroyed(HttpSessionEvent e)
         {
             destroys.add(e.getSession().hashCode());
@@ -161,11 +163,13 @@ public abstract class AbstractSessionInvalidateCreateScavengeTest extends Abstra
     {
         private boolean unbound = false;
         
+        @Override
         public void valueUnbound(HttpSessionBindingEvent event)
         {
             unbound = true;
         }
 
+        @Override
         public void valueBound(HttpSessionBindingEvent event)
         {
 

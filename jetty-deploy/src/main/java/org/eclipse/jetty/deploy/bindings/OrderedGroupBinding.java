@@ -63,11 +63,13 @@ public class OrderedGroupBinding implements AppLifeCycle.Binding
         }
     }
      
+    @Override
     public String[] getBindingTargets()
     {
         return _bindingTargets;
     }
 
+    @Override
     public void processBinding(Node node, App app) throws Exception
     {
         for ( AppLifeCycle.Binding binding : _orderedBindings )

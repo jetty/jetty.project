@@ -83,16 +83,19 @@ public class JaspiAuthenticator extends LoginAuthenticator
         this._identityService = identityService;
     }
 
+    @Override
     public void setConfiguration(AuthConfiguration configuration)
     {
         super.setConfiguration(configuration);
     }
 
+    @Override
     public String getAuthMethod()
     {
         return "JASPI";
     }
 
+    @Override
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
     {
         JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
@@ -107,6 +110,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     // most likely validatedUser is not needed here.
+    @Override
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         JaspiMessageInfo info = (JaspiMessageInfo) req.getAttribute("org.eclipse.jetty.security.jaspi.info");

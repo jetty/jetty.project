@@ -155,6 +155,7 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
      * 
      * @param context the webapp
      */
+    @Override
     public boolean serviceAdded (ServiceReference serviceRef, ContextHandler context)
     {   
         if (context == null || !(context instanceof WebAppContext))
@@ -238,6 +239,7 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
     /**
      * @param context the webapp
      */
+    @Override
     public boolean serviceRemoved (ServiceReference serviceRef, ContextHandler context)
     {
         if (context == null || !(context instanceof WebAppContext))
@@ -261,6 +263,7 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         BundleContext bundleContext = FrameworkUtil.getBundle(this.getClass()).getBundleContext();

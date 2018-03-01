@@ -47,6 +47,7 @@ public class OSGiUndeployer extends StandardUndeployer
     
     
     /* ------------------------------------------------------------ */
+    @Override
     public void processBinding(Node node, App app) throws Exception
     {
         EventSender.getInstance().send(EventSender.UNDEPLOYING_EVENT, ((AbstractOSGiApp)app).getBundle(), app.getContextPath());

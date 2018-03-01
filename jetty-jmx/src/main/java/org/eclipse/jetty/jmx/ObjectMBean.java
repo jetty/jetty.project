@@ -257,6 +257,7 @@ public class ObjectMBean implements DynamicMBean
         return this._mbeanContainer;
     }
 
+    @Override
     public MBeanInfo getMBeanInfo()
     {
         try
@@ -348,6 +349,7 @@ public class ObjectMBean implements DynamicMBean
         return _info;
     }
 
+    @Override
     public Object getAttribute(String name) throws AttributeNotFoundException, ReflectionException
     {
         Method getter = _getters.get(name);
@@ -429,6 +431,7 @@ public class ObjectMBean implements DynamicMBean
         }
     }
 
+    @Override
     public AttributeList getAttributes(String[] names)
     {
         AttributeList results = new AttributeList(names.length);
@@ -446,6 +449,7 @@ public class ObjectMBean implements DynamicMBean
         return results;
     }
 
+    @Override
     public void setAttribute(Attribute attr) throws AttributeNotFoundException, ReflectionException
     {
         if (attr == null)
@@ -496,6 +500,7 @@ public class ObjectMBean implements DynamicMBean
         }
     }
 
+    @Override
     public AttributeList setAttributes(AttributeList attrs)
     {
         if (LOG.isDebugEnabled())
@@ -518,6 +523,7 @@ public class ObjectMBean implements DynamicMBean
         return results;
     }
 
+    @Override
     public Object invoke(String name, Object[] params, String[] signature) throws MBeanException, ReflectionException
     {
         if (LOG.isDebugEnabled())

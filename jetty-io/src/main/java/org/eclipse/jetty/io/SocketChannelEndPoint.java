@@ -55,11 +55,13 @@ public class SocketChannelEndPoint extends ChannelEndPoint
         return _socket;
     }
 
+    @Override
     public InetSocketAddress getLocalAddress()
     {
         return _local;
     }
 
+    @Override
     public InetSocketAddress getRemoteAddress()
     {
         return _remote;

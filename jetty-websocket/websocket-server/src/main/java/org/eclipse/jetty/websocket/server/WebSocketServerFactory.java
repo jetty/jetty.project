@@ -342,6 +342,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return this.executor;
     }
     
+    @Override
     public DecoratedObjectFactory getObjectFactory()
     {
         return objectFactory;

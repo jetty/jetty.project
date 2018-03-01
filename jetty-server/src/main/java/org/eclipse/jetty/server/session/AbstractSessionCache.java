@@ -105,6 +105,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param data the session data
      * @return a new Session object
      */
+    @Override
     public abstract Session newSession (SessionData data);
     
     
@@ -188,6 +189,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /**
      * @return the SessionManger
      */
+    @Override
     public SessionHandler getSessionHandler()
     {
         return _handler;
@@ -197,6 +199,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /** 
      * @see org.eclipse.jetty.server.session.SessionCache#initialize(org.eclipse.jetty.server.session.SessionContext)
      */
+    @Override
     public void initialize (SessionContext context)
     {
         if (isStarted())
@@ -236,6 +239,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /**
      * @return the SessionDataStore or null if there isn't one
      */
+    @Override
     public SessionDataStore getSessionDataStore()
     {
         return _sessionDataStore;
@@ -244,6 +248,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /** 
      * @see org.eclipse.jetty.server.session.SessionCache#setSessionDataStore(org.eclipse.jetty.server.session.SessionDataStore)
      */
+    @Override
     public void setSessionDataStore(SessionDataStore sessionStore)
     {
         updateBean(_sessionDataStore, sessionStore);
@@ -259,6 +264,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @see org.eclipse.jetty.server.session.SessionCache#getEvictionPolicy()
      */
     @ManagedAttribute(value="session eviction policy", readonly=true)
+    @Override
     public int getEvictionPolicy()
     {
         return _evictionPolicy;
@@ -272,6 +278,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * 
      * @see org.eclipse.jetty.server.session.SessionCache#setEvictionPolicy(int)
      */
+    @Override
     public void setEvictionPolicy(int evictionTimeout)
     {
         _evictionPolicy = evictionTimeout;
@@ -689,6 +696,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * 
      * @param session session to check
      */
+    @Override
     public void checkInactiveSession (Session session)
     {
         if (session == null)
@@ -735,6 +743,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /** 
      * @see org.eclipse.jetty.server.session.SessionCache#renewSessionId(java.lang.String, java.lang.String)
      */
+    @Override
     public Session renewSessionId (String oldId, String newId)
     throws Exception
     {

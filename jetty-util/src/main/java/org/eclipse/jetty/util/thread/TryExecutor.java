@@ -33,6 +33,7 @@ public interface TryExecutor extends Executor
      */
     boolean tryExecute(Runnable task);
     
+    @Override
     default void execute(Runnable task)
     {
         if (!tryExecute(task))

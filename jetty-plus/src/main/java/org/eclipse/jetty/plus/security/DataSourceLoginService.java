@@ -285,6 +285,7 @@ public class DataSourceLoginService extends AbstractLoginService
   
     
     /* ------------------------------------------------------------ */
+    @Override
     public UserPrincipal loadUserInfo (String username)
     {
         try
@@ -318,6 +319,7 @@ public class DataSourceLoginService extends AbstractLoginService
     
     
     /* ------------------------------------------------------------ */
+    @Override
     public String[] loadRoleInfo (UserPrincipal user)
     {
         DBUserPrincipal dbuser = (DBUserPrincipal)user;

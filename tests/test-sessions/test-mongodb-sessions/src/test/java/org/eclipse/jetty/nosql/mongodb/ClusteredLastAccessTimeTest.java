@@ -54,6 +54,7 @@ public class ClusteredLastAccessTimeTest extends AbstractClusteredLastAccessTime
     
     
     @Test
+    @Override
     public void testLastAccessTime() throws Exception
     {
         super.testLastAccessTime();

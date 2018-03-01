@@ -49,67 +49,80 @@ public class Slf4jLog extends AbstractLogger
         }
     }
 
+    @Override
     public String getName()
     {
         return _logger.getName();
     }
 
+    @Override
     public void warn(String msg, Object... args)
     {
         _logger.warn(msg, args);
     }
 
+    @Override
     public void warn(Throwable thrown)
     {
         warn("", thrown);
     }
 
+    @Override
     public void warn(String msg, Throwable thrown)
     {
         _logger.warn(msg, thrown);
     }
 
+    @Override
     public void info(String msg, Object... args)
     {
         _logger.info(msg, args);
     }
 
+    @Override
     public void info(Throwable thrown)
     {
         info("", thrown);
     }
 
+    @Override
     public void info(String msg, Throwable thrown)
     {
         _logger.info(msg, thrown);
     }
 
+    @Override
     public void debug(String msg, Object... args)
     {
         _logger.debug(msg, args);
     }
     
+    @Override
     public void debug(String msg, long arg)
     {
         if (isDebugEnabled())
             _logger.debug(msg, new Object[]{new Long(arg)});
     }
 
+    @Override
     public void debug(Throwable thrown)
     {
         debug("", thrown);
     }
 
+    @Override
     public void debug(String msg, Throwable thrown)
     {
         _logger.debug(msg, thrown);
     }
 
+    @Override
     public boolean isDebugEnabled()
     {
         return _logger.isDebugEnabled();
     }
 
+    @Override
     public void setDebugEnabled(boolean enabled)
     {
         warn("setDebugEnabled not implemented",null,null);
@@ -118,11 +131,13 @@ public class Slf4jLog extends AbstractLogger
     /**
      * Create a Child Logger of this Logger.
      */
+    @Override
     protected Logger newLogger(String fullname)
     {
         return new Slf4jLog(fullname);
     }
 
+    @Override
     public void ignore(Throwable ignored)
     {
         if (Log.isIgnored())

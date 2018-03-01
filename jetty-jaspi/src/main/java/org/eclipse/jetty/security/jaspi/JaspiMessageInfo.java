@@ -46,26 +46,31 @@ public class JaspiMessageInfo implements MessageInfo
         map = new MIMap(isAuthMandatory);
     }
 
+    @Override
     public Map getMap()
     {
         return map;
     }
 
+    @Override
     public Object getRequestMessage()
     {
         return request;
     }
 
+    @Override
     public Object getResponseMessage()
     {
         return response;
     }
 
+    @Override
     public void setRequestMessage(Object request)
     {
         this.request = (ServletRequest)request;
     }
 
+    @Override
     public void setResponseMessage(Object response)
     {
         this.response = (ServletResponse)response;
@@ -93,6 +98,7 @@ public class JaspiMessageInfo implements MessageInfo
             isMandatory = mandatory;
         }
 
+        @Override
         public int size()
         {
             return (isMandatory? 1:0) +
@@ -100,11 +106,13 @@ public class JaspiMessageInfo implements MessageInfo
                     (delegate == null? 0: delegate.size());
         }
 
+        @Override
         public boolean isEmpty()
         {
             return !isMandatory && authMethod == null && (delegate == null || delegate.isEmpty());
         }
 
+        @Override
         public boolean containsKey(Object key)
         {
             if (MANDATORY_KEY.equals(key)) return isMandatory;
@@ -112,6 +120,7 @@ public class JaspiMessageInfo implements MessageInfo
             return delegate != null && delegate.containsKey(key);
         }
 
+        @Override
         public boolean containsValue(Object value)
         {
             if (isMandatory && "true".equals(value)) return true;
@@ -119,6 +128,7 @@ public class JaspiMessageInfo implements MessageInfo
             return delegate != null && delegate.containsValue(value);
         }
 
+        @Override
         public Object get(Object key)
         {
             if (MANDATORY_KEY.equals(key)) return isMandatory? "true": null;
@@ -127,6 +137,7 @@ public class JaspiMessageInfo implements MessageInfo
             return delegate.get(key);
         }
 
+        @Override
         public Object put(Object key, Object value)
         {
             if (MANDATORY_KEY.equals(key))
@@ -144,6 +155,7 @@ public class JaspiMessageInfo implements MessageInfo
             return getDelegate(true).put(key, value);
         }
 
+        @Override
         public Object remove(Object key)
         {
             if (MANDATORY_KEY.equals(key))
@@ -161,6 +173,7 @@ public class JaspiMessageInfo implements MessageInfo
             return delegate.remove(key);
         }
 
+        @Override
         public void putAll(Map map)
         {
             if (map != null)
@@ -173,22 +186,26 @@ public class JaspiMessageInfo implements MessageInfo
             }
         }
 
+        @Override
         public void clear()
         {
             authMethod = null;
             delegate = null;
         }
 
+        @Override
         public Set keySet()
         {
             return getDelegate(true).keySet();
         }
 
+        @Override
         public Collection values()
         {
             return getDelegate(true).values();
         }
 
+        @Override
         public Set entrySet()
         {
             return getDelegate(true).entrySet();

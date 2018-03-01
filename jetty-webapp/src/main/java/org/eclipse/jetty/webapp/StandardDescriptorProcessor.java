@@ -112,6 +112,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     /**
      * {@inheritDoc}
      */
+    @Override
     public void start(WebAppContext context, Descriptor descriptor)
     {
         for (FilterHolder h : context.getServletHandler().getFilters())
@@ -134,6 +135,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     /**
      * {@inheritDoc}
      */
+    @Override
     public void end(WebAppContext context, Descriptor descriptor)
     {
         context.getServletHandler().setFilters(_filterHolders.toArray(new FilterHolder[_filterHolderMap.size()]));

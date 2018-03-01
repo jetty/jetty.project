@@ -48,6 +48,7 @@ public class javaURLContextFactory implements ObjectFactory
      * @return a new context or the resolved object for the url
      * @exception Exception if an error occurs
      */
+    @Override
     public Object getObjectInstance(Object url, Name name, Context ctx, Hashtable env)
         throws Exception
     {

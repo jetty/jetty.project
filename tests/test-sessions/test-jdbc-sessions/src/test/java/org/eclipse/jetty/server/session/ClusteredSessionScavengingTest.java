@@ -26,6 +26,7 @@ import org.junit.Test;
  */
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
+    @Override
     public void pause (int scavenge)
     {
         //Wait a little longer for the scavenging to happen with the JDBCSession handling.
@@ -53,6 +54,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     }
 
     @Test
+    @Override
     public void testNoScavenging() throws Exception
     {
         super.testNoScavenging();
@@ -60,6 +62,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     
     
     @Test
+    @Override
     public void testLocalSessionsScavenging() throws Exception
     {
         super.testLocalSessionsScavenging();

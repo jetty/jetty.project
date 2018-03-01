@@ -69,6 +69,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     }
 
     @Before
+    @Override
     public void before()
     {
         super.before();

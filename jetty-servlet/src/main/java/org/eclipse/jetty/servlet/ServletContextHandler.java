@@ -686,6 +686,7 @@ public class ServletContextHandler extends ContextHandler
      * Insert a HandlerWrapper before the first Session,Security or ServletHandler
      * but after any other HandlerWrappers.
      */
+    @Override
     public void insertHandler(HandlerWrapper handler)
     {
         if (handler instanceof SessionHandler)
@@ -805,6 +806,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getUrlPatterns()
          */
+        @Override
         public Collection<String> getUrlPatterns()
         {
             return new ArrayList<String>(_urlPatterns); // spec says must be a copy
@@ -819,6 +821,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getElIgnored()
          */
+        @Override
         public String getElIgnored()
         {
             return _elIgnored;
@@ -832,6 +835,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getPageEncoding()
          */
+        @Override
         public String getPageEncoding()
         {
             return _pageEncoding;
@@ -880,6 +884,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getScriptingInvalid()
          */
+        @Override
         public String getScriptingInvalid()
         {
             return _scriptingInvalid;
@@ -888,6 +893,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIsXml()
          */
+        @Override
         public String getIsXml()
         {
             return _isXml;
@@ -896,6 +902,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIncludePreludes()
          */
+        @Override
         public Collection<String> getIncludePreludes()
         {
             return new ArrayList<String>(_includePreludes); //must be a copy
@@ -910,6 +917,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIncludeCodas()
          */
+        @Override
         public Collection<String> getIncludeCodas()
         {
             return new ArrayList<String>(_includeCodas); //must be a copy
@@ -924,6 +932,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getDeferredSyntaxAllowedAsLiteral()
          */
+        @Override
         public String getDeferredSyntaxAllowedAsLiteral()
         {
             return _deferredSyntaxAllowedAsLiteral;
@@ -932,6 +941,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getTrimDirectiveWhitespaces()
          */
+        @Override
         public String getTrimDirectiveWhitespaces()
         {
             return _trimDirectiveWhitespaces;
@@ -940,6 +950,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getDefaultContentType()
          */
+        @Override
         public String getDefaultContentType()
         {
             return _defaultContentType;
@@ -948,6 +959,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getBuffer()
          */
+        @Override
         public String getBuffer()
         {
             return _buffer;
@@ -956,11 +968,13 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getErrorOnUndeclaredNamespace()
          */
+        @Override
         public String getErrorOnUndeclaredNamespace()
         {
             return _errorOnUndeclaredNamespace;
         }
 
+        @Override
         public String toString ()
         {
             StringBuffer sb = new StringBuffer();
@@ -991,6 +1005,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.TaglibDescriptor#getTaglibURI()
          */
+        @Override
         public String getTaglibURI()
         {
            return _uri;
@@ -1004,6 +1019,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.TaglibDescriptor#getTaglibLocation()
          */
+        @Override
         public String getTaglibLocation()
         {
             return _location;
@@ -1014,6 +1030,7 @@ public class ServletContextHandler extends ContextHandler
             _location = location;
         }
 
+        @Override
         public String toString()
         {
             return ("TagLibDescriptor: taglib-uri="+_uri+" location="+_location);
@@ -1032,6 +1049,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspConfigDescriptor#getTaglibs()
          */
+        @Override
         public Collection<TaglibDescriptor> getTaglibs()
         {
             return new ArrayList<TaglibDescriptor>(_taglibs);
@@ -1045,6 +1063,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.descriptor.JspConfigDescriptor#getJspPropertyGroups()
          */
+        @Override
         public Collection<JspPropertyGroupDescriptor> getJspPropertyGroups()
         {
            return new ArrayList<JspPropertyGroupDescriptor>(_jspPropertyGroups);
@@ -1055,6 +1074,7 @@ public class ServletContextHandler extends ContextHandler
             _jspPropertyGroups.add(g);
         }
 
+        @Override
         public String toString()
         {
             StringBuffer sb = new StringBuffer();

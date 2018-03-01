@@ -119,6 +119,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         _webappTracker = new WebAppTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), getServerInstanceWrapper().getManagedServerName());
@@ -165,6 +166,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
      * A bundle has been added that could be a webapp 
      * @param bundle the bundle
      */
+    @Override
     public boolean bundleAdded (Bundle bundle) throws Exception
     {
         if (bundle == null)
@@ -250,6 +252,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
      * @param bundle the bundle
      * @return true if this was a webapp we had deployed, false otherwise
      */
+    @Override
     public boolean bundleRemoved (Bundle bundle) throws Exception
     {
         App app = _bundleMap.remove(bundle);

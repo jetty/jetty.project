@@ -139,6 +139,7 @@ public class AsyncIOServletTest extends AbstractTest
             throw callScope;
     }
 
+    @Override
     protected void stopServer() throws Exception
     {
         super.stopServer();

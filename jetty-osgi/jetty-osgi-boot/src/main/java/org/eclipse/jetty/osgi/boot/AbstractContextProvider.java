@@ -233,6 +233,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     /** 
      * @see org.eclipse.jetty.deploy.AppProvider#createContextHandler(org.eclipse.jetty.deploy.App)
      */
+    @Override
     public ContextHandler createContextHandler(App app) throws Exception
     {
         if (app == null)
@@ -246,6 +247,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
         _deploymentManager = deploymentManager;

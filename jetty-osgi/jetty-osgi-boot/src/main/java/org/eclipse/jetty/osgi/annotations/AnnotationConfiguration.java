@@ -54,6 +54,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
             super(parser, handlers, resource);
         }
 
+        @Override
         public Void call() throws Exception
         {
             if (_parser != null)

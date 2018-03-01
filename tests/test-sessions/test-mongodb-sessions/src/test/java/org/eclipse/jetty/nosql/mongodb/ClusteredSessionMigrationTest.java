@@ -53,6 +53,7 @@ public class ClusteredSessionMigrationTest extends AbstractClusteredSessionMigra
 
 
     @Test
+    @Override
     public void testSessionMigration() throws Exception
     {
         super.testSessionMigration();

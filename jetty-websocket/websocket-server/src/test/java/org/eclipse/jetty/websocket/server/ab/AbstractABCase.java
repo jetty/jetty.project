@@ -187,6 +187,7 @@ public abstract class AbstractABCase implements Fuzzed
         log.setHideStacks(!enabled);
     }
 
+    @Override
     public Generator getLaxGenerator()
     {
         return laxGenerator;

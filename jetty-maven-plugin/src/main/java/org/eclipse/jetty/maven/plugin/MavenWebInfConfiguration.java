@@ -46,6 +46,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     /** 
      * @see org.eclipse.jetty.webapp.WebInfConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
      */
+    @Override
     public void configure(WebAppContext context) throws Exception
     {
         JettyWebAppContext jwac = (JettyWebAppContext)context;
