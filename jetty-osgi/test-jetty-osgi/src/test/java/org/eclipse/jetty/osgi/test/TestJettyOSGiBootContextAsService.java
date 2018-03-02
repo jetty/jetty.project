@@ -63,7 +63,7 @@ public class TestJettyOSGiBootContextAsService
     @Configuration
     public static Option[] configure()
     {
-        ArrayList<Option> options = new ArrayList<Option>();
+        ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-context-as-service.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
@@ -74,6 +74,7 @@ public class TestJettyOSGiBootContextAsService
         options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-context").versionAsInProject().start());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
+        options.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( System.getProperty( "mavenRepoPath" ) ) );
         
         return options.toArray(new Option[options.size()]);
     }
