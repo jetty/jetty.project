@@ -25,6 +25,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -427,7 +428,7 @@ public class SslConnection extends AbstractConnection
         private boolean _fillRequiresFlushToProgress;
         private boolean _flushRequiresFillToProgress;
         private boolean _cannotAcceptMoreAppDataToFlush;
-        private boolean _handshaken;
+        private AtomicReference<Handshake> _handshake = new AtomicReference<>(Handshake.INITIAL);
         private boolean _underFlown;
 
         private final Callback _writeCallback = new WriteCallBack();
@@ -639,7 +640,7 @@ public class SslConnection extends AbstractConnection
                             // Let's try reading some encrypted data... even if we have some already.
                             int net_filled = getEndPoint().fill(_encryptedInput);
 
-                            if (net_filled > 0 && !_handshaken && _sslEngine.isOutboundDone())
+                            if (net_filled > 0 && _handshake.get() == Handshake.INITIAL && _sslEngine.isOutboundDone())
                                 throw new SSLHandshakeException("Closed during handshake");
 
                             decryption: while (true)
@@ -718,7 +719,7 @@ public class SslConnection extends AbstractConnection
                                     case OK:
                                     {
                                         if (unwrapHandshakeStatus == HandshakeStatus.FINISHED)
-                                            handshakeFinished();
+                                            handshakeSucceeded();
 
                                         // Check whether re-negotiation is allowed
                                         if (!allowRenegotiate(handshakeStatus))
@@ -791,24 +792,9 @@ public class SslConnection extends AbstractConnection
                             }
                         }
                     }
-                    catch (SSLHandshakeException x)
-                    {
-                        notifyHandshakeFailed(_sslEngine, x);
-                        failure = x;
-                        throw x;
-                    }
-                    catch (SSLException x)
-                    {
-                        if (!_handshaken)
-                        {
-                            x = (SSLException)new SSLHandshakeException(x.getMessage()).initCause(x);
-                            notifyHandshakeFailed(_sslEngine, x);
-                        }
-                        failure = x;
-                        throw x;
-                    }
                     catch (Throwable x)
                     {
+                        handshakeFailed(x);
                         failure = x;
                         throw x;
                     }
@@ -841,18 +827,10 @@ public class SslConnection extends AbstractConnection
             }
         }
 
-        private void handshakeFinished()
+        private void handshakeSucceeded()
         {
-            if (_handshaken)
+            if (_handshake.compareAndSet(Handshake.INITIAL, Handshake.SUCCEEDED))
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Renegotiated {}", SslConnection.this);
-                if (_renegotiationLimit>0)
-                    _renegotiationLimit--;
-            }
-            else
-            {
-                _handshaken = true;
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} handshake succeeded {}/{} {}",
                         _sslEngine.getUseClientMode() ? "client" : "resumed server",
@@ -860,11 +838,28 @@ public class SslConnection extends AbstractConnection
                             SslConnection.this);
                 notifyHandshakeSucceeded(_sslEngine);
             }
+            else if (_handshake.get() == Handshake.SUCCEEDED)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Renegotiated {}", SslConnection.this);
+                if (_renegotiationLimit>0)
+                    _renegotiationLimit--;
+            }
+        }
+
+        private void handshakeFailed(Throwable failure)
+        {
+            if (_handshake.compareAndSet(Handshake.INITIAL, Handshake.FAILED))
+            {
+                if (!(failure instanceof SSLHandshakeException))
+                    failure = new SSLHandshakeException(failure.getMessage()).initCause(failure);
+                notifyHandshakeFailed(_sslEngine, failure);
+            }
         }
 
         private boolean allowRenegotiate(HandshakeStatus handshakeStatus)
         {   
-            if (!_handshaken || handshakeStatus == HandshakeStatus.NOT_HANDSHAKING)
+            if (_handshake.get() == Handshake.INITIAL || handshakeStatus == HandshakeStatus.NOT_HANDSHAKING)
                 return true;
 
             if (!isRenegotiationAllowed())
@@ -1006,7 +1001,7 @@ public class SslConnection extends AbstractConnection
                                         LOG.debug("wrap {} {} {}", wrapResultStatus, BufferUtil.toHexSummary(_encryptedOutput), SslConnection.this);
 
                                     if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
-                                        handshakeFinished();
+                                        handshakeSucceeded();
 
                                     HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
 
@@ -1016,7 +1011,7 @@ public class SslConnection extends AbstractConnection
                                         getEndPoint().shutdownOutput();
                                         return allConsumed;
                                     }
-                                    
+
                                     // if we have net bytes, let's try to flush them
                                     if (BufferUtil.hasContent(_encryptedOutput))
                                         if (!getEndPoint().flush(_encryptedOutput))
@@ -1065,9 +1060,9 @@ public class SslConnection extends AbstractConnection
                             }
                         }
                     }
-                    catch (SSLHandshakeException x)
+                    catch (Throwable x)
                     {
-                        notifyHandshakeFailed(_sslEngine, x);
+                        handshakeFailed(x);
                         throw x;
                     }
                     finally
@@ -1235,5 +1230,12 @@ public class SslConnection extends AbstractConnection
                 return getWriteFlusher().getCallbackInvocationType();
             }
         }
+    }
+
+    private enum Handshake
+    {
+        INITIAL,
+        SUCCEEDED,
+        FAILED
     }
 }
