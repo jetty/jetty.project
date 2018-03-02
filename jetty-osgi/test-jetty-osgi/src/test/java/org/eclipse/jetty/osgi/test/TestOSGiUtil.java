@@ -98,7 +98,7 @@ public class TestOSGiUtil
     public static List<Option> coreJettyDependencies()
     {
         List<Option> res = new ArrayList<>();
-        
+        res.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( System.getProperty( "mavenRepoPath" ) ) );
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());

@@ -429,6 +429,9 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <skipTests>true</skipTests>
+          <systemPropertyVariables>
+            <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
       <plugin>
