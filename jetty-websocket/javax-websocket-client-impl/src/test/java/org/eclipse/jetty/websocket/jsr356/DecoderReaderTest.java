@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -28,6 +28,7 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ClientEndpoint;
@@ -40,7 +41,6 @@ import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -52,6 +52,7 @@ import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -126,7 +127,7 @@ public class DecoderReaderTest
     @ClientEndpoint(decoders = { QuotesDecoder.class })
     public static class QuotesSocket
     {
-        public EventQueue<Quotes> messageQueue = new EventQueue<>();
+        public LinkedBlockingQueue<Quotes> messageQueue = new LinkedBlockingQueue<>();
         private CountDownLatch closeLatch = new CountDownLatch(1);
 
         @OnClose
@@ -139,7 +140,7 @@ public class DecoderReaderTest
         public synchronized void onMessage(Quotes msg)
         {
             Integer h=hashCode();
-            messageQueue.add(msg);
+            messageQueue.offer(msg);
             System.out.printf("%x: Quotes from: %s%n",h,msg.author);
             for (String quote : msg.quotes)
             {
@@ -259,7 +260,7 @@ public class DecoderReaderTest
         server.stop();
     }
 
-    // TODO analyse and fix 
+    // TODO analyse and fix
     @Ignore
     @Test
     public void testSingleQuotes() throws Exception
@@ -270,15 +271,14 @@ public class DecoderReaderTest
         client.connectToServer(quoter,server.getWsUri());
         qserver.awaitConnect();
         qserver.writeQuotes("quotes-ben.txt");
-        quoter.messageQueue.awaitEventCount(1,1000,TimeUnit.MILLISECONDS);
         qserver.close();
         quoter.awaitClose();
-        Quotes quotes = quoter.messageQueue.poll();
+        Quotes quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
         Assert.assertThat("Quotes Author",quotes.author,is("Benjamin Franklin"));
         Assert.assertThat("Quotes Count",quotes.quotes.size(),is(3));
     }
 
-    // TODO analyse and fix 
+    // TODO analyse and fix
     @Test
     @Ignore ("Quotes appear to be able to arrive in any order?")
     public void testTwoQuotes() throws Exception
@@ -290,11 +290,12 @@ public class DecoderReaderTest
         qserver.awaitConnect();
         qserver.writeQuotes("quotes-ben.txt");
         qserver.writeQuotes("quotes-twain.txt");
-        quoter.messageQueue.awaitEventCount(2,1000,TimeUnit.MILLISECONDS);
         qserver.close();
         quoter.awaitClose();
-        Quotes quotes = quoter.messageQueue.poll();
+        Quotes quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
         Assert.assertThat("Quotes Author",quotes.author,is("Benjamin Franklin"));
         Assert.assertThat("Quotes Count",quotes.quotes.size(),is(3));
+        quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+        Assert.assertThat("Quotes Author",quotes.author,is("Mark Twain"));
     }
 }

@@ -25,10 +25,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -43,6 +43,7 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -272,21 +273,21 @@ public class ManyConnectionsCleanupTest
             client.write(new TextFrame().setPayload("calls"));
             client.write(new TextFrame().setPayload("openSessions"));
 
-            EventQueue<WebSocketFrame> frames = client.readFrames(3,6,TimeUnit.SECONDS);
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
             WebSocketFrame frame;
             String resp;
             
-            frame = frames.poll();
+            frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.TEXT));
             resp = frame.getPayloadAsUTF8();
             assertThat("Should only have 1 open session",resp,containsString("calls=" + ((iterationCount * 2) + 1)));
 
-            frame = frames.poll();
+            frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("frames[1].opcode",frame.getOpCode(),is(OpCode.TEXT));
             resp = frame.getPayloadAsUTF8();
             assertThat("Should only have 1 open session",resp,containsString("openSessions.size=1\n"));
 
-            frame = frames.poll();
+            frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("frames[2].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.NORMAL));
@@ -310,8 +311,9 @@ public class ManyConnectionsCleanupTest
                 client.connect();
                 client.sendStandardRequest();
                 client.expectUpgradeResponse();
-                
-                client.readFrames(1,1,TimeUnit.SECONDS);
+
+                LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+                frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
 
                 CloseInfo close = new CloseInfo(StatusCode.NORMAL,"Normal");
                 assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.NORMAL));

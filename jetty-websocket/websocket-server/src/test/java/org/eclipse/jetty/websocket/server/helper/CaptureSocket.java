@@ -20,9 +20,9 @@ package org.eclipse.jetty.websocket.server.helper;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.common.util.Sha1Sum;
@@ -30,12 +30,7 @@ import org.eclipse.jetty.websocket.common.util.Sha1Sum;
 public class CaptureSocket extends WebSocketAdapter
 {
     private final CountDownLatch latch = new CountDownLatch(1);
-    public EventQueue<String> messages;
-
-    public CaptureSocket()
-    {
-        messages = new EventQueue<String>();
-    }
+    public LinkedBlockingQueue<String> messages = new LinkedBlockingQueue<>();
 
     public boolean awaitConnected(long timeout) throws InterruptedException
     {

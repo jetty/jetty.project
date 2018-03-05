@@ -21,13 +21,14 @@ package org.eclipse.jetty.websocket.server;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.HttpResponse;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -89,10 +90,10 @@ public class FragmentExtensionTest
             client.write(new TextFrame().setPayload(msg));
 
             String parts[] = split(msg,fragSize);
-            EventQueue<WebSocketFrame> frames = client.readFrames(parts.length,1000,TimeUnit.MILLISECONDS);
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
             for (int i = 0; i < parts.length; i++)
             {
-                WebSocketFrame frame = frames.poll();
+                WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
                 Assert.assertThat("text[" + i + "].payload",frame.getPayloadAsUTF8(),is(parts[i]));
             }
         }

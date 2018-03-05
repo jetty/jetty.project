@@ -21,9 +21,9 @@ package org.eclipse.jetty.websocket.client;
 import static org.hamcrest.Matchers.is;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
@@ -42,8 +42,8 @@ public class MaxMessageSocket
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
-    public EventQueue<String> messageQueue = new EventQueue<>();
-    public EventQueue<Throwable> errorQueue = new EventQueue<>();
+    public LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
+    public LinkedBlockingQueue<Throwable> errorQueue = new LinkedBlockingQueue<>();
     public int closeCode = -1;
     public StringBuilder closeMessage = new StringBuilder();
 

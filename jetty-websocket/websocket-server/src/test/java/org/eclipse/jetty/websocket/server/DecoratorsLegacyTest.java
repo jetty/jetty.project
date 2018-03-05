@@ -24,18 +24,19 @@ import static org.junit.Assert.assertThat;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -167,8 +168,8 @@ public class DecoratorsLegacyTest
             
             client.write(new TextFrame().setPayload("info"));
 
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
-            WebSocketFrame resp = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame resp = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             String textMsg = resp.getPayloadAsUTF8();
             
             assertThat("DecoratedObjectFactory", textMsg, containsString("Object is a DecoratedObjectFactory"));

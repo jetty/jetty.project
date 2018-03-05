@@ -25,15 +25,14 @@ import static org.junit.Assert.assertThat;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.junit.Assert;
 
@@ -52,8 +51,8 @@ public class JettyTrackingSocket extends WebSocketAdapter
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
-    public EventQueue<String> messageQueue = new EventQueue<>();
-    public EventQueue<Throwable> errorQueue = new EventQueue<>();
+    public LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
+    public LinkedBlockingQueue<Throwable> errorQueue = new LinkedBlockingQueue<>();
 
     public void assertClose(int expectedStatusCode, String expectedReason) throws InterruptedException
     {
@@ -78,12 +77,6 @@ public class JettyTrackingSocket extends WebSocketAdapter
         assertNotClosed();
     }
 
-    public void assertMessage(String expected)
-    {
-        String actual = messageQueue.poll();
-        Assert.assertEquals("Message",expected,actual);
-    }
-
     public void assertNotClosed()
     {
         LOG.debug("assertNotClosed() - {}", closeLatch.getCount());
@@ -100,11 +93,6 @@ public class JettyTrackingSocket extends WebSocketAdapter
     {
         LOG.debug("assertWasOpened() - {}", openLatch.getCount());
         Assert.assertThat("Was Opened",openLatch.await(30,TimeUnit.SECONDS),is(true));
-    }
-
-    public void awaitMessage(int expectedMessageCount, TimeUnit timeoutUnit, int timeoutDuration) throws TimeoutException, InterruptedException
-    {
-        messageQueue.awaitEventCount(expectedMessageCount,timeoutDuration,timeoutUnit);
     }
 
     public void clear()

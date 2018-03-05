@@ -21,9 +21,10 @@ package org.eclipse.jetty.websocket.server.misbehaving;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -32,14 +33,11 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * Testing badly behaving Socket class implementations to get the best
@@ -80,8 +78,8 @@ public class MisbehavingClassTest
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
@@ -115,8 +113,8 @@ public class MisbehavingClassTest
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));

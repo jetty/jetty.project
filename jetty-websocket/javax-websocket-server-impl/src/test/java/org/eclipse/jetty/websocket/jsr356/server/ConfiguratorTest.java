@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -54,7 +54,6 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
@@ -63,6 +62,7 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.HttpResponse;
 import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -437,8 +437,8 @@ public class ConfiguratorTest
             assertThat("response.extensions", response.getExtensionsHeader(), nullValue());
     
             client.write(new TextFrame().setPayload("NegoExts"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("Frame Response", frame.getPayloadAsUTF8(), is("negotiatedExtensions=[]"));
         }
     }
@@ -456,8 +456,8 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("X-Dummy"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Request Header [X-Dummy]: \"Bogus\""));
         }
     }
@@ -475,8 +475,8 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("apple"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [apple] = \"fruit from tree\""));
         }
         
@@ -489,8 +489,8 @@ public class ConfiguratorTest
 
             client.write(new TextFrame().setPayload("apple"));
             client.write(new TextFrame().setPayload("blueberry"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(2, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             // should have no value
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [apple] = <null>"));
             
@@ -515,8 +515,8 @@ public class ConfiguratorTest
             InetSocketAddress expectedRemote = client.getRemoteSocketAddress();
 
             client.write(new TextFrame().setPayload("addr"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             
             StringWriter expected = new StringWriter();
             PrintWriter out = new PrintWriter(expected);
@@ -548,8 +548,8 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\"]"));
         }
     }
@@ -572,8 +572,8 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
         }
     }
@@ -596,8 +596,8 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
         }
     }
@@ -620,8 +620,8 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
         }
     }
@@ -642,8 +642,8 @@ public class ConfiguratorTest
             client.expectUpgradeResponse();
 
             client.write(new TextFrame().setPayload("2016-06-20T14:27:44"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("cal=2016.06.20 AD at 14:27:44 +0000"));
         }
     }

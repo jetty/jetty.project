@@ -27,7 +27,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.DispatcherType;
@@ -36,12 +36,12 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -314,8 +314,9 @@ public class WebSocketUpgradeFilterTest
             
             client.write(new TextFrame().setPayload("hello"));
             
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
-            String payload = frames.poll().getPayloadAsUTF8();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame received = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            String payload = received.getPayloadAsUTF8();
             
             // If we can connect and send a text message, we know that the endpoint was
             // added properly, and the response will help us verify the policy configuration too
@@ -336,9 +337,11 @@ public class WebSocketUpgradeFilterTest
             
             client.write(new TextFrame().setPayload("hello 1"));
             
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
-            String payload = frames.poll().getPayloadAsUTF8();
-            
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame received = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            String payload = received.getPayloadAsUTF8();
+
+
             // If we can connect and send a text message, we know that the endpoint was
             // added properly, and the response will help us verify the policy configuration too
             assertThat("payload", payload, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
@@ -355,9 +358,11 @@ public class WebSocketUpgradeFilterTest
         
             client.write(new TextFrame().setPayload("hello 2"));
         
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
-            String payload = frames.poll().getPayloadAsUTF8();
-        
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame received = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            String payload = received.getPayloadAsUTF8();
+
+
             // If we can connect and send a text message, we know that the endpoint was
             // added properly, and the response will help us verify the policy configuration too
             assertThat("payload", payload, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));

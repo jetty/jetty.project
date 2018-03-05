@@ -21,13 +21,13 @@ package org.eclipse.jetty.websocket.server;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.HttpResponse;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -73,8 +73,8 @@ public class ChromeTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
-            WebSocketFrame tf = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally

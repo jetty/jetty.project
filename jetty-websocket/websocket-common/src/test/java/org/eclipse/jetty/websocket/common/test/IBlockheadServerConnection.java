@@ -22,47 +22,46 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Parser;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 public interface IBlockheadServerConnection
 {
     public void close() throws IOException;
-
     public void close(int statusCode) throws IOException;
-
-    public void write(Frame frame) throws IOException;
-
-    public List<String> upgrade() throws IOException;
-
     public void disconnect();
 
-    public IncomingFramesCapture readFrames(int expectedCount, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException;
+    public void write(Frame frame) throws IOException;
     public void write(ByteBuffer buf) throws IOException;
+    public void write(int b) throws IOException;
+    public void flush() throws IOException;
+
+    public LinkedBlockingQueue<WebSocketFrame> getFrameQueue();
+
+    public void enableIncomingEcho(boolean enabled);
+    public void startReadThread();
+
+    public String readRequest() throws IOException;
     public List<String> readRequestLines() throws IOException;
     public String parseWebSocketKey(List<String> requestLines);
-    public void respond(String rawstr) throws IOException;
-    public String readRequest() throws IOException;
-    public List<String> regexFind(List<String> lines, String pattern);
-    public void echoMessage(int expectedFrames, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException;
-    public void setSoTimeout(int ms) throws SocketException;
-    public ByteBufferPool getBufferPool();
-    public int read(ByteBuffer buf) throws IOException;
-    public Parser getParser();
-    public IncomingFramesCapture getIncomingFrames();
-    public void flush() throws IOException;
-    public void write(int b) throws IOException;
-    public void startEcho();
-    public void stopEcho();
-    
     /**
      * Add an extra header for the upgrade response (from the server). No extra work is done to ensure the key and value are sane for http.
      * @param rawkey the raw key
      * @param rawvalue the raw value
      */
     public void addResponseHeader(String rawkey, String rawvalue);
+    public List<String> upgrade() throws IOException;
+    public void setSoTimeout(int ms) throws SocketException;
+
+    public void respond(String rawstr) throws IOException;
+    public List<String> regexFind(List<String> lines, String pattern);
+    public ByteBufferPool getBufferPool();
+    public Parser getParser();
+
+    @Deprecated
+    public int read(ByteBuffer buf) throws IOException;
 }

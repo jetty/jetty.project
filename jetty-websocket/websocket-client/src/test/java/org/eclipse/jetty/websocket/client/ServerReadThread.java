@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,6 +35,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.Assert;
 
 public class ServerReadThread extends Thread
@@ -89,9 +90,9 @@ public class ServerReadThread extends Thread
                     conn.getParser().parse(buf);
                 }
 
-                Queue<WebSocketFrame> frames = conn.getIncomingFrames().getFrames();
+                LinkedBlockingQueue<WebSocketFrame> frames = conn.getFrameQueue();
                 WebSocketFrame frame;
-                while ((frame = frames.poll()) != null)
+                while ((frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT)) != null)
                 {
                     frameCount.incrementAndGet();
                     if (frame.getOpCode() == OpCode.CLOSE)

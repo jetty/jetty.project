@@ -41,13 +41,13 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -96,8 +96,8 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         public long totalReadOps = 0;
         public long totalParseOps = 0;
 
-        public EventQueue<WebSocketFrame> frames = new EventQueue<>();
-        public EventQueue<Throwable> errors = new EventQueue<>();
+        public LinkedBlockingQueue<WebSocketFrame> frames = new LinkedBlockingQueue<>();
+        public LinkedBlockingQueue<Throwable> errors = new LinkedBlockingQueue<>();
 
         @Override
         public void run()
@@ -630,9 +630,8 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
     }
 
     @Override
-    public EventQueue<WebSocketFrame> readFrames(int expectedFrameCount, int timeoutDuration, TimeUnit timeoutUnit) throws Exception
+    public LinkedBlockingQueue<WebSocketFrame> getFrameQueue()
     {
-        frameReader.frames.awaitEventCount(expectedFrameCount,timeoutDuration,timeoutUnit);
         return frameReader.frames;
     }
 

@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -43,6 +45,7 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -103,26 +106,36 @@ public class WebSocketClientTest
         srvSock.upgrade();
 
         Session sess = future.get(30,TimeUnit.SECONDS);
-        Assert.assertThat("Session",sess,notNullValue());
-        Assert.assertThat("Session.open",sess.isOpen(),is(true));
-        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
-        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+        assertThat("Session",sess,notNullValue());
+        assertThat("Session.open",sess.isOpen(),is(true));
+        assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+        assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
         cliSock.assertWasOpened();
         cliSock.assertNotClosed();
 
         Collection<WebSocketSession> sessions = client.getOpenSessions();
-        Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
+        assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
 
         RemoteEndpoint remote = cliSock.getSession().getRemote();
         remote.sendStringByFuture("Hello World!");
         if (remote.getBatchMode() == BatchMode.ON)
             remote.flush();
-        srvSock.echoMessage(1,30,TimeUnit.SECONDS);
-        // wait for response from server
-        cliSock.waitForMessage(30,TimeUnit.SECONDS);
 
-        cliSock.assertMessage("Hello World!");
+        try
+        {
+            srvSock.enableIncomingEcho(true);
+            srvSock.startReadThread();
+
+            // wait for response from server
+            String received = cliSock.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            assertThat("Message", received, containsString("Hello World"));
+        }
+        finally
+        {
+            srvSock.close();
+            srvSock.disconnect();
+        }
     }
 
     @Test
@@ -140,16 +153,16 @@ public class WebSocketClientTest
         srvSock.upgrade();
 
         Session sess = future.get(30,TimeUnit.SECONDS);
-        Assert.assertThat("Session",sess,notNullValue());
-        Assert.assertThat("Session.open",sess.isOpen(),is(true));
-        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
-        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+        assertThat("Session",sess,notNullValue());
+        assertThat("Session.open",sess.isOpen(),is(true));
+        assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+        assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
         cliSock.assertWasOpened();
         cliSock.assertNotClosed();
 
         Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
-        Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
+        assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
 
         FutureWriteCallback callback = new FutureWriteCallback();
 
@@ -169,10 +182,10 @@ public class WebSocketClientTest
 
         // Validate connect
         Session sess = future.get(30,TimeUnit.SECONDS);
-        Assert.assertThat("Session",sess,notNullValue());
-        Assert.assertThat("Session.open",sess.isOpen(),is(true));
-        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
-        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+        assertThat("Session",sess,notNullValue());
+        assertThat("Session.open",sess.isOpen(),is(true));
+        assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+        assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
         // Have server send initial message
         srvSock.write(new TextFrame().setPayload("Hello World"));
@@ -180,9 +193,9 @@ public class WebSocketClientTest
         // Verify connect
         future.get(30,TimeUnit.SECONDS);
         wsocket.assertWasOpened();
-        wsocket.awaitMessage(1,TimeUnit.SECONDS,2);
 
-        wsocket.assertMessage("Hello World");
+        String received = wsocket.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+        assertThat("Message", received, containsString("Hello World"));
     }
 
     @Test
@@ -203,15 +216,15 @@ public class WebSocketClientTest
         InetSocketAddress local = wsocket.getSession().getLocalAddress();
         InetSocketAddress remote = wsocket.getSession().getRemoteAddress();
 
-        Assert.assertThat("Local Socket Address",local,notNullValue());
-        Assert.assertThat("Remote Socket Address",remote,notNullValue());
+        assertThat("Local Socket Address",local,notNullValue());
+        assertThat("Remote Socket Address",remote,notNullValue());
 
         // Hard to validate (in a portable unit test) the local address that was used/bound in the low level Jetty Endpoint
-        Assert.assertThat("Local Socket Address / Host",local.getAddress().getHostAddress(),notNullValue());
-        Assert.assertThat("Local Socket Address / Port",local.getPort(),greaterThan(0));
+        assertThat("Local Socket Address / Host",local.getAddress().getHostAddress(),notNullValue());
+        assertThat("Local Socket Address / Port",local.getPort(),greaterThan(0));
 
-        Assert.assertThat("Remote Socket Address / Host",remote.getAddress().getHostAddress(),is(wsUri.getHost()));
-        Assert.assertThat("Remote Socket Address / Port",remote.getPort(),greaterThan(0));
+        assertThat("Remote Socket Address / Host",remote.getAddress().getHostAddress(),is(wsUri.getHost()));
+        assertThat("Remote Socket Address / Port",remote.getPort(),greaterThan(0));
     }
 
     @Test
@@ -265,8 +278,8 @@ public class WebSocketClientTest
         wsocket.awaitConnect(1,TimeUnit.SECONDS);
 
         Session sess = future.get(30,TimeUnit.SECONDS);
-        Assert.assertThat("Session",sess,notNullValue());
-        Assert.assertThat("Session.open",sess.isOpen(),is(true));
+        assertThat("Session",sess,notNullValue());
+        assertThat("Session.open",sess.isOpen(),is(true));
 
         // Create string that is larger than default size of 64k
         // but smaller than maxMessageSize of 100k
@@ -275,13 +288,23 @@ public class WebSocketClientTest
         String msg = StringUtil.toUTF8String(buf,0,buf.length);
 
         wsocket.getSession().getRemote().sendStringByFuture(msg);
-        ssocket.echoMessage(1,2,TimeUnit.SECONDS);
-        // wait for response from server
-        wsocket.waitForMessage(1,TimeUnit.SECONDS);
+        try
+        {
+            ssocket.enableIncomingEcho(true);
+            ssocket.startReadThread();
 
-        wsocket.assertMessage(msg);
+            // wait for response from server
+            wsocket.waitForMessage(1, TimeUnit.SECONDS);
 
-        Assert.assertTrue(wsocket.dataLatch.await(2,TimeUnit.SECONDS));
+            wsocket.assertMessage(msg);
+
+            Assert.assertTrue(wsocket.dataLatch.await(2, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            ssocket.close();
+            ssocket.disconnect();
+        }
     }
 
     @Test
@@ -301,15 +324,15 @@ public class WebSocketClientTest
 
         Session session = wsocket.getSession();
         UpgradeRequest req = session.getUpgradeRequest();
-        Assert.assertThat("Upgrade Request",req,notNullValue());
+        assertThat("Upgrade Request",req,notNullValue());
 
         Map<String, List<String>> parameterMap = req.getParameterMap();
-        Assert.assertThat("Parameter Map",parameterMap,notNullValue());
+        assertThat("Parameter Map",parameterMap,notNullValue());
 
-        Assert.assertThat("Parameter[snack]",parameterMap.get("snack"),is(Arrays.asList(new String[] { "cashews" })));
-        Assert.assertThat("Parameter[amount]",parameterMap.get("amount"),is(Arrays.asList(new String[] { "handful" })));
-        Assert.assertThat("Parameter[brand]",parameterMap.get("brand"),is(Arrays.asList(new String[] { "off" })));
+        assertThat("Parameter[snack]",parameterMap.get("snack"),is(Arrays.asList(new String[] { "cashews" })));
+        assertThat("Parameter[amount]",parameterMap.get("amount"),is(Arrays.asList(new String[] { "handful" })));
+        assertThat("Parameter[brand]",parameterMap.get("brand"),is(Arrays.asList(new String[] { "off" })));
 
-        Assert.assertThat("Parameter[cost]",parameterMap.get("cost"),nullValue());
+        assertThat("Parameter[cost]",parameterMap.get("cost"),nullValue());
     }
 }

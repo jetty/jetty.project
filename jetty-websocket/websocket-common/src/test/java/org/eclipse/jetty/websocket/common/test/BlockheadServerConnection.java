@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,8 +33,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -50,9 +51,9 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.Frame.Type;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.api.extensions.Frame.Type;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
@@ -73,13 +74,15 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     private final Socket socket;
     private final ByteBufferPool bufferPool;
     private final WebSocketPolicy policy;
-    private final IncomingFramesCapture incomingFrames;
+    private final LinkedBlockingQueue<WebSocketFrame> incomingFrames = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<Throwable> incomingErrors = new LinkedBlockingQueue<>();
     private final Parser parser;
     private final Generator generator;
     private final AtomicInteger parseCount;
     private final WebSocketExtensionFactory extensionRegistry;
     private final AtomicBoolean echoing = new AtomicBoolean(false);
-    private Thread echoThread;
+    private final AtomicBoolean reading = new AtomicBoolean(false);
+    private Thread readThread;
 
     /** Set to true to disable timeouts (for debugging reasons) */
     private boolean debug = false;
@@ -92,7 +95,6 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     public BlockheadServerConnection(Socket socket)
     {
         this.socket = socket;
-        this.incomingFrames = new IncomingFramesCapture();
         this.policy = WebSocketPolicy.newServerPolicy();
         this.policy.setMaxBinaryMessageSize(100000);
         this.policy.setMaxTextMessageSize(100000);
@@ -140,6 +142,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     public void disconnect()
     {
         LOG.debug("disconnect");
+        reading.set(false);
         IO.close(in);
         IO.close(out);
         if (socket != null)
@@ -154,19 +157,6 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
             }
         }
     }
-
-    @Override
-    public void echoMessage(int expectedFrames, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException
-    {
-        LOG.debug("Echo Frames [expecting {}]",expectedFrames);
-        IncomingFramesCapture cap = readFrames(expectedFrames,timeoutDuration,timeoutUnit);
-        // now echo them back.
-        for (Frame frame : cap.getFrames())
-        {
-            write(WebSocketFrame.copy(frame).setMasked(false));
-        }
-    }
-
     @Override
     public void flush() throws IOException
     {
@@ -177,12 +167,6 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;
-    }
-
-    @Override
-    public IncomingFramesCapture getIncomingFrames()
-    {
-        return incomingFrames;
     }
 
     public InputStream getInputStream() throws IOException
@@ -217,19 +201,19 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     @Override
     public void incomingError(Throwable e)
     {
-        incomingFrames.incomingError(e);
+        incomingErrors.offer(e);
     }
 
     @Override
     public void incomingFrame(Frame frame)
     {
-        LOG.debug("incoming({})",frame);
+        LOG.debug("incomingFrame({})",frame);
         int count = parseCount.incrementAndGet();
         if ((count % 10) == 0)
         {
             LOG.info("Server parsed {} frames",count);
         }
-        incomingFrames.incomingFrame(WebSocketFrame.copy(frame));
+        incomingFrames.offer(WebSocketFrame.copy(frame));
 
         if (frame.getOpCode() == OpCode.CLOSE)
         {
@@ -238,6 +222,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         }
 
         Type type = frame.getType();
+
         if (echoing.get() && (type.isData() || type.isContinuation()))
         {
             try
@@ -329,52 +314,8 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public IncomingFramesCapture readFrames(int expectedCount, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException
+    public LinkedBlockingQueue<WebSocketFrame> getFrameQueue()
     {
-        LOG.debug("Read: waiting for {} frame(s) from client",expectedCount);
-        int startCount = incomingFrames.size();
-
-        ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
-        BufferUtil.clearToFill(buf);
-        try
-        {
-            long msDur = TimeUnit.MILLISECONDS.convert(timeoutDuration,timeoutUnit);
-            long now = System.currentTimeMillis();
-            long expireOn = now + msDur;
-            LOG.debug("Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
-
-            int len = 0;
-            while (incomingFrames.size() < (startCount + expectedCount))
-            {
-                BufferUtil.clearToFill(buf);
-                len = read(buf);
-                if (len > 0)
-                {
-                    LOG.debug("Read {} bytes",len);
-                    BufferUtil.flipToFlush(buf,0);
-                    parser.parse(buf);
-                }
-                try
-                {
-                    TimeUnit.MILLISECONDS.sleep(20);
-                }
-                catch (InterruptedException gnore)
-                {
-                    /* ignore */
-                }
-                if (!debug && (System.currentTimeMillis() > expireOn))
-                {
-                    incomingFrames.dump();
-                    throw new TimeoutException(String.format("Timeout reading all %d expected frames. (managed to only read %d frame(s))",expectedCount,
-                            incomingFrames.size()));
-                }
-            }
-        }
-        finally
-        {
-            bufferPool.release(buf);
-        }
-
         return incomingFrames;
     }
 
@@ -457,20 +398,19 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     {
         LOG.debug("Entering echo thread");
 
-        ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
-        BufferUtil.clearToFill(buf);
-        long readBytes = 0;
-        try
+        long totalReadBytes = 0;
+        ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE, false);
+        while(reading.get())
         {
-            while (echoing.get())
+            try
             {
                 BufferUtil.clearToFill(buf);
                 long len = read(buf);
                 if (len > 0)
                 {
-                    readBytes += len;
-                    LOG.debug("Read {} bytes",len);
-                    BufferUtil.flipToFlush(buf,0);
+                    totalReadBytes += len;
+                    LOG.debug("Read {} bytes", len);
+                    BufferUtil.flipToFlush(buf, 0);
                     parser.parse(buf);
                 }
 
@@ -483,16 +423,18 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
                     /* ignore */
                 }
             }
+            catch (IOException e)
+            {
+                LOG.debug("Exception during echo loop", e);
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Exception during echo loop", t);
+            }
         }
-        catch (IOException e)
-        {
-            LOG.debug("Exception during echo loop",e);
-        }
-        finally
-        {
-            LOG.debug("Read {} bytes",readBytes);
-            bufferPool.release(buf);
-        }
+
+        LOG.debug("Read {} total bytes (exiting)",totalReadBytes);
+        bufferPool.release(buf);
     }
 
     @Override
@@ -502,21 +444,22 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public void startEcho()
+    public void startReadThread()
     {
-        if (echoThread != null)
+        if (readThread != null)
         {
-            throw new IllegalStateException("Echo thread already declared!");
+            throw new IllegalStateException("Read thread already declared/started!");
         }
-        echoThread = new Thread(this,"BlockheadServer/Echo");
-        echoing.set(true);
-        echoThread.start();
+        readThread = new Thread(this,"BlockheadServer/Read");
+        LOG.debug("Starting Read Thread: {}", readThread);
+        reading.set(true);
+        readThread.start();
     }
 
     @Override
-    public void stopEcho()
+    public void enableIncomingEcho(boolean enabled)
     {
-        echoing.set(false);
+        echoing.set(enabled);
     }
 
     @Override

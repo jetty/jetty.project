@@ -22,15 +22,19 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 
+/**
+ * @deprecated should refactor away.
+ */
 @SuppressWarnings("serial")
-public class EventCapture extends EventQueue<String>
+@Deprecated
+public class EventCapture extends LinkedBlockingQueue<String>
 {
     private static final Logger LOG = Log.getLogger(EventCapture.class);
     
@@ -74,6 +78,7 @@ public class EventCapture extends EventQueue<String>
 
     public Assertable pop()
     {
+        // TODO: poll should have timeout.
         return new Assertable(super.poll());
     }
 

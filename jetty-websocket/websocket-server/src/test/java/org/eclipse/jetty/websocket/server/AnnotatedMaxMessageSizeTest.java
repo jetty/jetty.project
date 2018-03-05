@@ -24,11 +24,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -38,6 +37,7 @@ import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.examples.echo.BigEchoSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
@@ -105,8 +105,8 @@ public class AnnotatedMaxMessageSizeTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
-            WebSocketFrame tf = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
@@ -133,8 +133,8 @@ public class AnnotatedMaxMessageSizeTest
             client.write(new TextFrame().setPayload(ByteBuffer.wrap(buf)));
 
             // Read frame (hopefully close frame saying its too large)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
-            WebSocketFrame tf = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame is close", tf.getOpCode(), is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(tf);
             Assert.assertThat("Close Code", close.getStatusCode(), is(StatusCode.MESSAGE_TOO_LARGE));

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.client;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -29,10 +28,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
@@ -42,6 +40,7 @@ import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,8 +52,8 @@ public class CookieTest
 
     public static class CookieTrackingSocket extends WebSocketAdapter
     {
-        public EventQueue<String> messageQueue = new EventQueue<>();
-        public EventQueue<Throwable> errorQueue = new EventQueue<>();
+        public LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
+        public LinkedBlockingQueue<Throwable> errorQueue = new LinkedBlockingQueue<>();
         private CountDownLatch openLatch = new CountDownLatch(1);
         
         @Override
@@ -189,18 +188,8 @@ public class CookieTest
         clientConnectFuture.get(10,TimeUnit.SECONDS);
         clientSocket.awaitOpen(2,TimeUnit.SECONDS);
     
-        try
-        {
-            // Wait for client receipt of cookie frame via client websocket
-            clientSocket.messageQueue.awaitEventCount(1, 3, TimeUnit.SECONDS);
-        }
-        catch (TimeoutException e)
-        {
-            e.printStackTrace(System.err);
-            assertThat("Message Count", clientSocket.messageQueue.size(), is(1));
-        }
-
-        String cookies = clientSocket.messageQueue.poll();
+        // Wait for client receipt of cookie frame via client websocket
+        String cookies = clientSocket.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
         LOG.debug("Cookies seen at server: {}",cookies);
         
         // Server closes connection

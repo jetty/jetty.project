@@ -26,8 +26,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
@@ -39,7 +40,6 @@ import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -55,9 +56,8 @@ import org.junit.Test;
 
 public class EncoderTest
 {
-    private static class EchoServer implements Runnable
+    private static class EchoServer
     {
-        private Thread thread;
         private BlockheadServer server;
         private IBlockheadServerConnection sconnection;
         private CountDownLatch connectLatch = new CountDownLatch(1);
@@ -67,37 +67,32 @@ public class EncoderTest
             this.server = server;
         }
 
-        @Override
-        public void run()
-        {
-            try
-            {
-                sconnection = server.accept();
-                sconnection.setSoTimeout(60000);
-                sconnection.upgrade();
-                sconnection.startEcho();
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-            }
-            finally
-            {
-                connectLatch.countDown();
-            }
-        }
-
         public void start()
         {
-            this.thread = new Thread(this,"EchoServer");
-            this.thread.start();
+            CompletableFuture.runAsync(() -> {
+                try
+                {
+                    sconnection = server.accept();
+                    sconnection.setSoTimeout(10000);
+                    sconnection.upgrade();
+                    sconnection.enableIncomingEcho(true);
+                    sconnection.startReadThread();
+                }
+                catch (Exception e)
+                {
+                    LOG.warn(e);
+                }
+                finally
+                {
+                    connectLatch.countDown();
+                }
+            });
         }
 
         public void stop()
         {
             if (this.sconnection != null)
             {
-                this.sconnection.stopEcho();
                 try
                 {
                     this.sconnection.close();
@@ -166,12 +161,12 @@ public class EncoderTest
     public static class QuotesSocket extends Endpoint implements MessageHandler.Whole<String>
     {
         private Session session;
-        private EventQueue<String> messageQueue = new EventQueue<>();
+        private LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
 
         @Override
         public void onMessage(String message)
         {
-            messageQueue.add(message);
+            messageQueue.offer(message);
         }
 
         @Override
@@ -236,6 +231,7 @@ public class EncoderTest
     public void initClient()
     {
         client = ContainerProvider.getWebSocketContainer();
+        client.setDefaultMaxSessionIdleTimeout(10000);
     }
     
     @After
@@ -257,7 +253,7 @@ public class EncoderTest
         server.stop();
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testSingleQuotes() throws Exception
     {
         EchoServer eserver = new EchoServer(server);
@@ -277,9 +273,7 @@ public class EncoderTest
             Quotes ben = getQuotes("quotes-ben.txt");
             quoter.write(ben);
 
-            quoter.messageQueue.awaitEventCount(1,1000,TimeUnit.MILLISECONDS);
-
-            String result = quoter.messageQueue.poll();
+            String result = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertReceivedQuotes(result,ben);
         }
         finally
@@ -288,7 +282,7 @@ public class EncoderTest
         }
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testTwoQuotes() throws Exception
     {
         EchoServer eserver = new EchoServer(server);
@@ -309,11 +303,9 @@ public class EncoderTest
             quoter.write(ben);
             quoter.write(twain);
 
-            quoter.messageQueue.awaitEventCount(2,1000,TimeUnit.MILLISECONDS);
-
-            String result = quoter.messageQueue.poll();
+            String result = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertReceivedQuotes(result,ben);
-            result = quoter.messageQueue.poll();
+            result = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertReceivedQuotes(result,twain);
         }
         finally

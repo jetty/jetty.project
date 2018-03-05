@@ -24,6 +24,7 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ClientEndpoint;
@@ -36,7 +37,6 @@ import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -90,7 +91,7 @@ public class DecoderReaderManySmallTest
     @ClientEndpoint(decoders = { EventIdDecoder.class })
     public static class EventIdSocket
     {
-        public EventQueue<EventId> messageQueue = new EventQueue<>();
+        public LinkedBlockingQueue<EventId> messageQueue = new LinkedBlockingQueue<>();
         private CountDownLatch closeLatch = new CountDownLatch(1);
 
         @OnClose
@@ -102,7 +103,7 @@ public class DecoderReaderManySmallTest
         @OnMessage
         public void onMessage(EventId msg)
         {
-            messageQueue.add(msg);
+            messageQueue.offer(msg);
         }
 
         public void awaitClose() throws InterruptedException
@@ -208,12 +209,12 @@ public class DecoderReaderManySmallTest
         idserver.writeSequentialIds(from,to);
         idserver.close();
         int count = from - to;
-        ids.messageQueue.awaitEventCount(count,4,TimeUnit.SECONDS);
         ids.awaitClose();
         // collect seen ids
         List<Integer> seen = new ArrayList<>();
-        for(EventId id: ids.messageQueue)
+        for(int i=0; i<count; i++)
         {
+            EventId id = ids.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             // validate that ids don't repeat.
             Assert.assertFalse("Already saw ID: " + id.eventId, seen.contains(id.eventId));
             seen.add(id.eventId);

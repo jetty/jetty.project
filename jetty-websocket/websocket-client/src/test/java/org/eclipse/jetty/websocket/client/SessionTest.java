@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 import java.net.URI;
 import java.util.Collection;
@@ -32,6 +35,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -74,18 +78,17 @@ public class SessionTest
 
             final IBlockheadServerConnection srvSock = server.accept();
             srvSock.upgrade();
-
-            Session sess = future.get(30000,TimeUnit.MILLISECONDS);
-            Assert.assertThat("Session",sess,notNullValue());
-            Assert.assertThat("Session.open",sess.isOpen(),is(true));
-            Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
-            Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+            Session sess = future.get(30000, TimeUnit.MILLISECONDS);
+            Assert.assertThat("Session", sess, notNullValue());
+            Assert.assertThat("Session.open", sess.isOpen(), is(true));
+            Assert.assertThat("Session.upgradeRequest", sess.getUpgradeRequest(), notNullValue());
+            Assert.assertThat("Session.upgradeResponse", sess.getUpgradeResponse(), notNullValue());
 
             cliSock.assertWasOpened();
             cliSock.assertNotClosed();
 
             Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
-            Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
+            Assert.assertThat("client.connectionManager.sessions.size", sessions.size(), is(1));
 
             RemoteEndpoint remote = cliSock.getSession().getRemote();
             remote.sendStringByFuture("Hello World!");
@@ -93,19 +96,31 @@ public class SessionTest
             {
                 remote.flush();
             }
-            srvSock.echoMessage(1,30000,TimeUnit.MILLISECONDS);
-            // wait for response from server
-            cliSock.waitForMessage(30000,TimeUnit.MILLISECONDS);
-            
-            Set<WebSocketSession> open = client.getOpenSessions();
-            Assert.assertThat("(Before Close) Open Sessions.size", open.size(), is(1));
 
-            cliSock.assertMessage("Hello World!");
-            cliSock.close();
-            srvSock.close();
-            
-            cliSock.waitForClose(30000,TimeUnit.MILLISECONDS);
-            open = client.getOpenSessions();
+            try
+            {
+                srvSock.enableIncomingEcho(true);
+                srvSock.startReadThread();
+                // wait for response from server
+                cliSock.waitForMessage(30000, TimeUnit.MILLISECONDS);
+
+                Set<WebSocketSession> open = client.getOpenSessions();
+                Assert.assertThat("(Before Close) Open Sessions.size", open.size(), is(1));
+
+                String received = cliSock.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+                assertThat("Message", received, containsString("Hello World!"));
+
+                cliSock.close();
+                srvSock.close();
+            }
+            finally
+            {
+                srvSock.disconnect();
+            }
+
+            cliSock.waitForClose(30000, TimeUnit.MILLISECONDS);
+            Set<WebSocketSession> open = client.getOpenSessions();
+
             // TODO this sometimes fails!
             Assert.assertThat("(After Close) Open Sessions.size", open.size(), is(0));
         }

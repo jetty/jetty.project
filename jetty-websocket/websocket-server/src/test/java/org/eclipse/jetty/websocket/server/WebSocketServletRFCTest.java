@@ -22,10 +22,9 @@ import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
@@ -124,8 +124,8 @@ public class WebSocketServletRFCTest
             client.write(bin); // write buf3 (fin=true)
 
             // Read frame echo'd back (hopefully a single binary frame)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
-            Frame binmsg = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            Frame binmsg = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             int expectedSize = buf1.length + buf2.length + buf3.length;
             Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
 
@@ -191,8 +191,8 @@ public class WebSocketServletRFCTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
-            WebSocketFrame tf = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
@@ -222,8 +222,8 @@ public class WebSocketServletRFCTest
                 client.write(new TextFrame().setPayload("CRASH"));
 
                 // Read frame (hopefully close frame)
-                EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
-                Frame cf = frames.poll();
+                LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+                Frame cf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
                 CloseInfo close = new CloseInfo(cf);
                 Assert.assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
             }
@@ -263,8 +263,8 @@ public class WebSocketServletRFCTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
-            WebSocketFrame tf = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally
@@ -293,8 +293,8 @@ public class WebSocketServletRFCTest
             client.writeRaw(bbHeader);
             client.writeRaw(txt.getPayload());
 
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             Assert.assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.BAD_PAYLOAD));
@@ -334,8 +334,8 @@ public class WebSocketServletRFCTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
-            WebSocketFrame tf = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
         finally

@@ -27,9 +27,9 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -146,19 +146,27 @@ public class Fuzzer implements AutoCloseable
         expect(expect,10,TimeUnit.SECONDS);
     }
 
+    /**
+     * Read the response frames and validate them against the expected frame list
+     *
+     * @param expect the list of expected frames
+     * @param duration the timeout duration to wait for each read frame
+     * @param unit the timeout unit to wait for each read frame
+     * @throws Exception if unable to validate expectations
+     */
     public void expect(List<WebSocketFrame> expect, int duration, TimeUnit unit) throws Exception
     {
         int expectedCount = expect.size();
         LOG.debug("expect() {} frame(s)",expect.size());
 
         // Read frames
-        EventQueue<WebSocketFrame> frames = client.readFrames(expect.size(),duration,unit);
+        LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
         
         String prefix = "";
         for (int i = 0; i < expectedCount; i++)
         {
             WebSocketFrame expected = expect.get(i);
-            WebSocketFrame actual = frames.poll();
+            WebSocketFrame actual = frames.poll(duration,unit);
 
             prefix = "Frame[" + i + "]";
 

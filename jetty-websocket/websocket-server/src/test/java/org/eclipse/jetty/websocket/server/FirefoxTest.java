@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
@@ -66,7 +65,7 @@ public class FirefoxTest
             client.write(new TextFrame().setPayload(msg));
 
             // Read frame (hopefully text frame)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 30, TimeUnit.SECONDS);
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
             WebSocketFrame tf = frames.poll();
             Assert.assertThat("Text Frame.status code", tf.getPayloadAsUTF8(), is(msg));
         }

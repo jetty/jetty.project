@@ -23,17 +23,17 @@ import static org.hamcrest.Matchers.is;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -108,10 +108,10 @@ public class TooFastClientTest
             client.expectUpgradeResponse();
 
             // Read frames (hopefully text frames)
-            EventQueue<WebSocketFrame> frames = client.readFrames(2,1,TimeUnit.SECONDS);
-            WebSocketFrame tf = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Text Frame/msg1",tf.getPayloadAsUTF8(),is(msg1));
-            tf = frames.poll();
+            tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Text Frame/msg2",tf.getPayloadAsUTF8(),is(msg2));
         }
         finally
@@ -167,9 +167,9 @@ public class TooFastClientTest
             client.expectUpgradeResponse();
 
             // Read frames (hopefully text frames)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
 
-            WebSocketFrame tf = frames.poll();
+            WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Text Frame/msg1",tf.getPayloadAsUTF8(),is(bigMsg));
         }
         finally
