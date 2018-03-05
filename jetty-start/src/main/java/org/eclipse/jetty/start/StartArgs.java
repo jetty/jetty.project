@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.function.Function;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
@@ -569,11 +568,8 @@ public class StartArgs
                     String key = assign[0];
                     String value = assign.length==1?"":assign[1];
 
-                    Property p = processProperty(key,value,"modules",k->{return System.getProperty(k);});
-                    if (p!=null)
-                    {   
-                        cmd.addRawArg("-D"+p.key+"="+getProperties().expand(p.value));
-                    }                    
+                    Props.Prop p = processSystemProperty(key,value,null);
+                    cmd.addRawArg("-D"+p.key+"="+getProperties().expand(p.value));
                 }
                 else
                 {
@@ -1077,13 +1073,10 @@ public class StartArgs
             String key = assign[0];
             String value = assign.length==1?"":assign[1];
             
-            Property p = processProperty(key,value,source,k->{return System.getProperty(k);});
-            if (p!=null)
-            {   
-                systemPropertySource.put(p.key,p.source);
-                setProperty(p.key,p.value,p.source);
-                System.setProperty(p.key,p.value);
-            }
+            Props.Prop p = processSystemProperty(key,value,source);
+            systemPropertySource.put(p.key,p.origin);
+            setProperty(p.key,p.value,p.origin);
+            System.setProperty(p.key,p.value);
             return;
         }
         
@@ -1105,11 +1098,8 @@ public class StartArgs
             String key = arg.substring(0,equals);
             String value = arg.substring(equals + 1);
 
-            Property p = processProperty(key,value,source,k->{return getProperties().getString(k);});
-            if (p!=null)
-            {
-                setProperty(p.key,p.value,p.source);
-            }
+            processAndSetProperty(key,value,source);
+            
             return;
         }
 
@@ -1138,43 +1128,69 @@ public class StartArgs
         throw new UsageException(UsageException.ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
     
-    protected Property processProperty(String key,String value,String source, Function<String, String> getter)
+    protected Props.Prop processSystemProperty(String key, String value, String source)
     {
         if (key.endsWith("+"))
         {
             key = key.substring(0,key.length() - 1);
-            String orig = getter.apply(key);
+            String orig = System.getProperty(key);
             if (orig == null || orig.isEmpty())
+            {
+                if (value.startsWith(","))
+                    value = value.substring(1);
+            }
+            else 
+            {
+                value = orig + value;
+                if (source!=null && systemPropertySource.containsKey(key))
+                    source = systemPropertySource.get(key) + "," + source;
+            }
+        }
+        else if (key.endsWith("?"))
+        {
+            key = key.substring(0,key.length() - 1);
+            String preset = System.getProperty(key);
+            if (preset!=null)
+            {
+                value = preset;
+                source = systemPropertySource.get(key);
+            }
+            else if (source!=null)
+                source = source+"?=";
+        }
+
+        return new Prop(key, value, source);
+    }
+    
+    protected void processAndSetProperty(String key,String value,String source)
+    {
+        if (key.endsWith("+"))
+        {
+            key = key.substring(0,key.length() - 1);
+            Props.Prop orig = getProperties().getProp(key);
+            if (orig == null)
             {
                 if (value.startsWith(","))
                     value = value.substring(1);
             }
             else
             {
-                value = orig + value;
-                source = "," + source; // TODO Lost original source
+                value = orig.value + value;
+                source = orig.origin + "," + source;
             }
         }
-        if (key.endsWith("?"))
+        else if (key.endsWith("?"))
         {
             key = key.substring(0,key.length() - 1);
-            String preset = getter.apply(key);
+            Props.Prop preset = getProperties().getProp(key);
             if (preset!=null)
-            {
+                return;
+            
+            if (source!=null)
                 source = source+"?=";
-                value = preset;
-            }
         }
-        /* TODO
-        else if (propertySource.containsKey(key))
-        {
-            if (!propertySource.get(key).endsWith("[ini]"))
-                StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
-            propertySource.put(key,source);
-        }
-        */
         
-        return new Property(key,value,source);
+        setProperty(key,value,source);
     }
     
     private void enableModules(String source, List<String> moduleNames)
@@ -1284,22 +1300,4 @@ public class StartArgs
         return builder.toString();
     }
     
-    static class Property 
-    {
-        String key;
-        String value;
-        String source;
-        public Property(String key, String value, String source)
-        {
-            this.key = key;
-            this.value = value;
-            this.source = source;
-        }  
-        
-        @Override
-        public String toString()
-        {
-            return String.format("%s=%s(%s)",key,value,source);
-        }
-    }
 }
