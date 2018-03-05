@@ -123,9 +123,6 @@ public class StartArgs
     /** Map of enabled modules to the source of where that activation occurred */
     Map<String, List<String>> sources = new HashMap<>();
 
-    /** Map of properties to where that property was declared */
-    private Map<String, String> propertySource = new HashMap<>();
-
     /** List of all active [files] sections from enabled modules */
     private List<FileArg> files = new ArrayList<>();
 
@@ -148,7 +145,7 @@ public class StartArgs
     private List<Path> propertyFiles = new ArrayList<>();
 
     private Props properties = new Props();
-    private Set<String> systemPropertyKeys = new HashSet<>();
+    private Map<String,String> systemPropertySource = new HashMap<>();
     private List<String> rawLibs = new ArrayList<>();
 
     // jetty.base - build out commands
@@ -203,12 +200,6 @@ public class StartArgs
         {
             files.add(arg);
         }
-    }
-
-    public void addSystemProperty(String key, String value)
-    {
-        this.systemPropertyKeys.add(key);
-        System.setProperty(key,value);
     }
 
     private void addUniqueXmlFile(String xmlRef, Path xmlfile) throws IOException
@@ -379,26 +370,25 @@ public class StartArgs
         System.out.println("System Properties:");
         System.out.println("------------------");
 
-        if (systemPropertyKeys.isEmpty())
+        if (systemPropertySource.keySet().isEmpty())
         {
             System.out.println(" (no system properties specified)");
             return;
         }
 
         List<String> sortedKeys = new ArrayList<>();
-        sortedKeys.addAll(systemPropertyKeys);
+        sortedKeys.addAll(systemPropertySource.keySet());
         Collections.sort(sortedKeys);
 
         for (String key : sortedKeys)
-        {
-            String value = System.getProperty(key);
-            System.out.printf(" %s = %s%n",key,value);
-        }
+            dumpSystemProperty(key);
     }
 
     private void dumpSystemProperty(String key)
     {
-        System.out.printf(" %s = %s%n",key,System.getProperty(key));
+        String value = System.getProperty(key);
+        String source = systemPropertySource.get(key);
+        System.out.printf(" %s = %s (%s)%n",key,value,source);
     }
 
     /**
@@ -409,20 +399,20 @@ public class StartArgs
      */
     private void ensureSystemPropertySet(String key)
     {
-        if (systemPropertyKeys.contains(key))
+        if (systemPropertySource.containsKey(key))
         {
             return; // done
         }
 
         if (properties.containsKey(key))
         {
-            String val = properties.expand(properties.getString(key));
-            if (val == null)
-            {
-                return; // no value to set
-            }
+            Prop prop = properties.getProp(key);
+            if (prop==null)
+                return; // no value set;
+            
+            String val = properties.expand(prop.value);
             // setup system property
-            systemPropertyKeys.add(key);
+            systemPropertySource.put(key,"property:"+prop.origin);
             System.setProperty(key,val);
         }
     }
@@ -437,7 +427,7 @@ public class StartArgs
     {
         StartLog.debug("Expanding System Properties");
         
-        for (String key : systemPropertyKeys)
+        for (String key : systemPropertySource.keySet())
         {
             String value = properties.getString(key);
             if (value!=null)
@@ -592,7 +582,7 @@ public class StartArgs
             }
 
             // System Properties
-            for (String propKey : systemPropertyKeys)
+            for (String propKey : systemPropertySource.keySet())
             {
                 String value = System.getProperty(propKey);
                 cmd.addEqualsArg("-D" + propKey,value);
@@ -728,7 +718,7 @@ public class StartArgs
 
     public boolean hasSystemProperties()
     {
-        for (String key : systemPropertyKeys)
+        for (String key : systemPropertySource.keySet())
         {
             // ignored keys
             if ("jetty.home".equals(key) || "jetty.base".equals(key) || "main.class".equals(key))
@@ -1090,7 +1080,7 @@ public class StartArgs
             Property p = processProperty(key,value,source,k->{return System.getProperty(k);});
             if (p!=null)
             {   
-                systemPropertyKeys.add(p.key);
+                systemPropertySource.put(p.key,p.source);
                 setProperty(p.key,p.value,p.source);
                 System.setProperty(p.key,p.value);
             }
@@ -1162,7 +1152,7 @@ public class StartArgs
             else
             {
                 value = orig + value;
-                source = propertySource.get(key) + "," + source;
+                source = "," + source; // TODO Lost original source
             }
         }
         if (key.endsWith("?"))
@@ -1175,12 +1165,14 @@ public class StartArgs
                 value = preset;
             }
         }
+        /* TODO
         else if (propertySource.containsKey(key))
         {
             if (!propertySource.get(key).endsWith("[ini]"))
                 StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
             propertySource.put(key,source);
         }
+        */
         
         return new Property(key,value,source);
     }

@@ -37,7 +37,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.Props.Prop;
-import org.eclipse.jetty.start.config.CommandLineConfigSource;
 
 /**
  * Represents a Module metadata, as defined in Jetty.
