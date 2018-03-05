@@ -39,9 +39,7 @@ import java.net.SocketTimeoutException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
 
-import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSource;
 
@@ -428,23 +426,7 @@ public class Main
             {
                 System.out.printf("ConfigSource %s%n",config.getId());
                 for (StartIni ini : config.getStartInis())
-                {
-                    for (String line : ini.getAllLines())
-                    {
-                        Matcher m = Module.SET_PROPERTY.matcher(line);
-                        if (m.matches() && m.groupCount()==3)
-                        {
-                            String name = m.group(2);
-                            String value = m.group(3);
-                            Prop p = args.getProperties().getProp(name);
-                            if (p!=null && ("#".equals(m.group(1)) || !value.equals(p.value)))
-                            {
-                                ini.update(baseHome,args.getProperties());
-                                break;
-                            }
-                        }
-                    }
-                }
+                    ini.update(baseHome,args.getProperties());
             }
         }
         

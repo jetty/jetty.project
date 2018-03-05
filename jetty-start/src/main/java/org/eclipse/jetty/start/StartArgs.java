@@ -369,16 +369,7 @@ public class StartArgs
         {
             System.out.printf(" %s = %s%n",key,prop.value);
             if (StartLog.isDebugEnabled())
-            {
                 System.out.printf("   origin: %s%n",prop.origin);
-                while (prop.overrides != null)
-                {
-                    prop = prop.overrides;
-                    System.out.printf("   (overrides)%n");
-                    System.out.printf("     %s = %s%n",key,prop.value);
-                    System.out.printf("     origin: %s%n",prop.origin);
-                }
-            }
         }
     }
 

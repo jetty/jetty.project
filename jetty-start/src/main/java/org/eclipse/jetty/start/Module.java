@@ -527,8 +527,10 @@ public class Module implements Comparable<Module>
             if (m.matches() && m.groupCount()==3)
             {
                 String name = m.group(2);
+                String value = m.group(3);
                 Prop p = props.getProp(name);
-                if (p!=null && p.origin.startsWith(CommandLineConfigSource.ORIGIN_CMD_LINE))
+                
+                if (p!=null && ("#".equals(m.group(1)) || !value.equals(p.value)))
                 {
                     StartLog.info("%-15s property set %s=%s",this._name,name,p.value);
                     out.printf("%s=%s%n",name,p.value);
