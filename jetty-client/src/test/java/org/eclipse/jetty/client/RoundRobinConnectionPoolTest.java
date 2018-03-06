@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -45,23 +46,39 @@ public class RoundRobinConnectionPoolTest extends AbstractHttpClientServerTest
     @Test
     public void testRoundRobin() throws Exception
     {
+        AtomicBoolean record = new AtomicBoolean();
         List<Integer> remotePorts = new ArrayList<>();
         start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                remotePorts.add(request.getRemotePort());
+                if (record.get())
+                    remotePorts.add(request.getRemotePort());
             }
         });
 
         int maxConnections = 3;
         client.getTransport().setConnectionPoolFactory(destination -> new RoundRobinConnectionPool(destination, maxConnections, destination));
 
+        // Prime the connections, so that they are all opened
+        // before we actually test the round robin behavior.
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        for (int i = 0; i < maxConnections; ++i)
+        {
+            ContentResponse response = client.newRequest(host, port)
+                    .scheme(scheme)
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+
+        record.set(true);
         int requests = 2 * maxConnections - 1;
         for (int i = 0; i < requests; ++i)
         {
-            ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            ContentResponse response = client.newRequest(host, port)
                     .scheme(scheme)
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
