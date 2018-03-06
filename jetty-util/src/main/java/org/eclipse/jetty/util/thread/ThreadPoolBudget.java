@@ -97,7 +97,7 @@ public class ThreadPoolBudget
      */
     public ThreadPoolBudget(ThreadPool.SizedThreadPool pool)
     {
-        this(pool,Runtime.getRuntime().availableProcessors());
+        this(pool,Math.min(Runtime.getRuntime().availableProcessors(),pool.getMinThreads()));
     }
 
     /**
