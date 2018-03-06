@@ -16,25 +16,24 @@
 //  ========================================================================
 //
 
-package examples;
+package org.eclipse.jetty.websocket.common.test;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.common.events.EventCapture;
+import org.eclipse.jetty.toolchain.test.matchers.RegexMatcher;
 
-public class AdapterConnectCloseSocket extends WebSocketAdapter
+public class MoreMatchers
 {
-    public EventCapture capture = new EventCapture();
-
-    @Override
-    public void onWebSocketClose(int statusCode, String reason)
+    /**
+     * Create a matcher for {@link String} that matches against a regex pattern.
+     *
+     * <p>
+     *     Returns success based on {@code java.util.regex.Pattern.matcher(input).matches();}
+     * </p>
+     *
+     * @param pattern the {@link java.util.regex.Pattern} syntax pattern to match against.
+     * @return the Regex Matcher
+     */
+    public static org.hamcrest.Matcher<java.lang.String> regex(String pattern)
     {
-        capture.offer("onWebSocketClose(%d, %s)",statusCode,capture.q(reason));
-    }
-
-    @Override
-    public void onWebSocketConnect(Session sess)
-    {
-        capture.offer("onWebSocketConnect(%s)",sess);
+        return new RegexMatcher(pattern);
     }
 }

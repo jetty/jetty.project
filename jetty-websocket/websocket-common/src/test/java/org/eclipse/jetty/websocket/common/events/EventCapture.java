@@ -18,73 +18,23 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.Assert;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 
-/**
- * @deprecated should refactor away.
- */
 @SuppressWarnings("serial")
-@Deprecated
 public class EventCapture extends LinkedBlockingQueue<String>
 {
     private static final Logger LOG = Log.getLogger(EventCapture.class);
     
-    public static class Assertable
-    {
-        private final String event;
-
-        public Assertable(String event)
-        {
-            this.event = event;
-        }
-
-        public void assertEventContains(String expected)
-        {
-            Assert.assertThat("Event",event,containsString(expected));
-        }
-
-        public void assertEventRegex(String regex)
-        {
-            Assert.assertTrue("Event: regex:[" + regex + "] in [" + event + "]",Pattern.matches(regex,event));
-        }
-
-        public void assertEventStartsWith(String expected)
-        {
-            Assert.assertThat("Event",event,startsWith(expected));
-        }
-
-        public void assertEvent(String expected)
-        {
-            Assert.assertThat("Event",event,is(expected));
-        }
-    }
-
-    public void add(String format, Object... args)
+    public void offer(String format, Object... args)
     {
         String msg = String.format(format,args);
         if (LOG.isDebugEnabled())
             LOG.debug("EVENT: {}",msg);
         super.offer(msg);
-    }
-
-    public Assertable pop()
-    {
-        // TODO: poll should have timeout.
-        return new Assertable(super.poll());
-    }
-
-    public void assertEventCount(int expectedCount)
-    {
-        Assert.assertThat("Event Count",size(),is(expectedCount));
     }
 
     public String q(String str)
@@ -94,5 +44,10 @@ public class EventCapture extends LinkedBlockingQueue<String>
             return "<null>";
         }
         return '"' + str + '"';
+    }
+
+    public String safePoll() throws InterruptedException
+    {
+        return poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
     }
 }

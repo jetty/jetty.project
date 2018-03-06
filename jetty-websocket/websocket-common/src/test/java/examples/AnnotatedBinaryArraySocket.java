@@ -33,19 +33,19 @@ public class AnnotatedBinaryArraySocket
     @OnWebSocketMessage
     public void onBinary(byte payload[], int offset, int length)
     {
-        capture.add("onBinary([%d],%d,%d)",payload.length,offset,length);
+        capture.offer("onBinary([%d],%d,%d)",payload.length,offset,length);
     }
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        capture.add("onClose(%d, %s)",statusCode,capture.q(reason));
+        capture.offer("onClose(%d, %s)",statusCode,capture.q(reason));
     }
 
     @OnWebSocketConnect
     public void onConnect(Session sess)
     {
-        capture.add("onConnect(%s)",sess);
+        capture.offer("onConnect(%s)",sess);
     }
 
 }
