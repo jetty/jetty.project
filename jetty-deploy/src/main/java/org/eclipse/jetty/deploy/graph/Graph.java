@@ -40,7 +40,7 @@ public class Graph
             addNode(toNode=edge.getTo());
         
         // replace edge with normalized edge
-        if (!edge.isFromNode(fromNode) || !edge.isToNode(toNode))
+        if (!edge.getFrom().equals(fromNode) || !edge.getTo().equals(toNode))
             edge=new Edge(fromNode,toNode);
         
         this._edges.add(edge);
@@ -129,7 +129,7 @@ public class Graph
 
         for (Edge edge : this._edges)
         {
-            if (edge.isFromNode(node) || edge.isToNode(node))
+            if (edge.getFrom().equals(node) || edge.getTo().equals(node))
             {
                 fromedges.add(edge);
             }
@@ -151,7 +151,7 @@ public class Graph
 
         for (Edge edge : this._edges)
         {
-            if (edge.isFromNode(from))
+            if (edge.getFrom().equals(from))
             {
                 fromedges.add(edge);
             }

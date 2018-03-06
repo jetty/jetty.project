@@ -74,23 +74,9 @@ public final class Edge
         return _from;
     }
     
-    public boolean isFromNode(Node node)
-    {
-        @SuppressWarnings("ReferenceEquality")
-        boolean isFromNode_ = (_from == node);
-        return isFromNode_;
-    }
-
     public Node getTo()
     {
         return _to;
-    }
-    
-    public boolean isToNode(Node node)
-    {
-        @SuppressWarnings("ReferenceEquality")
-        boolean isToNode_ = (_to == node);
-        return isToNode_;
     }
     
     @Override

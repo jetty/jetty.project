@@ -381,7 +381,7 @@ public class DoSFilter implements Filter
                 // or if we were woken up we insist or we fail.
                 Boolean throttled = (Boolean)request.getAttribute(__THROTTLED);
                 long throttleMs = getThrottleMs();
-                if (Boolean.FALSE.equals(throttled) && throttleMs > 0)
+                if (!Boolean.TRUE.equals(throttled) && throttleMs > 0)
                 {
                     int priority = getPriority(request, tracker);
                     request.setAttribute(__THROTTLED, Boolean.TRUE);
