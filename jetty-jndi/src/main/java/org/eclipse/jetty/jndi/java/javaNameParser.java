@@ -49,6 +49,7 @@ public class javaNameParser implements NameParser
     * of this parser.
     * @exception NamingException If a naming exception was encountered.
     */
+   @Override
    public Name parse(String name) throws NamingException
    {
       return new CompoundName(name, syntax);

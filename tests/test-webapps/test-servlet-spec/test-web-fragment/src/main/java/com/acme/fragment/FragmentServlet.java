@@ -38,6 +38,7 @@ public class FragmentServlet extends HttpServlet
     private ServletConfig config;
     
     
+    @Override
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
@@ -47,12 +48,14 @@ public class FragmentServlet extends HttpServlet
     
     
     /* ------------------------------------------------------------ */
+    @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         doGet(request, response);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {      
         try

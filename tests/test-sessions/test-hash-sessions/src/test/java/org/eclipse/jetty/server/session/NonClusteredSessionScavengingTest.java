@@ -39,6 +39,7 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
     }
 
     @Test
+    @Override
     public void testNewSession() throws Exception
     {
         super.testNewSession();

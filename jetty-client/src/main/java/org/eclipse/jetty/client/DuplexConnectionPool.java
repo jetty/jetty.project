@@ -155,6 +155,7 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
         return active(connection);
     }
 
+    @Override
     public boolean release(Connection connection)
     {
         boolean closed = isClosed();
@@ -184,6 +185,7 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
         return idleConnections.offerFirst(connection);
     }
 
+    @Override
     public boolean remove(Connection connection)
     {
         return remove(connection, false);
@@ -212,6 +214,7 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
         return removed;
     }
 
+    @Override
     public void close()
     {
         super.close();

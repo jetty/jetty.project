@@ -199,6 +199,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      * 
      * @see AbstractJettyMojo#checkPomConfiguration()
      */
+    @Override
     public void checkPomConfiguration () throws MojoExecutionException
     {
         // check the location of the static content/jsps etc
@@ -274,6 +275,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureWebApplication()
      */
+    @Override
     public void configureWebApplication() throws Exception
     {
        super.configureWebApplication();
@@ -366,6 +368,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureScanner()
      */
+    @Override
     public void configureScanner ()
     throws MojoExecutionException
     {
@@ -523,6 +526,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#restartWebApp(boolean)
      */
+    @Override
     public void restartWebApp(boolean reconfigureScanner) throws Exception 
     {
         getLog().info("restarting "+webApp);

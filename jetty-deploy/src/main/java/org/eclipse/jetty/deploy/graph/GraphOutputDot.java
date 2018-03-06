@@ -50,6 +50,7 @@ public class GraphOutputDot
     {
         private Collator collator = Collator.getInstance();
 
+        @Override
         public int compare(Node o1, Node o2)
         {
             if (o1.getName().equals(TOPNODE))

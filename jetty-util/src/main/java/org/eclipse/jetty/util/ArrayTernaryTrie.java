@@ -582,51 +582,61 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
             _trie = new ArrayTernaryTrie<>(insensitive,capacity);
         }
 
+        @Override
         public boolean put(V v)
         {
             return put(v.toString(),v);
         }
 
+        @Override
         public int hashCode()
         {
             return _trie.hashCode();
         }
 
+        @Override
         public V remove(String s)
         {
             return _trie.remove(s);
         }
 
+        @Override
         public V get(String s)
         {
             return _trie.get(s);
         }
 
+        @Override
         public V get(ByteBuffer b)
         {
             return _trie.get(b);
         }
 
+        @Override
         public V getBest(byte[] b, int offset, int len)
         {
             return _trie.getBest(b,offset,len);
         }
 
+        @Override
         public boolean isCaseInsensitive()
         {
             return _trie.isCaseInsensitive();
         }
 
+        @Override
         public boolean equals(Object obj)
         {
             return _trie.equals(obj);
         }
 
+        @Override
         public void clear()
         {
             _trie.clear();
         }
 
+        @Override
         public boolean put(String s, V v)
         {
             boolean added = _trie.put(s,v);
@@ -642,41 +652,49 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
             return added;
         }
 
+        @Override
         public V get(String s, int offset, int len)
         {
             return _trie.get(s,offset,len);
         }
 
+        @Override
         public V get(ByteBuffer b, int offset, int len)
         {
             return _trie.get(b,offset,len);
         }
 
+        @Override
         public V getBest(String s)
         {
             return _trie.getBest(s);
         }
 
+        @Override
         public V getBest(String s, int offset, int length)
         {
             return _trie.getBest(s,offset,length);
         }
 
+        @Override
         public V getBest(ByteBuffer b, int offset, int len)
         {
             return _trie.getBest(b,offset,len);
         }
 
+        @Override
         public String toString()
         {
             return _trie.toString();
         }
 
+        @Override
         public Set<String> keySet()
         {
             return _trie.keySet();
         }
 
+        @Override
         public boolean isFull()
         {
             return false;

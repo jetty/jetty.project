@@ -57,6 +57,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void toJSON(Object obj, Output out)
     {
         String clsName=obj.getClass().getName();
@@ -80,6 +81,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
         }
     }
 
+    @Override
     public Object fromJSON(Map object)
     {
         Map map=object;

@@ -109,6 +109,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
      * @param rawkey the raw key
      * @param rawvalue the raw value
      */
+    @Override
     public void addResponseHeader(String rawkey, String rawvalue)
     {
         extraResponseHeaders.put(rawkey,rawvalue);
@@ -135,6 +136,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         flush();
     }
 
+    @Override
     public void disconnect()
     {
         LOG.debug("disconnect");
@@ -153,6 +155,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         }
     }
 
+    @Override
     public void echoMessage(int expectedFrames, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException
     {
         LOG.debug("Echo Frames [expecting {}]",expectedFrames);
@@ -164,16 +167,19 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         }
     }
 
+    @Override
     public void flush() throws IOException
     {
         getOutputStream().flush();
     }
 
+    @Override
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;
     }
 
+    @Override
     public IncomingFramesCapture getIncomingFrames()
     {
         return incomingFrames;
@@ -197,6 +203,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         return out;
     }
 
+    @Override
     public Parser getParser()
     {
         return parser;
@@ -294,6 +301,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         return extensionConfigs;
     }
 
+    @Override
     public String parseWebSocketKey(List<String> requestLines)
     {
         List<String> hits = regexFind(requestLines,"^Sec-WebSocket-Key: (.*)$");
@@ -308,6 +316,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         return key;
     }
 
+    @Override
     public int read(ByteBuffer buf) throws IOException
     {
         int len = 0;
@@ -319,6 +328,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         return len;
     }
 
+    @Override
     public IncomingFramesCapture readFrames(int expectedCount, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException
     {
         LOG.debug("Read: waiting for {} frame(s) from client",expectedCount);
@@ -368,6 +378,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         return incomingFrames;
     }
 
+    @Override
     public String readRequest() throws IOException
     {
         LOG.debug("Reading client request");
@@ -387,6 +398,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         return request.toString();
     }
 
+    @Override
     public List<String> readRequestLines() throws IOException
     {
         LOG.debug("Reading client request header");
@@ -405,6 +417,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         return lines;
     }
 
+    @Override
     public List<String> regexFind(List<String> lines, String pattern)
     {
         List<String> hits = new ArrayList<>();
@@ -431,6 +444,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         return hits;
     }
 
+    @Override
     public void respond(String rawstr) throws IOException
     {
         LOG.debug("respond(){}{}","\n",rawstr);
@@ -481,11 +495,13 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         }
     }
 
+    @Override
     public void setSoTimeout(int ms) throws SocketException
     {
         socket.setSoTimeout(ms);
     }
 
+    @Override
     public void startEcho()
     {
         if (echoThread != null)
@@ -497,11 +513,13 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         echoThread.start();
     }
 
+    @Override
     public void stopEcho()
     {
         echoing.set(false);
     }
 
+    @Override
     public List<String> upgrade() throws IOException
     {
         List<String> requestLines = readRequestLines();
@@ -599,11 +617,13 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         outgoing.outgoingFrame(frame,null,BatchMode.OFF);
     }
 
+    @Override
     public void write(int b) throws IOException
     {
         getOutputStream().write(b);
     }
 
+    @Override
     public void write(ByteBuffer buf) throws IOException
     {
         byte arr[] = BufferUtil.toArray(buf);

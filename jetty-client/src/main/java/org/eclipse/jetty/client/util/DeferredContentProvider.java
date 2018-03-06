@@ -207,6 +207,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
      * No more content will be added to this content provider
      * and notifies the listener that no more content is available.
      */
+    @Override
     public void close()
     {
         if (closed.compareAndSet(false, true))

@@ -46,6 +46,7 @@ public class QueuedThreadPoolTest
         private final CountDownLatch _run = new CountDownLatch(1);
         private final CountDownLatch _stopping = new CountDownLatch(1);
         private final CountDownLatch _stopped = new CountDownLatch(1);
+        @Override
         public void run()
         {
             try
@@ -160,6 +161,7 @@ public class QueuedThreadPoolTest
         final AtomicInteger sleep = new AtomicInteger(100);
         Runnable job = new Runnable()
         {
+            @Override
             public void run()
             {
                 try
@@ -210,6 +212,7 @@ public class QueuedThreadPoolTest
         tp.setStopTimeout(500);
         tp.start();
         tp.execute(new Runnable(){
+            @Override
             public void run () {
                 while (true) {
                     try {
@@ -271,10 +274,10 @@ public class QueuedThreadPoolTest
         tp.start();
         try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
         {
-            tp.execute(new Runnable(){ public void run () { throw new IllegalStateException(); } });
-            tp.execute(new Runnable(){ public void run () { throw new Error(); } });
-            tp.execute(new Runnable(){ public void run () { throw new RuntimeException(); } });
-            tp.execute(new Runnable(){ public void run () { throw new ThreadDeath(); } });
+            tp.execute(new Runnable(){ @Override public void run () { throw new IllegalStateException(); } });
+            tp.execute(new Runnable(){ @Override public void run () { throw new Error(); } });
+            tp.execute(new Runnable(){ @Override public void run () { throw new RuntimeException(); } });
+            tp.execute(new Runnable(){ @Override public void run () { throw new ThreadDeath(); } });
             
             Thread.sleep(100);
             assertThat(tp.getThreads(),greaterThanOrEqualTo(5));

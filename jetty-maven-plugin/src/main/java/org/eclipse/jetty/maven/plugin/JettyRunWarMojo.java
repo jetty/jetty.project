@@ -59,6 +59,7 @@ public class JettyRunWarMojo extends AbstractJettyMojo
     /**
      * @see org.apache.maven.plugin.Mojo#execute()
      */
+    @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
         super.execute();  
@@ -74,6 +75,7 @@ public class JettyRunWarMojo extends AbstractJettyMojo
 
 
     
+    @Override
     public void configureWebApplication () throws Exception
     {
         super.configureWebApplication();
@@ -87,6 +89,7 @@ public class JettyRunWarMojo extends AbstractJettyMojo
     /**
      * @see AbstractJettyMojo#checkPomConfiguration()
      */
+    @Override
     public void checkPomConfiguration() throws MojoExecutionException
     {
        return;        
@@ -109,6 +112,7 @@ public class JettyRunWarMojo extends AbstractJettyMojo
     /**
      * @see AbstractJettyMojo#configureScanner()
      */
+    @Override
     public void configureScanner() throws MojoExecutionException
     {
         scanner.watch(project.getFile().toPath());
@@ -147,6 +151,7 @@ public class JettyRunWarMojo extends AbstractJettyMojo
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#restartWebApp(boolean)
      */
+    @Override
     public void restartWebApp(boolean reconfigureScanner) throws Exception 
     {
         getLog().info("Restarting webapp ...");

@@ -306,6 +306,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /** 
      * @see org.apache.maven.plugin.Mojo#execute()
      */
+    @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
         getLog().info("Configuring Jetty for project: " + this.project.getName());

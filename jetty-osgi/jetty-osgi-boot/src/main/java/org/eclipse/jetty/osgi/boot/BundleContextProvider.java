@@ -154,6 +154,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean bundleAdded (Bundle bundle) throws Exception
     {
         if (bundle == null)
@@ -206,6 +207,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
      * @param bundle the bundle
      * @return true if this was a context we had deployed, false otherwise
      */
+    @Override
     public boolean bundleRemoved (Bundle bundle) throws Exception
     {
         List<App> apps = _bundleMap.remove(bundle);

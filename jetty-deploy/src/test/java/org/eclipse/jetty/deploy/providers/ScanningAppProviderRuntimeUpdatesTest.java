@@ -80,6 +80,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
                 _providers++;
                 ((ScanningAppProvider)provider).addScannerListener(new Scanner.ScanListener()
                 {
+                    @Override
                     public void scan()
                     {
                         _scans.incrementAndGet();

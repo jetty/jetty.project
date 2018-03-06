@@ -84,6 +84,7 @@ public class Log
 
         AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
+            @Override
             public Object run()
             {
                 /* First see if the jetty-logging.properties object exists in the classpath.

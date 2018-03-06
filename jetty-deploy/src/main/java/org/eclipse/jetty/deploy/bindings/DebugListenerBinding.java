@@ -45,6 +45,7 @@ public class DebugListenerBinding extends DebugBinding
         return _debugListener;
     }
     
+    @Override
     public void processBinding(Node node, App app) throws Exception
     {
         app.getContextHandler().addEventListener(_debugListener);

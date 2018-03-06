@@ -33,6 +33,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
     private DeploymentManager deployMan;
     private File webappsDir;
 
+    @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
         this.deployMan = deploymentManager;
@@ -50,6 +51,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
         this.deployMan.addApp(app);
     }
 
+    @Override
     public ContextHandler createContextHandler(App app) throws Exception
     {
         WebAppContext context = new WebAppContext();

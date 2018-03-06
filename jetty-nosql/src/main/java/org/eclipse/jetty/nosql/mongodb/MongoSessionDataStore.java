@@ -192,6 +192,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         final AtomicReference<Exception> exception = new AtomicReference<Exception>();
         Runnable r = new Runnable()
         {
+            @Override
             public void run ()
             {
                 try

@@ -35,6 +35,7 @@ public class ClusteredLastAccessTimeTest extends AbstractClusteredLastAccessTime
        return JdbcTestHelper.newSessionDataStoreFactory();
     }
     @Test
+    @Override
     public void testLastAccessTime() throws Exception
     {
         super.testLastAccessTime();

@@ -148,4 +148,17 @@ public class JavaVersionTest
         assertThat(version.getUpdate(),is(0));
         assertThat(version.getSuffix(),is("Ubuntu-9b181-4")); 
     }
+    
+    @Test
+    public void testUbuntu8()
+    {
+        JavaVersion version = JavaVersion.parse("1.8.0_151-8u151-b12-1~deb9u1-b12");
+        assertThat(version.getPlatform(),is(8));
+        assertThat(version.getMajor(),is(1));
+        assertThat(version.getMinor(),is(8));
+        assertThat(version.getMicro(),is(0));
+        assertThat(version.getUpdate(),is(151));
+        assertThat(version.getSuffix(),is("8u151-b12-1~deb9u1-b12")); 
+    }
+    
 }

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io;
 
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -120,13 +121,18 @@ public class IdleTimeoutTest
     @Test
     public void testShorten() throws Exception
     {
-        for (int i=0;i<5;i++)
+        for (int i=0;i<20;i++)
         {
-            Thread.sleep(100);
+            Thread.sleep(200);
             _timeout.notIdle();
         }
+        Assert.assertNull(_expired);
         _timeout.setIdleTimeout(100);
-        Thread.sleep(400);
+        
+        long start = System.nanoTime();
+        while (_expired==null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-start)<4)
+            Thread.sleep(200);
+        
         Assert.assertNotNull(_expired);
     }
 

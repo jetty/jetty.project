@@ -37,6 +37,7 @@ public interface IBlockheadClient extends AutoCloseable
 
     public boolean awaitDisconnect(long timeout, TimeUnit unit) throws InterruptedException;
 
+    @Override
     public void close();
 
     public void close(int statusCode, String message);

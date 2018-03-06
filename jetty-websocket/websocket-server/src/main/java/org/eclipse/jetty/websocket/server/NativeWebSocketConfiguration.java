@@ -108,6 +108,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
      * @param pathSpec the pathspec to respond on
      * @param creator the websocket creator to activate on the provided mapping.
      */
+    @Override
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator)
     {
         WebSocketCreator wsCreator = creator;

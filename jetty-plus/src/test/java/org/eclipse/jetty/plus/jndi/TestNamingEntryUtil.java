@@ -48,6 +48,7 @@ public class TestNamingEntryUtil
 
     public class ScopeA
     {
+        @Override
         public String toString()
         {
             return this.getClass().getName()+"@"+Long.toHexString(super.hashCode());

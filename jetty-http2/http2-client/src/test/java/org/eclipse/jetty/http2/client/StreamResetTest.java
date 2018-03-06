@@ -262,7 +262,7 @@ public class StreamResetTest extends AbstractTest
                 try
                 {
                     // Wait for the reset to happen.
-                    Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+                    Assert.assertTrue(resetLatch.await(10, TimeUnit.SECONDS));
                 }
                 catch (InterruptedException x)
                 {
@@ -273,9 +273,9 @@ public class StreamResetTest extends AbstractTest
                 {
                     // Write some content after the stream has
                     // been reset, it should throw an exception.
-                    for (int i = 0; i < 10; i++)
+                    for (int i = 0; i < 100; i++)
                     {
-                        Thread.sleep(500);
+                        Thread.sleep(100);
                         response.getOutputStream().write(data);
                         response.flushBuffer();
                     }
@@ -304,7 +304,7 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(10, TimeUnit.SECONDS));
     }
 
     @Test

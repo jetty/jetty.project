@@ -62,6 +62,7 @@ public class PropertyUserStoreTest
         {
         }
 
+        @Override
         public void update(String username, Credential credential, String[] roleArray)
         {
             if (!users.contains(username))
@@ -71,6 +72,7 @@ public class PropertyUserStoreTest
             }
         }
 
+        @Override
         public void remove(String username)
         {
             users.remove(username);

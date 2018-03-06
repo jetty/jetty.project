@@ -81,18 +81,22 @@ public interface NetworkTrafficListener
      */
     public static class Adapter implements NetworkTrafficListener
     {
+        @Override
         public void opened(Socket socket)
         {
         }
 
+        @Override
         public void incoming(Socket socket, ByteBuffer bytes)
         {
         }
 
+        @Override
         public void outgoing(Socket socket, ByteBuffer bytes)
         {
         }
 
+        @Override
         public void closed(Socket socket)
         {
         }

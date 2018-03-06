@@ -129,6 +129,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
         TreeSet<String> paths = new TreeSet<String>(
                 new Comparator<String>()
                 {
+                    @Override
                     public int compare(String o1, String o2)
                     {
                         int paths1 = new StringTokenizer(o1,"/",false).countTokens();

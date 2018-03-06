@@ -44,10 +44,12 @@ public class ELContextCleaner implements ServletContextListener
     private static final Logger LOG = Log.getLogger(ELContextCleaner.class);
 
 
+    @Override
     public void contextInitialized(ServletContextEvent sce)
     {
     }
 
+    @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
         try

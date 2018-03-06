@@ -96,6 +96,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
      *
      * @return name or null if not set.
      */
+    @Override
     public String getName()
     {
         return _realmName;
@@ -117,6 +118,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     /** Get the identityService.
      * @return the identityService
      */
+    @Override
     public IdentityService getIdentityService()
     {
         return _identityService;
@@ -126,6 +128,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     /** Set the identityService.
      * @param identityService the identityService to set
      */
+    @Override
     public void setIdentityService(IdentityService identityService)
     {
         _identityService = identityService;
@@ -172,6 +175,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         if (_identityService==null)
@@ -192,6 +196,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
             {
                 callbackHandler = new CallbackHandler()
                 {
+                    @Override
                     public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
                     {
                         for (Callback callback: callbacks)
@@ -266,6 +271,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean validate(UserIdentity user)
     {
         // TODO optionally check user is still valid
@@ -281,6 +287,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void logout(UserIdentity user)
     {
         Set<JAASUserPrincipal> userPrincipals = user.getSubject().getPrincipals(JAASUserPrincipal.class);

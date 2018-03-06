@@ -318,12 +318,14 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void startElement(String uri, String localName, String qName, Attributes attrs) throws SAXException
         {
             _depth++;
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void endElement(String uri, String localName, String qName) throws SAXException
         {
             if (_depth == 0)
@@ -356,6 +358,7 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void startElement(String uri, String localName, String qName, Attributes attrs) throws SAXException
         {
             String name = null;
@@ -407,6 +410,7 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void endElement(String uri, String localName, String qName) throws SAXException
         {
             _context = _context._parent;
@@ -417,6 +421,7 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void ignorableWhitespace(char buf[], int offset, int len) throws SAXException
         {
             for (int i = 0; i < _observers.size(); i++)
@@ -425,6 +430,7 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void characters(char buf[], int offset, int len) throws SAXException
         {
             _context.add(new String(buf, offset, len));
@@ -434,6 +440,7 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void warning(SAXParseException ex)
         {
             LOG.debug(Log.EXCEPTION, ex);
@@ -441,6 +448,7 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void error(SAXParseException ex) throws SAXException
         {
             // Save error and continue to report other errors
@@ -451,6 +459,7 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void fatalError(SAXParseException ex) throws SAXException
         {
             _error = ex;
@@ -466,6 +475,7 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public InputSource resolveEntity(String pid, String sid)
         {
             return XmlParser.this.resolveEntity(pid,sid);
@@ -601,6 +611,7 @@ public class XmlParser
         /**
          * Get the number of children nodes.
          */
+        @Override
         public int size()
         {
             if (_list != null)
@@ -614,6 +625,7 @@ public class XmlParser
          *
          * @return Node or String.
          */
+        @Override
         public Object get(int i)
         {
             if (_list != null)
@@ -671,6 +683,7 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void clear()
         {
             if (_list != null)
@@ -699,6 +712,7 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public synchronized String toString()
         {
             return toString(true);
@@ -795,6 +809,7 @@ public class XmlParser
                 Node _node;
 
                 /* -------------------------------------------------- */
+                @Override
                 public boolean hasNext()
                 {
                     if (_node != null)
@@ -817,6 +832,7 @@ public class XmlParser
                 }
 
                 /* -------------------------------------------------- */
+                @Override
                 public Node next()
                 {
                     try
@@ -833,6 +849,7 @@ public class XmlParser
                 }
 
                 /* -------------------------------------------------- */
+                @Override
                 public void remove()
                 {
                     throw new UnsupportedOperationException("Not supported");
