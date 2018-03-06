@@ -81,8 +81,8 @@ public class TestJettyOSGiBootContextAsService
 
 
 
+   
     @Ignore
-    @Test
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);

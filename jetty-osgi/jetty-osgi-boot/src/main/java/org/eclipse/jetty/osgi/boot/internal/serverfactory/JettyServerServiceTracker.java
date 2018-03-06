@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.Properties;
 
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
@@ -52,11 +54,10 @@ public class JettyServerServiceTracker implements ServiceTrackerCustomizer
         if (name == null) { throw new IllegalArgumentException("The property " + OSGiServerConstants.MANAGED_JETTY_SERVER_NAME + " is mandatory"); }
         if (LOG.isDebugEnabled()) LOG.debug("Adding Server {}", name);
         ServerInstanceWrapper wrapper = new ServerInstanceWrapper(name);
-        Properties props = new Properties();
+        Dictionary<String,Object> props = new Hashtable<>();
         for (String key : sr.getPropertyKeys())
         {
-            Object value = sr.getProperty(key);
-            props.put(key, value);
+            props.put(key, sr.getProperty(key));
         }
         try
         {
