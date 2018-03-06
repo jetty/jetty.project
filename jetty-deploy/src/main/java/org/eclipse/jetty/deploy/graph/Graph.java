@@ -40,7 +40,7 @@ public class Graph
             addNode(toNode=edge.getTo());
         
         // replace edge with normalized edge
-        if (edge.getFrom()!=fromNode || edge.getTo()!=toNode)
+        if (!edge.isFromNode(fromNode) || !edge.isToNode(toNode))
             edge=new Edge(fromNode,toNode);
         
         this._edges.add(edge);
@@ -129,7 +129,7 @@ public class Graph
 
         for (Edge edge : this._edges)
         {
-            if ((edge.getFrom() == node) || (edge.getTo() == node))
+            if (edge.isFromNode(node) || edge.isToNode(node))
             {
                 fromedges.add(edge);
             }
@@ -151,7 +151,7 @@ public class Graph
 
         for (Edge edge : this._edges)
         {
-            if (edge.getFrom() == from)
+            if (edge.isFromNode(from))
             {
                 fromedges.add(edge);
             }
@@ -192,7 +192,9 @@ public class Graph
      */
     public Path getPath(Node from, Node to)
     {
-        if (from == to)
+        @SuppressWarnings("ReferenceEquality")
+        boolean sameObject = (from==to);
+        if (sameObject)
         {
             return new Path();
         }

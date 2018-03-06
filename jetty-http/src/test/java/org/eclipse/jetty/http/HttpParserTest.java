@@ -2025,6 +2025,7 @@ public class HttpParserTest
         Assert.assertEquals(null, _bad);
     }
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testCachedField() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer(

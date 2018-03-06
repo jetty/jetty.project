@@ -29,6 +29,7 @@ import java.util.Arrays;
 import org.eclipse.jetty.io.ByteBufferPool.Bucket;
 import org.junit.Test;
 
+@SuppressWarnings("ReferenceEquality")
 public class ArrayByteBufferPoolTest
 {
     @Test
@@ -113,6 +114,7 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testAcquireReleaseAcquire() throws Exception
     {
         ArrayByteBufferPool bufferPool = new ArrayByteBufferPool(10,100,1000);

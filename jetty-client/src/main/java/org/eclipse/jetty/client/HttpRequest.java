@@ -204,7 +204,10 @@ public class HttpRequest implements Request
     {
         if (uri == null)
             uri = buildURI(true);
-        return uri == NULL_URI ? null : uri;
+        
+        @SuppressWarnings("ReferenceEquality")
+        boolean isNullURI = (uri == NULL_URI);
+        return isNullURI ? null : uri;
     }
 
     @Override

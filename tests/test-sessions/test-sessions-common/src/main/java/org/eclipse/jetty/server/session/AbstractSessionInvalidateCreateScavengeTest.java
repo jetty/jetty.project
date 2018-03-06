@@ -85,6 +85,7 @@ public abstract class AbstractSessionInvalidateCreateScavengeTest extends Abstra
     }
 
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testSessionScavenge() throws Exception
     {
         String contextPath = "/";

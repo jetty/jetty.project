@@ -470,11 +470,6 @@ public class ResponseWriter extends PrintWriter
                 {
                     _formatter = new Formatter(this, locale);
                 } 
-                else if(_formatter.locale()==null)
-                {
-                    if(locale != null)
-                        _formatter = new Formatter(this, locale);
-                }
                 else if (!_formatter.locale().equals(locale))
                 {
                     _formatter = new Formatter(this, locale);

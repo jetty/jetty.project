@@ -171,7 +171,7 @@ public class QoSFilter implements Filter
                 {
                     request.setAttribute(_suspended, Boolean.FALSE);
                     Boolean resumed = (Boolean)request.getAttribute(_resumed);
-                    if (resumed == Boolean.TRUE)
+                    if (Boolean.TRUE.equals(resumed))
                     {
                         _passes.acquire();
                         accepted = true;
@@ -222,7 +222,7 @@ public class QoSFilter implements Filter
                     {
                         ServletRequest candidate = asyncContext.getRequest();
                         Boolean suspended = (Boolean)candidate.getAttribute(_suspended);
-                        if (suspended == Boolean.TRUE)
+                        if (Boolean.TRUE.equals(suspended))
                         {
                             candidate.setAttribute(_resumed, Boolean.TRUE);
                             asyncContext.dispatch();

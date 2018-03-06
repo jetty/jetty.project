@@ -115,7 +115,7 @@ public class ValidUrlRule extends Rule
         
         LOG.debug("{} {} {} {}", Character.charCount(codepoint), codepoint, block, Character.isISOControl(codepoint));
         
-        return (!Character.isISOControl(codepoint)) && block != null && block != Character.UnicodeBlock.SPECIALS;       
+        return (!Character.isISOControl(codepoint)) && block != null && !Character.UnicodeBlock.SPECIALS.equals(block);       
     }
 
     public String toString()

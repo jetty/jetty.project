@@ -82,6 +82,18 @@ public class HttpContent implements Callback, Closeable
     }
 
     /**
+     * 
+     * @param buffer
+     * @return whether the input buffer has been closed
+     */
+    private static boolean isBufferClosed(ByteBuffer buffer)
+    {
+        @SuppressWarnings("ReferenceEquality")
+        boolean bufferClosed = (buffer == CLOSE);
+        return bufferClosed;
+    }
+    
+    /**
      * @return whether there is any content at all
      */
     public boolean hasContent()
@@ -177,6 +189,7 @@ public class HttpContent implements Callback, Closeable
     /**
      * @return whether the cursor has been advanced past the {@link #isLast() last} position.
      */
+    @SuppressWarnings("ReferenceEquality")
     public boolean isConsumed()
     {
         return buffer == AFTER;
@@ -187,7 +200,7 @@ public class HttpContent implements Callback, Closeable
     {
         if (isConsumed())
             return;
-        if (buffer == CLOSE)
+        if (isBufferClosed(buffer))
             return;
         if (iterator instanceof Callback)
             ((Callback)iterator).succeeded();
@@ -198,7 +211,7 @@ public class HttpContent implements Callback, Closeable
     {
         if (isConsumed())
             return;
-        if (buffer == CLOSE)
+        if (isBufferClosed(buffer))
             return;
         if (iterator instanceof Callback)
             ((Callback)iterator).failed(x);

@@ -297,6 +297,7 @@ public class BufferUtilTest
 
 
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testEnsureCapacity() throws Exception
     {
         ByteBuffer b = BufferUtil.toBuffer("Goodbye Cruel World");
