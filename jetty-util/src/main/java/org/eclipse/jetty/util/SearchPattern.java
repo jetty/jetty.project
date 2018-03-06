@@ -22,45 +22,28 @@ public class SearchPattern
 {
     static final int alphabetSize = 256;
     int[] table;
-    
-    private String pattern;
+    byte[] pattern;
 
+    public int[] getTable(){ return this.table; }
     
     /**
      * @param pattern  The pattern to search for.
      * @return A Pattern instance for the search pattern
      */
-    static SearchPattern compile(String pattern)
+    static SearchPattern compile(byte[] pattern)
     {
+        //Create new SearchPattern instance
         SearchPattern sp = new SearchPattern();
-        sp.pattern = pattern;
         
+        //Copy in the Pattern
+        sp.pattern = pattern.clone();
         
-        /*
-        Build up pre-processed table for this pattern.
-        
-            function preprocess(pattern):
-                T ← new table of 256 integers
-                for i from 0 to 256 exclusive
-                    T[i] ← length(pattern)
-                for i from 0 to length(pattern) - 1 exclusive
-                    T[pattern[i]] ← length(pattern) - 1 - i
-                return T
-        */
-        
+        //Build up the pre-processed table for this pattern.
         sp.table = new int[alphabetSize];
-        for(int i = 0; i<sp.table.length; ++i){
-            sp.table[i] = pattern.length();
-        }
-        
-        /*
-         for i from 0 to length(pattern) - 1 exclusive
-             T[pattern[i]] ← length(pattern) - 1 - i
-        */
-        for(int i = 0; i<pattern.length(); ++i){
-            int index = pattern;
-            sp.table[index] = pattern.length()-1-i;
-        }
+        for(int i = 0; i<sp.table.length; ++i)
+            sp.table[i] = sp.pattern.length;
+        for(int i = 0; i<sp.pattern.length-1; ++i)
+            sp.table[sp.pattern[i]] = sp.pattern.length-1-i;
         
         return sp;
     }
@@ -76,6 +59,15 @@ public class SearchPattern
      */
     public int match(byte[] data, int offset, int length)
     {
+        int skip = offset;
+        while((skip <= data.length - pattern.length) && (skip+pattern.length <= offset+length))
+        {            
+            for(int i = pattern.length-1; data[skip+i] == pattern[i]; i--) 
+                if(i==0) return skip;
+            
+            skip += table[data[skip + pattern.length - 1]];
+        }
+        
         return -1;
     }
     
