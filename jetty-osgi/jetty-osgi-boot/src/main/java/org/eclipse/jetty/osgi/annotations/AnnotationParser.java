@@ -42,10 +42,10 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
 {
     private Set<URI> _alreadyParsed = ConcurrentHashMap.newKeySet();
     
-    private ConcurrentHashMap<URI,Bundle> _uriToBundle = new ConcurrentHashMap<URI, Bundle>();
-    private ConcurrentHashMap<Bundle,Resource> _bundleToResource = new ConcurrentHashMap<Bundle,Resource>();
-    private ConcurrentHashMap<Resource, Bundle> _resourceToBundle = new ConcurrentHashMap<Resource, Bundle>();
-    private ConcurrentHashMap<Bundle,URI> _bundleToUri = new ConcurrentHashMap<Bundle, URI>();
+    private ConcurrentHashMap<URI,Bundle> _uriToBundle = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Bundle,Resource> _bundleToResource = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Resource, Bundle> _resourceToBundle = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Bundle,URI> _bundleToUri = new ConcurrentHashMap<>();
     
     public AnnotationParser(int javaPlatform)
     {
@@ -126,7 +126,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
             bundleClasspath = ".";
         }
         //order the paths first by the number of tokens in the path second alphabetically.
-        TreeSet<String> paths = new TreeSet<String>(
+        TreeSet<String> paths = new TreeSet<>(
                 new Comparator<String>()
                 {
                     @Override
@@ -177,6 +177,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
                 paths.add("/target/classes/");
             }
         }
+        @SuppressWarnings("rawtypes")
         Enumeration classes = bundle.findEntries("/","*.class",true);
         if (classes == null)
         {
