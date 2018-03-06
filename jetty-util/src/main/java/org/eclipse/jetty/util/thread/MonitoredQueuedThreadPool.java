@@ -44,6 +44,10 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
     public MonitoredQueuedThreadPool(int maxThreads)
     {
         super(maxThreads, maxThreads, 24 * 3600 * 1000, new BlockingArrayQueue<>(maxThreads, 256));
+        addBean(queueStats);
+        addBean(queueLatencyStats);
+        addBean(taskLatencyStats);
+        addBean(threadStats);
     }
 
     @Override
