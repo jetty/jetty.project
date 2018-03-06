@@ -18,28 +18,23 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAdder;
-
-import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.eclipse.jetty.util.statistic.SampleStatistic;
 
+/**
+ * <p>A {@link QueuedThreadPool} subclass that monitors its own activity by recording queue and task statistics.</p>
+ */
 @ManagedObject
 public class MonitoredQueuedThreadPool extends QueuedThreadPool
 {
-    private final LongAdder tasks = new LongAdder();
-    private final AtomicLong maxTaskLatency = new AtomicLong();
-    private final LongAdder totalTaskLatency = new LongAdder();
-    private final MonitoringBlockingArrayQueue queue;
-    private final AtomicLong maxQueueLatency = new AtomicLong();
-    private final LongAdder totalQueueLatency = new LongAdder();
-    private final AtomicInteger threads = new AtomicInteger();
-    private final AtomicInteger maxThreads = new AtomicInteger();
+    private final CounterStatistic queueStats = new CounterStatistic();
+    private final SampleStatistic queueLatencyStats = new SampleStatistic();
+    private final SampleStatistic taskLatencyStats = new SampleStatistic();
+    private final CounterStatistic threadStats = new CounterStatistic();
 
     public MonitoredQueuedThreadPool()
     {
@@ -48,25 +43,23 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
 
     public MonitoredQueuedThreadPool(int maxThreads)
     {
-        super(maxThreads, maxThreads, 24 * 3600 * 1000, new MonitoringBlockingArrayQueue(maxThreads, 256));
-        queue = (MonitoringBlockingArrayQueue)getQueue();
-        setStopTimeout(2000);
+        super(maxThreads, maxThreads, 24 * 3600 * 1000, new BlockingArrayQueue<>(maxThreads, 256));
     }
 
     @Override
     public void execute(final Runnable job)
     {
-        final long begin = System.nanoTime();
+        queueStats.increment();
+        long begin = System.nanoTime();
         super.execute(new Runnable()
         {
             @Override
             public void run()
             {
                 long queueLatency = System.nanoTime() - begin;
-                tasks.increment();
-                Atomics.updateMax(maxQueueLatency, queueLatency);
-                totalQueueLatency.add(queueLatency);
-                Atomics.updateMax(maxThreads, threads.incrementAndGet());
+                queueStats.decrement();
+                threadStats.increment();
+                queueLatencyStats.set(queueLatency);
                 long start = System.nanoTime();
                 try
                 {
@@ -75,9 +68,8 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
                 finally
                 {
                     long taskLatency = System.nanoTime() - start;
-                    threads.decrementAndGet();
-                    Atomics.updateMax(maxTaskLatency, taskLatency);
-                    totalTaskLatency.add(taskLatency);
+                    threadStats.decrement();
+                    taskLatencyStats.set(taskLatency);
                 }
             }
 
@@ -89,129 +81,78 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
         });
     }
 
+    /**
+     * Resets the statistics.
+     */
     @ManagedOperation(value = "resets the statistics", impact = "ACTION")
     public void reset()
     {
-        tasks.reset();
-        maxTaskLatency.set(0);
-        totalTaskLatency.reset();
-        queue.reset();
-        maxQueueLatency.set(0);
-        totalQueueLatency.reset();
-        threads.set(0);
-        maxThreads.set(0);
+        queueStats.reset();
+        queueLatencyStats.reset();
+        taskLatencyStats.reset();
+        threadStats.reset(0);
     }
 
+    /**
+     * @return the number of tasks executed
+     */
     @ManagedAttribute("the number of tasks executed")
     public long getTasks()
     {
-        return tasks.sum();
+        return taskLatencyStats.getTotal();
     }
 
+    /**
+     * @return the maximum number of busy threads
+     */
     @ManagedAttribute("the maximum number of busy threads")
     public int getMaxBusyThreads()
     {
-        return maxThreads.get();
+        return (int)threadStats.getMax();
     }
 
+    /**
+     * @return the maximum task queue size
+     */
     @ManagedAttribute("the maximum task queue size")
     public int getMaxQueueSize()
     {
-        return queue.maxSize.get();
+        return (int)queueStats.getMax();
     }
 
+    /**
+     * @return the average time a task remains in the queue, in nanoseconds
+     */
     @ManagedAttribute("the average time a task remains in the queue, in nanoseconds")
     public long getAverageQueueLatency()
     {
-        long count = tasks.sum();
-        return count == 0 ? -1 : totalQueueLatency.sum() / count;
+        return (long)queueLatencyStats.getMean();
     }
 
+    /**
+     * @return the maximum time a task remains in the queue, in nanoseconds
+     */
     @ManagedAttribute("the maximum time a task remains in the queue, in nanoseconds")
     public long getMaxQueueLatency()
     {
-        return maxQueueLatency.get();
+        return queueLatencyStats.getMax();
     }
 
+    /**
+     * @return the average task execution time, in nanoseconds
+     */
     @ManagedAttribute("the average task execution time, in nanoseconds")
     public long getAverageTaskLatency()
     {
-        long count = tasks.sum();
-        return count == 0 ? -1 : totalTaskLatency.sum() / count;
+        return (long)taskLatencyStats.getMean();
     }
 
+    /**
+     * @return the maximum task execution time, in nanoseconds
+     */
     @ManagedAttribute("the maximum task execution time, in nanoseconds")
     public long getMaxTaskLatency()
     {
-        return maxTaskLatency.get();
-    }
-
-    public static class MonitoringBlockingArrayQueue extends BlockingArrayQueue<Runnable>
-    {
-        private final AtomicInteger size = new AtomicInteger();
-        private final AtomicInteger maxSize = new AtomicInteger();
-
-        public MonitoringBlockingArrayQueue(int capacity, int growBy)
-        {
-            super(capacity, growBy);
-        }
-
-        public void reset()
-        {
-            size.set(0);
-            maxSize.set(0);
-        }
-
-        @Override
-        public void clear()
-        {
-            reset();
-            super.clear();
-        }
-
-        @Override
-        public boolean offer(Runnable job)
-        {
-            boolean added = super.offer(job);
-            if (added)
-                increment();
-            return added;
-        }
-
-        private void increment()
-        {
-            Atomics.updateMax(maxSize, size.incrementAndGet());
-        }
-
-        @Override
-        public Runnable poll()
-        {
-            Runnable job = super.poll();
-            if (job != null)
-                decrement();
-            return job;
-        }
-
-        @Override
-        public Runnable poll(long time, TimeUnit unit) throws InterruptedException
-        {
-            Runnable job = super.poll(time, unit);
-            if (job != null)
-                decrement();
-            return job;
-        }
-
-        @Override
-        public Runnable take() throws InterruptedException
-        {
-            Runnable job = super.take();
-            decrement();
-            return job;
-        }
-
-        private void decrement()
-        {
-            size.decrementAndGet();
-        }
+        return taskLatencyStats.getMax();
     }
 }
