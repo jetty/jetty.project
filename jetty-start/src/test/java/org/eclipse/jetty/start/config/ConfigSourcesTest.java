@@ -30,7 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.start.ConfigurationAssert;
-import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.Property;
 import org.eclipse.jetty.start.TestEnv;
 import org.eclipse.jetty.start.UsageException;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -75,7 +75,7 @@ public class ConfigSourcesTest
 
     private void assertProperty(ConfigSources sources, String key, String expectedValue)
     {
-        Prop prop = sources.getProp(key);
+        Property prop = sources.getProp(key);
         Assert.assertThat("getProp('" + key + "') should not be null",prop,notNullValue());
         Assert.assertThat("getProp('" + key + "')",prop.value,is(expectedValue));
     }

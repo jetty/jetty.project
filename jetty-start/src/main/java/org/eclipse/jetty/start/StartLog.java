@@ -131,7 +131,7 @@ public class StartLog
 
             if (arg.startsWith("--start-log-file"))
             {
-                logFileName = Props.getValue(arg.getLine());
+                logFileName = StartProperties.getValue(arg.getLine());
                 continue;
             }
         }

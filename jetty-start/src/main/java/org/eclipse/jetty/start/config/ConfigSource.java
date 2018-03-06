@@ -21,7 +21,7 @@ package org.eclipse.jetty.start.config;
 import java.util.Collections;
 import java.util.Set;
 
-import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.StartProperties;
 import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.StartIni;
 
@@ -67,7 +67,7 @@ public interface ConfigSource
      * 
      * @return the properties for this ConfigSource
      */
-    public Props getProps();
+    public StartProperties getProps();
     
     /**
      * Return the value of the specified property.

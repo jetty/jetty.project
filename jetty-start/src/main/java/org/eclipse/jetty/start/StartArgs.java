@@ -36,7 +36,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
@@ -143,7 +142,7 @@ public class StartArgs
     /** List of all property files */
     private List<Path> propertyFiles = new ArrayList<>();
 
-    private Props properties = new Props();
+    private StartProperties properties = new StartProperties();
     private Map<String,String> systemPropertySource = new HashMap<>();
     private List<String> rawLibs = new ArrayList<>();
 
@@ -325,9 +324,9 @@ public class StartArgs
         System.out.println("-----------");
 
         List<String> sortedKeys = new ArrayList<>();
-        for (Prop prop : properties)
+        for (Property prop : properties)
         {
-            if (prop.origin.equals(Props.ORIGIN_SYSPROP))
+            if (prop.source.equals(StartProperties.ORIGIN_SYSPROP))
             {
                 continue; // skip
             }
@@ -350,7 +349,7 @@ public class StartArgs
 
     private void dumpProperty(String key)
     {
-        Prop prop = properties.getProp(key);
+        Property prop = properties.getProp(key);
         if (prop == null)
         {
             System.out.printf(" %s (not defined)%n",key);
@@ -359,7 +358,7 @@ public class StartArgs
         {
             System.out.printf(" %s = %s%n",key,prop.value);
             if (StartLog.isDebugEnabled())
-                System.out.printf("   origin: %s%n",prop.origin);
+                System.out.printf("   origin: %s%n",prop.source);
         }
     }
 
@@ -405,13 +404,13 @@ public class StartArgs
 
         if (properties.containsKey(key))
         {
-            Prop prop = properties.getProp(key);
+            Property prop = properties.getProp(key);
             if (prop==null)
                 return; // no value set;
             
             String val = properties.expand(prop.value);
             // setup system property
-            systemPropertySource.put(key,"property:"+prop.origin);
+            systemPropertySource.put(key,"property:"+prop.source);
             System.setProperty(key,val);
         }
     }
@@ -568,7 +567,7 @@ public class StartArgs
                     String key = assign[0];
                     String value = assign.length==1?"":assign[1];
 
-                    Props.Prop p = processSystemProperty(key,value,null);
+                    Property p = processSystemProperty(key,value,null);
                     cmd.addRawArg("-D"+p.key+"="+getProperties().expand(p.value));
                 }
                 else
@@ -593,7 +592,7 @@ public class StartArgs
         // pass properties as args or as a file
         if (dryRun && exec_properties == null)
         {
-            for (Prop p : properties)
+            for (Property p : properties)
                 cmd.addRawArg(CommandLineBuilder.quote(p.key) + "=" + CommandLineBuilder.quote(p.value));
         }
         else if (properties.size() > 0)
@@ -687,7 +686,7 @@ public class StartArgs
         return moduleGraphFilename;
     }
 
-    public Props getProperties()
+    public StartProperties getProperties()
     {
         return properties;
     }
@@ -871,7 +870,7 @@ public class StartArgs
 
         if (arg.startsWith("--commands="))
         {
-            Path commands = baseHome.getPath(Props.getValue(arg));
+            Path commands = baseHome.getPath(StartProperties.getValue(arg));
 
             if (!Files.exists(commands) || !Files.isReadable(commands))
                 throw new UsageException(UsageException.ERR_BAD_ARG,"--commands file must be readable: %s",commands);
@@ -906,7 +905,7 @@ public class StartArgs
 
         if (arg.startsWith("--download="))
         {
-            addFile(null,Props.getValue(arg));
+            addFile(null,StartProperties.getValue(arg));
             run = false;
             createFiles = true;
             return;
@@ -958,7 +957,7 @@ public class StartArgs
         // Assign a fixed name to the property file for exec
         if (arg.startsWith("--exec-properties="))
         {
-            exec_properties = Props.getValue(arg);
+            exec_properties = StartProperties.getValue(arg);
             if (!exec_properties.endsWith(".properties"))
                 throw new UsageException(UsageException.ERR_BAD_ARG,"--exec-properties filename must have .properties suffix: %s",exec_properties);
             return;
@@ -974,7 +973,7 @@ public class StartArgs
         // Arbitrary Libraries
         if (arg.startsWith("--lib="))
         {
-            String cp = Props.getValue(arg);
+            String cp = StartProperties.getValue(arg);
 
             if (cp != null)
             {
@@ -1005,7 +1004,7 @@ public class StartArgs
 
         if (arg.startsWith("--list-modules="))
         {
-            listModules = Props.getValues(arg);
+            listModules = StartProperties.getValues(arg);
             run = false;
             return;
         }
@@ -1021,10 +1020,10 @@ public class StartArgs
         }
         if (arg.startsWith("--add-to-startd="))
         {
-            String value = Props.getValue(arg);
+            String value = StartProperties.getValue(arg);
             StartLog.warn("--add-to-startd is deprecated! Instead use: --create-startd --add-to-start=%s",value);
             createStartd = true;
-            startModules.addAll(Props.getValues(arg));
+            startModules.addAll(StartProperties.getValues(arg));
             run = false;
             createFiles = true;
             licenseCheckRequired = true;
@@ -1032,7 +1031,7 @@ public class StartArgs
         }
         if (arg.startsWith("--add-to-start="))
         {
-            startModules.addAll(Props.getValues(arg));
+            startModules.addAll(StartProperties.getValues(arg));
             run = false;
             createFiles = true;
             licenseCheckRequired = true;
@@ -1042,7 +1041,7 @@ public class StartArgs
         // Enable a module
         if (arg.startsWith("--module="))
         {
-            List<String> moduleNames = Props.getValues(arg);
+            List<String> moduleNames = StartProperties.getValues(arg);
             enableModules(source,moduleNames);
             return;
         }
@@ -1050,7 +1049,7 @@ public class StartArgs
         // Skip [files] validation on a module
         if (arg.startsWith("--skip-file-validation="))
         {
-            List<String> moduleNames = Props.getValues(arg);
+            List<String> moduleNames = StartProperties.getValues(arg);
             for (String moduleName : moduleNames)
             {
                 skipFileValidationModules.add(moduleName);
@@ -1061,7 +1060,7 @@ public class StartArgs
         // Create graphviz output of module graph
         if (arg.startsWith("--write-module-graph="))
         {
-            this.moduleGraphFilename = Props.getValue(arg);
+            this.moduleGraphFilename = StartProperties.getValue(arg);
             run = false;
             return;
         }
@@ -1073,9 +1072,9 @@ public class StartArgs
             String key = assign[0];
             String value = assign.length==1?"":assign[1];
             
-            Props.Prop p = processSystemProperty(key,value,source);
-            systemPropertySource.put(p.key,p.origin);
-            setProperty(p.key,p.value,p.origin);
+            Property p = processSystemProperty(key,value,source);
+            systemPropertySource.put(p.key,p.source);
+            setProperty(p.key,p.value,p.source);
             System.setProperty(p.key,p.value);
             return;
         }
@@ -1128,7 +1127,7 @@ public class StartArgs
         throw new UsageException(UsageException.ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
     
-    protected Props.Prop processSystemProperty(String key, String value, String source)
+    protected Property processSystemProperty(String key, String value, String source)
     {
         if (key.endsWith("+"))
         {
@@ -1159,7 +1158,7 @@ public class StartArgs
                 source = source+"?=";
         }
 
-        return new Prop(key, value, source);
+        return new Property(key, value, source);
     }
     
     protected void processAndSetProperty(String key,String value,String source)
@@ -1167,7 +1166,7 @@ public class StartArgs
         if (key.endsWith("+"))
         {
             key = key.substring(0,key.length() - 1);
-            Props.Prop orig = getProperties().getProp(key);
+            Property orig = getProperties().getProp(key);
             if (orig == null)
             {
                 if (value.startsWith(","))
@@ -1176,13 +1175,13 @@ public class StartArgs
             else
             {
                 value = orig.value + value;
-                source = orig.origin + "," + source;
+                source = orig.source + "," + source;
             }
         }
         else if (key.endsWith("?"))
         {
             key = key.substring(0,key.length() - 1);
-            Props.Prop preset = getProperties().getProp(key);
+            Property preset = getProperties().getProp(key);
             if (preset!=null)
                 return;
             

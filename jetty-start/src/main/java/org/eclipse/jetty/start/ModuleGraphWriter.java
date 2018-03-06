@@ -49,7 +49,7 @@ public class ModuleGraphWriter
         colorModuleFont = "#888888";
     }
 
-    public void config(Props props)
+    public void config(StartProperties props)
     {
         String prefix = "jetty.graph.";
         colorModuleBg = getProperty(props,prefix + "color.module.bg",colorModuleBg);
@@ -60,7 +60,7 @@ public class ModuleGraphWriter
         colorModuleFont = getProperty(props,prefix + "color.font",colorModuleFont);
     }
 
-    private String getProperty(Props props, String key, String defVal)
+    private String getProperty(StartProperties props, String key, String defVal)
     {
         String val = props.getString(key,defVal);
         if (val == null)

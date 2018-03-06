@@ -30,8 +30,8 @@ import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.start.FS;
-import org.eclipse.jetty.start.Props;
-import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.Property;
+import org.eclipse.jetty.start.StartProperties;
 import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
 
@@ -88,14 +88,14 @@ public class ConfigSources implements Iterable<ConfigSource>
         return null;
     }
 
-    public Prop getProp(String key)
+    public Property getProp(String key)
     {
         return getProps().getProp(key);
     }
     
-    public Props getProps()
+    public StartProperties getProps()
     {
-        Props props = new Props();
+        StartProperties props = new StartProperties();
 
         // add all properties from config sources (in reverse order)
         ListIterator<ConfigSource> iter = sources.listIterator(sources.size());

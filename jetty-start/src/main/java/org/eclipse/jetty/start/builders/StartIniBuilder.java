@@ -32,7 +32,7 @@ import java.util.Set;
 import org.eclipse.jetty.start.BaseBuilder;
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.Module;
-import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.StartProperties;
 import org.eclipse.jetty.start.StartLog;
 
 /**
@@ -72,7 +72,7 @@ public class StartIniBuilder implements BaseBuilder.Config
                 line = line.trim();
                 if (line.startsWith("--module="))
                 {
-                    List<String> moduleNames = Props.getValues(line);
+                    List<String> moduleNames = StartProperties.getValues(line);
                     this.modulesPresent.addAll(moduleNames);
                 }
                 else if (!line.startsWith("-") && line.contains("="))
@@ -85,7 +85,7 @@ public class StartIniBuilder implements BaseBuilder.Config
     }
 
     @Override
-    public String addModule(Module module, Props props) throws IOException
+    public String addModule(Module module, StartProperties props) throws IOException
     {
         if (modulesPresent.contains(module.getName()))
         {

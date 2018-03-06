@@ -292,19 +292,19 @@ public class Main
         StartArgs args = new StartArgs(baseHome);
         args.parse(baseHome.getConfigSources());
 
-        Props props = baseHome.getConfigSources().getProps();
-        Props.Prop home = props.getProp(BaseHome.JETTY_HOME);
+        StartProperties props = baseHome.getConfigSources().getProps();
+        Property home = props.getProp(BaseHome.JETTY_HOME);
         if (!args.getProperties().containsKey(BaseHome.JETTY_HOME))
             args.getProperties().setProperty(home);
         args.getProperties().setProperty(BaseHome.JETTY_HOME+".uri",
             normalizeURI(baseHome.getHomePath().toUri().toString()),
-            home.origin);
-        Props.Prop base = props.getProp(BaseHome.JETTY_BASE);
+            home.source);
+        Property base = props.getProp(BaseHome.JETTY_BASE);
         if (!args.getProperties().containsKey(BaseHome.JETTY_BASE))
             args.getProperties().setProperty(base);
         args.getProperties().setProperty(BaseHome.JETTY_BASE+".uri",
             normalizeURI(baseHome.getBasePath().toUri().toString()),
-            base.origin);
+            base.source);
         
         // ------------------------------------------------------------
         // 3) Module Registration
@@ -494,10 +494,10 @@ public class Main
 
     private void doStop(StartArgs args)
     {
-        Props.Prop stopHostProp = args.getProperties().getProp("STOP.HOST", true);
-        Props.Prop stopPortProp = args.getProperties().getProp("STOP.PORT", true);
-        Props.Prop stopKeyProp = args.getProperties().getProp("STOP.KEY", true);
-        Props.Prop stopWaitProp = args.getProperties().getProp("STOP.WAIT", true);
+        Property stopHostProp = args.getProperties().getProp("STOP.HOST", true);
+        Property stopPortProp = args.getProperties().getProp("STOP.PORT", true);
+        Property stopKeyProp = args.getProperties().getProp("STOP.KEY", true);
+        Property stopWaitProp = args.getProperties().getProp("STOP.WAIT", true);
         
         String stopHost = "127.0.0.1";
         int stopPort = -1;
