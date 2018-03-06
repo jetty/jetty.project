@@ -80,10 +80,10 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
         {
             long msgsIn=connection.getMessagesIn();
             long msgsOut=connection.getMessagesOut();
-            _messagesIn.set(msgsIn);
-            _messagesOut.set(msgsOut);
+            _messagesIn.record(msgsIn);
+            _messagesOut.record(msgsOut);
             _connectionStats.decrement();
-            _connectionDurationStats.set(System.currentTimeMillis()-connection.getCreatedTimeStamp());
+            _connectionDurationStats.record(System.currentTimeMillis()-connection.getCreatedTimeStamp());
 
             Sample sample=_samples.remove(connection);
             if (sample!=null)
