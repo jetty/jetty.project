@@ -38,7 +38,7 @@ public class JavaVersion
     private static final String UPDATE = "(?:(?<UNDERSCORE>_)(?<UPDATE>[0-9]+))?";
     private static final String PRE = "(?:-(?<PRE>[a-zA-Z0-9]+))?";
     private static final String BUILD = "(?:(?<PLUS>\\+)(?<BUILD>[0-9]+))?";
-    private static final String OPT = "(?:-(?<OPT>[-a-zA-Z0-9.]+))?";
+    private static final String OPT = "(?:-(?<OPT>[-a-zA-Z0-9.~]+))?";
 
     private static final String VSTR_FORMAT = VNUM + UPDATE + PRE + BUILD + OPT;
 
