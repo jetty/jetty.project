@@ -317,8 +317,8 @@ public class ByteArrayEndPointTest
 
         // Write more than the output capacity, then wait for idle timeout.
         fcb = new FutureCallback();
-        endp.write(fcb, BufferUtil.toBuffer("This is too long"));
         start = System.nanoTime();
+        endp.write(fcb, BufferUtil.toBuffer("This is too long"));
         try
         {
             fcb.get();
