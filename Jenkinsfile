@@ -40,7 +40,7 @@ def getFullBuild(jdk, os) {
               withMaven(
                       maven: 'maven3',
                       jdk: "$jdk",
-                      options: disableMvnReporters(),
+                      publisherStrategy: 'EXPLICIT',
                       mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
                 sh "mvn -V -B clean install -Dtest=None -T6"
               }
@@ -61,7 +61,7 @@ def getFullBuild(jdk, os) {
               withMaven(
                       maven: 'maven3',
                       jdk: "$jdk",
-                      options: disableMvnReporters(),
+                      publisherStrategy: 'EXPLICIT',
                       mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
                 sh "mvn -V -B javadoc:javadoc -T5"
               }
@@ -82,7 +82,7 @@ def getFullBuild(jdk, os) {
               withMaven(
                       maven: 'maven3',
                       jdk: "$jdk",
-                      options: disableMvnReporters(),
+                      publisherStrategy: 'EXPLICIT',
                       mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
                 //
                 sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T3 -e -Dmaven.repo.local=${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
@@ -136,7 +136,7 @@ def getFullBuild(jdk, os) {
               withMaven(
                       maven: 'maven3',
                       jdk: "$jdk",
-                      options: disableMvnReporters(),
+                      publisherStrategy: 'EXPLICIT',
                       mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
                 sh "mvn -V -B -Pcompact3 clean install -T5"
               }
@@ -196,19 +196,6 @@ def notifyBuild(String buildStatus, String jdk)
           subject: summary,
           body: detail
   )
-}
-
-def disableMvnReporters() {
-  return [
-          concordionPublisher(disabled: true),
-          dependenciesFingerprintPublisher(disabled: true),
-          findbugsPublisher(disabled: true),
-          artifactsPublisher(disabled: true),
-          invokerPublisher(disabled: true),
-          jgivenPublisher(disabled: true),
-          junitPublisher(disabled: true),
-          pipelineGraphPublisher(disabled: true),
-          openTasksPublisher(disabled: true)];
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
