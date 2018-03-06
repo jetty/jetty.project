@@ -424,7 +424,6 @@ public class Main
         {
             for (ConfigSource config : baseHome.getConfigSources())
             {
-                System.out.printf("ConfigSource %s%n",config.getId());
                 for (StartIni ini : config.getStartInis())
                     ini.update(baseHome,args.getProperties());
             }
