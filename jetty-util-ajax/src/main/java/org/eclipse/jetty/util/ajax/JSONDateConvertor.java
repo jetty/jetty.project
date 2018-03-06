@@ -71,6 +71,7 @@ public class JSONDateConvertor implements JSON.Convertor
         _format.setTimeZone(zone);
     }
 
+    @Override
     public Object fromJSON(Map map)
     {
         if (!_fromJSON)
@@ -89,6 +90,7 @@ public class JSONDateConvertor implements JSON.Convertor
         return null;
     }
 
+    @Override
     public void toJSON(Object obj, Output out)
     {
         String date = _dateCache.format((Date)obj);

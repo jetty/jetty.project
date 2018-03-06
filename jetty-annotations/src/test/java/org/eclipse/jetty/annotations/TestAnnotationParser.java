@@ -116,6 +116,7 @@ public class TestAnnotationParser
         {
             private List<String> methods = Arrays.asList("a","b","c","d","l");
 
+            @Override
             public void handle(ClassInfo info, String annotation)
             {
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
@@ -124,6 +125,7 @@ public class TestAnnotationParser
                 assertEquals("org.eclipse.jetty.annotations.ClassA",info.getClassName());
             }
 
+            @Override
             public void handle(FieldInfo info, String annotation)
             {                
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
@@ -132,6 +134,7 @@ public class TestAnnotationParser
                 assertEquals(org.objectweb.asm.Type.OBJECT,org.objectweb.asm.Type.getType(info.getFieldType()).getSort());
             }
 
+            @Override
             public void handle(MethodInfo info, String annotation)
             {                
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
@@ -158,6 +161,7 @@ public class TestAnnotationParser
 
         class MultiAnnotationHandler extends AnnotationParser.AbstractHandler
         {
+            @Override
             public void handle(ClassInfo info, String annotation)
             {
                 if (annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation))
@@ -165,6 +169,7 @@ public class TestAnnotationParser
                 assertTrue("org.eclipse.jetty.annotations.ClassB".equals(info.getClassName()));
             }
 
+            @Override
             public void handle(FieldInfo info, String annotation)
             {                
                 if (annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation))
@@ -173,6 +178,7 @@ public class TestAnnotationParser
                 fail();
             }
 
+            @Override
             public void handle(MethodInfo info, String annotation)
             {  
                 if (annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation))

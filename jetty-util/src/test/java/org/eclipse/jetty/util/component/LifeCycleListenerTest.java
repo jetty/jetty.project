@@ -22,6 +22,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.Test;
 
@@ -187,13 +189,13 @@ public class LifeCycleListenerTest
         public void lifeCycleStarted(LifeCycle event)
         {
             started = true;
-            startedTime = System.currentTimeMillis();
+            startedTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
 
         public void lifeCycleStarting(LifeCycle event)
         {
             starting = true;
-            startingTime = System.currentTimeMillis();
+            startingTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
             // need to sleep to make sure the starting and started times are not
             // the same
@@ -210,13 +212,13 @@ public class LifeCycleListenerTest
         public void lifeCycleStopped(LifeCycle event)
         {
             stopped = true;
-            stoppedTime = System.currentTimeMillis();
+            stoppedTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
 
         public void lifeCycleStopping(LifeCycle event)
         {
             stopping = true;
-            stoppingTime = System.currentTimeMillis();
+            stoppingTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
             // need to sleep to make sure the stopping and stopped times are not
             // the same

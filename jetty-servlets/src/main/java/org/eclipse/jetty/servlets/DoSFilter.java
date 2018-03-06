@@ -191,6 +191,7 @@ public class DoSFilter implements Filter
     private Scheduler _scheduler;
     private ServletContext _context;
 
+    @Override
     public void init(FilterConfig filterConfig) throws ServletException
     {
         _queues = new Queue[getMaxPriority() + 1];
@@ -290,6 +291,7 @@ public class DoSFilter implements Filter
         }
     }
 
+    @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException
     {
         doFilter((HttpServletRequest)request, (HttpServletResponse)response, filterChain);
@@ -752,6 +754,7 @@ public class DoSFilter implements Filter
         return result;
     }
 
+    @Override
     public void destroy()
     {
         LOG.debug("Destroy {}",this);
@@ -1188,6 +1191,7 @@ public class DoSFilter implements Filter
             return _type;
         }
 
+        @Override
         public void valueBound(HttpSessionBindingEvent event)
         {
             if (LOG.isDebugEnabled())
@@ -1195,6 +1199,7 @@ public class DoSFilter implements Filter
             _context = event.getSession().getServletContext();
         }
 
+        @Override
         public void valueUnbound(HttpSessionBindingEvent event)
         {
             //take the tracker out of the list of trackers
@@ -1203,6 +1208,7 @@ public class DoSFilter implements Filter
             _context = null;
         }
 
+        @Override
         public void sessionWillPassivate(HttpSessionEvent se)
         {
             //take the tracker of the list of trackers (if its still there)
@@ -1211,6 +1217,7 @@ public class DoSFilter implements Filter
             _context = null;
         }
 
+        @Override
         public void sessionDidActivate(HttpSessionEvent se)
         {
             RateTracker tracker = (RateTracker)se.getSession().getAttribute(__TRACKER);

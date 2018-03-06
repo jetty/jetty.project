@@ -49,6 +49,7 @@ public abstract class NamingEntry
     protected String _objectNameString; //the name of the object relative to the context it is stored in
    
    
+    @Override
     public String toString()
     {
         return _jndiName;

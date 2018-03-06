@@ -69,6 +69,7 @@ public class MailSessionReference extends Reference implements ObjectFactory
             passwordAuthentication = new PasswordAuthentication (user, (password.startsWith(Password.__OBFUSCATE)?Password.deobfuscate(password):password));
         }
 
+        @Override
         public PasswordAuthentication getPasswordAuthentication()
         {
             return passwordAuthentication;
@@ -110,6 +111,7 @@ public class MailSessionReference extends Reference implements ObjectFactory
      * @return the object found
      * @throws Exception if unable to get object instance
      */
+    @Override
     public Object getObjectInstance(Object ref, Name arg1, Context arg2, Hashtable arg3) throws Exception
     {
         if (ref == null)

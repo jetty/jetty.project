@@ -112,6 +112,7 @@ public class RegexRuleTest
 
     private class TestRegexRule extends RegexRule
     {
+        @Override
         public String apply(String target,HttpServletRequest request,HttpServletResponse response, Matcher matcher) throws IOException
         {
             return target;

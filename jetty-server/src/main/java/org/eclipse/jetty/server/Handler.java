@@ -82,6 +82,7 @@ public interface Handler extends LifeCycle, Destroyable
     public Server getServer();
 
     @ManagedOperation(value="destroy associated resources", impact="ACTION")
+    @Override
     public void destroy();
 }
 

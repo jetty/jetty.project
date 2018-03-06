@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,8 +32,6 @@ import javax.inject.Inject;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
-import org.eclipse.jetty.toolchain.test.OS;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,9 +57,9 @@ public class TestJettyOSGiBootWithJsp
     @Configuration
     public static Option[] configure()
     {
-        ArrayList<Option> options = new ArrayList<Option>();
+        ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort(false,"jetty-http-boot-with-jsp.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false,"jetty-http-boot-with-jsp.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
@@ -76,42 +73,11 @@ public class TestJettyOSGiBootWithJsp
         return options.toArray(new Option[options.size()]);
     }
 
-    public static List<Option> configureJettyHomeAndPort(boolean ssl,String jettySelectorFileName)
-    {
-        File etc = new File(OS.separators("src/test/config/etc"));
-        
-        List<Option> options = new ArrayList<Option>();
-        StringBuffer xmlConfigs = new StringBuffer();
-        xmlConfigs.append(new File(etc, "jetty.xml").toURI());
-        xmlConfigs.append(";");
-        if (ssl)
-        {
 
-            xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-alpn.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
-            xmlConfigs.append(";");
-
-        }
-        xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-deployer.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
-
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
-        options.add(systemProperty("jetty.http.port").value("0"));
-        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
-        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
-        options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
-        return options;
-    }
 
     public static List<Option> jspDependencies()
     {
-        List<Option> res = new ArrayList<Option>();
+        List<Option> res = new ArrayList<>();
         res.addAll(TestOSGiUtil.jspDependencies());
         //test webapp bundle
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject());
@@ -137,13 +103,12 @@ public class TestJettyOSGiBootWithJsp
         {
             client.start();
             
-            String tmp = System.getProperty("boot.jsp.port");
-            assertNotNull(tmp);
-            int port = Integer.valueOf(tmp.trim()).intValue();
+            String port = System.getProperty("boot.jsp.port");
+            assertNotNull(port);
             ContentResponse response = client.GET("http://127.0.0.1:" + port + "/jsp/jstl.jsp");
             
             assertEquals(HttpStatus.OK_200, response.getStatus());
-            String content = new String(response.getContent());
+            String content = response.getContentAsString();
             assertTrue(content.contains("JSTL Example"));           
         }
         finally

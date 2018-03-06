@@ -30,6 +30,7 @@ public class BinaryFrame extends DataFrame
         super(OpCode.BINARY);
     }
 
+    @Override
     public BinaryFrame setPayload(ByteBuffer buf)
     {
         super.setPayload(buf);

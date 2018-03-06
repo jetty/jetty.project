@@ -68,6 +68,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
     /**
      * @see org.apache.maven.plugin.Mojo#execute()
      */
+    @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
         super.execute();

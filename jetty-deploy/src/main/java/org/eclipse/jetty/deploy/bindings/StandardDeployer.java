@@ -25,12 +25,14 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 
 public class StandardDeployer implements AppLifeCycle.Binding
 {
+    @Override
     public String[] getBindingTargets()
     {
         return new String[]
         { "deploying" };
     }
 
+    @Override
     public void processBinding(Node node, App app) throws Exception
     {
         ContextHandler handler = app.getContextHandler();

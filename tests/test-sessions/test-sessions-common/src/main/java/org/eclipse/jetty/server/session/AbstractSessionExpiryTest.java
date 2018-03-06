@@ -42,6 +42,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -82,6 +83,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             accessAttribute = false;
         }
         
+        @Override
         public void sessionDestroyed(HttpSessionEvent se)
         {
             destroyedSessions.add(se.getSession().getId());
@@ -99,6 +101,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             }
         }
 
+        @Override
         public void sessionCreated(HttpSessionEvent se)
         {
             createdSessions.add(se.getSession().getId());
@@ -106,6 +109,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
     };
     
     @Test
+    @Ignore // https://github.com/eclipse/jetty.project/issues/2214
     public void testSessionExpiresWithListener() throws Exception
     {
         String contextPath = "/";

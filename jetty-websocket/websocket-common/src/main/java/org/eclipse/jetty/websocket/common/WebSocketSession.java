@@ -77,9 +77,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         WebSocketSessionScope, IncomingFrames, LogicalConnection.Listener, Connection.Listener
 {
     private static final FrameCallback EMPTY = new FrameCallback.Adapter();
-    
+
     private final Logger LOG;
-    
+
     private final WebSocketContainerScope containerScope;
     private final WebSocketPolicy policy;
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -89,18 +89,18 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private final AtomicConnectionState connectionState = new AtomicConnectionState();
     private final AtomicBoolean closeSent = new AtomicBoolean(false);
     private final AtomicBoolean closeNotified = new AtomicBoolean(false);
-    
+
     /* The websocket endpoint object itself.
      * Not declared final, as it can be decorated by other libraries (like CDI)
      */
     private Object endpoint;
-    
+
     // Callbacks
 
     // Endpoint Functions and MessageSinks
     protected EndpointFunctions endpointFunctions;
     private MessageSink activeMessageSink;
-    
+
     private ClassLoader classLoader;
     private ExtensionFactory extensionFactory;
     private BatchMode batchmode = BatchMode.AUTO;
@@ -113,14 +113,14 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private UpgradeResponse upgradeResponse;
     private CompletableFuture<Session> openFuture;
     private AtomicReference<Throwable> pendingError = new AtomicReference<>();
-    
+
     public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, Object endpoint, LogicalConnection connection)
     {
         Objects.requireNonNull(containerScope, "Container Scope cannot be null");
         Objects.requireNonNull(requestURI, "Request URI cannot be null");
-        
+
         LOG = Log.getLogger(WebSocketSession.class.getName() + "." + connection.getPolicy().getBehavior().name());
-        
+
         this.classLoader = Thread.currentThread().getContextClassLoader();
         this.containerScope = containerScope;
         this.requestURI = requestURI;
@@ -131,16 +131,16 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.policy = connection.getPolicy();
 
         this.connection.setSession(this);
-        
+
         addBean(this.connection);
         addBean(endpoint);
     }
-    
+
     public EndpointFunctions newEndpointFunctions(Object endpoint)
     {
         return new CommonEndpointFunctions(endpoint, getPolicy(), this.executor);
     }
-    
+
     public void connect()
     {
         connectionState.onConnecting();
@@ -155,20 +155,20 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         close(new CloseInfo(statusCode, reason), new DisconnectCallback());
     }
-    
+
     @Override
     public void close()
     {
         /* This is assumed to always be a NORMAL closure, no reason phrase */
         close(new CloseInfo(StatusCode.NORMAL), null);
     }
-    
+
     @Override
     public void close(CloseStatus closeStatus)
     {
         close(new CloseInfo(closeStatus.getCode(),closeStatus.getPhrase()), null);
     }
-    
+
     @Override
     public void close(int statusCode, String reason)
     {
@@ -205,25 +205,25 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         connection.disconnect();
     }
-    
+
     public void dispatch(Runnable runnable)
     {
         executor.execute(runnable);
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("starting - {}", this);
-        
+
         Iterator<RemoteEndpointFactory> iter = ServiceLoader.load(RemoteEndpointFactory.class).iterator();
         if (iter.hasNext())
             remoteEndpointFactory = iter.next();
-        
+
         if (remoteEndpointFactory == null)
             remoteEndpointFactory = this;
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("Using RemoteEndpointFactory: {}", remoteEndpointFactory);
 
@@ -247,7 +247,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         addManaged(this.endpointFunctions);
 
         connection.setMaxIdleTimeout(this.policy.getIdleTimeout());
-        
+
         Throwable fastFail;
         synchronized (pendingError)
         {
@@ -256,13 +256,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         if (fastFail != null)
             onError(fastFail);
     }
-    
+
     @Override
     protected void doStop() throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("stopping - {}", this);
-    
+
         try
         {
             CloseInfo closeInfo = new CloseInfo(StatusCode.SHUTDOWN, "Shutdown");
@@ -274,7 +274,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                     endpointFunctions.onClose(closeInfo);
                 }
             });
-        
+
         }
         catch (Throwable ignore)
         {
@@ -282,7 +282,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         }
         super.doStop();
     }
-    
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -298,7 +298,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             out.append(outgoingHandler.toString()).append(System.lineSeparator());
         }
     }
-    
+
     @Override
     public boolean equals(Object obj)
     {
@@ -328,33 +328,33 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         }
         return true;
     }
-    
+
     public ByteBufferPool getBufferPool()
     {
         return this.connection.getBufferPool();
     }
-    
+
     public ClassLoader getClassLoader()
     {
         return this.getClass().getClassLoader();
     }
-    
+
     public LogicalConnection getConnection()
     {
         return connection;
     }
-    
+
     public AtomicConnectionState getConnectionState()
     {
         return connectionState;
     }
-    
+
     @Override
     public WebSocketContainerScope getContainerScope()
     {
         return this.containerScope;
     }
-    
+
     public Object getEndpoint()
     {
         Object ret = endpoint;
@@ -364,17 +364,17 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         }
         return ret;
     }
-    
+
     public Executor getExecutor()
     {
         return executor;
     }
-    
+
     public ExtensionFactory getExtensionFactory()
     {
         return extensionFactory;
     }
-    
+
     /**
      * The idle timeout in milliseconds
      */
@@ -383,7 +383,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         return connection.getMaxIdleTimeout();
     }
-    
+
     private Throwable getInvokedCause(Throwable t)
     {
         if (t instanceof FunctionCallException)
@@ -392,82 +392,82 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             if (cause != null)
                 return cause;
         }
-        
+
         return t;
     }
-    
+
     @Override
     public InetSocketAddress getLocalAddress()
     {
         return connection.getLocalAddress();
     }
-    
+
     @ManagedAttribute(readonly = true)
     public OutgoingFrames getOutgoingHandler()
     {
         return outgoingHandler;
     }
-    
+
     @Override
     public WebSocketPolicy getPolicy()
     {
         return this.policy;
     }
-    
+
     @Override
     public String getProtocolVersion()
     {
         return protocolVersion;
     }
-    
+
     @Override
     public RemoteEndpoint getRemote()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{}.getRemote()", this.getClass().getSimpleName());
-        
+
         AtomicConnectionState.State state = connectionState.get();
-        
+
         if ((state == AtomicConnectionState.State.OPEN) || (state == AtomicConnectionState.State.CONNECTED))
         {
             return remote;
         }
-        
+
         String err = String.format("RemoteEndpoint unavailable, current state [%s], expecting [%s or %s]",
                 state.name(), AtomicConnectionState.State.OPEN.name(), AtomicConnectionState.State.CONNECTED.name());
-        
+
         throw new WebSocketException(err);
     }
-    
+
     @Override
     public InetSocketAddress getRemoteAddress()
     {
         return connection.getRemoteAddress();
     }
-    
+
     public URI getRequestURI()
     {
         return requestURI;
     }
-    
+
     @Override
     public UpgradeRequest getUpgradeRequest()
     {
         return this.upgradeRequest;
     }
-    
+
     @Override
     public UpgradeResponse getUpgradeResponse()
     {
         return this.upgradeResponse;
     }
-    
+
     @Override
     public WebSocketSession getWebSocketSession()
     {
         return this;
     }
-    
+
     @Override
     public int hashCode()
     {
@@ -476,7 +476,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         result = (prime * result) + ((connection == null) ? 0 : connection.hashCode());
         return result;
     }
-    
+
     /**
      * Incoming Raw Frames from Parser (after ExtensionStack)
      */
@@ -495,13 +495,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                 // For endpoints that want to see raw frames.
                 // These are immutable.
                 endpointFunctions.onFrame(frame);
-                
+
                 byte opcode = frame.getOpCode();
                 switch (opcode)
                 {
                     case OpCode.CLOSE:
                     {
-                        
+
                         if (connectionState.onClosing())
                         {
                             if (LOG.isDebugEnabled())
@@ -525,17 +525,17 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ConnectionState: {} - Close Frame Received", connectionState);
                         }
-                        
+
                         // let fill/parse continue
                         callback.succeed();
-                        
+
                         return;
                     }
                     case OpCode.PING:
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("PING: {}", BufferUtil.toDetailString(frame.getPayload()));
-                        
+
                         ByteBuffer pongBuf;
                         if (frame.hasPayload())
                         {
@@ -547,10 +547,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                         {
                             pongBuf = ByteBuffer.allocate(0);
                         }
-                        
+
                         endpointFunctions.onPing(frame.getPayload());
                         callback.succeed();
-                        
+
                         try
                         {
                             getRemote().sendPong(pongBuf);
@@ -566,7 +566,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("PONG: {}", BufferUtil.toDetailString(frame.getPayload()));
-                        
+
                         endpointFunctions.onPong(frame.getPayload());
                         callback.succeed();
                         break;
@@ -586,7 +586,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                         endpointFunctions.onContinuation(frame, callback);
                         if (activeMessageSink != null)
                             activeMessageSink.accept(frame, callback);
-                        
+
                         return;
                     }
                     default:
@@ -606,18 +606,18 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         {
             callback.fail(t);
         }
-        
+
         // Unset active MessageSink if this was a fin frame
         if (frame.getType().isData() && frame.isFin() && activeMessageSink != null)
             activeMessageSink = null;
     }
-    
+
     @Override
     public boolean isOpen()
     {
         return !closed.get() && (this.connectionState.get() == AtomicConnectionState.State.OPEN);
     }
-    
+
     @Override
     public boolean isSecure()
     {
@@ -625,26 +625,26 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         {
             throw new IllegalStateException("No valid UpgradeRequest yet");
         }
-        
+
         URI requestURI = upgradeRequest.getRequestURI();
-        
+
         return "wss".equalsIgnoreCase(requestURI.getScheme());
     }
-    
+
     public void notifyClose(CloseInfo closeInfo)
     {
         if (LOG.isDebugEnabled())
         {
             LOG.debug("notifyClose({}) closeNotified={} [{}]", closeInfo, closeNotified.get(), getState());
         }
-        
+
         // only notify once
         if (closeNotified.compareAndSet(false, true))
         {
             endpointFunctions.onClose(closeInfo);
         }
     }
-    
+
     /**
      * Error Event.
      * <p>
@@ -665,15 +665,15 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                 return;
             }
         }
-        
+
         Throwable cause = getInvokedCause(t);
-        
+
         if (openFuture != null && !openFuture.isDone())
             openFuture.completeExceptionally(cause);
-        
+
         // Forward Errors to User WebSocket Object
         endpointFunctions.onError(cause);
-        
+
         if (cause instanceof NotUtf8Exception)
         {
             close(new CloseInfo(StatusCode.BAD_PAYLOAD, cause.getMessage()), new DisconnectCallback());
@@ -696,7 +696,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         {
             CloseException ce = (CloseException) cause;
             FrameCallback callback = EMPTY;
-            
+
             // Force disconnect for protocol breaking status codes
             switch (ce.getStatusCode())
             {
@@ -710,7 +710,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                     callback = new DisconnectCallback();
                 }
             }
-            
+
             close(new CloseInfo(ce.getStatusCode(), ce.getMessage()), callback);
         }
         else if (cause instanceof WebSocketTimeoutException)
@@ -720,7 +720,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         else
         {
             LOG.warn("Unhandled Error (closing connection)", cause);
-            
+
             // Exception on end-user WS-Endpoint.
             // Fast-fail & close connection with reason.
             int statusCode = StatusCode.SERVER_ERROR;
@@ -731,7 +731,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             close(statusCode, cause.getMessage());
         }
     }
-    
+
     /**
      * Connection Disconnect Event.
      * <p>
@@ -755,7 +755,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             LOG.ignore(t);
         }
     }
-    
+
     /**
      * Connection Open Event
      * <p>
@@ -772,12 +772,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         connectionState.onConnecting();
         open();
     }
-    
+
+    @Override
     public WebSocketRemoteEndpoint newRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoingFrames, BatchMode batchMode)
     {
         return new WebSocketRemoteEndpoint(this, outgoingHandler, getBatchMode());
     }
-    
+
     /**
      * Open/Activate the session
      */
@@ -785,13 +786,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{}.open()", this.getClass().getSimpleName());
-        
+
         if (remote != null)
         {
             // already opened
             return;
         }
-        
+
         try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(classLoader))
         {
             // Upgrade success
@@ -799,23 +800,23 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to CONNECTED");
-                
+
                 // Connect remote
                 remote = remoteEndpointFactory.newRemoteEndpoint(connection, outgoingHandler, getBatchMode());
                 if (LOG.isDebugEnabled())
                     LOG.debug("{}.open() remote={}", this.getClass().getSimpleName(), remote);
-                
+
                 try
                 {
                     // Open WebSocket
                     endpointFunctions.onOpen(this);
-                    
+
                     // Open connection
                     if (connectionState.onOpen())
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("ConnectionState: Transition to OPEN");
-                        
+
                         // notify session listeners
                         try
                         {
@@ -827,12 +828,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                         {
                             LOG.ignore(t);
                         }
-                        
+
                         if (LOG.isDebugEnabled())
                         {
                             LOG.debug("open -> {}", dump());
                         }
-                        
+
                         if (openFuture != null)
                         {
                             openFuture.complete(this);
@@ -844,7 +845,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                     endpointFunctions.getLog().warn("Error during OPEN", t);
                     onError(new CloseException(StatusCode.SERVER_ERROR, t));
                 }
-                
+
                 /* Perform fillInterested outside of onConnected / onOpen.
                  *
                  * This is to allow for 2 specific scenarios.
@@ -877,17 +878,17 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             onError(t);
         }
     }
-    
+
     public void setExtensionFactory(ExtensionFactory extensionFactory)
     {
         this.extensionFactory = extensionFactory;
     }
-    
+
     public void setFuture(CompletableFuture<Session> fut)
     {
         this.openFuture = fut;
     }
-    
+
     /**
      * Set the timeout in milliseconds
      */
@@ -896,12 +897,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         connection.setMaxIdleTimeout(ms);
     }
-    
+
     public void setOutgoingHandler(OutgoingFrames outgoing)
     {
         this.outgoingHandler = outgoing;
     }
-    
+
     public void setUpgradeRequest(UpgradeRequest request)
     {
         this.upgradeRequest = request;
@@ -923,7 +924,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             }
         }
     }
-    
+
     public void setUpgradeResponse(UpgradeResponse response)
     {
         this.upgradeResponse = response;
@@ -936,7 +937,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
         return connection.suspend();
     }
-    
+
     /**
      * @return the default (initial) value for the batching mode.
      */
@@ -944,7 +945,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         return this.batchmode;
     }
-    
+
     @Override
     public String toString()
     {
@@ -975,14 +976,14 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         sb.append(']');
         return sb.toString();
     }
-    
+
     public interface Listener
     {
         @SuppressWarnings("unused")
         default void onCreated(WebSocketSession session) { }
 
         void onOpened(WebSocketSession session);
-        
+
         void onClosed(WebSocketSession session);
     }
 

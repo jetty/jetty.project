@@ -1275,7 +1275,9 @@ public class StartArgs
             }
             catch (Throwable x)
             {
-                throw new UsageException(UsageException.ERR_BAD_ARG, x.getMessage());
+                UsageException ue = new UsageException(UsageException.ERR_BAD_ARG, x.getMessage()==null?x.toString():x.getMessage());
+                ue.initCause(x);
+                throw ue;
             }
         }
     }

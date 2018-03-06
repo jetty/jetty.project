@@ -110,6 +110,7 @@ public class DatabaseLoginServiceTestServer
             _resourcePath = repositoryPath;
         }
 
+        @Override
         public void handle(String target, org.eclipse.jetty.server.Request baseRequest,
                 HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException

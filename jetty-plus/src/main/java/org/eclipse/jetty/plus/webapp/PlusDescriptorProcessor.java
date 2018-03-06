@@ -73,6 +73,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     /**
      * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start(WebAppContext, org.eclipse.jetty.webapp.Descriptor)
      */
+    @Override
     public void start(WebAppContext context, Descriptor descriptor)
     {
 
@@ -102,6 +103,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     /**
      * {@inheritDoc}
      */
+    @Override
     public void end(WebAppContext context,Descriptor descriptor)
     {
     }

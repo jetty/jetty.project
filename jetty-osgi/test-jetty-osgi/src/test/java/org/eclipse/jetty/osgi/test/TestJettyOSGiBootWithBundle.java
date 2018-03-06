@@ -95,7 +95,7 @@ public class TestJettyOSGiBootWithBundle
         List<Option> options = new ArrayList<Option>();
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value("etc/jetty-with-custom-class.xml,etc/jetty-http-boot-with-bundle.xml"));
         options.add(systemProperty("jetty.http.port").value("0"));
-        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
+        // TODO: FIXME: options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
         options.add(systemProperty("jetty.home.bundle").value(TEST_JETTY_HOME_BUNDLE));
         return options;
     }

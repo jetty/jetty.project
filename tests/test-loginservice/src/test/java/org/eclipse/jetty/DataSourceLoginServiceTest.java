@@ -149,7 +149,7 @@ public class DataSourceLoginServiceTest
              
              stopClient();
              
-             String newpwd = String.valueOf(System.currentTimeMillis());
+             String newpwd = String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
              
              changePassword("jetty", newpwd);
            

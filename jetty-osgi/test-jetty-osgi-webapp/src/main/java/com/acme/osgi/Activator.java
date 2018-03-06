@@ -71,6 +71,7 @@ public class Activator implements BundleActivator
      * 
      * @param context
      */
+    @Override
     public void start(BundleContext context) throws Exception
     {
         //Create webappA as a Service and target it at the default server
@@ -98,6 +99,7 @@ public class Activator implements BundleActivator
      * @see
      * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
+    @Override
     public void stop(BundleContext context) throws Exception
     {
         _srA.unregister(); 

@@ -168,6 +168,7 @@ public abstract class AbstractLoginModule implements LoginModule
      * @see javax.security.auth.spi.LoginModule#abort()
      * @throws LoginException if unable to abort
      */
+    @Override
     public boolean abort() throws LoginException
     {
         this.currentUser = null;
@@ -179,6 +180,7 @@ public abstract class AbstractLoginModule implements LoginModule
      * @return true if committed, false if not (likely not authenticated)
      * @throws LoginException if unable to commit
      */
+    @Override
     public boolean commit() throws LoginException
     {
         if (!isAuthenticated())
@@ -220,6 +222,7 @@ public abstract class AbstractLoginModule implements LoginModule
      * @return true if is authenticated, false otherwise
      * @throws LoginException if unable to login
      */
+    @Override
     public boolean login() throws LoginException
     {
         try
@@ -286,6 +289,7 @@ public abstract class AbstractLoginModule implements LoginModule
      * @return true always
      * @throws LoginException if unable to logout
      */
+    @Override
     public boolean logout() throws LoginException
     {
         this.currentUser.unsetJAASInfo(this.subject);
@@ -300,6 +304,7 @@ public abstract class AbstractLoginModule implements LoginModule
      * @param sharedState the shared state map
      * @param options the option map
      */
+    @Override
     public void initialize(Subject subject, CallbackHandler callbackHandler,
             Map<String,?> sharedState, Map<String,?> options)
     {

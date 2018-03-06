@@ -160,6 +160,7 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
         return _delegate.getPrincipal();
     }
 
+    @Override
     public void setPrincipal(HttpPrincipal principal)
     {
         _delegate.setPrincipal(principal);

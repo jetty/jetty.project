@@ -56,12 +56,12 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
         assertThat(prefix + " received close code", close.getStatusCode(), Matchers.is(expectedCloseStatusCode));
         assertThat(prefix + " received close reason", close.getReason(), reasonMatcher);
     }
-    
+
     public void awaitCloseEvent(String prefix) throws InterruptedException
     {
         assertTrue(prefix + " onClose event", closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
-    
+
     @Override
     public void onOpen(Session session, EndpointConfig config)
     {
@@ -71,7 +71,8 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
         this.session = session;
         this.config = config;
     }
-    
+
+    @Override
     public void onClose(Session session, CloseReason closeReason)
     {
         if (LOG.isDebugEnabled())
@@ -82,7 +83,8 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
         this.closeLatch.countDown();
         assertTrue("Close only happened once", closeTracked);
     }
-    
+
+    @Override
     public void onError(Session session, Throwable thr)
     {
         LOG.warn("onError()", thr);

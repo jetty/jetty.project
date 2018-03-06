@@ -26,12 +26,14 @@ import org.eclipse.jetty.util.Loader;
 
 public class JSONCollectionConvertor implements JSON.Convertor
 {
+    @Override
     public void toJSON(Object obj, JSON.Output out)
     {
         out.addClass(obj.getClass());
         out.add("list", ((Collection)obj).toArray());
     }
 
+    @Override
     public Object fromJSON(Map object)
     {
         try

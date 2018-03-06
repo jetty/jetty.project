@@ -93,6 +93,7 @@ public class javaRootURLContext implements Context
         _env = env;
     }
 
+    @Override
     public Object lookup(Name name)
         throws NamingException
     {
@@ -100,54 +101,63 @@ public class javaRootURLContext implements Context
     }
 
 
+    @Override
     public Object lookup(String name)
         throws NamingException
     {
         return getRoot().lookup(stripProtocol(name));
     }
 
+    @Override
     public void bind(Name name, Object obj)
         throws NamingException
     {
         getRoot().bind(stripProtocol(name), obj);
     }
 
+    @Override
     public void bind(String name, Object obj)
         throws NamingException
     {
         getRoot().bind(stripProtocol(name), obj);
     }
 
+    @Override
     public void unbind (String name)
         throws NamingException
     {
         getRoot().unbind(stripProtocol(name));
     }
 
+    @Override
     public void unbind (Name name)
         throws NamingException
     {
         getRoot().unbind(stripProtocol(name));
     }
 
+    @Override
     public void rename (String oldStr, String newStr)
         throws NamingException
     {
         getRoot().rename (stripProtocol(oldStr), stripProtocol(newStr));
     }
 
+    @Override
     public void rename (Name oldName, Name newName)
         throws NamingException
     {
         getRoot().rename (stripProtocol(oldName), stripProtocol(newName));
     }
 
+    @Override
     public void rebind (Name name, Object obj)
         throws NamingException
     {
         getRoot().rebind(stripProtocol(name), obj);
     }
 
+    @Override
     public void rebind (String name, Object obj)
         throws NamingException
     {
@@ -155,12 +165,14 @@ public class javaRootURLContext implements Context
     }
 
 
+    @Override
     public Object lookupLink (Name name)
         throws NamingException
     {
         return getRoot().lookupLink(stripProtocol(name));
     }
 
+    @Override
     public Object lookupLink (String name)
         throws NamingException
     {
@@ -168,12 +180,14 @@ public class javaRootURLContext implements Context
     }
 
 
+    @Override
     public Context createSubcontext (Name name)
         throws NamingException
     {
         return getRoot().createSubcontext(stripProtocol(name));
     }
 
+    @Override
     public Context createSubcontext (String name)
         throws NamingException
     {
@@ -181,12 +195,14 @@ public class javaRootURLContext implements Context
     }
 
 
+    @Override
     public void destroySubcontext (Name name)
         throws NamingException
     {
         getRoot().destroySubcontext(stripProtocol(name));
     }
 
+    @Override
     public void destroySubcontext (String name)
         throws NamingException
     {
@@ -194,6 +210,7 @@ public class javaRootURLContext implements Context
     }
 
 
+    @Override
     public NamingEnumeration list(Name name)
         throws NamingException
     {
@@ -201,18 +218,21 @@ public class javaRootURLContext implements Context
     }
 
 
+    @Override
     public NamingEnumeration list(String name)
         throws NamingException
     {
         return getRoot().list(stripProtocol(name));
     }
 
+    @Override
     public NamingEnumeration listBindings(Name name)
         throws NamingException
     {
         return getRoot().listBindings(stripProtocol(name));
     }
 
+    @Override
     public NamingEnumeration listBindings(String name)
         throws NamingException
     {
@@ -220,6 +240,7 @@ public class javaRootURLContext implements Context
     }
 
 
+    @Override
     public Name composeName (Name name,
                              Name prefix)
         throws NamingException
@@ -227,6 +248,7 @@ public class javaRootURLContext implements Context
         return getRoot().composeName(name, prefix);
     }
 
+    @Override
     public String composeName (String name,
                                String prefix)
         throws NamingException
@@ -235,23 +257,27 @@ public class javaRootURLContext implements Context
     }
 
 
+    @Override
     public void close ()
         throws NamingException
     {
     }
 
+    @Override
     public String getNameInNamespace ()
         throws NamingException
     {
         return URL_PREFIX;
     }
 
+    @Override
     public NameParser getNameParser (Name name)
         throws NamingException
     {
         return __javaNameParser;
     }
 
+    @Override
     public NameParser getNameParser (String name)
         throws NamingException
     {
@@ -259,6 +285,7 @@ public class javaRootURLContext implements Context
     }
 
 
+    @Override
     public Object addToEnvironment(String propName,
                                    Object propVal)
         throws NamingException
@@ -266,12 +293,14 @@ public class javaRootURLContext implements Context
        return _env.put (propName,propVal);
     }
 
+    @Override
     public Object removeFromEnvironment(String propName)
         throws NamingException
     {
         return _env.remove (propName);
     }
 
+    @Override
     public Hashtable getEnvironment ()
     {
         return _env;

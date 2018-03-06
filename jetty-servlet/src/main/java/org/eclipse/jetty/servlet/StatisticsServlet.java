@@ -51,6 +51,7 @@ public class StatisticsServlet extends HttpServlet
     private MemoryMXBean _memoryBean;
     private Connector[] _connectors;
 
+    @Override
     public void init() throws ServletException
     {
         ServletContext context = getServletContext();
@@ -78,11 +79,13 @@ public class StatisticsServlet extends HttpServlet
         }
     }
 
+    @Override
     public void doPost(HttpServletRequest sreq, HttpServletResponse sres) throws ServletException, IOException
     {
         doGet(sreq, sres);
     }
 
+    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
         if (_statsHandler == null)

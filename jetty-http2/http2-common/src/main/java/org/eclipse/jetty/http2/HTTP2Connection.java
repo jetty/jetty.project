@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.parser.Parser;
@@ -35,13 +36,16 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
+import org.eclipse.jetty.util.thread.TryExecutor;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 public class HTTP2Connection extends AbstractConnection implements WriteFlusher.Listener
 {
     protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
-
+    
+    // TODO remove this once we are sure EWYK is OK for http2
+    private static final boolean PEC_MODE = Boolean.getBoolean("org.eclipse.jetty.http2.PEC_MODE");
+    
     private final Queue<Runnable> tasks = new ArrayDeque<>();
     private final HTTP2Producer producer = new HTTP2Producer();
     private final AtomicLong bytesIn = new AtomicLong();
@@ -51,14 +55,16 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private final int bufferSize;
     private final ExecutionStrategy strategy;
 
-    public HTTP2Connection(ByteBufferPool byteBufferPool, ReservedThreadExecutor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
-        super(endPoint, executor.getExecutor());
+        super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.strategy = new EatWhatYouKill(producer, executor.getExecutor(), executor);
+        if (PEC_MODE)
+            executor = new TryExecutor.NoTryExecutor(executor);
+        this.strategy = new EatWhatYouKill(producer, executor);
         LifeCycle.start(strategy);
     }
 
@@ -281,9 +287,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         @Override
         public InvocationType getInvocationType()
         {
-            // TODO: see also AbstractHTTP2ServerConnectionFactory.reservedThreads.
-            // TODO: it's non blocking here because reservedThreads=0.
-            return InvocationType.NON_BLOCKING;
+            return InvocationType.EITHER;
         }
     }
 }

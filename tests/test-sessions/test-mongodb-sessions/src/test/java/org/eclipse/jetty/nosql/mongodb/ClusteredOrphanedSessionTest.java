@@ -55,6 +55,7 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
 
 
     @Test
+    @Override
     public void testOrphanedSession() throws Exception
     {
         super.testOrphanedSession();

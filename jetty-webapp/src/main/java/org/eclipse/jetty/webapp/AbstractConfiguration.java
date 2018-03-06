@@ -80,8 +80,8 @@ public class AbstractConfiguration implements Configuration
     {
         addDependents(Arrays.asList(classes).stream().map(Class::getName).collect(Collectors.toList()).toArray(new String[classes.length]));
     }
-    
-    /** 
+
+    /**
      * Protect classes from modification by the web application by adding them
      * to the {@link WebAppConfiguration#getSystemClasses()}
      * @param classes classname or package pattern
@@ -91,7 +91,7 @@ public class AbstractConfiguration implements Configuration
         _system.add(classes);
     }
 
-    /** 
+    /**
      * Hide classes from the web application by adding them
      * to the {@link WebAppConfiguration#getServerClasses()}
      * @param classes classname or package pattern
@@ -101,7 +101,7 @@ public class AbstractConfiguration implements Configuration
         _server.add(classes);
     }
 
-    /** 
+    /**
      * Expose classes to the web application by adding them
      * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
      * @param classes classname or package pattern
@@ -116,9 +116,9 @@ public class AbstractConfiguration implements Configuration
         }
     }
 
-    /** 
+    /**
      * Protect classes from modification by the web application by adding them
-     * to the {@link WebAppConfiguration#getSystemClasses()} and 
+     * to the {@link WebAppConfiguration#getSystemClasses()} and
      * expose them to the web application by adding them
      * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
      * @param classes classname or package pattern
@@ -134,8 +134,8 @@ public class AbstractConfiguration implements Configuration
             _server.add("-"+c);
         }
     }
-    
-    
+
+
     @Override
     public Collection<String> getDependents()
     {
@@ -153,29 +153,34 @@ public class AbstractConfiguration implements Configuration
     {
         return _system;
     }
-    
+
     @Override
     public ClasspathPattern getServerClasses()
     {
         return _server;
     }
-    
+
+    @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
     }
 
+    @Override
     public void configure(WebAppContext context) throws Exception
     {
     }
 
+    @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
     }
 
+    @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
     }
 
+    @Override
     public void destroy(WebAppContext context) throws Exception
     {
     }
@@ -194,5 +199,5 @@ public class AbstractConfiguration implements Configuration
 
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-    }    
+    }
 }

@@ -221,6 +221,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
      *
      * @return the InetSocketAddress for the established connection. (or null, if the connection is no longer established)
      */
+    @Override
     public InetSocketAddress getInetSocketAddress()
     {
         if(session.isOpen())

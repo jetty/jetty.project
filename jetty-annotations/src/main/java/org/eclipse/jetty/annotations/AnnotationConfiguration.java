@@ -167,6 +167,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
            _stat = stat; 
         }
 
+        @Override
         public Void call() throws Exception
         {            
             if (_stat != null)
@@ -275,6 +276,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             return _indexMap.size();
         }
         
+        @Override
         public String toString()
         {
             if (_ordering == null)

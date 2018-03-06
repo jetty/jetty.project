@@ -41,12 +41,14 @@ public class AppLifeCyclePathCollector implements AppLifeCycle.Binding
         return actualOrder;
     }
 
+    @Override
     public String[] getBindingTargets()
     {
         return new String[]
         { "*" };
     }
 
+    @Override
     public void processBinding(Node node, App app) throws Exception
     {
         actualOrder.add(node);

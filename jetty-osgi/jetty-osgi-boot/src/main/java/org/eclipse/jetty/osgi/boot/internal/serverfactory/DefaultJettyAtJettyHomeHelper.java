@@ -103,7 +103,7 @@ public class DefaultJettyAtJettyHomeHelper
         File jettyHomeDir = null;
         Bundle jettyHomeBundle = null;
      
-        Dictionary<String,String> properties = new Hashtable<String,String>();
+        Dictionary<String, Object> properties = new Hashtable<>();
         if (jettyHomeSysProp != null)
         {
             jettyHomeSysProp = Util.resolvePropertyValue(jettyHomeSysProp);
@@ -158,8 +158,8 @@ public class DefaultJettyAtJettyHomeHelper
         List<URL> configURLs = jettyHomeDir != null ? getJettyConfigurationURLs(jettyHomeDir) : getJettyConfigurationURLs(jettyHomeBundle, properties);
 
         LOG.info("Configuring the default jetty server with {}",configURLs);
-        String home=properties.get(OSGiServerConstants.JETTY_HOME);
-        String base=properties.get(OSGiServerConstants.JETTY_BASE);
+        String home=(String)properties.get(OSGiServerConstants.JETTY_HOME);
+        String base=(String)properties.get(OSGiServerConstants.JETTY_BASE);
         if (base==null)
             base=home;
         LOG.info("JETTY.HOME="+home);
@@ -187,7 +187,6 @@ public class DefaultJettyAtJettyHomeHelper
             Util.setProperty(properties, OSGiServerConstants.JETTY_HOME, home);
             Util.setProperty(properties, OSGiServerConstants.JETTY_BASE, base);
             Server server = ServerInstanceWrapper.configure(null, configURLs, properties);
-            
             
             //Register the default Server instance as an OSGi service.
             //The JettyServerServiceTracker will notice it and set it up to deploy bundles as wars etc
@@ -223,7 +222,7 @@ public class DefaultJettyAtJettyHomeHelper
     private static List<URL> getJettyConfigurationURLs(File jettyhome) 
     throws MalformedURLException
     {
-        List<URL> configURLs = new ArrayList<URL>();
+        List<URL> configURLs = new ArrayList<>();
         String jettyetc = System.getProperty(JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);
         StringTokenizer tokenizer = new StringTokenizer(jettyetc, ";,", false);
         while (tokenizer.hasMoreTokens())
@@ -251,7 +250,7 @@ public class DefaultJettyAtJettyHomeHelper
     private static List<URL> getJettyConfigurationURLs(Bundle configurationBundle, Dictionary properties)
     throws Exception
     {
-        List<URL> configURLs = new ArrayList<URL>();
+        List<URL> configURLs = new ArrayList<>();
         String files = System.getProperty(JETTY_ETC_FILES, DEFAULT_JETTY_ETC_FILES);       
         StringTokenizer tokenizer = new StringTokenizer(files, ";,", false);
 

@@ -25,7 +25,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ExecutorSizedThreadPool;
+import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.SuspendToken;
@@ -49,7 +49,7 @@ public class LocalWebSocketConnection implements LogicalConnection
     {
         this("anon",bufferPool);
     }
-    
+
     public LocalWebSocketConnection(URI uri, ByteBufferPool bufferPool)
     {
         this(uri.toASCIIString(), bufferPool);
@@ -59,7 +59,7 @@ public class LocalWebSocketConnection implements LogicalConnection
     {
         this.id = id;
         this.bufferPool = bufferPool;
-        this.executor = new ExecutorSizedThreadPool();
+        this.executor = new ExecutorThreadPool();
         this.policy = WebSocketPolicy.newServerPolicy();
     }
 
@@ -86,12 +86,12 @@ public class LocalWebSocketConnection implements LogicalConnection
         if (LOG.isDebugEnabled())
             LOG.debug("disconnect()");
     }
-    
+
     @Override
     public void fillInterested()
     {
     }
-    
+
     @Override
     public ByteBufferPool getBufferPool()
     {
@@ -121,25 +121,25 @@ public class LocalWebSocketConnection implements LogicalConnection
     {
         return 0;
     }
-    
+
     @Override
     public WebSocketPolicy getPolicy()
     {
         return policy;
     }
-    
+
     @Override
     public InetSocketAddress getRemoteAddress()
     {
         return null;
     }
-    
+
     @Override
     public boolean isOpen()
     {
         return false;
     }
-    
+
     @Override
     public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {

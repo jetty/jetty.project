@@ -75,6 +75,17 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>biz.aQute.bnd</groupId>
+      <artifactId>bndlib</artifactId>
+      <version>2.4.0</version>
+      <exclusions>
+          <exclusion>
+              <groupId>org.osgi</groupId>
+              <artifactId>org.osgi.core</artifactId>
+          </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi</artifactId>
       <version>3.12.50</version>
@@ -270,6 +281,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>javax-websocket-client-impl</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-servlet</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
@@ -288,12 +305,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>javax-websocket-server-impl</artifactId>
-      <version>${project.version}</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-client-impl</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
@@ -390,11 +401,13 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
+      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
+      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -417,6 +430,9 @@
         <version>2.20.1</version>
         <configuration>
           <skipTests>true</skipTests>
+          <systemPropertyVariables>
+            <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
       <plugin>
@@ -466,7 +482,7 @@
     <profile>
       <id>jdk8</id>
       <activation>
-        <jdk>[1.8,1.9)</jdk>
+        <jdk>[1.8,9)</jdk>
       </activation>
       <dependencies>
         <dependency>
@@ -496,7 +512,7 @@
         <dependency>
           <groupId>org.conscrypt</groupId>
           <artifactId>conscrypt-openjdk-uber</artifactId>
-          <version>1.0.0.RC11</version>
+          <version>${conscrypt.version}</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
@@ -507,7 +523,7 @@
         <configuration>
           <skipTests>false</skipTests>
           <excludes>
-             <exclude>**/*JDK9*</exclude>
+             <exclude>**/TestJettyOSGiBootHTTP2JDK9*</exclude>
           </excludes>
           <!-- No point defining -Xbootclasspath as the actual OSGi VM is run as a forked process by pax-exam -->
           <!-- But we do pass the sys property of the alpn-boot jar so that it can be configured inside tests -->
@@ -520,9 +536,27 @@
     <profile>
       <id>jdk9</id>
       <activation>
-        <jdk>[1.9,)</jdk>
+        <jdk>[9,)</jdk>
       </activation>
       <dependencies>
+        <dependency>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-alpn-conscrypt-server</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-alpn-conscrypt-client</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.conscrypt</groupId>
+          <artifactId>conscrypt-openjdk-uber</artifactId>
+          <version>1.0.0.RC11</version>
+          <scope>test</scope>
+        </dependency>
         <dependency>
           <groupId>org.eclipse.jetty</groupId>
           <artifactId>jetty-alpn-java-server</artifactId>
@@ -542,9 +576,9 @@
          <artifactId>maven-surefire-plugin</artifactId>
          <configuration>
            <skipTests>false</skipTests>
-           <includes>
-              <include>**/*JDK9</include>
-           </includes>
+           <excludes>
+             <exclude>**/TestJettyOSGiBootHTTP2</exclude>  
+           </excludes>
          </configuration>
        </plugin>
       </plugins>

@@ -60,6 +60,7 @@ public class DebugHandlerTest
 {
     public final static HostnameVerifier __hostnameverifier = new HostnameVerifier()
     {
+        @Override
         public boolean verify(String hostname, SSLSession session)
         {
             return true;

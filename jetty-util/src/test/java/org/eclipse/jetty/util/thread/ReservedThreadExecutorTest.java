@@ -63,6 +63,7 @@ public class ReservedThreadExecutorTest
     @Before
     public void before() throws Exception
     {
+        System.gc();
         _executor = new TestExecutor();
         _reservedExecutor = new ReservedThreadExecutor(_executor, SIZE);
         _reservedExecutor.start();
@@ -91,7 +92,7 @@ public class ReservedThreadExecutorTest
         assertThat(_executor._queue.size(), is(SIZE));
 
         for (int i = 0; i < SIZE; i++)
-            _executor.execute();
+            _executor.startThread();
         assertThat(_executor._queue.size(), is(0));
 
         waitForAllAvailable();
@@ -117,7 +118,7 @@ public class ReservedThreadExecutorTest
         assertThat(_executor._queue.size(), is(SIZE));
 
         for (int i = 0; i < SIZE; i++)
-            _executor.execute();
+            _executor.startThread();
         assertThat(_executor._queue.size(), is(0));
 
         waitForAllAvailable();
@@ -146,8 +147,7 @@ public class ReservedThreadExecutorTest
 
         waitForAllAvailable();
     }
-
-
+    
     @Test
     public void testShrink() throws Exception
     {
@@ -156,47 +156,20 @@ public class ReservedThreadExecutorTest
         _reservedExecutor.stop();
         _reservedExecutor.setIdleTimeout(IDLE,TimeUnit.MILLISECONDS);
         _reservedExecutor.start();
-
-        // Reserved threads are lazily started.
-        assertThat(_executor._queue.size(), is(0));
-
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(false));
-        _executor.execute();
-        waitForNoPending();
-
-        CountDownLatch latch = new CountDownLatch(1);
-        Runnable waitForLatch = ()->{try {latch.await();} catch(Exception e){}};
-        assertThat(_reservedExecutor.tryExecute(waitForLatch),is(true));
-        _executor.execute();
-
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(false));
-        _executor.execute();
-        waitForNoPending();
-
-        latch.countDown();
-        waitForAvailable(2);
-
-        // Check that regular moderate activity keeps the pool a moderate size
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(true));
-        waitForAvailable(2);
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(true));
-        waitForAvailable(1);
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(true));
-        waitForAvailable(1);
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(true));
-        waitForAvailable(1);
-        TimeUnit.MILLISECONDS.sleep(IDLE/2);
-        assertThat(_reservedExecutor.tryExecute(NOOP),is(true));
-        waitForAvailable(1);
-
-        // check fully idle goes to zero
-        TimeUnit.MILLISECONDS.sleep(IDLE);
         assertThat(_reservedExecutor.getAvailable(),is(0));
+        
+        assertThat(_reservedExecutor.tryExecute(NOOP),is(false));
+        assertThat(_reservedExecutor.tryExecute(NOOP),is(false));
+        
+        _executor.startThread();
+        _executor.startThread();
 
+        waitForAvailable(2);
+        
+        int available = _reservedExecutor.getAvailable();
+        assertThat(available,is(2));
+        Thread.sleep((5*IDLE)/2);
+        assertThat(_reservedExecutor.getAvailable(),is(0));
     }
 
     protected void waitForNoPending() throws InterruptedException
@@ -240,7 +213,7 @@ public class ReservedThreadExecutorTest
             _queue.addLast(task);
         }
 
-        public void execute()
+        public void startThread()
         {
             Runnable task = _queue.pollFirst();
             if (task != null)

@@ -61,6 +61,7 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
         return ContainerLifeCycle.dump(this);
     }
 
+    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         // incoming

@@ -66,6 +66,7 @@ public class SchedulerTest
     @Before
     public void before() throws Exception
     {
+        System.gc();
         _scheduler.start();
     }
 
@@ -163,9 +164,9 @@ public class SchedulerTest
             }
         },2000,TimeUnit.MILLISECONDS);
 
-        Thread.sleep(1600);
+        Thread.sleep(100);
         Assert.assertTrue(task.cancel());
-        Thread.sleep(1000);
+        Thread.sleep(2500);
         Assert.assertEquals(0,executed.get());
     }
 
@@ -200,139 +201,5 @@ public class SchedulerTest
 
             Assert.assertTrue(latch.await(2 * delay, TimeUnit.MILLISECONDS));
         }
-    }
-
-    @Test
-    @Slow
-    @Ignore
-    public void testManySchedulesAndCancels() throws Exception
-    {
-        schedule(100,5000,3800,200);
-    }
-    
-    @Test
-    public void testFewSchedulesAndCancels() throws Exception
-    {
-        schedule(10,500,380,20);
-    }
-
-    @Test
-    @Slow
-    @Ignore
-    public void testBenchmark() throws Exception
-    {
-        schedule(2000,10000,2000,50);
-        PlatformMonitor benchmark = new PlatformMonitor();
-        PlatformMonitor.Start start = benchmark.start();
-        System.err.println(start);
-        System.err.println(_scheduler);
-        schedule(2000,30000,2000,50);
-        PlatformMonitor.Stop stop = benchmark.stop();
-        System.err.println(stop);
-    }
-
-    private void schedule(int threads,final int duration, final int delay, final int interval) throws Exception
-    {
-        Thread[] test = new Thread[threads];
-
-        final AtomicInteger schedules = new AtomicInteger();
-        final SampleStatistic executions = new SampleStatistic();
-        final SampleStatistic cancellations = new SampleStatistic();
-
-        for (int i=test.length;i-->0;)
-        {
-            test[i]=new Thread()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        Random random = new Random();
-                        long now = System.currentTimeMillis();
-                        long start=now;
-                        long end=start+duration;
-                        boolean last=false;
-                        while (!last)
-                        {
-                            final long expected=now+delay;
-                            int cancel=random.nextInt(interval);
-                            final boolean expected_to_execute;
-
-                            last=now+2*interval>end;
-                            if (cancel==0 || last)
-                            {
-                                expected_to_execute=true;
-                                cancel=delay+1000;
-                            }
-                            else
-                                expected_to_execute=false;
-
-                            schedules.incrementAndGet();
-                            Scheduler.Task task=_scheduler.schedule(new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    long lateness=System.currentTimeMillis()-expected;
-                                    if (expected_to_execute)
-                                        executions.set(lateness);
-                                    else
-                                        executions.set(6666);
-
-                                }
-                            },delay,TimeUnit.MILLISECONDS);
-
-                            Thread.sleep(cancel);
-                            now = System.currentTimeMillis();
-                            if (task.cancel())
-                            {
-                                long lateness=now-expected;
-                                if (expected_to_execute)
-                                    cancellations.set(lateness);
-                                else
-                                    cancellations.set(0);
-                            }
-                            else
-                            {
-                                if (!expected_to_execute)
-                                {
-                                    cancellations.set(9999);
-                                }
-                            }
-
-                            Thread.yield();
-                        }
-                    }
-                    catch (InterruptedException e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-            };
-        }
-
-        for (Thread thread : test)
-            thread.start();
-
-        for (Thread thread : test)
-            thread.join();
-
-        // there were some executions and cancellations
-        Assert.assertThat(executions.getCount(),Matchers.greaterThan(0L));
-        Assert.assertThat(cancellations.getCount(),Matchers.greaterThan(0L));
-
-        // All executed or cancelled
-        // Not that SimpleScheduler can execute and cancel an event!
-        Assert.assertThat(0L+schedules.get(),Matchers.lessThanOrEqualTo(executions.getCount()+cancellations.getCount()));
-
-        // No really late executions
-        Assert.assertThat(executions.getMax(),Matchers.lessThan(500L));
-
-        // Executions on average are close to the expected time
-        Assert.assertThat(executions.getMean(),Matchers.lessThan(500.0));
-
-        // No cancellations long after expected executions
-        Assert.assertThat(cancellations.getMax(),Matchers.lessThan(500L));
     }
 }

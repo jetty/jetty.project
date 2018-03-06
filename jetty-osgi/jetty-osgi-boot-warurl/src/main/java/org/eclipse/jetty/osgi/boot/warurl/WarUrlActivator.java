@@ -42,6 +42,7 @@ public class WarUrlActivator implements BundleActivator
      * @param context the {@link BundleContext} to use
      */
     @SuppressWarnings("unchecked")
+    @Override
     public void start(BundleContext context) throws Exception
     {
         Dictionary props = new Hashtable();
@@ -55,6 +56,7 @@ public class WarUrlActivator implements BundleActivator
      * as osgi might shutdown every registered service
      * by default: need test)
      */
+    @Override
     public void stop(BundleContext context) throws Exception
     {
         try

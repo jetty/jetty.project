@@ -42,6 +42,7 @@ public class PlusDecorator implements Decorator
         _context = context;
     }
 
+    @Override
     public Object decorate (Object o)
     {
 
@@ -68,6 +69,7 @@ public class PlusDecorator implements Decorator
         return o;
     }
 
+    @Override
     public void destroy (Object o)
     {
         LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);

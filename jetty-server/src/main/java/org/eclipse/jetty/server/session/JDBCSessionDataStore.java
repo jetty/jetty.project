@@ -302,6 +302,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         public PreparedStatement getExpiredSessionsStatement (Connection connection, String canonicalContextPath, String vhost, long expiry)
         throws SQLException
         {
+            // TODO expiry should be a delay rather than an absolute time.
+            
             if (_dbAdaptor == null)
                 throw new IllegalStateException("No DB adaptor");
 
@@ -324,6 +326,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         public PreparedStatement getMyExpiredSessionsStatement (Connection connection, SessionContext sessionContext, long expiry)
         throws SQLException
         {
+            // TODO expiry should be a delay rather than an absolute time.
+            
             if (_dbAdaptor == null)
                 throw new IllegalStateException("No DB adaptor");
 
@@ -628,6 +632,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         
         Runnable r = new Runnable()
         {
+            @Override
             public void run ()
             {
                 try (Connection connection = _dbAdaptor.getConnection();

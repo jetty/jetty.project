@@ -42,6 +42,7 @@ public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
     
     
     @Test
+    @Override
     public void testWebappObjectInSession() throws Exception
     {
         super.testWebappObjectInSession();

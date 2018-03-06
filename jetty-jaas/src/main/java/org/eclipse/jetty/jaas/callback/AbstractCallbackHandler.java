@@ -51,6 +51,7 @@ public abstract class AbstractCallbackHandler implements CallbackHandler
         return _credential;
     }
 
+    @Override
     public  void handle (Callback[] callbacks)
         throws IOException, UnsupportedCallbackException
     {

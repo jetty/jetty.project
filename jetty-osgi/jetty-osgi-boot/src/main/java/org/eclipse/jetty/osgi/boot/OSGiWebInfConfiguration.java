@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.osgi.boot;
 
-
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 
@@ -30,7 +29,7 @@ import org.eclipse.jetty.webapp.WebInfConfiguration;
  * Handle adding resources found in bundle fragments, and add them into the 
  */
 public class OSGiWebInfConfiguration extends WebInfConfiguration
-{        
+{
     @Deprecated
     public static final String SYS_PROP_TLD_BUNDLES = OSGiMetaInfConfiguration.SYS_PROP_TLD_BUNDLES;
     @Deprecated

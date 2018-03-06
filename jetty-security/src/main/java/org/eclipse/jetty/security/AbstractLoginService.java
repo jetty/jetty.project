@@ -55,6 +55,7 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
         {
             _roleName=name;
         }
+        @Override
         public String getName()
         {
             return _roleName;
@@ -93,6 +94,7 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String getName()
         {
             return _name;
@@ -128,6 +130,7 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
     /** Set the identityService.
      * @param identityService the identityService to set
      */
+    @Override
     public void setIdentityService(IdentityService identityService)
     {
         if (isRunning())

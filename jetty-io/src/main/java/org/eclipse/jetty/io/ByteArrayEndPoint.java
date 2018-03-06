@@ -341,7 +341,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         {
             while (BufferUtil.isEmpty(_out) && !isOutputShutdown())
             {
-                _hasOutput.await(time,unit);
+                if (!_hasOutput.await(time,unit))
+                    return null;
             }
             b=_out;
             _out=BufferUtil.allocate(b.capacity());
@@ -493,6 +494,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     /**
      *
      */
+    @Override
     public void reset()
     {
         try(Locker.Lock lock = _locker.lock())

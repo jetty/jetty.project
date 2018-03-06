@@ -12,7 +12,7 @@
   <name>Jetty :: Hazelcast Session Manager</name>
 
   <properties>
-    <hazelcast.version>3.8.2</hazelcast.version>
+    <hazelcast.version>3.9.3</hazelcast.version>
     <bundle-symbolic-name>${project.groupId}.hazelcast</bundle-symbolic-name>
   </properties>
 

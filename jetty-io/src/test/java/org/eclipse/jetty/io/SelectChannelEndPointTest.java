@@ -20,8 +20,10 @@ package org.eclipse.jetty.io;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedInputStream;
@@ -94,6 +96,7 @@ public class SelectChannelEndPointTest
     @Before
     public void startManager() throws Exception
     {
+        System.gc();
         _writeCount = 1;
         _lastEndPoint = null;
         _lastEndPointLatch = new CountDownLatch(1);
@@ -189,7 +192,7 @@ public class SelectChannelEndPointTest
             EndPoint _endp = getEndPoint();
             try
             {
-                _last = System.currentTimeMillis();
+                _last = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 boolean progress = true;
                 while (progress)
                 {
@@ -293,7 +296,7 @@ public class SelectChannelEndPointTest
 
         // wait for read timeout
         client.setSoTimeout(500);
-        long start = System.currentTimeMillis();
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         try
         {
             client.getInputStream().read();
@@ -301,7 +304,7 @@ public class SelectChannelEndPointTest
         }
         catch (SocketTimeoutException e)
         {
-            long duration = System.currentTimeMillis() - start;
+            long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
             Assert.assertThat("timeout duration", duration, greaterThanOrEqualTo(400L));
         }
 
@@ -351,7 +354,7 @@ public class SelectChannelEndPointTest
         }
 
         // wait for read timeout
-        long start = System.currentTimeMillis();
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         try
         {
             client.getInputStream().read();
@@ -359,7 +362,7 @@ public class SelectChannelEndPointTest
         }
         catch (SocketTimeoutException e)
         {
-            assertTrue(System.currentTimeMillis() - start >= 400);
+            assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start >= 400);
         }
 
         // write then shutdown
@@ -403,7 +406,7 @@ public class SelectChannelEndPointTest
         _lastEndPoint.setIdleTimeout(10 * specifiedTimeout);
         Thread.sleep((11 * specifiedTimeout) / 10);
 
-        long start = System.currentTimeMillis();
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         try
         {
             int b = clientInputStream.read();
@@ -411,7 +414,7 @@ public class SelectChannelEndPointTest
         }
         catch (SocketTimeoutException e)
         {
-            int elapsed = Long.valueOf(System.currentTimeMillis() - start).intValue();
+            int elapsed = Long.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start).intValue();
             Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3 * specifiedTimeout / 4));
         }
 
@@ -431,9 +434,11 @@ public class SelectChannelEndPointTest
     @Test
     public void testIdle() throws Exception
     {
+        int idleTimeout = 2000;
+        
         Socket client = newClient();
 
-        client.setSoTimeout(3000);
+        client.setSoTimeout(idleTimeout*10);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
@@ -441,6 +446,7 @@ public class SelectChannelEndPointTest
         _manager.accept(server);
 
         // Write client to server
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
 
         // Verify echo server to client
@@ -452,19 +458,17 @@ public class SelectChannelEndPointTest
         }
 
         Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
-        int idleTimeout = 500;
         _lastEndPoint.setIdleTimeout(idleTimeout);
 
         // read until idle shutdown received
-        long start = System.currentTimeMillis();
         int b = client.getInputStream().read();
         assertEquals(-1, b);
-        long idle = System.currentTimeMillis() - start;
-        assertTrue(idle > idleTimeout / 2);
-        assertTrue(idle < idleTimeout * 2);
+        long idle = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
+        assertThat(idle, greaterThan(idleTimeout / 2L));
+        assertThat(idle, lessThan(idleTimeout * 2L));
 
         // But endpoint may still be open for a little bit.
-        for (int i = 0; i < 10; ++i)
+        for (int i = 0; i < 20; ++i)
         {
             if (_lastEndPoint.isOpen())
                 Thread.sleep(2 * idleTimeout / 10);
@@ -509,10 +513,10 @@ public class SelectChannelEndPointTest
         clientOutputStream.flush();
 
         // read until idle shutdown received
-        long start = System.currentTimeMillis();
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         int b = clientInputStream.read();
         assertEquals('E', b);
-        long idle = System.currentTimeMillis() - start;
+        long idle = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
         assertTrue(idle > idleTimeout / 2);
         assertTrue(idle < idleTimeout * 2);
 
@@ -551,7 +555,7 @@ public class SelectChannelEndPointTest
         BufferedOutputStream out = new BufferedOutputStream(client.getOutputStream());
         final CountDownLatch latch = new CountDownLatch(writes);
         final InputStream in = new BufferedInputStream(client.getInputStream());
-        final long start = System.currentTimeMillis();
+        final long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         out.write(bytes);
         out.write(count);
         out.flush();
@@ -586,7 +590,7 @@ public class SelectChannelEndPointTest
                             count = count * 10 + (b - '0');
                             b = in.read();
                         }
-                        last = System.currentTimeMillis();
+                        last = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
                         //if (latch.getCount()%1000==0)
                         //    System.out.println(writes-latch.getCount());
@@ -597,7 +601,7 @@ public class SelectChannelEndPointTest
                 catch (Throwable e)
                 {
 
-                    long now = System.currentTimeMillis();
+                    long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                     System.err.println("count=" + count);
                     System.err.println("latch=" + latch.getCount());
                     System.err.println("time=" + (now - start));
@@ -741,6 +745,7 @@ public class SelectChannelEndPointTest
         {
             new Thread()
             {
+                @Override
                 public void run()
                 {
                     try(Socket client = newClient();)

@@ -25,6 +25,7 @@ import static org.junit.Assert.assertThat;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
@@ -170,7 +171,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         for (int i = 0; i < 5; i++)
         {
             Thread.sleep(sleep);
-            if (rateTracker.isRateExceeded(System.currentTimeMillis()))
+            if (rateTracker.isRateExceeded(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())))
                 exceeded = true;
         }
         return exceeded;

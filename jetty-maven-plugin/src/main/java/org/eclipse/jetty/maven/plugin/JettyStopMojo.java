@@ -62,12 +62,11 @@ public class JettyStopMojo extends AbstractMojo
      * @parameter
      */
     protected int stopWait;
-    
- 
-    
+
     
     
 
+    @Override
     public void execute() throws MojoExecutionException, MojoFailureException 
     {
         if (stopPort <= 0)

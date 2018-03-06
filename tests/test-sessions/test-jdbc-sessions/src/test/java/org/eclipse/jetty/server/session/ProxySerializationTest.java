@@ -53,6 +53,7 @@ public class ProxySerializationTest extends AbstractProxySerializationTest
     
 
     @Test
+    @Override
     public void testProxySerialization() throws Exception
     {
         super.testProxySerialization();

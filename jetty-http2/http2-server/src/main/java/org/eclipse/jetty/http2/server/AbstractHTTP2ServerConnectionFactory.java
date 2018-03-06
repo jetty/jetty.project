@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 
 @ManagedObject
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
@@ -49,7 +48,6 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
-    private int reservedThreads;
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -143,20 +141,24 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     }
 
     /**
-     * @see ReservedThreadExecutor
-     * @return The number of reserved threads
+     * @return -1
+     * @deprecated feature removed, no replacement
      */
-    @ManagedAttribute("The number of threads reserved for high priority tasks")
+    @Deprecated
     public int getReservedThreads()
     {
-        return reservedThreads;
+        return -1;
     }
 
+    /**
+     * @param threads ignored
+     * @deprecated feature removed, no replacement
+     * @throws UnsupportedOperationException when invoked
+     */
+    @Deprecated
     public void setReservedThreads(int threads)
     {
-        // TODO: see also HTTP2Connection.FillableCallback.
-        // TODO: currently disabled since the only value that works is 0.
-//        this.reservedThreads = threads;
+        throw new UnsupportedOperationException();
     }
 
     public HttpConfiguration getHttpConfiguration()
@@ -183,28 +185,12 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
             streamIdleTimeout = endPoint.getIdleTimeout();
         session.setStreamIdleTimeout(streamIdleTimeout);
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
-
-        ReservedThreadExecutor executor = provideReservedThreadExecutor(connector);
         
         ServerParser parser = newServerParser(connector, session);
-        HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), executor,
+        HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
                         endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
         connection.addListener(connectionListener);
         return configure(connection, connector, endPoint);
-    }
-
-    protected ReservedThreadExecutor provideReservedThreadExecutor(Connector connector)
-    {
-        synchronized (this)
-        {
-            ReservedThreadExecutor executor = getBean(ReservedThreadExecutor.class);
-            if (executor == null)
-            {
-                executor = new ReservedThreadExecutor(connector.getExecutor(), getReservedThreads());
-                addManaged(executor);
-            }
-            return executor;
-        }
     }
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);

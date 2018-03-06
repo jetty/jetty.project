@@ -67,6 +67,23 @@ public class JettyDeployWar extends JettyRunWarMojo
     
 
 
+  
+
+
+    /** 
+     * @see org.eclipse.jetty.maven.plugin.JettyRunWarMojo#checkPackagingConfiguration()
+     */
+    @Override
+    public void checkPackagingConfiguration() throws MojoExecutionException
+    {
+        return; //do not require this to be a war project
+    }
+
+
+
+
+
+
     @Override
     public void finishConfigurationBeforeStart() throws Exception
     {

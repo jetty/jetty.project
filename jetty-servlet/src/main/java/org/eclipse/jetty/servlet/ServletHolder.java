@@ -233,12 +233,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean equals(Object o)
     {
         return o instanceof ServletHolder && compareTo((ServletHolder)o)==0;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int hashCode()
     {
         return _name==null?System.identityHashCode(this):_name.hashCode();
@@ -304,6 +306,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doStart()
         throws Exception
     {
@@ -436,6 +439,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doStop()
         throws Exception
     {

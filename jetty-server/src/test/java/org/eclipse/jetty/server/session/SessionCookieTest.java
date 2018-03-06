@@ -28,6 +28,8 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * SessionCookieTest
  */
@@ -169,7 +171,7 @@ public class SessionCookieTest
         mgr.setSessionCache(store);
         mgr.setSessionIdManager(idMgr);
         
-        long now = System.currentTimeMillis();
+        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         
         Session session = new Session(null, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30)); 
 

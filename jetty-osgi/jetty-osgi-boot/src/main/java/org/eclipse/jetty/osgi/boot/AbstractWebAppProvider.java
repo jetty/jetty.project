@@ -105,6 +105,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             _webApp = webApp;
         }
 
+        @Override
         public String getContextPath()
         {
             return _contextPath;
@@ -561,6 +562,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     /** 
      * @see org.eclipse.jetty.deploy.AppProvider#setDeploymentManager(org.eclipse.jetty.deploy.DeploymentManager)
      */
+    @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
         _deploymentManager = deploymentManager;
@@ -568,6 +570,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     
     
     /* ------------------------------------------------------------ */
+    @Override
     public ContextHandler createContextHandler(App app) throws Exception
     {
         if (app == null)

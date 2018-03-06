@@ -31,6 +31,8 @@ import org.junit.Before;
 
 import static org.junit.Assert.*;
 
+import java.util.concurrent.TimeUnit;
+
 public class ClientNonClusteredSessionScavengingTest
     extends AbstractNonClusteredSessionScavengingTest
 {
@@ -60,7 +62,7 @@ public class ClientNonClusteredSessionScavengingTest
             fail( e.getMessage() );
         }
     }
-    private static final String MAP_NAME = Long.toString( System.currentTimeMillis() );
+    private static final String MAP_NAME = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
 
     private HazelcastInstance hazelcastInstance;
 
@@ -69,7 +71,7 @@ public class ClientNonClusteredSessionScavengingTest
         throws Exception
     {
         Config config = new Config().addMapConfig( new MapConfig().setName( MAP_NAME ) ) //
-            .setInstanceName( "beer" );
+            .setInstanceName( Long.toString( System.currentTimeMillis() ) );
         // start Hazelcast instance
         hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance( config );
     }

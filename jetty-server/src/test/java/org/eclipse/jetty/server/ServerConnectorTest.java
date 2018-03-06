@@ -255,7 +255,7 @@ public class ServerConnectorTest
         try (StacklessLogging stackless = new StacklessLogging(AbstractConnector.class))
         {
             AtomicLong spins = new AtomicLong();
-            ServerConnector connector = new ServerConnector(server)
+            ServerConnector connector = new ServerConnector(server,1,1)
             {
                 @Override
                 public void accept(int acceptorID) throws IOException
@@ -267,7 +267,7 @@ public class ServerConnectorTest
             server.addConnector(connector);
             server.start();
 
-            Thread.sleep(1000);
+            Thread.sleep(1500);
             assertThat(spins.get(), Matchers.lessThan(5L));
         }
         finally

@@ -947,11 +947,13 @@ public class HttpFields implements Iterable<HttpField>
         int _cursor;       // index of next element to return
         int _last=-1;
 
+        @Override
         public boolean hasNext() 
         {
             return _cursor != _size;
         }
 
+        @Override
         public HttpField next() 
         {
             int i = _cursor;
@@ -961,6 +963,7 @@ public class HttpFields implements Iterable<HttpField>
             return _fields[_last=i];
         }
 
+        @Override
         public void remove() 
         {
             if (_last<0)

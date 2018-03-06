@@ -361,6 +361,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     protected abstract SendFailure send(Connection connection, HttpExchange exchange);
 
+    @Override
     public void newConnection(Promise<Connection> promise)
     {
         createConnection(promise);
@@ -376,6 +377,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         return exchanges.remove(exchange);
     }
 
+    @Override
     public void close()
     {
         abort(new AsynchronousCloseException());

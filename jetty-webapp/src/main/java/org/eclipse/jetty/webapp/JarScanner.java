@@ -142,6 +142,7 @@ public abstract class JarScanner extends org.eclipse.jetty.util.PatternMatcher
     }
     
     
+    @Override
     public void matched (URI uri)
     throws Exception
     {

@@ -101,6 +101,7 @@ public class QoSFilter implements Filter
     private Queue<AsyncContext>[] _queues;
     private AsyncListener[] _listeners;
 
+    @Override
     public void init(FilterConfig filterConfig)
     {
         int max_priority = __DEFAULT_MAX_PRIORITY;
@@ -135,6 +136,7 @@ public class QoSFilter implements Filter
             context.setAttribute(filterConfig.getFilterName(), this);
     }
 
+    @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
         boolean accepted = false;
@@ -266,6 +268,7 @@ public class QoSFilter implements Filter
         }
     }
 
+    @Override
     public void destroy()
     {
     }

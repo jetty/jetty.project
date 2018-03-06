@@ -118,6 +118,7 @@ public class ValidUrlRule extends Rule
         return (!Character.isISOControl(codepoint)) && block != null && block != Character.UnicodeBlock.SPECIALS;       
     }
 
+    @Override
     public String toString()
     {
         return super.toString() + "[" + _code + ":" + _reason + "]";

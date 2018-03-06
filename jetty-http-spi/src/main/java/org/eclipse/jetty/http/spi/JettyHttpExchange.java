@@ -176,6 +176,7 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setPrincipal(HttpPrincipal principal)
     {
         _delegate.setPrincipal(principal);

@@ -228,6 +228,7 @@ public abstract class AbstractLogger implements Logger
     }
 
 
+    @Override
     public void debug(String msg, long arg)
     {
         if (isDebugEnabled())
