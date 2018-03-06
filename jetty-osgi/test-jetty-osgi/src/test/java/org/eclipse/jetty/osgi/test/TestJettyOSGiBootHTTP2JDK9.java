@@ -152,7 +152,6 @@ public class TestJettyOSGiBootHTTP2JDK9
             ContentResponse response = httpClient.GET("https://localhost:"+port+"/jsp/jstl.jsp");
             assertEquals(200, response.getStatus());
             assertTrue(response.getContentAsString().contains("JSTL Example"));
-
         }
         finally
         {
@@ -160,5 +159,4 @@ public class TestJettyOSGiBootHTTP2JDK9
             if (http2Client != null) http2Client.stop();
         }
     }
-
 }

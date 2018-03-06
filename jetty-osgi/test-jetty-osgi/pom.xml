@@ -508,7 +508,7 @@
         <dependency>
           <groupId>org.conscrypt</groupId>
           <artifactId>conscrypt-openjdk-uber</artifactId>
-          <version>1.0.0.RC11</version>
+          <version>${conscrypt.version}</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
