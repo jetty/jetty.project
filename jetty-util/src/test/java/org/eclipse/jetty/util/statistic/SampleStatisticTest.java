@@ -61,6 +61,7 @@ public class SampleStatisticTest
             assertNearEnough("mean"+d,results[d][0], stats.getMean());
             assertNearEnough("stddev"+d,results[d][1], stats.getStdDev());
         }
+        System.err.println(stats);
     }
 
     private void assertNearEnough(String test,double expected, double actual)
