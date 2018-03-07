@@ -241,6 +241,7 @@ public class BlockheadServer
                         policy,
                         bufferPool,
                         extensionStack,
+                        connFut,
                         endp,
                         executor);
 
@@ -258,10 +259,6 @@ public class BlockheadServer
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Websocket upgrade {} {}", request.getRequestURI(), wsConnection);
-
-                if(connFut != null)
-                    connFut.complete(wsConnection);
-
             }
             catch(Throwable cause)
             {

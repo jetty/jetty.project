@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Arrays;
@@ -70,6 +71,8 @@ public class WebSocketClientTest
     public static void startServer() throws Exception
     {
         server = new BlockheadServer();
+        server.getPolicy().setMaxTextMessageSize(200 * 1024);
+        server.getPolicy().setMaxBinaryMessageSize(200 * 1024);
         server.start();
     }
 
@@ -80,7 +83,7 @@ public class WebSocketClientTest
     }
 
     @AfterClass
-    public void stopServer() throws Exception
+    public static void stopServer() throws Exception
     {
         server.stop();
     }
@@ -122,6 +125,7 @@ public class WebSocketClientTest
             // Setup echo of frames on server side
             serverConn.setIncomingFrameConsumer((frame)->{
                 WebSocketFrame copy = WebSocketFrame.copy(frame);
+                copy.setMask(null); // strip client mask (if present)
                 serverConn.write(copy);
             });
 
@@ -237,7 +241,8 @@ public class WebSocketClientTest
         assertThat("Local Socket Address / Host",local.getAddress().getHostAddress(),notNullValue());
         assertThat("Local Socket Address / Port",local.getPort(),greaterThan(0));
 
-        assertThat("Remote Socket Address / Host",remote.getAddress().getHostAddress(),is(wsUri.getHost()));
+        String uriHostAddress = InetAddress.getByName(wsUri.getHost()).getHostAddress();
+        assertThat("Remote Socket Address / Host",remote.getAddress().getHostAddress(),is(uriHostAddress));
         assertThat("Remote Socket Address / Port",remote.getPort(),greaterThan(0));
     }
 
@@ -264,6 +269,7 @@ public class WebSocketClientTest
             // Setup echo of frames on server side
             serverConn.setIncomingFrameConsumer((frame)->{
                 WebSocketFrame copy = WebSocketFrame.copy(frame);
+                copy.setMask(null); // strip client mask (if present)
                 serverConn.write(copy);
             });
 

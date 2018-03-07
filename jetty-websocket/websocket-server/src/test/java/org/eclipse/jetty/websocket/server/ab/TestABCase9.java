@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.DataFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.Test;
 
 /**
@@ -176,7 +177,7 @@ public class TestABCase9 extends AbstractABCase
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
             fuzzer.send(send);
-            fuzzer.expect(expect);
+            fuzzer.expect(expect, Timeouts.POLL_EVENT*2, Timeouts.POLL_EVENT_UNIT);
         }
     }
 

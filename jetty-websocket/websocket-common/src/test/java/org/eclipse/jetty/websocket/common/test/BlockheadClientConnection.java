@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -29,9 +30,14 @@ import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 
 public class BlockheadClientConnection extends BlockheadConnection
 {
-    public BlockheadClientConnection(WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack, EndPoint endp, Executor executor)
+    public BlockheadClientConnection(WebSocketPolicy policy,
+                                     ByteBufferPool bufferPool,
+                                     ExtensionStack extensionStack,
+                                     CompletableFuture<BlockheadConnection> openFut,
+                                     EndPoint endp,
+                                     Executor executor)
     {
-        super(policy, bufferPool, extensionStack, endp, executor);
+        super(policy, bufferPool, extensionStack, openFut, endp, executor);
     }
 
     @Override

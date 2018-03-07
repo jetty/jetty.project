@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common.test;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.IOException;
 import java.net.SocketException;
@@ -184,6 +185,7 @@ public class Fuzzer implements AutoCloseable
 
             LOG.debug("{} {}",prefix,actual);
 
+            Assert.assertThat(prefix, actual, is(notNullValue()));
             Assert.assertThat(prefix + ".opcode",OpCode.name(actual.getOpCode()),is(OpCode.name(expected.getOpCode())));
             prefix += "/" + actual.getOpCode();
             if (expected.getOpCode() == OpCode.CLOSE)

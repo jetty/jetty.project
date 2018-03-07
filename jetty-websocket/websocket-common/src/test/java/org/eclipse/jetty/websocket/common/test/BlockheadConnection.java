@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.test;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
@@ -57,11 +58,12 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     private final ExtensionStack extensionStack;
     private final OutgoingNetwork networkOutgoing;
     private final IncomingCapture incomingCapture;
+    private final CompletableFuture<BlockheadConnection> openFuture;
     private ByteBuffer networkBuffer;
     private HttpFields upgradeResponseHeaders;
     private HttpFields upgradeRequestHeaders;
 
-    public BlockheadConnection(WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack, EndPoint endp, Executor executor)
+    public BlockheadConnection(WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack, CompletableFuture<BlockheadConnection> openFut, EndPoint endp, Executor executor)
     {
         super(endp, executor);
         this.LOG = Log.getLogger(this.getClass());
@@ -70,6 +72,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
         this.parser = new Parser(policy, bufferPool);
         this.generator = new Generator(policy, bufferPool, false);
         this.extensionStack = extensionStack;
+        this.openFuture = openFut;
 
         this.extensionStack.configure(this.parser);
         this.extensionStack.configure(this.generator);
@@ -179,22 +182,26 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     public void onOpen()
     {
         super.onOpen();
+        if(this.openFuture != null)
+            this.openFuture.complete(this);
         fillInterested();
     }
 
     public void processConnectionError(Throwable cause)
     {
         LOG.warn("Connection Error", cause);
+        if(this.openFuture != null)
+            this.openFuture.completeExceptionally(cause);
     }
 
     public void setUpgradeRequestHeaders(HttpFields upgradeRequestHeaders)
     {
-        this.upgradeRequestHeaders = upgradeRequestHeaders;
+        this.upgradeRequestHeaders = new HttpFields(upgradeRequestHeaders);
     }
 
     public void setUpgradeResponseHeaders(HttpFields upgradeResponseHeaders)
     {
-        this.upgradeResponseHeaders = upgradeResponseHeaders;
+        this.upgradeResponseHeaders = new HttpFields(upgradeResponseHeaders);
     }
 
     public void setIncomingFrameConsumer(Consumer<Frame> consumer)
@@ -209,7 +216,11 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
 
     public void writeRaw(ByteBuffer buf) throws IOException
     {
-        getEndPoint().flush(buf);
+        boolean done = false;
+        while (!done)
+        {
+            done = getEndPoint().flush(buf);
+        }
     }
 
     public void writeRaw(ByteBuffer buf, int numBytes) throws IOException

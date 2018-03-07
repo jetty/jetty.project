@@ -186,7 +186,7 @@ public class ClientConnectTest
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         // actual value for this test is irrelevant, its important that this
         // header actually be sent with a value (the value specified)
-        upgradeRequest.setHeader("Authorization", "Bogus SHA1");
+        upgradeRequest.setHeader("Authorization", "Basic YWxhZGRpbjpvcGVuc2VzYW1l");
         Future<Session> future = client.connect(wsocket,wsUri,upgradeRequest);
 
         try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
@@ -194,13 +194,14 @@ public class ClientConnectTest
             HttpFields upgradeRequestHeaders = serverConn.getUpgradeRequestHeaders();
 
             Session sess = future.get(30, TimeUnit.SECONDS);
-            sess.close();
 
             HttpField authHeader = upgradeRequestHeaders.getField(HttpHeader.AUTHORIZATION);
             assertThat("Server Request Authorization Header", authHeader, is(notNullValue()));
-            assertThat("Server Request Authorization Value", authHeader.getValue(), is("Authorization: Bogus SHA1"));
+            assertThat("Server Request Authorization Value", authHeader.getValue(), is("Basic YWxhZGRpbjpvcGVuc2VzYW1l"));
             assertThat("Connect.UpgradeRequest", wsocket.connectUpgradeRequest, notNullValue());
             assertThat("Connect.UpgradeResponse", wsocket.connectUpgradeResponse, notNullValue());
+
+            sess.close();
         }
     }
     

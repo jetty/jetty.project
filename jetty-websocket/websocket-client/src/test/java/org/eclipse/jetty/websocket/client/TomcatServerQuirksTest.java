@@ -95,7 +95,7 @@ public class TomcatServerQuirksTest
         server.setRequestHandling((req, resp) -> {
             // Add the extra problematic header that triggers bug found in jetty-io
             resp.setHeader("Transfer-Encoding", "chunked");
-            return true;
+            return false;
         });
 
         try

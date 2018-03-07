@@ -28,7 +28,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -120,14 +119,8 @@ public class SlowServerTest
                 String prefix = "Server Frame[" + i + "]";
                 Assert.assertThat(prefix, serverFrame, is(notNullValue()));
                 Assert.assertThat(prefix + ".opCode", serverFrame.getOpCode(), is(OpCode.TEXT));
-                Assert.assertThat(prefix + ".payload", serverFrame.getPayloadAsUTF8(), is("Hello"));
+                Assert.assertThat(prefix + ".payload", serverFrame.getPayloadAsUTF8(), is("Hello/" + i + "/"));
             }
-
-            // Close
-            tsocket.getSession().close(StatusCode.NORMAL, "Done");
-
-            Assert.assertTrue("Client Socket Closed", tsocket.closeLatch.await(10, TimeUnit.SECONDS));
-            tsocket.assertCloseCode(StatusCode.NORMAL);
         }
     }
 
@@ -161,11 +154,6 @@ public class SlowServerTest
 
             // Verify receive
             Assert.assertThat("Message Receive Count", clientSocket.messageQueue.size(), is(messageCount));
-
-            // Close server connection (by exiting try-with-resources)
         }
-
-        Assert.assertTrue("Client Socket Closed", clientSocket.closeLatch.await(10, TimeUnit.SECONDS));
-        clientSocket.assertCloseCode(StatusCode.NORMAL);
     }
 }

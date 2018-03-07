@@ -222,6 +222,7 @@ public class BlockheadClientRequest extends HttpRequest implements Response.Comp
                 client.getPolicy(),
                 client.getBufferPool(),
                 extensionStack,
+                fut,
                 endp,
                 client.getExecutor());
 
@@ -232,8 +233,6 @@ public class BlockheadClientRequest extends HttpRequest implements Response.Comp
 
         // Now swap out the connection
         endp.upgrade(connection);
-
-        fut.complete(connection);
     }
 
     /**
