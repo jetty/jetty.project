@@ -18,14 +18,13 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.Assert.*;
 
 import java.nio.charset.StandardCharsets;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-public class 
+public class SearchPatternTest
 
 {
 
