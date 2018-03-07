@@ -510,16 +510,22 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     {
         if (LOG.isDebugEnabled()) LOG.debug("Loading session {} from DataStore", id);
 
-        Entity entity = _datastore.get(makeKey(id, _context));
-        if (entity == null)
+        try
         {
-            if (LOG.isDebugEnabled()) LOG.debug("No session {} in DataStore ", id);
-            return null;
+            Entity entity = _datastore.get(makeKey(id, _context));
+            if (entity == null)
+            {
+                if (LOG.isDebugEnabled()) LOG.debug("No session {} in DataStore ", id);
+                return null;
+            }
+            else
+            {
+                return sessionFromEntity(entity);
+            }
         }
-        else
+        catch (Exception e)
         {
-            SessionData data = sessionFromEntity(entity);
-            return data;
+            throw new UnreadableSessionDataException(id, _context, e);
         }
     }
 
@@ -706,7 +712,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
                     .setKind(_model.getKind())
                     .setProjection(_model.getExpiry())
-                    .setFilter(PropertyFilter.eq(_model.getId(), id))
+                    .setFilter(CompositeFilter.and(PropertyFilter.eq(_model.getId(), id), 
+                                                   PropertyFilter.eq(_model.getContextPath(), _context.getCanonicalContextPath()),
+                                                   PropertyFilter.eq(_model.getVhost(), _context.getVhost())))
+                    //.setFilter(PropertyFilter.eq(_model.getId(), id))
                     .build();
 
             QueryResults<ProjectionEntity> presults;
@@ -731,7 +740,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         {
             Query<Entity> query = Query.newEntityQueryBuilder()
                     .setKind(_model.getKind())
-                    .setFilter(PropertyFilter.eq(_model.getId(), id))
+                    .setFilter(CompositeFilter.and(PropertyFilter.eq(_model.getId(), id), 
+                                                   PropertyFilter.eq(_model.getContextPath(), _context.getCanonicalContextPath()),
+                                                   PropertyFilter.eq(_model.getVhost(), _context.getVhost())))
+                    //.setFilter(PropertyFilter.eq(_model.getId(), id))
                     .build();
             
             QueryResults<Entity> results;
@@ -912,8 +924,8 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         if (entity == null)
             return null;
 
-        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
-        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        final AtomicReference<SessionData> reference = new AtomicReference<>();
+        final AtomicReference<Exception> exception = new AtomicReference<>();
         Runnable load = new Runnable()
         {
             public void run ()
@@ -974,7 +986,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
        _context.run(load);
     
         if (exception.get() != null)
+        {
             throw exception.get();
+        }
         
         return reference.get();
     }

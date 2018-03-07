@@ -17,58 +17,57 @@
 //
 
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.gcloud.session;
 
+import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
+import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.After;
-import org.junit.Before;
 
 /**
- * FileSessionDataStoreTest
+ * GCloudSessionDataStoreTest
  *
  *
  */
-public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
+public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-    @Before
-    public void before() throws Exception
+
+    @After
+    public void teardown () throws Exception
     {
-       FileTestHelper.setup();
+       GCloudTestSuite.__testSupport.deleteSessions();
     }
     
-    @After 
-    public void after()
-    {
-       FileTestHelper.teardown();
-    }
- 
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return FileTestHelper.newSessionDataStoreFactory();
+        return GCloudSessionTestSupport.newSessionDataStoreFactory(GCloudTestSuite.__testSupport.getDatastore());
     }
 
-    
+  
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        FileTestHelper.createFile(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-                                  data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getAllAttributes());
+        GCloudTestSuite.__testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
+                                                    data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getAllAttributes());
+
     }
 
    
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        FileTestHelper.createFile(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-                                  data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), null);
+
+        GCloudTestSuite.__testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
+                                                    data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), null);
     }
 
-   
+    
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
-        return (FileTestHelper.getFile(data.getId()) != null);
+        return GCloudTestSuite.__testSupport.checkSessionExists(data.getId());
     }
 
 }

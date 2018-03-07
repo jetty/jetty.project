@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.After;
-import org.junit.Test;
 
 public class SessionExpiryTest
     extends AbstractSessionExpiryTest

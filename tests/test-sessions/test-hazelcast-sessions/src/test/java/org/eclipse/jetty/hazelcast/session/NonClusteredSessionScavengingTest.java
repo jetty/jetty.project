@@ -19,13 +19,16 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.server.session.AbstractNonClusteredSessionScavengingTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.After;
-
-import static org.junit.Assert.*;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * NonClusteredSessionScavengingTest

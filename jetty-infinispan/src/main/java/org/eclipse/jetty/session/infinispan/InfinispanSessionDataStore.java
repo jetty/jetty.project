@@ -24,9 +24,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
@@ -84,8 +84,8 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public SessionData load(String id) throws Exception
     {  
-        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
-        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        final AtomicReference<SessionData> reference = new AtomicReference<>();
+        final AtomicReference<Exception> exception = new AtomicReference<>();
         
         Runnable load = new Runnable()
         {
@@ -102,7 +102,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
                 }
                 catch (Exception e)
                 {
-                    exception.set(e);
+                    exception.set(new UnreadableSessionDataException(id, _context, e));
                 }
             }
         };
@@ -138,11 +138,10 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
        
        long now = System.currentTimeMillis();
        
-       Set<String> expired = new HashSet<String>();
+       Set<String> expired = new HashSet<>();
        
        //TODO if there is NOT an idle timeout set on entries in infinispan, need to check other sessions
-       //that are not currently in the SessionDataStore (eg they've been passivated)
-       
+       //that are not currently in the SessionDataStore (eg they've been passivated)   
        for (String candidate:candidates)
        {
            if (LOG.isDebugEnabled())
@@ -204,8 +203,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
-        try
-        {
         //Put an idle timeout on the cache entry if the session is not immortal - 
         //if no requests arrive at any node before this timeout occurs, or no node 
         //scavenges the session before this timeout occurs, the session will be removed.
@@ -217,10 +214,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
 
         if (LOG.isDebugEnabled())
             LOG.debug("Session {} saved to infinispan, expires {} ", id, data.getExpiry());
-        } catch (Exception e)
-        {
-            e.printStackTrace();
-        }
     }
     
     
@@ -264,8 +257,8 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     {
         // TODO find a better way to do this that does not pull into memory the
         // whole session object
-        final AtomicReference<Boolean> reference = new AtomicReference<Boolean>();
-        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        final AtomicReference<Boolean> reference = new AtomicReference<>();
+        final AtomicReference<Exception> exception = new AtomicReference<>();
 
         Runnable load = new Runnable()
         {

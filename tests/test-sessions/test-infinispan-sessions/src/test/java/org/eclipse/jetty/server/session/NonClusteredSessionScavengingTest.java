@@ -19,12 +19,10 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
-
+import static org.junit.Assert.fail;
 
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.AfterClass;

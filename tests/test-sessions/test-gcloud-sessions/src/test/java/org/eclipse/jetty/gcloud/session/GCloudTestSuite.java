@@ -31,6 +31,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+  GCloudSessionDataStoreTest.class,
   InvalidationSessionTest.class,
   ClusteredLastAccessTimeTest.class,
   ClusteredSessionScavengingTest.class,

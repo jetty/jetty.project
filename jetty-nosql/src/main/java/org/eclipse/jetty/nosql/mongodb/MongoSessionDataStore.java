@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -267,7 +268,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                 }
                 catch (Exception e)
                 {
-                    exception.set(e);
+                    exception.set(new UnreadableSessionDataException(id, _context, e));
                 }
             }
         };
@@ -349,6 +350,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         DBObject fields = new BasicDBObject();
         fields.put(__EXPIRY, 1);
         fields.put(__VALID, 1);
+        fields.put(getContextSubfield(__VERSION), 1);
         
         DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id), fields);
         
@@ -361,9 +363,16 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         
         Long expiry = (Long)sessionDocument.get(__EXPIRY);
         
-        if (expiry.longValue() <= 0)
-            return true; //never expires, its good
-        return (expiry.longValue() > System.currentTimeMillis()); //expires later
+        //expired?
+        if (expiry.longValue() > 0 && expiry.longValue() < System.currentTimeMillis())
+            return false; //it's expired
+        
+        //does it exist for this context?
+        Object version = getNestedValue(sessionDocument, getContextSubfield(__VERSION));
+        if (version == null)
+            return false;
+        
+        return true;
     }
 
 
@@ -427,13 +436,31 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                 if (LOG.isDebugEnabled()) LOG.debug("{} Mongo found old expired session {}", _context, id+" exp="+session.get(__EXPIRY));
                 expiredSessions.add(id);
             }
-
         }
         finally
         {
-            oldExpiredSessions.close();
+            if (oldExpiredSessions != null)
+                oldExpiredSessions.close();
         }
+
         
+        //check through sessions that were candidates, but not found as expired. 
+        //they may no longer be persisted, in which case they are treated as expired.
+        for (String c:candidates)
+        {
+            if (!expiredSessions.contains(c))
+            {
+                try
+                {
+                    if (!exists(c))
+                        expiredSessions.add(c);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Problem checking potentially expired session {}", c, e);
+                }
+            }
+        }
         return expiredSessions;
     }
 

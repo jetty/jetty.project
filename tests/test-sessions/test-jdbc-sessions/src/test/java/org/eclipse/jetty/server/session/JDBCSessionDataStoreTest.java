@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.session;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
 /**
  * JDBCSessionDataStoreTest
@@ -45,18 +44,14 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStoreTest#createSessionDataStoreFactory()
-     */
+
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         return JdbcTestHelper.newSessionDataStoreFactory();
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStoreTest#persistSession(org.eclipse.jetty.server.session.SessionData)
-     */
+
     @Override
     public void persistSession(SessionData data)
     throws Exception
@@ -69,10 +64,6 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
 
 
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStoreTest#persistUnreadableSession(org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
@@ -84,13 +75,7 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
 
     
     
-    
-    
-    
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStoreTest#checkSessionPersisted(org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {

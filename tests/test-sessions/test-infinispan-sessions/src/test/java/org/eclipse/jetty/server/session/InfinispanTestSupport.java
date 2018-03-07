@@ -113,4 +113,25 @@ public class InfinispanTestSupport
             }
         }
     }
+    
+    
+    public void createSession (SessionData data)
+    throws Exception
+    {
+        _cache.put(data.getContextPath()+"_"+data.getVhost()+"_"+data.getId(), data);
+    }
+
+    
+    public void createUnreadableSession (SessionData data)
+    {
+        
+    }
+    
+    
+    public boolean checkSessionExists (SessionData data)
+            throws Exception
+    {
+        return (_cache.get(data.getContextPath()+"_"+data.getVhost()+"_"+data.getId()) != null);
+    }
+               
 }

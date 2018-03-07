@@ -28,10 +28,10 @@ import java.util.Map;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
-import com.mongodb.WriteResult;
 
 
 /**
@@ -71,12 +71,76 @@ public class MongoTestHelper
         storeFactory.setDbName(DB_NAME);
         return storeFactory;
     }
+    
+    
+    public static boolean checkSessionExists (String id)
+    throws Exception
+    {
+        DBCollection collection = new Mongo().getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        
+        DBObject fields = new BasicDBObject();
+        fields.put(MongoSessionDataStore.__EXPIRY, 1);
+        fields.put(MongoSessionDataStore.__VALID, 1);
+        
+        DBObject sessionDocument = collection.findOne(new BasicDBObject(MongoSessionDataStore.__ID, id), fields);
+        
+        if (sessionDocument == null)
+            return false; //doesn't exist
+
+       return true;
+    }
+    
+    public static void createUnreadableSession (String id, String contextPath, String vhost, 
+                                      String lastNode, long created, long accessed, 
+                                      long lastAccessed, long maxIdle, long expiry,
+                                      Map<String,Object> attributes)
+    throws Exception
+    {
+        DBCollection collection = new Mongo().getDB(DB_NAME).getCollection(COLLECTION_NAME);
+
+        // Form query for upsert
+        BasicDBObject key = new BasicDBObject(MongoSessionDataStore.__ID, id);
+
+        // Form updates
+        BasicDBObject update = new BasicDBObject();
+        boolean upsert = false;
+        BasicDBObject sets = new BasicDBObject();
+
+        Object version = new Long(1);
+
+        // New session
+
+        upsert = true;
+        sets.put(MongoSessionDataStore.__CREATED,created);
+        sets.put(MongoSessionDataStore.__VALID,true);
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__VERSION,version);
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__LASTSAVED, System.currentTimeMillis());
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__LASTNODE, lastNode);
+       
+        //Leaving out __MAX_IDLE to make it an invalid session object!
+        
+        sets.put(MongoSessionDataStore.__EXPIRY, expiry);
+        sets.put(MongoSessionDataStore.__ACCESSED, accessed);
+        sets.put(MongoSessionDataStore.__LAST_ACCESSED, lastAccessed);
+
+        if (attributes != null)
+        {
+            for (String name : attributes.keySet())
+            {
+                Object value = attributes.get(name);
+                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath+ "." + encodeName(name),encodeName(value));
+            }
+        }
+        update.put("$set",sets);
+        collection.update(key,update,upsert,false,WriteConcern.SAFE); 
+    }
+    
 
     public static void createSession (String id, String contextPath, String vhost, 
                                       String lastNode, long created, long accessed, 
                                       long lastAccessed, long maxIdle, long expiry,
                                       Map<String,Object> attributes)
-                                              throws Exception
+    throws Exception
     {
 
         DBCollection collection = new Mongo().getDB(DB_NAME).getCollection(COLLECTION_NAME);
@@ -88,12 +152,10 @@ public class MongoTestHelper
         BasicDBObject update = new BasicDBObject();
         boolean upsert = false;
         BasicDBObject sets = new BasicDBObject();
-        BasicDBObject unsets = new BasicDBObject();
 
         Object version = new Long(1);
 
         // New session
-
         upsert = true;
         sets.put(MongoSessionDataStore.__CREATED,created);
         sets.put(MongoSessionDataStore.__VALID,true);
@@ -114,7 +176,7 @@ public class MongoTestHelper
             }
         }
         update.put("$set",sets);
-        WriteResult res = collection.update(key,update,upsert,false,WriteConcern.SAFE);
+        collection.update(key,update,upsert,false,WriteConcern.SAFE);
     }
     
     protected static String encodeName(String name)
