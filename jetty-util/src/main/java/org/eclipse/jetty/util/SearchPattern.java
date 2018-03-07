@@ -41,19 +41,31 @@ public class SearchPattern
     private int[] table;
     private byte[] pattern;    
     
-
+    /**
+     * Produces a SearchPattern instance which can be used
+     * to find matches of the pattern in data
+     * @param pattern byte array containing the pattern
+     * @return a new SearchPattern instance using the given pattern
+     */
     public static SearchPattern compile(byte[] pattern)
     {
         return new SearchPattern(Arrays.copyOf(pattern, pattern.length));
     }
     
-    
+    /**
+     * Produces a SearchPattern instance which can be used
+     * to find matches of the pattern in data
+     * @param pattern string containing the pattern
+     * @return a new SearchPattern instance using the given pattern
+     */
     public static SearchPattern compile(String pattern)
     {
         return new SearchPattern(pattern.getBytes(StandardCharsets.UTF_8));
     }
     
-    
+    /**
+     * @param pattern byte array containing the pattern used for matching
+     */
     private SearchPattern(byte[] pattern)
     {
         this.pattern = pattern;
