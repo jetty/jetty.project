@@ -29,8 +29,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntUnaryOperator;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -58,8 +56,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final Executor executor;
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
-    private final AtomicInteger _selectorIndex = new AtomicInteger();
-    private final IntUnaryOperator _selectorIndexUpdate;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private ThreadPoolBudget.Lease _lease;
 
@@ -92,7 +88,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         this.executor = executor;
         this.scheduler = scheduler;
         _selectors = new ManagedSelector[selectors];
-        _selectorIndexUpdate = index -> (index+1)%_selectors.length;
     }
 
     @ManagedAttribute("The Executor")
@@ -169,7 +164,19 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
 
     private ManagedSelector chooseSelector()
     {
-        return _selectors[_selectorIndex.updateAndGet(_selectorIndexUpdate)];
+        ManagedSelector selector = _selectors[0];
+        int size = selector.size();
+        for (int i=_selectors.length; i-->1;)
+        {
+            int s = _selectors[i].size();
+            if (s<size)
+            {
+                selector = _selectors[i];
+                size = s;
+            }
+        }
+        
+        return selector;
     }
 
     /**

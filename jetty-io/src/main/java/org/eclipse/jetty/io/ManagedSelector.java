@@ -42,6 +42,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.io.ManagedSelector.Connect;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -185,24 +186,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (connect.timeout.cancel())
                 {
                     key.interestOps(0);
-                    execute(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            try
-                            {
-                                createEndPoint(channel,key);
-                            }
-                            catch(Throwable failure)
-                            {
-                                closeNoExceptions(channel);
-                                LOG.warn(String.valueOf(failure));
-                                LOG.debug(failure);
-                                connect.failed(failure);
-                            }
-                        }
-                    });    
+                    execute(new CreateEndPoint(connect,key));    
                 }
                 else
                 {
@@ -300,6 +284,40 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 selector != null && selector.isOpen() ? selector.keys().size() : -1,
                 selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1,
                 getActionSize());
+    }
+
+    private final class CreateEndPoint implements Runnable
+    {
+        private final Connect _connect;
+        private final SelectionKey _key;
+
+        private CreateEndPoint(Connect connect, SelectionKey key)
+        {
+            _connect = connect;
+            _key = key;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                createEndPoint(_connect.channel,_key);
+            }
+            catch(Throwable failure)
+            {
+                closeNoExceptions(_connect.channel);
+                LOG.warn(String.valueOf(failure));
+                LOG.debug(failure);
+                _connect.failed(failure);
+            }
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("CreateEndPoint@%x{%s,%s}",hashCode(),_connect,_key);
+        }
     }
 
     /**
@@ -729,6 +747,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 closeNoExceptions(channel);
                 ManagedSelector.this._selectorManager.connectionFailed(channel, failure, attachment);
             }
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("Connect@%x{%s,%s}",hashCode(),channel,attachment);
         }
     }
 
