@@ -20,10 +20,10 @@ package org.eclipse.jetty.client;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -39,7 +39,12 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     private static final Logger LOG = Log.getLogger(AbstractConnectionPool.class);
 
     private final AtomicBoolean closed = new AtomicBoolean();
-    private final AtomicInteger connectionCount = new AtomicInteger();
+    
+    /**
+     * The connectionCount encodes both the total connections plus the pending connection counts, so both can be atomically changed.
+     * The bottom 32 bits represent the total connections and the top 32 bits represent the pending connections.
+     */
+    private final AtomicBiInteger connections = new AtomicBiInteger();
     private final Destination destination;
     private final int maxConnections;
     private final Callback requester;
@@ -60,13 +65,19 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     @ManagedAttribute(value = "The number of connections", readonly = true)
     public int getConnectionCount()
     {
-        return connectionCount.get();
+        return connections.getLo();
+    }
+
+    @ManagedAttribute(value = "The number of pending connections", readonly = true)
+    public int getPendingCount()
+    {
+        return connections.getHi();
     }
 
     @Override
     public boolean isEmpty()
     {
-        return connectionCount.get() == 0;
+        return connections.getLo() == 0;
     }
 
     @Override
@@ -80,11 +91,14 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     {
         Connection connection = activate();
         if (connection == null)
-            connection = tryCreate();
+        {
+            tryCreate();
+            connection = activate();
+        }
         return connection;
     }
 
-    private Connection tryCreate()
+    private void tryCreate()
     {
         while (true)
         {
@@ -94,15 +108,15 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
             if (next > maxConnections)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Max connections {}/{} reached", current, maxConnections);
+                    LOG.debug("Max connections {}/{}  reached", current, maxConnections);
                 // Try again the idle connections
-                return activate();
+                return;
             }
 
-            if (connectionCount.compareAndSet(current, next))
+            if (connections.compareAndSetLoUpdateHi(current, next, 1))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Connection {}/{} creation", next, maxConnections);
+                    LOG.debug("Connection {}/{} creation {} pending", next, maxConnections, connections.getHi());
 
                 destination.newConnection(new Promise<Connection>()
                 {
@@ -112,6 +126,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                         if (LOG.isDebugEnabled())
                             LOG.debug("Connection {}/{} creation succeeded {}", next, maxConnections, connection);
                         onCreated(connection);
+                        connections.update(-1,0);
                         proceed();
                     }
 
@@ -120,13 +135,13 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Connection " + next + "/" + maxConnections + " creation failed", x);
-                        connectionCount.decrementAndGet();
+                        connections.update(-1,-1);
                         requester.failed(x);
                     }
                 });
 
                 // Try again the idle connections
-                return activate();
+                return;
             }
         }
     }
@@ -174,7 +189,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
 
     protected void removed(Connection connection)
     {
-        int pooled = connectionCount.decrementAndGet();
+        int pooled = connections.updateLo(-1);
         if (LOG.isDebugEnabled())
             LOG.debug("Connection removed {} - pooled: {}", connection, pooled);
     }
@@ -184,7 +199,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     {
         if (closed.compareAndSet(false, true))
         {
-            connectionCount.set(0);
+            connections.set(0,0);
         }
     }
 
