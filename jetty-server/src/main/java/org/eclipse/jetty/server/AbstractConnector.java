@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -196,7 +197,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         for (ConnectionFactory factory:factories)
             addConnectionFactory(factory);
 
-        int cores = Runtime.getRuntime().availableProcessors();
+        int cores = ProcessorUtils.availableProcessors();
         if (acceptors < 0)
             acceptors=Math.max(1, Math.min(4,cores/8));
         if (acceptors > cores)

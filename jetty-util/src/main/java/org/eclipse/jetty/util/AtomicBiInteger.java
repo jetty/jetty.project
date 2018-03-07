@@ -46,6 +46,7 @@ public class AtomicBiInteger extends AtomicLong
      * Atomically set the hi integer value without changing
      * the lo value. 
      * @param hi the new hi value
+     * @return the hi int value
      */
     public int setHi(int hi)
     {
