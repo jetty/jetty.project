@@ -89,6 +89,20 @@ public class AtomicBiInteger extends AtomicLong
                 return true;
         }
     }
+    
+    public boolean compareAndSet(long expect, int hi, int lo)
+    {
+        long encoded = get();
+        long update = encode(hi,lo);
+        return compareAndSet(encoded,update);
+    }
+
+    public boolean compareAndSet(int expectHi, int hi, int expectLo, int lo)
+    {
+        long encoded = encode(expectHi,expectLo);
+        long update = encode(hi,lo);
+        return compareAndSet(encoded,update);
+    }
         
     public int updateHi(int delta)
     {
