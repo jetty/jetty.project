@@ -29,7 +29,7 @@ import org.eclipse.jetty.start.BaseBuilder;
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.Module;
-import org.eclipse.jetty.start.StartProperties;
+import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.StartLog;
 
 /**
@@ -51,7 +51,7 @@ public class StartDirBuilder implements BaseBuilder.Config
     }
 
     @Override
-    public String addModule(Module module, StartProperties props) throws IOException
+    public String addModule(Module module, Props props) throws IOException
     {
         if (module.isDynamic())
         {

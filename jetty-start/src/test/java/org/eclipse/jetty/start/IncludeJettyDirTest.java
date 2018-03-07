@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
@@ -59,7 +60,7 @@ public class IncludeJettyDirTest
 
         public void assertProperty(String key, String expectedValue)
         {
-            Property prop = args.getProperties().getProp(key);
+            Prop prop = args.getProperties().getProp(key);
             String prefix = "Prop[" + key + "]";
             Assert.assertThat(prefix + " should have a value",prop,notNullValue());
             Assert.assertThat(prefix + " value",prop.value,is(expectedValue));

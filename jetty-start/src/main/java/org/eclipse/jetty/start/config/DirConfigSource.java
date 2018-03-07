@@ -35,8 +35,8 @@ import java.util.Set;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.NaturalSort;
 import org.eclipse.jetty.start.PathMatchers;
-import org.eclipse.jetty.start.Property;
-import org.eclipse.jetty.start.StartProperties;
+import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.StartIni;
 import org.eclipse.jetty.start.StartLog;
@@ -76,7 +76,7 @@ public class DirConfigSource implements ConfigSource
     private final Path dir;
     private final int weight;
     private final RawArgs args;
-    private final StartProperties props;
+    private final Props props;
     private final Set<StartIni> startInis = new HashSet<>();
 
     /**
@@ -98,7 +98,7 @@ public class DirConfigSource implements ConfigSource
         this.id = id;
         this.dir = dir.toAbsolutePath();
         this.weight = weight;
-        this.props = new StartProperties();
+        this.props = new Props();
 
         this.args = new RawArgs();
 
@@ -235,7 +235,7 @@ public class DirConfigSource implements ConfigSource
     @Override
     public String getProperty(String key)
     {
-        Property prop = props.getProp(key,false);
+        Prop prop = props.getProp(key,false);
         if (prop == null)
         {
             return null;
@@ -244,7 +244,7 @@ public class DirConfigSource implements ConfigSource
     }
 
     @Override
-    public StartProperties getProps()
+    public Props getProps()
     {
         return props;
     }

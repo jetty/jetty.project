@@ -26,6 +26,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.regex.Matcher;
 
+import org.eclipse.jetty.start.Props.Prop;
+
 /**
  * Simple Start .INI handler
  */
@@ -84,7 +86,7 @@ public class StartIni extends TextFile
         return basedir;
     }
 
-    public void update(BaseHome baseHome,StartProperties props) throws IOException
+    public void update(BaseHome baseHome,Props props) throws IOException
     {
         String update = getFile().getFileName().toString();
         update = update.substring(0,update.lastIndexOf("."));
@@ -101,7 +103,7 @@ public class StartIni extends TextFile
                 {
                     String name = m.group(2);
                     String value = m.group(3);
-                    Property p = props.getProp(name);
+                    Prop p = props.getProp(name);
                     
                     if (p!=null && (p.source==null || !p.source.endsWith("?=")) && ("#".equals(m.group(1)) || !value.equals(p.value)))
                     {

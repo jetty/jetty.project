@@ -32,16 +32,45 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.start.Props.Prop;
+
 /**
  * Management of Properties.
  * <p>
  * This is larger in scope than the standard {@link java.util.Properties}, as it will also handle tracking the origin of each property, if it was overridden,
  * and also allowing for <code>${property}</code> expansion.
  */
-public final class StartProperties implements Iterable<Property>
+public final class Props implements Iterable<Prop>
 {
     private static final Pattern __propertyPattern = Pattern.compile("(?<=[^$]|^)\\$\\{([^}]*)\\}");
     
+    public static class Prop
+    {
+        public String key;
+        public String value;
+        public String source;
+
+        public Prop(String key, String value, String source)
+        {
+            this.key = key;
+            this.value = value;
+            this.source = source;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.append("Prop [key=");
+            builder.append(key);
+            builder.append(", value=");
+            builder.append(value);
+            builder.append(", source=");
+            builder.append(source);
+            builder.append("]");
+            return builder.toString();
+        }
+    }
     public static final String ORIGIN_SYSPROP = "<system-property>";
     
     public static String getValue(String arg)
@@ -77,10 +106,10 @@ public final class StartProperties implements Iterable<Property>
         return l;
     }
 
-    private Map<String, Property> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private Map<String, Prop> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private List<String> sysPropTracking = new ArrayList<>();
 
-    public void addAll(StartProperties other)
+    public void addAll(Props other)
     {
         this.props.putAll(other.props);
         this.sysPropTracking.addAll(other.sysPropTracking);
@@ -142,7 +171,7 @@ public final class StartProperties implements Iterable<Property>
 
     public boolean containsKey(String key)
     {
-        Property prop = props.get(key);
+        Prop prop = props.get(key);
         return prop!=null && prop.value!=null;
     }
 
@@ -222,14 +251,14 @@ public final class StartProperties implements Iterable<Property>
         return expanded.toString();
     }
 
-    public Property getProp(String key)
+    public Prop getProp(String key)
     {
         return getProp(key,true);
     }
 
-    public Property getProp(String key, boolean searchSystemProps)
+    public Prop getProp(String key, boolean searchSystemProps)
     {
-        Property prop = props.get(key);
+        Prop prop = props.get(key);
         if ((prop == null) && searchSystemProps)
         {
             // try system property
@@ -252,7 +281,7 @@ public final class StartProperties implements Iterable<Property>
             throw new PropsException("Cannot get value for empty key");
         }
 
-        Property prop = getProp(name);
+        Prop prop = getProp(name);
         if (prop == null)
         {
             return null;
@@ -270,14 +299,14 @@ public final class StartProperties implements Iterable<Property>
         return val;
     }
 
-    private Property getSystemProperty(String key)
+    private Prop getSystemProperty(String key)
     {
         String value = System.getProperty(key);
         if (value == null)
         {
             return null;
         }
-        return new Property(key,value,ORIGIN_SYSPROP);
+        return new Prop(key,value,ORIGIN_SYSPROP);
     }
 
     public static boolean hasPropertyKey(String name)
@@ -286,7 +315,7 @@ public final class StartProperties implements Iterable<Property>
     }
 
     @Override
-    public Iterator<Property> iterator()
+    public Iterator<Prop> iterator()
     {
         return props.values().iterator();
     }
@@ -296,14 +325,14 @@ public final class StartProperties implements Iterable<Property>
         props.clear();
     }
 
-    public void setProperty(Property prop)
+    public void setProperty(Prop prop)
     {
         props.put(prop.key,prop);
     }
 
     public void setProperty(String key, String value, String origin)
     {
-        props.put(key,new Property(key,value,origin));
+        props.put(key,new Prop(key,value,origin));
     }
 
     public int size()
@@ -315,7 +344,7 @@ public final class StartProperties implements Iterable<Property>
     {
         Properties props = new Properties();
         // add all Props as normal properties, with expansion performed.
-        for (Property prop : this)
+        for (Prop prop : this)
         {
             props.setProperty(prop.key,expand(prop.value));
         }

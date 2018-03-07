@@ -53,7 +53,7 @@ public class BaseBuilder
          * @return The ini file if module was added, null if module was not added.
          * @throws IOException if unable to add the module
          */
-        public String addModule(Module module, StartProperties props) throws IOException;
+        public String addModule(Module module, Props props) throws IOException;
     }
 
     private static final String EXITING_LICENSE_NOT_ACKNOWLEDGED = "Exiting: license not acknowledged!";

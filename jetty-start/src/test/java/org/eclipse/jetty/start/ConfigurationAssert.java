@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.hamcrest.Matchers;
@@ -133,7 +134,7 @@ public class ConfigurationAssert
             }
         }
         List<String> actualProperties = new ArrayList<>();
-        for (Property prop : args.getProperties())
+        for (Prop prop : args.getProperties())
         {
             String name = prop.key;
             if ("jetty.home".equals(name) ||
@@ -141,7 +142,7 @@ public class ConfigurationAssert
                 "jetty.home.uri".equals(name) ||
                 "jetty.base.uri".equals(name) ||
                 "user.dir".equals(name) ||
-                prop.source.equals(StartProperties.ORIGIN_SYSPROP) ||
+                prop.source.equals(Props.ORIGIN_SYSPROP) ||
                 name.startsWith("java."))
             {
                 // strip these out from assertion, to make assertions easier.

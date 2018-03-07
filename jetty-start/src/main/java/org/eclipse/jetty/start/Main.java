@@ -40,6 +40,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 
+import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSource;
 
@@ -292,14 +293,14 @@ public class Main
         StartArgs args = new StartArgs(baseHome);
         args.parse(baseHome.getConfigSources());
 
-        StartProperties props = baseHome.getConfigSources().getProps();
-        Property home = props.getProp(BaseHome.JETTY_HOME);
+        Props props = baseHome.getConfigSources().getProps();
+        Prop home = props.getProp(BaseHome.JETTY_HOME);
         if (!args.getProperties().containsKey(BaseHome.JETTY_HOME))
             args.getProperties().setProperty(home);
         args.getProperties().setProperty(BaseHome.JETTY_HOME+".uri",
             normalizeURI(baseHome.getHomePath().toUri().toString()),
             home.source);
-        Property base = props.getProp(BaseHome.JETTY_BASE);
+        Prop base = props.getProp(BaseHome.JETTY_BASE);
         if (!args.getProperties().containsKey(BaseHome.JETTY_BASE))
             args.getProperties().setProperty(base);
         args.getProperties().setProperty(BaseHome.JETTY_BASE+".uri",
@@ -493,10 +494,10 @@ public class Main
 
     private void doStop(StartArgs args)
     {
-        Property stopHostProp = args.getProperties().getProp("STOP.HOST", true);
-        Property stopPortProp = args.getProperties().getProp("STOP.PORT", true);
-        Property stopKeyProp = args.getProperties().getProp("STOP.KEY", true);
-        Property stopWaitProp = args.getProperties().getProp("STOP.WAIT", true);
+        Prop stopHostProp = args.getProperties().getProp("STOP.HOST", true);
+        Prop stopPortProp = args.getProperties().getProp("STOP.PORT", true);
+        Prop stopKeyProp = args.getProperties().getProp("STOP.KEY", true);
+        Prop stopWaitProp = args.getProperties().getProp("STOP.WAIT", true);
         
         String stopHost = "127.0.0.1";
         int stopPort = -1;

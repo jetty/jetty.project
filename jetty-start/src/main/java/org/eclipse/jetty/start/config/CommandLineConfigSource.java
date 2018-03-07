@@ -28,8 +28,8 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
-import org.eclipse.jetty.start.Property;
-import org.eclipse.jetty.start.StartProperties;
+import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
 import org.eclipse.jetty.start.Utils;
@@ -44,14 +44,14 @@ public class CommandLineConfigSource implements ConfigSource
     public static final String ORIGIN_SYSTEM_PROPERTY = "<system-property>";
 
     private final RawArgs args;
-    private final StartProperties props;
+    private final Props props;
     private final Path homePath;
     private final Path basePath;
 
     public CommandLineConfigSource(String rawargs[])
     {
         this.args = new RawArgs();
-        this.props = new StartProperties();
+        this.props = new Props();
         for (String arg : rawargs)
         {
             this.args.addArg(arg,ORIGIN_CMD_LINE);
@@ -70,7 +70,7 @@ public class CommandLineConfigSource implements ConfigSource
     private final Path findJettyBasePath()
     {
         // If a jetty property is defined, use it
-        Property prop = this.props.getProp(BaseHome.JETTY_BASE,false);
+        Prop prop = this.props.getProp(BaseHome.JETTY_BASE,false);
         if (prop != null && !Utils.isBlank(prop.value))
         {
             return FS.toPath(prop.value);
@@ -93,7 +93,7 @@ public class CommandLineConfigSource implements ConfigSource
     private final Path findJettyHomePath()
     {
         // If a jetty property is defined, use it
-        Property prop = this.props.getProp(BaseHome.JETTY_HOME,false);
+        Prop prop = this.props.getProp(BaseHome.JETTY_HOME,false);
         if (prop != null && !Utils.isBlank(prop.value))
         {
             return FS.toPath(prop.value);
@@ -195,7 +195,7 @@ public class CommandLineConfigSource implements ConfigSource
     }
 
     @Override
-    public StartProperties getProps()
+    public Props getProps()
     {
         return props;
     }

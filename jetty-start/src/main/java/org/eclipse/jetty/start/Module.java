@@ -36,6 +36,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.start.Props.Prop;
+
 /**
  * Represents a Module metadata, as defined in Jetty.
  * 
@@ -176,7 +178,7 @@ public class Module implements Comparable<Module>
         return _path.equals(other._path);
     }
 
-    public void expandDependencies(StartProperties props)
+    public void expandDependencies(Props props)
     {
         Function<String,String> expander = d->{return props.expand(d);};
         
@@ -264,7 +266,7 @@ public class Module implements Comparable<Module>
         return _dynamic;
     }
 
-    public boolean hasFiles(BaseHome baseHome, StartProperties props)
+    public boolean hasFiles(BaseHome baseHome, Props props)
     {
         for (String ref : getFiles())
         {
@@ -508,7 +510,7 @@ public class Module implements Comparable<Module>
         return isEnabled() && !_notTransitive;
     }
     
-    public void writeIniSection(BufferedWriter writer, StartProperties props)
+    public void writeIniSection(BufferedWriter writer, Props props)
     {
         PrintWriter out = new PrintWriter(writer);
         out.println("# --------------------------------------- ");
@@ -525,7 +527,7 @@ public class Module implements Comparable<Module>
             {
                 String name = m.group(2);
                 String value = m.group(3);
-                Property p = props.getProp(name);
+                Prop p = props.getProp(name);
                 
                 if (p!=null && (p.source==null || !p.source.endsWith("?=")) && ("#".equals(m.group(1)) || !value.equals(p.value)))
                 {

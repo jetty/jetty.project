@@ -20,17 +20,17 @@ package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import org.eclipse.jetty.start.Props.Prop;
 import org.junit.Test;
 
 public class PropsTest
 {
     private static final String FROM_TEST = "(test)";
 
-    private void assertProp(String prefix, Property prop, String expectedKey, String expectedValue, String expectedOrigin)
+    private void assertProp(String prefix, Prop prop, String expectedKey, String expectedValue, String expectedOrigin)
     {
         assertThat(prefix,prop,notNullValue());
         assertThat(prefix + ".key",prop.key,is(expectedKey));
@@ -41,32 +41,32 @@ public class PropsTest
     @Test
     public void testSystemPropsOnly()
     {
-        StartProperties props = new StartProperties();
+        Props props = new Props();
 
         String expected = System.getProperty("java.io.tmpdir");
         assertThat("System Property",props.getString("java.io.tmpdir"),is(expected));
 
-        Property prop = props.getProp("java.io.tmpdir");
-        assertProp("System Prop",prop,"java.io.tmpdir",expected,StartProperties.ORIGIN_SYSPROP);
+        Prop prop = props.getProp("java.io.tmpdir");
+        assertProp("System Prop",prop,"java.io.tmpdir",expected,Props.ORIGIN_SYSPROP);
     }
 
     @Test
     public void testBasic()
     {
-        StartProperties props = new StartProperties();
+        Props props = new Props();
         props.setProperty("name","jetty",FROM_TEST);
 
         String prefix = "Basic";
         assertThat(prefix,props.getString("name"),is("jetty"));
 
-        Property prop = props.getProp("name");
+        Prop prop = props.getProp("name");
         assertProp(prefix,prop,"name","jetty",FROM_TEST);
     }
 
     @Test
     public void testSimpleExpand()
     {
-        StartProperties props = new StartProperties();
+        Props props = new Props();
         props.setProperty("name","jetty",FROM_TEST);
         props.setProperty("version","9.1",FROM_TEST);
 
@@ -79,7 +79,7 @@ public class PropsTest
     @Test
     public void testNoExpandDoubleDollar()
     {
-        StartProperties props = new StartProperties();
+        Props props = new Props();
         props.setProperty("aa","123",FROM_TEST);
 
         // Should NOT expand double $$ symbols
@@ -91,7 +91,7 @@ public class PropsTest
     @Test
     public void testExpandDeep()
     {
-        StartProperties props = new StartProperties();
+        Props props = new Props();
         props.setProperty("name","jetty",FROM_TEST);
         props.setProperty("version","9.1",FROM_TEST);
         props.setProperty("id","${name}-${version}",FROM_TEST);
@@ -103,7 +103,7 @@ public class PropsTest
     @Test
     public void testExpandDouble()
     {
-        StartProperties props = new StartProperties();
+        Props props = new Props();
         props.setProperty("bar","apple",FROM_TEST);
         props.setProperty("foo","foo/${bar}/${bar}-xx",FROM_TEST);
 
@@ -114,7 +114,7 @@ public class PropsTest
     @Test
     public void testExpandLoop()
     {
-        StartProperties props = new StartProperties();
+        Props props = new Props();
         props.setProperty("aa","${bb}",FROM_TEST);
         props.setProperty("bb","${cc}",FROM_TEST);
         props.setProperty("cc","${aa}",FROM_TEST);
