@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -149,7 +150,7 @@ public class ProxyServletLoadTest
         startClient();
 
         // Number of clients to simulate
-        int clientCount = Runtime.getRuntime().availableProcessors();
+        int clientCount = ProcessorUtils.availableProcessors();
 
         // Latch for number of clients still active (used to terminate test)
         final CountDownLatch activeClientLatch = new CountDownLatch(clientCount);

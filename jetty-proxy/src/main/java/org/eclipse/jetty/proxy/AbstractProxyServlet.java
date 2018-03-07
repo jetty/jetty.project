@@ -50,6 +50,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.HttpCookieStore;
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -352,7 +353,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
      */
     protected HttpClient newHttpClient()
     {
-        int selectors = Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
+        int selectors = Math.max(1,ProcessorUtils.availableProcessors()/2);
         String value = getServletConfig().getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);

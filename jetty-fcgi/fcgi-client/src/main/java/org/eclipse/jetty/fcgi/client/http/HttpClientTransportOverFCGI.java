@@ -32,6 +32,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -44,7 +45,7 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
 
     public HttpClientTransportOverFCGI(String scriptRoot)
     {
-        this(Math.max(1, Runtime.getRuntime().availableProcessors() / 2), false, scriptRoot);
+        this( Math.max( 1, ProcessorUtils.availableProcessors() / 2), false, scriptRoot);
     }
 
     public HttpClientTransportOverFCGI(int selectors, boolean multiplexed, String scriptRoot)
