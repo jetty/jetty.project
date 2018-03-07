@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -26,11 +27,15 @@ import org.junit.Test;
  */
 public class ProcessorUtilsTest
 {
-
-    @Test
-    public void get_default_value(){
-        Assert.assertEquals(Runtime.getRuntime().availableProcessors(), ProcessorUtils.availableProcessors());
+    @BeforeClass
+    public static void beforeClass()
+    {
+        System.setProperty("JETTY_AVAILABLE_PROCESSORS","42");
     }
-
-
+    
+    @Test
+    public void getPropertyValue()
+    {
+        Assert.assertEquals(42, ProcessorUtils.availableProcessors());
+    }
 }

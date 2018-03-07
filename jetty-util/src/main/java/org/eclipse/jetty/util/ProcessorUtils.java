@@ -19,21 +19,24 @@
 package org.eclipse.jetty.util;
 
 /**
- * ProcessorUtils return the default value for processor number from {@link Runtime}
- * but in a virtual environment you can override it using env var <code>JETTY_AVAILABLE_PROCESSORS</code>
+ * ProcessorUtils provides access to runtime info about processors, that may be 
+ * overridden by system properties of environment variables.   This can be useful
+ * in virtualised environments where the runtime may miss report the available 
+ * resources.
  */
 public class ProcessorUtils
 {
-    private static int AVAILABLE_PROCESSORS = Runtime.getRuntime().availableProcessors();
+    public static final String AVAILABLE_PROCESSORS = "JETTY_AVAILABLE_PROCESSORS";
+    private static int __availableProcessors = Runtime.getRuntime().availableProcessors();
 
     static
     {
-        String avlProcEnv = System.getenv( "JETTY_AVAILABLE_PROCESSORS" );
+        String avlProcEnv = System.getProperty(AVAILABLE_PROCESSORS,System.getenv(AVAILABLE_PROCESSORS));
         if (avlProcEnv != null)
         {
             try
             {
-                AVAILABLE_PROCESSORS = Integer.parseInt( avlProcEnv );
+                __availableProcessors = Integer.parseInt( avlProcEnv );
             }
             catch ( NumberFormatException e )
             {
@@ -43,11 +46,13 @@ public class ProcessorUtils
     }
 
     /**
-     *
+     * Obtain the number of available processors, from System Property "JETTY_AVAILABLE_PROCESSORS",
+     * or if not set then environment variable "JETTY_AVAILABLE_PROCESSORS" or if not set then
+     * {@link Runtime#availableProcessors()}.
      * @return the number of processors
      */
     public static int availableProcessors()
     {
-        return AVAILABLE_PROCESSORS;
+        return __availableProcessors;
     }
 }
