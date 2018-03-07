@@ -19,7 +19,7 @@
 package org.eclipse.jetty.util;
 
 /**
- * ProcessorUtils return the default value for processor number fron {@link Runtime#getRuntime()#availableProcessors()}
+ * ProcessorUtils return the default value for processor number from {@link Runtime}
  * but in a virtual environment you can override it using env var <code>JETTY_AVAILABLE_PROCESSORS</code>
  */
 public class ProcessorUtils
@@ -42,6 +42,10 @@ public class ProcessorUtils
         }
     }
 
+    /**
+     *
+     * @return the number of processors
+     */
     public static int availableProcessors()
     {
         return AVAILABLE_PROCESSORS;
