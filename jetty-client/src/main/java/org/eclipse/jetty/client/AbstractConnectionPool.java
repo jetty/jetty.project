@@ -127,8 +127,8 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Connection {}/{} creation succeeded {}", total+1, maxConnections, connection);
-                        onCreated(connection);
                         connections.update(-1,0);
+                        onCreated(connection);
                         proceed();
                     }
 

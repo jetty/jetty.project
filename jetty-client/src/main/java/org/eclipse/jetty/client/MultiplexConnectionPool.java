@@ -63,7 +63,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements S
         Connection connection = activate();
         if (connection == null)
         {
-            int maxPending = 1 + destination.getQueuedRequestCount() / maxMultiplex;
+            int maxPending = 1 + destination.getQueuedRequestCount() / getMaxMultiplex();
             tryCreate(maxPending);
             connection = activate();
         }

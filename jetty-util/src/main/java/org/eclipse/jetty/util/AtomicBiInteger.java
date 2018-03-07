@@ -137,34 +137,7 @@ public class AtomicBiInteger extends AtomicLong
             if (compareAndSet(encoded,update))
                 return;
         }
-    }
-
-    public boolean compareAndSetHiUpdateLo(int expect, int hi, int deltaLo)
-    {
-        while(true)
-        {
-            long encoded = get();
-            if (getHi(encoded)!=expect)
-                return false;
-            long update = encode(hi,getLo(encoded)+deltaLo);
-            if (compareAndSet(encoded,update))
-                return true;
-        }
-    }
-    
-    public boolean compareAndSetLoUpdateHi(int expect, int lo, int deltaHi)
-    {
-        while(true)
-        {
-            long encoded = get();
-            if (getLo(encoded)!=expect)
-                return false;
-            long update = encode(getHi(encoded)+deltaHi, lo);
-            if (compareAndSet(encoded,update))
-                return true;
-        }
-    }
-    
+    }    
     
     
     public static int getHi(long encoded)
