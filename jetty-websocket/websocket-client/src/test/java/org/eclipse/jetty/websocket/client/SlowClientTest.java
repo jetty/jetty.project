@@ -18,14 +18,12 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
@@ -33,14 +31,10 @@ import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class SlowClientTest
 {
-    @Rule
-    public TestTracker tt = new TestTracker();
-
     private BlockheadServer server;
     private WebSocketClient client;
 
@@ -72,7 +66,6 @@ public class SlowClientTest
     }
 
     @Test
-    @Slow
     public void testClientSlowToSend() throws Exception
     {
         JettyTrackingSocket tsocket = new JettyTrackingSocket();

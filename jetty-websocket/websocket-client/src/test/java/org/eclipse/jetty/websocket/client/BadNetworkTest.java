@@ -24,14 +24,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -39,9 +37,6 @@ import org.junit.Test;
  */
 public class BadNetworkTest
 {
-    @Rule
-    public TestTracker tt = new TestTracker();
-
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     private BlockheadServer server;

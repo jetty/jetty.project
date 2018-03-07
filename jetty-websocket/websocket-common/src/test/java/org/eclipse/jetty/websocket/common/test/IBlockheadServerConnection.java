@@ -29,6 +29,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
+@Deprecated
 public interface IBlockheadServerConnection
 {
     public void close() throws IOException;

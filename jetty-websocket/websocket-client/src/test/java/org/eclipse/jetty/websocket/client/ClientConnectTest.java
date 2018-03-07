@@ -39,7 +39,6 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.common.AcceptHash;
@@ -49,7 +48,6 @@ import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -58,9 +56,6 @@ import org.junit.Test;
 @SuppressWarnings("Duplicates")
 public class ClientConnectTest
 {
-    @Rule
-    public TestTracker tt = new TestTracker();
-
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     private final int timeout = 500;

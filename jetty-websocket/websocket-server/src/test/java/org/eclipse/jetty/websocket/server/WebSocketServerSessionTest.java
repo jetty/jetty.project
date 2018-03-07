@@ -21,29 +21,29 @@ package org.eclipse.jetty.websocket.server;
 import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
+import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.helper.SessionServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * Testing various aspects of the server side support for WebSocket {@link org.eclipse.jetty.websocket.api.Session}
  */
-@RunWith(AdvancedRunner.class)
 public class WebSocketServerSessionTest
 {
     private static SimpleServletServer server;
+    private static BlockheadClient client;
 
     @BeforeClass
     public static void startServer() throws Exception
@@ -58,19 +58,36 @@ public class WebSocketServerSessionTest
         server.stop();
     }
 
+    @BeforeClass
+    public static void startClient() throws Exception
+    {
+        client = new BlockheadClient();
+        client.setIdleTimeout(TimeUnit.SECONDS.toMillis(2));
+        client.start();
+    }
+
+    @AfterClass
+    public static void stopClient() throws Exception
+    {
+        client.stop();
+    }
+
     @Test
     public void testDisconnect() throws Exception
     {
         URI uri = server.getServerUri().resolve("/test/disconnect");
-        try (IBlockheadClient client = new BlockheadClient(uri))
+
+        BlockheadClientRequest request = client.newWsRequest(uri);
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+            clientConn.write(new TextFrame().setPayload("harsh-disconnect"));
+            clientConn.write(new TextFrame().setPayload("this shouldn't be seen by server"));
 
-            client.write(new TextFrame().setPayload("harsh-disconnect"));
-
-            client.awaitDisconnect(1, TimeUnit.SECONDS);
+            TimeUnit.SECONDS.sleep(10);
+            // clientConn.awaitDisconnect(1, TimeUnit.SECONDS);
         }
     }
 
@@ -78,20 +95,20 @@ public class WebSocketServerSessionTest
     public void testUpgradeRequestResponse() throws Exception
     {
         URI uri = server.getServerUri().resolve("/test?snack=cashews&amount=handful&brand=off");
-        try (IBlockheadClient client = new BlockheadClient(uri))
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+        BlockheadClientRequest request = client.newWsRequest(uri);
 
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
             // Ask the server socket for specific parameter map info
-            client.write(new TextFrame().setPayload("getParameterMap|snack"));
-            client.write(new TextFrame().setPayload("getParameterMap|amount"));
-            client.write(new TextFrame().setPayload("getParameterMap|brand"));
-            client.write(new TextFrame().setPayload("getParameterMap|cost")); // intentionally invalid
+            clientConn.write(new TextFrame().setPayload("getParameterMap|snack"));
+            clientConn.write(new TextFrame().setPayload("getParameterMap|amount"));
+            clientConn.write(new TextFrame().setPayload("getParameterMap|brand"));
+            clientConn.write(new TextFrame().setPayload("getParameterMap|cost")); // intentionally invalid
 
             // Read frame (hopefully text frame)
-            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Parameter Map[snack]", tf.getPayloadAsUTF8(), is("[cashews]"));
             tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);

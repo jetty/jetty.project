@@ -23,11 +23,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,9 +53,6 @@ public class WebSocketClientBadUriTest
         // @formatter:on
         return data;
     }
-
-    @Rule
-    public TestTracker tt = new TestTracker();
 
     private WebSocketClient client;
     private final String uriStr;

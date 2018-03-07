@@ -22,6 +22,9 @@ import java.util.concurrent.TimeUnit;
 
 public class Timeouts
 {
-    public static long POLL_EVENT = 2;
-    public static TimeUnit POLL_EVENT_UNIT = TimeUnit.SECONDS;
+    public static final long CONNECT = 2;
+    public static final TimeUnit CONNECT_UNIT = TimeUnit.SECONDS;
+
+    public static final long POLL_EVENT = 2;
+    public static final TimeUnit POLL_EVENT_UNIT = TimeUnit.SECONDS;
 }

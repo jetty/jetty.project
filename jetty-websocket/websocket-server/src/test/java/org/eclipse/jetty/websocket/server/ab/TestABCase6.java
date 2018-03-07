@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -39,12 +37,10 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * UTF-8 Tests
  */
-@RunWith(AdvancedRunner.class)
 public class TestABCase6 extends AbstractABCase
 {
     /**
@@ -276,7 +272,6 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Slow
     public void testCase6_4_1() throws Exception
     {
         byte part1[] = StringUtil.getUtf8Bytes("\u03BA\u1F79\u03C3\u03BC\u03B5");
@@ -312,7 +307,6 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Slow
     public void testCase6_4_2() throws Exception
     {
         byte part1[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F4"); // split code point
@@ -340,7 +334,6 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Slow
     public void testCase6_4_3() throws Exception
     {
         // Disable Long Stacks from Parser (we know this test will throw an exception)
@@ -393,7 +386,6 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Slow
     public void testCase6_4_4() throws Exception
     {
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");

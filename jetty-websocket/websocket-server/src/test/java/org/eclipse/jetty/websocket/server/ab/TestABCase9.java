@@ -24,8 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -37,12 +35,10 @@ import org.eclipse.jetty.websocket.common.frames.DataFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * Big frame/message tests
  */
-@RunWith(AdvancedRunner.class)
 public class TestABCase9 extends AbstractABCase
 {
     private static final int KBYTE = 1024;
@@ -246,7 +242,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_1_5() throws Exception
     {
         byte utf[] = new byte[8 * MBYTE];
@@ -275,7 +270,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_1_6() throws Exception
     {
         byte utf[] = new byte[16 * MBYTE];
@@ -359,7 +353,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_2_3() throws Exception
     {
         byte data[] = new byte[1 * MBYTE];
@@ -388,7 +381,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_2_4() throws Exception
     {
         byte data[] = new byte[4 * MBYTE];
@@ -417,7 +409,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_2_5() throws Exception
     {
         byte data[] = new byte[8 * MBYTE];
@@ -446,7 +437,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_2_6() throws Exception
     {
         byte data[] = new byte[16 * MBYTE];
@@ -475,7 +465,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_3_1() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT,4 * MBYTE,64);
@@ -486,7 +475,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_3_2() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT,4 * MBYTE,256);
@@ -497,7 +485,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_3_3() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT,4 * MBYTE,1 * KBYTE);
@@ -508,7 +495,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_3_4() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT,4 * MBYTE,4 * KBYTE);
@@ -519,7 +505,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_3_5() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT,4 * MBYTE,16 * KBYTE);
@@ -530,7 +515,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_3_6() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT,4 * MBYTE,64 * KBYTE);
@@ -541,7 +525,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_3_7() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT,4 * MBYTE,256 * KBYTE);
@@ -552,7 +535,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_3_8() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT,4 * MBYTE,1 * MBYTE);
@@ -563,7 +545,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_3_9() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT,4 * MBYTE,4 * MBYTE);
@@ -574,7 +555,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_4_1() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY,4 * MBYTE,64);
@@ -585,7 +565,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_4_2() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY,4 * MBYTE,256);
@@ -596,7 +575,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_4_3() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY,4 * MBYTE,1 * KBYTE);
@@ -607,7 +585,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_4_4() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY,4 * MBYTE,4 * KBYTE);
@@ -618,7 +595,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_4_5() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY,4 * MBYTE,16 * KBYTE);
@@ -629,7 +605,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_4_6() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY,4 * MBYTE,64 * KBYTE);
@@ -640,7 +615,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_4_7() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY,4 * MBYTE,256 * KBYTE);
@@ -651,7 +625,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_4_8() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY,4 * MBYTE,1 * MBYTE);
@@ -662,7 +635,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_4_9() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY,4 * MBYTE,4 * MBYTE);
@@ -673,7 +645,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_5_1() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT,1 * MBYTE,64);
@@ -684,7 +655,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_5_2() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT,1 * MBYTE,128);
@@ -695,7 +665,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_5_3() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT,1 * MBYTE,256);
@@ -706,7 +675,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_5_4() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT,1 * MBYTE,512);
@@ -717,7 +685,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_5_5() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT,1 * MBYTE,1024);
@@ -728,7 +695,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_5_6() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT,1 * MBYTE,2048);
@@ -739,7 +705,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_6_1() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY,1 * MBYTE,64);
@@ -750,7 +715,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_6_2() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY,1 * MBYTE,128);
@@ -761,7 +725,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_6_3() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY,1 * MBYTE,256);
@@ -772,7 +735,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_6_4() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY,1 * MBYTE,512);
@@ -783,7 +745,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_6_5() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY,1 * MBYTE,1024);
@@ -794,7 +755,6 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Stress("High I/O use")
     public void testCase9_6_6() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY,1 * MBYTE,2048);

@@ -21,9 +21,11 @@ package org.eclipse.jetty.websocket.server;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -31,6 +33,8 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -90,7 +94,8 @@ public class SubProtocolTest
             factory.setCreator(new ProtocolCreator());
         }
     }
-    
+
+    private static BlockheadClient client;
     private static SimpleServletServer server;
     
     @BeforeClass
@@ -104,6 +109,20 @@ public class SubProtocolTest
     public static void stopServer()
     {
         server.stop();
+    }
+
+    @BeforeClass
+    public static void startClient() throws Exception
+    {
+        client = new BlockheadClient();
+        client.setIdleTimeout(TimeUnit.SECONDS.toMillis(2));
+        client.start();
+    }
+
+    @AfterClass
+    public static void stopClient() throws Exception
+    {
+        client.stop();
     }
     
     @Test
@@ -120,17 +139,16 @@ public class SubProtocolTest
     
     private void testSubProtocol(String requestProtocols, String acceptedSubProtocols) throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
+        request.header(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, requestProtocols);
+        request.idleTimeout(1, TimeUnit.SECONDS);
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.setTimeout(1, TimeUnit.SECONDS);
-            
-            client.connect();
-            client.addHeader("Sec-WebSocket-Protocol: "+ requestProtocols + "\r\n");
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-            
-            client.write(new TextFrame().setPayload("showme"));
-            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            clientConn.write(new TextFrame().setPayload("showme"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             
             assertThat(ProtocolEchoSocket.class.getSimpleName() + ".onMessage()", tf.getPayloadAsUTF8(), is("acceptedSubprotocol=" + acceptedSubProtocols));

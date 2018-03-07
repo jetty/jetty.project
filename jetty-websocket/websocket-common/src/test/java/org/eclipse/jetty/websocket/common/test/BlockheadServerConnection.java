@@ -396,7 +396,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     @Override
     public void run()
     {
-        LOG.debug("Entering echo thread");
+        LOG.debug("Entering read thread");
 
         long totalReadBytes = 0;
         ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE, false);
@@ -450,7 +450,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         {
             throw new IllegalStateException("Read thread already declared/started!");
         }
-        readThread = new Thread(this,"BlockheadServer/Read");
+        readThread = new Thread(this,"Blockhead-Server-Read");
         LOG.debug("Starting Read Thread: {}", readThread);
         reading.set(true);
         readThread.start();

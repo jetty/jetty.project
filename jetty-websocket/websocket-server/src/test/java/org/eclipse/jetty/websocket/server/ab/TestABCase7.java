@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -39,7 +38,6 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.eclipse.jetty.websocket.common.util.Hex;
-import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -47,9 +45,6 @@ import org.junit.Test;
  */
 public class TestABCase7 extends AbstractABCase
 {
-    @Rule
-    public TestTracker tt = new TestTracker();
-
     /**
      * Basic message then close frame, normal behavior
      * @throws Exception on test failure

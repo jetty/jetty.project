@@ -51,7 +51,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -76,7 +75,6 @@ import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class ClientCloseTest
@@ -177,9 +175,6 @@ public class ClientCloseTest
             return wsconn.getEndPoint();
         }
     }
-
-    @Rule
-    public TestTracker tt = new TestTracker();
 
     private BlockheadServer server;
     private WebSocketClient client;

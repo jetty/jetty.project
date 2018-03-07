@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.server;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -33,6 +34,8 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -101,6 +104,7 @@ public class SuspendResumeTest
     }
     
     private static SimpleServletServer server;
+    private static BlockheadClient client;
     
     @BeforeClass
     public static void startServer() throws Exception
@@ -108,7 +112,21 @@ public class SuspendResumeTest
         server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
+
+    @BeforeClass
+    public static void startClient() throws Exception
+    {
+        client = new BlockheadClient();
+        client.setIdleTimeout(TimeUnit.SECONDS.toMillis(2));
+        client.start();
+    }
     
+    @AfterClass
+    public static void stopClient() throws Exception
+    {
+        client.stop();
+    }
+
     @AfterClass
     public static void stopServer()
     {
@@ -118,18 +136,16 @@ public class SuspendResumeTest
     @Test
     public void testSuspendResume() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.setTimeout(1, TimeUnit.SECONDS);
+            clientConn.write(new TextFrame().setPayload("echo1"));
+            clientConn.write(new TextFrame().setPayload("echo2"));
             
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-            
-            client.write(new TextFrame().setPayload("echo1"));
-            client.write(new TextFrame().setPayload("echo2"));
-            
-            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat(EchoSocket.class.getSimpleName() + ".onMessage()", tf.getPayloadAsUTF8(), is("echo1"));
             tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);

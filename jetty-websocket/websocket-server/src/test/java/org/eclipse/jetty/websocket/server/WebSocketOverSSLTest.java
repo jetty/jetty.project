@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -38,16 +37,12 @@ import org.eclipse.jetty.websocket.server.helper.SessionServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class WebSocketOverSSLTest
 {
     public static final int CONNECT_TIMEOUT = 15000;
     public static final int FUTURE_TIMEOUT_SEC = 30;
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     private static SimpleServletServer server;

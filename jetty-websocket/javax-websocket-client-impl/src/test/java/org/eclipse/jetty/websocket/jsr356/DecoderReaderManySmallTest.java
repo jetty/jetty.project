@@ -37,7 +37,6 @@ import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -49,7 +48,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
 @Ignore("Not working atm")
@@ -164,9 +162,6 @@ public class DecoderReaderManySmallTest
     }
 
     private static final Logger LOG = Log.getLogger(DecoderReaderManySmallTest.class);
-
-    @Rule
-    public TestTracker tt = new TestTracker();
 
     private BlockheadServer server;
     private WebSocketContainer client;

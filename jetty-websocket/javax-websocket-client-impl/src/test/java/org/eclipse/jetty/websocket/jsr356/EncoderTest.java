@@ -41,7 +41,6 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -51,7 +50,6 @@ import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class EncoderTest
@@ -186,8 +184,6 @@ public class EncoderTest
 
     private static final Logger LOG = Log.getLogger(EncoderTest.class);
 
-    @Rule
-    public TestTracker tt = new TestTracker();
     private BlockheadServer server;
 
     private WebSocketContainer client;

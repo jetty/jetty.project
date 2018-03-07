@@ -18,21 +18,23 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -42,7 +44,8 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
+import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -52,13 +55,11 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests various close scenarios that should result in Open Session cleanup
  */
-@Ignore
 public class ManyConnectionsCleanupTest
 {
     static class AbstractCloseSocket extends WebSocketAdapter
@@ -220,6 +221,7 @@ public class ManyConnectionsCleanupTest
 
     private static final Logger LOG = Log.getLogger(ManyConnectionsCleanupTest.class);
 
+    private static BlockheadClient client;
     private static SimpleServletServer server;
     private static AbstractCloseSocket closeSocket;
 
@@ -236,6 +238,20 @@ public class ManyConnectionsCleanupTest
         server.stop();
     }
 
+    @BeforeClass
+    public static void startClient() throws Exception
+    {
+        client = new BlockheadClient();
+        client.setIdleTimeout(TimeUnit.SECONDS.toMillis(2));
+        client.start();
+    }
+
+    @AfterClass
+    public static void stopClient() throws Exception
+    {
+        client.stop();
+    }
+
     /**
      * Test session open session cleanup (bug #474936)
      * 
@@ -245,35 +261,31 @@ public class ManyConnectionsCleanupTest
     @Test
     public void testOpenSessionCleanup() throws Exception
     {
-        int iterationCount = 100;
-        
-        StdErrLog.getLogger(FastFailSocket.class).setLevel(StdErrLog.LEVEL_OFF);
-        
-        StdErrLog sessLog = StdErrLog.getLogger(WebSocketSession.class);
-        int oldLevel = sessLog.getLevel();
-        sessLog.setLevel(StdErrLog.LEVEL_OFF);
-        
-        for (int requests = 0; requests < iterationCount; requests++)
+        int iterationCount = 20;
+
+        // TODO: consider a SilentLogging alternative class
+        try(StacklessLogging ignore = new StacklessLogging(FastFailSocket.class, WebSocketSession.class))
         {
-            fastFail();
-            fastClose();
-            dropConnection();
+            for (int requests = 0; requests < iterationCount; requests++)
+            {
+                fastFail();
+                fastClose();
+                dropConnection();
+            }
         }
         
-        sessLog.setLevel(oldLevel);
+        BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
+        request.header(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "container");
+        request.idleTimeout(1, TimeUnit.SECONDS);
 
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.setProtocols("container");
-            client.setTimeout(1,TimeUnit.SECONDS);
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-            
-            client.write(new TextFrame().setPayload("calls"));
-            client.write(new TextFrame().setPayload("openSessions"));
+            clientConn.write(new TextFrame().setPayload("calls"));
+            clientConn.write(new TextFrame().setPayload("openSessions"));
 
-            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame;
             String resp;
             
@@ -291,7 +303,7 @@ public class ManyConnectionsCleanupTest
             assertThat("frames[2].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
             assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.NORMAL));
-            client.write(close.asFrame()); // respond with close
+            clientConn.write(close.asFrame()); // respond with close
 
             // ensure server socket got close event
             assertThat("Open Sessions Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
@@ -302,70 +314,63 @@ public class ManyConnectionsCleanupTest
 
     private void fastClose() throws Exception
     {
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
+        BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
+        request.header(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "fastclose");
+        request.idleTimeout(1, TimeUnit.SECONDS);
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
+             StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
-            client.setProtocols("fastclose");
-            client.setTimeout(1,TimeUnit.SECONDS);
-            try (StacklessLogging scope = new StacklessLogging(WebSocketSession.class))
-            {
-                client.connect();
-                client.sendStandardRequest();
-                client.expectUpgradeResponse();
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
 
-                LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
-                frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            CloseInfo close = new CloseInfo(StatusCode.NORMAL,"Normal");
+            assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.NORMAL));
 
-                CloseInfo close = new CloseInfo(StatusCode.NORMAL,"Normal");
-                assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.NORMAL));
+            // Notify server of close handshake
+            clientConn.write(close.asFrame()); // respond with close
 
-                // Notify server of close handshake
-                client.write(close.asFrame()); // respond with close
-
-                // ensure server socket got close event
-                assertThat("Fast Close Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-                assertThat("Fast Close.statusCode",closeSocket.closeStatusCode,is(StatusCode.NORMAL));
-            }
+            // ensure server socket got close event
+            assertThat("Fast Close Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
+            assertThat("Fast Close.statusCode",closeSocket.closeStatusCode,is(StatusCode.NORMAL));
         }
     }
 
     private void fastFail() throws Exception
     {
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
+        BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
+        request.header(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "fastfail");
+        request.idleTimeout(1, TimeUnit.SECONDS);
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
+             StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
-            client.setProtocols("fastfail");
-            client.setTimeout(1,TimeUnit.SECONDS);
-            try (StacklessLogging scope = new StacklessLogging(WebSocketSession.class))
-            {
-                client.connect();
-                client.sendStandardRequest();
-                client.expectUpgradeResponse();
-                
-                // client.readFrames(1,2,TimeUnit.SECONDS);
+            CloseInfo close = new CloseInfo(StatusCode.NORMAL,"Normal");
+            clientConn.write(close.asFrame()); // respond with close
 
-                CloseInfo close = new CloseInfo(StatusCode.NORMAL,"Normal");
-                client.write(close.asFrame()); // respond with close
-
-                // ensure server socket got close event
-                assertThat("Fast Fail Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-                assertThat("Fast Fail.statusCode",closeSocket.closeStatusCode,is(StatusCode.SERVER_ERROR));
-                assertThat("Fast Fail.errors",closeSocket.errors.size(),is(1));
-            }
+            // ensure server socket got close event
+            assertThat("Fast Fail Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
+            assertThat("Fast Fail.statusCode",closeSocket.closeStatusCode,is(StatusCode.SERVER_ERROR));
+            assertThat("Fast Fail.errors",closeSocket.errors.size(),is(1));
         }
     }
     
     private void dropConnection() throws Exception
     {
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
+        BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
+        request.header(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "container");
+        request.idleTimeout(1, TimeUnit.SECONDS);
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
+             StacklessLogging ignore = new StacklessLogging(WebSocketSession.class))
         {
-            client.setProtocols("container");
-            client.setTimeout(1,TimeUnit.SECONDS);
-            try (StacklessLogging scope = new StacklessLogging(WebSocketSession.class))
-            {
-                client.connect();
-                client.sendStandardRequest();
-                client.expectUpgradeResponse();
-                client.disconnect();
-            }
+            clientConn.abort();
         }
     }
 }

@@ -21,23 +21,30 @@ package org.eclipse.jetty.websocket.server;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.HttpResponse;
+import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class FragmentExtensionTest
 {
     private static SimpleServletServer server;
+    private static BlockheadClient client;
 
     @BeforeClass
     public static void startServer() throws Exception
@@ -50,6 +57,20 @@ public class FragmentExtensionTest
     public static void stopServer()
     {
         server.stop();
+    }
+
+    @BeforeClass
+    public static void startClient() throws Exception
+    {
+        client = new BlockheadClient();
+        client.setIdleTimeout(TimeUnit.SECONDS.toMillis(2));
+        client.start();
+    }
+
+    @AfterClass
+    public static void stopClient() throws Exception
+    {
+        client.stop();
     }
 
     private String[] split(String str, int partSize)
@@ -69,37 +90,39 @@ public class FragmentExtensionTest
     @Test
     public void testFragmentExtension() throws Exception
     {
+        Assume.assumeTrue("Server has fragment registered",
+                server.getWebSocketServletFactory().getExtensionFactory().isAvailable("fragment"));
+
+        Assume.assumeTrue("Client has fragment registered",
+                client.getExtensionFactory().isAvailable("fragment"));
+
         int fragSize = 4;
 
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        client.clearExtensions();
-        client.addExtensions("fragment;maxLength=" + fragSize);
-        client.setProtocols("onConnect");
+        BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
+        request.header(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "fragment;maxLength=" + fragSize);
+        request.header(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "onConnect");
+        request.idleTimeout(1, TimeUnit.SECONDS);
 
-        try
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
             // Make sure the read times out if there are problems with the implementation
-            client.setTimeout(1,TimeUnit.SECONDS);
-            client.connect();
-            client.sendStandardRequest();
-            HttpResponse resp = client.expectUpgradeResponse();
+            HttpFields responseHeaders = clientConn.getUpgradeResponseHeaders();
+            HttpField extensionHeader = responseHeaders.getField(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
 
-            Assert.assertThat("Response",resp.getExtensionsHeader(),containsString("fragment"));
+            Assert.assertThat("Response",extensionHeader.getValue(),containsString("fragment"));
 
             String msg = "Sent as a long message that should be split";
-            client.write(new TextFrame().setPayload(msg));
+            clientConn.write(new TextFrame().setPayload(msg));
 
             String parts[] = split(msg,fragSize);
-            LinkedBlockingQueue<WebSocketFrame> frames = client.getFrameQueue();
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             for (int i = 0; i < parts.length; i++)
             {
                 WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
                 Assert.assertThat("text[" + i + "].payload",frame.getPayloadAsUTF8(),is(parts[i]));
             }
-        }
-        finally
-        {
-            client.close();
         }
     }
 }

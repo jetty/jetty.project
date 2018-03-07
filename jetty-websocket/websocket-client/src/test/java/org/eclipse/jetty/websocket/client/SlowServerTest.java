@@ -24,8 +24,6 @@ import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
@@ -34,16 +32,10 @@ import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
-@Ignore("TODO: Flappy Test")
 public class SlowServerTest
 {
-    @Rule
-    public TestTracker tt = new TestTracker();
-
     private BlockheadServer server;
     private WebSocketClient client;
 
@@ -75,7 +67,6 @@ public class SlowServerTest
     }
 
     @Test
-    @Slow
     public void testServerSlowToRead() throws Exception
     {
         JettyTrackingSocket tsocket = new JettyTrackingSocket();
@@ -122,7 +113,6 @@ public class SlowServerTest
     }
 
     @Test
-    @Slow
     public void testServerSlowToSend() throws Exception
     {
         JettyTrackingSocket clientSocket = new JettyTrackingSocket();

@@ -249,7 +249,6 @@ public class EchoTest
     public EchoTest(EchoCase testcase)
     {
         this.testcase = testcase;
-        System.err.println(testcase);
     }
 
     @Test(timeout=2000)
