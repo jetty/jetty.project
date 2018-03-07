@@ -104,26 +104,21 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         {
             long encoded = connections.get();
             int pending = AtomicBiInteger.getHi(encoded);
-            int current = AtomicBiInteger.getLo(encoded);
+            int total = AtomicBiInteger.getLo(encoded);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("tryCreate {}/{} connections {}/{} pending",total,maxConnections,pending,maxPending);
             
-            if (current >= maxConnections)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Max connections {}/{} reached", current, maxConnections);
+            if (total >= maxConnections)
                 return;
-            }
 
             if (maxPending>=0 && pending>=maxPending)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Max pending {}/{} reached", pending, maxPending);
                 return;
-            }
             
-            if (connections.compareAndSet(encoded,pending+1,current+1))
+            if (connections.compareAndSet(encoded,pending+1,total+1))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Connection {}/{} creation {}/{} pending", current+1, maxConnections, pending+1, maxPending);
+                    LOG.debug("newConnection {}/{} connections {}/{} pending", total+1, maxConnections, pending+1, maxPending);
 
                 destination.newConnection(new Promise<Connection>()
                 {
@@ -131,7 +126,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                     public void succeeded(Connection connection)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Connection {}/{} creation succeeded {}", current+1, maxConnections, connection);
+                            LOG.debug("Connection {}/{} creation succeeded {}", total+1, maxConnections, connection);
                         onCreated(connection);
                         connections.update(-1,0);
                         proceed();
@@ -141,7 +136,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                     public void failed(Throwable x)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Connection " + (current+1) + "/" + maxConnections + " creation failed", x);
+                            LOG.debug("Connection " + (total+1) + "/" + maxConnections + " creation failed", x);
                         connections.update(-1,-1);
                         requester.failed(x);
                     }

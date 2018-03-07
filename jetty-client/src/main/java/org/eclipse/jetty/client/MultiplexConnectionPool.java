@@ -148,22 +148,30 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements S
         lock();
         try
         {
-            if (muxedConnections.isEmpty())
+            while (true)
             {
-                holder = idleConnections.poll();
-                if (holder == null)
-                    return null;
-                muxedConnections.put(holder.connection, holder);
-            }
-            else
-            {
-                holder = muxedConnections.values().iterator().next();
-            }
+                if (muxedConnections.isEmpty())
+                {
+                    holder = idleConnections.poll();
+                    if (holder == null)
+                        return null;
+                    muxedConnections.put(holder.connection, holder);
+                }
+                else
+                {
+                    holder = muxedConnections.values().iterator().next();
+                }
 
-            if (holder.count++ >= maxMultiplex)
-            {
-                muxedConnections.remove(holder.connection);
-                busyConnections.put(holder.connection, holder);
+                if (holder.count < maxMultiplex)
+                {
+                    ++holder.count;
+                    break;
+                }
+                else
+                {
+                    muxedConnections.remove(holder.connection);
+                    busyConnections.put(holder.connection, holder);
+                }
             }
         }
         finally
