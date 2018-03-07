@@ -286,40 +286,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 getActionSize());
     }
 
-    private final class CreateEndPoint implements Runnable
-    {
-        private final Connect _connect;
-        private final SelectionKey _key;
-
-        private CreateEndPoint(Connect connect, SelectionKey key)
-        {
-            _connect = connect;
-            _key = key;
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                createEndPoint(_connect.channel,_key);
-            }
-            catch(Throwable failure)
-            {
-                closeNoExceptions(_connect.channel);
-                LOG.warn(String.valueOf(failure));
-                LOG.debug(failure);
-                _connect.failed(failure);
-            }
-        }
-        
-        @Override
-        public String toString()
-        {
-            return String.format("CreateEndPoint@%x{%s,%s}",hashCode(),_connect,_key);
-        }
-    }
-
     /**
      * A {@link Selectable} is an {@link EndPoint} that wish to be
      * notified of non-blocking events by the {@link ManagedSelector}.
@@ -840,7 +806,40 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
+    private final class CreateEndPoint implements Runnable
+    {
+        private final Connect _connect;
+        private final SelectionKey _key;
 
+        private CreateEndPoint(Connect connect, SelectionKey key)
+        {
+            _connect = connect;
+            _key = key;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                createEndPoint(_connect.channel,_key);
+            }
+            catch(Throwable failure)
+            {
+                closeNoExceptions(_connect.channel);
+                LOG.warn(String.valueOf(failure));
+                LOG.debug(failure);
+                _connect.failed(failure);
+            }
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("CreateEndPoint@%x{%s,%s}",hashCode(),_connect,_key);
+        }
+    }
+    
     private class DestroyEndPoint implements Runnable, Closeable
     {
         private final EndPoint endPoint;

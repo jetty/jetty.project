@@ -166,7 +166,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     {
         ManagedSelector selector = _selectors[0];
         int size = selector.size();
-        for (int i=_selectors.length; i-->1;)
+        for (int i=1; i<_selectors.length; i++)
         {
             int s = _selectors[i].size();
             if (s<size)
