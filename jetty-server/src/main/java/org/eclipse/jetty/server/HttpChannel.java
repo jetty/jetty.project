@@ -180,6 +180,11 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         return _configuration;
     }
 
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return getHttpTransport().isOptimizedForDirectBuffers();
+    }
+
     public Server getServer()
     {
         return _connector.getServer();
@@ -793,7 +798,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
      * @param complete whether the content is complete for the response
      * @param callback Callback when complete or failed
      */
-    protected void write(ByteBuffer content, boolean complete, Callback callback)
+    public void write(ByteBuffer content, boolean complete, Callback callback)
     {
         sendResponse(null,content,complete,callback);
     }

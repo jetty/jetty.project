@@ -54,6 +54,12 @@ public class ChannelEndPoint extends AbstractEndPoint
     }
 
     @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return true;
+    }
+    
+    @Override
     public boolean isOpen()
     {
         return _channel.isOpen();

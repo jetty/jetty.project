@@ -55,14 +55,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 {
     private static Logger LOG = Log.getLogger(HttpOutput.class);
     private final HttpChannel<?> _channel;
-    private final SharedBlockingCallback _writeblock=new SharedBlockingCallback()
-    {
-        @Override
-        protected long getIdleTimeout()
-        {
-            return _channel.getIdleTimeout();
-        }
-    };
+    private final SharedBlockingCallback _writeBlock;
+    
+    /** Bytes written via the write API (excludes bytes written via sendContent). Used to autocommit once content length is written. */
     private long _written;
     private ByteBuffer _aggregate;
     private int _bufferSize;
@@ -87,14 +82,17 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public HttpOutput(HttpChannel<?> channel)
     {
         _channel = channel;
+        _writeBlock = new SharedBlockingCallback()
+        {
+            @Override
+            protected long getIdleTimeout()
+            {
+                return _channel.getIdleTimeout();
+            }
+        };
         HttpConfiguration config = channel.getHttpConfiguration();
         _bufferSize = config.getOutputBufferSize();
         _commitSize = config.getOutputAggregationSize();
-        if (_commitSize>_bufferSize)
-        {
-            LOG.warn("OutputAggregationSize {} exceeds bufferSize {}",_commitSize,_bufferSize);
-            _commitSize=_bufferSize;
-        }
     }
     
     public HttpChannel<?> getHttpChannel()
@@ -138,12 +136,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     protected Blocker acquireWriteBlockingCallback() throws IOException
     {
-        return _writeblock.acquire();
+        return _writeBlock.acquire();
     }
     
     protected void write(ByteBuffer content, boolean complete) throws IOException
     {
-        try (Blocker blocker=_writeblock.acquire())
+        try (Blocker blocker=_writeBlock.acquire())
         {        
             write(content,complete,blocker);
             blocker.block();
@@ -300,7 +298,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     if (!complete && len<=_commitSize)
                     {
                         if (_aggregate == null)
-                            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
+                            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.isOptimizedForDirectBuffers());
 
                         // YES - fill the aggregate with content from the buffer
                         int filled = BufferUtil.fill(_aggregate, b, off, len);
@@ -343,7 +341,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (!complete && len<=_commitSize)
         {
             if (_aggregate == null)
-                _aggregate = _channel.getByteBufferPool().acquire(capacity, false);
+                _aggregate = _channel.getByteBufferPool().acquire(capacity, _channel.isOptimizedForDirectBuffers());
 
             // YES - fill the aggregate with content from the buffer
             int filled = BufferUtil.fill(_aggregate, b, off, len);
@@ -467,13 +465,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 case OPEN:
                     if (_aggregate == null)
-                        _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
+                        _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.isOptimizedForDirectBuffers());
                     BufferUtil.append(_aggregate, (byte)b);
 
                     // Check if all written or full
                     if (complete || BufferUtil.isFull(_aggregate))
                     {
-                        try(Blocker blocker=_writeblock.acquire())
+                        try(Blocker blocker=_writeBlock.acquire())
                         {
                             write(_aggregate, complete, blocker);
                             blocker.block();
@@ -491,7 +489,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         continue;
 
                     if (_aggregate == null)
-                        _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
+                        _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.isOptimizedForDirectBuffers());
                     BufferUtil.append(_aggregate, (byte)b);
 
                     // Check if all written or full
@@ -536,7 +534,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(ByteBuffer content) throws IOException
     {
-        try(Blocker blocker=_writeblock.acquire())
+        try(Blocker blocker=_writeBlock.acquire())
         {
             write(content,true,blocker);
             blocker.block();
@@ -550,7 +548,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(InputStream in) throws IOException
     {
-        try(Blocker blocker=_writeblock.acquire())
+        try(Blocker blocker=_writeBlock.acquire())
         {
             new InputStreamWritingCB(in,blocker).iterate();
             blocker.block();
@@ -564,7 +562,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(ReadableByteChannel in) throws IOException
     {
-        try(Blocker blocker=_writeblock.acquire())
+        try(Blocker blocker=_writeBlock.acquire())
         {
             new ReadableByteChannelWritingCB(in,blocker).iterate();
             blocker.block();
@@ -579,7 +577,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(HttpContent content) throws IOException
     {
-        try(Blocker blocker=_writeblock.acquire())
+        try(Blocker blocker=_writeBlock.acquire())
         {
             sendContent(content,blocker);
             blocker.block();
@@ -724,6 +722,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _commitSize = size;
     }
 
+    public void recycle()
+    {
+        resetBuffer();
+    }
+    
     public void resetBuffer()
     {
         if (BufferUtil.hasContent(_aggregate))

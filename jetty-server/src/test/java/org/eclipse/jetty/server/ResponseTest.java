@@ -106,6 +106,11 @@ public class ResponseTest
                 
             }
 
+            @Override
+            public boolean isOptimizedForDirectBuffers()
+            {
+                return false;
+            }
         }, input);
     }
 
