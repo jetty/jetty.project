@@ -70,7 +70,6 @@ public class TestABCase9 extends AbstractABCase
         int offset = 0;
         boolean fin;
         ByteBuffer buf;
-        ;
         byte op = opcode;
         while (remaining > 0)
         {

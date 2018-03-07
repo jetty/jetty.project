@@ -27,8 +27,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
@@ -44,65 +44,21 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class EncoderTest
 {
-    private static class EchoServer
-    {
-        private BlockheadServer server;
-        private IBlockheadServerConnection sconnection;
-        private CountDownLatch connectLatch = new CountDownLatch(1);
-
-        public EchoServer(BlockheadServer server)
-        {
-            this.server = server;
-        }
-
-        public void start()
-        {
-            CompletableFuture.runAsync(() -> {
-                try
-                {
-                    sconnection = server.accept();
-                    sconnection.setSoTimeout(10000);
-                    sconnection.upgrade();
-                    sconnection.enableIncomingEcho(true);
-                    sconnection.startReadThread();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(e);
-                }
-                finally
-                {
-                    connectLatch.countDown();
-                }
-            });
-        }
-
-        public void stop()
-        {
-            if (this.sconnection != null)
-            {
-                try
-                {
-                    this.sconnection.close();
-                }
-                catch (IOException ignore)
-                {
-                    /* ignore */
-                }
-            }
-        }
-    }
-
     public static class Quotes
     {
         private String author;
@@ -184,9 +140,21 @@ public class EncoderTest
 
     private static final Logger LOG = Log.getLogger(EncoderTest.class);
 
-    private BlockheadServer server;
-
+    private static BlockheadServer server;
     private WebSocketContainer client;
+
+    @BeforeClass
+    public static void startServer() throws Exception
+    {
+        server = new BlockheadServer();
+        server.start();
+    }
+
+    @AfterClass
+    public static void stopServer() throws Exception
+    {
+        server.stop();
+    }
 
     private void assertReceivedQuotes(String result, Quotes quotes)
     {
@@ -229,42 +197,33 @@ public class EncoderTest
         client = ContainerProvider.getWebSocketContainer();
         client.setDefaultMaxSessionIdleTimeout(10000);
     }
-    
+
     @After
     public void stopClient() throws Exception
     {
         ((LifeCycle)client).stop();
     }
-    
-    @Before
-    public void startServer() throws Exception
-    {
-        server = new BlockheadServer();
-        server.start();
-    }
-
-    @After
-    public void stopServer() throws Exception
-    {
-        server.stop();
-    }
 
     @Test(timeout = 10000)
     public void testSingleQuotes() throws Exception
     {
-        EchoServer eserver = new EchoServer(server);
-        try
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
+        QuotesSocket quoter = new QuotesSocket();
+
+        ClientEndpointConfig.Builder builder = ClientEndpointConfig.Builder.create();
+        List<Class<? extends Encoder>> encoders = new ArrayList<>();
+        encoders.add(QuotesEncoder.class);
+        builder.encoders(encoders);
+        ClientEndpointConfig cec = builder.build();
+        client.connectToServer(quoter,cec,server.getWsUri());
+
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            eserver.start();
-
-            QuotesSocket quoter = new QuotesSocket();
-
-            ClientEndpointConfig.Builder builder = ClientEndpointConfig.Builder.create();
-            List<Class<? extends Encoder>> encoders = new ArrayList<>();
-            encoders.add(QuotesEncoder.class);
-            builder.encoders(encoders);
-            ClientEndpointConfig cec = builder.build();
-            client.connectToServer(quoter,cec,server.getWsUri());
+            // Setup echo of frames on server side
+            serverConn.setIncomingFrameConsumer(new DataFrameEcho(serverConn));
 
             Quotes ben = getQuotes("quotes-ben.txt");
             quoter.write(ben);
@@ -272,27 +231,27 @@ public class EncoderTest
             String result = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertReceivedQuotes(result,ben);
         }
-        finally
-        {
-            eserver.stop();
-        }
     }
 
     @Test(timeout = 10000)
     public void testTwoQuotes() throws Exception
     {
-        EchoServer eserver = new EchoServer(server);
-        try
-        {
-            eserver.start();
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
 
-            QuotesSocket quoter = new QuotesSocket();
-            ClientEndpointConfig.Builder builder = ClientEndpointConfig.Builder.create();
-            List<Class<? extends Encoder>> encoders = new ArrayList<>();
-            encoders.add(QuotesEncoder.class);
-            builder.encoders(encoders);
-            ClientEndpointConfig cec = builder.build();
-            client.connectToServer(quoter,cec,server.getWsUri());
+        QuotesSocket quoter = new QuotesSocket();
+        ClientEndpointConfig.Builder builder = ClientEndpointConfig.Builder.create();
+        List<Class<? extends Encoder>> encoders = new ArrayList<>();
+        encoders.add(QuotesEncoder.class);
+        builder.encoders(encoders);
+        ClientEndpointConfig cec = builder.build();
+        client.connectToServer(quoter,cec,server.getWsUri());
+
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            // Setup echo of frames on server side
+            serverConn.setIncomingFrameConsumer(new DataFrameEcho(serverConn));
 
             Quotes ben = getQuotes("quotes-ben.txt");
             Quotes twain = getQuotes("quotes-twain.txt");
@@ -304,9 +263,26 @@ public class EncoderTest
             result = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertReceivedQuotes(result,twain);
         }
-        finally
+    }
+
+    private static class DataFrameEcho implements Consumer<Frame>
+    {
+        private final BlockheadConnection connection;
+
+        public DataFrameEcho(BlockheadConnection connection)
         {
-            eserver.stop();
+            this.connection = connection;
+        }
+
+        @Override
+        public void accept(Frame frame)
+        {
+            if (OpCode.isDataFrame(frame.getOpCode()))
+            {
+                WebSocketFrame copy = WebSocketFrame.copy(frame);
+                copy.setMask(null); // remove client masking
+                connection.write(copy);
+            }
         }
     }
 }

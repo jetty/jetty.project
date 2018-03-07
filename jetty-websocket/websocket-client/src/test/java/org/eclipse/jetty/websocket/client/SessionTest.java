@@ -26,35 +26,37 @@ import static org.junit.Assert.assertThat;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class SessionTest
 {
-    private BlockheadServer server;
+    private static BlockheadServer server;
 
-    @Before
-    public void startServer() throws Exception
+    @BeforeClass
+    public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
     }
 
-    @After
-    public void stopServer() throws Exception
+    @AfterClass
+    public static void stopServer() throws Exception
     {
         server.stop();
     }
@@ -69,6 +71,10 @@ public class SessionTest
         {
             JettyTrackingSocket cliSock = new JettyTrackingSocket();
 
+            // Hook into server connection creation
+            CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+            server.addConnectFuture(serverConnFut);
+
             client.getPolicy().setIdleTimeout(10000);
 
             URI wsUri = server.getWsUri();
@@ -76,31 +82,33 @@ public class SessionTest
             request.setSubProtocols("echo");
             Future<Session> future = client.connect(cliSock,wsUri,request);
 
-            final IBlockheadServerConnection srvSock = server.accept();
-            srvSock.upgrade();
-            Session sess = future.get(30000, TimeUnit.MILLISECONDS);
-            Assert.assertThat("Session", sess, notNullValue());
-            Assert.assertThat("Session.open", sess.isOpen(), is(true));
-            Assert.assertThat("Session.upgradeRequest", sess.getUpgradeRequest(), notNullValue());
-            Assert.assertThat("Session.upgradeResponse", sess.getUpgradeResponse(), notNullValue());
-
-            cliSock.assertWasOpened();
-            cliSock.assertNotClosed();
-
-            Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
-            Assert.assertThat("client.connectionManager.sessions.size", sessions.size(), is(1));
-
-            RemoteEndpoint remote = cliSock.getSession().getRemote();
-            remote.sendStringByFuture("Hello World!");
-            if (remote.getBatchMode() == BatchMode.ON)
+            try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
             {
-                remote.flush();
-            }
+                // Setup echo of frames on server side
+                serverConn.setIncomingFrameConsumer((frame)->{
+                    WebSocketFrame copy = WebSocketFrame.copy(frame);
+                    serverConn.write(copy);
+                });
 
-            try
-            {
-                srvSock.enableIncomingEcho(true);
-                srvSock.startReadThread();
+                Session sess = future.get(30000, TimeUnit.MILLISECONDS);
+                Assert.assertThat("Session", sess, notNullValue());
+                Assert.assertThat("Session.open", sess.isOpen(), is(true));
+                Assert.assertThat("Session.upgradeRequest", sess.getUpgradeRequest(), notNullValue());
+                Assert.assertThat("Session.upgradeResponse", sess.getUpgradeResponse(), notNullValue());
+
+                cliSock.assertWasOpened();
+                cliSock.assertNotClosed();
+
+                Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
+                Assert.assertThat("client.connectionManager.sessions.size", sessions.size(), is(1));
+
+                RemoteEndpoint remote = cliSock.getSession().getRemote();
+                remote.sendStringByFuture("Hello World!");
+                if (remote.getBatchMode() == BatchMode.ON)
+                {
+                    remote.flush();
+                }
+
                 // wait for response from server
                 cliSock.waitForMessage(30000, TimeUnit.MILLISECONDS);
 
@@ -111,11 +119,6 @@ public class SessionTest
                 assertThat("Message", received, containsString("Hello World!"));
 
                 cliSock.close();
-                srvSock.close();
-            }
-            finally
-            {
-                srvSock.disconnect();
             }
 
             cliSock.waitForClose(30000, TimeUnit.MILLISECONDS);

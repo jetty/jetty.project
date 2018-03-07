@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.Assert;
 
 /**
@@ -159,9 +160,9 @@ public class JettyTrackingSocket extends WebSocketAdapter
         Assert.assertThat("Client Socket Closed",closeLatch.await(timeoutDuration,timeoutUnit),is(true));
     }
 
-    public void waitForConnected(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
+    public void waitForConnected() throws InterruptedException
     {
-        Assert.assertThat("Client Socket Connected",openLatch.await(timeoutDuration,timeoutUnit),is(true));
+        Assert.assertThat("Client Socket Connected",openLatch.await(Timeouts.CONNECT,Timeouts.CONNECT_UNIT),is(true));
     }
 
     public void waitForMessage(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException

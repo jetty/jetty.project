@@ -227,6 +227,7 @@ public class BlockheadClientRequest extends HttpRequest implements Response.Comp
 
         endp.setIdleTimeout(client.getIdleTimeout());
 
+        connection.setUpgradeRequestHeaders(this.getHeaders());
         connection.setUpgradeResponseHeaders(response.getHeaders());
 
         // Now swap out the connection

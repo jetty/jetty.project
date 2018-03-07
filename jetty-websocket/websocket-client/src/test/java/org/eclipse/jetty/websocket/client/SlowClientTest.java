@@ -19,23 +19,32 @@
 package org.eclipse.jetty.websocket.client;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SlowClientTest
 {
-    private BlockheadServer server;
+    private static BlockheadServer server;
     private WebSocketClient client;
 
     @Before
@@ -46,8 +55,8 @@ public class SlowClientTest
         client.start();
     }
 
-    @Before
-    public void startServer() throws Exception
+    @BeforeClass
+    public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
@@ -59,8 +68,8 @@ public class SlowClientTest
         client.stop();
     }
 
-    @After
-    public void stopServer() throws Exception
+    @AfterClass
+    public static void stopServer() throws Exception
     {
         server.stop();
     }
@@ -74,39 +83,50 @@ public class SlowClientTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(tsocket, wsUri);
 
-        IBlockheadServerConnection sconnection = server.accept();
-        sconnection.setSoTimeout(60000);
-        sconnection.upgrade();
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
 
         // Confirm connected
-        future.get(30,TimeUnit.SECONDS);
-        tsocket.waitForConnected(30,TimeUnit.SECONDS);
+        future.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
+        tsocket.waitForConnected();
 
         int messageCount = 10;
 
-        // Setup server read thread
-        ServerReadThread reader = new ServerReadThread(sconnection, messageCount);
-        reader.start();
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            // Have client write slowly.
+            ClientWriteThread writer = new ClientWriteThread(tsocket.getSession());
+            writer.setMessageCount(messageCount);
+            writer.setMessage("Hello");
+            writer.setSlowness(10);
+            writer.start();
+            writer.join();
 
-        // Have client write slowly.
-        ClientWriteThread writer = new ClientWriteThread(tsocket.getSession());
-        writer.setMessageCount(messageCount);
-        writer.setMessage("Hello");
-        writer.setSlowness(10);
-        writer.start();
-        writer.join();
+            LinkedBlockingQueue<WebSocketFrame> serverFrames = serverConn.getFrameQueue();
 
-        reader.waitForExpectedMessageCount(1, TimeUnit.MINUTES);
+            for (int i = 0; i < messageCount; i++)
+            {
+                WebSocketFrame serverFrame = serverFrames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+                String prefix = "Server frame[" + i + "]";
+                assertThat(prefix + ".opcode", serverFrame.getOpCode(), is(OpCode.TEXT));
+                assertThat(prefix + ".payload", serverFrame.getPayloadAsUTF8(), is("Hello/" + i + "/"));
+            }
 
-        // Verify receive
-        Assert.assertThat("Frame Receive Count", reader.getFrameCount(), is(messageCount));
+            // Close
+            tsocket.getSession().close(StatusCode.NORMAL, "Done");
 
-        // Close
-        tsocket.getSession().close(StatusCode.NORMAL, "Done");
+            // confirm close received on server
+            WebSocketFrame serverFrame = serverFrames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            assertThat("close frame", serverFrame.getOpCode(), is(OpCode.CLOSE));
+            CloseInfo closeInfo = new CloseInfo(serverFrame);
+            assertThat("close info", closeInfo.getStatusCode(), is(StatusCode.NORMAL));
+            WebSocketFrame respClose = WebSocketFrame.copy(serverFrame);
+            respClose.setMask(null); // remove client mask (if present)
+            serverConn.write(respClose);
 
-        Assert.assertTrue("Client Socket Closed", tsocket.closeLatch.await(3, TimeUnit.MINUTES));
-        tsocket.assertCloseCode(StatusCode.NORMAL);
-
-        reader.cancel(); // stop reading
+            // Verify server response
+            Assert.assertTrue("Client Socket Closed", tsocket.closeLatch.await(3, TimeUnit.MINUTES));
+            tsocket.assertCloseCode(StatusCode.NORMAL);
+        }
     }
 }

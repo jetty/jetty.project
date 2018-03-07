@@ -20,11 +20,20 @@ package org.eclipse.jetty.websocket.common.test;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * A central place for all of the various test timeouts within the websocket testing.
+ */
 public class Timeouts
 {
+    // establish a connection timeout
     public static final long CONNECT = 2;
     public static final TimeUnit CONNECT_UNIT = TimeUnit.SECONDS;
 
+    // poll for an event timeout
     public static final long POLL_EVENT = 2;
     public static final TimeUnit POLL_EVENT_UNIT = TimeUnit.SECONDS;
+
+    // send a message timeout
+    public static final long SEND = 2;
+    public static final TimeUnit SEND_UNIT = TimeUnit.SECONDS;
 }

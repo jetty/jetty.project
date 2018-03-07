@@ -25,25 +25,30 @@ import static org.junit.Assert.assertTrue;
 import java.net.CookieManager;
 import java.net.HttpCookie;
 import java.util.Collections;
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.util.QuoteUtil;
+import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class CookieTest
@@ -83,8 +88,8 @@ public class CookieTest
         }
     }
 
+    private static BlockheadServer server;
     private WebSocketClient client;
-    private BlockheadServer server;
 
     @Before
     public void startClient() throws Exception
@@ -93,8 +98,8 @@ public class CookieTest
         client.start();
     }
 
-    @Before
-    public void startServer() throws Exception
+    @BeforeClass
+    public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
@@ -109,8 +114,8 @@ public class CookieTest
         }
     }
 
-    @After
-    public void stopServer() throws Exception
+    @AfterClass
+    public static void stopServer() throws Exception
     {
         server.stop();
     }
@@ -132,18 +137,22 @@ public class CookieTest
         cookie.setMaxAge(100000);
         cookieMgr.getCookieStore().add(server.getWsUri(),cookie);
 
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         // Client connects
         CookieTrackingSocket clientSocket = new CookieTrackingSocket();
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
-        // Server accepts connect
-        IBlockheadServerConnection serverConn = server.accept();
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            // client confirms upgrade and receipt of frame
+            String serverCookies = confirmClientUpgradeAndCookies(clientSocket, clientConnectFuture, serverConn);
 
-        // client confirms upgrade and receipt of frame
-        String serverCookies = confirmClientUpgradeAndCookies(clientSocket,clientConnectFuture,serverConn);
-
-        assertThat("Cookies seen at server side",serverCookies,containsString("hello=world"));
-        assertThat("Cookies seen at server side",serverCookies,containsString("foo=bar is the word"));
+            assertThat("Cookies seen at server side", serverCookies, containsString("hello=world"));
+            assertThat("Cookies seen at server side", serverCookies, containsString("foo=bar is the word"));
+        }
     }
     
     @Test
@@ -157,32 +166,35 @@ public class CookieTest
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setCookies(Collections.singletonList(cookie));
 
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         // Client connects
         CookieTrackingSocket clientSocket = new CookieTrackingSocket();
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri(),request);
 
-        // Server accepts connect
-        IBlockheadServerConnection serverConn = server.accept();
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            // client confirms upgrade and receipt of frame
+            String serverCookies = confirmClientUpgradeAndCookies(clientSocket, clientConnectFuture, serverConn);
 
-        // client confirms upgrade and receipt of frame
-        String serverCookies = confirmClientUpgradeAndCookies(clientSocket,clientConnectFuture,serverConn);
-
-        Assert.assertThat("Cookies seen at server side",serverCookies,containsString("hello=world"));
+            Assert.assertThat("Cookies seen at server side", serverCookies, containsString("hello=world"));
+        }
     }
 
-    private String confirmClientUpgradeAndCookies(CookieTrackingSocket clientSocket, Future<Session> clientConnectFuture, IBlockheadServerConnection serverConn)
+    private String confirmClientUpgradeAndCookies(CookieTrackingSocket clientSocket, Future<Session> clientConnectFuture, BlockheadConnection serverConn)
             throws Exception
     {
-        // Server upgrades
-        List<String> upgradeRequestLines = serverConn.upgrade();
-        List<String> upgradeRequestCookies = serverConn.regexFind(upgradeRequestLines,"^Cookie: (.*)$");
+        // Server side upgrade information
+        HttpFields upgradeRequestHeaders = serverConn.getUpgradeRequestHeaders();
+        HttpField cookieField = upgradeRequestHeaders.getField(HttpHeader.COOKIE);
 
         // Server responds with cookies it knows about
         TextFrame serverCookieFrame = new TextFrame();
         serverCookieFrame.setFin(true);
-        serverCookieFrame.setPayload(QuoteUtil.join(upgradeRequestCookies,","));
+        serverCookieFrame.setPayload(cookieField.getValue());
         serverConn.write(serverCookieFrame);
-        serverConn.flush();
 
         // Confirm client connect on future
         clientConnectFuture.get(10,TimeUnit.SECONDS);
@@ -193,7 +205,7 @@ public class CookieTest
         LOG.debug("Cookies seen at server: {}",cookies);
         
         // Server closes connection
-        serverConn.close(StatusCode.NORMAL);
+        serverConn.write(new CloseInfo(StatusCode.NORMAL).asFrame());
     
         return cookies;
     }

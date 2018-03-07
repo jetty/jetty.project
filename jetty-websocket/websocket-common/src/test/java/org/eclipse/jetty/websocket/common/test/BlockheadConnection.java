@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -58,6 +59,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     private final IncomingCapture incomingCapture;
     private ByteBuffer networkBuffer;
     private HttpFields upgradeResponseHeaders;
+    private HttpFields upgradeRequestHeaders;
 
     public BlockheadConnection(WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack, EndPoint endp, Executor executor)
     {
@@ -115,6 +117,11 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
         }
     }
 
+    public ByteBufferPool getBufferPool()
+    {
+        return bufferPool;
+    }
+
     public LinkedBlockingQueue<WebSocketFrame> getFrameQueue()
     {
         return incomingCapture.incomingFrames;
@@ -138,6 +145,11 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     public InetSocketAddress getRemoteSocketAddress()
     {
         return getEndPoint().getRemoteAddress();
+    }
+
+    public HttpFields getUpgradeRequestHeaders()
+    {
+        return upgradeRequestHeaders;
     }
 
     public HttpFields getUpgradeResponseHeaders()
@@ -175,9 +187,19 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
         LOG.warn("Connection Error", cause);
     }
 
+    public void setUpgradeRequestHeaders(HttpFields upgradeRequestHeaders)
+    {
+        this.upgradeRequestHeaders = upgradeRequestHeaders;
+    }
+
     public void setUpgradeResponseHeaders(HttpFields upgradeResponseHeaders)
     {
         this.upgradeResponseHeaders = upgradeResponseHeaders;
+    }
+
+    public void setIncomingFrameConsumer(Consumer<Frame> consumer)
+    {
+        this.incomingCapture.frameConsumer = consumer;
     }
 
     public void write(WebSocketFrame frame)
@@ -197,7 +219,11 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
         buf.limit(len);
         try
         {
-            getEndPoint().flush(slice);
+            boolean done = false;
+            while (!done)
+            {
+                done = getEndPoint().flush(slice);
+            }
         }
         catch (IOException e)
         {
@@ -311,6 +337,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     {
         public final LinkedBlockingQueue<WebSocketFrame> incomingFrames = new LinkedBlockingQueue<>();
         public final LinkedBlockingQueue<Throwable> incomingErrors = new LinkedBlockingQueue<>();
+        public Consumer<Frame> frameConsumer;
 
         @Override
         public void incomingError(Throwable cause)
@@ -321,6 +348,9 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
         @Override
         public void incomingFrame(Frame frame)
         {
+            if(frameConsumer != null)
+                frameConsumer.accept(frame);
+
             incomingFrames.offer(WebSocketFrame.copy(frame));
         }
     }
