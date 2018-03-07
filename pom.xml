@@ -27,6 +27,7 @@
     <asm.version>6.0</asm.version>
     <jmh.version>1.20</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
+    <surefireVersion>2.21.0</surefireVersion>
   </properties>
 
   <licenses>
@@ -439,7 +440,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>2.20.1</version>
+          <version>${surefireVersion}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -593,7 +594,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.20</version>
+          <version>${surefireVersion}</version>
           <configuration>
             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
@@ -1021,11 +1022,6 @@
               <configuration>
                 <skip>true</skip>
               </configuration>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-failsafe-plugin</artifactId>
-              <version>2.21.0-SNAPSHOT</version>
             </plugin>
           </plugins>
         </pluginManagement>
