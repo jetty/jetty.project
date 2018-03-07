@@ -84,6 +84,8 @@ public class Fuzzer implements AutoCloseable
 
         client.setIdleTimeout(TimeUnit.SECONDS.toMillis(2));
 
+        client.start();
+
         this.generator = testcase.getLaxGenerator();
         this.testname = testcase.getTestMethodName();
     }
@@ -111,6 +113,14 @@ public class Fuzzer implements AutoCloseable
     public void close()
     {
         this.clientConnection.close();
+        try
+        {
+            this.client.stop();
+        }
+        catch (Exception ignore)
+        {
+            LOG.ignore(ignore);
+        }
     }
 
     public void disconnect()
@@ -121,6 +131,7 @@ public class Fuzzer implements AutoCloseable
     public void connect() throws IOException
     {
         BlockheadClientRequest request = this.client.newWsRequest(testcase.getServerURI());
+        request.idleTimeout(2, TimeUnit.SECONDS);
         request.header("X-TestCase", testname);
         Future<BlockheadConnection> connFut = request.sendAsync();
 

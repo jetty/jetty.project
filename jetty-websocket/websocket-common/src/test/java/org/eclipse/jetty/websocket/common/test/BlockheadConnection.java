@@ -194,7 +194,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     {
         int len = Math.min(numBytes, buf.remaining());
         ByteBuffer slice = buf.slice();
-        buf.position(len);
+        buf.limit(len);
         try
         {
             getEndPoint().flush(slice);
