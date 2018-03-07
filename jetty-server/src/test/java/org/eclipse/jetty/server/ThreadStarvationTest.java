@@ -325,12 +325,20 @@ public class ThreadStarvationTest
                     
                     byte buf[] = new byte[1024];
                     
-                    while((len = in.read(buf,0,buf.length)) != -1)
+                    try
                     {
-                        for(int x=0; x<len; x++)
+                        while((len = in.read(buf,0,buf.length)) != -1)
                         {
-                            if(buf[x] == '!') bodyCount++;
+                            for(int x=0; x<len; x++)
+                            {
+                                if(buf[x] == '!') bodyCount++;
+                            }
                         }
+                    }
+                    catch(Throwable th)
+                    {
+                        _server.dumpStdErr();
+                        throw th;
                     }
                     return bodyCount;
                 }
