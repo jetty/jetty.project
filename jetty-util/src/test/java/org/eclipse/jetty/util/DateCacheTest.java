@@ -40,6 +40,7 @@ public class DateCacheTest
     /* ------------------------------------------------------------ */
     @Test
     @Slow
+    @SuppressWarnings("ReferenceEquality")
     public void testDateCache() throws Exception
     {
         //@WAS: Test t = new Test("org.eclipse.jetty.util.DateCache");

@@ -407,6 +407,7 @@ public class FileResource extends Resource
      * @return <code>true</code> of the object <code>o</code> is a {@link FileResource} pointing to the same file as this resource. 
      */
     @Override
+    @SuppressWarnings("ReferenceEquality")
     public boolean equals( Object o)
     {
         if (this == o)
@@ -416,7 +417,7 @@ public class FileResource extends Resource
             return false;
 
         FileResource f=(FileResource)o;
-        return f._file == _file || (null != _file && _file.equals(f._file));
+        return f._file==_file || (null != _file && _file.equals(f._file));
     }
 
     /* ------------------------------------------------------------ */

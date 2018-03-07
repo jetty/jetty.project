@@ -1513,7 +1513,9 @@ public class ServletHandler extends ScopedHandler
         boolean found = false;
         for (ServletHolder s:_servlets)
         {
-            if (s == holder)
+            @SuppressWarnings("ReferenceEquality")
+            boolean foundServletHolder = (s == holder);
+            if (foundServletHolder)
                 found = true;
         }
         return found;

@@ -627,8 +627,12 @@ public class SslConnection extends AbstractConnection
 
                         // We also need an app buffer, but can use the passed buffer if it is big enough
                         ByteBuffer app_in;
+                        boolean used_passed_buffer = false;
                         if (BufferUtil.space(buffer) > _sslEngine.getSession().getApplicationBufferSize())
+                        {
                             app_in = buffer;
+                            used_passed_buffer = true;
+                        }
                         else if (_decryptedInput == null)
                             app_in = _decryptedInput = _bufferPool.acquire(_sslEngine.getSession().getApplicationBufferSize(), _decryptedDirectBuffers);
                         else
@@ -730,7 +734,7 @@ public class SslConnection extends AbstractConnection
                                         // another call to fill() or flush().
                                         if (unwrapResult.bytesProduced() > 0)
                                         {
-                                            if (app_in == buffer)
+                                            if (used_passed_buffer)
                                                 return unwrapResult.bytesProduced();
                                             return BufferUtil.append(buffer,_decryptedInput);
                                         }

@@ -696,9 +696,9 @@ public class ClasspathPattern extends AbstractSet<String>
                 LOG.debug("match {} from {} byName={} byLocation={} in {}",clazz,location,byName,byLocation,this);
             
             // Combine the tri-state match of both IncludeExclude Sets
-            boolean included = byName==Boolean.TRUE || byLocation==Boolean.TRUE
+            boolean included = Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation)
                 || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
-            boolean excluded = byName==Boolean.FALSE || byLocation==Boolean.FALSE;
+            boolean excluded = Boolean.FALSE.equals(byName) || Boolean.FALSE.equals(byLocation);
             return included && !excluded;
         }
         catch (Exception e)
@@ -737,9 +737,9 @@ public class ClasspathPattern extends AbstractSet<String>
         }
 
         // Combine the tri-state match of both IncludeExclude Sets
-        boolean included = byName==Boolean.TRUE || byLocation==Boolean.TRUE
+        boolean included = Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation)
             || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
-        boolean excluded = byName==Boolean.FALSE || byLocation==Boolean.FALSE;
+        boolean excluded = Boolean.FALSE.equals(byName) || Boolean.FALSE.equals(byLocation);
         return included && !excluded;
     }
     

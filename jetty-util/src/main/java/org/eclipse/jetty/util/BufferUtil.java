@@ -238,6 +238,17 @@ public class BufferUtil
         }
     }
 
+    /**
+     * @param buf the buffer to check
+     * @return true if buf is equal to EMPTY_BUFFER
+     */
+    public static boolean isTheEmptyBuffer(ByteBuffer buf)
+    {
+        @SuppressWarnings("ReferenceEquality")
+        boolean isTheEmptyBuffer_ = (buf == EMPTY_BUFFER);
+        return isTheEmptyBuffer_;
+    }
+    
     /* ------------------------------------------------------------ */
     /** Check for an empty or null buffer.
      * @param buf the buffer to check

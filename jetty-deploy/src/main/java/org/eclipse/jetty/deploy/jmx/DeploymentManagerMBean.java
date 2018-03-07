@@ -74,7 +74,7 @@ public class DeploymentManagerMBean extends ObjectMBean
         List<String> ret = new ArrayList<>();
         for (DeploymentManager.AppEntry entry : _manager.getAppEntries())
         {
-            if (entry.getLifecyleNode() == node)
+            if (node.equals(entry.getLifecyleNode()))
             {
                 ret.add(toRef(entry.getApp()));
             }

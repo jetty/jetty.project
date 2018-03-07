@@ -251,6 +251,7 @@ public class Fields implements Iterable<Fields.Field>
             this.values = Collections.unmodifiableList(list);
         }
 
+        @SuppressWarnings("ReferenceEquality")
         public boolean equals(Field that, boolean caseSensitive)
         {
             if (this == that)
