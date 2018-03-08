@@ -207,8 +207,16 @@ public class DecoderReaderTest
         }
     }
 
+    /**
+     * Test that multiple quotes can go through decoder without issue.
+     * <p>
+     *     Since this decoder is Reader based, this is a useful test to ensure
+     *     that the Reader creation / dispatch / hand off to the user endpoint
+     *     works properly.
+     * </p>
+     * @throws Exception
+     */
     @Test
-    // @Ignore ("Quotes appear to be able to arrive in any order?")
     public void testTwoQuotes() throws Exception
     {
         // Hook into server connection creation
@@ -221,10 +229,11 @@ public class DecoderReaderTest
         try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
             writeQuotes( serverConn,"quotes-ben.txt");
-            writeQuotes( serverConn,"quotes-twain.txt");
             Quotes quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Quotes Author", quotes.author, is("Benjamin Franklin"));
             Assert.assertThat("Quotes Count", quotes.quotes.size(), is(3));
+
+            writeQuotes( serverConn,"quotes-twain.txt");
             quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Quotes Author", quotes.author, is("Mark Twain"));
         }
