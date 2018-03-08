@@ -168,5 +168,11 @@ public class SearchPatternTest
         d = new String("mnopqrs").getBytes(StandardCharsets.US_ASCII);
         sp = SearchPattern.compile(p);
         Assert.assertEquals(7,sp.startsWith(d,0,d.length,12));  
+        
+        //partial pattern
+        p = new String("abcdef").getBytes(StandardCharsets.US_ASCII);
+        d = new String("cde").getBytes(StandardCharsets.US_ASCII);
+        sp = SearchPattern.compile(p);
+        Assert.assertEquals(5,sp.startsWith(d,0,d.length,2));
     }
 }
