@@ -22,7 +22,10 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.eclipse.jetty.http.MultiPartParser.Handler;
 import org.eclipse.jetty.http.MultiPartParser.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
@@ -75,7 +78,12 @@ public class MultiPartParserTest
         assertThat(parser.getState(),is(State.PREAMBLE));
         assertThat(data.remaining(),is(0));
         
-        data = BufferUtil.toBuffer("but not it isn't");
+        data = BufferUtil.toBuffer("but not it isn't \r\n--BOUN");
+        parser.parse(data,false);
+        assertThat(parser.getState(),is(State.PREAMBLE));
+        assertThat(data.remaining(),is(0));
+        
+        data = BufferUtil.toBuffer("DARX nor is this");
         parser.parse(data,false);
         assertThat(parser.getState(),is(State.PREAMBLE));
         assertThat(data.remaining(),is(0));
@@ -129,5 +137,56 @@ public class MultiPartParserTest
         assertThat(data.remaining(),is(0));
     }
 
+    @Test
+    public void testFirstPartNoFields()
+    {
+        MultiPartParser parser = new MultiPartParser(new MultiPartParser.Handler(){},"BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("");
+        
+        data = BufferUtil.toBuffer("--BOUNDARY\r\n\r\n");
+        parser.parse(data,false);
+        assertTrue(parser.isState(State.PART));
+        assertThat(data.remaining(),is(0));
+    }
+    
+    @Test
+    public void testFirstPartFields()
+    {
+        List<String> fields = new ArrayList<>();
+        MultiPartParser parser = new MultiPartParser(new MultiPartParser.Handler()
+        {
+
+            @Override
+            public void parsedHeader(String name, String value)
+            {
+                new Throwable().printStackTrace();
+                fields.add(name+": "+value);
+            }
+
+            @Override
+            public boolean headerComplete()
+            {
+                fields.add("COMPLETE!");
+                return true;
+            }
+            
+        },"BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("");
+        
+        data = BufferUtil.toBuffer("--BOUNDARY\r\n"
+                + "name0: value0\r\n"
+                + "name1 :value1 \r\n"
+                + "name2:value\r\n"
+                + " 2\r\n"
+                + "\r\n"
+                + "Content");
+        parser.parse(data,false);
+        assertTrue(parser.isState(State.PART));
+        assertThat(data.remaining(),is(7));
+        assertThat(fields,Matchers.contains("name0: value0","name1: value1", "name2: value 2", "COMPLETE!"));
+        
+        
+    }
+    
     
 }

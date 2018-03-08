@@ -28,10 +28,8 @@ import java.util.Arrays;
 import java.util.EnumSet;
 
 import org.eclipse.jetty.http.HttpParser.RequestHandler;
-import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.SearchPattern;
-import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -120,7 +118,6 @@ public class MultiPartParser
 {
     public static final Logger LOG = Log.getLogger(MultiPartParser.class);
 
-    public final static Trie<MimeField> CACHE = new ArrayTrie<>(2048);
 
     // States
     public enum FieldState
@@ -129,11 +126,7 @@ public class MultiPartParser
         IN_NAME,
         AFTER_NAME,
         VALUE,
-        IN_VALUE,
-        
-        PARAM,
-        PARAM_NAME, 
-        PARAM_VALUE
+        IN_VALUE
     }
     
     // States
@@ -155,10 +148,8 @@ public class MultiPartParser
     private final Handler _handler;
     private final String _boundary;
     private final SearchPattern _search;
-    private MimeField _field;
-    private String _headerString;
-    private String _valueString;
-    private int _headerBytes;
+    private String _fieldName;
+    private String _fieldValue;
 
     private State _state = State.PREAMBLE;
     private FieldState _fieldState = FieldState.FIELD;
@@ -168,12 +159,6 @@ public class MultiPartParser
 
     private final StringBuilder _string=new StringBuilder();
     private int _length;
-
-    static
-    {
-        CACHE.put(new MimeField("Content-Disposition","form-data"));
-        CACHE.put(new MimeField("Content-Type","text/plain"));
-    }
 
 
     /* ------------------------------------------------------------------------------- */
@@ -330,24 +315,30 @@ public class MultiPartParser
                 case DELIMITER_PADDING:
                 case DELIMITER_CLOSE:
                     parseDelimiter(buffer);
-                    break;
-
+                    continue;
                     
                 case BODY_PART:
                     handle = parseFields(buffer);
                     break;
                     
                 case PART:
+                    // TODO
+                    handle = true;
+                    break;
+                    
+                    
+                case EPILOGUE:
+                    // TODO
+                    handle = true;
                     break;
                     
                 case END:
-                    break;
-                    
-                case EPILOGUE:
+                    // TODO
+                    handle = true;
                     break;
                     
                 default:
-                    break;
+                    throw new IllegalStateException();
                 
             }
         }
@@ -442,37 +433,38 @@ public class MultiPartParser
      */
     protected boolean parseFields(ByteBuffer buffer)
     {
-        /*
         // Process headers
-        while ((_state==State.HEADER && buffer.hasRemaining())
+        while (_state==State.BODY_PART && buffer.hasRemaining())
         {
             // process each character
             byte b=next(buffer);
             if (b==0)
                 break;
 
-
             switch (_fieldState)
             {
                 case FIELD:
                     switch(b)
                     {
-                        case HttpTokens.COLON:
                         case HttpTokens.SPACE:
                         case HttpTokens.TAB:
                         {
-                            // header value without name - continuation?
-                            if (_valueString==null)
+                            // Folded field value!
+                            
+                            if (_fieldName==null)
+                                throw new IllegalStateException("First field folded");
+                            
+                            if (_fieldValue==null)
                             {
                                 _string.setLength(0);
                                 _length=0;
                             }
                             else
                             {
-                                setString(_valueString);
+                                setString(_fieldValue);
                                 _string.append(' ');
                                 _length++;
-                                _valueString=null;
+                                _fieldValue=null;
                             }
                             setState(FieldState.VALUE);
                             break;
@@ -480,76 +472,11 @@ public class MultiPartParser
 
                         case HttpTokens.LINE_FEED:
                         {
-                            // process previous header
-                            if (_state==State.HEADER)
-                                parsedHeader();
-                            else
-                                parsedTrailer();
-
-                            _contentPosition=0;
-
-                            // End of headers or trailers?
-                            if (_state==State.TRAILER)
-                            {
-                                setState(State.END);
-                                return _handler.messageComplete();
-                            }
-                            
-                            // Was there a required host header?
-                            if (!_host && _version==HttpVersion.HTTP_1_1 && _requestHandler!=null)
-                            {
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"No Host");
-                            }
-
-                            // is it a response that cannot have a body?
-                            if (_responseHandler !=null  && // response
-                                    (_responseStatus == 304  || // not-modified response
-                                    _responseStatus == 204 || // no-content response
-                                    _responseStatus < 200)) // 1xx response
-                                _endOfContent=EndOfContent.NO_CONTENT; // ignore any other headers set
-
-                            // else if we don't know framing
-                            else if (_endOfContent == EndOfContent.UNKNOWN_CONTENT)
-                            {
-                                if (_responseStatus == 0  // request
-                                        || _responseStatus == 304 // not-modified response
-                                        || _responseStatus == 204 // no-content response
-                                        || _responseStatus < 200) // 1xx response
-                                    _endOfContent=EndOfContent.NO_CONTENT;
-                                else
-                                    _endOfContent=EndOfContent.EOF_CONTENT;
-                            }
-
-                            // How is the message ended?
-                            switch (_endOfContent)
-                            {
-                                case EOF_CONTENT:
-                                {
-                                    setState(State.EOF_CONTENT);
-                                    boolean handle=_handler.headerComplete();
-                                    _headerComplete=true;
-                                    return handle;
-                                }
-                                case CHUNKED_CONTENT:
-                                {
-                                    setState(State.CHUNKED_CONTENT);
-                                    boolean handle=_handler.headerComplete();
-                                    _headerComplete=true;
-                                    return handle;
-                                }
-                                case NO_CONTENT:
-                                {
-                                    setState(State.END);
-                                    return handleHeaderContentMessage();
-                                }
-                                default:
-                                {
-                                    setState(State.CONTENT);
-                                    boolean handle=_handler.headerComplete();
-                                    _headerComplete=true;
-                                    return handle;
-                                }
-                            }
+                            handleField();
+                            setState(State.PART);
+                            if (_handler.headerComplete())
+                                return true;
+                            break;
                         }
 
                         default:
@@ -559,90 +486,7 @@ public class MultiPartParser
                                 throw new BadMessageException();
 
                             // process previous header
-                            if (_state==State.HEADER)
-                                parsedHeader();
-                            else
-                                parsedTrailer();
-
-                            // handle new header
-                            if (buffer.hasRemaining())
-                            {
-                                // Try a look ahead for the known header name and value.
-                                HttpField cached_field=_fieldCache==null?null:_fieldCache.getBest(buffer,-1,buffer.remaining());
-                                if (cached_field==null)
-                                    cached_field=CACHE.getBest(buffer,-1,buffer.remaining());
-
-                                if (cached_field!=null)
-                                {
-                                    String n = cached_field.getName();
-                                    String v = cached_field.getValue();
-
-                                    if (!_compliances.contains(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE))
-                                    {
-                                        // Have to get the fields exactly from the buffer to match case
-                                        String en = BufferUtil.toString(buffer,buffer.position()-1,n.length(),StandardCharsets.US_ASCII);
-                                        if (!n.equals(en))
-                                        {
-                                            handleViolation(HttpComplianceSection.FIELD_NAME_CASE_INSENSITIVE,en);
-                                            n = en;
-                                            cached_field = new HttpField(cached_field.getHeader(),n,v);
-                                        }
-                                    }
-                                    
-                                    if (v!=null && !_compliances.contains(HttpComplianceSection.CASE_INSENSITIVE_FIELD_VALUE_CACHE))
-                                    {
-                                        String ev = BufferUtil.toString(buffer,buffer.position()+n.length()+1,v.length(),StandardCharsets.ISO_8859_1);
-                                        if (!v.equals(ev))
-                                        {
-                                            handleViolation(HttpComplianceSection.CASE_INSENSITIVE_FIELD_VALUE_CACHE,ev+"!="+v);
-                                            v = ev;
-                                            cached_field = new HttpField(cached_field.getHeader(),n,v);
-                                        }
-                                    }
-                                    
-                                    _header=cached_field.getHeader();
-                                    _headerString=n;
-
-                                    if (v==null)
-                                    {
-                                        // Header only
-                                        setState(FieldState.VALUE);
-                                        _string.setLength(0);
-                                        _length=0;
-                                        buffer.position(buffer.position()+n.length()+1);
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        // Header and value
-                                        int pos=buffer.position()+n.length()+v.length()+1;
-                                        byte peek=buffer.get(pos);
-
-                                        if (peek==HttpTokens.CARRIAGE_RETURN || peek==HttpTokens.LINE_FEED)
-                                        {
-                                            _field=cached_field;
-                                            _valueString=v;
-                                            setState(FieldState.IN_VALUE);
-
-                                            if (peek==HttpTokens.CARRIAGE_RETURN)
-                                            {
-                                                _cr=true;
-                                                buffer.position(pos+1);
-                                            }
-                                            else
-                                                buffer.position(pos);
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            setState(FieldState.IN_VALUE);
-                                            setString(v);
-                                            buffer.position(pos);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
+                            handleField();
 
                             // New header
                             setState(FieldState.IN_NAME);
@@ -654,61 +498,50 @@ public class MultiPartParser
                     break;
 
                 case IN_NAME:
-                    if (b>HttpTokens.SPACE && b!=HttpTokens.COLON)
+                    if (b==HttpTokens.COLON)
                     {
-                        if (_header!=null)
-                        {
-                            setString(_header.asString());
-                            _header=null;
-                            _headerString=null;
-                        }
-
+                        _fieldName=takeString();
+                        _length=-1;
+                        setState(FieldState.VALUE);
+                        break;
+                    }
+                    
+                    if (b>HttpTokens.SPACE)
+                    {
                         _string.append((char)b);
                         _length=_string.length();
                         break;
                     }
 
-                    // Fallthrough
+                    //Ignore trailing whitespaces
+                    if (b==HttpTokens.SPACE)
+                    {
+                        setState(FieldState.AFTER_NAME);
+                        break;
+                    }
+                    
+                    throw new IllegalCharacterException(_state,b,buffer);
                     
                 case AFTER_NAME:
                     if (b==HttpTokens.COLON)
                     {
-                        if (_headerString==null)
-                        {
-                            _headerString=takeString();
-                            _header=HttpHeader.CACHE.get(_headerString);
-                        }
+                        _fieldName=takeString();
                         _length=-1;
-
                         setState(FieldState.VALUE);
                         break;
                     }
                     
                     if (b==HttpTokens.LINE_FEED)
                     {
-                        if (_headerString==null)
-                        {
-                            _headerString=takeString();
-                            _header=HttpHeader.CACHE.get(_headerString);
-                        }
+                        _fieldName=takeString();
                         _string.setLength(0);
-                        _valueString="";
+                        _fieldValue="";
                         _length=-1;
-
-                        if (!complianceViolation(HttpComplianceSection.FIELD_COLON,_headerString))
-                        {                        
-                            setState(FieldState.FIELD);
-                            break;
-                        }
                     }
 
-                    //Ignore trailing whitespaces
-                    if (b==HttpTokens.SPACE && !complianceViolation(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME,null))
-                    {
-                        setState(FieldState.AFTER_NAME);
+                    if (b==HttpTokens.SPACE)
                         break;
-                    }
-
+                    
                     throw new IllegalCharacterException(_state,b,buffer);
 
                 case VALUE:
@@ -726,7 +559,7 @@ public class MultiPartParser
                     if (b==HttpTokens.LINE_FEED)
                     {
                         _string.setLength(0);
-                        _valueString="";
+                        _fieldValue="";
                         _length=-1;
 
                         setState(FieldState.FIELD);
@@ -737,11 +570,10 @@ public class MultiPartParser
                 case IN_VALUE:
                     if (b>=HttpTokens.SPACE || b<0 || b==HttpTokens.TAB)
                     {
-                        if (_valueString!=null)
+                        if (_fieldValue!=null)
                         {
-                            setString(_valueString);
-                            _valueString=null;
-                            _field=null;
+                            setString(_fieldValue);
+                            _fieldValue=null;
                         }
                         _string.append((char)(0xff&b));
                         if (b>HttpTokens.SPACE || b<0)
@@ -753,7 +585,7 @@ public class MultiPartParser
                     {
                         if (_length > 0)
                         {
-                            _valueString=takeString();
+                            _fieldValue=takeString();
                             _length=-1;
                         }
                         setState(FieldState.FIELD);
@@ -767,11 +599,16 @@ public class MultiPartParser
 
             }
         }
-        */
         return true;
     }
-
-
+    
+    /* ------------------------------------------------------------------------------- */
+    private void handleField()
+    {
+        if (_fieldName!=null && _fieldValue!=null)
+            _handler.parsedHeader(_fieldName,_fieldValue);
+        _fieldName = _fieldValue = null;
+    }
     
     /* ------------------------------------------------------------------------------- */
 
@@ -793,7 +630,7 @@ public class MultiPartParser
     private void setState(FieldState state)
     {
         if (DEBUG)
-            LOG.debug("{}:{} --> {}",_state,_field,state);
+            LOG.debug("{}:{} --> {}",_state,_fieldState,state);
         _fieldState=state;
     }
 
@@ -819,8 +656,7 @@ public class MultiPartParser
      */
     public interface Handler
     {
-        public default void parsedHeader(MimeField field) {}
-        public default void parsedParameter(MimeField field, String name, String value) {};
+        public default void parsedHeader(String name, String value) {}
         public default boolean headerComplete() {return false;}
         
         public default boolean content(ByteBuffer item, boolean last) {return false;}
@@ -842,25 +678,5 @@ public class MultiPartParser
         }
     }
     
-
-    static class MimeField
-    {
-        final String _name;
-        final String _value;
-        final String _string;
-        
-        public MimeField(String name, String value)
-        {
-            _name = name;
-            _value = value;
-            _string = name + ": " + value;
-        }
-        
-        @Override
-        public String toString()
-        {
-            return _string;
-        }
-    }
     
 }
