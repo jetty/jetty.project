@@ -143,14 +143,12 @@ public class SearchPatternTest
         SearchPattern sp = SearchPattern.compile(p);
         Assert.assertEquals(18,sp.match(d,0,d.length));
         Assert.assertEquals(-1,sp.match(d,19,d.length-19));
-        Assert.assertEquals(18,sp.startsWith(d,0,d.length,8));
+        Assert.assertEquals(26,sp.startsWith(d,0,d.length,8));
         
         p = new String("abcdefghijklmnopqrstuvwxyz").getBytes(StandardCharsets.US_ASCII);
-        d = new String("ijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz").getBytes(StandardCharsets.US_ASCII);
+        d = new String("ijklmnopqrstuvwxyNOMATCH").getBytes(StandardCharsets.US_ASCII);
         sp = SearchPattern.compile(p);
-        Assert.assertEquals(19,sp.match(d,0,d.length));
-        Assert.assertEquals(-1,sp.match(d,20,d.length-20));
-        Assert.assertEquals(18,sp.startsWith(d,0,d.length,8));
+        Assert.assertEquals(0,sp.startsWith(d,0,d.length,8));
         
         p = new String("abcdefghijklmnopqrstuvwxyz").getBytes(StandardCharsets.US_ASCII);
         d = new String("abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz").getBytes(StandardCharsets.US_ASCII);
@@ -167,6 +165,6 @@ public class SearchPatternTest
         p = new String("abcdefghijklmnopqrstuvwxyz").getBytes(StandardCharsets.US_ASCII);
         d = new String("mnopqrs").getBytes(StandardCharsets.US_ASCII);
         sp = SearchPattern.compile(p);
-        Assert.assertEquals(7,sp.startsWith(d,0,d.length,12));  
+        Assert.assertEquals(19,sp.startsWith(d,0,d.length,12));  
     }
 }

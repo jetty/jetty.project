@@ -153,10 +153,10 @@ public class SearchPattern
             if(data[i] == pattern[i+matched])
                 matchedCount++;
             else
-                break;
+                return 0;
         }
         
-        return matchedCount;   
+        return matched + matchedCount;   
     }
     
     /**
