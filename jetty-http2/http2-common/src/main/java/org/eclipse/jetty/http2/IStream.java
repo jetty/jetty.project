@@ -32,12 +32,17 @@ import org.eclipse.jetty.util.Callback;
 public interface IStream extends Stream, Closeable
 {
     /**
-     * <p>The constant used as attribute key to store/retrieve the HTTP
-     * channel associated with this stream</p>
-     *
-     * @see #setAttribute(String, Object)
+     * @return the object attached to this stream
+     * @see #setAttachment(Object)
      */
-    public static final String CHANNEL_ATTRIBUTE = IStream.class.getName() + ".channel";
+    public Object getAttachment();
+
+    /**
+     * Attaches the given object to this stream for later retrieval.
+     *
+     * @param attachment the object to attach to this stream
+     */
+    public void setAttachment(Object attachment);
 
     /**
      * @return whether this stream is local or remote

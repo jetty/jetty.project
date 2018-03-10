@@ -47,6 +47,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 {
     private static final Logger LOG = Log.getLogger(HTTP2Stream.class);
 
+    private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final AtomicReference<Callback> writing = new AtomicReference<>();
@@ -71,6 +72,18 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     public int getId()
     {
         return streamId;
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return attachment.get();
+    }
+
+    @Override
+    public void setAttachment(Object attachment)
+    {
+        this.attachment.set(attachment);
     }
 
     @Override
@@ -460,7 +473,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,reset=%b,%s}", getClass().getSimpleName(),
-                hashCode(), getId(), sendWindow, recvWindow, isReset(), closeState);
+        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,reset=%b,%s,attachment=%s}", getClass().getSimpleName(),
+                hashCode(), getId(), sendWindow, recvWindow, isReset(), closeState, attachment);
     }
 }
