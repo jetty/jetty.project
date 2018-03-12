@@ -446,6 +446,7 @@ public class SelectChannelEndPointTest
         _manager.accept(server);
 
         // Write client to server
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
 
         // Verify echo server to client
@@ -457,7 +458,6 @@ public class SelectChannelEndPointTest
         }
 
         Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         _lastEndPoint.setIdleTimeout(idleTimeout);
 
         // read until idle shutdown received

@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -64,7 +65,8 @@ public class HttpSenderOverHTTP2 extends HttpSender
             @Override
             public void succeeded(Stream stream)
             {
-                getHttpChannel().setStream(stream);
+                channel.setStream(stream);
+                ((IStream)stream).setAttachment(channel);
                 stream.setIdleTimeout(request.getIdleTimeout());
 
                 if (content.hasContent() && !expects100Continue(request))

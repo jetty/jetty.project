@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -35,7 +36,7 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
 {
     public HttpClientTransportOverHTTP()
     {
-        this(Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
+        this(Math.max( 1, ProcessorUtils.availableProcessors() / 2));
     }
 
     public HttpClientTransportOverHTTP(int selectors)

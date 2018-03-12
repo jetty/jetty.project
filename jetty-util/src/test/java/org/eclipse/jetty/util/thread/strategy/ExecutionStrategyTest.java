@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ExecutionStrategy.Producer;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -72,6 +73,7 @@ public class ExecutionStrategyTest
     @Before
     public void before() throws Exception
     {
+        _threads.setDetailedDump(true);
         _threads.start();
     }
     
@@ -213,6 +215,11 @@ public class ExecutionStrategyTest
             }
         });
 
-        assertTrue(latch.await(30,TimeUnit.SECONDS));
+        if (!latch.await(30,TimeUnit.SECONDS))
+        {
+            System.err.println(_strategy);
+            _threads.dumpStdErr();
+            Assert.fail();
+        }
     }
 }

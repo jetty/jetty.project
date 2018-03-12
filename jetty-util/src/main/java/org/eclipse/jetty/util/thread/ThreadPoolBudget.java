@@ -25,6 +25,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -97,7 +98,7 @@ public class ThreadPoolBudget
      */
     public ThreadPoolBudget(ThreadPool.SizedThreadPool pool)
     {
-        this(pool,Runtime.getRuntime().availableProcessors());
+        this(pool,Math.min(ProcessorUtils.availableProcessors(),pool.getMinThreads()));
     }
 
     /**

@@ -37,6 +37,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.HttpOutput;
+import org.eclipse.jetty.util.ProcessorUtils;
 
 /**
  * A servlet that uses the Servlet 3.1 asynchronous IO API to server
@@ -78,7 +79,7 @@ public class DataRateLimitedServlet extends HttpServlet
         if (tmp!=null)
             pauseNS=TimeUnit.MILLISECONDS.toNanos(Integer.parseInt(tmp));
         tmp = getInitParameter("pool");
-        int pool=tmp==null?Runtime.getRuntime().availableProcessors():Integer.parseInt(tmp);
+        int pool=tmp==null?ProcessorUtils.availableProcessors():Integer.parseInt(tmp);
         
         // Create and start a shared scheduler.  
         scheduler=new ScheduledThreadPoolExecutor(pool);

@@ -64,6 +64,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -213,7 +214,7 @@ public class HttpClient extends ContainerLifeCycle
             byteBufferPool = new MappedByteBufferPool(2048,
                 executor instanceof ThreadPool.SizedThreadPool
                     ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads()/2
-                    : Runtime.getRuntime().availableProcessors()*2);
+                    : ProcessorUtils.availableProcessors()*2);
         addBean(byteBufferPool);
 
         if (scheduler == null)

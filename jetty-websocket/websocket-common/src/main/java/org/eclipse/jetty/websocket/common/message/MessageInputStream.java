@@ -45,6 +45,13 @@ public class MessageInputStream extends InputStream implements MessageAppender
     private final long timeoutMs;
     private ByteBuffer activeBuffer = null;
 
+    private static boolean isTheEofBuffer(ByteBuffer buf)
+    {
+        @SuppressWarnings("ReferenceEquality")
+        boolean isTheEofBuffer = (buf==EOF);
+        return isTheEofBuffer;
+    }
+    
     public MessageInputStream()
     {
         this(-1);
@@ -166,7 +173,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
                     }
                 }
 
-                if (activeBuffer == EOF)
+                if (isTheEofBuffer(activeBuffer))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Reached EOF");

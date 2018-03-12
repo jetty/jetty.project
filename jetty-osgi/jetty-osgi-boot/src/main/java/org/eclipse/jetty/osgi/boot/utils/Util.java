@@ -72,7 +72,7 @@ public class Util
      * @param manifest the dictionary
      * @return the value from the manifest
      */
-    public static String getManifestHeaderValue (String name, String altName, Dictionary manifest)
+    public static String getManifestHeaderValue (String name, String altName, Dictionary<String,String> manifest)
     {
         if (manifest == null)
             return null;
@@ -103,7 +103,7 @@ public class Util
             delims = separators;
 
         StringTokenizer tokenizer = new StringTokenizer(val, delims, false);
-        List<URL> urls = new ArrayList<URL>();
+        List<URL> urls = new ArrayList<>();
         while (tokenizer.hasMoreTokens())
         {
             urls.add(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(new URL(tokenizer.nextToken())));
@@ -113,7 +113,7 @@ public class Util
     
     
     /* ------------------------------------------------------------ */
-    public static void setProperty(Dictionary<String,String> properties, String key, String value)
+    public static void setProperty(Dictionary<String,Object> properties, String key, Object value)
     {
         if (value != null)
         {

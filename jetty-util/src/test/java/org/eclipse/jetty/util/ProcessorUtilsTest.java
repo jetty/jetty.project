@@ -16,12 +16,26 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util.thread;
+package org.eclipse.jetty.util;
+
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
- * @deprecated Use {@link ExecutorThreadPool}
+ * we cannot really add env var in a unit test... so only test we get default value
  */
-@Deprecated
-public class ExecutorSizedThreadPool extends ExecutorThreadPool
+public class ProcessorUtilsTest
 {
+    @BeforeClass
+    public static void beforeClass()
+    {
+        System.setProperty("JETTY_AVAILABLE_PROCESSORS","42");
+    }
+    
+    @Test
+    public void getPropertyValue()
+    {
+        Assert.assertEquals(42, ProcessorUtils.availableProcessors());
+    }
 }

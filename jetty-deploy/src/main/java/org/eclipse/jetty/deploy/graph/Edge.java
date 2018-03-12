@@ -28,7 +28,9 @@ public final class Edge
 
     public Edge(Node from, Node to)
     {
-        if (from==null || to==null || from==to)
+        @SuppressWarnings("ReferenceEquality")
+        boolean sameObject = (from==to);
+        if (from==null || to==null || sameObject)
             throw new IllegalArgumentException("from "+from+" to "+to);
         _from = from;
         _to = to;
@@ -71,7 +73,7 @@ public final class Edge
     {
         return _from;
     }
-
+    
     public Node getTo()
     {
         return _to;

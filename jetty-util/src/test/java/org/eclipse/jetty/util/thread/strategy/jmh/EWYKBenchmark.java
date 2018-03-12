@@ -166,7 +166,8 @@ public class EWYKBenchmark
         return hash;
     }
 
-    public static void main(String[] args) throws RunnerException {
+    public static void main(String[] args) throws RunnerException 
+    {
         Options opt = new OptionsBuilder()
                 .include(EWYKBenchmark.class.getSimpleName())
                 .warmupIterations(2)

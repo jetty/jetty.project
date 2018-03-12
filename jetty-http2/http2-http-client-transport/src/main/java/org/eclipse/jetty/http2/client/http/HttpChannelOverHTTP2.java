@@ -120,4 +120,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         super.exchangeTerminated(exchange, result);
         release();
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[send=%s,recv=%s]",
+                super.toString(),
+                sender,
+                receiver);
+    }
 }

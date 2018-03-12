@@ -417,7 +417,9 @@ public class GZIPContentDecoder implements Destroyable
      */
     public void release(ByteBuffer buffer)
     {
-        if (_pool!=null && buffer!=BufferUtil.EMPTY_BUFFER)
+        @SuppressWarnings("ReferenceEquality")
+        boolean isTheEmptyBuffer = (buffer==BufferUtil.EMPTY_BUFFER);
+        if (_pool!=null && !isTheEmptyBuffer)
             _pool.release(buffer);
     }
 }

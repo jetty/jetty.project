@@ -383,7 +383,7 @@ public class DoSFilter implements Filter
                 // or if we were woken up we insist or we fail.
                 Boolean throttled = (Boolean)request.getAttribute(__THROTTLED);
                 long throttleMs = getThrottleMs();
-                if (throttled != Boolean.TRUE && throttleMs > 0)
+                if (!Boolean.TRUE.equals(throttled) && throttleMs > 0)
                 {
                     int priority = getPriority(request, tracker);
                     request.setAttribute(__THROTTLED, Boolean.TRUE);
@@ -401,7 +401,7 @@ public class DoSFilter implements Filter
                 }
 
                 Boolean resumed = (Boolean)request.getAttribute(_resumed);
-                if (resumed == Boolean.TRUE)
+                if (Boolean.TRUE.equals(resumed))
                 {
                     // We were resumed, we wait for the next pass.
                     _passes.acquire();
@@ -446,7 +446,7 @@ public class DoSFilter implements Filter
                         {
                             ServletRequest candidate = asyncContext.getRequest();
                             Boolean suspended = (Boolean)candidate.getAttribute(_suspended);
-                            if (suspended == Boolean.TRUE)
+                            if (Boolean.TRUE.equals(suspended))
                             {
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("Resuming {}", request);
