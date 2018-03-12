@@ -19,18 +19,31 @@
 package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.instanceOf;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.HttpResponse;
+import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class WebSocketInvalidVersionTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    private static BlockheadClient client;
     private static SimpleServletServer server;
 
     @BeforeClass
@@ -46,28 +59,40 @@ public class WebSocketInvalidVersionTest
         server.stop();
     }
 
+    @BeforeClass
+    public static void startClient() throws Exception
+    {
+        client = new BlockheadClient();
+        client.setIdleTimeout(TimeUnit.SECONDS.toMillis(2));
+        client.start();
+    }
+
+    @AfterClass
+    public static void stopClient() throws Exception
+    {
+        client.stop();
+    }
+
     /**
      * Test the requirement of responding with an http 400 when using a Sec-WebSocket-Version that is unsupported.
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testRequestVersion29() throws Exception
     {
-        @SuppressWarnings("resource")
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        client.setVersion(29); // intentionally bad version
-        try
+        BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
+        // intentionally bad version
+        request.header(HttpHeader.SEC_WEBSOCKET_VERSION, "29");
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        expectedException.expect(ExecutionException.class);
+        expectedException.expectCause(instanceOf(UpgradeException.class));
+        expectedException.expectMessage(containsString("400 Unsupported websocket version specification"));
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.connect();
-            client.sendStandardRequest();
-            HttpResponse response = client.readResponseHeader();
-            Assert.assertThat("Response Status Code",response.getStatusCode(),is(400));
-            Assert.assertThat("Response Status Reason",response.getStatusReason(),containsString("Unsupported websocket version specification"));
-            Assert.assertThat("Response Versions",response.getHeader("Sec-WebSocket-Version"),is("13"));
-        }
-        finally
-        {
-            client.disconnect();
         }
     }
 }

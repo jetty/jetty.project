@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -35,9 +34,7 @@ import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AdvancedRunner.class)
 public class TestABCase2 extends AbstractABCase
 {
     /**

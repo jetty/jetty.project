@@ -18,24 +18,23 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 
 public class ServerWriteThread extends Thread
 {
     private static final Logger LOG = Log.getLogger(ServerWriteThread.class);
-    private final IBlockheadServerConnection conn;
+    private final BlockheadConnection conn;
     private int slowness = -1;
     private int messageCount = 100;
     private String message = "Hello";
 
-    public ServerWriteThread(IBlockheadServerConnection conn)
+    public ServerWriteThread(BlockheadConnection conn)
     {
         this.conn = conn;
     }
@@ -74,7 +73,7 @@ public class ServerWriteThread extends Thread
                 }
             }
         }
-        catch (InterruptedException | IOException e)
+        catch (InterruptedException e)
         {
             LOG.warn(e);
         }

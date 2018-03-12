@@ -34,9 +34,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,8 +54,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
-import org.eclipse.jetty.toolchain.test.EventQueue;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -68,15 +70,16 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.RawFrameBuilder;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.hamcrest.Matcher;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class ClientCloseTest
@@ -94,7 +97,7 @@ public class ClientCloseTest
         public CountDownLatch openLatch = new CountDownLatch(1);
         public CountDownLatch errorLatch = new CountDownLatch(1);
 
-        public EventQueue<String> messageQueue = new EventQueue<>();
+        public LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
         public AtomicReference<Throwable> error = new AtomicReference<>();
 
         public void assertNoCloseEvent()
@@ -178,13 +181,10 @@ public class ClientCloseTest
         }
     }
 
-    @Rule
-    public TestTracker tt = new TestTracker();
-
-    private BlockheadServer server;
+    private static BlockheadServer server;
     private WebSocketClient client;
 
-    private void confirmConnection(CloseTrackingSocket clientSocket, Future<Session> clientFuture, IBlockheadServerConnection serverConns) throws Exception
+    private void confirmConnection(CloseTrackingSocket clientSocket, Future<Session> clientFuture, BlockheadConnection serverConns) throws Exception
     {
         // Wait for client connect on via future
         clientFuture.get(30,TimeUnit.SECONDS);
@@ -199,24 +199,19 @@ public class ClientCloseTest
             Future<Void> testFut = clientSocket.getRemote().sendStringByFuture(echoMsg);
 
             // Wait for send future
-            testFut.get(30,TimeUnit.SECONDS);
+            testFut.get(Timeouts.SEND, Timeouts.SEND_UNIT);
 
             // Read Frame on server side
-            IncomingFramesCapture serverCapture = serverConns.readFrames(1,30,TimeUnit.SECONDS);
-            serverCapture.assertNoErrors();
-            serverCapture.assertFrameCount(1);
-            WebSocketFrame frame = serverCapture.getFrames().poll();
+            LinkedBlockingQueue<WebSocketFrame> serverCapture = serverConns.getFrameQueue();
+            WebSocketFrame frame = serverCapture.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("Server received frame",frame.getOpCode(),is(OpCode.TEXT));
             assertThat("Server received frame payload",frame.getPayloadAsUTF8(),is(echoMsg));
 
             // Server send echo reply
             serverConns.write(new TextFrame().setPayload(echoMsg));
 
-            // Wait for received echo
-            clientSocket.messageQueue.awaitEventCount(1,1,TimeUnit.SECONDS);
-
             // Verify received message
-            String recvMsg = clientSocket.messageQueue.poll();
+            String recvMsg = clientSocket.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("Received message",recvMsg,is(echoMsg));
 
             // Verify that there are no errors
@@ -228,14 +223,11 @@ public class ClientCloseTest
         }
     }
 
-    private void confirmServerReceivedCloseFrame(IBlockheadServerConnection serverConn, int expectedCloseCode, Matcher<String> closeReasonMatcher) throws IOException,
-            TimeoutException
+    private void confirmServerReceivedCloseFrame(BlockheadConnection serverConn, int expectedCloseCode, Matcher<String> closeReasonMatcher) throws InterruptedException
     {
-        IncomingFramesCapture serverCapture = serverConn.readFrames(1,30,TimeUnit.SECONDS);
-        serverCapture.assertNoErrors();
-        serverCapture.assertFrameCount(1);
-        serverCapture.assertHasFrame(OpCode.CLOSE,1);
-        WebSocketFrame frame = serverCapture.getFrames().poll();
+        LinkedBlockingQueue<WebSocketFrame> serverCapture = serverConn.getFrameQueue();
+        WebSocketFrame frame = serverCapture.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+        assertThat("Server close frame", frame, is(notNullValue()));
         assertThat("Server received close frame",frame.getOpCode(),is(OpCode.CLOSE));
         CloseInfo closeInfo = new CloseInfo(frame);
         assertThat("Server received close code",closeInfo.getStatusCode(),is(expectedCloseCode));
@@ -293,8 +285,8 @@ public class ClientCloseTest
         client.start();
     }
 
-    @Before
-    public void startServer() throws Exception
+    @BeforeClass
+    public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
@@ -306,8 +298,8 @@ public class ClientCloseTest
         client.stop();
     }
 
-    @After
-    public void stopServer() throws Exception
+    @AfterClass
+    public static void stopServer() throws Exception
     {
         server.stop();
     }
@@ -316,49 +308,49 @@ public class ClientCloseTest
     public void testHalfClose() throws Exception
     {
         // Set client timeout
-        final int timeout = 1000;
+        final int timeout = 5000;
         client.setMaxIdleTimeout(timeout);
+
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
 
         // Client connects
         CloseTrackingSocket clientSocket = new CloseTrackingSocket();
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
-        // Server accepts connect
-        IBlockheadServerConnection serverConn = server.accept();
-        serverConn.upgrade();
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            // client confirms connection via echo
+            confirmConnection(clientSocket, clientConnectFuture, serverConn);
 
-        // client confirms connection via echo
-        confirmConnection(clientSocket,clientConnectFuture,serverConn);
+            // client sends close frame (code 1000, normal)
+            final String origCloseReason = "Normal Close";
+            clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
-        // client sends close frame (code 1000, normal)
-        final String origCloseReason = "Normal Close";
-        clientSocket.getSession().close(StatusCode.NORMAL,origCloseReason);
+            // server receives close frame
+            confirmServerReceivedCloseFrame(serverConn, StatusCode.NORMAL, is(origCloseReason));
 
-        // server receives close frame
-        confirmServerReceivedCloseFrame(serverConn,StatusCode.NORMAL,is(origCloseReason));
+            // server sends 2 messages
+            serverConn.write(new TextFrame().setPayload("Hello"));
+            serverConn.write(new TextFrame().setPayload("World"));
 
-        // server sends 2 messages
-        serverConn.write(new TextFrame().setPayload("Hello"));
-        serverConn.write(new TextFrame().setPayload("World"));
+            // server sends close frame (code 1000, no reason)
+            CloseInfo sclose = new CloseInfo(StatusCode.NORMAL, "From Server");
+            serverConn.write(sclose.asFrame());
 
-        // server sends close frame (code 1000, no reason)
-        CloseInfo sclose = new CloseInfo(StatusCode.NORMAL,"From Server");
-        serverConn.write(sclose.asFrame());
+            // Verify received messages
+            String recvMsg = clientSocket.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            assertThat("Received message 1", recvMsg, is("Hello"));
+            recvMsg = clientSocket.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            assertThat("Received message 2", recvMsg, is("World"));
 
-        // client receives 2 messages
-        clientSocket.messageQueue.awaitEventCount(2,1,TimeUnit.SECONDS);
+            // Verify that there are no errors
+            assertThat("Error events", clientSocket.error.get(), nullValue());
 
-        // Verify received messages
-        String recvMsg = clientSocket.messageQueue.poll();
-        assertThat("Received message 1",recvMsg,is("Hello"));
-        recvMsg = clientSocket.messageQueue.poll();
-        assertThat("Received message 2",recvMsg,is("World"));
-
-        // Verify that there are no errors
-        assertThat("Error events",clientSocket.error.get(),nullValue());
-
-        // client close event on ws-endpoint
-        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.NORMAL),containsString("From Server"));
+            // client close event on ws-endpoint
+            clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.NORMAL), containsString("From Server"));
+        }
     }
 
     @Ignore("Need sbordet's help here")
@@ -369,43 +361,46 @@ public class ClientCloseTest
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         // Client connects
         CloseTrackingSocket clientSocket = new CloseTrackingSocket();
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
-        // Server accepts connect
-        IBlockheadServerConnection serverConn = server.accept();
-        serverConn.upgrade();
-
-        // client confirms connection via echo
-        confirmConnection(clientSocket,clientConnectFuture,serverConn);
-
-        // client sends BIG frames (until it cannot write anymore)
-        // server must not read (for test purpose, in order to congest connection)
-        // when write is congested, client enqueue close frame
-        // client initiate write, but write never completes
-        EndPoint endp = clientSocket.getEndPoint();
-        assertThat("EndPoint is testable",endp,instanceOf(TestEndPoint.class));
-        TestEndPoint testendp = (TestEndPoint)endp;
-
-        char msg[] = new char[10240];
-        int writeCount = 0;
-        long writeSize = 0;
-        int i = 0;
-        while (!testendp.congestedFlush.get())
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            int z = i - ((i / 26) * 26);
-            char c = (char)('a' + z);
-            Arrays.fill(msg,c);
-            clientSocket.getRemote().sendStringByFuture(String.valueOf(msg));
-            writeCount++;
-            writeSize += msg.length;
-        }
-        LOG.info("Wrote {} frames totalling {} bytes of payload before congestion kicked in",writeCount,writeSize);
+            // client confirms connection via echo
+            confirmConnection(clientSocket, clientConnectFuture, serverConn);
 
-        // Verify timeout error
-        assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
-        assertThat("OnError", clientSocket.error.get(), instanceOf(SocketTimeoutException.class));
+            // client sends BIG frames (until it cannot write anymore)
+            // server must not read (for test purpose, in order to congest connection)
+            // when write is congested, client enqueue close frame
+            // client initiate write, but write never completes
+            EndPoint endp = clientSocket.getEndPoint();
+            assertThat("EndPoint is testable", endp, instanceOf(TestEndPoint.class));
+            TestEndPoint testendp = (TestEndPoint) endp;
+
+            char msg[] = new char[10240];
+            int writeCount = 0;
+            long writeSize = 0;
+            int i = 0;
+            while (!testendp.congestedFlush.get())
+            {
+                int z = i - ((i / 26) * 26);
+                char c = (char) ('a' + z);
+                Arrays.fill(msg, c);
+                clientSocket.getRemote().sendStringByFuture(String.valueOf(msg));
+                writeCount++;
+                writeSize += msg.length;
+            }
+            LOG.info("Wrote {} frames totalling {} bytes of payload before congestion kicked in", writeCount, writeSize);
+
+            // Verify timeout error
+            assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
+            assertThat("OnError", clientSocket.error.get(), instanceOf(SocketTimeoutException.class));
+        }
     }
 
     @Test
@@ -415,44 +410,45 @@ public class ClientCloseTest
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         // Client connects
         CloseTrackingSocket clientSocket = new CloseTrackingSocket();
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
-        // Server accepts connect
-        IBlockheadServerConnection serverConn = server.accept();
-        serverConn.upgrade();
-
-        // client confirms connection via echo
-        confirmConnection(clientSocket,clientConnectFuture,serverConn);
-
-        // client should not have received close message (yet)
-        clientSocket.assertNoCloseEvent();
-
-        // server sends bad close frame (too big of a reason message)
-        byte msg[] = new byte[400];
-        Arrays.fill(msg,(byte)'x');
-        ByteBuffer bad = ByteBuffer.allocate(500);
-        RawFrameBuilder.putOpFin(bad,OpCode.CLOSE,true);
-        RawFrameBuilder.putLength(bad,msg.length + 2,false);
-        bad.putShort((short)StatusCode.NORMAL);
-        bad.put(msg);
-        BufferUtil.flipToFlush(bad,0);
-        try (StacklessLogging quiet = new StacklessLogging(Parser.class))
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            serverConn.write(bad);
+            // client confirms connection via echo
+            confirmConnection(clientSocket, clientConnectFuture, serverConn);
 
-            // client should have noticed the error
-            assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
-            assertThat("OnError", clientSocket.error.get(), instanceOf(ProtocolException.class));
-            assertThat("OnError", clientSocket.error.get().getMessage(), containsString("Invalid control frame"));
+            // client should not have received close message (yet)
+            clientSocket.assertNoCloseEvent();
 
-            // client parse invalid frame, notifies server of close (protocol error)
-            confirmServerReceivedCloseFrame(serverConn,StatusCode.PROTOCOL,allOf(containsString("Invalid control frame"),containsString("length")));
+            // server sends bad close frame (too big of a reason message)
+            byte msg[] = new byte[400];
+            Arrays.fill(msg, (byte) 'x');
+            ByteBuffer bad = ByteBuffer.allocate(500);
+            RawFrameBuilder.putOpFin(bad, OpCode.CLOSE, true);
+            RawFrameBuilder.putLength(bad, msg.length + 2, false);
+            bad.putShort((short) StatusCode.NORMAL);
+            bad.put(msg);
+            BufferUtil.flipToFlush(bad, 0);
+
+            try (StacklessLogging ignore = new StacklessLogging(Parser.class))
+            {
+                serverConn.writeRaw(bad);
+
+                // client should have noticed the error
+                assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
+                assertThat("OnError", clientSocket.error.get(), instanceOf(ProtocolException.class));
+                assertThat("OnError", clientSocket.error.get().getMessage(), containsString("Invalid control frame"));
+
+                // client parse invalid frame, notifies server of close (protocol error)
+                confirmServerReceivedCloseFrame(serverConn, StatusCode.PROTOCOL, allOf(containsString("Invalid control frame"), containsString("length")));
+            }
         }
-
-        // server disconnects
-        serverConn.disconnect();
 
         // client triggers close event on client ws-endpoint
         clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.PROTOCOL),allOf(containsString("Invalid control frame"),containsString("length")));
@@ -465,37 +461,40 @@ public class ClientCloseTest
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         // Client connects
         CloseTrackingSocket clientSocket = new CloseTrackingSocket();
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
-        // Server accepts connect
-        IBlockheadServerConnection serverConn = server.accept();
-        serverConn.upgrade();
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            // client confirms connection via echo
+            confirmConnection(clientSocket, clientConnectFuture, serverConn);
 
-        // client confirms connection via echo
-        confirmConnection(clientSocket,clientConnectFuture,serverConn);
+            // client sends close frame
+            final String origCloseReason = "Normal Close";
+            clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
-        // client sends close frame
-        final String origCloseReason = "Normal Close";
-        clientSocket.getSession().close(StatusCode.NORMAL,origCloseReason);
+            // server receives close frame
+            confirmServerReceivedCloseFrame(serverConn, StatusCode.NORMAL, is(origCloseReason));
 
-        // server receives close frame
-        confirmServerReceivedCloseFrame(serverConn,StatusCode.NORMAL,is(origCloseReason));
+            // client should not have received close message (yet)
+            clientSocket.assertNoCloseEvent();
 
-        // client should not have received close message (yet)
-        clientSocket.assertNoCloseEvent();
+            // server shuts down connection (no frame reply)
+            serverConn.abort();
 
-        // server shuts down connection (no frame reply)
-        serverConn.disconnect();
-
-        // client reads -1 (EOF)
-        // client triggers close event on client ws-endpoint
-        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.ABNORMAL),
-                anyOf(
-                        containsString("EOF"),
-                        containsString("Disconnected")
-                ));
+            // client reads -1 (EOF)
+            // client triggers close event on client ws-endpoint
+            clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL),
+                    anyOf(
+                            containsString("EOF"),
+                            containsString("Disconnected")
+                    ));
+        }
     }
 
     @Test
@@ -505,33 +504,36 @@ public class ClientCloseTest
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         // Client connects
         CloseTrackingSocket clientSocket = new CloseTrackingSocket();
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
-        // Server accepts connect
-        IBlockheadServerConnection serverConn = server.accept();
-        serverConn.upgrade();
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            // client confirms connection via echo
+            confirmConnection(clientSocket, clientConnectFuture, serverConn);
 
-        // client confirms connection via echo
-        confirmConnection(clientSocket,clientConnectFuture,serverConn);
+            // client sends close frame
+            final String origCloseReason = "Normal Close";
+            clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
-        // client sends close frame
-        final String origCloseReason = "Normal Close";
-        clientSocket.getSession().close(StatusCode.NORMAL,origCloseReason);
+            // server receives close frame
+            confirmServerReceivedCloseFrame(serverConn, StatusCode.NORMAL, is(origCloseReason));
 
-        // server receives close frame
-        confirmServerReceivedCloseFrame(serverConn,StatusCode.NORMAL,is(origCloseReason));
+            // client should not have received close message (yet)
+            clientSocket.assertNoCloseEvent();
 
-        // client should not have received close message (yet)
-        clientSocket.assertNoCloseEvent();
+            // server never sends close frame handshake
+            // server sits idle
 
-        // server never sends close frame handshake
-        // server sits idle
-
-        // client idle timeout triggers close event on client ws-endpoint
-        assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
-        assertThat("OnError", clientSocket.error.get(), instanceOf(TimeoutException.class));
+            // client idle timeout triggers close event on client ws-endpoint
+            assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
+            assertThat("OnError", clientSocket.error.get(), instanceOf(TimeoutException.class));
+        }
     }
 
     @Test(timeout = 5000L)
@@ -542,38 +544,59 @@ public class ClientCloseTest
         client.setMaxIdleTimeout(timeout);
 
         int clientCount = 3;
-        CloseTrackingSocket clientSockets[] = new CloseTrackingSocket[clientCount];
-        IBlockheadServerConnection serverConns[] = new IBlockheadServerConnection[clientCount];
+        List<CloseTrackingSocket> clientSockets = new ArrayList<>();
+        List<CompletableFuture<BlockheadConnection>> serverConnFuts = new ArrayList<>();
+        List<BlockheadConnection> serverConns = new ArrayList<>();
 
-        // Connect Multiple Clients
-        for (int i = 0; i < clientCount; i++)
+        try
         {
-            // Client Request Upgrade
-            clientSockets[i] = new CloseTrackingSocket();
-            Future<Session> clientConnectFuture = client.connect(clientSockets[i],server.getWsUri());
+            // Open Multiple Clients
+            for (int i = 0; i < clientCount; i++)
+            {
+                // Client Request Upgrade
+                CloseTrackingSocket clientSocket = new CloseTrackingSocket();
+                clientSockets.add(clientSocket);
+                Future<Session> clientConnectFuture = client.connect(clientSocket, server.getWsUri());
 
-            // Server accepts connection
-            serverConns[i] = server.accept();
-            serverConns[i].upgrade();
+                // Server accepts connection
+                CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+                serverConnFuts.add(serverConnFut);
+                server.addConnectFuture(serverConnFut);
+                BlockheadConnection serverConn = serverConnFut.get();
+                serverConns.add(serverConn);
 
-            // client confirms connection via echo
-            confirmConnection(clientSockets[i],clientConnectFuture,serverConns[i]);
+                // client confirms connection via echo
+                confirmConnection(clientSocket, clientConnectFuture, serverConn);
+            }
+
+            // client lifecycle stop (the meat of this test)
+            client.stop();
+
+            // clients send close frames (code 1001, shutdown)
+            for (int i = 0; i < clientCount; i++)
+            {
+                // server receives close frame
+                confirmServerReceivedCloseFrame(serverConns.get(i), StatusCode.SHUTDOWN, containsString("Shutdown"));
+            }
+
+            // clients disconnect
+            for (int i = 0; i < clientCount; i++)
+            {
+                clientSockets.get(i).assertReceivedCloseEvent(timeout, is(StatusCode.SHUTDOWN), containsString("Shutdown"));
+            }
         }
-
-        // client lifecycle stop
-        client.stop();
-
-        // clients send close frames (code 1001, shutdown)
-        for (int i = 0; i < clientCount; i++)
+        finally
         {
-            // server receives close frame
-            confirmServerReceivedCloseFrame(serverConns[i],StatusCode.SHUTDOWN,containsString("Shutdown"));
-        }
-
-        // clients disconnect
-        for (int i = 0; i < clientCount; i++)
-        {
-            clientSockets[i].assertReceivedCloseEvent(timeout,is(StatusCode.SHUTDOWN),containsString("Shutdown"));
+            for(BlockheadConnection serverConn: serverConns)
+            {
+                try
+                {
+                    serverConn.close();
+                }
+                catch (Exception ignore)
+                {
+                }
+            }
         }
     }
 
@@ -584,32 +607,35 @@ public class ClientCloseTest
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         // Client connects
         CloseTrackingSocket clientSocket = new CloseTrackingSocket();
         Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
 
-        // Server accepts connect
-        IBlockheadServerConnection serverConn = server.accept();
-        serverConn.upgrade();
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            // client confirms connection via echo
+            confirmConnection(clientSocket, clientConnectFuture, serverConn);
 
-        // client confirms connection via echo
-        confirmConnection(clientSocket,clientConnectFuture,serverConn);
+            // setup client endpoint for write failure (test only)
+            EndPoint endp = clientSocket.getEndPoint();
+            endp.shutdownOutput();
 
-        // setup client endpoint for write failure (test only)
-        EndPoint endp = clientSocket.getEndPoint();
-        endp.shutdownOutput();
+            // client enqueue close frame
+            // client write failure
+            final String origCloseReason = "Normal Close";
+            clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
-        // client enqueue close frame
-        // client write failure
-        final String origCloseReason = "Normal Close";
-        clientSocket.getSession().close(StatusCode.NORMAL,origCloseReason);
-    
-        assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
-        assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
+            assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
+            assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
 
-        // client triggers close event on client ws-endpoint
-        // assert - close code==1006 (abnormal)
-        // assert - close reason message contains (write failure)
-        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.ABNORMAL),containsString("EOF"));
+            // client triggers close event on client ws-endpoint
+            // assert - close code==1006 (abnormal)
+            // assert - close reason message contains (write failure)
+            clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), containsString("EOF"));
+        }
     }
 }

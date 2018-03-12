@@ -31,30 +31,30 @@ public class ListenerPartialSocket implements WebSocketPartialListener
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        capture.add("onWebSocketClose(%d, %s)",statusCode,capture.q(reason));
+        capture.offer("onWebSocketClose(%d, %s)",statusCode,capture.q(reason));
     }
 
     @Override
     public void onWebSocketConnect(Session session)
     {
-        capture.add("onWebSocketConnect(%s)",session);
+        capture.offer("onWebSocketConnect(%s)",session);
     }
 
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        capture.add("onWebSocketError((%s) %s)",cause.getClass().getSimpleName(),cause.getMessage());
+        capture.offer("onWebSocketError((%s) %s)",cause.getClass().getSimpleName(),cause.getMessage());
     }
     
     @Override
     public void onWebSocketPartialText(String payload, boolean fin)
     {
-        capture.add("onWebSocketPartialText('%s', %b)",payload,fin);
+        capture.offer("onWebSocketPartialText('%s', %b)",payload,fin);
     }
     
     @Override
     public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
     {
-        capture.add("onWebSocketPartialBinary(%s [%d], %b)",payload,payload.remaining(),fin);
+        capture.offer("onWebSocketPartialBinary(%s [%d], %b)",payload,payload.remaining(),fin);
     }
 }

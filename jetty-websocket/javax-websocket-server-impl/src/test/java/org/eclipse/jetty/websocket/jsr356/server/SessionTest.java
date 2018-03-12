@@ -30,8 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -101,8 +99,6 @@ public class SessionTest
         return cases;
     }
 
-    public ByteBufferPool bufferPool = new MappedByteBufferPool();
-
     private final Case testcase;
     private final static AtomicInteger ID = new AtomicInteger(0);
     private WSServer server;
@@ -136,7 +132,7 @@ public class SessionTest
 
     private void assertResponse(String requestPath, String requestMessage, String expectedResponse) throws Exception
     {
-        WebSocketClient client = new WebSocketClient(bufferPool);
+        WebSocketClient client = new WebSocketClient();
         try
         {
             client.start();

@@ -22,10 +22,9 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
@@ -45,8 +44,8 @@ public class TrackingSocket extends WebSocketAdapter
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
-    public EventQueue<String> messageQueue = new EventQueue<>();
-    public EventQueue<Throwable> errorQueue = new EventQueue<>();
+    public LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
+    public LinkedBlockingQueue<Throwable> errorQueue = new LinkedBlockingQueue<>();
 
     public TrackingSocket()
     {
@@ -100,11 +99,6 @@ public class TrackingSocket extends WebSocketAdapter
     public void assertWasOpened() throws InterruptedException
     {
         Assert.assertThat("Was Opened",openLatch.await(30,TimeUnit.SECONDS),is(true));
-    }
-
-    public void awaitMessage(int expectedMessageCount, TimeUnit timeoutUnit, int timeoutDuration) throws TimeoutException, InterruptedException
-    {
-        messageQueue.awaitEventCount(expectedMessageCount,timeoutDuration,timeoutUnit);
     }
 
     public void clear()

@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.net.URI;
-import java.util.Queue;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -29,6 +29,7 @@ import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpoint;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpointConfigContextListener;
 import org.junit.Assert;
@@ -73,8 +74,8 @@ public class BasicEndpointTest
                 // wait for connect
                 future.get(1,TimeUnit.SECONDS);
                 clientEcho.sendMessage("Hello World");
-                Queue<String> msgs = clientEcho.awaitMessages(1);
-                Assert.assertEquals("Expected message","Hello World",msgs.poll());
+                LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
+                Assert.assertEquals("Expected message","Hello World",msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT));
             }
             finally
             {

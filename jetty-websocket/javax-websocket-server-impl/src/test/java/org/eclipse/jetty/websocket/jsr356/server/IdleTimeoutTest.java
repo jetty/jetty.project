@@ -18,15 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import java.net.URI;
-import java.util.Queue;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.IdleTimeoutContextListener;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.OnOpenIdleTimeoutEndpoint;
@@ -100,10 +100,12 @@ public class IdleTimeoutTest
                 clientEcho.sendMessage("You shouldn't be there");
                 try
                 {
-                    Queue<String> msgs = clientEcho.awaitMessages(1);
-                    assertThat("Should not have received messages echoed back",msgs,is(empty()));
+                    LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
+                    // should not have a message.
+                    String received = msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+                    assertThat("Should not have received messages echoed back",received,is(nullValue()));
                 }
-                catch (TimeoutException | InterruptedException e)
+                catch (InterruptedException e)
                 {
                     // valid success path
                 }

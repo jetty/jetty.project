@@ -16,36 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.examples;
+package org.eclipse.jetty.websocket.common.test;
 
-import java.io.IOException;
+import org.eclipse.jetty.toolchain.test.matchers.RegexMatcher;
 
-import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-
-/**
- * Example of a basic blocking echo socket.
- */
-public class MyEchoSocket extends WebSocketAdapter
+public class MoreMatchers
 {
-    @Override
-    public void onWebSocketText(String message)
+    /**
+     * Create a matcher for {@link String} that matches against a regex pattern.
+     *
+     * <p>
+     *     Returns success based on {@code java.util.regex.Pattern.matcher(input).matches();}
+     * </p>
+     *
+     * @param pattern the {@link java.util.regex.Pattern} syntax pattern to match against.
+     * @return the Regex Matcher
+     */
+    public static org.hamcrest.Matcher<java.lang.String> regex(String pattern)
     {
-        if (isNotConnected())
-        {
-            return;
-        }
-
-        try
-        {
-            // echo the data back
-            RemoteEndpoint remote = getRemote();
-            remote.sendString(message);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException(e);
-        }
+        return new RegexMatcher(pattern);
     }
 }

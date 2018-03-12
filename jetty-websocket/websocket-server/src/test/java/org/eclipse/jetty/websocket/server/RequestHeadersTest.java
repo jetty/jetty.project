@@ -26,11 +26,16 @@ import static org.junit.Assert.assertThat;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.helper.EchoSocket;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -43,6 +48,7 @@ import org.junit.Test;
 
 public class RequestHeadersTest
 {
+
     private static class EchoCreator implements WebSocketCreator
     {
         private UpgradeRequest lastRequest;
@@ -86,6 +92,7 @@ public class RequestHeadersTest
         }
     }
 
+    private static BlockheadClient client;
     private static SimpleServletServer server;
     private static EchoCreator echoCreator;
 
@@ -103,19 +110,31 @@ public class RequestHeadersTest
         server.stop();
     }
 
+    @BeforeClass
+    public static void startClient() throws Exception
+    {
+        client = new BlockheadClient();
+        client.setIdleTimeout(TimeUnit.SECONDS.toMillis(2));
+        client.start();
+    }
+
+    @AfterClass
+    public static void stopClient() throws Exception
+    {
+        client.stop();
+    }
+
     @Test
     public void testAccessRequestCookies() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        client.setTimeout(1,TimeUnit.SECONDS);
+        BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
+        request.idleTimeout(1, TimeUnit.SECONDS);
+        request.header(HttpHeader.COOKIE, "fruit=Pear; type=Anjou");
 
-        try
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection ignore = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.connect();
-            client.addHeader("Cookie: fruit=Pear; type=Anjou\r\n");
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-
             UpgradeRequest req = echoCreator.getLastRequest();
             assertThat("Last Request",req,notNullValue());
             List<HttpCookie> cookies = req.getCookies();
@@ -127,25 +146,19 @@ public class RequestHeadersTest
                 assertThat("Cookie value",cookie.getValue(),anyOf(is("Pear"),is("Anjou")));
             }
         }
-        finally
-        {
-            client.close();
-        }
     }
     
     @Test
     public void testRequestURI() throws Exception
     {
         URI destUri = server.getServerUri().resolve("/?abc=x%20z&breakfast=bacon%26eggs&2*2%3d5=false");
-        BlockheadClient client = new BlockheadClient(destUri);
-        client.setTimeout(1,TimeUnit.SECONDS);
-    
-        try
+        BlockheadClientRequest request = client.newWsRequest(destUri);
+        request.idleTimeout(1, TimeUnit.SECONDS);
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection ignore = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-                    
             UpgradeRequest req = echoCreator.getLastRequest();
             assertThat("Last Request",req,notNullValue());
             assertThat("Request.host", req.getHost(), is(server.getServerUri().getHost()));
@@ -153,10 +166,6 @@ public class RequestHeadersTest
             assertThat("Request.uri.path", req.getRequestURI().getPath(), is("/"));
             assertThat("Request.uri.rawQuery", req.getRequestURI().getRawQuery(), is("abc=x%20z&breakfast=bacon%26eggs&2*2%3d5=false"));
             assertThat("Request.uri.query", req.getRequestURI().getQuery(), is("abc=x z&breakfast=bacon&eggs&2*2=5=false"));
-        }
-        finally
-        {
-            client.close();
         }
     }
 }

@@ -16,36 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.examples;
+package org.eclipse.jetty.websocket.common.test;
 
-import java.io.IOException;
-
-import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Example of a basic blocking echo socket.
+ * A central place for all of the various test timeouts within the websocket testing.
  */
-public class MyEchoSocket extends WebSocketAdapter
+public class Timeouts
 {
-    @Override
-    public void onWebSocketText(String message)
-    {
-        if (isNotConnected())
-        {
-            return;
-        }
+    // establish a connection timeout
+    public static final long CONNECT = 2;
+    public static final TimeUnit CONNECT_UNIT = TimeUnit.SECONDS;
 
-        try
-        {
-            // echo the data back
-            RemoteEndpoint remote = getRemote();
-            remote.sendString(message);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException(e);
-        }
-    }
+    // poll for an event timeout
+    public static final long POLL_EVENT = 2;
+    public static final TimeUnit POLL_EVENT_UNIT = TimeUnit.SECONDS;
+
+    // send a message timeout
+    public static final long SEND = 2;
+    public static final TimeUnit SEND_UNIT = TimeUnit.SECONDS;
 }

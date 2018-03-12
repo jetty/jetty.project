@@ -16,36 +16,31 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.examples;
+package org.eclipse.jetty.websocket.common.test;
 
-import java.io.IOException;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 
-import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-
-/**
- * Example of a basic blocking echo socket.
- */
-public class MyEchoSocket extends WebSocketAdapter
+public class WriteCallbackDelegate implements Callback
 {
-    @Override
-    public void onWebSocketText(String message)
-    {
-        if (isNotConnected())
-        {
-            return;
-        }
+    private final WriteCallback delegate;
 
-        try
-        {
-            // echo the data back
-            RemoteEndpoint remote = getRemote();
-            remote.sendString(message);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException(e);
-        }
+    public WriteCallbackDelegate(WriteCallback delegate)
+    {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public void succeeded()
+    {
+        if (this.delegate != null)
+            this.delegate.writeSuccess();
+    }
+
+    @Override
+    public void failed(Throwable x)
+    {
+        if (this.delegate != null)
+            this.delegate.writeFailed(x);
     }
 }

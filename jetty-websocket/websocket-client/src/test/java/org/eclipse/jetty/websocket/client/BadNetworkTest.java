@@ -19,19 +19,21 @@
 package org.eclipse.jetty.websocket.client;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -39,12 +41,9 @@ import org.junit.Test;
  */
 public class BadNetworkTest
 {
-    @Rule
-    public TestTracker tt = new TestTracker();
-
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
-    private BlockheadServer server;
+    private static BlockheadServer server;
     private WebSocketClient client;
 
     @Before
@@ -55,8 +54,8 @@ public class BadNetworkTest
         client.start();
     }
 
-    @Before
-    public void startServer() throws Exception
+    @BeforeClass
+    public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
@@ -68,8 +67,8 @@ public class BadNetworkTest
         client.stop();
     }
 
-    @After
-    public void stopServer() throws Exception
+    @AfterClass
+    public static void stopServer() throws Exception
     {
         server.stop();
     }
@@ -82,12 +81,9 @@ public class BadNetworkTest
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        IBlockheadServerConnection ssocket = server.accept();
-        ssocket.upgrade();
-
         // Validate that we are connected
         future.get(30,TimeUnit.SECONDS);
-        wsocket.waitForConnected(30,TimeUnit.SECONDS);
+        wsocket.waitForConnected();
 
         // Have client disconnect abruptly
         Session session = wsocket.getSession();
@@ -107,25 +103,28 @@ public class BadNetworkTest
     {
         JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(wsocket,wsUri);
 
-        IBlockheadServerConnection ssocket = server.accept();
-        ssocket.upgrade();
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            // Validate that we are connected
+            future.get(30, TimeUnit.SECONDS);
+            wsocket.waitForConnected();
 
-        // Validate that we are connected
-        future.get(30,TimeUnit.SECONDS);
-        wsocket.waitForConnected(30,TimeUnit.SECONDS);
+            // Have server disconnect abruptly
+            serverConn.abort();
 
-        // Have server disconnect abruptly
-        ssocket.disconnect();
+            // Wait for close (as response to idle timeout)
+            wsocket.waitForClose(10, TimeUnit.SECONDS);
 
-        // Wait for close (as response to idle timeout)
-        wsocket.waitForClose(10,TimeUnit.SECONDS);
-
-        // Client Socket should see a close event, with status NO_CLOSE
-        // This event is automatically supplied by the underlying WebSocketClientConnection
-        // in the situation of a bad network connection.
-        wsocket.assertCloseCode(StatusCode.NO_CLOSE);
+            // Client Socket should see a close event, with status NO_CLOSE
+            // This event is automatically supplied by the underlying WebSocketClientConnection
+            // in the situation of a bad network connection.
+            wsocket.assertCloseCode(StatusCode.NO_CLOSE);
+        }
     }
 }

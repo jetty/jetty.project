@@ -21,8 +21,8 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Queue;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -31,6 +31,7 @@ import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.LargeEchoDefaultSocket;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -78,8 +79,8 @@ public class LargeContainerTest
                 Arrays.fill(txt,(byte)'o');
                 String msg = new String(txt,StandardCharsets.UTF_8);
                 clientEcho.sendMessage(msg);
-                Queue<String> msgs = clientEcho.awaitMessages(1);
-                Assert.assertEquals("Expected message",msg,msgs.poll());
+                LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
+                Assert.assertEquals("Expected message",msg,msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT));
             }
             finally
             {
