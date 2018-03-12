@@ -155,18 +155,16 @@ public class MultiPartParserTest
         List<String> fields = new ArrayList<>();
         MultiPartParser parser = new MultiPartParser(new MultiPartParser.Handler()
         {
-
             @Override
             public void parsedHeader(String name, String value)
             {
-                new Throwable().printStackTrace();
                 fields.add(name+": "+value);
             }
 
             @Override
             public boolean headerComplete()
             {
-                fields.add("COMPLETE!");
+                fields.add("<<COMPLETE>>");
                 return true;
             }
             
@@ -183,10 +181,220 @@ public class MultiPartParserTest
         parser.parse(data,false);
         assertTrue(parser.isState(State.PART));
         assertThat(data.remaining(),is(7));
-        assertThat(fields,Matchers.contains("name0: value0","name1: value1", "name2: value 2", "COMPLETE!"));
+        assertThat(fields,Matchers.contains("name0: value0","name1: value1", "name2: value 2", "<<COMPLETE>>"));
         
         
     }
     
+    @Test
+    public void testFirstPartNoContent()
+    {
+        List<String> fields = new ArrayList<>();
+        List<String> content = new ArrayList<>();
+        MultiPartParser parser = new MultiPartParser(new MultiPartParser.Handler()
+        {
+
+            @Override
+            public void parsedHeader(String name, String value)
+            {
+                fields.add(name+": "+value);
+            }
+
+            @Override
+            public boolean headerComplete()
+            {
+                fields.add("<<COMPLETE>>");
+                return true;
+            }
+
+            @Override
+            public boolean content(ByteBuffer buffer, boolean last)
+            {
+                if (BufferUtil.hasContent(buffer))
+                    content.add(BufferUtil.toString(buffer));
+                if (last)
+                    content.add("<<LAST>>");
+                return last;
+            }
+            
+        },"BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("");
+        
+        data = BufferUtil.toBuffer("--BOUNDARY\r\n"
+                + "name: value\n"
+                + "\r\n"
+                + "--BOUNDARY\r\n");
+        parser.parse(data,false);
+        assertTrue(parser.isState(State.BODY_PART));
+        assertThat(data.remaining(),is(0));
+        assertThat(fields,Matchers.contains("name: value", "<<COMPLETE>>"));
+        assertThat(content,Matchers.contains("<<LAST>>"));
+        
+        
+    }
+    
+
+    @Test
+    public void testFirstPartPartialContent()
+    {
+        List<String> fields = new ArrayList<>();
+        List<String> content = new ArrayList<>();
+        MultiPartParser parser = new MultiPartParser(new MultiPartParser.Handler()
+        {
+
+            @Override
+            public void parsedHeader(String name, String value)
+            {
+                fields.add(name+": "+value);
+            }
+
+            @Override
+            public boolean headerComplete()
+            {
+                fields.add("<<COMPLETE>>");
+                return true;
+            }
+
+            @Override
+            public boolean content(ByteBuffer buffer, boolean last)
+            {
+                if (BufferUtil.hasContent(buffer))
+                    content.add(BufferUtil.toString(buffer));
+                if (last)
+                    content.add("<<LAST>>");
+                return last;
+            }
+            
+        },"BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("");
+        
+        data = BufferUtil.toBuffer("--BOUNDARY\r\n"
+                + "name: value\n"
+                + "\r\n"
+                + "Hello\r\n");
+        parser.parse(data,false);
+        assertTrue(parser.isState(State.PART));
+        assertThat(data.remaining(),is(0));
+        assertThat(fields,Matchers.contains("name: value", "<<COMPLETE>>"));
+        assertThat(content,Matchers.contains("Hello"));
+
+        data = BufferUtil.toBuffer(
+                "Now is the time for all good ment to come to the aid of the party.\r\n"
+                + "How now brown cow.\r\n"
+                + "The quick brown fox jumped over the lazy dog.\r\n"
+                + "this is not a --BOUNDARY\r\n");
+        parser.parse(data,false);
+        assertTrue(parser.isState(State.PART));
+        assertThat(data.remaining(),is(0));
+        assertThat(fields,Matchers.contains("name: value", "<<COMPLETE>>"));
+        assertThat(content,Matchers.contains("Hello","Now is the time for all good ment to come to the aid of the party.\r\n"
+                + "How now brown cow.\r\n"
+                + "The quick brown fox jumped over the lazy dog.\r\n"
+                + "this is not a --BOUNDARY\r\n"));
+        
+
+            
+    }
+    
+    
+
+    @Test
+    public void testFirstPartShortContent()
+    {
+        List<String> fields = new ArrayList<>();
+        List<String> content = new ArrayList<>();
+        MultiPartParser parser = new MultiPartParser(new MultiPartParser.Handler()
+        {
+
+            @Override
+            public void parsedHeader(String name, String value)
+            {
+                fields.add(name+": "+value);
+            }
+
+            @Override
+            public boolean headerComplete()
+            {
+                fields.add("<<COMPLETE>>");
+                return true;
+            }
+
+            @Override
+            public boolean content(ByteBuffer buffer, boolean last)
+            {
+                if (BufferUtil.hasContent(buffer))
+                    content.add(BufferUtil.toString(buffer));
+                if (last)
+                    content.add("<<LAST>>");
+                return last;
+            }
+            
+        },"BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("");
+        
+        data = BufferUtil.toBuffer("--BOUNDARY\r\n"
+                + "name: value\n"
+                + "\r\n"
+                + "Hello\r\n"
+                + "--BOUNDARY\r\n");
+        parser.parse(data,false);
+        assertTrue(parser.isState(State.BODY_PART));
+        assertThat(data.remaining(),is(0));
+        assertThat(fields,Matchers.contains("name: value", "<<COMPLETE>>"));
+        assertThat(content,Matchers.contains("Hello","<<LAST>>"));
+        
+        
+    }
+    
+
+    @Test
+    public void testFirstPartLongContent()
+    {
+        List<String> fields = new ArrayList<>();
+        List<String> content = new ArrayList<>();
+        MultiPartParser parser = new MultiPartParser(new MultiPartParser.Handler()
+        {
+
+            @Override
+            public void parsedHeader(String name, String value)
+            {
+                fields.add(name+": "+value);
+            }
+
+            @Override
+            public boolean headerComplete()
+            {
+                fields.add("<<COMPLETE>>");
+                return true;
+            }
+
+            @Override
+            public boolean content(ByteBuffer buffer, boolean last)
+            {
+                if (BufferUtil.hasContent(buffer))
+                    content.add(BufferUtil.toString(buffer));
+                if (last)
+                    content.add("<<LAST>>");
+                return last;
+            }
+            
+        },"BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("");
+        
+        data = BufferUtil.toBuffer("--BOUNDARY\r\n"
+                + "name: value\n"
+                + "\r\n"
+                + "Now is the time for all good ment to come to the aid of the party.\r\n"
+                + "How now brown cow.\r\n"
+                + "The quick brown fox jumped over the lazy dog.\r\n"
+                + "--BOUNDARY\r\n");
+        parser.parse(data,false);
+        assertTrue(parser.isState(State.BODY_PART));
+        assertThat(data.remaining(),is(0));
+        assertThat(fields,Matchers.contains("name: value", "<<COMPLETE>>"));
+        assertThat(content,Matchers.contains("Now is the time for all good ment to come to the aid of the party.\r\n"
+                + "How now brown cow.\r\n"
+                + "The quick brown fox jumped over the lazy dog.\r\n","<<LAST>>"));
+    }
     
 }
