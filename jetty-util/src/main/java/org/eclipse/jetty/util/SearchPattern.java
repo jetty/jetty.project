@@ -175,5 +175,13 @@ public class SearchPattern
         else if (offset + length > data.length)
             throw new IllegalArgumentException("(offset+length) out of bounds of data[]");
     }
+
+    /**
+     * @return The length of the pattern in bytes.
+     */
+    public int getLength()
+    {
+        return pattern.length;
+    }
     
 }
