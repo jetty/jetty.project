@@ -621,6 +621,7 @@ public class Response implements HttpServletResponse
 
         _mimeType=null;
         _characterEncoding=null;
+        _encodingFrom = EncodingFrom.NOT_SET;
         _outputType = OutputType.NONE;
         setHeader(HttpHeader.EXPIRES,null);
         setHeader(HttpHeader.LAST_MODIFIED,null);
