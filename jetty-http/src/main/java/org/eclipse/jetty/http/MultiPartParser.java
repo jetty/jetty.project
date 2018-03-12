@@ -354,9 +354,6 @@ public class MultiPartParser
             int partial = _search.startsWith(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining(),_partialBoundary);
             if (partial>0)
             {
-                // TODO this should not be needed?
-                partial+=_partialBoundary;
-                
                 if (partial==_search.getLength())
                 {
                     buffer.position(buffer.position()+partial-_partialBoundary);
