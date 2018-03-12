@@ -25,6 +25,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
@@ -172,7 +173,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
-        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
         if (channel != null)
         {
             Runnable task = channel.onRequestContent(frame, callback);
@@ -189,7 +190,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing trailers {} on {}", frame, stream);
-        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
         if (channel != null)
         {
             Runnable task = channel.onRequestTrailers(frame);
@@ -200,7 +201,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     public boolean onStreamTimeout(IStream stream, Throwable failure)
     {
-        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
         boolean result = channel != null && channel.onStreamTimeout(failure, task -> offerTask(task, true));
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", stream, failure);
@@ -211,7 +212,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing failure on {}: {}", stream, failure);
-        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
         if (channel != null)
         {
             Runnable task = channel.onFailure(failure, callback);
@@ -227,13 +228,13 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public boolean onSessionTimeout(Throwable failure)
     {
         ISession session = getSession();
-        boolean result = true;
-        for (Stream stream : session.getStreams())
-        {
-            HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-            if (channel != null)
-                result &= channel.isRequestIdle();
-        }
+        // Compute whether all requests are idle.
+        boolean result = session.getStreams().stream()
+                .map(stream -> (IStream)stream)
+                .map(stream -> (HttpChannelOverHTTP2)stream.getAttachment())
+                .filter(Objects::nonNull)
+                .map(HttpChannelOverHTTP2::isRequestIdle)
+                .reduce(true, Boolean::logicalAnd);
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);
         return result;
@@ -284,7 +285,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             if (LOG.isDebugEnabled())
                 LOG.debug("Creating channel {} for {}", channel, this);
         }
-        stream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
+        stream.setAttachment(channel);
         return channel;
     }
 
@@ -379,7 +380,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         @Override
         public void recycle()
         {
-            getStream().removeAttribute(IStream.CHANNEL_ATTRIBUTE);
+            getStream().setAttachment(null);
             super.recycle();
             offerHttpChannel(this);
         }

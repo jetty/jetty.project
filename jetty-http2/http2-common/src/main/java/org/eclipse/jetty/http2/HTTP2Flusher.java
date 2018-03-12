@@ -223,7 +223,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 IStream stream = entry.stream;
                 if (stream != null && !entry.isControl())
                 {
-                    Object channel = stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+                    Object channel = stream.getAttachment();
                     if (channel instanceof WriteFlusher.Listener)
                         ((WriteFlusher.Listener)channel).onFlushed(update - Frame.HEADER_LENGTH);
                 }

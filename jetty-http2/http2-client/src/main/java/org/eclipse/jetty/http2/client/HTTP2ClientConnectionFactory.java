@@ -124,15 +124,15 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             {
                 session.frames(null, this, prefaceFrame, settingsFrame);
             }
-            // Only start reading from server after we have sent the client preface,
-            // otherwise we risk to read the server preface (a SETTINGS frame) and
-            // reply to that before we have the chance to send the client preface.
-            super.onOpen();
         }
 
         @Override
         public void succeeded()
         {
+            // Only start reading from server after we have sent the client preface,
+            // otherwise we risk to read the server preface (a SETTINGS frame) and
+            // reply to that before we have the chance to send the client preface.
+            super.onOpen();
             promise.succeeded(getSession());
         }
 

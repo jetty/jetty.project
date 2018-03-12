@@ -13,7 +13,6 @@
     <mavenVersion>3.5.0</mavenVersion>
     <pluginToolsVersion>3.5</pluginToolsVersion>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
-    <surefireVersion>2.20.1</surefireVersion>
     <it.debug>false</it.debug>
     <jetty.stopKey>FREEBEER</jetty.stopKey>
     <jetty.jvmArgs></jetty.jvmArgs>
