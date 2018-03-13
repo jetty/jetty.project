@@ -39,6 +39,8 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     private final ByteBufferPool byteBufferPool;
     private final Executor executor;
     private final ClientConnectionFactory connectionFactory;
+    private boolean _useDirectBuffersForEncryption = false;
+    private boolean _useDirectBuffersForDecryption = false;
 
     public SslClientConnectionFactory(SslContextFactory sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
     {
@@ -46,6 +48,16 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         this.byteBufferPool = byteBufferPool;
         this.executor = executor;
         this.connectionFactory = connectionFactory;
+    }
+
+    public void setDirectBuffersForEncryption(boolean useDirectBuffers)
+    {
+        this._useDirectBuffersForEncryption = useDirectBuffers;
+    }
+
+    public void setDirectBuffersForDecryption(boolean useDirectBuffers)
+    {
+        this._useDirectBuffersForDecryption = useDirectBuffers;
     }
 
     @Override
@@ -68,6 +80,6 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
 
     protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
     {
-        return new SslConnection(byteBufferPool, executor, endPoint, engine);
+        return new SslConnection(byteBufferPool, executor, endPoint, engine, _useDirectBuffersForEncryption, _useDirectBuffersForDecryption);
     }
 }

@@ -34,6 +34,8 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 {
     private final SslContextFactory _sslContextFactory;
     private final String _nextProtocol;
+    private boolean _useDirectBuffersForEncryption = false;
+    private boolean _useDirectBuffersForDecryption = false;
 
     public SslConnectionFactory()
     {
@@ -56,6 +58,16 @@ public class SslConnectionFactory extends AbstractConnectionFactory
     public SslContextFactory getSslContextFactory()
     {
         return _sslContextFactory;
+    }
+
+    public void setDirectBuffersForEncryption(boolean useDirectBuffers)
+    {
+        this._useDirectBuffersForEncryption = useDirectBuffers;
+    }
+
+    public void setDirectBuffersForDecryption(boolean useDirectBuffers)
+    {
+        this._useDirectBuffersForDecryption = useDirectBuffers;
     }
 
     @Override
@@ -91,7 +103,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
     protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
     {
-        return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine);
+        return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, _useDirectBuffersForEncryption, _useDirectBuffersForDecryption);
     }
 
     @Override
