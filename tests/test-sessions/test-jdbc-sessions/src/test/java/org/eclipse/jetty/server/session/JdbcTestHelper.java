@@ -19,21 +19,26 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.ObjectOutputStream;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 
 /**
  * JdbcTestHelper
@@ -171,6 +176,71 @@ public class JdbcTestHelper
     }
     
     
+    @SuppressWarnings("unchecked")
+    public static boolean checkSessionPersisted (SessionData data)
+            throws Exception
+    {
+        Class.forName(DRIVER_CLASS);
+        PreparedStatement statement = null;
+        ResultSet result = null;
+        try (Connection con=DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
+        {
+            statement = con.prepareStatement("select * from "+TABLE+
+                                             " where "+ID_COL+" = ? and "+CONTEXT_COL+
+                    " = ? and virtualHost = ?");
+            statement.setString(1, data.getId());
+            statement.setString(2, data.getContextPath());
+            statement.setString(3, data.getVhost());
+            
+            result = statement.executeQuery();
+
+            if (!result.next())
+                return false;
+
+
+            assertEquals(data.getCreated(),result.getLong(CREATE_COL));
+            assertEquals(data.getAccessed(), result.getLong(ACCESS_COL));
+            assertEquals(data.getLastAccessed(), result.getLong(LAST_ACCESS_COL)); 
+            assertEquals(data.getMaxInactiveMs(), result.getLong(MAX_IDLE_COL));
+
+            assertEquals(data.getCookieSet(), result.getLong(COOKIE_COL));
+            assertEquals(data.getLastNode(), result.getString(LAST_NODE_COL));
+
+            assertEquals(data.getExpiry(), result.getLong(EXPIRY_COL));
+            assertEquals(data.getContextPath(), result.getString(CONTEXT_COL));          
+            assertEquals(data.getVhost(), result.getString("virtualHost"));
+
+            Map<String,Object> attributes = new HashMap<>();
+            Blob blob = result.getBlob(MAP_COL);
+
+            try (InputStream is = blob.getBinaryStream();
+                 ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+            {
+                Object o = ois.readObject();
+                attributes.putAll((Map<String,Object>)o);
+            }
+            
+            //same number of attributes
+            assertEquals(data.getAllAttributes().size(), attributes.size());
+            //same keys
+            assertTrue(data.getKeys().equals(attributes.keySet()));
+            //same values
+            for (String name:data.getKeys())
+            {
+                assertTrue(data.getAttribute(name).equals(attributes.get(name)));
+            }
+        }
+        finally
+        {
+            if (result != null)
+                result.close();
+            if (statement != null)
+                statement.close();
+        }
+        
+        return true;
+    }
+
     public static void insertSession (String id, String contextPath, String vhost)
     throws Exception
     {
@@ -205,7 +275,7 @@ public class JdbcTestHelper
     public static void insertSession (String id, String contextPath, String vhost, 
                                       String lastNode, long created, long accessed, 
                                       long lastAccessed, long maxIdle, long expiry,
-                                      Map<String,Object> attributes)
+                                      long cookieSet, Map<String,Object> attributes)
     throws Exception
     {
         Class.forName(DRIVER_CLASS);
@@ -225,7 +295,7 @@ public class JdbcTestHelper
             statement.setLong(5, accessed);
             statement.setLong(6, lastAccessed);
             statement.setLong(7, created);
-            statement.setLong(8, created);
+            statement.setLong(8, cookieSet);
 
             statement.setLong(9, System.currentTimeMillis());
             statement.setLong(10, expiry);

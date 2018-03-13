@@ -16,53 +16,42 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.After;
-import org.junit.Test;
+import java.io.Serializable;
 
 /**
- * ProxySerializationTest
+ * TestFoo
  *
  *
  */
-public class ProxySerializationTest extends AbstractProxySerializationTest
+public class TestFoo implements Foo, Serializable
 {
+    private static final long serialVersionUID = 953717519120144555L;
     
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
-    @Override
-    public SessionDataStoreFactory createSessionDataStoreFactory()
-    {
-       return JdbcTestHelper.newSessionDataStoreFactory();
-    }
-    
-    
+    private int i = -99;
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractProxySerializationTest#customizeContext(org.eclipse.jetty.servlet.ServletContextHandler)
-     */
     @Override
-    public void customizeContext(ServletContextHandler c)
+    public int getInt()
     {
+       return this.i;
     }
-    
-    
 
-    @Test
-    public void testProxySerialization() throws Exception
+    @Override
+    public void setInt(int i)
     {
-        super.testProxySerialization();
+        this.i = i;
+    }
+
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+            return false;
+  
+        return (((Foo)obj).getInt() == getInt());
     }
 
  
-    
-    @After
-    public void tearDown() throws Exception 
-    {
-        JdbcTestHelper.shutdown(null);
-    }
 }

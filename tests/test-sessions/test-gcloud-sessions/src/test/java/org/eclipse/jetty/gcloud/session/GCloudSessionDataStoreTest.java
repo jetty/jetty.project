@@ -65,9 +65,19 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
 
     
     @Override
-    public boolean checkSessionPersisted(SessionData data) throws Exception
+    public boolean checkSessionExists(SessionData data) throws Exception
     {
         return GCloudTestSuite.__testSupport.checkSessionExists(data.getId());
+    }
+
+
+    /** 
+     * 
+     */
+    @Override
+    public boolean checkSessionPersisted(SessionData data) throws Exception
+    {
+        return GCloudTestSuite.__testSupport.checkSessionPersisted(data);
     }
 
 }

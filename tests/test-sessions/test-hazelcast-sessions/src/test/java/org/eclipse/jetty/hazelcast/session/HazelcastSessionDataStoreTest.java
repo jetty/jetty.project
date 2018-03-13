@@ -72,13 +72,12 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        //Doesn't work in hazelcast local mode because the object
-        //is stored directly in the map
+        //not used by testLoadSessionFails()
     }
 
    
     @Override
-    public boolean checkSessionPersisted(SessionData data) throws Exception
+    public boolean checkSessionExists(SessionData data) throws Exception
     {
         return _testHelper.checkSessionExists(data);
     }
@@ -135,5 +134,12 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     public void testGetExpiredPersistedAndExpiredOnly() throws Exception
     {
         
+    }
+
+
+    @Override
+    public boolean checkSessionPersisted(SessionData data) throws Exception
+    {
+        return _testHelper.checkSessionPersisted(data);
     }
 }

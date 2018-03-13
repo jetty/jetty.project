@@ -19,6 +19,9 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.session.SessionData;
@@ -76,5 +79,38 @@ public class HazelcastTestHelper
     public boolean checkSessionExists (SessionData data)
     {
         return (_instance.getMap(_name).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()) != null);
+    }
+    
+    public boolean checkSessionPersisted (SessionData data)
+    {
+        Object obj = _instance.getMap(_name).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
+        if (obj == null)
+            return false;
+        
+        SessionData saved = (SessionData)obj;
+        
+        assertEquals(data.getId(),saved.getId());
+        assertEquals(data.getContextPath(), saved.getContextPath());
+        assertEquals(data.getVhost(), saved.getVhost());
+        assertEquals(data.getLastNode(), saved.getLastNode());
+        assertEquals(data.getCreated(), saved.getCreated());
+        assertEquals(data.getAccessed(), saved.getAccessed());
+        assertEquals(data.getLastAccessed(), saved.getLastAccessed());
+        assertEquals(data.getCookieSet(), saved.getCookieSet());
+        assertEquals(data.getExpiry(), saved.getExpiry());
+        assertEquals(data.getMaxInactiveMs(), saved.getMaxInactiveMs());
+
+        
+        //same number of attributes
+        assertEquals(data.getAllAttributes().size(),saved.getAllAttributes().size());
+        //same keys
+        assertTrue(data.getKeys().equals(saved.getKeys()));
+        //same values
+        for (String name:data.getKeys())
+        {
+            assertTrue(data.getAttribute(name).equals(saved.getAttribute(name)));
+        
+        }
+        return true;
     }
 }

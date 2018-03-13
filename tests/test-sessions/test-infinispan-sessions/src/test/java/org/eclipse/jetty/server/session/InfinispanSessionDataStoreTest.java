@@ -71,13 +71,12 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        // TODO Auto-generated method stub
-
+        //Not used by testLoadSessionFails() 
     }
 
    
     @Override
-    public boolean checkSessionPersisted(SessionData data) throws Exception
+    public boolean checkSessionExists(SessionData data) throws Exception
     {
         return __testSupport.checkSessionExists(data);
     }
@@ -133,6 +132,15 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     public void testGetExpiredPersistedAndExpiredOnly() throws Exception
     {
         
+    }
+
+    /** 
+     * 
+     */
+    @Override
+    public boolean checkSessionPersisted(SessionData data) throws Exception
+    {
+        return __testSupport.checkSessionPersisted(data);
     }
     
 }

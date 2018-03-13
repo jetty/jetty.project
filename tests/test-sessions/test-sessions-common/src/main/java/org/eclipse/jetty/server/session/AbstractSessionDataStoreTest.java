@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -60,9 +61,118 @@ public abstract class AbstractSessionDataStoreTest
     
     public abstract void persistUnreadableSession(SessionData data) throws Exception;
     
+    public abstract boolean checkSessionExists (SessionData data) throws Exception;
+    
     public abstract boolean checkSessionPersisted (SessionData data) throws Exception;
     
-
+    
+    
+    /**
+     * Test that the store can persist a session.
+     * 
+     * @throws Exception 
+     */
+    @Test
+    public void testStoreSession() throws Exception
+    {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+        
+        store.start();
+        
+        //create a session
+        long now = System.currentTimeMillis();
+        SessionData data = store.newSessionData("1234", 100, now, now-1, -1);//never expires
+        data.setAttribute("a", "b");
+        data.setLastNode(sessionContext.getWorkerName());
+        
+        store.store("1234", data);
+        
+        //check that the store contains all of the session data
+        assertTrue(checkSessionPersisted(data));
+    }
+    
+    
+    /**
+     * Test that the store can update a pre-existing session.
+     *  
+     * @throws Exception
+     */
+    @Test
+    public void testUpdateSession() throws Exception
+    {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+        
+        store.start();
+        
+        //create a session
+        long now = System.currentTimeMillis();
+        SessionData data = store.newSessionData("1234", 100, 200, 199, -1);//never expires
+        data.setAttribute("a", "b");
+        data.setLastNode(sessionContext.getWorkerName());
+        data.setLastSaved(400); //make it look like it was previously saved by the store
+        
+        System.err.println("Cookie set time:"+data.getCookieSet());
+        
+        //put it into the store
+        persistSession(data);
+        
+        //now test we can update the session
+        data.setLastAccessed(now-1);
+        data.setAccessed(now);
+        data.setAttribute("a", "c");
+        store.store("1234", data);
+        
+        assertTrue(checkSessionPersisted(data));
+    }
+    
+    
+    /**
+     * Test that the store can persist a session that contains 
+     * serializable objects in the attributes.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testStoreObjectAttributes() throws Exception
+    {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+        
+        store.start();
+        
+        //create a session
+        SessionData data = store.newSessionData("1234", 100, 200, 199, -1);//never expires
+        TestFoo testFoo = new TestFoo();
+        testFoo.setInt(33);
+        FooInvocationHandler handler = new FooInvocationHandler(testFoo);
+        Foo foo = (Foo)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[] {Foo.class}, handler);
+        data.setAttribute("foo", foo);
+        data.setLastNode(sessionContext.getWorkerName());
+        
+        //test that it can be persisted
+        store.store("1234", data);
+        checkSessionPersisted(data);
+    }
 
     /**
      * Test that we can load a persisted session.
@@ -228,8 +338,8 @@ public abstract class AbstractSessionDataStoreTest
         //delete the session via the store
         store.delete("1234");
         
-        //check the session is no longer persisted
-        assertFalse(checkSessionPersisted(data));
+        //check the session is no longer exists
+        assertFalse(checkSessionExists(data));
     }
     
     

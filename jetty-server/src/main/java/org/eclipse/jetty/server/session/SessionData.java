@@ -372,9 +372,7 @@ public class SessionData implements Serializable
         return (getExpiry() <= time);
     }
     
-    /** 
-     * @see java.lang.Object#toString()
-     */
+
     public String toString()
     {
         StringBuilder builder = new StringBuilder();

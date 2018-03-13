@@ -53,7 +53,7 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
     public void persistSession(SessionData data) throws Exception
     {
         FileTestHelper.createFile(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-                                  data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getAllAttributes());
+                                  data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), data.getAllAttributes());
     }
 
    
@@ -61,14 +61,23 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
     public void persistUnreadableSession(SessionData data) throws Exception
     {
         FileTestHelper.createFile(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-                                  data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), null);
+                                  data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), null);
     }
 
    
     @Override
-    public boolean checkSessionPersisted(SessionData data) throws Exception
+    public boolean checkSessionExists(SessionData data) throws Exception
     {
         return (FileTestHelper.getFile(data.getId()) != null);
+    }
+
+    /** 
+     * 
+     */
+    @Override
+    public boolean checkSessionPersisted(SessionData data) throws Exception
+    {
+        return FileTestHelper.checkSessionPersisted(data);
     }
 
 }

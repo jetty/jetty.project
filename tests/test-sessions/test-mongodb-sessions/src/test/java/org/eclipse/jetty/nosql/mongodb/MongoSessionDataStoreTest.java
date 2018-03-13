@@ -70,8 +70,15 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
 
 
     @Override
-    public boolean checkSessionPersisted(SessionData data) throws Exception
+    public boolean checkSessionExists(SessionData data) throws Exception
     {
         return MongoTestHelper.checkSessionExists(data.getId());
+    }
+
+
+    @Override
+    public boolean checkSessionPersisted(SessionData data) throws Exception
+    {
+       return MongoTestHelper.checkSessionPersisted(data);
     }
 }

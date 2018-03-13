@@ -115,6 +115,7 @@ public class InfinispanTestSupport
     }
     
     
+    @SuppressWarnings("unchecked")
     public void createSession (SessionData data)
     throws Exception
     {
@@ -129,9 +130,18 @@ public class InfinispanTestSupport
     
     
     public boolean checkSessionExists (SessionData data)
-            throws Exception
+    throws Exception
     {
         return (_cache.get(data.getContextPath()+"_"+data.getVhost()+"_"+data.getId()) != null);
     }
-               
+    
+    
+    public boolean checkSessionPersisted (SessionData data)
+    throws Exception
+    {
+        Object obj = _cache.get(data.getContextPath()+"_"+data.getVhost()+"_"+data.getId());
+        if (obj == null)
+            return false;
+        return (data.equals((SessionData)obj));
+    }
 }

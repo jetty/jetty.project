@@ -21,18 +21,22 @@ package org.eclipse.jetty.gcloud.session;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore.EntityDataModel;
+import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.threeten.bp.Duration;
 
 import com.google.cloud.datastore.Blob;
@@ -155,6 +159,47 @@ public class GCloudSessionTestSupport
         Entity entity = builder.build();
         
         _ds.put(entity);
+    }
+    
+    public boolean checkSessionPersisted (SessionData data)
+    throws Exception
+    {
+        Entity entity = _ds.get(_keyFactory.newKey(data.getContextPath()+"_"+data.getVhost()+"_"+data.getId()));
+        if (entity == null)
+            return false;
+        
+        //turn an Entity into a Session
+        assertEquals(data.getId(), entity.getString(EntityDataModel.ID));
+        assertEquals(data.getContextPath(), entity.getString(EntityDataModel.CONTEXTPATH));
+        assertEquals(data.getVhost(), entity.getString(EntityDataModel.VHOST));
+        assertEquals(data.getAccessed(), entity.getLong(EntityDataModel.ACCESSED));
+        assertEquals(data.getLastAccessed(), entity.getLong(EntityDataModel.LASTACCESSED));
+        assertEquals(data.getCreated(), entity.getLong(EntityDataModel.CREATETIME));
+        assertEquals(data.getCookieSet(), entity.getLong(EntityDataModel.COOKIESETTIME));
+        assertEquals(data.getLastNode(), entity.getString(EntityDataModel.LASTNODE));
+        assertEquals(data.getLastSaved(), entity.getLong(EntityDataModel.LASTSAVED));  
+        assertEquals(data.getExpiry(), entity.getLong(EntityDataModel.EXPIRY));
+        assertEquals(data.getMaxInactiveMs(), entity.getLong(EntityDataModel.MAXINACTIVE));
+        Blob blob = (Blob) entity.getBlob(EntityDataModel.ATTRIBUTES);
+        
+        Map<String,Object> attributes = new HashMap<>();
+        try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(blob.asInputStream()))
+        {
+            Object o = ois.readObject();
+            attributes.putAll((Map<String,Object>)o);
+        }
+        
+        //same number of attributes
+        assertEquals(data.getAllAttributes().size(), attributes.size());
+        //same keys
+        assertTrue(data.getKeys().equals(attributes.keySet()));
+        //same values
+        for (String name:data.getKeys())
+        {
+            assertTrue(data.getAttribute(name).equals(attributes.get(name)));
+        }
+        
+        return true;
     }
     
     

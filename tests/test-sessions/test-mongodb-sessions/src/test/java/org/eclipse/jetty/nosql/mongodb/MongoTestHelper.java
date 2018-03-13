@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -25,6 +29,9 @@ import java.net.UnknownHostException;
 import java.sql.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.eclipse.jetty.nosql.NoSqlSessionDataStore.NoSqlSessionData;
+import org.eclipse.jetty.server.session.SessionData;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -90,6 +97,81 @@ public class MongoTestHelper
        return true;
     }
     
+    
+    public static boolean checkSessionPersisted (SessionData data)
+    throws Exception
+    {
+        DBCollection collection = new Mongo().getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        
+        DBObject fields = new BasicDBObject();
+        
+        DBObject sessionDocument = collection.findOne(new BasicDBObject(MongoSessionDataStore.__ID, data.getId()), fields);
+        if (sessionDocument == null)
+            return false; //doesn't exist
+        
+        System.err.println(sessionDocument);
+        
+        Boolean valid = (Boolean)sessionDocument.get(MongoSessionDataStore.__VALID);   
+
+
+        if (valid == null || !valid)
+            return false;
+
+        Long created = (Long)sessionDocument.get(MongoSessionDataStore.__CREATED);
+        Long accessed = (Long)sessionDocument.get(MongoSessionDataStore.__ACCESSED);
+        Long lastAccessed = (Long)sessionDocument.get(MongoSessionDataStore.__LAST_ACCESSED);
+        Long maxInactive = (Long)sessionDocument.get(MongoSessionDataStore.__MAX_IDLE);
+        Long expiry = (Long)sessionDocument.get(MongoSessionDataStore.__EXPIRY);
+
+        Object version = MongoUtils.getNestedValue(sessionDocument, 
+                                        MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() +"."+MongoSessionDataStore.__VERSION);
+        Long lastSaved = (Long)MongoUtils.getNestedValue(sessionDocument, 
+                                              MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() +"."+MongoSessionDataStore.__LASTSAVED);
+        String lastNode = (String)MongoUtils.getNestedValue(sessionDocument, 
+                                                 MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() +"."+MongoSessionDataStore.__LASTNODE);
+        
+
+        System.err.println("DA:"+data.getAccessed()+" MA:"+accessed);
+        System.err.println("DLA:"+data.getLastAccessed()+" DLA:"+lastAccessed);
+        assertEquals(data.getCreated(), created.longValue());
+        assertEquals(data.getAccessed(), accessed.longValue());
+        assertEquals(data.getLastAccessed(), lastAccessed.longValue());
+        assertEquals(data.getMaxInactiveMs(), maxInactive.longValue());
+        assertEquals(data.getExpiry(), expiry.longValue());
+        assertEquals(data.getLastNode(), lastNode);
+        assertNotNull(version);
+        assertNotNull(lastSaved);
+
+        // get the session for the context
+        DBObject sessionSubDocumentForContext = 
+                (DBObject)MongoUtils.getNestedValue(sessionDocument,
+                                                    MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath());
+
+        assertNotNull(sessionSubDocumentForContext);
+
+        Map<String,Object> attributes = new HashMap<>();
+        for (String name : sessionSubDocumentForContext.keySet())
+        {
+            //skip special metadata attribute which is not one of the actual session attributes
+            if (MongoSessionDataStore.__METADATA.equals(name) )
+                continue;         
+            String attr = MongoUtils.decodeName(name);
+            Object value = MongoUtils.decodeValue(sessionSubDocumentForContext.get(name));
+            attributes.put(attr, value);
+        }
+        
+        //same keys
+        assertTrue(data.getKeys().equals(attributes.keySet()));
+        //same values
+        for (String name:data.getKeys())
+        {
+            assertTrue(data.getAttribute(name).equals(attributes.get(name)));
+        }
+        
+        
+        return true;
+    }
+    
     public static void createUnreadableSession (String id, String contextPath, String vhost, 
                                       String lastNode, long created, long accessed, 
                                       long lastAccessed, long maxIdle, long expiry,
@@ -128,7 +210,8 @@ public class MongoTestHelper
             for (String name : attributes.keySet())
             {
                 Object value = attributes.get(name);
-                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath+ "." + encodeName(name),encodeName(value));
+                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath+ "." + MongoUtils.encodeName(name),
+                         MongoUtils.encodeName(value));
             }
         }
         update.put("$set",sets);
@@ -172,47 +255,16 @@ public class MongoTestHelper
             for (String name : attributes.keySet())
             {
                 Object value = attributes.get(name);
-                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath+ "." + encodeName(name),encodeName(value));
+                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath+ "." + MongoUtils.encodeName(name),
+                         MongoUtils.encodeName(value));
             }
         }
         update.put("$set",sets);
         collection.update(key,update,upsert,false,WriteConcern.SAFE);
     }
     
-    protected static String encodeName(String name)
-    {
-        return name.replace("%","%25").replace(".","%2E");
-    }
-    protected static Object encodeName(Object value) throws IOException
-    {
-        if (value instanceof Number || value instanceof String || value instanceof Boolean || value instanceof Date)
-        {
-            return value;
-        }
-        else if (value.getClass().equals(HashMap.class))
-        {
-            BasicDBObject o = new BasicDBObject();
-            for (Map.Entry<?, ?> entry : ((Map<?, ?>)value).entrySet())
-            {
-                if (!(entry.getKey() instanceof String))
-                {
-                    o = null;
-                    break;
-                }
-                o.append(encodeName(entry.getKey().toString()),encodeName(entry.getValue()));
-            }
-
-            if (o != null)
-                return o;
-        }
-        
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        ObjectOutputStream out = new ObjectOutputStream(bout);
-        out.reset();
-        out.writeUnshared(value);
-        out.flush();
-        return bout.toByteArray();
-    }
+    
+  
     
     
 }

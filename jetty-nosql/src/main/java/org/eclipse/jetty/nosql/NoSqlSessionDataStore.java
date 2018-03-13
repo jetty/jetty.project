@@ -37,12 +37,13 @@ public abstract class NoSqlSessionDataStore extends AbstractSessionDataStore
     public class NoSqlSessionData extends SessionData
     {
         private Object _version;
-        private Set<String> _dirtyAttributes = new HashSet<String>();
+        private Set<String> _dirtyAttributes = new HashSet<>();
         
 
         public NoSqlSessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
         {
             super(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
+            setVersion (new Long(0));
         }
         
         public void setVersion (Object v)

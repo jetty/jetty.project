@@ -261,12 +261,19 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         if (p == null)
             return;
 
-        long expiry = getExpiryFromFilename(p.getFileName().toString());
-        //files with 0 expiry never expire
-        if (expiry >0 && ((now - expiry) >= (5*TimeUnit.SECONDS.toMillis(_gracePeriodSec))))
+        try
         {
-            Files.deleteIfExists(p);
-            if (LOG.isDebugEnabled()) LOG.debug("Sweep deleted {}", p.getFileName());
+            long expiry = getExpiryFromFilename(p.getFileName().toString());
+            //files with 0 expiry never expire
+            if (expiry >0 && ((now - expiry) >= (5*TimeUnit.SECONDS.toMillis(_gracePeriodSec))))
+            {
+                Files.deleteIfExists(p);
+                if (LOG.isDebugEnabled()) LOG.debug("Sweep deleted {}", p.getFileName());
+            }
+        }
+        catch (NumberFormatException e)
+        {
+            LOG.warn("Not valid session filename {}", p.getFileName(), e);
         }
 
     }
@@ -289,7 +296,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                 if (filename == null)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Unknown file {}",filename);
+                        LOG.debug("Unknown file {}",idWithContext);
                     return;
                 }
                 File file = new File (_storeDir, filename);
@@ -538,7 +545,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @param id identity of session
      * @return the session id plus context
      */
-    private String getIdWithContext (String id)
+    protected String getIdWithContext (String id)
     {
         return _contextString+"_"+id;
     }
@@ -548,13 +555,13 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @param data
      * @return the session id plus context and expiry
      */
-    private String getIdWithContextAndExpiry (SessionData data)
+    protected String getIdWithContextAndExpiry (SessionData data)
     {
         return ""+data.getExpiry()+"_"+getIdWithContext(data.getId());
     }
     
     
-    private String getIdFromFilename (String filename)
+    protected String getIdFromFilename (String filename)
     {
         if (filename == null)
             return null;
@@ -563,7 +570,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     
     
     
-    private long getExpiryFromFilename (String filename)
+    protected long getExpiryFromFilename (String filename)
     {
         if (StringUtil.isBlank(filename) || filename.indexOf("_") < 0)
             throw new IllegalStateException ("Invalid or missing filename");
@@ -573,7 +580,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
     
     
-    private String getContextFromFilename (String filename)
+    protected String getContextFromFilename (String filename)
     {
         if (StringUtil.isBlank(filename))
             return null;
@@ -589,7 +596,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @param filename the name of the file to use
      * @return the session id plus context
      */
-    private String getIdWithContextFromFilename (String filename)
+    protected String getIdWithContextFromFilename (String filename)
     {
         if (StringUtil.isBlank(filename) || filename.indexOf('_') < 0)
             return null;
@@ -603,7 +610,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @param filename the filename to check
      * @return true if the filename has the correct filename format
      */
-    private boolean isSessionFilename (String filename)
+    protected boolean isSessionFilename (String filename)
     {
         if (StringUtil.isBlank(filename))
             return false;
@@ -622,7 +629,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @param filename the filename to check
      * @return true if the filename has the correct filename format and is for this context
      */  
-    private boolean isOurContextSessionFilename (String filename)
+    protected boolean isOurContextSessionFilename (String filename)
     {
         if (StringUtil.isBlank(filename))
             return false;

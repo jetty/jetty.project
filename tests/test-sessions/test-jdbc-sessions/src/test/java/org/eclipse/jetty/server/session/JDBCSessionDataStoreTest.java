@@ -58,7 +58,7 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         JdbcTestHelper.insertSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), 
                                      data.getCreated(), data.getAccessed(), data.getLastAccessed(), 
-                                     data.getMaxInactiveMs(), data.getExpiry(), data.getAllAttributes());
+                                     data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), data.getAllAttributes());
 
     }
 
@@ -69,7 +69,7 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         JdbcTestHelper.insertSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), 
                                      data.getCreated(), data.getAccessed(), data.getLastAccessed(), 
-                                     data.getMaxInactiveMs(), data.getExpiry(), null);
+                                     data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), null);
         
     }
 
@@ -77,9 +77,17 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     
 
     @Override
-    public boolean checkSessionPersisted(SessionData data) throws Exception
+    public boolean checkSessionExists(SessionData data) throws Exception
     {
         return JdbcTestHelper.existsInSessionTable(data.getId(), false);
+    }
+
+
+
+    @Override
+    public boolean checkSessionPersisted(SessionData data) throws Exception
+    {
+        return JdbcTestHelper.checkSessionPersisted(data);
     }
     
 }

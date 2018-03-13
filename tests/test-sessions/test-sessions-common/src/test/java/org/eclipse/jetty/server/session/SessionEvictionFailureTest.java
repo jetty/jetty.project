@@ -153,7 +153,7 @@ public class SessionEvictionFailureTest
     
     
     /**
-     * TestServlet
+     * TestFooServlet
      *
      *
      */
