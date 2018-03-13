@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.EnumSet;
 
@@ -140,6 +141,7 @@ public class MultiPartParser
         DELIMITER_PADDING,
         DELIMITER_CLOSE, 
         BODY_PART,
+        FIRST_OCTETS,       
         OCTETS,       
         EPILOGUE,
         END
@@ -167,8 +169,10 @@ public class MultiPartParser
     public MultiPartParser(Handler handler, String boundary)
     {
         _handler = handler;
-        _delimiterSearch = SearchPattern.compile("\r\n--"+boundary);
-        _patternBuffer = ByteBuffer.wrap(boundary.getBytes());
+
+        String delimiter = "\r\n--"+boundary;
+        _patternBuffer = ByteBuffer.wrap(delimiter.getBytes(StandardCharsets.US_ASCII));
+        _delimiterSearch = SearchPattern.compile(_patternBuffer.array());
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -323,6 +327,7 @@ public class MultiPartParser
                     handle = parseMimePartHeaders(buffer);
                     break;
                     
+                case FIRST_OCTETS:
                 case OCTETS:
                     handle = parseOctetContent(buffer);
                     break;
@@ -471,7 +476,8 @@ public class MultiPartParser
                         case LINE_FEED:
                         {
                             handleField();
-                            setState(State.OCTETS);
+                            setState(State.FIRST_OCTETS);
+                            _partialBoundary = 2; // CRLF is option for empty parts
                             if (_handler.headerComplete())
                                 return true;
                             break;
@@ -603,7 +609,6 @@ public class MultiPartParser
 
     protected boolean parseOctetContent(ByteBuffer buffer)
     {
-        
         //Starts With
         if (_partialBoundary>0)
         {
@@ -626,9 +631,16 @@ public class MultiPartParser
             {
                 //print up to _partialBoundary of the search pattern
                 ByteBuffer content = _patternBuffer.slice();
+                if (_state==State.FIRST_OCTETS)
+                {
+                    setState(State.OCTETS);
+                    content.position(2);
+                }
                 content.limit(_partialBoundary);
                 _partialBoundary = 0;
-                return _handler.content(BufferUtil.EMPTY_BUFFER, false);
+                
+                if (_handler.content(content, false))
+                    return true;
             }
         }
         
@@ -725,29 +737,4 @@ public class MultiPartParser
             LOG.warn(String.format("Illegal character 0x%X in state=%s for buffer %s",ch,state,BufferUtil.toDetailString(buffer)));
         }
     }
-    
-    
-    
-    public static void main(String[] args) {
-        String s = "hello world";
-        
-        ByteBuffer bb = ByteBuffer.wrap(s.getBytes());
-        System.out.println("bb position: "+bb.position());
-        for(int i=0; i<4; i++) 
-            System.out.print((char)bb.get()+", ");
-        System.out.println();
-        System.out.println("bb position: "+bb.position());
-        
-        //split
-        ByteBuffer bb2 = bb.slice();
-        bb2.limit(bb2.limit()-3);
-        
-        System.out.println("bb2 array offset: "+bb2.arrayOffset());
-        System.out.println("bb2 position: "+bb2.position());
-        System.out.println((char)bb2.get(0));
-        System.out.println((char)bb2.array()[0]);
-        while(bb2.hasRemaining()) 
-            System.out.print((char)bb2.get()+", ");
-    }
-    
 }

@@ -148,9 +148,9 @@ public class SearchPattern
         
         int matchedCount = 0;
         
-        for(int i=0; i<pattern.length-matched && i < offset+length; i++)
+        for(int i=0; i<pattern.length-matched && i < length; i++)
         {
-            if(data[i] == pattern[i+matched])
+            if(data[offset+i] == pattern[i+matched])
                 matchedCount++;
             else
                 return 0;
