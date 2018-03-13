@@ -323,38 +323,11 @@ public class MultiPartParserTest
     
     @Test
     public void testEpilogue() {
-        List<String> fields = new ArrayList<>();
-        List<String> content = new ArrayList<>();
-        MultiPartParser parser = new MultiPartParser(new MultiPartParser.Handler()
-        {
-
-            @Override
-            public void parsedField(String name, String value)
-            {
-                fields.add(name+": "+value);
-            }
-
-            @Override
-            public boolean headerComplete()
-            {
-                fields.add("<<COMPLETE>>");
-                return false;
-            }
-
-            @Override
-            public boolean content(ByteBuffer buffer, boolean last)
-            {
-                if (BufferUtil.hasContent(buffer))
-                    content.add(BufferUtil.toString(buffer));
-                if (last)
-                    content.add("<<LAST>>");
-                return last;
-            }
-            
-        },"BOUNDARY");
-        ByteBuffer data = BufferUtil.toBuffer("");
+        TestHandler handler = new TestHandler();
+        MultiPartParser parser = new MultiPartParser(handler,"BOUNDARY");
         
-        data = BufferUtil.toBuffer("--BOUNDARY\r\n"
+        ByteBuffer data = BufferUtil.toBuffer(""
+                + "--BOUNDARY\r\n"
                 + "name: value\n"
                 + "\r\n"
                 + "Hello\r\n"
@@ -364,10 +337,12 @@ public class MultiPartParserTest
                 + "--BOUNDARY--"
                 + "\r\n"
                 + "--BOUNDARY");
+        
+        
         parser.parse(data,false);
         assertThat(parser.getState(), is(State.DELIMITER));
-        assertThat(fields,Matchers.contains("name: value", "<<COMPLETE>>"));
-        assertThat(content,Matchers.contains("Hello","<<LAST>>"));
+        assertThat(handler.fields,Matchers.contains("name: value", "<<COMPLETE>>"));
+        assertThat(handler.content,Matchers.contains("Hello","<<LAST>>"));
         
         parser.parse(data,false);
         assertThat(parser.getState(), is(State.EPILOGUE));
@@ -380,44 +355,17 @@ public class MultiPartParserTest
     
     @Test
     public void testMultipleContent() {
-        List<String> fields = new ArrayList<>();
-        List<String> content = new ArrayList<>();
-        MultiPartParser parser = new MultiPartParser(new MultiPartParser.Handler()
-        {
-
-            @Override
-            public void parsedField(String name, String value)
-            {
-                fields.add(name+": "+value);
-            }
-
-            @Override
-            public boolean headerComplete()
-            {
-                fields.add("<<COMPLETE>>");
-                return false;
-            }
-
-            @Override
-            public boolean content(ByteBuffer buffer, boolean last)
-            {
-                if (BufferUtil.hasContent(buffer))
-                    content.add(BufferUtil.toString(buffer));
-                if (last)
-                    content.add("<<LAST>>");
-                return last;
-            }
-            
-        },"BOUNDARY");
-        ByteBuffer data = BufferUtil.toBuffer("");
+        TestHandler handler = new TestHandler();
+        MultiPartParser parser = new MultiPartParser(handler,"BOUNDARY");
         
-        data = BufferUtil.toBuffer("--BOUNDARY\r\n"
+        ByteBuffer data = BufferUtil.toBuffer(""
+                + "--BOUNDARY\r\n"
                 + "name: value\n"
                 + "\r\n"
                 + "Hello"
                 + "\r\n"
                 + "--BOUNDARY\r\n"
-                + "powerLevel: 9001"
+                + "powerLevel: 9001\n"
                 + "\r\n"
                 + "secondary"
                 + "\r\n"
@@ -428,15 +376,14 @@ public class MultiPartParserTest
         /* Test First Content Section */
         parser.parse(data,false);
         assertThat(parser.getState(), is(State.DELIMITER));
-        assertThat(fields,Matchers.contains("name: value", "<<COMPLETE>>"));
-        assertThat(content,Matchers.contains("Hello","<<LAST>>"));
-        
+        assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>"));
+        assertThat(handler.content, Matchers.contains("Hello","<<LAST>>"));
         
         /* Test Second Content Section */
         parser.parse(data,false);
         assertThat(parser.getState(), is(State.DELIMITER));
-        assertThat(fields,Matchers.contains("name: value", "<<COMPLETE>>","powerLevel: 9001"));
-        assertThat(content,Matchers.contains("Hello","<<LAST>>","secondary\r\ncontent"));
+        assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>","powerLevel: 9001","<<COMPLETE>>"));
+        assertThat(handler.content, Matchers.contains("Hello","<<LAST>>","secondary\r\ncontent","<<LAST>>"));
         
         /* Test Progression to EPILOGUE State */
         parser.parse(data,false);
@@ -444,7 +391,7 @@ public class MultiPartParserTest
         assertThat(data.remaining(),is(0));
         
         /* Test Progression to END State */
-        parser.parse(data,false);
+        parser.parse(data,true);
         assertThat(parser.getState(), is(State.END));
         assertThat(data.remaining(),is(0));
     }
