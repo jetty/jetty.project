@@ -329,7 +329,7 @@ public class MultiPartParserTest
         {
 
             @Override
-            public void parsedHeader(String name, String value)
+            public void parsedField(String name, String value)
             {
                 fields.add(name+": "+value);
             }
@@ -386,7 +386,7 @@ public class MultiPartParserTest
         {
 
             @Override
-            public void parsedHeader(String name, String value)
+            public void parsedField(String name, String value)
             {
                 fields.add(name+": "+value);
             }
@@ -456,7 +456,7 @@ public class MultiPartParserTest
         List<String> content = new ArrayList<>();
 
         @Override
-        public void parsedHeader(String name, String value)
+        public void parsedField(String name, String value)
         {
             fields.add(name+": "+value);
         }

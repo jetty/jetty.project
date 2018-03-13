@@ -351,6 +351,10 @@ public class MultiPartParser
             _state = State.END;
             _handler.messageComplete();
         }
+        else
+        {
+            _handler.earlyEOF();
+        }
         
         return handle;
     }
@@ -405,6 +409,7 @@ public class MultiPartParser
             if (b=='\n')
             {
                 setState(State.BODY_PART);
+                _handler.startPart();
                 return;
             }            
 
@@ -604,7 +609,7 @@ public class MultiPartParser
     private void handleField()
     {
         if (_fieldName!=null && _fieldValue!=null)
-            _handler.parsedHeader(_fieldName,_fieldValue);
+            _handler.parsedField(_fieldName,_fieldValue);
         _fieldName = _fieldValue = null;
     }
     
@@ -719,7 +724,8 @@ public class MultiPartParser
      */
     public interface Handler
     {
-        public default void parsedHeader(String name, String value) {}
+        public default void startPart() {}
+        public default void parsedField(String name, String value) {}
         public default boolean headerComplete() {return false;}
         
         public default boolean content(ByteBuffer item, boolean last) {return false;}
