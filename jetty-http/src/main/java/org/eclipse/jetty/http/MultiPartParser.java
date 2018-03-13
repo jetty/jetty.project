@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
-import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
-import static org.eclipse.jetty.http.HttpTokens.SPACE;
-import static org.eclipse.jetty.http.HttpTokens.TAB;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -118,6 +113,14 @@ public class MultiPartParser
 {
     public static final Logger LOG = Log.getLogger(MultiPartParser.class);
 
+    static final byte COLON= (byte)':';
+    static final byte TAB= 0x09;
+    static final byte LINE_FEED= 0x0A;
+    static final byte CARRIAGE_RETURN= 0x0D;
+    static final byte SPACE= 0x20;
+    static final byte[] CRLF = {CARRIAGE_RETURN,LINE_FEED};
+    static final byte SEMI_COLON= (byte)';';
+    
 
     // States
     public enum FieldState
@@ -146,8 +149,7 @@ public class MultiPartParser
     
     private final boolean DEBUG=LOG.isDebugEnabled(); 
     private final Handler _handler;
-    private final String _boundary;
-    private final SearchPattern _search;
+    private final SearchPattern _delimiterSearch;
     private String _fieldName;
     private String _fieldValue;
 
@@ -155,7 +157,6 @@ public class MultiPartParser
     private FieldState _fieldState = FieldState.FIELD;
     private int _partialBoundary = 2; // No CRLF if no preamble
     private boolean _cr;
-    private boolean _quote;
 
     private final StringBuilder _string=new StringBuilder();
     private int _length;
@@ -165,8 +166,7 @@ public class MultiPartParser
     public MultiPartParser(Handler handler, String boundary)
     {
         _handler = handler;
-        _boundary = boundary;
-        _search = SearchPattern.compile("\r\n--"+boundary);
+        _delimiterSearch = SearchPattern.compile("\r\n--"+boundary);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -318,7 +318,7 @@ public class MultiPartParser
                     continue;
                     
                 case BODY_PART:
-                    handle = parseFields(buffer);
+                    handle = parseMimePartHeaders(buffer);
                     break;
                     
                 case PART:
@@ -351,10 +351,10 @@ public class MultiPartParser
     {
         if (_partialBoundary>0)
         {
-            int partial = _search.startsWith(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining(),_partialBoundary);
+            int partial = _delimiterSearch.startsWith(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining(),_partialBoundary);
             if (partial>0)
             {
-                if (partial==_search.getLength())
+                if (partial==_delimiterSearch.getLength())
                 {
                     buffer.position(buffer.position()+partial-_partialBoundary);
                     _partialBoundary = 0;
@@ -370,15 +370,15 @@ public class MultiPartParser
             _partialBoundary = 0;
         }
         
-        int delimiter = _search.match(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
+        int delimiter = _delimiterSearch.match(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
         if (delimiter>=0)
         {
-            buffer.position(delimiter-buffer.arrayOffset()+_search.getLength());
+            buffer.position(delimiter-buffer.arrayOffset()+_delimiterSearch.getLength());
             setState(State.DELIMITER);
             return;
         }
 
-        _partialBoundary = _search.endsWith(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
+        _partialBoundary = _delimiterSearch.endsWith(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
         BufferUtil.clear(buffer);
 
         return;
@@ -428,7 +428,7 @@ public class MultiPartParser
     /*
      * Parse the message headers and return true if the handler has signaled for a return
      */
-    protected boolean parseFields(ByteBuffer buffer)
+    protected boolean parseMimePartHeaders(ByteBuffer buffer)
     {
         // Process headers
         while (_state==State.BODY_PART && buffer.hasRemaining())
@@ -443,8 +443,8 @@ public class MultiPartParser
                 case FIELD:
                     switch(b)
                     {
-                        case HttpTokens.SPACE:
-                        case HttpTokens.TAB:
+                        case SPACE:
+                        case TAB:
                         {
                             // Folded field value!
                             
@@ -467,7 +467,7 @@ public class MultiPartParser
                             break;
                         }
 
-                        case HttpTokens.LINE_FEED:
+                        case LINE_FEED:
                         {
                             handleField();
                             setState(State.PART);
@@ -478,10 +478,6 @@ public class MultiPartParser
 
                         default:
                         {
-                            // now handle the ch
-                            if (b<HttpTokens.SPACE)
-                                throw new BadMessageException();
-
                             // process previous header
                             handleField();
 
@@ -495,101 +491,96 @@ public class MultiPartParser
                     break;
 
                 case IN_NAME:
-                    if (b==HttpTokens.COLON)
+                    switch(b)
                     {
-                        _fieldName=takeString();
-                        _length=-1;
-                        setState(FieldState.VALUE);
-                        break;
+                        case COLON:
+                            _fieldName=takeString();
+                            _length=-1;
+                            setState(FieldState.VALUE);
+                            break;
+                            
+                        case SPACE:
+                            //Ignore trailing whitespaces
+                            setState(FieldState.AFTER_NAME);
+                            break;
+                            
+                        default:
+                            _string.append((char)b);
+                            _length=_string.length();
+                            break;
                     }
-                    
-                    if (b>HttpTokens.SPACE)
-                    {
-                        _string.append((char)b);
-                        _length=_string.length();
-                        break;
-                    }
-
-                    //Ignore trailing whitespaces
-                    if (b==HttpTokens.SPACE)
-                    {
-                        setState(FieldState.AFTER_NAME);
-                        break;
-                    }
-                    
-                    throw new IllegalCharacterException(_state,b,buffer);
+                    break;
                     
                 case AFTER_NAME:
-                    if (b==HttpTokens.COLON)
+                    switch(b)
                     {
-                        _fieldName=takeString();
-                        _length=-1;
-                        setState(FieldState.VALUE);
-                        break;
+                        case COLON:
+                            _fieldName=takeString();
+                            _length=-1;
+                            setState(FieldState.VALUE);
+                            break;
+                            
+                        case LINE_FEED:
+                            _fieldName=takeString();
+                            _string.setLength(0);
+                            _fieldValue="";
+                            _length=-1;
+                            break;
+                            
+                        case SPACE:
+                            break;
+                            
+                        default:
+                            throw new IllegalCharacterException(_state,b,buffer);
                     }
+                    break;
                     
-                    if (b==HttpTokens.LINE_FEED)
-                    {
-                        _fieldName=takeString();
-                        _string.setLength(0);
-                        _fieldValue="";
-                        _length=-1;
-                    }
-
-                    if (b==HttpTokens.SPACE)
-                        break;
-                    
-                    throw new IllegalCharacterException(_state,b,buffer);
-
                 case VALUE:
-                    if (b>HttpTokens.SPACE || b<0)
+                    switch(b)
                     {
-                        _string.append((char)(0xff&b));
-                        _length=_string.length();
-                        setState(FieldState.IN_VALUE);
-                        break;
+                        case LINE_FEED:
+                            _string.setLength(0);
+                            _fieldValue="";
+                            _length=-1;
+
+                            setState(FieldState.FIELD);
+                            break;
+                            
+                        case SPACE:
+                        case TAB:
+                            break;
+                        
+                        default:
+                            _string.append((char)(0xff&b));
+                            _length=_string.length();
+                            setState(FieldState.IN_VALUE);
+                            break;
                     }
-
-                    if (b==HttpTokens.SPACE || b==HttpTokens.TAB)
-                        break;
-
-                    if (b==HttpTokens.LINE_FEED)
-                    {
-                        _string.setLength(0);
-                        _fieldValue="";
-                        _length=-1;
-
-                        setState(FieldState.FIELD);
-                        break;
-                    }
-                    throw new IllegalCharacterException(_state,b,buffer);
+                    break;
 
                 case IN_VALUE:
-                    if (b>=HttpTokens.SPACE || b<0 || b==HttpTokens.TAB)
+                    switch(b)
                     {
-                        if (_fieldValue!=null)
-                        {
-                            setString(_fieldValue);
-                            _fieldValue=null;
-                        }
-                        _string.append((char)(0xff&b));
-                        if (b>HttpTokens.SPACE || b<0)
-                            _length=_string.length();
-                        break;
-                    }
+                        case SPACE:
+                            _string.append((char)(0xff&b));
+                            break;
 
-                    if (b==HttpTokens.LINE_FEED)
-                    {
-                        if (_length > 0)
-                        {
-                            _fieldValue=takeString();
-                            _length=-1;
-                        }
-                        setState(FieldState.FIELD);
-                        break;
-                    }
+                        case LINE_FEED:
+                            if (_length > 0)
+                            {
+                                _fieldValue=takeString();
+                                _length=-1;
+                            }
+                            setState(FieldState.FIELD);
+                            break;
 
-                    throw new IllegalCharacterException(_state,b,buffer);
+                        default:
+                            _string.append((char)(0xff&b));
+                            if (b>SPACE || b<0)
+                                _length=_string.length();
+                            break;
+                    }
+                    break;
 
                 default:
                     throw new IllegalStateException(_state.toString());
@@ -665,11 +656,11 @@ public class MultiPartParser
 
     /* ------------------------------------------------------------------------------- */
     @SuppressWarnings("serial")
-    private static class IllegalCharacterException extends BadMessageException
+    private static class IllegalCharacterException extends IllegalArgumentException
     {
         private IllegalCharacterException(State state,byte ch,ByteBuffer buffer)
         {
-            super(400,String.format("Illegal character 0x%X",ch));
+            super(String.format("Illegal character 0x%X",ch));
             // Bug #460642 - don't reveal buffers to end user
             LOG.warn(String.format("Illegal character 0x%X in state=%s for buffer %s",ch,state,BufferUtil.toDetailString(buffer)));
         }
