@@ -42,6 +42,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private final HttpParser parser;
     private ByteBuffer buffer;
     private boolean shutdown;
+    private boolean complete;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -168,13 +169,23 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         while (true)
         {
-            // Must parse even if the buffer is fully consumed, to allow the
-            // parser to advance from asynchronous content to response complete.
             boolean handle = parser.parseNext(buffer);
+            boolean complete = this.complete;
+            if (complete)
+                this.complete = false;
             if (LOG.isDebugEnabled())
                 LOG.debug("Parsed {}, remaining {} {}", handle, buffer.remaining(), parser);
-            if (handle || !buffer.hasRemaining())
-                return handle;
+            if (handle)
+                return true;
+            if (!buffer.hasRemaining())
+                return false;
+            if (complete)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Discarding unexpected content after response: {}", BufferUtil.toDetailString(buffer));
+                BufferUtil.clear(buffer);
+                return false;
+            }
         }
     }
 
@@ -294,6 +305,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     @Override
     public boolean messageComplete()
     {
+        complete = true;
+
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return false;
