@@ -611,6 +611,55 @@ public class MultiPartParser
 
     protected boolean parseContent(ByteBuffer buffer)
     {
+        
+        //Starts With
+        if (_partialBoundary>0)
+        {
+            int partial = _search.startsWith(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining(),_partialBoundary);
+            if (partial>0)
+            {
+                if (partial==_search.getLength())
+                {
+                    
+                    
+                    _partialBoundary = 0;
+                    return _handler.content(content, true);
+                }
+
+                _partialBoundary = partial;
+                BufferUtil.clear(buffer);
+                
+                //TODO
+                return false;
+            }
+            
+            _partialBoundary = 0;
+        }
+        
+        
+        // Contains
+        int delimiter = _search.match(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
+        if (delimiter>=0)
+        {
+            ByteBuffer content = buffer.slice();
+            content.limit(delimiter - buffer.arrayOffset()+buffer.position() - buffer.arrayOffset());
+            
+            buffer.position(delimiter-buffer.arrayOffset()+_search.getLength());
+            setState(State.DELIMITER);
+            
+            return _handler.content(content, true);
+        }
+
+        // Ends With
+        _partialBoundary = _search.endsWith(buffer.array(), buffer.arrayOffset()+buffer.position(), buffer.remaining());
+        if(_partialBoundary > 0) 
+        {
+            ByteBuffer content = buffer.slice();
+            content.limit(delimiter - buffer.arrayOffset()+buffer.position() - buffer.arrayOffset());
+        }
+        BufferUtil.clear(buffer);
+        
+        //TODO
         return false;
     }
 
@@ -675,5 +724,10 @@ public class MultiPartParser
         }
     }
     
+    
+    
+    public static void main(String[] args) {
+        System.out.println("hello");
+    }
     
 }
