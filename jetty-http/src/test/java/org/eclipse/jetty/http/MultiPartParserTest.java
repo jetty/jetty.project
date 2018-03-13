@@ -25,11 +25,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.http.MultiPartParser.Handler;
 import org.eclipse.jetty.http.MultiPartParser.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class MultiPartParserTest
@@ -158,6 +156,7 @@ public class MultiPartParserTest
             @Override
             public void parsedHeader(String name, String value)
             {
+                System.err.println("Value='"+value+"'");
                 fields.add(name+": "+value);
             }
 
@@ -181,9 +180,8 @@ public class MultiPartParserTest
         parser.parse(data,false);
         assertTrue(parser.isState(State.PART));
         assertThat(data.remaining(),is(7));
+        System.err.println(fields);
         assertThat(fields,Matchers.contains("name0: value0","name1: value1", "name2: value 2", "<<COMPLETE>>"));
-        
-        
     }
     
     @Test
