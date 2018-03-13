@@ -472,11 +472,6 @@ public class LocalConnector extends AbstractConnector
                 }
                 
                 @Override
-                public void badMessage(int status, String reason)
-                {
-                }
-                
-                @Override
                 public boolean startResponse(HttpVersion version, int status, String reason)
                 {
                     return false;

@@ -26,7 +26,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpResponseException;
-import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
@@ -325,13 +325,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     @Override
-    public void badMessage(int status, String reason)
+    public void badMessage(BadMessageException failure)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
         {
             HttpResponse response = exchange.getResponse();
-            response.status(status).reason(reason);
+            response.status(failure.getCode()).reason(failure.getReason());
             failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response));
         }
     }

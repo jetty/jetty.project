@@ -305,9 +305,9 @@ public class ResponseContentParser extends StreamContentParser
         }
 
         @Override
-        public void badMessage(int status, String reason)
+        public void badMessage(BadMessageException failure)
         {
-            fail(new BadMessageException(status, reason));
+            fail(failure);
         }
 
         protected void fail(Throwable failure)
