@@ -442,4 +442,133 @@ public class MultiPartParserTest
                 + "The quick brown fox jumped over the lazy dog.\r\n","<<LAST>>"));
     }
     
+    
+    @Test
+    public void testEpilogue() {
+        List<String> fields = new ArrayList<>();
+        List<String> content = new ArrayList<>();
+        MultiPartParser parser = new MultiPartParser(new MultiPartParser.Handler()
+        {
+
+            @Override
+            public void parsedHeader(String name, String value)
+            {
+                fields.add(name+": "+value);
+            }
+
+            @Override
+            public boolean headerComplete()
+            {
+                fields.add("<<COMPLETE>>");
+                return false;
+            }
+
+            @Override
+            public boolean content(ByteBuffer buffer, boolean last)
+            {
+                if (BufferUtil.hasContent(buffer))
+                    content.add(BufferUtil.toString(buffer));
+                if (last)
+                    content.add("<<LAST>>");
+                return last;
+            }
+            
+        },"BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("");
+        
+        data = BufferUtil.toBuffer("--BOUNDARY\r\n"
+                + "name: value\n"
+                + "\r\n"
+                + "Hello\r\n"
+                + "--BOUNDARY--"
+                + "epilogue here:"
+                + "\r\n"
+                + "--BOUNDARY--"
+                + "\r\n"
+                + "--BOUNDARY");
+        parser.parse(data,false);
+        assertThat(parser.getState(), is(State.DELIMITER));
+        assertThat(fields,Matchers.contains("name: value", "<<COMPLETE>>"));
+        assertThat(content,Matchers.contains("Hello","<<LAST>>"));
+        
+        parser.parse(data,false);
+        assertThat(parser.getState(), is(State.EPILOGUE));
+        assertThat(data.remaining(),is(0));
+        
+        parser.parse(data,true);
+        assertThat(parser.getState(), is(State.END));
+    }
+    
+    
+    @Test
+    public void testMultipleContent() {
+        List<String> fields = new ArrayList<>();
+        List<String> content = new ArrayList<>();
+        MultiPartParser parser = new MultiPartParser(new MultiPartParser.Handler()
+        {
+
+            @Override
+            public void parsedHeader(String name, String value)
+            {
+                fields.add(name+": "+value);
+            }
+
+            @Override
+            public boolean headerComplete()
+            {
+                fields.add("<<COMPLETE>>");
+                return false;
+            }
+
+            @Override
+            public boolean content(ByteBuffer buffer, boolean last)
+            {
+                if (BufferUtil.hasContent(buffer))
+                    content.add(BufferUtil.toString(buffer));
+                if (last)
+                    content.add("<<LAST>>");
+                return last;
+            }
+            
+        },"BOUNDARY");
+        ByteBuffer data = BufferUtil.toBuffer("");
+        
+        data = BufferUtil.toBuffer("--BOUNDARY\r\n"
+                + "name: value\n"
+                + "\r\n"
+                + "Hello"
+                + "\r\n"
+                + "--BOUNDARY\r\n"
+                + "powerLevel: 9001"
+                + "\r\n"
+                + "secondary"
+                + "\r\n"
+                + "content"
+                + "\r\n--BOUNDARY--"
+                + "epilogue here");
+        
+        /* Test First Content Section */
+        parser.parse(data,false);
+        assertThat(parser.getState(), is(State.DELIMITER));
+        assertThat(fields,Matchers.contains("name: value", "<<COMPLETE>>"));
+        assertThat(content,Matchers.contains("Hello","<<LAST>>"));
+        
+        
+        /* Test Second Content Section */
+        parser.parse(data,false);
+        assertThat(parser.getState(), is(State.DELIMITER));
+        assertThat(fields,Matchers.contains("name: value", "<<COMPLETE>>","powerLevel: 9001"));
+        assertThat(content,Matchers.contains("Hello","<<LAST>>","secondary\r\ncontent"));
+        
+        /* Test Progression to EPILOGUE State */
+        parser.parse(data,false);
+        assertThat(parser.getState(), is(State.EPILOGUE));
+        assertThat(data.remaining(),is(0));
+        
+        /* Test Progression to END State */
+        parser.parse(data,false);
+        assertThat(parser.getState(), is(State.END));
+        assertThat(data.remaining(),is(0));
+    }
+    
 }

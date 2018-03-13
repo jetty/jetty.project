@@ -302,7 +302,7 @@ public class MultiPartParser
      * @param buffer the buffer to parse
      * @return True if an {@link RequestHandler} method was called and it returned true;
      */
-    public boolean parse(ByteBuffer buffer,boolean last)
+    public boolean parse(ByteBuffer buffer, boolean last)
     {
         boolean handle = false;
         while(handle==false && BufferUtil.hasContent(buffer))
@@ -327,14 +327,11 @@ public class MultiPartParser
                     handle = parseOctetContent(buffer);
                     break;
                     
-                    
                 case EPILOGUE:
-                    // TODO
-                    handle = true;
+                    BufferUtil.clear(buffer);
                     break;
                     
                 case END:
-                    // TODO
                     handle = true;
                     break;
                     
@@ -342,6 +339,12 @@ public class MultiPartParser
                     throw new IllegalStateException();
                 
             }
+        }
+        
+        if(last && _state == State.EPILOGUE)
+        {
+            _state = State.END;
+            _handler.messageComplete();
         }
         
         return handle;
