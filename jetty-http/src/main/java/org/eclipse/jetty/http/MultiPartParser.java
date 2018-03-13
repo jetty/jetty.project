@@ -140,7 +140,7 @@ public class MultiPartParser
         DELIMITER_PADDING,
         DELIMITER_CLOSE, 
         BODY_PART,
-        PART,       
+        OCTETS,       
         EPILOGUE,
         END
     }
@@ -157,6 +157,7 @@ public class MultiPartParser
     private FieldState _fieldState = FieldState.FIELD;
     private int _partialBoundary = 2; // No CRLF if no preamble
     private boolean _cr;
+    private ByteBuffer _patternBuffer;
 
     private final StringBuilder _string=new StringBuilder();
     private int _length;
@@ -167,6 +168,7 @@ public class MultiPartParser
     {
         _handler = handler;
         _delimiterSearch = SearchPattern.compile("\r\n--"+boundary);
+        _patternBuffer = ByteBuffer.wrap(boundary.getBytes());
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -321,9 +323,8 @@ public class MultiPartParser
                     handle = parseMimePartHeaders(buffer);
                     break;
                     
-                case PART:
-                    // TODO
-                    handle = true;
+                case OCTETS:
+                    handle = parseOctetContent(buffer);
                     break;
                     
                     
@@ -470,7 +471,7 @@ public class MultiPartParser
                         case LINE_FEED:
                         {
                             handleField();
-                            setState(State.PART);
+                            setState(State.OCTETS);
                             if (_handler.headerComplete())
                                 return true;
                             break;
@@ -587,7 +588,7 @@ public class MultiPartParser
 
             }
         }
-        return true;
+        return false;
     }
     
     /* ------------------------------------------------------------------------------- */
@@ -600,58 +601,68 @@ public class MultiPartParser
     
     /* ------------------------------------------------------------------------------- */
 
-    protected boolean parseContent(ByteBuffer buffer)
+    protected boolean parseOctetContent(ByteBuffer buffer)
     {
         
         //Starts With
         if (_partialBoundary>0)
         {
-            int partial = _search.startsWith(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining(),_partialBoundary);
+            int partial = _delimiterSearch.startsWith(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining(),_partialBoundary);
             if (partial>0)
             {
-                if (partial==_search.getLength())
+                if (partial==_delimiterSearch.getLength())
                 {
-                    
-                    
+                    buffer.position(buffer.position() + _delimiterSearch.getLength() - _partialBoundary);
+                    setState(State.DELIMITER);
                     _partialBoundary = 0;
-                    return _handler.content(content, true);
+                    return _handler.content(BufferUtil.EMPTY_BUFFER, true);
                 }
 
                 _partialBoundary = partial;
-                BufferUtil.clear(buffer);
-                
-                //TODO
+                BufferUtil.clear(buffer);                
                 return false;
             }
-            
-            _partialBoundary = 0;
+            else
+            {
+                //print up to _partialBoundary of the search pattern
+                ByteBuffer content = _patternBuffer.slice();
+                content.limit(_partialBoundary);
+                _partialBoundary = 0;
+                return _handler.content(BufferUtil.EMPTY_BUFFER, false);
+            }
         }
         
         
         // Contains
-        int delimiter = _search.match(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
+        int delimiter = _delimiterSearch.match(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
         if (delimiter>=0)
         {
             ByteBuffer content = buffer.slice();
-            content.limit(delimiter - buffer.arrayOffset()+buffer.position() - buffer.arrayOffset());
+            content.limit(delimiter - buffer.arrayOffset() - buffer.position());
             
-            buffer.position(delimiter-buffer.arrayOffset()+_search.getLength());
+            buffer.position(delimiter - buffer.arrayOffset() + _delimiterSearch.getLength());
             setState(State.DELIMITER);
             
             return _handler.content(content, true);
         }
+        
 
         // Ends With
-        _partialBoundary = _search.endsWith(buffer.array(), buffer.arrayOffset()+buffer.position(), buffer.remaining());
+        _partialBoundary = _delimiterSearch.endsWith(buffer.array(), buffer.arrayOffset()+buffer.position(), buffer.remaining());
         if(_partialBoundary > 0) 
         {
             ByteBuffer content = buffer.slice();
-            content.limit(delimiter - buffer.arrayOffset()+buffer.position() - buffer.arrayOffset());
+            content.limit(content.limit() - _partialBoundary);
+            
+            BufferUtil.clear(buffer);
+            return _handler.content(content, false);
         }
-        BufferUtil.clear(buffer);
         
-        //TODO
-        return false;
+        
+        // There is normal content with no delimiter
+        ByteBuffer content = buffer.slice();
+        BufferUtil.clear(buffer);
+        return _handler.content(content, false);
     }
 
 
@@ -718,7 +729,25 @@ public class MultiPartParser
     
     
     public static void main(String[] args) {
-        System.out.println("hello");
+        String s = "hello world";
+        
+        ByteBuffer bb = ByteBuffer.wrap(s.getBytes());
+        System.out.println("bb position: "+bb.position());
+        for(int i=0; i<4; i++) 
+            System.out.print((char)bb.get()+", ");
+        System.out.println();
+        System.out.println("bb position: "+bb.position());
+        
+        //split
+        ByteBuffer bb2 = bb.slice();
+        bb2.limit(bb2.limit()-3);
+        
+        System.out.println("bb2 array offset: "+bb2.arrayOffset());
+        System.out.println("bb2 position: "+bb2.position());
+        System.out.println((char)bb2.get(0));
+        System.out.println((char)bb2.array()[0]);
+        while(bb2.hasRemaining()) 
+            System.out.print((char)bb2.get()+", ");
     }
     
 }
