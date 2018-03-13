@@ -707,12 +707,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _request.getHttpInput().earlyEOF();
     }
 
-    public void onBadMessage(int status, String reason)
+    public void onBadMessage(BadMessageException failure)
     {
+        int status = failure.getCode();
+        String reason = failure.getReason();
         if (status < 400 || status > 599)
-            status = HttpStatus.BAD_REQUEST_400;
+            failure = new BadMessageException(HttpStatus.BAD_REQUEST_400, reason, failure);
 
-        notifyRequestFailure(_request, new BadMessageException(status, reason));
+        notifyRequestFailure(_request, failure);
 
         Action action;
         try
@@ -721,10 +723,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch(IllegalStateException e)
         {
-            // The bad message cannot be handled in the current state, so throw
-            // to hopefull somebody that can handle
+            // The bad message cannot be handled in the current state,
+            // so rethrow, hopefully somebody will be able to handle.
             abort(e);
-            throw new BadMessageException(status,reason);
+            throw failure;
         }
 
         try

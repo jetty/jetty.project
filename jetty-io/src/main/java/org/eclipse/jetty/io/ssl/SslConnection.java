@@ -527,12 +527,10 @@ public class SslConnection extends AbstractConnection
                     // don't bother writing, just notify of close
                     getWriteFlusher().onClose();
                 }
-                // Else,
                 else
                 {
-                    // try to flush what is pending
-                    // execute to avoid recursion
-                    getExecutor().execute(_runCompleteWrite);
+                    // Try again
+                    _runCompleteWrite.run();
                 }
             }
         }

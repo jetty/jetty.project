@@ -1506,7 +1506,7 @@ public class HttpParser
                         if (DEBUG)
                             LOG.debug("{} EOF in {}",this,_state);
                         setState(State.CLOSED);
-                        _handler.badMessage(HttpStatus.BAD_REQUEST_400,null);
+                        _handler.badMessage(new BadMessageException(HttpStatus.BAD_REQUEST_400));
                         break;
                 }
             }
@@ -1532,7 +1532,7 @@ public class HttpParser
         if (_headerComplete)
             _handler.earlyEOF();
         else
-            _handler.badMessage(x._code, x._reason);
+            _handler.badMessage(x);
     }
 
     protected boolean parseContent(ByteBuffer buffer)
@@ -1811,10 +1811,20 @@ public class HttpParser
 
         /* ------------------------------------------------------------ */
         /** Called to signal that a bad HTTP message has been received.
-         * @param status The bad status to send
-         * @param reason The textual reason for badness
+         * @param failure the failure with the bad message information
          */
-        public void badMessage(int status, String reason);
+        public default void badMessage(BadMessageException failure)
+        {
+            badMessage(failure.getCode(), failure.getReason());
+        }
+
+        /**
+         * @deprecated use {@link #badMessage(BadMessageException)} instead
+         */
+        @Deprecated
+        public default void badMessage(int status, String reason)
+        {
+        }
 
         /* ------------------------------------------------------------ */
         /** @return the size in bytes of the per parser header cache

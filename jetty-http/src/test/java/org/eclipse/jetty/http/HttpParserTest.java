@@ -19,8 +19,6 @@
 package org.eclipse.jetty.http;
 
 import static org.eclipse.jetty.http.HttpComplianceSection.NO_FIELD_FOLDING;
-import static org.hamcrest.Matchers.contains;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -34,6 +32,8 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.contains;
 
 public class HttpParserTest
 {
@@ -2208,9 +2208,10 @@ public class HttpParserTest
         }
 
         @Override
-        public void badMessage(int status, String reason)
+        public void badMessage(BadMessageException failure)
         {
-            _bad = reason == null ? ("" + status) : reason;
+            String reason = failure.getReason();
+            _bad = reason == null ? String.valueOf(failure.getCode()) : reason;
         }
 
         @Override
