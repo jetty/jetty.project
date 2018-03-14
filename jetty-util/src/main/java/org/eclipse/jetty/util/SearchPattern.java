@@ -78,7 +78,7 @@ public class SearchPattern
         for(int i = 0; i<table.length; ++i)
             table[i] = pattern.length;
         for(int i = 0; i<pattern.length-1; ++i)
-            table[pattern[i]] = pattern.length-1-i;
+            table[0xff&pattern[i]] = pattern.length-1-i;
     }
     
     
@@ -100,7 +100,7 @@ public class SearchPattern
             for(int i = pattern.length-1; data[skip+i] == pattern[i]; i--) 
                 if(i==0) return skip;
             
-            skip += table[data[skip + pattern.length - 1]];
+            skip += table[0xff&data[skip + pattern.length - 1]];
         }
         
         return -1;
@@ -125,7 +125,7 @@ public class SearchPattern
                 if(i==0) return(offset+length - skip);
             
             if(skip + pattern.length - 1 < data.length)
-                skip += table[data[skip + pattern.length - 1]];
+                skip += table[0xff&data[skip + pattern.length - 1]];
             else
                 skip++;
         }
@@ -183,5 +183,4 @@ public class SearchPattern
     {
         return pattern.length;
     }
-    
 }
