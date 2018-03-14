@@ -480,7 +480,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             upsert = true;
             version = new Long(1);
             sets.put(__CREATED,data.getCreated());
-            System.err.println("PUT CREATED: "+data.getCreated());
             sets.put(__VALID,true);
             sets.put(getContextSubfield(__VERSION),version);
             sets.put(getContextSubfield(__LASTSAVED), data.getLastSaved());
@@ -491,7 +490,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         }
         else
         {
-            System.err.println("UPDATING");
             sets.put(getContextSubfield(__LASTSAVED), data.getLastSaved());
             sets.put(getContextSubfield(__LASTNODE), data.getLastNode());
             version = new Long(((Number)version).longValue() + 1);
@@ -520,9 +518,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         }
 
         sets.put(__ACCESSED, data.getAccessed());
-        System.err.println("PUTTING ACCESSED:"+data.getAccessed());
         sets.put(__LAST_ACCESSED, data.getLastAccessed());
-        System.err.println("PUTTING LAST ACCESSED:"+data.getLastAccessed());
 
         Set<String> names = ((NoSqlSessionData)data).takeDirtyAttributes();
 
@@ -549,8 +545,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         WriteResult res = _dbSessions.update(key,update,upsert,false,WriteConcern.SAFE);
         if (LOG.isDebugEnabled())
             LOG.debug("Save:db.sessions.update( {}, {},{} )", key, update, res); 
-        
-        System.err.println("NOW:"+_dbSessions.findOne(new BasicDBObject(__ID, id)));
     }
 
 

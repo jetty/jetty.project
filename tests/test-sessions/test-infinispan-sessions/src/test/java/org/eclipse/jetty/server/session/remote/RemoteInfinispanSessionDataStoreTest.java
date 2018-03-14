@@ -17,10 +17,17 @@
 //
 
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.server.session.remote;
 
 import static org.junit.Assert.fail;
 
+import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
+import org.eclipse.jetty.server.session.SessionContext;
+import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.server.session.SessionDataStore;
+import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
@@ -28,29 +35,33 @@ import org.junit.After;
 import org.junit.Before;
 
 /**
- * InfinispanSessionDataStoreTest
+ * RemoteInfinispanSessionDataStoreTest
  *
  *
  */
-public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
-{    
+public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
+{
+
+    public static RemoteInfinispanTestSupport __testSupport;
+
+   
     
-    public InfinispanTestSupport __testSupport;
     
     @Before
     public void setup () throws Exception
     {
-        __testSupport = new InfinispanTestSupport();
-        __testSupport.setup();
+      __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
+      __testSupport.setup();
     }
     
     @After
     public void teardown () throws Exception
     {
-        __testSupport.teardown();
+       __testSupport.teardown();
     }
+    
 
-   
+
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
@@ -59,7 +70,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         return factory;
     }
 
-   
+    
     @Override
     public void persistSession(SessionData data) throws Exception
     {
@@ -80,6 +91,40 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         return __testSupport.checkSessionExists(data);
     }
+ 
+
+    @Override
+    public boolean checkSessionPersisted(SessionData data) throws Exception
+    {
+        return __testSupport.checkSessionPersisted(data);
+    }
+    
+    
+
+    /** 
+     * This test currently won't work for Infinispan - there is currently no
+     * means to query it to find sessions that have expired.
+     * 
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStoreTest#testGetExpiredPersistedAndExpiredOnly()
+     */
+    @Override
+    public void testGetExpiredPersistedAndExpiredOnly() throws Exception
+    {
+        
+    }
+    
+    
+
+    /** 
+     * This test won't work for Infinispan - there is currently no
+     * means to query infinispan to find other expired sessions.
+     */
+    @Override
+    public void testGetExpiredDifferentNode() throws Exception
+    {
+        //Ignore
+    }
+    
     
     /** 
      * This test deliberately sets the infinispan cache to null to
@@ -120,39 +165,5 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
             //expected exception
         }
     }
-    
-    
-    /** 
-     * This test currently won't work for Infinispan - there is currently no
-     * means to query it to find sessions that have expired.
-     * 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStoreTest#testGetExpiredPersistedAndExpiredOnly()
-     */
-    @Override
-    public void testGetExpiredPersistedAndExpiredOnly() throws Exception
-    {
-        
-    }
-    
-    
 
-    /** 
-     * This test won't work for Infinispan - there is currently no
-     * means to query infinispan to find other expired sessions.
-     */
-    @Override
-    public void testGetExpiredDifferentNode() throws Exception
-    {
-        //Ignore
-    }
-
-    /** 
-     * 
-     */
-    @Override
-    public boolean checkSessionPersisted(SessionData data) throws Exception
-    {
-        return __testSupport.checkSessionPersisted(data);
-    }
-    
 }

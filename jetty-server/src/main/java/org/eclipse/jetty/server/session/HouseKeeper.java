@@ -146,7 +146,7 @@ public class HouseKeeper extends AbstractLifeCycle
                     _task.cancel();
                 if (_runner == null)
                     _runner = new Runner();
-                LOG.info("Scavenging every {}ms", _intervalMs);
+                LOG.info("{} Scavenging every {}ms", _sessionIdManager.getWorkerName(), _intervalMs);
                 _task = _scheduler.schedule(_runner,_intervalMs,TimeUnit.MILLISECONDS);
             }
         }
@@ -164,7 +164,7 @@ public class HouseKeeper extends AbstractLifeCycle
             if (_task!=null)
             {
                 _task.cancel();
-                LOG.info("Stopped scavenging");
+                LOG.info("{} Stopped scavenging", _sessionIdManager.getWorkerName());
             }
             _task = null;
             if (_ownScheduler) 
@@ -204,13 +204,13 @@ public class HouseKeeper extends AbstractLifeCycle
             if (sec <= 0)
             {
                 _intervalMs = 0L;
-                LOG.info("Scavenging disabled");
+                LOG.info("{} Scavenging disabled", _sessionIdManager.getWorkerName());
                 stopScavenging();
             }
             else
             {
                 if (sec < 10)
-                    LOG.warn("Short interval of {}sec for session scavenging.", sec);
+                    LOG.warn("{} Short interval of {}sec for session scavenging.", _sessionIdManager.getWorkerName(), sec);
                 
                 _intervalMs=sec*1000L;
 
@@ -261,7 +261,7 @@ public class HouseKeeper extends AbstractLifeCycle
             return;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} scavenging sessions", this);
+            LOG.debug("{} scavenging sessions", _sessionIdManager.getWorkerName());
         
         //find the session managers
         for (SessionHandler manager:_sessionIdManager.getSessionHandlers())

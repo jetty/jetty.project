@@ -335,6 +335,7 @@ public class CreationTest
 
     public static class TestServlet extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
         public String _id = null;
         public CountDownLatch _synchronizer;
         public SessionDataStore _store;
@@ -419,6 +420,8 @@ public class CreationTest
 
     public static class TestServletB extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {

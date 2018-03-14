@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -46,43 +47,21 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
 /**
- * AbstractSessionInvalidateCreateScavengeTest
+ * SessionInvalidateCreateScavengeTest
  *
  * This test verifies that invalidating an existing session and creating
  * a new session within the scope of a single request will expire the
  * newly created session correctly (removed from the server and session listeners called).
  * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=377610
  */
-public abstract class AbstractSessionInvalidateCreateScavengeTest extends AbstractTestBase
+public class SessionInvalidateCreateScavengeTest extends AbstractTestBase
 {
-    public class MySessionListener implements HttpSessionListener
+    @Override
+    public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        List<Integer> destroys = new ArrayList<>();
-
-        public void sessionCreated(HttpSessionEvent e)
-        {
-
-        }
-
-        public void sessionDestroyed(HttpSessionEvent e)
-        {
-            destroys.add(e.getSession().hashCode());
-        }
+        return new TestSessionDataStoreFactory();
     }
 
-
-
-    public void pause(int scavengePeriod)
-    {
-        try
-        {
-            Thread.sleep(scavengePeriod * 1000L);
-        }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-    }
 
     @Test
     public void testSessionScavenge() throws Exception
@@ -90,22 +69,22 @@ public abstract class AbstractSessionInvalidateCreateScavengeTest extends Abstra
         String contextPath = "/";
         String servletMapping = "/server";
         int inactivePeriod = 6;
-        int scavengePeriod = 3;
-        
+        int scavengePeriod = 1;
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
-        
+
         TestServer server = new TestServer(0, inactivePeriod, scavengePeriod,
-                                                           cacheFactory, storeFactory);
+                                           cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         context.addServlet(holder, servletMapping);
         MySessionListener listener = new MySessionListener();
         context.getSessionHandler().addEventListener(listener);
-    
+
         try
         {
             server.start();
@@ -123,14 +102,14 @@ public abstract class AbstractSessionInvalidateCreateScavengeTest extends Abstra
                 assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                
+
                 // Make a request which will invalidate the existing session and create a new one
                 Request request2 = client.newRequest(url + "?action=test");
                 ContentResponse response2 = request2.send();
                 assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
                 // Wait for the scavenger to run
-                pause(inactivePeriod+(2*scavengePeriod));
+                Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(inactivePeriod+scavengePeriod));
 
                 //test that the session created in the last test is scavenged:
                 //the HttpSessionListener should have been called when session1 was invalidated and session2 was scavenged
@@ -150,15 +129,24 @@ public abstract class AbstractSessionInvalidateCreateScavengeTest extends Abstra
         }
     }
     
-    public static class Foo implements Serializable
+    public class MySessionListener implements HttpSessionListener
     {
-        public boolean bar = false;
-        
-        public boolean getBar() { return bar;};
+        List<Integer> destroys = new ArrayList<>();
+
+        public void sessionCreated(HttpSessionEvent e)
+        {
+
+        }
+
+        public void sessionDestroyed(HttpSessionEvent e)
+        {
+            destroys.add(e.getSession().hashCode());
+        }
     }
 
     public static class MySessionBindingListener implements HttpSessionBindingListener, Serializable
     {
+        private static final long serialVersionUID = 1L;
         private boolean unbound = false;
         
         public void valueUnbound(HttpSessionBindingEvent event)
@@ -174,6 +162,7 @@ public abstract class AbstractSessionInvalidateCreateScavengeTest extends Abstra
     
     public static class TestServlet extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
         public MySessionBindingListener listener = new MySessionBindingListener();
        
 
@@ -215,11 +204,12 @@ public abstract class AbstractSessionInvalidateCreateScavengeTest extends Abstra
                     assertTrue(!newId.equals(oldId));
                     assertTrue (session.getAttribute("identity")==null);
                     session.setAttribute("identity", "session2");
-                    session.setAttribute("listener", listener);
+                    session.setAttribute("bindingListener", listener);
                 }
                 else
                     fail("Session already missing");
             }
         }
     }
+
 }

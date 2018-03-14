@@ -29,6 +29,7 @@ import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -179,23 +180,13 @@ public class SessionEvictionFailureTest
             }
         }
     }
-    
-    
-    /**
-     * @param sec
-     */
-    public static void pause (int sec)
+
+
+    public static void pause (int sec) throws InterruptedException
     {
-        try
-        {
-            Thread.currentThread().sleep(sec*1000L);
-        }
-        catch (InterruptedException e)
-        {
-            //just return;
-        }
+        Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(sec));
     }
-    
+
 
     
     @Test

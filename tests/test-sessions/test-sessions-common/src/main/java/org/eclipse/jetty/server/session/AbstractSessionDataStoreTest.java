@@ -125,7 +125,6 @@ public abstract class AbstractSessionDataStoreTest
         data.setLastNode(sessionContext.getWorkerName());
         data.setLastSaved(400); //make it look like it was previously saved by the store
         
-        System.err.println("Cookie set time:"+data.getCookieSet());
         
         //put it into the store
         persistSession(data);
@@ -133,6 +132,7 @@ public abstract class AbstractSessionDataStoreTest
         //now test we can update the session
         data.setLastAccessed(now-1);
         data.setAccessed(now);
+        data.setMaxInactiveMs(TimeUnit.MINUTES.toMillis(2));
         data.setAttribute("a", "c");
         store.store("1234", data);
         
@@ -505,6 +505,41 @@ public abstract class AbstractSessionDataStoreTest
         assertTrue(expiredIds.contains("1234"));
         assertTrue(expiredIds.contains("5678"));
     }
+    
+    
+    /**
+     * Test SessionDataStore.getExpired: tests the situation where
+     * there are sessions that are not in use on the node, but have
+     * expired and are last used by another node.
+     *  
+     * @throws Exception
+     */
+    @Test
+    public void testGetExpiredDifferentNode() throws Exception
+    {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+        
+        //persist a session that is expired for a different node
+        SessionData data = store.newSessionData("1234", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
+        data.setLastNode("other");
+        data.setExpiry(RECENT_TIMESTAMP); //must be recently expired, or FileSessionDataStore will eliminate it on startup
+        persistSession(data);
+        
+        store.start();
+        
+        Set<String> candidates = new HashSet<>();
+        Set<String> expiredIds = store.getExpired(candidates);
+        assertEquals(1, expiredIds.size());
+        assertTrue(expiredIds.contains("1234"));
+    }
+    
     
     
     /**

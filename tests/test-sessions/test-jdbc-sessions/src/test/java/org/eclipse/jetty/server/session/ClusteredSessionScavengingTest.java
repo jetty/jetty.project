@@ -19,29 +19,12 @@
 package org.eclipse.jetty.server.session;
 
 import org.junit.After;
-import org.junit.Test;
 
 /**
  * ClusteredSessionScavengingTest
  */
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
-    public void pause (int scavenge)
-    {
-        //Wait a little longer for the scavenging to happen with the JDBCSession handling.
-        //The scavenging happens at about +10% longer than the scavenge interval, so that
-        //not all nodes sync up and start trying to scavenge for the same sessions at the
-        //same time.
-        //So, we wait 3 times the scavenging interval.
-        try
-        {
-            Thread.sleep(scavenge * 3000);
-        }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-    }
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
@@ -52,18 +35,6 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
        return JdbcTestHelper.newSessionDataStoreFactory();
     }
 
-    @Test
-    public void testNoScavenging() throws Exception
-    {
-        super.testNoScavenging();
-    }
-    
-    
-    @Test
-    public void testLocalSessionsScavenging() throws Exception
-    {
-        super.testLocalSessionsScavenging();
-    }
 
     
     @After

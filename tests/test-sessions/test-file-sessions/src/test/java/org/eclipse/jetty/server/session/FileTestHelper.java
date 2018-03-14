@@ -56,8 +56,6 @@ public class FileTestHelper
         _tmpDir.delete();
         _tmpDir.mkdirs();
         _tmpDir.deleteOnExit();
-        
-        System.err.println("TMP DIR="+_tmpDir.getAbsolutePath());
     }
     
     

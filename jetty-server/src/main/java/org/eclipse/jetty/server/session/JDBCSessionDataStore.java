@@ -815,7 +815,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     public Set<String> doGetExpired(Set<String> candidates)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Getting expired sessions "+System.currentTimeMillis());
+            LOG.debug("Getting expired sessions at time {}", System.currentTimeMillis());
 
         long now = System.currentTimeMillis();
         
@@ -829,7 +829,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
              */
             long upperBound = now;
             if (LOG.isDebugEnabled())
-                LOG.debug ("{}- Pass 1: Searching for sessions for context {} managed by me {} and expired before {}",  _context.getCanonicalContextPath(), _context.getWorkerName(), upperBound);
+                LOG.debug ("{}- Pass 1: Searching for sessions for context {} managed by me and expired before {}",  _context.getWorkerName(), _context.getCanonicalContextPath(),upperBound);
 
             try (PreparedStatement statement = _sessionTableSchema.getExpiredSessionsStatement(connection, _context.getCanonicalContextPath(), _context.getVhost(), upperBound))
             {
@@ -904,7 +904,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         }
                         catch (Exception e)
                         {
-                            LOG.warn("Problem checking if potentially expired session {} exists in db", k,e);
+                            LOG.warn("{} Problem checking if potentially expired session {} exists in db", _context.getWorkerName(), k,e);
                         }
                     }
 
