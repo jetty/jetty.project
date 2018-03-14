@@ -42,7 +42,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.io.ManagedSelector.Connect;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -322,7 +321,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     return task;
 
                 processUpdates();
-                
+
                 updateKeys();
 
                 if (!select())
@@ -372,7 +371,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 LOG.debug("updates {}",updates);
             
             if (selector != null)
-                selector.wakeup();           
+                selector.wakeup();
         }
 
         private boolean select()
@@ -385,6 +384,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} waiting on select", selector);
                     int selected = selector.select();
+                    if (selected == 0)
+                        selected = selector.selectNow();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} woken up from select, {}/{} selected", selector, selected, selector.keys().size());
 
