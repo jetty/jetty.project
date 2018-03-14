@@ -406,10 +406,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         Objects.requireNonNull(httpClient, "Provided HttpClient is null");
 
+        super.doStart();
+
         if (!httpClient.isRunning())
             throw new IllegalStateException("HttpClient is not running (did you forget to start it?): " + httpClient);
-
-        super.doStart();
     }
 
     @Override
