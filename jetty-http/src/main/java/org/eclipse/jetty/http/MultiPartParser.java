@@ -175,6 +175,14 @@ public class MultiPartParser
         _delimiterSearch = SearchPattern.compile(_patternBuffer.array());
     }
 
+    public void reset()
+    {
+        _state = State.PREAMBLE;
+        _fieldState = FieldState.FIELD;
+        _partialBoundary = 2; // No CRLF if no preamble
+    }
+    
+    
     /* ------------------------------------------------------------------------------- */
     public Handler getHandler()
     {
@@ -346,16 +354,20 @@ public class MultiPartParser
             }
         }
         
-        if(last && _state == State.EPILOGUE)
+        if(last)
         {
-            _state = State.END;
-            _handler.messageComplete();
+            if(_state == State.EPILOGUE) 
+            {
+                _state = State.END;
+                return _handler.messageComplete();
+            }
+            else if(BufferUtil.isEmpty(buffer))
+            {
+                _handler.earlyEOF();
+                return true;
+            }
+            
         }
-        else
-        {
-            _handler.earlyEOF();
-        }
-        
         return handle;
     }
     
