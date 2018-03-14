@@ -46,7 +46,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {      
-        return _testHelper.createSessionDataStoreFactory();
+        return _testHelper.createSessionDataStoreFactory(false);
     }
     
     @Before

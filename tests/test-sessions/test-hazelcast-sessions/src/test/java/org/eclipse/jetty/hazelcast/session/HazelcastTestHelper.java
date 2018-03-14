@@ -57,11 +57,14 @@ public class HazelcastTestHelper
     {
         // noop
     }
-    
-    public SessionDataStoreFactory createSessionDataStoreFactory()
+
+    // definitely not thread safe so tests cannot be executed in parallel
+    // TODO use ThreadContext variable for this Map name
+    public SessionDataStoreFactory createSessionDataStoreFactory(boolean onlyClient)
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
         _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
+        factory.setOnlyClient( onlyClient );
         factory.setMapName(_name);
         factory.setHazelcastInstance(_instance);
         
