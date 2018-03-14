@@ -22,14 +22,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -73,9 +71,6 @@ public class TestABCase3
         // @formatter:on
         return data;
     }
-
-    @Rule
-    public TestTracker tt = new TestTracker();
 
     private WebSocketFrame invalidFrame;
 

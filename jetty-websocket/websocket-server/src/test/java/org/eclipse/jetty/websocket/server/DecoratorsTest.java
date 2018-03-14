@@ -24,18 +24,22 @@ import static org.junit.Assert.assertThat;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -43,10 +47,8 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
 public class DecoratorsTest
 {
     private static class DecoratorsSocket extends WebSocketAdapter
@@ -125,6 +127,7 @@ public class DecoratorsTest
         }
     }
 
+    private static BlockheadClient client;
     private static SimpleServletServer server;
     private static DecoratorsCreator decoratorsCreator;
 
@@ -151,31 +154,38 @@ public class DecoratorsTest
         server.stop();
     }
 
+    @BeforeClass
+    public static void startClient() throws Exception
+    {
+        client = new BlockheadClient();
+        client.setIdleTimeout(TimeUnit.SECONDS.toMillis(2));
+        client.start();
+    }
+
+    @AfterClass
+    public static void stopClient() throws Exception
+    {
+        client.stop();
+    }
+
     @Test
     public void testAccessRequestCookies() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
-        client.setTimeout(1,TimeUnit.SECONDS);
+        BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
 
-        try
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-            
-            client.write(new TextFrame().setPayload("info"));
+            clientConn.write(new TextFrame().setPayload("info"));
 
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
-            WebSocketFrame resp = frames.poll();
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame resp = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             String textMsg = resp.getPayloadAsUTF8();
             
             assertThat("DecoratedObjectFactory", textMsg, containsString("Object is a DecoratedObjectFactory"));
             assertThat("decorators.size", textMsg, containsString("Decorators.size = [1]"));
             assertThat("decorator type", textMsg, containsString("decorator[] = " + DummyUtilDecorator.class.getName()));
-        }
-        finally
-        {
-            client.close();
         }
     }
 }

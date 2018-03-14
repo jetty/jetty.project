@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -33,12 +32,10 @@ import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * Test various bad / forbidden opcodes (per spec)
  */
-@RunWith(AdvancedRunner.class)
 public class TestABCase4 extends AbstractABCase
 {
     /**

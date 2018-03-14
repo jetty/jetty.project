@@ -408,9 +408,9 @@ public class HttpTester
         }
 
         @Override
-        public void badMessage(int status, String reason)
+        public void badMessage(BadMessageException failure)
         {
-            throw new RuntimeException(reason);
+            throw failure;
         }
 
         public ByteBuffer generate()

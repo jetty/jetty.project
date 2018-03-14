@@ -179,7 +179,6 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
     public ServerAnnotatedEndpointScanner_GoodSignaturesTest(Case testcase)
     {
         this.testcase = testcase;
-        System.err.printf("Testing signature of %s%n",testcase.pojo.getName());
     }
 
     @Test

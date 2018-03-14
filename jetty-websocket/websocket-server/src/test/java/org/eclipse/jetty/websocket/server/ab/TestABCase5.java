@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -35,12 +33,10 @@ import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * Fragmentation Tests
  */
-@RunWith(AdvancedRunner.class)
 public class TestABCase5 extends AbstractABCase
 {
     /**
@@ -65,7 +61,7 @@ public class TestABCase5 extends AbstractABCase
             fuzzer.send(send);
             fuzzer.expect(expect);
         }
-            }
+    }
 
     /**
      * Send continuation+fin, then text+fin (framewise)
@@ -301,7 +297,6 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Slow
     public void testCase5_19() throws Exception
     {
         // phase 1

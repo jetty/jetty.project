@@ -22,31 +22,27 @@ import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.EventQueue;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.helper.CaptureSocket;
 import org.eclipse.jetty.websocket.server.helper.SessionServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class WebSocketOverSSLTest
 {
     public static final int CONNECT_TIMEOUT = 15000;
     public static final int FUTURE_TIMEOUT_SEC = 30;
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     private static SimpleServletServer server;
@@ -94,9 +90,8 @@ public class WebSocketOverSSLTest
                 remote.flush();
 
             // Read frame (hopefully text frame)
-            clientSocket.messages.awaitEventCount(1,30,TimeUnit.SECONDS);
-            EventQueue<String> captured = clientSocket.messages;
-            Assert.assertThat("Text Message",captured.poll(),is(msg));
+            LinkedBlockingQueue<String> captured = clientSocket.messages;
+            Assert.assertThat("Text Message",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is(msg));
 
             // Shutdown the socket
             clientSocket.close();
@@ -136,9 +131,8 @@ public class WebSocketOverSSLTest
                 remote.flush();
 
             // Read frame (hopefully text frame)
-            clientSocket.messages.awaitEventCount(1,30,TimeUnit.SECONDS);
-            EventQueue<String> captured = clientSocket.messages;
-            Assert.assertThat("Server.session.isSecure",captured.poll(),is("session.isSecure=true"));
+            LinkedBlockingQueue<String> captured = clientSocket.messages;
+            Assert.assertThat("Server.session.isSecure",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is("session.isSecure=true"));
 
             // Shutdown the socket
             clientSocket.close();
@@ -178,10 +172,9 @@ public class WebSocketOverSSLTest
                 remote.flush();
 
             // Read frame (hopefully text frame)
-            clientSocket.messages.awaitEventCount(1,30,TimeUnit.SECONDS);
-            EventQueue<String> captured = clientSocket.messages;
+            LinkedBlockingQueue<String> captured = clientSocket.messages;
             String expected = String.format("session.upgradeRequest.requestURI=%s",requestUri.toASCIIString());
-            Assert.assertThat("session.upgradeRequest.requestURI",captured.poll(),is(expected));
+            Assert.assertThat("session.upgradeRequest.requestURI",captured.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),is(expected));
 
             // Shutdown the socket
             clientSocket.close();

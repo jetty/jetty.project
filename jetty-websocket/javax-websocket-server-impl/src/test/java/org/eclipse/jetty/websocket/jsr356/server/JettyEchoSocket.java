@@ -19,13 +19,10 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.io.IOException;
-import java.util.Queue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -50,13 +47,7 @@ public class JettyEchoSocket
     private Session session;
     private Lock remoteLock = new ReentrantLock();
     private RemoteEndpoint remote;
-    private EventQueue<String> incomingMessages = new EventQueue<>();
-
-    public Queue<String> awaitMessages(int expected) throws TimeoutException, InterruptedException
-    {
-        incomingMessages.awaitEventCount(expected,2,TimeUnit.SECONDS);
-        return incomingMessages;
-    }
+    public LinkedBlockingQueue<String> incomingMessages = new LinkedBlockingQueue<>();
 
     public boolean getClosed()
     {

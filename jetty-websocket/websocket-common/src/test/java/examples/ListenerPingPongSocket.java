@@ -31,30 +31,30 @@ public class ListenerPingPongSocket implements WebSocketPingPongListener
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        capture.add("onWebSocketClose(%d, %s)",statusCode,capture.q(reason));
+        capture.offer("onWebSocketClose(%d, %s)",statusCode,capture.q(reason));
     }
 
     @Override
     public void onWebSocketConnect(Session session)
     {
-        capture.add("onWebSocketConnect(%s)",session);
+        capture.offer("onWebSocketConnect(%s)",session);
     }
 
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        capture.add("onWebSocketError((%s) %s)",cause.getClass().getSimpleName(),cause.getMessage());
+        capture.offer("onWebSocketError((%s) %s)",cause.getClass().getSimpleName(),cause.getMessage());
     }
 
     @Override
     public void onWebSocketPing(ByteBuffer payload)
     {
-        capture.add("onWebSocketPing(%d)",payload.remaining());
+        capture.offer("onWebSocketPing(%d)",payload.remaining());
     }
 
     @Override
     public void onWebSocketPong(ByteBuffer payload)
     {
-        capture.add("onWebSocketPong(%d)",payload.remaining());
+        capture.offer("onWebSocketPong(%d)",payload.remaining());
     }
 }

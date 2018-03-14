@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -1297,8 +1295,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         }
         catch(ExecutionException e)
         {
-            assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
-            assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
+            Assert.assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
+            Assert.assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
         }
     }
 
@@ -1311,8 +1309,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         }
         catch(ExecutionException e)
         {
-            assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
-            assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
+            Assert.assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
+            Assert.assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
         }
     }
 

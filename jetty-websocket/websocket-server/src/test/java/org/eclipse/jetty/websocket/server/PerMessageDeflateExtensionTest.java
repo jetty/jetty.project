@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.common.util.Sha1Sum;
 import org.eclipse.jetty.websocket.server.helper.CaptureSocket;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
@@ -166,8 +167,7 @@ public class PerMessageDeflateExtensionTest
             // Client sends first message
             session.getRemote().sendBytes(ByteBuffer.wrap(msg));
 
-            clientSocket.messages.awaitEventCount(1,5,TimeUnit.SECONDS);
-            String echoMsg = clientSocket.messages.poll();
+            String echoMsg = clientSocket.messages.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Echo'd Message",echoMsg,is("binary[sha1="+sha1+"]"));
         }
         finally

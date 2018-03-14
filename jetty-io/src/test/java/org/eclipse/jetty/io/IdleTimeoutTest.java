@@ -120,17 +120,19 @@ public class IdleTimeoutTest
 
     @Test
     public void testShorten() throws Exception
-    {
-        for (int i=0;i<20;i++)
+    {        
+        _timeout.setIdleTimeout(2000);
+
+        for (int i=0;i<30;i++)
         {
-            Thread.sleep(200);
+            Thread.sleep(100);
             _timeout.notIdle();
         }
         Assert.assertNull(_expired);
         _timeout.setIdleTimeout(100);
         
         long start = System.nanoTime();
-        while (_expired==null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-start)<4)
+        while (_expired==null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-start)<5)
             Thread.sleep(200);
         
         Assert.assertNotNull(_expired);

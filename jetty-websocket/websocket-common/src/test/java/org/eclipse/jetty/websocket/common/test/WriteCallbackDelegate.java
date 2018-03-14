@@ -16,8 +16,31 @@
 //  ========================================================================
 //
 
-/**
- * Jetty Monitor : Intregation with Java Monitor
- */
-package org.eclipse.jetty.monitor.integration;
+package org.eclipse.jetty.websocket.common.test;
 
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.api.WriteCallback;
+
+public class WriteCallbackDelegate implements Callback
+{
+    private final WriteCallback delegate;
+
+    public WriteCallbackDelegate(WriteCallback delegate)
+    {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public void succeeded()
+    {
+        if (this.delegate != null)
+            this.delegate.writeSuccess();
+    }
+
+    @Override
+    public void failed(Throwable x)
+    {
+        if (this.delegate != null)
+            this.delegate.writeFailed(x);
+    }
+}

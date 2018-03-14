@@ -20,15 +20,17 @@ package org.eclipse.jetty.websocket.common.test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 
-public class BlockheadServerConnection extends BlockheadConnection
+public class BlockheadClientConnection extends BlockheadConnection
 {
-    public BlockheadServerConnection(WebSocketPolicy policy,
+    public BlockheadClientConnection(WebSocketPolicy policy,
                                      ByteBufferPool bufferPool,
                                      ExtensionStack extensionStack,
                                      CompletableFuture<BlockheadConnection> openFut,
@@ -36,5 +38,17 @@ public class BlockheadServerConnection extends BlockheadConnection
                                      Executor executor)
     {
         super(policy, bufferPool, extensionStack, openFut, endp, executor);
+    }
+
+    @Override
+    public void write(WebSocketFrame frame)
+    {
+        if (frame.getMask() == null)
+        {
+            byte mask[] = new byte[4];
+            ThreadLocalRandom.current().nextBytes(mask);
+            frame.setMask(mask);
+        }
+        super.write(frame);
     }
 }
