@@ -39,26 +39,29 @@ import com.hazelcast.core.HazelcastInstance;
  */
 public class HazelcastTestHelper
 {
-    String _hazelcastInstanceName = "SESSION_TEST_"+Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+    static String _hazelcastInstanceName = "SESSION_TEST_"+Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
     
-    String _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
-    HazelcastInstance _instance;
-
-    
-    public HazelcastTestHelper ()
-    {
+    static String _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
+    static HazelcastInstance _instance;
+    static {
         MapConfig mapConfig = new MapConfig();
         mapConfig.setName(_name);
         Config config = new Config();
         config.setInstanceName(_hazelcastInstanceName );
         config.addMapConfig( mapConfig );
-        
         _instance = Hazelcast.getOrCreateHazelcastInstance( config );
+    }
+
+    
+    public HazelcastTestHelper ()
+    {
+        // noop
     }
     
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
+        _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
         factory.setMapName(_name);
         factory.setHazelcastInstance(_instance);
         
