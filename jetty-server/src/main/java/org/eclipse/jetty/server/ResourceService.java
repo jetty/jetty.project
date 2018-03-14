@@ -225,7 +225,7 @@ public class ResourceService
 
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);        
         
-        boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
+        boolean endsWithSlash=(pathInfo==null?servletPath:pathInfo).endsWith(URIUtil.SLASH);
         boolean checkPrecompressedVariants=_precompressedFormats.length > 0 && !endsWithSlash && !included && reqRanges==null;
         
         HttpContent content=null;
@@ -254,7 +254,7 @@ public class ResourceService
             }
             
             // Strip slash?
-            if (endsWithSlash && pathInContext.length()>1)
+            if (!included && endsWithSlash && pathInContext.length()>1)
             {
                 String q=request.getQueryString();
                 pathInContext=pathInContext.substring(0,pathInContext.length()-1);
