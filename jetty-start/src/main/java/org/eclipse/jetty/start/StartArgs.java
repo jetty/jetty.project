@@ -1265,12 +1265,11 @@ public class StartArgs
             try
             {
                 JavaVersion ver = JavaVersion.parse(value);
-                properties.setProperty("java.version",ver.getVersion(),source);
+                properties.setProperty("java.version",System.getProperty("java.version"),source);
                 properties.setProperty("java.version.platform",Integer.toString(ver.getPlatform()),source);
                 properties.setProperty("java.version.major",Integer.toString(ver.getMajor()),source);
                 properties.setProperty("java.version.minor",Integer.toString(ver.getMinor()),source);
                 properties.setProperty("java.version.micro",Integer.toString(ver.getMicro()),source);
-                properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
             }
             catch (Throwable x)
             {
