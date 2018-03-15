@@ -101,8 +101,8 @@
         <id>mongodb</id>
         <activation>
           <property>
-            <name>mongodb.enabled</name>
-            <value>true</value>
+            <name>mongodb.disabled</name>
+            <value>!true</value>
           </property>
         </activation>
         <build>
