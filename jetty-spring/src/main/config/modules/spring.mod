@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Enable spring configuration processing so all jetty style 
 xml files can optionally be written as spring beans
