@@ -496,8 +496,6 @@ abstract public class WriteFlusher
     public boolean onFail(Throwable cause)
     {
         // Keep trying to handle the failure until we get to IDLE or FAILED state
-        if (cause!=null)
-            cause.addSuppressed(new Throwable());
         while (true)
         {
             State current = _state.get();
