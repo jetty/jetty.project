@@ -546,32 +546,11 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         if (LOG.isDebugEnabled())
             LOG.debug("Save:db.sessions.update( {}, {},{} )", key, update, res); 
     }
-
-
-    
-    
-    @Override
-    protected void doStart() throws Exception
-    {
-        if (_dbSessions == null)
-            throw new IllegalStateException("DBCollection not set");
-        
-        _version_1 = new BasicDBObject(getContextSubfield(__VERSION),1);
-        
-        ensureIndexes();
-        
-        super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-    }
     
     
     protected void ensureIndexes() throws MongoException
     {
+        _version_1 = new BasicDBObject(getContextSubfield(__VERSION),1);
         DBObject idKey = BasicDBObjectBuilder.start().add("id", 1).get();        
         _dbSessions.createIndex(idKey,
                               BasicDBObjectBuilder.start()
