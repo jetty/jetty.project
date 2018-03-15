@@ -252,9 +252,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 if (getEndPoint().getConnection()!=this)
                     break;
 
-                // Handle closed parser.
-                if (_parser.isClose() || _parser.isClosed())
+                // Handle closed parser with closed output stream
+                if ((_parser.isClose() || _parser.isClosed()) && getEndPoint().isOutputShutdown())
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Close for output shutdown {} ",getEndPoint());
                     close();
                     break;
                 }
