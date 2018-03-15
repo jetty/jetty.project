@@ -243,6 +243,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 int filled = fillRequestBuffer();
                 if (filled>0)
                     bytesIn.add(filled);
+                else if (filled==-1 && getEndPoint().isOutputShutdown())
+                    close();
 
                 // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
@@ -252,20 +254,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 if (getEndPoint().getConnection()!=this)
                     break;
 
-                // Handle closed parser with closed output stream
-                if ((_parser.isClose() || _parser.isClosed()) && getEndPoint().isOutputShutdown())
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Close for output shutdown {} ",getEndPoint());
-                    close();
-                    break;
-                }
-
                 // Handle channel event
                 if (handle)
                 {
                     boolean suspended = !_channel.handle();
-
+                    
                     // We should break iteration if we have suspended or changed connection or this is not the handling thread.
                     if (suspended || getEndPoint().getConnection() != this)
                         break;
