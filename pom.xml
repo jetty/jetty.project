@@ -1770,6 +1770,9 @@
     <url>https://webtide.com</url>
   </organization>
 
+  <!-- SNAPSHOT Repository is only for temporary usage.
+       This configuration should not be checked in, as it
+       can result in bad success on CI.
   <repositories>
     <repository>
       <id>jetty-snapshots</id>
@@ -1780,6 +1783,7 @@
       </snapshots>
     </repository>
   </repositories>
+   -->
 
   <distributionManagement>
     <repository>
