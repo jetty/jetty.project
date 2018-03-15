@@ -258,7 +258,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 if (handle)
                 {
                     boolean suspended = !_channel.handle();
-                    
+
                     // We should break iteration if we have suspended or changed connection or this is not the handling thread.
                     if (suspended || getEndPoint().getConnection() != this)
                         break;

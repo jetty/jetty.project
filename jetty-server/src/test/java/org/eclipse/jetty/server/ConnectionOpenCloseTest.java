@@ -230,7 +230,6 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         // Read to EOF
         String response = BufferUtil.toString(ByteBuffer.wrap(IO.readBytes(socket.getInputStream())));
         assertThat(response,Matchers.containsString("200 OK"));
-        Thread.sleep(500);
         socket.close();
 
         Assert.assertTrue(openLatch.await(5, TimeUnit.SECONDS));
