@@ -11,6 +11,7 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.mongo</bundle-symbolic-name>
+    <embedmongo.host>localhost</embedmongo.host>
   </properties>
   <build>
     <plugins>
@@ -100,8 +101,8 @@
         <id>mongodb</id>
         <activation>
           <property>
-            <name>mongodb.enabled</name>
-            <value>true</value>
+            <name>mongodb.disabled</name>
+            <value>!true</value>
           </property>
         </activation>
         <build>
@@ -110,8 +111,49 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
               <configuration>
+                <systemPropertyVariables>
+                  <embedmongoPort>${embedmongo.port}</embedmongoPort>
+                  <embedmongoHost>${embedmongo.host}</embedmongoHost>
+                </systemPropertyVariables>
                 <skipTests>false</skipTests>
               </configuration>
+            </plugin>
+            <plugin>
+              <groupId>com.github.joelittlejohn.embedmongo</groupId>
+              <artifactId>embedmongo-maven-plugin</artifactId>
+              <version>0.3.5</version>
+              <configuration>
+                <!--port>37017</port-->
+                <!-- allocates a random port and overrides embedmongo.port -->
+                <randomPort>true</randomPort>
+
+                <databaseDirectory>${project.build.directory}/mongotest</databaseDirectory>
+
+                <!-- optional (file|console|none), default console -->
+                <logging>file</logging>
+                <!-- optional, can be used when logging=file, default is ./embedmongo.log -->
+                <logFile>${project.build.directory}/embedmongo.log</logFile>
+                <!--optional, one of wiredTiger or mmapv1 (default is mmapv1) -->
+                <!--storageEngine>wiredTiger</storageEngine-->
+                <!-- optional, skips this plugin entirely, use on the command line like -Dembedmongo.skip -->
+                <skip>false</skip>
+              </configuration>
+              <executions>
+                <execution>
+                  <id>start</id>
+                  <phase>process-test-resources</phase>
+                  <goals>
+                    <goal>start</goal>
+                  </goals>
+                </execution>
+                <execution>
+                  <id>stop</id>
+                  <phase>test</phase>
+                  <goals>
+                    <goal>stop</goal>
+                  </goals>
+                </execution>
+              </executions>
             </plugin>
           </plugins>
         </build>

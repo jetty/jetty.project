@@ -30,6 +30,7 @@ import java.sql.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.mongodb.MongoClient;
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore.NoSqlSessionData;
 import org.eclipse.jetty.server.session.SessionData;
 
@@ -50,30 +51,45 @@ public class MongoTestHelper
     static int __workers=0;
     public static final String DB_NAME = "HttpSessions";
     public static final String COLLECTION_NAME = "testsessions";
-    
+
+    static MongoClient _mongoClient;
+    static
+    {
+        try
+        {
+            _mongoClient =
+                new MongoClient( System.getProperty( "embedmongo.host" ), Integer.getInteger( "embedmongoPort" ) );
+        }
+        catch ( UnknownHostException e )
+        {
+            e.printStackTrace();
+        }
+    }
     
     
     public static void dropCollection () throws MongoException, UnknownHostException
     {
-        new Mongo().getDB(DB_NAME).getCollection(COLLECTION_NAME).drop();
+        _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME).drop();
     }
     
     
     public static void createCollection() throws UnknownHostException, MongoException
     {
-        new Mongo().getDB(DB_NAME).createCollection(COLLECTION_NAME, null);
+        _mongoClient.getDB(DB_NAME).createCollection(COLLECTION_NAME, null);
     }
     
     
     public static DBCollection getCollection () throws UnknownHostException, MongoException 
     {
-        return new Mongo().getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        return _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
     }
     
     
     public static MongoSessionDataStoreFactory newSessionDataStoreFactory()
     {
         MongoSessionDataStoreFactory storeFactory = new MongoSessionDataStoreFactory();
+        storeFactory.setHost( System.getProperty( "embedmongoHost" ) );
+        storeFactory.setPort( Integer.getInteger( "embedmongoPort" ) );
         storeFactory.setCollectionName(COLLECTION_NAME);
         storeFactory.setDbName(DB_NAME);
         return storeFactory;
@@ -83,7 +99,7 @@ public class MongoTestHelper
     public static boolean checkSessionExists (String id)
     throws Exception
     {
-        DBCollection collection = new Mongo().getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
         
         DBObject fields = new BasicDBObject();
         fields.put(MongoSessionDataStore.__EXPIRY, 1);
@@ -101,7 +117,7 @@ public class MongoTestHelper
     public static boolean checkSessionPersisted (SessionData data)
     throws Exception
     {
-        DBCollection collection = new Mongo().getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
         
         DBObject fields = new BasicDBObject();
         
@@ -178,7 +194,7 @@ public class MongoTestHelper
                                       Map<String,Object> attributes)
     throws Exception
     {
-        DBCollection collection = new Mongo().getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
 
         // Form query for upsert
         BasicDBObject key = new BasicDBObject(MongoSessionDataStore.__ID, id);
@@ -226,7 +242,7 @@ public class MongoTestHelper
     throws Exception
     {
 
-        DBCollection collection = new Mongo().getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
 
         // Form query for upsert
         BasicDBObject key = new BasicDBObject(MongoSessionDataStore.__ID, id);
