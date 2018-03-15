@@ -32,35 +32,34 @@ public class JavaVersion
      * Acceptable values should correspond to those returned by JavaVersion.getPlatform().
      */
     public static final String JAVA_TARGET_PLATFORM = "org.eclipse.jetty.javaTargetPlatform";
-    
-    /** Regex for Java version numbers */
-    private static final String VSTR_FORMAT = "(?<VNUM>[1-9][0-9]*(?:(?:\\.0)*\\.[0-9]+)*).*";
-
-    static final Pattern VSTR_PATTERN = Pattern.compile(VSTR_FORMAT);
-    
-    public static final JavaVersion VERSION = parse(System.getProperty("java.runtime.version",System.getProperty("java.version","1.8")));
+        
+    public static final JavaVersion VERSION = parse(System.getProperty("java.version"));
     
     public static JavaVersion parse(String v) 
-    {
-        Matcher m = VSTR_PATTERN.matcher(v);
-        if (!m.matches() || m.group("VNUM")==null)
-        {
-            System.err.println("ERROR: Invalid version string: '" + v + "'");
-            return new JavaVersion(v+"-UNKNOWN",8,1,8,0);
-        }
-        
+    {        
         // $VNUM is a dot-separated list of integers of arbitrary length
-        String[] split = m.group("VNUM").split("\\.");
-        int[] version = new int[split.length];
-        for (int i = 0; i < split.length; i++)
-            version[i] = Integer.parseInt(split[i]);
+        String[] split = v.split("[^0-9]");
+        int len = Math.min(split.length,3);
+        int[] version = new int[len];
+        for (int i = 0; i < len; i++)
+        {
+            try
+            {
+                version[i] = Integer.parseInt(split[i]);
+            }
+            catch(Throwable e)
+            {
+                len = i-1;
+                break;
+            }
+        }
 
         return new JavaVersion(
                 v,
-                (version[0]>=9 || version.length==1)?version[0]:version[1],
+                (version[0]>=9 || len==1)?version[0]:version[1],
                 version[0],
-                version.length>1?version[1]:0,
-                version.length>2?version[2]:0);
+                len>1?version[1]:0,
+                len>2?version[2]:0);
     }
     
     private final String version;

@@ -29,6 +29,17 @@ import org.junit.Test;
 public class JavaVersionTest
 {
     @Test
+    public void testAndroid()
+    {
+        JavaVersion version = JavaVersion.parse("0.9");
+        assertThat(version.toString(),is("0.9"));
+        assertThat(version.getPlatform(),is(9));
+        assertThat(version.getMajor(),is(0));
+        assertThat(version.getMinor(),is(9));
+        assertThat(version.getMicro(),is(0));
+    }
+    
+    @Test
     public void test9()
     {
         JavaVersion version = JavaVersion.parse("9.0.1");
