@@ -33,12 +33,23 @@ import java.util.Set;
 public class TestSessionDataStore extends AbstractSessionDataStore
 {
     public Map<String,SessionData> _map = new HashMap<>();
+    public boolean _passivating;
 
+    
+    public TestSessionDataStore ()
+    {
+        _passivating = false;
+    }
+    
+    public TestSessionDataStore (boolean passivating)
+    {
+        _passivating = passivating;
+    }
 
     @Override
     public boolean isPassivating()
     {
-        return false;
+        return _passivating;
     }
 
 

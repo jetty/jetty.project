@@ -50,7 +50,8 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
     public void persistSession(SessionData data) throws Exception
     {
         GCloudTestSuite.__testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-                                                    data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getAllAttributes());
+                                                    data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), 
+                                                    data.getCookieSet(), data.getLastSaved(), data.getAllAttributes());
 
     }
 
@@ -60,7 +61,8 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
 
         GCloudTestSuite.__testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-                                                    data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), null);
+                                                    data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), 
+                                                    data.getCookieSet(), data.getLastSaved(), null);
     }
 
     

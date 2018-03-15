@@ -58,7 +58,8 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         JdbcTestHelper.insertSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), 
                                      data.getCreated(), data.getAccessed(), data.getLastAccessed(), 
-                                     data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), data.getAllAttributes());
+                                     data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), 
+                                     data.getLastSaved(), data.getAllAttributes());
 
     }
 
@@ -69,7 +70,8 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         JdbcTestHelper.insertSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), 
                                      data.getCreated(), data.getAccessed(), data.getLastAccessed(), 
-                                     data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), null);
+                                     data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), 
+                                     data.getLastSaved(), null);
         
     }
 

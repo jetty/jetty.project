@@ -275,7 +275,7 @@ public class JdbcTestHelper
     public static void insertSession (String id, String contextPath, String vhost, 
                                       String lastNode, long created, long accessed, 
                                       long lastAccessed, long maxIdle, long expiry,
-                                      long cookieSet, Map<String,Object> attributes)
+                                      long cookieSet, long lastSaved, Map<String,Object> attributes)
     throws Exception
     {
         Class.forName(DRIVER_CLASS);
@@ -284,8 +284,8 @@ public class JdbcTestHelper
             PreparedStatement statement = con.prepareStatement("insert into "+TABLE+
                                                                " ("+ID_COL+", "+CONTEXT_COL+", virtualHost, "+LAST_NODE_COL+
                                                                ", "+ACCESS_COL+", "+LAST_ACCESS_COL+", "+CREATE_COL+", "+COOKIE_COL+
-                                                               ", "+LAST_SAVE_COL+", "+EXPIRY_COL+", "+MAP_COL+" ) "+
-                                                               " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                                               ", "+LAST_SAVE_COL+", "+EXPIRY_COL+", "+MAX_IDLE_COL+","+MAP_COL+" ) "+
+                                                               " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
            
             statement.setString(1, id);
             statement.setString(2, contextPath);
@@ -297,9 +297,10 @@ public class JdbcTestHelper
             statement.setLong(7, created);
             statement.setLong(8, cookieSet);
 
-            statement.setLong(9, System.currentTimeMillis());
+            statement.setLong(9, lastSaved);
             statement.setLong(10, expiry);
-
+            statement.setLong(11, maxIdle);
+            
             if (attributes != null)
             {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -310,10 +311,10 @@ public class JdbcTestHelper
                 byte[] bytes = baos.toByteArray();
 
                 ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                statement.setBinaryStream(11, bais, bytes.length);//attribute map as blob
+                statement.setBinaryStream(12, bais, bytes.length);//attribute map as blob
             }
             else
-                statement.setBinaryStream(11, new ByteArrayInputStream("".getBytes()), 0);
+                statement.setBinaryStream(12, new ByteArrayInputStream("".getBytes()), 0);
             
             statement.execute();
             assertEquals(1,statement.getUpdateCount());

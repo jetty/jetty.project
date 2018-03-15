@@ -128,6 +128,7 @@ public class GCloudSessionTestSupport
     public void createSession (String id, String contextPath, String vhost, 
                                       String lastNode, long created, long accessed, 
                                       long lastAccessed, long maxIdle, long expiry,
+                                      long cookieset, long lastSaved,
                                       Map<String,Object> attributes)
     throws Exception
     {
@@ -148,11 +149,11 @@ public class GCloudSessionTestSupport
                 .set(EntityDataModel.ACCESSED, accessed)
                 .set(EntityDataModel.LASTACCESSED, lastAccessed)
                 .set(EntityDataModel.CREATETIME, created)
-                .set(EntityDataModel.COOKIESETTIME, created)
+                .set(EntityDataModel.COOKIESETTIME, cookieset)
                 .set(EntityDataModel.LASTNODE, lastNode)
                 .set(EntityDataModel.EXPIRY, expiry)
                 .set(EntityDataModel.MAXINACTIVE, maxIdle)
-                .set(EntityDataModel.LASTSAVED, System.currentTimeMillis());
+                .set(EntityDataModel.LASTSAVED, lastSaved);
         if (attributes != null)
                 builder.set(EntityDataModel.ATTRIBUTES, BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build());
 

@@ -644,4 +644,118 @@ public abstract class AbstractSessionDataStoreTest
          //check that session does not exist for this context
          assertFalse(store.exists("1234"));
      }
+
+
+     /**
+      * Test setting a save period to avoid writes when the attributes haven't changed.
+      * 
+      * @throws Exception
+      */
+     @Test
+     public void testSavePeriodOnUpdate ()
+             throws Exception
+     {
+         //create the SessionDataStore
+         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+         context.setContextPath("/test");       
+         SessionDataStoreFactory factory = createSessionDataStoreFactory();
+         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec
+         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+         store.initialize(sessionContext);
+         store.start();
+         
+         long now = System.currentTimeMillis();
+        
+         //persist a session that is not expired, and has been saved before
+         SessionData data = store.newSessionData("1234", 100, now-10, now-20, TimeUnit.MINUTES.toMillis(60));
+         data.setLastNode(sessionContext.getWorkerName());
+         data.setLastSaved(now-100);
+         persistSession(data);
+         
+         //update just the access and last access time
+         data.setLastAccessed(now-5);
+         data.setAccessed(now-1);
+         
+         //test that a save does not change the stored data
+         store.store("1234", data);
+        
+         //reset the times for a check
+         data.setLastAccessed(now-20);
+         data.setAccessed(now-10);
+         checkSessionPersisted(data);
+     }
+
+
+     /**
+      * Check that a session that has never previously been
+      * saved will be saved despite the savePeriod setting.
+      * 
+      * @throws Exception
+      */
+     @Test
+     public void testSavePeriodOnCreate ()
+             throws Exception
+     {
+         //create the SessionDataStore
+         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+         context.setContextPath("/test");       
+         SessionDataStoreFactory factory = createSessionDataStoreFactory();
+         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec
+         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+         store.initialize(sessionContext);
+         store.start();
+         
+         long now = System.currentTimeMillis(); 
+         //create a session that is not expired, and has never been saved before
+         SessionData data = store.newSessionData("1234", 100, now-10, now-20, TimeUnit.MINUTES.toMillis(60));
+         data.setLastNode(sessionContext.getWorkerName());
+         
+         store.store("1234", data);
+         
+         checkSessionPersisted(data);
+     }
+
+
+     /**
+      * Check that a session whose attributes have changed will always
+      * be saved despite the savePeriod
+      * 
+      * @throws Exception
+      */
+     @Test
+     public void testSavePeriodDirtySession ()
+             throws Exception
+     {
+         //create the SessionDataStore
+         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+         context.setContextPath("/test");       
+         SessionDataStoreFactory factory = createSessionDataStoreFactory();
+         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec
+         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+         store.initialize(sessionContext);
+         store.start();
+         
+         //persist a session that is not expired
+         long now = System.currentTimeMillis(); 
+         SessionData data = store.newSessionData("1234", 100, now-10, now-20, TimeUnit.MINUTES.toMillis(60));
+         data.setLastNode(sessionContext.getWorkerName());
+         data.setLastSaved(now-100);
+         data.setAttribute("wibble", "wobble");
+         persistSession(data);
+         
+         //now change the attributes
+         data.setAttribute("wibble", "bobble");
+         data.setLastAccessed(now-5);
+         data.setAccessed(now-1);
+         
+         store.store("1234", data);
+         
+         checkSessionPersisted(data);
+     }
 }
