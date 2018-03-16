@@ -141,7 +141,7 @@
               <executions>
                 <execution>
                   <id>start</id>
-                  <phase>process-test-resources</phase>
+                  <phase>process-test-classes</phase>
                   <goals>
                     <goal>start</goal>
                   </goals>
