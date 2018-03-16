@@ -1050,7 +1050,6 @@
         </pluginRepository>
       </pluginRepositories>
     </profile>
-  <profiles>
     <!-- use last snapshot of jacoco for jdk11 -->
     <profile>
       <id>jdk11</id>
