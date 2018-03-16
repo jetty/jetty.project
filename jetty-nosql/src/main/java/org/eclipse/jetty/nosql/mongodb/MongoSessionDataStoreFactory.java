@@ -146,7 +146,6 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         else
             mongo = new Mongo();
         store.setDBCollection(mongo.getDB(getDbName()).getCollection(getCollectionName()));
-        //store.ensureIndexes();
         return store;
     }
 
