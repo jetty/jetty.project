@@ -1006,11 +1006,56 @@
   </dependencyManagement>
 
   <profiles>
-    <!-- use last snapshot of jacoco and failsafe for jdk10 -->
+    <!-- use last snapshot of jacoco for jdk10 -->
     <profile>
       <id>jdk10</id>
       <activation>
         <jdk>10</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.jacoco</groupId>
+              <artifactId>jacoco-maven-plugin</artifactId>
+              <version>0.8.1-SNAPSHOT</version>
+              <configuration>
+                <skip>true</skip>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>oss.snapshots</id>
+          <name>OSS Snapshots</name>
+          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+        <pluginRepository>
+          <id>apache.snapshots</id>
+          <url>https://repository.apache.org/content/repositories/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  <profiles>
+    <!-- use last snapshot of jacoco for jdk11 -->
+    <profile>
+      <id>jdk11</id>
+      <activation>
+        <jdk>11</jdk>
       </activation>
       <build>
         <pluginManagement>
