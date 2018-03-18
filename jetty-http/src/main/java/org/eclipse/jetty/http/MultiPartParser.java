@@ -354,20 +354,20 @@ public class MultiPartParser
             }
         }
         
-        if(last)
+        if(last && BufferUtil.isEmpty(buffer))
         {
             if(_state == State.EPILOGUE) 
             {
                 _state = State.END;
                 return _handler.messageComplete();
             }
-            else if(BufferUtil.isEmpty(buffer))
+            else
             {
                 _handler.earlyEOF();
                 return true;
             }
-            
         }
+        
         return handle;
     }
     
@@ -649,7 +649,7 @@ public class MultiPartParser
             }
             else
             {
-                //print up to _partialBoundary of the search pattern
+                //output up to _partialBoundary of the search pattern
                 ByteBuffer content = _patternBuffer.slice();
                 if (_state==State.FIRST_OCTETS)
                 {

@@ -371,10 +371,6 @@ public class MultiPartParserTest
         assertThat(handler.fields,Matchers.contains("name: value", "<<COMPLETE>>"));
         assertThat(handler.content,Matchers.contains("Hello","<<LAST>>"));
         
-        parser.parse(data,false);
-        assertThat(parser.getState(), is(State.EPILOGUE));
-        assertThat(data.remaining(),is(0));
-        
         parser.parse(data,true);
         assertThat(parser.getState(), is(State.END));
     }
@@ -412,16 +408,50 @@ public class MultiPartParserTest
         assertThat(handler.fields, Matchers.contains("name: value", "<<COMPLETE>>","powerLevel: 9001","<<COMPLETE>>"));
         assertThat(handler.content, Matchers.contains("Hello","<<LAST>>","secondary\r\ncontent","<<LAST>>"));
         
-        /* Test Progression to EPILOGUE State */
-        parser.parse(data,false);
-        assertThat(parser.getState(), is(State.EPILOGUE));
-        assertThat(data.remaining(),is(0));
-        
         /* Test Progression to END State */
         parser.parse(data,true);
         assertThat(parser.getState(), is(State.END));
         assertThat(data.remaining(),is(0));
     }
+    
+    
+    
+    @Test
+    public void testEndState() {
+        TestHandler handler = new TestHandler() 
+        {
+            @Override public boolean messageComplete(){ return true; }
+
+            @Override
+            public boolean content(ByteBuffer buffer, boolean last)
+            {
+                super.content(buffer,last);
+                return false;
+            }
+        };
+        MultiPartParser parser = new MultiPartParser(handler,"AaB03x");
+        
+        ByteBuffer data =  BufferUtil.toBuffer("            "+
+                "--AaB03x\r\n"+
+                "content-disposition: form-data; name=\"field1\"\r\n"+
+                "\r\n"+
+                "Joe Blow\r\n"+
+                "--AaB03x\r\n"+
+                "content-disposition: form-data; name=\"stuff\"; filename=\"" + "foo.txt" + "\"\r\n"+
+                "Content-Type: text/plain\r\n"+
+                "\r\n"+"aaaa"+
+                "bbbbb"+"\r\n" +
+                "--AaB03x--\r\n");
+        
+
+        /* Test Progression to END State */
+        parser.parse(data,true);
+        assertThat(parser.getState(), is(State.END));
+        assertThat(data.remaining(),is(0));
+
+    }
+    
+    
     
     @Test
     public void splitTest() 
@@ -504,7 +534,7 @@ public class MultiPartParserTest
     
         
                 int length = data.remaining();
-                for(int i = 0; i<length; i++){
+                for(int i = 0; i<length-1; i++){
                     //partition 0 to i
                     ByteBuffer dataSeg = data.slice();
                     dataSeg.position(0);
@@ -534,8 +564,6 @@ public class MultiPartParserTest
                                                                 , "Field1: value1","<<COMPLETE>>"));
                     
                     
-                    System.out.println("iteration "+i);
-                    System.out.println(handler.content);
                     assertThat(handler.contentString(), is(new String("text default"+"<<LAST>>"
                                                                 + "Content of a.txt.\n"+"<<LAST>>"
                                                                 + "<!DOCTYPE html><title>Content of a.html.</title>\n"+"<<LAST>>"
