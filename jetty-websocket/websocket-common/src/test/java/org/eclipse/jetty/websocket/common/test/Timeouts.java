@@ -16,27 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.gzip;
+package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import java.util.concurrent.TimeUnit;
 
-import java.util.Arrays;
-
-import org.junit.Test;
-
-public class GzipHandlerTest
+/**
+ * A central place for all of the various test timeouts within the websocket testing.
+ */
+public class Timeouts
 {
-    @Test
-    public void testAddGetPaths()
-    {
-        GzipHandler gzip = new GzipHandler();
-        gzip.addIncludedPaths("/foo");
-        gzip.addIncludedPaths("^/bar.*$");
-        
-        String[] includedPaths = gzip.getIncludedPaths();
-        assertThat("Included Paths.size", includedPaths.length, is(2));
-        assertThat("Included Paths", Arrays.asList(includedPaths), contains("/foo","^/bar.*$"));
-    }
+    // establish a connection timeout
+    public static final long CONNECT = 2;
+    public static final TimeUnit CONNECT_UNIT = TimeUnit.SECONDS;
+
+    // poll for an event timeout
+    public static final long POLL_EVENT = 2;
+    public static final TimeUnit POLL_EVENT_UNIT = TimeUnit.SECONDS;
+
+    // send a message timeout
+    public static final long SEND = 2;
+    public static final TimeUnit SEND_UNIT = TimeUnit.SECONDS;
 }

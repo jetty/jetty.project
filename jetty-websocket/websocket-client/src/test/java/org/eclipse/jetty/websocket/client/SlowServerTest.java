@@ -19,31 +19,28 @@
 package org.eclipse.jetty.websocket.client;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
-@Ignore("TODO: Flappy Test")
 public class SlowServerTest
 {
-    @Rule
-    public TestTracker tt = new TestTracker();
-
     private BlockheadServer server;
     private WebSocketClient client;
 
@@ -75,88 +72,88 @@ public class SlowServerTest
     }
 
     @Test
-    @Slow
     public void testServerSlowToRead() throws Exception
     {
         JettyTrackingSocket tsocket = new JettyTrackingSocket();
         client.setMasker(new ZeroMasker());
         client.setMaxIdleTimeout(60000);
 
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         URI wsUri = server.getWsUri();
         Future<Session> future = client.connect(tsocket,wsUri);
 
-        IBlockheadServerConnection sconnection = server.accept();
-        sconnection.setSoTimeout(60000);
-        sconnection.upgrade();
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            // slow down reads
+            serverConn.setIncomingFrameConsumer((frame)-> {
+                try
+                {
+                    TimeUnit.MILLISECONDS.sleep(100);
+                }
+                catch (InterruptedException ignore)
+                {
+                }
+            });
 
-        // Confirm connected
-        future.get(30,TimeUnit.SECONDS);
-        tsocket.waitForConnected(30,TimeUnit.SECONDS);
+            // Confirm connected
+            future.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
+            tsocket.waitForConnected();
 
-        int messageCount = 10;
+            int messageCount = 10;
 
-        // Setup slow server read thread
-        ServerReadThread reader = new ServerReadThread(sconnection, messageCount);
-        reader.setSlowness(100); // slow it down
-        reader.start();
+            // Have client write as quickly as it can.
+            ClientWriteThread writer = new ClientWriteThread(tsocket.getSession());
+            writer.setMessageCount(messageCount);
+            writer.setMessage("Hello");
+            writer.setSlowness(-1); // disable slowness
+            writer.start();
+            writer.join();
 
-        // Have client write as quickly as it can.
-        ClientWriteThread writer = new ClientWriteThread(tsocket.getSession());
-        writer.setMessageCount(messageCount);
-        writer.setMessage("Hello");
-        writer.setSlowness(-1); // disable slowness
-        writer.start();
-        writer.join();
-
-        // Verify receive
-        reader.waitForExpectedMessageCount(10,TimeUnit.SECONDS);
-        Assert.assertThat("Frame Receive Count",reader.getFrameCount(),is(messageCount));
-
-        // Close
-        tsocket.getSession().close(StatusCode.NORMAL,"Done");
-
-        Assert.assertTrue("Client Socket Closed",tsocket.closeLatch.await(10,TimeUnit.SECONDS));
-        tsocket.assertCloseCode(StatusCode.NORMAL);
-
-        reader.cancel(); // stop reading
+            // Verify receive
+            LinkedBlockingQueue<WebSocketFrame> serverFrames = serverConn.getFrameQueue();
+            for(int i=0; i< messageCount; i++)
+            {
+                WebSocketFrame serverFrame = serverFrames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+                String prefix = "Server Frame[" + i + "]";
+                Assert.assertThat(prefix, serverFrame, is(notNullValue()));
+                Assert.assertThat(prefix + ".opCode", serverFrame.getOpCode(), is(OpCode.TEXT));
+                Assert.assertThat(prefix + ".payload", serverFrame.getPayloadAsUTF8(), is("Hello/" + i + "/"));
+            }
+        }
     }
 
     @Test
-    @Slow
     public void testServerSlowToSend() throws Exception
     {
         JettyTrackingSocket clientSocket = new JettyTrackingSocket();
-        client.setMasker(new ZeroMasker());
         client.setMaxIdleTimeout(60000);
+
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
 
         URI wsUri = server.getWsUri();
         Future<Session> clientConnectFuture = client.connect(clientSocket,wsUri);
 
-        IBlockheadServerConnection serverConn = server.accept();
-        serverConn.setSoTimeout(60000);
-        serverConn.upgrade();
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            // Confirm connected
+            clientConnectFuture.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
+            clientSocket.waitForConnected();
 
-        // Confirm connected
-        clientConnectFuture.get(30,TimeUnit.SECONDS);
-        clientSocket.waitForConnected(30,TimeUnit.SECONDS);
+            // Have server write slowly.
+            int messageCount = 1000;
 
-        // Have server write slowly.
-        int messageCount = 1000;
+            ServerWriteThread writer = new ServerWriteThread(serverConn);
+            writer.setMessageCount(messageCount);
+            writer.setMessage("Hello");
+            writer.setSlowness(10);
+            writer.start();
+            writer.join();
 
-        ServerWriteThread writer = new ServerWriteThread(serverConn);
-        writer.setMessageCount(messageCount);
-        writer.setMessage("Hello");
-        writer.setSlowness(10);
-        writer.start();
-        writer.join();
-
-        // Verify receive
-        Assert.assertThat("Message Receive Count",clientSocket.messageQueue.size(),is(messageCount));
-
-        // Close
-        serverConn.close(StatusCode.NORMAL);
-
-        Assert.assertTrue("Client Socket Closed",clientSocket.closeLatch.await(10,TimeUnit.SECONDS));
-        clientSocket.assertCloseCode(StatusCode.NORMAL);
+            // Verify receive
+            Assert.assertThat("Message Receive Count", clientSocket.messageQueue.size(), is(messageCount));
+        }
     }
 }

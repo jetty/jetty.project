@@ -23,9 +23,9 @@ import static org.hamcrest.Matchers.is;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -43,8 +43,8 @@ public class TrackingInputStreamSocket
     public int closeCode = -1;
     public StringBuilder closeMessage = new StringBuilder();
     public CountDownLatch closeLatch = new CountDownLatch(1);
-    public EventQueue<String> messageQueue = new EventQueue<>();
-    public EventQueue<Throwable> errorQueue = new EventQueue<>();
+    public LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
+    public LinkedBlockingQueue<Throwable> errorQueue = new LinkedBlockingQueue<>();
 
     public TrackingInputStreamSocket()
     {

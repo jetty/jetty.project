@@ -47,13 +47,13 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@SuppressWarnings("serial")
 public class GzipHandlerTest
 {
     private static final String __content =
@@ -151,6 +151,17 @@ public class GzipHandlerTest
                 writer.write(__content);
             }
         }
+
+        @Override
+        protected void doDelete(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {        
+            String ifm = req.getHeader("If-Match"); 
+            if (ifm!=null && ifm.equals(__contentETag))
+                response.sendError(HttpServletResponse.SC_NO_CONTENT);
+            else
+                response.sendError(HttpServletResponse.SC_NOT_MODIFIED);
+        }
+        
     }
     
     public static class EchoServlet extends HttpServlet
@@ -346,6 +357,43 @@ public class GzipHandlerTest
         assertThat(response.get("Content-Encoding"),not(Matchers.equalToIgnoringCase("gzip")));
         assertThat(response.get("ETag"),is(__contentETagGzip));
     }
+    
+
+    @Test
+    public void testDeleteETagGzipHandler() throws Exception
+    {
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("DELETE");
+        request.setURI("/ctx/content");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("If-Match","WrongEtag--gzip");
+        request.setHeader("accept-encoding","gzip");
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+        
+        assertThat(response.getStatus(),is(HttpServletResponse.SC_NOT_MODIFIED));
+        assertThat(response.get("Content-Encoding"),not(Matchers.equalToIgnoringCase("gzip")));
+        
+        
+        request = HttpTester.newRequest();
+        request.setMethod("DELETE");
+        request.setURI("/ctx/content");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("If-Match",__contentETagGzip);
+        request.setHeader("accept-encoding","gzip");
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+        
+        assertThat(response.getStatus(),is(HttpServletResponse.SC_NO_CONTENT));
+        assertThat(response.get("Content-Encoding"),not(Matchers.equalToIgnoringCase("gzip")));
+    }
+    
+    
+    
     
     @Test
     public void testForwardGzipHandler() throws Exception

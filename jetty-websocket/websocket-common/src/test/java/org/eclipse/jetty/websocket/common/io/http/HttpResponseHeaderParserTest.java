@@ -28,18 +28,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class HttpResponseHeaderParserTest
 {
-    @Rule
-    public TestTracker tt = new TestTracker();
-
     private void appendUtf8(ByteBuffer buf, String line)
     {
         buf.put(ByteBuffer.wrap(StringUtil.getUtf8Bytes(line)));

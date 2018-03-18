@@ -19,7 +19,10 @@
 package org.eclipse.jetty.util;
 
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -75,7 +78,42 @@ public class SearchPatternTest
         Assert.assertEquals(28,sp.match(d, 28, d.length-28));
         Assert.assertEquals(-1,sp.match(d, 29, d.length-29));
     }
+    
+    @Test
+    public void testSearchInBinary()
+    {
+        byte[] random = new byte[8192];
+        ThreadLocalRandom.current().nextBytes(random);
+        // Arrays.fill(random,(byte)-67);
+        String preamble = "Blah blah blah";
+        String epilogue = "The End! Blah Blah Blah";
+        
+        ByteBuffer data = BufferUtil.allocate(preamble.length()+random.length+epilogue.length());
+        BufferUtil.append(data,BufferUtil.toBuffer(preamble));
+        BufferUtil.append(data,ByteBuffer.wrap(random));
+        BufferUtil.append(data,BufferUtil.toBuffer(epilogue));
 
+        SearchPattern sp = SearchPattern.compile("The End!");
+
+        Assert.assertEquals(preamble.length()+random.length,sp.match(data.array(),data.arrayOffset()+data.position(),data.remaining()));
+    }
+
+    
+    @Test
+    public void testSearchBinaryKey()
+    {
+        byte[] random = new byte[8192];
+        ThreadLocalRandom.current().nextBytes(random);
+        byte[] key = new byte[64];
+        ThreadLocalRandom.current().nextBytes(key);
+        
+        ByteBuffer data = BufferUtil.allocate(random.length+key.length);
+        BufferUtil.append(data,ByteBuffer.wrap(random));
+        BufferUtil.append(data,ByteBuffer.wrap(key));
+        SearchPattern sp = SearchPattern.compile(key);
+
+        Assert.assertEquals(random.length,sp.match(data.array(),data.arrayOffset()+data.position(),data.remaining()));
+    }
     
     @Test
     public void testAlmostMatch()

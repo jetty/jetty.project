@@ -23,7 +23,9 @@ import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.http.MultiPartParser.State;
 import org.eclipse.jetty.util.BufferUtil;
@@ -291,8 +293,6 @@ public class MultiPartParserTest
         assertThat(data.remaining(),is(0));
         assertThat(handler.fields,Matchers.contains("name: value", "<<COMPLETE>>"));
         assertThat(handler.content,Matchers.contains("Hello","<<LAST>>"));
-        
-        
     }
     
 
@@ -346,7 +346,40 @@ public class MultiPartParserTest
                 + "How now brown cow.\n"
                 + "The quick brown fox jumped over the lazy dog.\n","<<LAST>>"));
     }
+
     
+    @Test
+    public void testBinaryPart()
+    {
+        byte[] random = new byte[8192];
+        final ByteBuffer bytes = BufferUtil.allocate(random.length);
+        ThreadLocalRandom.current().nextBytes(random);
+        // Arrays.fill(random,(byte)'X');
+        
+        TestHandler handler = new TestHandler()
+        {
+            @Override
+            public boolean content(ByteBuffer buffer, boolean last)
+            {
+                BufferUtil.append(bytes,buffer);
+                return last;
+            }
+        };
+        MultiPartParser parser = new MultiPartParser(handler,"BOUNDARY");
+        
+        String preamble = "Blah blah blah\r\n--BOUNDARY\r\n\r\n";
+        String epilogue = "\r\n--BOUNDARY\r\nBlah blah blah!\r\n";
+        
+        ByteBuffer data = BufferUtil.allocate(preamble.length()+random.length+epilogue.length());
+        BufferUtil.append(data,BufferUtil.toBuffer(preamble));
+        BufferUtil.append(data,ByteBuffer.wrap(random));
+        BufferUtil.append(data,BufferUtil.toBuffer(epilogue));
+        
+        parser.parse(data,true);
+        assertThat(parser.getState(), is(State.DELIMITER));
+        assertThat(data.remaining(),is(19));
+        assertThat(bytes.array(),is(random));
+    }
     
     @Test
     public void testEpilogue() {

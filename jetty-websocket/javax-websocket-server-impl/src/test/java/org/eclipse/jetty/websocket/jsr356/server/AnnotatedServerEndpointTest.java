@@ -22,8 +22,8 @@ import static org.hamcrest.Matchers.containsString;
 
 import java.io.File;
 import java.net.URI;
-import java.util.Queue;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -33,6 +33,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.server.samples.beans.DateDecoder;
 import org.eclipse.jetty.websocket.jsr356.server.samples.beans.TimeEncoder;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.ConfiguredEchoSocket;
@@ -40,7 +41,6 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.echo.EchoSocketConfigur
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -90,9 +90,9 @@ public class AnnotatedServerEndpointTest
             foo.get(1,TimeUnit.SECONDS);
 
             clientEcho.sendMessage(message);
-            Queue<String> msgs = clientEcho.awaitMessages(1);
+            LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
 
-            String response = msgs.poll();
+            String response = msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             for (String expected : expectedTexts)
             {
                 Assert.assertThat("Expected message",response,containsString(expected));

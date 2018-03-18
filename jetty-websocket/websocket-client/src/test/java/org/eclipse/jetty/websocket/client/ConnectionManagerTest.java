@@ -24,17 +24,12 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.client.io.ConnectionManager;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class ConnectionManagerTest
 {
-    @Rule
-    public TestTracker tt = new TestTracker();
-
     private void assertToSocketAddress(String uriStr, String expectedHost, int expectedPort) throws URISyntaxException
     {
         URI uri = new URI(uriStr);

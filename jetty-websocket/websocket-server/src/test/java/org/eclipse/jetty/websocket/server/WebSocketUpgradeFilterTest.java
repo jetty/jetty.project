@@ -27,6 +27,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,19 +38,21 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.junit.Ignore;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-@Ignore("Unstable - see Issue #1815")
 @RunWith(Parameterized.class)
 public class WebSocketUpgradeFilterTest
 {
@@ -56,7 +60,23 @@ public class WebSocketUpgradeFilterTest
     {
         Server newServer() throws Exception;
     }
-    
+
+    private static BlockheadClient client;
+
+    @BeforeClass
+    public static void startClient() throws Exception
+    {
+        client = new BlockheadClient();
+        client.setIdleTimeout(TimeUnit.SECONDS.toMillis(2));
+        client.start();
+    }
+
+    @AfterClass
+    public static void stopClient() throws Exception
+    {
+        client.stop();
+    }
+
     private static AtomicInteger uniqTestDirId = new AtomicInteger(0);
     
     private static File getNewTestDir()
@@ -305,17 +325,18 @@ public class WebSocketUpgradeFilterTest
     public void testNormalConfiguration() throws Exception
     {
         URI destUri = serverUri.resolve("/info/");
-        
-        try (BlockheadClient client = new BlockheadClient(destUri))
+
+        BlockheadClientRequest request = client.newWsRequest(destUri);
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+            clientConn.write(new TextFrame().setPayload("hello"));
             
-            client.write(new TextFrame().setPayload("hello"));
-            
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
-            String payload = frames.poll().getPayloadAsUTF8();
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame received = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            String payload = received.getPayloadAsUTF8();
             
             // If we can connect and send a text message, we know that the endpoint was
             // added properly, and the response will help us verify the policy configuration too
@@ -327,18 +348,19 @@ public class WebSocketUpgradeFilterTest
     public void testStopStartOfHandler() throws Exception
     {
         URI destUri = serverUri.resolve("/info/");
-        
-        try (BlockheadClient client = new BlockheadClient(destUri))
+
+        BlockheadClientRequest request = client.newWsRequest(destUri);
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+            clientConn.write(new TextFrame().setPayload("hello 1"));
             
-            client.write(new TextFrame().setPayload("hello 1"));
-            
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
-            String payload = frames.poll().getPayloadAsUTF8();
-            
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame received = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            String payload = received.getPayloadAsUTF8();
+
             // If we can connect and send a text message, we know that the endpoint was
             // added properly, and the response will help us verify the policy configuration too
             assertThat("payload", payload, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
@@ -346,18 +368,19 @@ public class WebSocketUpgradeFilterTest
         
         server.getHandler().stop();
         server.getHandler().start();
-        
-        try (BlockheadClient client = new BlockheadClient(destUri))
+
+        request = client.newWsRequest(destUri);
+
+        connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+            clientConn.write(new TextFrame().setPayload("hello 2"));
         
-            client.write(new TextFrame().setPayload("hello 2"));
-        
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
-            String payload = frames.poll().getPayloadAsUTF8();
-        
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame received = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            String payload = received.getPayloadAsUTF8();
+
             // If we can connect and send a text message, we know that the endpoint was
             // added properly, and the response will help us verify the policy configuration too
             assertThat("payload", payload, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));

@@ -34,24 +34,24 @@ public class AnnotatedTextSocket
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        capture.add("onClose(%d, %s)",statusCode,capture.q(reason));
+        capture.offer("onClose(%d, %s)",statusCode,capture.q(reason));
     }
 
     @OnWebSocketConnect
     public void onConnect(Session sess)
     {
-        capture.add("onConnect(%s)",sess);
+        capture.offer("onConnect(%s)",sess);
     }
 
     @OnWebSocketError
     public void onError(Throwable cause)
     {
-        capture.add("onError(%s: %s)",cause.getClass().getSimpleName(),cause.getMessage());
+        capture.offer("onError(%s: %s)",cause.getClass().getSimpleName(),cause.getMessage());
     }
 
     @OnWebSocketMessage
     public void onText(String message)
     {
-        capture.add("onText(%s)",capture.q(message));
+        capture.offer("onText(%s)",capture.q(message));
     }
 }

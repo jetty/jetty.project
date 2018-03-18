@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ClientEndpoint;
@@ -36,19 +38,23 @@ import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
 @Ignore("Not working atm")
@@ -90,7 +96,7 @@ public class DecoderReaderManySmallTest
     @ClientEndpoint(decoders = { EventIdDecoder.class })
     public static class EventIdSocket
     {
-        public EventQueue<EventId> messageQueue = new EventQueue<>();
+        public LinkedBlockingQueue<EventId> messageQueue = new LinkedBlockingQueue<>();
         private CountDownLatch closeLatch = new CountDownLatch(1);
 
         @OnClose
@@ -102,7 +108,7 @@ public class DecoderReaderManySmallTest
         @OnMessage
         public void onMessage(EventId msg)
         {
-            messageQueue.add(msg);
+            messageQueue.offer(msg);
         }
 
         public void awaitClose() throws InterruptedException
@@ -111,63 +117,9 @@ public class DecoderReaderManySmallTest
         }
     }
 
-    private static class EventIdServer implements Runnable
-    {
-        private BlockheadServer server;
-        private IBlockheadServerConnection sconnection;
-        private CountDownLatch connectLatch = new CountDownLatch(1);
-
-        public EventIdServer(BlockheadServer server)
-        {
-            this.server = server;
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                sconnection = server.accept();
-                sconnection.setSoTimeout(60000);
-                sconnection.upgrade();
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-            }
-            finally
-            {
-                connectLatch.countDown();
-            }
-        }
-
-        public void writeSequentialIds(int from, int to) throws IOException
-        {
-            for (int id = from; id < to; id++)
-            {
-                TextFrame frame = new TextFrame();
-                frame.setPayload(Integer.toString(id));
-                sconnection.write(frame);
-            }
-        }
-
-        public void close() throws IOException
-        {
-            sconnection.close();
-        }
-
-        public void awaitConnect() throws InterruptedException
-        {
-            connectLatch.await(1,TimeUnit.SECONDS);
-        }
-    }
-
     private static final Logger LOG = Log.getLogger(DecoderReaderManySmallTest.class);
 
-    @Rule
-    public TestTracker tt = new TestTracker();
-
-    private BlockheadServer server;
+    private static BlockheadServer server;
     private WebSocketContainer client;
 
     @Before
@@ -182,15 +134,15 @@ public class DecoderReaderManySmallTest
         ((LifeCycle)client).stop();
     }
 
-    @Before
-    public void startServer() throws Exception
+    @BeforeClass
+    public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
     }
 
-    @After
-    public void stopServer() throws Exception
+    @AfterClass
+    public static void stopServer() throws Exception
     {
         server.stop();
     }
@@ -198,31 +150,55 @@ public class DecoderReaderManySmallTest
     @Test
     public void testManyIds() throws Exception
     {
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         EventIdSocket ids = new EventIdSocket();
-        EventIdServer idserver = new EventIdServer(server);
-        new Thread(idserver).start();
         client.connectToServer(ids,server.getWsUri());
-        idserver.awaitConnect();
-        int from = 1000;
-        int to = 2000;
-        idserver.writeSequentialIds(from,to);
-        idserver.close();
-        int count = from - to;
-        ids.messageQueue.awaitEventCount(count,4,TimeUnit.SECONDS);
-        ids.awaitClose();
-        // collect seen ids
-        List<Integer> seen = new ArrayList<>();
-        for(EventId id: ids.messageQueue)
+
+        final int from = 1000;
+        final int to = 2000;
+
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            // validate that ids don't repeat.
-            Assert.assertFalse("Already saw ID: " + id.eventId, seen.contains(id.eventId));
-            seen.add(id.eventId);
-        }
-        
-        // validate that all expected ids have been seen (order is irrelevant here)
-        for(int expected=from; expected<to; expected++)
-        {
-            Assert.assertTrue("Has expected id:"+expected,seen.contains(expected));
+            // Setup echo of frames on server side
+            serverConn.setIncomingFrameConsumer((frame) ->
+            {
+                WebSocketFrame wsFrame = (WebSocketFrame) frame;
+                if (wsFrame.getOpCode() == OpCode.TEXT)
+                {
+                    String msg = wsFrame.getPayloadAsUTF8();
+                    if (msg == "generate")
+                    {
+                        for (int id = from; id < to; id++)
+                        {
+                            TextFrame event = new TextFrame();
+                            event.setPayload(Integer.toString(id));
+                            serverConn.write(event);
+                        }
+                        serverConn.write(new CloseInfo(StatusCode.NORMAL).asFrame());
+                    }
+                }
+            });
+
+            int count = from - to;
+            ids.awaitClose();
+            // collect seen ids
+            List<Integer> seen = new ArrayList<>();
+            for (int i = 0; i < count; i++)
+            {
+                EventId id = ids.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+                // validate that ids don't repeat.
+                Assert.assertFalse("Already saw ID: " + id.eventId, seen.contains(id.eventId));
+                seen.add(id.eventId);
+            }
+
+            // validate that all expected ids have been seen (order is irrelevant here)
+            for (int expected = from; expected < to; expected++)
+            {
+                Assert.assertTrue("Has expected id:" + expected, seen.contains(expected));
+            }
         }
     }
 }

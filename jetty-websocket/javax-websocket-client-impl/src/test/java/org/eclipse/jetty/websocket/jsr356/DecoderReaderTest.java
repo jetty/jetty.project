@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -27,7 +27,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ClientEndpoint;
@@ -40,9 +43,7 @@ import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -50,13 +51,14 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class DecoderReaderTest
@@ -126,7 +128,8 @@ public class DecoderReaderTest
     @ClientEndpoint(decoders = { QuotesDecoder.class })
     public static class QuotesSocket
     {
-        public EventQueue<Quotes> messageQueue = new EventQueue<>();
+        private static final Logger LOG = Log.getLogger(QuotesSocket.class);
+        public LinkedBlockingQueue<Quotes> messageQueue = new LinkedBlockingQueue<>();
         private CountDownLatch closeLatch = new CountDownLatch(1);
 
         @OnClose
@@ -138,12 +141,15 @@ public class DecoderReaderTest
         @OnMessage
         public synchronized void onMessage(Quotes msg)
         {
-            Integer h=hashCode();
-            messageQueue.add(msg);
-            System.out.printf("%x: Quotes from: %s%n",h,msg.author);
-            for (String quote : msg.quotes)
+            messageQueue.offer(msg);
+            if(LOG.isDebugEnabled())
             {
-                System.out.printf("%x: - %s%n",h,quote);
+                String hashcode = Integer.toHexString(Objects.hashCode(this));
+                LOG.debug("{}: Quotes from: {}", hashcode, msg.author);
+                for (String quote : msg.quotes)
+                {
+                    LOG.debug("{}: - {}", hashcode, quote);
+                }
             }
         }
 
@@ -153,85 +159,7 @@ public class DecoderReaderTest
         }
     }
 
-    private static class QuoteServer implements Runnable
-    {
-        private BlockheadServer server;
-        private IBlockheadServerConnection sconnection;
-        private CountDownLatch connectLatch = new CountDownLatch(1);
-
-        public QuoteServer(BlockheadServer server)
-        {
-            this.server = server;
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                sconnection = server.accept();
-                sconnection.setSoTimeout(60000);
-                sconnection.upgrade();
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-            }
-            finally
-            {
-                connectLatch.countDown();
-            }
-        }
-
-        public void writeQuotes(String filename) throws IOException
-        {
-            // read file
-            File qfile = MavenTestingUtils.getTestResourceFile(filename);
-            List<String> lines = new ArrayList<>();
-            try (FileReader reader = new FileReader(qfile); BufferedReader buf = new BufferedReader(reader))
-            {
-                String line;
-                while ((line = buf.readLine()) != null)
-                {
-                    lines.add(line);
-                }
-            }
-            // write file out, each line on a separate frame, but as
-            // 1 whole message
-            for (int i = 0; i < lines.size(); i++)
-            {
-                WebSocketFrame frame;
-                if (i == 0)
-                {
-                    frame = new TextFrame();
-                }
-                else
-                {
-                    frame = new ContinuationFrame();
-                }
-                frame.setFin((i >= (lines.size() - 1)));
-                frame.setPayload(BufferUtil.toBuffer(lines.get(i) + "\n"));
-                sconnection.write(frame);
-            }
-        }
-
-        public void close() throws IOException
-        {
-            sconnection.close();
-        }
-
-        public void awaitConnect() throws InterruptedException
-        {
-            connectLatch.await(1,TimeUnit.SECONDS);
-        }
-    }
-
-    private static final Logger LOG = Log.getLogger(DecoderReaderTest.class);
-
-    @Rule
-    public TestTracker tt = new TestTracker();
-
-    private BlockheadServer server;
+    private static BlockheadServer server;
     private WebSocketContainer client;
 
     @Before
@@ -246,55 +174,100 @@ public class DecoderReaderTest
         ((LifeCycle)client).stop();
     }
     
-    @Before
-    public void startServer() throws Exception
+    @BeforeClass
+    public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
     }
 
-    @After
-    public void stopServer() throws Exception
+    @AfterClass
+    public static void stopServer() throws Exception
     {
         server.stop();
     }
 
-    // TODO analyse and fix 
-    @Ignore
     @Test
     public void testSingleQuotes() throws Exception
     {
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         QuotesSocket quoter = new QuotesSocket();
-        QuoteServer qserver = new QuoteServer(server);
-        new Thread(qserver).start();
         client.connectToServer(quoter,server.getWsUri());
-        qserver.awaitConnect();
-        qserver.writeQuotes("quotes-ben.txt");
-        quoter.messageQueue.awaitEventCount(1,1000,TimeUnit.MILLISECONDS);
-        qserver.close();
-        quoter.awaitClose();
-        Quotes quotes = quoter.messageQueue.poll();
-        Assert.assertThat("Quotes Author",quotes.author,is("Benjamin Franklin"));
-        Assert.assertThat("Quotes Count",quotes.quotes.size(),is(3));
+
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            writeQuotes(serverConn, "quotes-ben.txt");
+
+            Quotes quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            Assert.assertThat("Quotes Author", quotes.author, is("Benjamin Franklin"));
+            Assert.assertThat("Quotes Count", quotes.quotes.size(), is(3));
+        }
     }
 
-    // TODO analyse and fix 
+    /**
+     * Test that multiple quotes can go through decoder without issue.
+     * <p>
+     *     Since this decoder is Reader based, this is a useful test to ensure
+     *     that the Reader creation / dispatch / hand off to the user endpoint
+     *     works properly.
+     * </p>
+     * @throws Exception
+     */
     @Test
-    @Ignore ("Quotes appear to be able to arrive in any order?")
     public void testTwoQuotes() throws Exception
     {
+        // Hook into server connection creation
+        CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
+        server.addConnectFuture(serverConnFut);
+
         QuotesSocket quoter = new QuotesSocket();
-        QuoteServer qserver = new QuoteServer(server);
-        new Thread(qserver).start();
         client.connectToServer(quoter,server.getWsUri());
-        qserver.awaitConnect();
-        qserver.writeQuotes("quotes-ben.txt");
-        qserver.writeQuotes("quotes-twain.txt");
-        quoter.messageQueue.awaitEventCount(2,1000,TimeUnit.MILLISECONDS);
-        qserver.close();
-        quoter.awaitClose();
-        Quotes quotes = quoter.messageQueue.poll();
-        Assert.assertThat("Quotes Author",quotes.author,is("Benjamin Franklin"));
-        Assert.assertThat("Quotes Count",quotes.quotes.size(),is(3));
+
+        try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            writeQuotes( serverConn,"quotes-ben.txt");
+            Quotes quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            Assert.assertThat("Quotes Author", quotes.author, is("Benjamin Franklin"));
+            Assert.assertThat("Quotes Count", quotes.quotes.size(), is(3));
+
+            writeQuotes( serverConn,"quotes-twain.txt");
+            quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            Assert.assertThat("Quotes Author", quotes.author, is("Mark Twain"));
+        }
+    }
+
+    private void writeQuotes(BlockheadConnection conn, String filename) throws IOException
+    {
+        // read file
+        File qfile = MavenTestingUtils.getTestResourceFile(filename);
+        List<String> lines = new ArrayList<>();
+        try (FileReader reader = new FileReader(qfile); BufferedReader buf = new BufferedReader(reader))
+        {
+            String line;
+            while ((line = buf.readLine()) != null)
+            {
+                lines.add(line);
+            }
+        }
+        // write file out, each line on a separate frame, but as
+        // 1 whole message
+        for (int i = 0; i < lines.size(); i++)
+        {
+            WebSocketFrame frame;
+            if (i == 0)
+            {
+                frame = new TextFrame();
+            }
+            else
+            {
+                frame = new ContinuationFrame();
+            }
+            frame.setFin((i >= (lines.size() - 1)));
+            frame.setPayload(BufferUtil.toBuffer(lines.get(i) + "\n"));
+            conn.write(frame);
+        }
     }
 }

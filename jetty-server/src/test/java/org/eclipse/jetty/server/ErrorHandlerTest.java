@@ -19,30 +19,34 @@
 package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AdvancedRunner.class)
 public class ErrorHandlerTest
 {
-    Server server;
-    LocalConnector connector;
+    static Server server;
+    static LocalConnector connector;
     
-    @Before
-    public void before() throws Exception
+    @BeforeClass
+    public static void before() throws Exception
     {
         server = new Server();
         connector = new LocalConnector(server);
@@ -72,17 +76,36 @@ public class ErrorHandlerTest
                          .append("}");
                         break;
                     }
+                    case "text/plain":
+                    {
+                        baseRequest.setHandled(true);
+                        response.setContentType("text/plain");
+                        response.getOutputStream().print(response.getContentType());
+                        break;
+                    }
                     default:
                         super.generateAcceptableResponse(baseRequest,request,response,code,message,mimeType);
                 }
             }
             
         });
+        server.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                if(target.startsWith("/charencoding/"))
+                {
+                    response.setCharacterEncoding("utf-8");
+                    response.sendError(404);
+                }
+            }
+        });
         server.start();
     }
     
-    @After
-    public void after() throws Exception
+    @AfterClass
+    public static void after() throws Exception
     {
         server.stop();
     }
@@ -260,4 +283,19 @@ public class ErrorHandlerTest
         assertThat(response,containsString("Content-Type: text/json"));
     }
 
+    @Test
+    public void testCharEncoding() throws Exception
+    {
+        String rawResponse = connector.getResponse(
+                "GET /charencoding/foo HTTP/1.1\r\n"+
+                        "Host: Localhost\r\n"+
+                        "Accept: text/plain\r\n"+
+                        "\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+        assertThat("Response Content-Type", contentType, is(notNullValue()));
+        assertThat("Response Content-Type value", contentType.getValue(), not(containsString("null")));
+    }
 }

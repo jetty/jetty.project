@@ -448,6 +448,28 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             interceptor=interceptor.getNextInterceptor();
         }
         
+        // Special handling for etags
+        for (ListIterator<HttpField> fields = baseRequest.getHttpFields().listIterator(); fields.hasNext();)
+        {
+            HttpField field = fields.next();
+            if (field.getHeader()==HttpHeader.IF_NONE_MATCH || field.getHeader()==HttpHeader.IF_MATCH)
+            {
+                String etag = field.getValue();
+                int i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
+                if (i>0)
+                {
+                    baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag",etag);
+                    while (i>=0)
+                    {
+                        etag=etag.substring(0,i)+etag.substring(i+CompressedContentFormat.GZIP._etag.length());
+                        i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote,i);
+                    }
+                    
+                    fields.set(new HttpField(field.getHeader(),etag));
+                }   
+            }
+        }
+        
         // If not a supported method - no Vary because no matter what client, this URI is always excluded
         if (!_methods.test(baseRequest.getMethod()))
         {
@@ -492,28 +514,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
                     _handler.handle(target,baseRequest, request, response);
                     return;
                 }
-            }
-        }
-        
-        // Special handling for etags
-        for (ListIterator<HttpField> fields = baseRequest.getHttpFields().listIterator(); fields.hasNext();)
-        {
-            HttpField field = fields.next();
-            if (field.getHeader()==HttpHeader.IF_NONE_MATCH || field.getHeader()==HttpHeader.IF_MATCH)
-            {
-                String etag = field.getValue();
-                int i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
-                if (i>0)
-                {
-                    baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag",etag);
-                    while (i>=0)
-                    {
-                        etag=etag.substring(0,i)+etag.substring(i+CompressedContentFormat.GZIP._etag.length());
-                        i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote,i);
-                    }
-                    
-                    fields.set(new HttpField(field.getHeader(),etag));
-                }   
             }
         }
       

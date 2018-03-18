@@ -21,10 +21,7 @@ package org.eclipse.jetty.websocket.server.ab;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -39,12 +36,10 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * UTF-8 Tests
  */
-@RunWith(AdvancedRunner.class)
 public class TestABCase6 extends AbstractABCase
 {
     /**
@@ -276,12 +271,21 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Slow
     public void testCase6_4_1() throws Exception
     {
         byte part1[] = StringUtil.getUtf8Bytes("\u03BA\u1F79\u03C3\u03BC\u03B5");
         byte part2[] = Hex.asByteArray("F4908080"); // invalid
         byte part3[] = StringUtil.getUtf8Bytes("edited");
+
+        ByteBuffer b1 = ByteBuffer.wrap(part1);
+        ByteBuffer b2 = ByteBuffer.wrap(part2);
+        ByteBuffer b3 = ByteBuffer.wrap(part3);
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new TextFrame().setPayload(b1).setFin(false));
+        send.add(new ContinuationFrame().setPayload(b2).setFin(true));
+        send.add(new ContinuationFrame().setPayload(b3).setFin(true));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
@@ -289,14 +293,8 @@ public class TestABCase6 extends AbstractABCase
         try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-
-            fuzzer.send(new TextFrame().setPayload(ByteBuffer.wrap(part1)).setFin(false));
-            TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(new ContinuationFrame().setPayload(ByteBuffer.wrap(part2)).setFin(false));
-            TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(new ContinuationFrame().setPayload(ByteBuffer.wrap(part3)).setFin(true));
-
+            fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
+            fuzzer.send(send);
             fuzzer.expect(expect);
         }
     }
@@ -312,12 +310,21 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Slow
     public void testCase6_4_2() throws Exception
     {
         byte part1[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F4"); // split code point
         byte part2[] = Hex.asByteArray("90"); // continue code point & invalid
         byte part3[] = Hex.asByteArray("8080656469746564"); // continue code point & finish
+
+        ByteBuffer b1 = ByteBuffer.wrap(part1);
+        ByteBuffer b2 = ByteBuffer.wrap(part2);
+        ByteBuffer b3 = ByteBuffer.wrap(part3);
+
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new TextFrame().setPayload(b1).setFin(false));
+        send.add(new ContinuationFrame().setPayload(b2).setFin(true));
+        send.add(new ContinuationFrame().setPayload(b3).setFin(true));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
@@ -325,12 +332,8 @@ public class TestABCase6 extends AbstractABCase
         try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
-            fuzzer.setSendMode(Fuzzer.SendMode.BULK);
-            fuzzer.send(new TextFrame().setPayload(ByteBuffer.wrap(part1)).setFin(false));
-            TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(new ContinuationFrame().setPayload(ByteBuffer.wrap(part2)).setFin(false));
-            TimeUnit.SECONDS.sleep(1);
-            fuzzer.send(new ContinuationFrame().setPayload(ByteBuffer.wrap(part3)).setFin(true));
+            fuzzer.setSendMode(Fuzzer.SendMode.PER_FRAME);
+            fuzzer.send(send);
             fuzzer.expect(expect);
         }
     }
@@ -340,7 +343,6 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Slow
     public void testCase6_4_3() throws Exception
     {
         // Disable Long Stacks from Parser (we know this test will throw an exception)
@@ -378,9 +380,7 @@ public class TestABCase6 extends AbstractABCase
                 part3.limit(splits[2]);
 
                 fuzzer.send(part1); // the header + good utf
-                TimeUnit.MILLISECONDS.sleep(500);
                 fuzzer.send(part2); // the bad UTF
-                TimeUnit.MILLISECONDS.sleep(500);
                 fuzzer.send(part3); // the rest (shouldn't work)
 
                 fuzzer.expect(expect);
@@ -393,7 +393,6 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    @Slow
     public void testCase6_4_4() throws Exception
     {
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");
@@ -412,9 +411,7 @@ public class TestABCase6 extends AbstractABCase
             ByteBuffer net = fuzzer.asNetworkBuffer(send);
             fuzzer.send(net,6);
             fuzzer.send(net,11);
-            TimeUnit.SECONDS.sleep(1);
             fuzzer.send(net,1);
-            TimeUnit.SECONDS.sleep(1);
             fuzzer.send(net,100); // the rest
 
             fuzzer.expect(expect);

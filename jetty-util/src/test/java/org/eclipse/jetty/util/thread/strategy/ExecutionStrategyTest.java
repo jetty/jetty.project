@@ -156,11 +156,11 @@ public class ExecutionStrategyTest
         
         Producer producer = new TestProducer()
         {
-            int tasks=TASKS;
+            AtomicInteger tasks = new AtomicInteger(TASKS);
             @Override
             public Runnable produce()
             {
-                final int id = --tasks;
+                final int id = tasks.decrementAndGet();
                 if (id>=0)
                 {
                     while(_threads.isRunning())

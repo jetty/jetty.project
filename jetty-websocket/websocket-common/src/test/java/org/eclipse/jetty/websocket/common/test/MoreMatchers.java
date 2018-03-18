@@ -16,8 +16,24 @@
 //  ========================================================================
 //
 
-/**
- * Jetty Monitor : Triggers for Monitor Events
- */
-package org.eclipse.jetty.monitor.triggers;
+package org.eclipse.jetty.websocket.common.test;
 
+import org.eclipse.jetty.toolchain.test.matchers.RegexMatcher;
+
+public class MoreMatchers
+{
+    /**
+     * Create a matcher for {@link String} that matches against a regex pattern.
+     *
+     * <p>
+     *     Returns success based on {@code java.util.regex.Pattern.matcher(input).matches();}
+     * </p>
+     *
+     * @param pattern the {@link java.util.regex.Pattern} syntax pattern to match against.
+     * @return the Regex Matcher
+     */
+    public static org.hamcrest.Matcher<java.lang.String> regex(String pattern)
+    {
+        return new RegexMatcher(pattern);
+    }
+}

@@ -269,7 +269,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public void badMessage(int status, String reason)
+    public void badMessage(BadMessageException failure)
     {
         _httpConnection.getGenerator().setPersistent(false);
         try
@@ -283,7 +283,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             LOG.ignore(e);
         }
 
-        onBadMessage(status, reason);
+        onBadMessage(failure);
     }
 
     @Override
@@ -333,7 +333,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             {
                 if (_unknownExpectation)
                 {
-                    badMessage(HttpStatus.EXPECTATION_FAILED_417, null);
+                    badMessage(new BadMessageException(HttpStatus.EXPECTATION_FAILED_417));
                     return false;
                 }
 
@@ -374,7 +374,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                         upgrade())
                     return true;
 
-                badMessage(HttpStatus.UPGRADE_REQUIRED_426, null);
+                badMessage(new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426));
                 _httpConnection.getParser().close();
                 return false;
             }
