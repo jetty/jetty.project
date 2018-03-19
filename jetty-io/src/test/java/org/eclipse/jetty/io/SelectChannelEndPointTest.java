@@ -46,6 +46,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -59,10 +60,14 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class SelectChannelEndPointTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     private static final Logger LOG = Log.getLogger(SelectChannelEndPointTest.class);
     protected CountDownLatch _lastEndPointLatch;
     protected volatile EndPoint _lastEndPoint;
