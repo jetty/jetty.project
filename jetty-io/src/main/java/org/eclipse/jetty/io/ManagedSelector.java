@@ -245,16 +245,15 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
+        List<String> keys;
+        List<SelectorUpdate> updates;
         Selector selector = _selector;
-        List<String> keys = null;
-        List<SelectorUpdate> updates = null;
         if (selector != null && selector.isOpen())
         {
             DumpKeys dump = new DumpKeys();
-            String updatesAt;
+            String updatesAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
             synchronized(ManagedSelector.this)
             {
-                updatesAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
                 updates = new ArrayList<>(_updates);
                 _updates.addFirst(dump);
                 _selecting = false;
