@@ -444,6 +444,8 @@ public class SelectChannelEndPointTest
         server.configureBlocking(false);
 
         _manager.accept(server);
+        Assert.assertTrue(_lastEndPointLatch.await(10, TimeUnit.SECONDS));
+        _lastEndPoint.setIdleTimeout(idleTimeout);
 
         // Write client to server
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
@@ -457,14 +459,11 @@ public class SelectChannelEndPointTest
             assertEquals(c, (char)b);
         }
 
-        Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
-        _lastEndPoint.setIdleTimeout(idleTimeout);
-
         // read until idle shutdown received
         int b = client.getInputStream().read();
         assertEquals(-1, b);
         long idle = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-        assertThat(idle, greaterThan(idleTimeout / 2L));
+        assertThat(idle, greaterThan(idleTimeout - 100L));
         assertThat(idle, lessThan(idleTimeout * 2L));
 
         // But endpoint may still be open for a little bit.
