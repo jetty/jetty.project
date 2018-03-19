@@ -20,10 +20,8 @@ package org.eclipse.jetty.io;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -56,6 +54,7 @@ import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -69,6 +68,7 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -83,7 +83,7 @@ public class SocketChannelEndPointTest
     {
         Socket newClient(ServerSocketChannel connector) throws IOException;
 
-        Connection newConnection(SelectableChannel channel, EndPoint endPoint, Executor executor, SafeInteger blockAt, SafeInteger writeCount);
+        Connection newConnection(SelectableChannel channel, EndPoint endPoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount);
 
         boolean supportsHalfCloses();
     }
@@ -100,7 +100,10 @@ public class SocketChannelEndPointTest
         return ret;
     }
 
-    public Scenario _scenario;
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
+    private final Scenario _scenario;
 
     private ServerSocketChannel _connector;
     private QueuedThreadPool _threadPool;
@@ -110,8 +113,8 @@ public class SocketChannelEndPointTest
     private CountDownLatch _lastEndPointLatch;
 
     // Must be volatile or the test may fail spuriously
-    private SafeInteger _blockAt = new SafeInteger("_blockAt", 0);
-    private SafeInteger _writeCount = new SafeInteger("_writeCount", 1);
+    private AtomicInteger _blockAt = new AtomicInteger(0);
+    private AtomicInteger _writeCount = new AtomicInteger(1);
 
     public SocketChannelEndPointTest(Scenario scenario) throws Exception
     {
@@ -297,112 +300,6 @@ public class SocketChannelEndPointTest
             assertTrue(b > 0);
             assertEquals(c, (char) b);
         }
-    }
-
-    @Test
-    public void testIdle() throws Exception
-    {
-        int idleTimeout = 2000;
-
-        Socket client = _scenario.newClient(_connector);
-
-        client.setSoTimeout(idleTimeout * 10);
-
-        SocketChannel server = _connector.accept();
-        server.configureBlocking(false);
-
-        _manager.accept(server);
-        Assert.assertTrue(_lastEndPointLatch.await(10, TimeUnit.SECONDS));
-        _lastEndPoint.setIdleTimeout(idleTimeout);
-
-        // Write client to server
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
-
-        // Verify echo server to client
-        for (char c : "HelloWorld".toCharArray())
-        {
-            int b = client.getInputStream().read();
-            assertTrue(b > 0);
-            assertEquals(c, (char) b);
-        }
-
-        // read until idle shutdown received
-        int b = client.getInputStream().read();
-        assertEquals(-1, b);
-        long idle = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-        assertThat(idle, greaterThan(idleTimeout - 100L));
-        assertThat(idle, lessThan(idleTimeout * 2L));
-
-        // But endpoint may still be open for a little bit.
-        for (int i = 0; i < 20; ++i)
-        {
-            if (_lastEndPoint.isOpen())
-                Thread.sleep(2 * idleTimeout / 10);
-            else
-                break;
-        }
-        assertFalse(_lastEndPoint.isOpen());
-    }
-
-    @Test
-    public void testBlockedReadIdle() throws Exception
-    {
-        Socket client = _scenario.newClient(_connector);
-        InputStream clientInputStream = client.getInputStream();
-        OutputStream clientOutputStream = client.getOutputStream();
-
-        client.setSoTimeout(5000);
-
-        SocketChannel server = _connector.accept();
-        server.configureBlocking(false);
-
-        _manager.accept(server);
-
-        // Write client to server
-        clientOutputStream.write("HelloWorld".getBytes(StandardCharsets.UTF_8));
-
-        // Verify echo server to client
-        for (char c : "HelloWorld".toCharArray())
-        {
-            int b = clientInputStream.read();
-            assertTrue(b > 0);
-            assertEquals(c, (char) b);
-        }
-
-        Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
-        int idleTimeout = 500;
-        _lastEndPoint.setIdleTimeout(idleTimeout);
-
-        // Write 8 and cause block waiting for 10
-        _blockAt.set(10);
-        clientOutputStream.write("12345678".getBytes(StandardCharsets.UTF_8));
-        clientOutputStream.flush();
-
-        // read until idle shutdown received
-        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        int b = clientInputStream.read();
-        assertEquals('E', b);
-        long idle = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
-        assertTrue(idle > idleTimeout / 2);
-        assertTrue(idle < idleTimeout * 2);
-
-        for (char c : "E: 12345678".toCharArray())
-        {
-            b = clientInputStream.read();
-            assertTrue(b > 0);
-            assertEquals(c, (char) b);
-        }
-        b = clientInputStream.read();
-        assertEquals(-1, b);
-
-        // But endpoint is still open.
-        if (_lastEndPoint.isOpen())
-            // Wait for another idle callback
-            Thread.sleep(idleTimeout * 2);
-
-        // endpoint is closed.
-        assertFalse(_lastEndPoint.isOpen());
     }
 
     @Test
@@ -729,7 +626,7 @@ public class SocketChannelEndPointTest
         }
 
         @Override
-        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Executor executor, SafeInteger blockAt, SafeInteger writeCount)
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
         {
             return new TestConnection(endpoint, executor, blockAt, writeCount);
         }
@@ -773,7 +670,7 @@ public class SocketChannelEndPointTest
         }
 
         @Override
-        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Executor executor, SafeInteger blockAt, SafeInteger writeCount)
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
         {
             SSLEngine engine = __sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
@@ -798,62 +695,21 @@ public class SocketChannelEndPointTest
         }
     }
 
-    /**
-     * Testing possibility of a bad test configuration
-     */
-    public static class SafeInteger
-    {
-        private final String name;
-        private int value;
-        private boolean getCalled = false;
-        private Throwable firstGetThrowable;
-
-        public SafeInteger(String name, int value)
-        {
-            this.name = name;
-            this.value = value;
-        }
-
-        public void set(int value)
-        {
-            synchronized(this)
-            {
-                if(getCalled)
-                    throw new IllegalStateException(name + ".get() already called, unable to " + name + ".set(" + value + ") now: TOOLATE", firstGetThrowable);
-                this.value = value;
-            }
-        }
-
-        public int get()
-        {
-            synchronized (this)
-            {
-                if(!getCalled)
-                {
-                    // first occurrence.
-                    firstGetThrowable = new Throwable("First Get Here");
-                }
-                getCalled = true;
-                return this.value;
-            }
-        }
-    }
-
     @SuppressWarnings("Duplicates")
     public static class TestConnection extends AbstractConnection
     {
         private static final Logger LOG = Log.getLogger(TestConnection.class);
 
         volatile FutureCallback _blockingRead;
-        final SafeInteger _blockAt;
-        final SafeInteger _writeCount;
+        final AtomicInteger _blockAt;
+        final AtomicInteger _writeCount;
         // volatile int _blockAt = 0;
         ByteBuffer _in = BufferUtil.allocate(32 * 1024);
         ByteBuffer _out = BufferUtil.allocate(32 * 1024);
         long _last = -1;
         final CountDownLatch _latch;
 
-        public TestConnection(EndPoint endp, Executor executor, SafeInteger blockAt, SafeInteger writeCount)
+        public TestConnection(EndPoint endp, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
         {
             super(endp, executor);
             _latch = null;
@@ -861,7 +717,7 @@ public class SocketChannelEndPointTest
             this._writeCount = writeCount;
         }
 
-        public TestConnection(EndPoint endp, CountDownLatch latch, Executor executor, SafeInteger blockAt, SafeInteger writeCount)
+        public TestConnection(EndPoint endp, CountDownLatch latch, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
         {
             super(endp, executor);
             _latch = latch;
