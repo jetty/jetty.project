@@ -77,7 +77,9 @@ public class MultiPartInputStreamTest
         "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"+
         "Content-Type: application/octet-stream\r\n\r\n"+
         "How now brown cow."+
-        "\r\n--" + boundary + "-\r\n\r\n";
+        "\r\n--" + boundary + "-\r\n"
+                + "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"
+                + "\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()), 
@@ -92,6 +94,7 @@ public class MultiPartInputStreamTest
         }
         catch (IOException e)
         {
+            System.err.println(e.getMessage());
             assertTrue(e.getMessage().startsWith("Incomplete"));
         }
     }

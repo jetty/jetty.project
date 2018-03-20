@@ -497,6 +497,7 @@ public class MultiPartInputStreamParser
     {
         if (_err != null)
         {
+            _err.addSuppressed(new Throwable());
             if (_err instanceof IOException)
                 throw (IOException)_err;
             if (_err instanceof IllegalStateException)
@@ -551,7 +552,6 @@ public class MultiPartInputStreamParser
             }
 
             
-            // ============ MY CODE ============= //
             Handler handler = new Handler();
             MultiPartParser parser = new MultiPartParser(handler,contentTypeBoundary);            
             
@@ -596,7 +596,12 @@ public class MultiPartInputStreamParser
             //check we read to the end of the message
             if(parser.getState() != MultiPartParser.State.END)
             {
-                _err = new IllegalStateException("Parser Not in End State: "+parser.getState());
+                _err = new IOException("Incomplete Multipart");
+            }
+            
+            if(LOG.isDebugEnabled()) 
+            {
+                LOG.debug("Parsing Complete {} err={}",parser,_err);
             }
            
     }
@@ -668,16 +673,8 @@ public class MultiPartInputStreamParser
                 {
                     return false;
                 }
-    
-                //Have a new Part
-                System.out.println("-------------------------");
-                System.out.println("Creating New Part");
-                System.out.println("Name: "+name);
-                System.out.println("Filename: "+filename);
-                System.out.println("Headers:\n"+headers);
-                System.out.println("ContentType:\n"+contentType);
-                System.out.println("-------------------------");
-                
+
+                //create the new part
                 _part = new MultiPart(name, filename);
                 _part.setHeaders(headers);
                 _part.setContentType(contentType);

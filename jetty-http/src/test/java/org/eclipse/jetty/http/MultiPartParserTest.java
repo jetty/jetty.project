@@ -450,7 +450,7 @@ public class MultiPartParserTest
     
     
     @Test
-    public void testEndState() {
+    public void testCrAsLineTermination() {
         TestHandler handler = new TestHandler() 
         {
             @Override public boolean messageComplete(){ return true; }
@@ -462,19 +462,14 @@ public class MultiPartParserTest
                 return false;
             }
         };
-        MultiPartParser parser = new MultiPartParser(handler,"AaB03x");
+        MultiPartParser parser = new MultiPartParser(handler,"AaB03x",true);
         
-        ByteBuffer data =  BufferUtil.toBuffer("            "+
-                "--AaB03x\r\n"+
-                "content-disposition: form-data; name=\"field1\"\r\n"+
-                "\r\n"+
+        ByteBuffer data =  BufferUtil.toBuffer(
+                "--AaB03x\r"+
+                "content-disposition: form-data; name=\"field1\"\r"+
+                "\r"+
                 "Joe Blow\r\n"+
-                "--AaB03x\r\n"+
-                "content-disposition: form-data; name=\"stuff\"; filename=\"" + "foo.txt" + "\"\r\n"+
-                "Content-Type: text/plain\r\n"+
-                "\r\n"+"aaaa"+
-                "bbbbb"+"\r\n" +
-                "--AaB03x--\r\n");
+                "--AaB03x--\r");
         
 
         /* Test Progression to END State */
