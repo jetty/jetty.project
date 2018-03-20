@@ -40,6 +40,8 @@ import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -48,6 +50,7 @@ import com.mongodb.WriteConcern;
  */
 public class MongoTestHelper
 {
+    private final static Logger LOG = Log.getLogger(MongoTestHelper.class);
     static int __workers=0;
     public static final String DB_NAME = "HttpSessions";
     public static final String COLLECTION_NAME = "testsessions";
@@ -125,7 +128,7 @@ public class MongoTestHelper
         if (sessionDocument == null)
             return false; //doesn't exist
         
-        System.err.println(sessionDocument);
+        LOG.info("{}",sessionDocument);
         
         Boolean valid = (Boolean)sessionDocument.get(MongoSessionDataStore.__VALID);   
 
@@ -147,8 +150,8 @@ public class MongoTestHelper
                                                  MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() +"."+MongoSessionDataStore.__LASTNODE);
         
 
-        System.err.println("DA:"+data.getAccessed()+" MA:"+accessed);
-        System.err.println("DLA:"+data.getLastAccessed()+" DLA:"+lastAccessed);
+        LOG.info("DA:{} MA:{}", data.getAccessed(), accessed);
+        LOG.info("DLA:{} DLA:{}",data.getLastAccessed(),lastAccessed);
         assertEquals(data.getCreated(), created.longValue());
         assertEquals(data.getAccessed(), accessed.longValue());
         assertEquals(data.getLastAccessed(), lastAccessed.longValue());

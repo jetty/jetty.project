@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
+import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -457,7 +458,18 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         return expiredSessions;
     }
 
-    /** 
+    /**
+     * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
+     */
+    public void initialize (SessionContext context) throws Exception
+    {
+        if (isStarted())
+            throw new IllegalStateException("Context set after SessionDataStore started");
+        _context = context;
+        ensureIndexes();
+    }
+
+    /**
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long) 
      */
     @Override
@@ -542,16 +554,16 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             update.put("$set",sets);
         if (!unsets.isEmpty())
             update.put("$unset",unsets);
+
         WriteResult res = _dbSessions.update(key,update,upsert,false,WriteConcern.SAFE);
         if (LOG.isDebugEnabled())
             LOG.debug("Save:db.sessions.update( {}, {},{} )", key, update, res); 
     }
-    
-    
+
     protected void ensureIndexes() throws MongoException
     {
         _version_1 = new BasicDBObject(getContextSubfield(__VERSION),1);
-        DBObject idKey = BasicDBObjectBuilder.start().add("id", 1).get();        
+        DBObject idKey = BasicDBObjectBuilder.start().add("id", 1).get();
         _dbSessions.createIndex(idKey,
                               BasicDBObjectBuilder.start()
                               .add("name", "id_1")
@@ -560,15 +572,18 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                               .add("unique", true)
                               .get());
 
-        DBObject versionKey = BasicDBObjectBuilder.start().add("id", 1).add("version", 1).get();       
+        DBObject versionKey = BasicDBObjectBuilder.start().add("id", 1).add("version", 1).get();
         _dbSessions.createIndex(versionKey, BasicDBObjectBuilder.start()
                               .add("name", "id_1_version_1")
                               .add("ns", _dbSessions.getFullName())
                               .add("sparse", false)
                               .add("unique", true)
                               .get());
+        LOG.debug( "done ensure Mongodb indexes existing" );
         //TODO perhaps index on expiry time?
     }
+
+
 
     /*------------------------------------------------------------ */
     private String getContextField ()
