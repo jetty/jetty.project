@@ -397,7 +397,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     }
 
                     _keys = selector.selectedKeys();
-                    _cursor = _keys.iterator();
+                    _cursor = _keys.isEmpty() ? Collections.emptyIterator() : _keys.iterator();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} processing {} keys, {} updates", selector, _keys.size(), updates);
 
