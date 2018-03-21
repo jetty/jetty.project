@@ -171,8 +171,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             boolean handle = parser.parseNext(buffer);
             boolean complete = this.complete;
-            if (complete)
-                this.complete = false;
+            this.complete = false;
             if (LOG.isDebugEnabled())
                 LOG.debug("Parsed {}, remaining {} {}", handle, buffer.remaining(), parser);
             if (handle)
