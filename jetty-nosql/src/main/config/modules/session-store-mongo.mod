@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Enables NoSql session management with a MongoDB driver.
 

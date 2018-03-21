@@ -1,6 +1,5 @@
-#
-# Jetty Rewrite Customizer module
-#
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Enables a rewrite Rules container as a request customizer on
 the servers default HttpConfiguration instance

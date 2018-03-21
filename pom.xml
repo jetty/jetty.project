@@ -460,7 +460,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.0.0</version>
           <configuration>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
@@ -1006,11 +1006,55 @@
   </dependencyManagement>
 
   <profiles>
-    <!-- use last snapshot of jacoco and failsafe for jdk10 -->
+    <!-- use last snapshot of jacoco for jdk10 -->
     <profile>
       <id>jdk10</id>
       <activation>
         <jdk>10</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.jacoco</groupId>
+              <artifactId>jacoco-maven-plugin</artifactId>
+              <version>0.8.1-SNAPSHOT</version>
+              <configuration>
+                <skip>true</skip>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>oss.snapshots</id>
+          <name>OSS Snapshots</name>
+          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+        <pluginRepository>
+          <id>apache.snapshots</id>
+          <url>https://repository.apache.org/content/repositories/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+    <!-- use last snapshot of jacoco for jdk11 -->
+    <profile>
+      <id>jdk11</id>
+      <activation>
+        <jdk>11</jdk>
       </activation>
       <build>
         <pluginManagement>
@@ -1755,6 +1799,14 @@
       <organization>IBM</organization>
       <timezone>-8</timezone>
     </developer>
+    <developer>
+      <id>olamy</id>
+      <name>Olivier Lamy</name>
+      <email>oliver.lamy@gmail.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>Australia/Brisbane</timezone>
+    </developer>
   </developers>
 
   <organization>
@@ -1762,6 +1814,9 @@
     <url>https://webtide.com</url>
   </organization>
 
+  <!-- SNAPSHOT Repository is only for temporary usage.
+       This configuration should not be checked in, as it
+       can result in bad success on CI.
   <repositories>
     <repository>
       <id>jetty-snapshots</id>
@@ -1772,6 +1827,7 @@
       </snapshots>
     </repository>
   </repositories>
+   -->
 
   <distributionManagement>
     <repository>

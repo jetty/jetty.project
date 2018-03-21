@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +43,11 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -224,11 +227,9 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
                 "\r\n").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
-        InputStream inputStream = socket.getInputStream();
-        HttpTester.Response response = HttpTester.parseResponse(inputStream);
-        Assert.assertEquals(200, response.getStatus());
-
-        Assert.assertEquals(-1, inputStream.read());
+        // Read to EOF
+        String response = BufferUtil.toString(ByteBuffer.wrap(IO.readBytes(socket.getInputStream())));
+        assertThat(response,Matchers.containsString("200 OK"));
         socket.close();
 
         Assert.assertTrue(openLatch.await(5, TimeUnit.SECONDS));

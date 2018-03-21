@@ -719,10 +719,10 @@ This is _not_ a recommended usage.
 ____
 
 [[conscrypt]]
-===== Conscrypt SSL
+==== Conscrypt SSL
 
-Jetty also includes support for Google's https://github.com/google/conscrypt/[Conscrypt SSL], which is built on their fork of https://www.openssl.org/[OpenSSL], https://boringssl.googlesource.com/boringssl/[BoringSSL].
-Implementing Conscrypt is very straightforward process - simply instantiate an instance of Conscrypt's `OpenSSLProvider` and set `Conscrypt` as a provider for Jetty's `SslContextFactory`:
+Jetty includes support for Google's https://github.com/google/conscrypt/[Conscrypt SSL], which is built on their fork of https://www.openssl.org/[OpenSSL], https://boringssl.googlesource.com/boringssl/[BoringSSL].
+Implementing Conscrypt for the link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-conscrypt-server/src/test/java/org/eclipse/jetty/alpn/conscrypt/server/ConscryptHTTP2Server.java[server] or link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-conscrypt-client/src/test/java/org/eclipse/jetty/alpn/java/client/ConscryptHTTP2Client.java[client] is very straightforward process - simply instantiate an instance of Conscrypt's `OpenSSLProvider` and set `Conscrypt` as a provider for Jetty's `SslContextFactory`:
 
 [source, java, subs="{sub-order}"]
 ----
