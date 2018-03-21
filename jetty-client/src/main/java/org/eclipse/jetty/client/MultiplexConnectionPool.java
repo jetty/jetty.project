@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
-public class MultiplexConnectionPool extends AbstractConnectionPool implements Sweeper.Sweepable
+public class MultiplexConnectionPool extends AbstractConnectionPool implements ConnectionPool.Multiplexable, Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(MultiplexConnectionPool.class);
 
@@ -80,6 +80,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements S
         lock.unlock();
     }
 
+    @Override
     public int getMaxMultiplex()
     {
         lock();
@@ -93,6 +94,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements S
         }
     }
 
+    @Override
     public void setMaxMultiplex(int maxMultiplex)
     {
         lock();
