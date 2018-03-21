@@ -103,7 +103,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
                 if (entry.connection == null)
                     break;
 
-                if (entry.active <= getMaxMultiplex())
+                if (entry.active < getMaxMultiplex())
                 {
                     ++entry.active;
                     ++entry.used;
