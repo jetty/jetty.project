@@ -85,6 +85,7 @@ def getFullBuild(jdk, os) {
                       maven: 'maven3',
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
+                      options: [invokerPublisher(disabled: false)],
                       globalMavenSettingsConfig: 'oss-settings.xml',
                       mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
                 //
