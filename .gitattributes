@@ -6,3 +6,4 @@
 *.xml	eol=lf
 Jenkinsfile	eol=lf
 *.js    eol=lf
+*.raw   binary

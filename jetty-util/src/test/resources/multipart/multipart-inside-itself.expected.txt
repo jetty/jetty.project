@@ -1,0 +1,6 @@
+Content-Type|multipart/form-data; boundary="kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGjx5eCuVFbaeUZ9oK57JCp_p5wP86S5nY4re5x"
+Parts-Count|4
+Part-ContainsContents|reporter|<user@company.com>
+Part-ContainsContents|timestamp|2018-03-21T18:52:18+00:00
+Part-ContainsContents|comments|this couldn't be parsed
+Part-ContainsContents|attachment|banana
