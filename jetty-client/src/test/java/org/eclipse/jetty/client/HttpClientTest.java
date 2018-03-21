@@ -1649,7 +1649,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test204NoContentWithContent() throws Exception
+    public void test204WithContent() throws Exception
     {
         // This test only works with clear-text HTTP.
         Assume.assumeTrue(sslContextFactory == null);

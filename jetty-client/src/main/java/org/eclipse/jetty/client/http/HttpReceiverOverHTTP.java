@@ -304,17 +304,19 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     @Override
     public boolean messageComplete()
     {
-        complete = true;
-
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return false;
+
+        int status = exchange.getResponse().getStatus();
+
+        if (status != HttpStatus.CONTINUE_100)
+            complete = true;
 
         boolean proceed = responseSuccess(exchange);
         if (!proceed)
             return true;
 
-        int status = exchange.getResponse().getStatus();
         if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
             return true;
 
