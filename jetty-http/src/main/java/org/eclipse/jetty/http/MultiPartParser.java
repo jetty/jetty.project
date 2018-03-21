@@ -152,7 +152,6 @@ public class MultiPartParser
     private final boolean DEBUG=LOG.isDebugEnabled(); 
     private final Handler _handler;
     private final SearchPattern _delimiterSearch;
-    private final boolean _acceptCrAsLineTermination;
 
     private String _fieldName;
     private String _fieldValue;
@@ -161,34 +160,22 @@ public class MultiPartParser
     private FieldState _fieldState = FieldState.FIELD;
     private int _partialBoundary = 2; // No CRLF if no preamble
     private boolean _cr;
-    private byte _next;
     private ByteBuffer _patternBuffer;
 
     private final StringBuilder _string=new StringBuilder();
     private int _length;
 
+    private int _totalHeaderLineLength = -1;
+    private int _maxHeaderLineLength = 998;
 
     /* ------------------------------------------------------------------------------- */
     public MultiPartParser(Handler handler, String boundary)
-    {
-        this(handler,boundary,false);
-    }
-    
-    /* ------------------------------------------------------------------------------- */
-    /** TODO complete
-     * 
-     * @param handler
-     * @param boundary
-     * @param acceptCR
-     */
-    public MultiPartParser(Handler handler, String boundary, boolean acceptCR)
     {
         _handler = handler;
 
         String delimiter = "\r\n--"+boundary;
         _patternBuffer = ByteBuffer.wrap(delimiter.getBytes(StandardCharsets.US_ASCII));
         _delimiterSearch = SearchPattern.compile(_patternBuffer.array());
-        _acceptCrAsLineTermination = acceptCR;
     }
 
     public void reset()
@@ -272,21 +259,14 @@ public class MultiPartParser
     /* ------------------------------------------------------------------------------- */
     private boolean hasNextByte(ByteBuffer buffer)
     {
-        return BufferUtil.hasContent(buffer) || _next!=0;
+        return BufferUtil.hasContent(buffer);
     }
     
     /* ------------------------------------------------------------------------------- */
-    private byte getNextByte(ByteBuffer buffer, boolean last)
+    private byte getNextByte(ByteBuffer buffer)
     {
 
-        byte ch;
-        if (_next==0)
-            ch = buffer.get();
-        else
-        {
-            ch = _next;
-            _next = 0;
-        }
+        byte ch = buffer.get();
 
         CharState s = __charState[0xff & ch];
         switch(s)
@@ -297,18 +277,11 @@ public class MultiPartParser
 
             case CR:
                 if (_cr)
-                {
-                    if (!_acceptCrAsLineTermination)
-                        throw new BadMessageException("Bad EOL");
-                    // TODO log compliance violation
-                    return (byte)'\n';
-                }
+                    throw new BadMessageException("Bad EOL");
                 
                 _cr=true;
                 if (buffer.hasRemaining())
-                    return getNextByte(buffer, last);
-                else if (_acceptCrAsLineTermination && last)
-                    return '\n';
+                    return getNextByte(buffer);
 
                 // Can return 0 here to indicate the need for more characters,
                 // because a real 0 in the buffer would cause a BadMessage below
@@ -316,14 +289,8 @@ public class MultiPartParser
 
             case LEGAL:
                 if (_cr)
-                {
-                    if (!_acceptCrAsLineTermination)
-                        throw new BadMessageException("Bad EOL");
-                    // TODO log compliance violation
-                    _next = ch;
-                    _cr = false;
-                    return (byte)'\n';
-                }
+                    throw new BadMessageException("Bad EOL");
+
                 return ch;
 
             case ILLEGAL:
@@ -372,11 +339,11 @@ public class MultiPartParser
                 case DELIMITER:
                 case DELIMITER_PADDING:
                 case DELIMITER_CLOSE:
-                    parseDelimiter(buffer, last);
+                    parseDelimiter(buffer);
                     continue;
                     
                 case BODY_PART:
-                    handle = parseMimePartHeaders(buffer, last);
+                    handle = parseMimePartHeaders(buffer);
                     break;
                     
                 case FIRST_OCTETS:
@@ -454,11 +421,11 @@ public class MultiPartParser
     }
     
     /* ------------------------------------------------------------------------------- */
-    private void parseDelimiter(ByteBuffer buffer, boolean last)
+    private void parseDelimiter(ByteBuffer buffer)
     {        
         while (__delimiterStates.contains(_state) && hasNextByte(buffer))
         {
-            byte b=getNextByte(buffer, last);
+            byte b=getNextByte(buffer);
             if (b==0)
                 return;
             
@@ -498,15 +465,22 @@ public class MultiPartParser
     /*
      * Parse the message headers and return true if the handler has signaled for a return
      */
-    protected boolean parseMimePartHeaders(ByteBuffer buffer, boolean last)
+    protected boolean parseMimePartHeaders(ByteBuffer buffer)
     {
         // Process headers
         while (_state==State.BODY_PART && hasNextByte(buffer))
         {
             // process each character
-            byte b=getNextByte(buffer, last);
+            byte b=getNextByte(buffer);
             if (b==0)
                 break;
+            
+            if(b!=LINE_FEED)
+                _totalHeaderLineLength++;
+            
+            if(_totalHeaderLineLength > _maxHeaderLineLength)
+                throw new IllegalStateException("Header Line Exceeded Max Length");
+
 
             switch (_fieldState)
             {
@@ -641,6 +615,7 @@ public class MultiPartParser
                             {
                                 _fieldValue=takeString();
                                 _length=-1;
+                                _totalHeaderLineLength=-1;
                             }
                             setState(FieldState.FIELD);
                             break;
@@ -673,13 +648,6 @@ public class MultiPartParser
 
     protected boolean parseOctetContent(ByteBuffer buffer)
     {
-
-        //handle the next content that was held because of \r as \r\n
-        if (_next!=0)
-        {
-            _handler.content(BufferUtil.toBuffer(new byte[] {_next}),false);
-            _next = 0;
-        }
         
         //Starts With
         if (_partialBoundary>0)

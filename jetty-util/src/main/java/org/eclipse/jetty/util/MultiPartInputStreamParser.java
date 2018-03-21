@@ -36,6 +36,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,6 +45,7 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.util.ReadLineInputStream.Termination;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -69,8 +71,29 @@ public class MultiPartInputStreamParser
     protected boolean _deleteOnExit;
     protected boolean _writeFilesWithFilenames;
 
+    EnumSet<NonCompliance> nonComplianceWarnings = EnumSet.noneOf(NonCompliance.class);
+    public enum NonCompliance
+    {
+        CR_TERMINATION,
+        LF_TERMINATION,
+        NO_INITIAL_CRLF, 
+        BASE64_TRANSFER_ENCODING, 
+        QUOTED_PRINTABLE_TRANSFER_ENCODING
+    }
+    public EnumSet<NonCompliance> getNonComplianceWarnings()
+    {         
+        EnumSet<Termination> term = ((ReadLineInputStream)_in).getLineTerminations();
+        
+        if(term.contains(Termination.CR))
+            nonComplianceWarnings.add(NonCompliance.CR_TERMINATION);
+        if(term.contains(Termination.LF))
+            nonComplianceWarnings.add(NonCompliance.LF_TERMINATION);
+        
+        return nonComplianceWarnings; 
+    }
 
 
+    
     public class MultiPart implements Part
     {
         protected String _name;
@@ -175,8 +198,8 @@ public class MultiPartInputStreamParser
                 _out.flush();
                 _bout.writeTo(bos);
                 _out.close();
-                _bout = null;
             }
+            _bout = null;
             _out = bos;
         }
 
@@ -563,6 +586,8 @@ public class MultiPartInputStreamParser
                 throw new IOException("Missing content for multipart request");
 
             boolean badFormatLogged = false;
+            
+            String untrimmed = line;
             line=line.trim();
             while (line != null && !line.equals(boundary) && !line.equals(lastBoundary))
             {
@@ -572,15 +597,21 @@ public class MultiPartInputStreamParser
                     badFormatLogged = true;
                 }
                 line=((ReadLineInputStream)_in).readLine();
-                line=(line==null?line:line.trim());
+                untrimmed = line;
+                if(line!=null)
+                    line = line.trim();
             }
 
-        if (line == null || line.length() == 0)
+            if (line == null || line.length() == 0)
                 throw new IOException("Missing initial multi part boundary");
 
             // Empty multipart.
             if (line.equals(lastBoundary))
                 return;
+
+            // check compliance of preamble
+            if (Character.isWhitespace(untrimmed.charAt(0)))
+                nonComplianceWarnings.add(NonCompliance.NO_INITIAL_CRLF);
 
             // Read each part
             boolean lastPart=false;
@@ -671,10 +702,12 @@ public class MultiPartInputStreamParser
                 InputStream partInput = null;
                 if ("base64".equalsIgnoreCase(contentTransferEncoding))
                 {
+                    nonComplianceWarnings.add(NonCompliance.BASE64_TRANSFER_ENCODING);
                     partInput = new Base64InputStream((ReadLineInputStream)_in);
                 }
                 else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding))
                 {
+                    nonComplianceWarnings.add(NonCompliance.QUOTED_PRINTABLE_TRANSFER_ENCODING);
                     partInput = new FilterInputStream(_in)
                     {
                         @Override
@@ -917,5 +950,8 @@ public class MultiPartInputStreamParser
 
             return _buffer[_pos++];
         }
-    }
+    } 
+    
+    
+    
 }

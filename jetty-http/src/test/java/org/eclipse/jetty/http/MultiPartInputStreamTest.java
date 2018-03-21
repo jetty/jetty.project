@@ -90,11 +90,10 @@ public class MultiPartInputStreamTest
         try
         {
             mpis.getParts();
-            fail ("Multipart incomplete");
+            fail ("Incomplete Multipart");
         }
         catch (IOException e)
         {
-            System.err.println(e.getMessage());
             assertTrue(e.getMessage().startsWith("Incomplete"));
         }
     }
@@ -237,11 +236,11 @@ public class MultiPartInputStreamTest
         try
         {
             mpis.getParts();
-            fail ("Multipart missing body");
+            fail ("Missing initial multi part boundary");
         }
         catch (IOException e)
         {
-            assertTrue(e.getMessage().startsWith("Missing content"));
+            assertTrue(e.getMessage().contains("Missing initial multi part boundary"));
         }
     }
     
@@ -305,11 +304,11 @@ public class MultiPartInputStreamTest
         try
         {
             mpis.getParts();
-            fail ("Multipart missing body");
+            fail("Missing initial multi part boundary");
         }
         catch (IOException e)
         {
-            assertTrue(e.getMessage().startsWith("Missing initial"));
+            assertTrue(e.getMessage().contains("Missing initial multi part boundary"));
         }
     }
 
@@ -403,13 +402,9 @@ public class MultiPartInputStreamTest
 
         Collection<Part> parts =    mpis.getParts();
         assertThat(parts, notNullValue());
-        assertThat(parts.size(), is(2));
-        Part field1 = mpis.getPart("field1");
-        assertThat(field1, notNullValue());
+        assertThat(parts.size(), is(1));
+
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        IO.copy(field1.getInputStream(), baos);
-        assertThat(baos.toString("US-ASCII"), is("Joe Blow"));
-        
         Part stuff = mpis.getPart("stuff");
         assertThat(stuff, notNullValue());
         baos = new ByteArrayOutputStream();
@@ -446,10 +441,10 @@ public class MultiPartInputStreamTest
                                                              config,
                                                              _tmpDir);
         mpis.setDeleteOnExit(true);
-        Collection<Part> parts = null;
+        
         try
         {
-            parts = mpis.getParts();
+            mpis.getParts();
             fail("Request should have exceeded maxRequestSize");
         }
         catch (IllegalStateException e)
@@ -534,6 +529,7 @@ public class MultiPartInputStreamTest
         }
         catch (IllegalStateException e)
         {
+            e.printStackTrace();
             assertTrue(e.getMessage().startsWith("Multipart Mime part"));
         }
         
@@ -600,12 +596,12 @@ public class MultiPartInputStreamTest
         String str = "--AaB03x\n"+
                 "content-disposition: form-data; name=\"field1\"\n"+
                 "\n"+
-                "Joe Blow\n"+ 
-                "--AaB03x\n"+
+                "Joe Blow"+ 
+                "\r\n--AaB03x\n"+
                 "content-disposition: form-data; name=\"field2\"\n"+
                 "\n"+
-                "Other\n"+        
-                "--AaB03x--\n";
+                "Other"+        
+                "\r\n--AaB03x--\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
@@ -620,12 +616,14 @@ public class MultiPartInputStreamTest
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IO.copy(p1.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Joe Blow"));
-                
+
         Part p2 = mpis.getPart("field2");
         assertThat(p2, notNullValue());
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Other"));
+
+
     }
     
     @Test
@@ -648,22 +646,30 @@ public class MultiPartInputStreamTest
                                                                          config,
                                                                          _tmpDir);
         mpis.setDeleteOnExit(true);
-        Collection<Part> parts = mpis.getParts();
-        assertThat(parts.size(), is(2));
         
-        assertThat(parts.size(), is(2));
-        Part p1 = mpis.getPart("field1");
-        assertThat(p1, notNullValue());
-        
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        IO.copy(p1.getInputStream(), baos);
-        assertThat(baos.toString("UTF-8"), is("Joe Blow"));
-        
-        Part p2 = mpis.getPart("field2");
-        assertThat(p2, notNullValue());
-        baos = new ByteArrayOutputStream();
-        IO.copy(p2.getInputStream(), baos);
-        assertThat(baos.toString("UTF-8"), is("Other"));
+        try
+        {
+            Collection<Part> parts = mpis.getParts();
+            assertThat(parts.size(), is(2));
+
+            assertThat(parts.size(), is(2));
+            Part p1 = mpis.getPart("field1");
+            assertThat(p1, notNullValue());
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            IO.copy(p1.getInputStream(), baos);
+            assertThat(baos.toString("UTF-8"), is("Joe Blow"));
+
+            Part p2 = mpis.getPart("field2");
+            assertThat(p2, notNullValue());
+            baos = new ByteArrayOutputStream();
+            IO.copy(p2.getInputStream(), baos);
+            assertThat(baos.toString("UTF-8"), is("Other"));
+        }
+        catch(Throwable e)
+        {
+            assertTrue(e.getMessage().contains("Bad EOL"));
+        }
     }
 
     @Test
@@ -687,28 +693,37 @@ public class MultiPartInputStreamTest
                                                                          config,
                                                                          _tmpDir);
         mpis.setDeleteOnExit(true);
-        Collection<Part> parts = mpis.getParts();
-        assertThat(parts.size(), is(2));
-
-        Part p1 = mpis.getPart("field1");
-        assertThat(p1, notNullValue());      
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        IO.copy(p1.getInputStream(), baos);
-        assertThat(baos.toString("UTF-8"), is("\nJoe Blow\n"));
         
-        Part p2 = mpis.getPart("field2");
-        assertThat(p2, notNullValue());
-        baos = new ByteArrayOutputStream();
-        IO.copy(p2.getInputStream(), baos);
-        assertThat(baos.toString("UTF-8"), is("Other")); 
+        
+        try
+        {
+            Collection<Part> parts = mpis.getParts();
+            assertThat(parts.size(), is(2));
+    
+            Part p1 = mpis.getPart("field1");
+            assertThat(p1, notNullValue());      
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            IO.copy(p1.getInputStream(), baos);
+            assertThat(baos.toString("UTF-8"), is("\nJoe Blow\n"));
+            
+            Part p2 = mpis.getPart("field2");
+            assertThat(p2, notNullValue());
+            baos = new ByteArrayOutputStream();
+            IO.copy(p2.getInputStream(), baos);
+            assertThat(baos.toString("UTF-8"), is("Other"));
+        }
+        catch(Throwable e)
+        {
+            assertTrue(e.getMessage().contains("Bad EOL"));
+        }
     }
     
     @Test
     public void testBufferOverflowNoCRLF () throws Exception
     {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write("--AaB03x".getBytes());
-        for (int i=0; i< 8500; i++) //create content that will overrun default buffer size of BufferedInputStream
+        baos.write("--AaB03x\r\n".getBytes());
+        for (int i=0; i< 3000; i++) //create content that will overrun default buffer size of BufferedInputStream
         {
             baos.write('a');
         }
@@ -722,11 +737,11 @@ public class MultiPartInputStreamTest
         try
         {
             mpis.getParts();
-            fail ("Multipart buffer overrun");
+            fail ("Header Line Exceeded Max Length");
         }
-        catch (IOException e)
+        catch (Throwable e)
         {
-            assertTrue(e.getMessage().startsWith("Buffer size exceeded"));
+            assertTrue(e.getMessage().startsWith("Header Line Exceeded Max Length"));
         }
 
     }
@@ -735,12 +750,12 @@ public class MultiPartInputStreamTest
     public void testCharsetEncoding () throws Exception
     {
         String contentType = "multipart/form-data; boundary=TheBoundary; charset=ISO-8859-1";
-        String str = "--TheBoundary\r"+
-                "content-disposition: form-data; name=\"field1\"\r"+
-                "\r"+
+        String str = "--TheBoundary\r\n"+
+                "content-disposition: form-data; name=\"field1\"\r\n"+
+                "\r\n"+
                 "\nJoe Blow\n"+ 
-                "\r"+
-                "--TheBoundary--\r";
+                "\r\n"+
+                "--TheBoundary--\r\n";
         
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
@@ -907,8 +922,8 @@ public class MultiPartInputStreamTest
         assertThat(stuff.getSize(),is(51L));
         
         File tmpfile = ((MultiPartInputStreamParser.MultiPart)stuff).getFile();
-        assertThat(tmpfile,notNullValue()); // longer than 100 bytes, should already be a tmp file
-        assertThat(((MultiPartInputStreamParser.MultiPart)stuff).getBytes(),nullValue()); //not in an internal buffer
+        assertThat(tmpfile,notNullValue()); // longer than 50 bytes, should already be a tmp file
+        assertThat(stuff.getBytes(),nullValue()); //not in an internal buffer
         assertThat(tmpfile.exists(),is(true));
         assertThat(tmpfile.getName(),is(not("stuff with space.txt")));
         stuff.write(filename);
@@ -1000,7 +1015,7 @@ public class MultiPartInputStreamTest
         assertNotNull(p2);
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
-        assertEquals("hello jetty", baos.toString("US-ASCII"));
+        assertEquals(B64Code.encode("hello jetty"), baos.toString("US-ASCII"));
         
         Part p3 = mpis.getPart("final");
         assertNotNull(p3);
@@ -1044,7 +1059,7 @@ public class MultiPartInputStreamTest
         assertNotNull(p2);
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
-        assertEquals("truth=beauty", baos.toString("US-ASCII"));
+        assertEquals("truth=3Dbeauty", baos.toString("US-ASCII"));
     }
 
 

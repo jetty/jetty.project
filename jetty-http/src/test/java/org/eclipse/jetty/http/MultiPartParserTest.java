@@ -462,20 +462,25 @@ public class MultiPartParserTest
                 return false;
             }
         };
-        MultiPartParser parser = new MultiPartParser(handler,"AaB03x",true);
+        MultiPartParser parser = new MultiPartParser(handler,"AaB03x");
         
         ByteBuffer data =  BufferUtil.toBuffer(
-                "--AaB03x\r"+
-                "content-disposition: form-data; name=\"field1\"\r"+
+                "--AaB03x\r\n"+
+                "content-disposition: form-data; name=\"field1\"\r\n"+
                 "\r"+
                 "Joe Blow\r\n"+
-                "--AaB03x--\r");
+                "--AaB03x--\r\n");
         
 
-        /* Test Progression to END State */
-        parser.parse(data,true);
-        assertThat(parser.getState(), is(State.END));
-        assertThat(data.remaining(),is(0));
+        try
+        {
+            parser.parse(data,true);
+            fail("Invalid End of Line");
+        }
+        catch(BadMessageException e) {
+            assertTrue(e.getMessage().contains("Bad EOL"));
+        }
+
 
     }
     
