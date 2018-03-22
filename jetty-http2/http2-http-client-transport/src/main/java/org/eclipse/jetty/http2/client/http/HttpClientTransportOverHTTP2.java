@@ -124,14 +124,17 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     @Override
     public void connect(InetSocketAddress address, Map<String, Object> context)
     {
-        client.setConnectTimeout(getHttpClient().getConnectTimeout());
+        HttpClient httpClient = getHttpClient();
+        client.setConnectTimeout(httpClient.getConnectTimeout());
+        client.setConnectBlocking(httpClient.isConnectBlocking());
+        client.setBindAddress(httpClient.getBindAddress());
 
         SessionListenerPromise listenerPromise = new SessionListenerPromise(context);
 
         HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         SslContextFactory sslContextFactory = null;
         if (HttpScheme.HTTPS.is(destination.getScheme()))
-            sslContextFactory = getHttpClient().getSslContextFactory();
+            sslContextFactory = httpClient.getSslContextFactory();
 
         client.connect(sslContextFactory, address, listenerPromise, listenerPromise, context);
     }

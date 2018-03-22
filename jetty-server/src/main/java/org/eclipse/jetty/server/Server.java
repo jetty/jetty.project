@@ -373,17 +373,17 @@ public class Server extends HandlerWrapper implements Attributes
             String gitHash = Jetty.GIT_HASH;
             String timestamp = Jetty.BUILD_TIMESTAMP;
 
-            LOG.info("jetty-{}, build timestamp: {}, git hash: {}", getVersion(), timestamp, gitHash);
-            if (!Jetty.STABLE)
-            {
-                LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
-                LOG.warn("Download a stable release from http://download.eclipse.org/jetty/");
-            }
-
-            HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
+        LOG.info("jetty-{}; built: {}; git: {}; jvm {}", getVersion(), timestamp, gitHash, System.getProperty("java.runtime.version",System.getProperty("java.version")));
+        if (!Jetty.STABLE)
+        {
+            LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
+            LOG.warn("Download a stable release from http://download.eclipse.org/jetty/");
+        }
+        
+        HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
 
             MultiException mex=new MultiException();
-            
+
             // Open network connector to ensure ports are available
             _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(connector->
             {
@@ -396,15 +396,15 @@ public class Server extends HandlerWrapper implements Attributes
                     mex.add(th);
                 }
             });
-            
+
             // Throw now if verified start sequence and there was an open exception
             mex.ifExceptionThrow();
 
             // Start the server and components, but not connectors!
-            // #start(LifeCycle) is overridden so that connectors are not started 
+            // #start(LifeCycle) is overridden so that connectors are not started
             super.doStart();
-          
-            // start connectors 
+
+            // start connectors
             for (Connector connector : _connectors)
             {
                 try

@@ -26,7 +26,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpResponseException;
-import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
@@ -42,6 +42,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private final HttpParser parser;
     private ByteBuffer buffer;
     private boolean shutdown;
+    private boolean complete;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -168,13 +169,22 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         while (true)
         {
-            // Must parse even if the buffer is fully consumed, to allow the
-            // parser to advance from asynchronous content to response complete.
             boolean handle = parser.parseNext(buffer);
+            boolean complete = this.complete;
+            this.complete = false;
             if (LOG.isDebugEnabled())
                 LOG.debug("Parsed {}, remaining {} {}", handle, buffer.remaining(), parser);
-            if (handle || !buffer.hasRemaining())
-                return handle;
+            if (handle)
+                return true;
+            if (!buffer.hasRemaining())
+                return false;
+            if (complete)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Discarding unexpected content after response: {}", BufferUtil.toDetailString(buffer));
+                BufferUtil.clear(buffer);
+                return false;
+            }
         }
     }
 
@@ -298,11 +308,15 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
+        int status = exchange.getResponse().getStatus();
+
+        if (status != HttpStatus.CONTINUE_100)
+            complete = true;
+
         boolean proceed = responseSuccess(exchange);
         if (!proceed)
             return true;
 
-        int status = exchange.getResponse().getStatus();
         if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
             return true;
 
@@ -325,13 +339,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     @Override
-    public void badMessage(int status, String reason)
+    public void badMessage(BadMessageException failure)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
         {
             HttpResponse response = exchange.getResponse();
-            response.status(status).reason(reason);
+            response.status(failure.getCode()).reason(failure.getReason());
             failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response));
         }
     }

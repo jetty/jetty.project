@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -365,6 +366,15 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
             throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
         }
 
+        if ("wss".equals(scheme))
+        {
+            // test for ssl context
+            if (httpClient.getSslContextFactory() == null)
+            {
+                throw new IllegalStateException("HttpClient has no SslContextFactory, wss:// URI's are not supported in this configuration");
+            }
+        }
+
         request.setRequestURI(toUri);
         request.setLocalEndpoint(websocket);
 
@@ -385,6 +395,17 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         WebSocketUpgradeRequest wsReq = new WebSocketUpgradeRequest(this,httpClient,request);
         wsReq.setUpgradeListener(upgradeListener);
         return wsReq.sendAsync();
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        Objects.requireNonNull(httpClient, "Provided HttpClient is null");
+
+        super.doStart();
+
+        if (!httpClient.isRunning())
+            throw new IllegalStateException("HttpClient is not running (did you forget to start it?): " + httpClient);
     }
 
     @Override

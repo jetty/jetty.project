@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.function.Function;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
@@ -123,9 +122,6 @@ public class StartArgs
     /** Map of enabled modules to the source of where that activation occurred */
     Map<String, List<String>> sources = new HashMap<>();
 
-    /** Map of properties to where that property was declared */
-    private Map<String, String> propertySource = new HashMap<>();
-
     /** List of all active [files] sections from enabled modules */
     private List<FileArg> files = new ArrayList<>();
 
@@ -148,7 +144,7 @@ public class StartArgs
     private List<Path> propertyFiles = new ArrayList<>();
 
     private Props properties = new Props();
-    private Set<String> systemPropertyKeys = new HashSet<>();
+    private Map<String,String> systemPropertySource = new HashMap<>();
     private List<String> rawLibs = new ArrayList<>();
 
     // jetty.base - build out commands
@@ -203,12 +199,6 @@ public class StartArgs
         {
             files.add(arg);
         }
-    }
-
-    public void addSystemProperty(String key, String value)
-    {
-        this.systemPropertyKeys.add(key);
-        System.setProperty(key,value);
     }
 
     private void addUniqueXmlFile(String xmlRef, Path xmlfile) throws IOException
@@ -337,7 +327,7 @@ public class StartArgs
         List<String> sortedKeys = new ArrayList<>();
         for (Prop prop : properties)
         {
-            if (prop.origin.equals(Props.ORIGIN_SYSPROP))
+            if (prop.source.equals(Props.ORIGIN_SYSPROP))
             {
                 continue; // skip
             }
@@ -369,16 +359,7 @@ public class StartArgs
         {
             System.out.printf(" %s = %s%n",key,prop.value);
             if (StartLog.isDebugEnabled())
-            {
-                System.out.printf("   origin: %s%n",prop.origin);
-                while (prop.overrides != null)
-                {
-                    prop = prop.overrides;
-                    System.out.printf("   (overrides)%n");
-                    System.out.printf("     %s = %s%n",key,prop.value);
-                    System.out.printf("     origin: %s%n",prop.origin);
-                }
-            }
+                System.out.printf("   origin: %s%n",prop.source);
         }
     }
 
@@ -388,26 +369,25 @@ public class StartArgs
         System.out.println("System Properties:");
         System.out.println("------------------");
 
-        if (systemPropertyKeys.isEmpty())
+        if (systemPropertySource.keySet().isEmpty())
         {
             System.out.println(" (no system properties specified)");
             return;
         }
 
         List<String> sortedKeys = new ArrayList<>();
-        sortedKeys.addAll(systemPropertyKeys);
+        sortedKeys.addAll(systemPropertySource.keySet());
         Collections.sort(sortedKeys);
 
         for (String key : sortedKeys)
-        {
-            String value = System.getProperty(key);
-            System.out.printf(" %s = %s%n",key,value);
-        }
+            dumpSystemProperty(key);
     }
 
     private void dumpSystemProperty(String key)
     {
-        System.out.printf(" %s = %s%n",key,System.getProperty(key));
+        String value = System.getProperty(key);
+        String source = systemPropertySource.get(key);
+        System.out.printf(" %s = %s (%s)%n",key,value,source);
     }
 
     /**
@@ -418,20 +398,20 @@ public class StartArgs
      */
     private void ensureSystemPropertySet(String key)
     {
-        if (systemPropertyKeys.contains(key))
+        if (systemPropertySource.containsKey(key))
         {
             return; // done
         }
 
         if (properties.containsKey(key))
         {
-            String val = properties.expand(properties.getString(key));
-            if (val == null)
-            {
-                return; // no value to set
-            }
+            Prop prop = properties.getProp(key);
+            if (prop==null)
+                return; // no value set;
+            
+            String val = properties.expand(prop.value);
             // setup system property
-            systemPropertyKeys.add(key);
+            systemPropertySource.put(key,"property:"+prop.source);
             System.setProperty(key,val);
         }
     }
@@ -446,7 +426,7 @@ public class StartArgs
     {
         StartLog.debug("Expanding System Properties");
         
-        for (String key : systemPropertyKeys)
+        for (String key : systemPropertySource.keySet())
         {
             String value = properties.getString(key);
             if (value!=null)
@@ -588,11 +568,8 @@ public class StartArgs
                     String key = assign[0];
                     String value = assign.length==1?"":assign[1];
 
-                    Property p = processProperty(key,value,"modules",k->{return System.getProperty(k);});
-                    if (p!=null)
-                    {   
-                        cmd.addRawArg("-D"+p.key+"="+getProperties().expand(p.value));
-                    }                    
+                    Prop p = processSystemProperty(key,value,null);
+                    cmd.addRawArg("-D"+p.key+"="+getProperties().expand(p.value));
                 }
                 else
                 {
@@ -601,7 +578,7 @@ public class StartArgs
             }
 
             // System Properties
-            for (String propKey : systemPropertyKeys)
+            for (String propKey : systemPropertySource.keySet())
             {
                 String value = System.getProperty(propKey);
                 cmd.addEqualsArg("-D" + propKey,value);
@@ -737,7 +714,7 @@ public class StartArgs
 
     public boolean hasSystemProperties()
     {
-        for (String key : systemPropertyKeys)
+        for (String key : systemPropertySource.keySet())
         {
             // ignored keys
             if ("jetty.home".equals(key) || "jetty.base".equals(key) || "main.class".equals(key))
@@ -1096,13 +1073,10 @@ public class StartArgs
             String key = assign[0];
             String value = assign.length==1?"":assign[1];
             
-            Property p = processProperty(key,value,source,k->{return System.getProperty(k);});
-            if (p!=null)
-            {   
-                systemPropertyKeys.add(p.key);
-                setProperty(p.key,p.value,p.source);
-                System.setProperty(p.key,p.value);
-            }
+            Prop p = processSystemProperty(key,value,source);
+            systemPropertySource.put(p.key,p.source);
+            setProperty(p.key,p.value,p.source);
+            System.setProperty(p.key,p.value);
             return;
         }
         
@@ -1124,11 +1098,8 @@ public class StartArgs
             String key = arg.substring(0,equals);
             String value = arg.substring(equals + 1);
 
-            Property p = processProperty(key,value,source,k->{return getProperties().getString(k);});
-            if (p!=null)
-            {
-                setProperty(p.key,p.value,p.source);
-            }
+            processAndSetProperty(key,value,source);
+            
             return;
         }
 
@@ -1157,41 +1128,69 @@ public class StartArgs
         throw new UsageException(UsageException.ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
     
-    protected Property processProperty(String key,String value,String source, Function<String, String> getter)
+    protected Prop processSystemProperty(String key, String value, String source)
     {
         if (key.endsWith("+"))
         {
             key = key.substring(0,key.length() - 1);
-            String orig = getter.apply(key);
+            String orig = System.getProperty(key);
             if (orig == null || orig.isEmpty())
+            {
+                if (value.startsWith(","))
+                    value = value.substring(1);
+            }
+            else 
+            {
+                value = orig + value;
+                if (source!=null && systemPropertySource.containsKey(key))
+                    source = systemPropertySource.get(key) + "," + source;
+            }
+        }
+        else if (key.endsWith("?"))
+        {
+            key = key.substring(0,key.length() - 1);
+            String preset = System.getProperty(key);
+            if (preset!=null)
+            {
+                value = preset;
+                source = systemPropertySource.get(key);
+            }
+            else if (source!=null)
+                source = source+"?=";
+        }
+
+        return new Prop(key, value, source);
+    }
+    
+    protected void processAndSetProperty(String key,String value,String source)
+    {
+        if (key.endsWith("+"))
+        {
+            key = key.substring(0,key.length() - 1);
+            Prop orig = getProperties().getProp(key);
+            if (orig == null)
             {
                 if (value.startsWith(","))
                     value = value.substring(1);
             }
             else
             {
-                value = orig + value;
-                source = propertySource.get(key) + "," + source;
+                value = orig.value + value;
+                source = orig.source + "," + source;
             }
         }
-        if (key.endsWith("?"))
+        else if (key.endsWith("?"))
         {
             key = key.substring(0,key.length() - 1);
-            String preset = getter.apply(key);
+            Prop preset = getProperties().getProp(key);
             if (preset!=null)
-            {
+                return;
+            
+            if (source!=null)
                 source = source+"?=";
-                value = preset;
-            }
-        }
-        else if (propertySource.containsKey(key))
-        {
-            if (!propertySource.get(key).endsWith("[ini]"))
-                StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
-            propertySource.put(key,source);
         }
         
-        return new Property(key,value,source);
+        setProperty(key,value,source);
     }
     
     private void enableModules(String source, List<String> moduleNames)
@@ -1266,12 +1265,11 @@ public class StartArgs
             try
             {
                 JavaVersion ver = JavaVersion.parse(value);
-                properties.setProperty("java.version",ver.getVersion(),source);
                 properties.setProperty("java.version.platform",Integer.toString(ver.getPlatform()),source);
-                properties.setProperty("java.version.major",Integer.toString(ver.getMajor()),source);
-                properties.setProperty("java.version.minor",Integer.toString(ver.getMinor()),source);
-                properties.setProperty("java.version.micro",Integer.toString(ver.getMicro()),source);
-                properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
+                // @deprecated - below will be removed in Jetty 10.x
+                properties.setProperty("java.version.major", Integer.toString(ver.getMajor()), "Deprecated");
+                properties.setProperty("java.version.minor", Integer.toString(ver.getMinor()), "Deprecated");
+                properties.setProperty("java.version.micro", Integer.toString(ver.getMicro()), "Deprecated");
             }
             catch (Throwable x)
             {
@@ -1303,22 +1301,4 @@ public class StartArgs
         return builder.toString();
     }
     
-    static class Property 
-    {
-        String key;
-        String value;
-        String source;
-        public Property(String key, String value, String source)
-        {
-            this.key = key;
-            this.value = value;
-            this.source = source;
-        }  
-        
-        @Override
-        public String toString()
-        {
-            return String.format("%s=%s(%s)",key,value,source);
-        }
-    }
 }

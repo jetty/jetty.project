@@ -321,10 +321,10 @@ public class HttpSenderOverHTTP extends HttpSender
         private void release()
         {
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
-            if (headerBuffer != BufferUtil.EMPTY_BUFFER)
+            if (!BufferUtil.isTheEmptyBuffer(headerBuffer))
                 bufferPool.release(headerBuffer);
             headerBuffer = null;
-            if (chunkBuffer != BufferUtil.EMPTY_BUFFER)
+            if (!BufferUtil.isTheEmptyBuffer(chunkBuffer))
                 bufferPool.release(chunkBuffer);
             chunkBuffer = null;
             contentBuffer = null;

@@ -266,7 +266,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public void badMessage(int status, String reason)
+    public void badMessage(BadMessageException failure)
     {
         _httpConnection.getGenerator().setPersistent(false);
         try
@@ -280,7 +280,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             LOG.ignore(e);
         }
 
-        onBadMessage(status, reason);
+        onBadMessage(failure);
     }
 
     @Override
@@ -330,7 +330,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             {
                 if (_unknownExpectation)
                 {
-                    badMessage(HttpStatus.EXPECTATION_FAILED_417, null);
+                    badMessage(new BadMessageException(HttpStatus.EXPECTATION_FAILED_417));
                     return false;
                 }
 
@@ -371,7 +371,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                         upgrade())
                     return true;
 
-                badMessage(HttpStatus.UPGRADE_REQUIRED_426, null);
+                badMessage(new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426));
                 _httpConnection.getParser().close();
                 return false;
             }
@@ -425,7 +425,10 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade {} {}", this, _upgrade);
 
-        if (_upgrade != PREAMBLE_UPGRADE_H2C && (_connection == null || !_connection.contains("upgrade")))
+        @SuppressWarnings("ReferenceEquality")
+        boolean isUpgraded_H2C = (_upgrade == PREAMBLE_UPGRADE_H2C);
+
+        if (!isUpgraded_H2C && (_connection == null || !_connection.contains("upgrade")))
             throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
         // Find the upgrade factory
@@ -462,7 +465,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         // Send 101 if needed
         try
         {
-            if (_upgrade != PREAMBLE_UPGRADE_H2C)
+            if (!isUpgraded_H2C)
                 sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.SWITCHING_PROTOCOLS_101, response101, 0), null, true);
         }
         catch (IOException e)

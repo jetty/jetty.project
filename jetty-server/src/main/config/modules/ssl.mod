@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Enables a TLS(SSL) Connector on the server.
 This may be used for HTTPS and/or HTTP2 by enabling

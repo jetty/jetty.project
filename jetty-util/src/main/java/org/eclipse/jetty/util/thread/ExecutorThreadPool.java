@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -78,7 +79,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
 
     public ExecutorThreadPool(ThreadPoolExecutor executor, int reservedThreads, ThreadGroup group)
     {
-        this(executor, Math.min(Runtime.getRuntime().availableProcessors(), executor.getCorePoolSize()), reservedThreads, group);
+        this( executor, Math.min(ProcessorUtils.availableProcessors(),executor.getCorePoolSize()),reservedThreads,group);
     }
 
     private ExecutorThreadPool(ThreadPoolExecutor executor, int minThreads, int reservedThreads, ThreadGroup group)

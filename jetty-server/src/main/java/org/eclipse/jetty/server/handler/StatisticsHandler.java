@@ -102,7 +102,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             final long elapsed = System.currentTimeMillis()-request.getTimeStamp();
 
             long d=_requestStats.decrement();
-            _requestTimeStats.set(elapsed);
+            _requestTimeStats.record(elapsed);
 
             updateResponse(request);
 
@@ -184,7 +184,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             final long dispatched=now-start;
 
             _dispatchedStats.decrement();
-            _dispatchedTimeStats.set(dispatched);
+            _dispatchedTimeStats.record(dispatched);
 
             if (state.isSuspended())
             {
@@ -197,7 +197,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             else if (state.isInitial())
             {
                 long d=_requestStats.decrement();
-                _requestTimeStats.set(dispatched);
+                _requestTimeStats.record(dispatched);
                 updateResponse(baseRequest);
                 
                 // If we have no more dispatches, should we signal shutdown?

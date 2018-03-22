@@ -82,6 +82,17 @@ public class HttpContent implements Callback, Closeable
     }
 
     /**
+     * @param buffer
+     * @return true if the buffer is the sentinel instance {@link CLOSE}
+     */
+    private static boolean isTheCloseBuffer(ByteBuffer buffer)
+    {
+        @SuppressWarnings("ReferenceEquality")
+        boolean isTheCloseBuffer = (buffer == CLOSE);
+        return isTheCloseBuffer;
+    }
+    
+    /**
      * @return whether there is any content at all
      */
     public boolean hasContent()
@@ -177,6 +188,7 @@ public class HttpContent implements Callback, Closeable
     /**
      * @return whether the cursor has been advanced past the {@link #isLast() last} position.
      */
+    @SuppressWarnings("ReferenceEquality")
     public boolean isConsumed()
     {
         return buffer == AFTER;
@@ -187,7 +199,7 @@ public class HttpContent implements Callback, Closeable
     {
         if (isConsumed())
             return;
-        if (buffer == CLOSE)
+        if (isTheCloseBuffer(buffer))
             return;
         if (iterator instanceof Callback)
             ((Callback)iterator).succeeded();
@@ -198,7 +210,7 @@ public class HttpContent implements Callback, Closeable
     {
         if (isConsumed())
             return;
-        if (buffer == CLOSE)
+        if (isTheCloseBuffer(buffer))
             return;
         if (iterator instanceof Callback)
             ((Callback)iterator).failed(x);

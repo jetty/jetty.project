@@ -41,8 +41,9 @@ def getFullBuild(jdk, os) {
                       maven: 'maven3',
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
+                      globalMavenSettingsConfig: 'oss-settings.xml',
                       mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
-                sh "mvn -V -B clean install -Dtest=None -T6"
+                sh "mvn -V -B clean install -DskipTests -T6"
               }
 
             }
@@ -62,6 +63,7 @@ def getFullBuild(jdk, os) {
                       maven: 'maven3',
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
+                      globalMavenSettingsConfig: 'oss-settings.xml',
                       mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
                 sh "mvn -V -B javadoc:javadoc -T5"
               }
@@ -83,6 +85,8 @@ def getFullBuild(jdk, os) {
                       maven: 'maven3',
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
+                      //options: [invokerPublisher(disabled: false)],
+                      globalMavenSettingsConfig: 'oss-settings.xml',
                       mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
                 //
                 sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T3 -e -Dmaven.repo.local=${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
@@ -137,6 +141,7 @@ def getFullBuild(jdk, os) {
                       maven: 'maven3',
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
+                      globalMavenSettingsConfig: 'oss-settings.xml',
                       mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
                 sh "mvn -V -B -Pcompact3 clean install -T5"
               }

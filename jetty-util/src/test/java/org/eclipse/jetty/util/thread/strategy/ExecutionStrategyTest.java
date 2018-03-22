@@ -29,6 +29,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -156,11 +157,12 @@ public class ExecutionStrategyTest
         
         Producer producer = new TestProducer()
         {
-            int tasks=TASKS;
+            AtomicInteger tasks = new AtomicInteger(TASKS);
             @Override
             public Runnable produce()
             {
-                final int id = --tasks;
+                final int id = tasks.decrementAndGet();
+
                 if (id>=0)
                 {
                     while(_threads.isRunning())
@@ -188,7 +190,7 @@ public class ExecutionStrategyTest
                 return null;
             }
         };
-        
+
         newExecutionStrategy(producer,_threads);
         _strategy.dispatch();
         
@@ -205,7 +207,6 @@ public class ExecutionStrategyTest
                     {
                         Thread.sleep(20);
                         q.offer(latch);
-                        _strategy.produce();
                     }
                 }
                 catch(Exception e)
@@ -218,6 +219,7 @@ public class ExecutionStrategyTest
         if (!latch.await(30,TimeUnit.SECONDS))
         {
             System.err.println(_strategy);
+            System.err.printf("tasks=%d latch=%d q=%d%n",TASKS,latch.getCount(), q.size());
             _threads.dumpStdErr();
             Assert.fail();
         }

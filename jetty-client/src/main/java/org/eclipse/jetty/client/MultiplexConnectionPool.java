@@ -36,11 +36,12 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
-public class MultiplexConnectionPool extends AbstractConnectionPool implements Sweeper.Sweepable
+public class MultiplexConnectionPool extends AbstractConnectionPool implements ConnectionPool.Multiplexable, Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(MultiplexConnectionPool.class);
 
     private final ReentrantLock lock = new ReentrantLock();
+    private final HttpDestination destination;
     private final Deque<Holder> idleConnections;
     private final Map<Connection, Holder> muxedConnections;
     private final Map<Connection, Holder> busyConnections;
@@ -49,12 +50,26 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements S
     public MultiplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
         super(destination, maxConnections, requester);
+        this.destination = destination;
         this.idleConnections = new ArrayDeque<>(maxConnections);
         this.muxedConnections = new HashMap<>(maxConnections);
         this.busyConnections = new HashMap<>(maxConnections);
         this.maxMultiplex = maxMultiplex;
     }
 
+    @Override
+    public Connection acquire()
+    {
+        Connection connection = activate();
+        if (connection == null)
+        {
+            int maxPending = 1 + destination.getQueuedRequestCount() / getMaxMultiplex();
+            tryCreate(maxPending);
+            connection = activate();
+        }
+        return connection;
+    }    
+    
     protected void lock()
     {
         lock.lock();
@@ -65,6 +80,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements S
         lock.unlock();
     }
 
+    @Override
     public int getMaxMultiplex()
     {
         lock();
@@ -78,6 +94,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements S
         }
     }
 
+    @Override
     public void setMaxMultiplex(int maxMultiplex)
     {
         lock();

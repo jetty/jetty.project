@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -122,6 +123,8 @@ public class HTTP2Client extends ContainerLifeCycle
     private int selectors = 1;
     private long idleTimeout = 30000;
     private long connectTimeout = 10000;
+    private boolean connectBlocking;
+    private SocketAddress bindAddress;
     private int inputBufferSize = 8192;
     private List<String> protocols = Arrays.asList("h2", "h2-17", "h2-16", "h2-15", "h2-14");
     private int initialSessionRecvWindow = 16 * 1024 * 1024;
@@ -266,6 +269,27 @@ public class HTTP2Client extends ContainerLifeCycle
             selector.setConnectTimeout(connectTimeout);
     }
 
+    @ManagedAttribute("Whether the connect() operation is blocking")
+    public boolean isConnectBlocking()
+    {
+        return connectBlocking;
+    }
+
+    public void setConnectBlocking(boolean connectBlocking)
+    {
+        this.connectBlocking = connectBlocking;
+    }
+
+    public SocketAddress getBindAddress()
+    {
+        return bindAddress;
+    }
+
+    public void setBindAddress(SocketAddress bindAddress)
+    {
+        this.bindAddress = bindAddress;
+    }
+
     @ManagedAttribute("The size of the buffer used to read from the network")
     public int getInputBufferSize()
     {
@@ -325,10 +349,23 @@ public class HTTP2Client extends ContainerLifeCycle
         try
         {
             SocketChannel channel = SocketChannel.open();
+            SocketAddress bindAddress = getBindAddress();
+            if (bindAddress != null)
+                channel.bind(bindAddress);
             configure(channel);
-            channel.configureBlocking(false);
+            boolean connected = true;
+            if (isConnectBlocking())
+            {
+                channel.socket().connect(address, (int)getConnectTimeout());
+                channel.configureBlocking(false);
+            }
+            else
+            {
+                channel.configureBlocking(false);
+                connected = channel.connect(address);
+            }
             context = contextFrom(sslContextFactory, address, listener, promise, context);
-            if (channel.connect(address))
+            if (connected)
                 selector.accept(channel, context);
             else
                 selector.connect(channel, context);

@@ -29,6 +29,7 @@
     <asm.version>6.0</asm.version>
     <jmh.version>1.20</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
+    <surefireVersion>2.21.0</surefireVersion>
   </properties>
 
   <licenses>
@@ -440,7 +441,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>2.20.1</version>
+          <version>${surefireVersion}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-invoker-plugin</artifactId>
+          <version>3.0.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -460,7 +466,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.0.0</version>
           <configuration>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
@@ -594,7 +600,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.20</version>
+          <version>${surefireVersion}</version>
           <configuration>
             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
@@ -1001,11 +1007,56 @@
   </dependencyManagement>
 
   <profiles>
-    <!-- use last snapshot of jacoco and failsafe for jdk10 -->
+    <!-- use last snapshot of jacoco for jdk10 -->
     <profile>
       <id>jdk10</id>
       <activation>
         <jdk>10</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <!-- https://github.com/jacoco/jacoco/pull/629 -->
+            <plugin>
+              <groupId>org.jacoco</groupId>
+              <artifactId>jacoco-maven-plugin</artifactId>
+              <version>0.8.1-SNAPSHOT</version>
+              <configuration>
+                <skip>false</skip>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>oss.snapshots</id>
+          <name>OSS Snapshots</name>
+          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+        <pluginRepository>
+          <id>apache.snapshots</id>
+          <url>https://repository.apache.org/content/repositories/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+    <!-- use last snapshot of jacoco for jdk11 -->
+    <profile>
+      <id>jdk11</id>
+      <activation>
+        <jdk>11</jdk>
       </activation>
       <build>
         <pluginManagement>
@@ -1017,11 +1068,6 @@
               <configuration>
                 <skip>true</skip>
               </configuration>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-failsafe-plugin</artifactId>
-              <version>2.21.0-SNAPSHOT</version>
             </plugin>
           </plugins>
         </pluginManagement>
@@ -1755,6 +1801,14 @@
       <organization>IBM</organization>
       <timezone>-8</timezone>
     </developer>
+    <developer>
+      <id>olamy</id>
+      <name>Olivier Lamy</name>
+      <email>oliver.lamy@gmail.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>Australia/Brisbane</timezone>
+    </developer>
   </developers>
 
   <organization>
@@ -1762,6 +1816,9 @@
     <url>https://webtide.com</url>
   </organization>
 
+  <!-- SNAPSHOT Repository is only for temporary usage.
+       This configuration should not be checked in, as it
+       can result in bad success on CI.
   <repositories>
     <repository>
       <id>jetty-snapshots</id>
@@ -1772,6 +1829,7 @@
       </snapshots>
     </repository>
   </repositories>
+   -->
 
   <distributionManagement>
     <repository>

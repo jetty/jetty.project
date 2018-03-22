@@ -64,23 +64,26 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
         }
         
         URL url = _cache.get(name);
-        
-        if (name==null)
+
+        if (url == null)
         {
+            // Not found in cache, try parent
             url = super.getResource(name);
         
             if (url==null)
             {
+                // Still not found, cache the not-found result
                 if (LOG.isDebugEnabled())
                     LOG.debug("Caching not found resource {}",name);
                 _notFound.add(name);
             }
             else
             {
+                // Cache the new result
                 _cache.putIfAbsent(name,url);
             }
         }
-        
+
         return url;
     }
 

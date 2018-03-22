@@ -70,10 +70,14 @@ public abstract class HttpChannel
         }
 
         if (abort)
+        {
             exchange.getRequest().abort(new UnsupportedOperationException("Pipelined requests not supported"));
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} associated {} to {}", exchange, result, this);
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} associated {} to {}", exchange, result, this);
+        }
 
         return result;
     }

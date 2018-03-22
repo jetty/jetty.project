@@ -32,6 +32,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -68,10 +69,10 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         if (executor instanceof ThreadPool.SizedThreadPool)
         {
             int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
-            int cpus = Runtime.getRuntime().availableProcessors();
+            int cpus = ProcessorUtils.availableProcessors();
             return Math.max(1,Math.min(cpus/2,threads/16));
         }
-        return Math.max(1,Runtime.getRuntime().availableProcessors()/2);
+        return Math.max(1,ProcessorUtils.availableProcessors()/2);
     }
 
     protected SelectorManager(Executor executor, Scheduler scheduler)

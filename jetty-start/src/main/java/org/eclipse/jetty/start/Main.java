@@ -39,7 +39,6 @@ import java.net.SocketTimeoutException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
@@ -295,18 +294,18 @@ public class Main
         args.parse(baseHome.getConfigSources());
 
         Props props = baseHome.getConfigSources().getProps();
-        Props.Prop home = props.getProp(BaseHome.JETTY_HOME);
+        Prop home = props.getProp(BaseHome.JETTY_HOME);
         if (!args.getProperties().containsKey(BaseHome.JETTY_HOME))
             args.getProperties().setProperty(home);
         args.getProperties().setProperty(BaseHome.JETTY_HOME+".uri",
             normalizeURI(baseHome.getHomePath().toUri().toString()),
-            home.origin);
-        Props.Prop base = props.getProp(BaseHome.JETTY_BASE);
+            home.source);
+        Prop base = props.getProp(BaseHome.JETTY_BASE);
         if (!args.getProperties().containsKey(BaseHome.JETTY_BASE))
             args.getProperties().setProperty(base);
         args.getProperties().setProperty(BaseHome.JETTY_BASE+".uri",
             normalizeURI(baseHome.getBasePath().toUri().toString()),
-            base.origin);
+            base.source);
         
         // ------------------------------------------------------------
         // 3) Module Registration
@@ -426,25 +425,8 @@ public class Main
         {
             for (ConfigSource config : baseHome.getConfigSources())
             {
-                System.out.printf("ConfigSource %s%n",config.getId());
                 for (StartIni ini : config.getStartInis())
-                {
-                    for (String line : ini.getAllLines())
-                    {
-                        Matcher m = Module.SET_PROPERTY.matcher(line);
-                        if (m.matches() && m.groupCount()==3)
-                        {
-                            String name = m.group(2);
-                            String value = m.group(3);
-                            Prop p = args.getProperties().getProp(name);
-                            if (p!=null && ("#".equals(m.group(1)) || !value.equals(p.value)))
-                            {
-                                ini.update(baseHome,args.getProperties());
-                                break;
-                            }
-                        }
-                    }
-                }
+                    ini.update(baseHome,args.getProperties());
             }
         }
         
@@ -512,10 +494,10 @@ public class Main
 
     private void doStop(StartArgs args)
     {
-        Props.Prop stopHostProp = args.getProperties().getProp("STOP.HOST", true);
-        Props.Prop stopPortProp = args.getProperties().getProp("STOP.PORT", true);
-        Props.Prop stopKeyProp = args.getProperties().getProp("STOP.KEY", true);
-        Props.Prop stopWaitProp = args.getProperties().getProp("STOP.WAIT", true);
+        Prop stopHostProp = args.getProperties().getProp("STOP.HOST", true);
+        Prop stopPortProp = args.getProperties().getProp("STOP.PORT", true);
+        Prop stopKeyProp = args.getProperties().getProp("STOP.KEY", true);
+        Prop stopWaitProp = args.getProperties().getProp("STOP.WAIT", true);
         
         String stopHost = "127.0.0.1";
         int stopPort = -1;

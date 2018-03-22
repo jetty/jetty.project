@@ -17,6 +17,7 @@
     <exam.version>4.11.0</exam.version>
     <url.version>2.5.2</url.version>
     <injection.bundle.version>1.0</injection.bundle.version>
+    <skipTests>true</skipTests>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->
@@ -424,32 +425,29 @@
     </dependency>
   </dependencies>
   <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.20.1</version>
-        <configuration>
-          <skipTests>true</skipTests>
-          <systemPropertyVariables>
-            <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.servicemix.tooling</groupId>
-        <artifactId>depends-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-depends-file</id>
-            <goals>
-              <goal>generate-depends-file</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <skipTests>${skipTests}</skipTests>
+            <systemPropertyVariables>
+              <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.servicemix.tooling</groupId>
+          <artifactId>depends-maven-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>generate-depends-file</id>
+              <goals>
+                <goal>generate-depends-file</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
         <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
@@ -477,6 +475,20 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.servicemix.tooling</groupId>
+        <artifactId>depends-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-depends-file</id>
+            <goals>
+              <goal>generate-depends-file</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
   <profiles>
     <profile>
@@ -516,20 +528,23 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
+      <properties>
+        <skipTests>false</skipTests>
+      </properties>
       <build>
         <plugins>
-       <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <skipTests>false</skipTests>
-          <excludes>
-             <exclude>**/TestJettyOSGiBootHTTP2JDK9*</exclude>
-          </excludes>
-          <!-- No point defining -Xbootclasspath as the actual OSGi VM is run as a forked process by pax-exam -->
-          <!-- But we do pass the sys property of the alpn-boot jar so that it can be configured inside tests -->
-          <argLine>-Dmortbay-alpn-boot=${settings.localRepository}/org/mortbay/jetty/alpn/alpn-boot/${alpn.version}/alpn-boot-${alpn.version}.jar</argLine>
-        </configuration>
-      </plugin>
+           <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+
+              <excludes>
+                 <exclude>**/TestJettyOSGiBootHTTP2JDK9*</exclude>
+              </excludes>
+              <!-- No point defining -Xbootclasspath as the actual OSGi VM is run as a forked process by pax-exam -->
+              <!-- But we do pass the sys property of the alpn-boot jar so that it can be configured inside tests -->
+              <argLine>-Dmortbay-alpn-boot=${settings.localRepository}/org/mortbay/jetty/alpn/alpn-boot/${alpn.version}/alpn-boot-${alpn.version}.jar</argLine>
+            </configuration>
+          </plugin>
         </plugins>
       </build>
     </profile>
@@ -570,12 +585,15 @@
           <scope>test</scope>
         </dependency>
      </dependencies>
+      <properties>
+        <skipTests>false</skipTests>
+      </properties>
      <build>
        <plugins>
         <plugin>
          <artifactId>maven-surefire-plugin</artifactId>
          <configuration>
-           <skipTests>false</skipTests>
+           <skipTests>${skipTests}</skipTests>
            <excludes>
              <exclude>**/TestJettyOSGiBootHTTP2</exclude>  
            </excludes>

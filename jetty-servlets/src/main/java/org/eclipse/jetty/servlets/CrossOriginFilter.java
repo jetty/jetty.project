@@ -54,7 +54,8 @@ import org.eclipse.jetty.util.log.Logger;
  * <dt>allowedOrigins</dt>
  * <dd>a comma separated list of origins that are
  * allowed to access the resources. Default value is <b>*</b>, meaning all
- * origins.
+ * origins.    Note that using wild cards can result in security problems
+ * for requests identifying hosts that do not exist. 
  * <p>
  * If an allowed origin contains one or more * characters (for example
  * http://*.domain.com), then "*" characters are converted to ".*", "."
