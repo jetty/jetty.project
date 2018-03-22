@@ -40,6 +40,8 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     private String _fileName;
     private String _sysPropertyName;
 
+
+
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener#lifeCycleStarted(org.eclipse.jetty.util.component.LifeCycle)
      */
@@ -89,6 +91,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
      */
     public void setFileName(String name)
     {
+        
         _fileName = name;
     }
 
