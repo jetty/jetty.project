@@ -46,7 +46,6 @@ import org.apache.maven.plugin.MojoFailureException;
 public class JettyDeployWar extends JettyRunWarMojo
 {
 
-    
     /**
      * If true, the plugin should continue and not block. Otherwise the
      * plugin will block further execution and you will need to use
@@ -56,19 +55,13 @@ public class JettyDeployWar extends JettyRunWarMojo
      * @parameter  default-value="true"
      */
     protected boolean daemon = true;
-    
-    
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
         nonBlocking = daemon;
         super.execute();
     }
-    
-
-
-  
-
 
     /** 
      * @see org.eclipse.jetty.maven.plugin.JettyRunWarMojo#checkPackagingConfiguration()
@@ -78,11 +71,6 @@ public class JettyDeployWar extends JettyRunWarMojo
     {
         return; //do not require this to be a war project
     }
-
-
-
-
-
 
     @Override
     public void finishConfigurationBeforeStart() throws Exception
