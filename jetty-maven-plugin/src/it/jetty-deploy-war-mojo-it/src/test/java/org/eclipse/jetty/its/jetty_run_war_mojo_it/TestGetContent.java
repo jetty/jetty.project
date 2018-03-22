@@ -30,10 +30,10 @@ import org.junit.Test;
 /**
  *
  */
-public class TestHelloServlet
+public class TestGetContent
 {
     @Test
-    public void hello_servlet()
+    public void get_content()
         throws Exception
     {
         int port = getPort();
