@@ -36,6 +36,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import javax.servlet.MultipartConfigElement;
@@ -65,6 +66,7 @@ public class MultiPartParsingTest
     {
         List<Object[]> ret = new ArrayList<>();
 
+        // Capture of raw request body contents from Apache HttpComponents 4.5.5
         ret.add(new String[]{"multipart-text-files"});
         ret.add(new String[]{"multipart-base64"});
         ret.add(new String[]{"multipart-base64-long"});
@@ -81,6 +83,56 @@ public class MultiPartParsingTest
         ret.add(new String[]{"multipart-uppercase"});
         ret.add(new String[]{"multipart-x-www-form-urlencoded"});
         ret.add(new String[]{"multipart-zencoding"});
+
+        // Capture of raw request body contents from various browsers
+
+        // simple form - 2 fields
+        ret.add(new String[]{"browser-capture-form1-android-chrome"});
+        ret.add(new String[]{"browser-capture-form1-android-firefox"});
+        ret.add(new String[]{"browser-capture-form1-chrome"});
+        ret.add(new String[]{"browser-capture-form1-edge"});
+        ret.add(new String[]{"browser-capture-form1-firefox"});
+        ret.add(new String[]{"browser-capture-form1-ios-safari"});
+        ret.add(new String[]{"browser-capture-form1-msie"});
+        ret.add(new String[]{"browser-capture-form1-osx-safari"});
+
+        // form submitted as shift-jis
+        ret.add(new String[]{"browser-capture-sjis-form-android-chrome"});
+        ret.add(new String[]{"browser-capture-sjis-form-android-firefox"});
+        ret.add(new String[]{"browser-capture-sjis-form-chrome"});
+        ret.add(new String[]{"browser-capture-sjis-form-edge"});
+        ret.add(new String[]{"browser-capture-sjis-form-firefox"});
+        ret.add(new String[]{"browser-capture-sjis-form-ios-safari"});
+        ret.add(new String[]{"browser-capture-sjis-form-msie"});
+        ret.add(new String[]{"browser-capture-sjis-form-safari"});
+
+        // form submitted as shift-jis (with HTML5 specific hidden _charset_ field)
+        ret.add(new String[]{"browser-capture-sjis-charset-form-android-chrome"});
+        ret.add(new String[]{"browser-capture-sjis-charset-form-android-firefox"});
+        ret.add(new String[]{"browser-capture-sjis-charset-form-chrome"});
+        ret.add(new String[]{"browser-capture-sjis-charset-form-edge"});
+        ret.add(new String[]{"browser-capture-sjis-charset-form-firefox"});
+        ret.add(new String[]{"browser-capture-sjis-charset-form-ios-safari"});
+        ret.add(new String[]{"browser-capture-sjis-charset-form-msie"});
+        ret.add(new String[]{"browser-capture-sjis-charset-form-safari"});
+
+        // form submitted with simple file upload
+        ret.add(new String[]{"browser-capture-form-fileupload-android-chrome"});
+        ret.add(new String[]{"browser-capture-form-fileupload-android-firefox"});
+        ret.add(new String[]{"browser-capture-form-fileupload-chrome"});
+        ret.add(new String[]{"browser-capture-form-fileupload-edge"});
+        ret.add(new String[]{"browser-capture-form-fileupload-firefox"});
+        ret.add(new String[]{"browser-capture-form-fileupload-ios-safari"});
+        ret.add(new String[]{"browser-capture-form-fileupload-msie"});
+        ret.add(new String[]{"browser-capture-form-fileupload-safari"});
+
+        // form submitted with 2 files (1 binary, 1 text) and 2 text fields
+        ret.add(new String[]{"browser-capture-form-fileupload-alt-chrome"});
+        ret.add(new String[]{"browser-capture-form-fileupload-alt-edge"});
+        ret.add(new String[]{"browser-capture-form-fileupload-alt-firefox"});
+        ret.add(new String[]{"browser-capture-form-fileupload-alt-ios-safari"});
+        ret.add(new String[]{"browser-capture-form-fileupload-alt-msie"});
+        ret.add(new String[]{"browser-capture-form-fileupload-alt-safari"});
 
         return ret;
     }
@@ -146,7 +198,7 @@ public class MultiPartParsingTest
                      DigestOutputStream digester = new DigestOutputStream(noop, digest))
                 {
                     IO.copy(partInputStream, digester);
-                    String actualSha1sum = Hex.asHex(digest.digest());
+                    String actualSha1sum = Hex.asHex(digest.digest()).toLowerCase(Locale.US);
                     assertThat("Part[" + expected.name + "].sha1sum", actualSha1sum, containsString(expected.value));
                 }
             }
@@ -212,6 +264,12 @@ public class MultiPartParsingTest
                     String split[] = line.split("\\|");
                     switch (split[0])
                     {
+                        case "Request-Header":
+                            if(split[1].equalsIgnoreCase("Content-Type"))
+                            {
+                                parsedContentType = split[2];
+                            }
+                            break;
                         case "Content-Type":
                             parsedContentType = split[1];
                             break;
