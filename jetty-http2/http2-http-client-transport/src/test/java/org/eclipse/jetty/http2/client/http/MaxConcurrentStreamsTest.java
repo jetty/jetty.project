@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.http2.client.http;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -32,7 +31,6 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,12 +51,11 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testOneConcurrentStream() throws Exception
     {
         long sleep = 1000;
-        start(1, new AbstractHandler()
+        start(1, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 // Sleep a bit to allow the second request to be queued.
                 sleep(sleep);
             }
@@ -92,16 +89,40 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     }
 
     @Test
+    public void testManyIterationsWithOneConcurrentStream() throws Exception
+    {
+        int concurrency = 1;
+        start(concurrency, new EmptyServerHandler());
+
+        int iterations = 50;
+        IntStream.range(0, concurrency).parallel().forEach(i ->
+                IntStream.range(0, iterations).forEach(j -> {
+                    try
+                    {
+                        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                                .path("/" + i + "_" + j)
+                                .timeout(5, TimeUnit.SECONDS)
+                                .send();
+                        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+                    }
+                    catch (Throwable x)
+                    {
+                        throw new RuntimeException(x);
+                    }
+                })
+        );
+    }
+
+    @Test
     public void testTwoConcurrentStreamsThirdWaits() throws Exception
     {
         int maxStreams = 2;
         long sleep = 1000;
-        start(maxStreams, new AbstractHandler()
+        start(maxStreams, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 sleep(sleep);
             }
         });
@@ -140,12 +161,11 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testAbortedWhileQueued() throws Exception
     {
         long sleep = 1000;
-        start(1, new AbstractHandler()
+        start(1, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 sleep(sleep);
             }
         });
@@ -170,12 +190,11 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     {
         int maxConcurrent = 10;
         long sleep = 500;
-        start(maxConcurrent, new AbstractHandler()
+        start(maxConcurrent, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 sleep(sleep);
             }
         });
