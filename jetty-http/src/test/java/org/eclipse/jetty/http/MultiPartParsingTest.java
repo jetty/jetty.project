@@ -48,6 +48,7 @@ import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -199,7 +200,7 @@ public class MultiPartParsingTest
                 {
                     IO.copy(partInputStream, digester);
                     String actualSha1sum = Hex.asHex(digest.digest()).toLowerCase(Locale.US);
-                    assertThat("Part[" + expected.name + "].sha1sum", actualSha1sum, containsString(expected.value));
+                    assertThat("Part[" + expected.name + "].sha1sum", actualSha1sum, Matchers.equalToIgnoringCase(expected.value));
                 }
             }
         }
