@@ -33,7 +33,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.ManagedSelector.Selectable;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -87,20 +86,20 @@ public class OneHandler
     {
         private final ConcurrentMap<ManagedSelector, List<Long>> selections = new ConcurrentHashMap<>();
         private final ConcurrentMap<SelectionKey, OnOffStatistic> writeblocked = new ConcurrentHashMap<>();
-        long lastSelected=-1;
+        long lastSelectedEnd=-1;
         long lastSelecting=-1;
 
         @Override
         public void onSelecting(ManagedSelector selector)
         {
             long now = System.nanoTime();
-            if (lastSelected!=-1)
+            if (lastSelectedEnd!=-1)
             {
-                long sinceSelected = TimeUnit.NANOSECONDS.toMillis(now-lastSelected);
+                long sinceSelected = TimeUnit.NANOSECONDS.toMillis(now-lastSelectedEnd);
                 if (sinceSelected>100)
                     System.err.printf("onSelecting: sinceSelected %d>100ms%n",sinceSelected);
             }
-            lastSelected = -1;
+            lastSelectedEnd = -1;
             lastSelecting = now;
         }
         
@@ -121,9 +120,8 @@ public class OneHandler
         }
 
         @Override
-        public void onUpdatedKey(ManagedSelector managedSelector, Selectable selectable)
+        public void onUpdatedKey(ManagedSelector managedSelector, SelectionKey key)
         {
-            SelectionKey key = selectable.getKey();
             OnOffStatistic blocked = writeblocked.get(key);
             if ((key.interestOps()&SelectionKey.OP_WRITE)!=0)
             {
@@ -139,13 +137,19 @@ public class OneHandler
             {
                 if (blocked.getLastOn(TimeUnit.MILLISECONDS)>200)
                 {
-                    System.err.printf("WRITE BLOCKED>200ms: %s %s%n",blocked,selectable);
+                    System.err.printf("WRITE BLOCKED>200ms: %s %s%n",blocked,key.attachment());
                 }
             }
         }
         
         @Override
-        public void onSelectedKey(ManagedSelector selector, Selectable selectable)
+        public void onClosed(ManagedSelector selector, SelectionKey key)
+        {
+            writeblocked.remove(key);
+        }
+
+        @Override
+        public void onSelectedKey(ManagedSelector selector, SelectionKey key)
         {
             selections.get(selector).add(System.nanoTime());
         }
@@ -164,7 +168,7 @@ public class OneHandler
                     .skip(1)
                     .collect(Collectors.joining(",")));
             }
-            lastSelected = System.nanoTime();
+            lastSelectedEnd = System.nanoTime();
         }
 
         @Override

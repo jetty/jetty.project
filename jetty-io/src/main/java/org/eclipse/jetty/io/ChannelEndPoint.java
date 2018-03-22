@@ -100,7 +100,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         public void update(Selector selector)
         {
             if (updateKey())
-                _selector.notifyUpdatedKey(ChannelEndPoint.this);
+                _selector.notifyUpdatedKey(_key);
         }
     };
 

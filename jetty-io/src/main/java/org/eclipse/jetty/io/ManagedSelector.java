@@ -260,13 +260,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         notifyEvent1(listener -> listener::onSelectedBegin);
     }
 
-    void notifyUpdatedKey(Selectable selectable)
+    void notifyUpdatedKey(SelectionKey key)
     {
         for (Listener listener : _listeners)
         {
             try
             {
-                listener.onUpdatedKey(this, selectable);
+                listener.onUpdatedKey(this, key);
             }
             catch (Throwable x)
             {
@@ -275,13 +275,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private void notifySelectedKey(Selectable selectable)
+    private void notifySelectedKey(SelectionKey key)
     {
         for (Listener listener : _listeners)
         {
             try
             {
-                listener.onSelectedKey(this, selectable);
+                listener.onSelectedKey(this, key);
             }
             catch (Throwable x)
             {
@@ -290,13 +290,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private void notifyClosed(Selectable selectable)
+    private void notifyClosed(SelectionKey key)
     {
         for (Listener listener : _listeners)
         {
             try
             {
-                listener.onClosed(this, selectable);
+                listener.onClosed(this, key);
             }
             catch (Throwable x)
             {
@@ -519,7 +519,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 SelectionKey key = _cursor.next();
 
                 if (key.attachment() instanceof Selectable)
-                    notifySelectedKey((Selectable)key.attachment());
+                    notifySelectedKey(key);
 
                 if (key.isValid())
                 {
@@ -585,7 +585,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     Selectable selectable = (Selectable)attachment;
                     if (selectable.updateKey())
-                        notifyUpdatedKey(selectable);
+                        notifyUpdatedKey(key);
                 }
             }
             _keys.clear();
@@ -609,7 +609,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     public interface Listener extends EventListener
     {
 
-        public default void onUpdatedKey(ManagedSelector managedSelector, Selectable selectable)
+        public default void onUpdatedKey(ManagedSelector managedSelector, SelectionKey key)
         {
         }
         
@@ -621,7 +621,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
         }
 
-        public default void onSelectedKey(ManagedSelector selector, Selectable selectable)
+        public default void onSelectedKey(ManagedSelector selector, SelectionKey key)
         {
         }
 
@@ -629,7 +629,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
         }
         
-        public default void onClosed(ManagedSelector selector, Selectable selectable)
+        public default void onClosed(ManagedSelector selector, SelectionKey key)
         {
         }
 
@@ -1003,7 +1003,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 _selectorManager.connectionClosed(connection);
             _selectorManager.endPointClosed(endPoint);
             if (endPoint instanceof Selectable)
-                notifyClosed((Selectable)endPoint);
+                notifyClosed(((Selectable)endPoint).getKey());
         }
 
         @Override
