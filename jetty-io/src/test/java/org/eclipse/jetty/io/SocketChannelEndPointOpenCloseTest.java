@@ -23,25 +23,51 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public abstract class EndPointTest<T extends EndPoint>
+public class SocketChannelEndPointOpenCloseTest
 {
-    public static class EndPointPair<T>
+    public static class EndPointPair
     {
-        public T client;
-        public T server;
+        public SocketChannelEndPoint client;
+        public SocketChannelEndPoint server;
     }
 
-    protected abstract EndPointPair<T> newConnection() throws Exception;
+    static ServerSocketChannel connector;
 
+    @BeforeClass
+    public static void open() throws Exception
+    {
+        connector = ServerSocketChannel.open();
+        connector.socket().bind(null);
+    }
+
+    @AfterClass
+    public static void close() throws Exception
+    {
+        connector.close();
+        connector=null;
+    }
+
+    private EndPointPair newConnection() throws Exception
+    {
+        EndPointPair c = new EndPointPair();
+
+        c.client=new SocketChannelEndPoint(SocketChannel.open(connector.socket().getLocalSocketAddress()),null,null,null);
+        c.server=new SocketChannelEndPoint(connector.accept(),null,null,null);
+        return c;
+    }
 
     @Test
     public void testClientServerExchange() throws Exception
     {
-        EndPointPair<T> c = newConnection();
+        EndPointPair c = newConnection();
         ByteBuffer buffer = BufferUtil.allocate(4096);
 
         // Client sends a request
@@ -110,15 +136,12 @@ public abstract class EndPointTest<T extends EndPoint>
         assertTrue(c.client.isOutputShutdown());
         assertFalse(c.server.isOpen());
         assertTrue(c.server.isOutputShutdown());
-
     }
-
-
 
     @Test
     public void testClientClose() throws Exception
     {
-        EndPointPair<T> c = newConnection();
+        EndPointPair c = newConnection();
         ByteBuffer buffer = BufferUtil.allocate(4096);
 
         c.client.flush(BufferUtil.toBuffer("request"));

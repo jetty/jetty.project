@@ -18,110 +18,46 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SocketChannel;
-
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
-import javax.net.ssl.SSLEngineResult.HandshakeStatus;
-import javax.net.ssl.SSLSocket;
-
-import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.toolchain.test.JDK;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.annotation.Stress;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+import java.io.File;
+import java.nio.ByteBuffer;
 
-public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+
+import org.eclipse.jetty.toolchain.test.JDK;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+public class SslEngineBehaviorTest
 {
-    private static SslContextFactory __sslCtxFactory=new SslContextFactory();
-    private static ByteBufferPool __byteBufferPool = new MappedByteBufferPool();
+    private static SslContextFactory sslCtxFactory;
 
     @BeforeClass
-    public static void initSslEngine() throws Exception
+    public static void startSsl() throws Exception
     {
+        sslCtxFactory = new SslContextFactory();
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
-        __sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
-        __sslCtxFactory.setKeyStorePassword("storepwd");
-        __sslCtxFactory.setKeyManagerPassword("keypwd");
-        __sslCtxFactory.setEndpointIdentificationAlgorithm("");
-        __sslCtxFactory.start();
+        sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
+        sslCtxFactory.setKeyStorePassword("storepwd");
+        sslCtxFactory.setKeyManagerPassword("keypwd");
+        sslCtxFactory.setEndpointIdentificationAlgorithm("");
+        sslCtxFactory.start();
     }
 
-    @Override
-    protected Socket newClient() throws IOException
+    @AfterClass
+    public static void stopSsl() throws Exception
     {
-        SSLSocket socket = __sslCtxFactory.newSslSocket();
-        socket.connect(_connector.socket().getLocalSocketAddress());
-        return socket;
-    }
-
-    @Override
-    protected Connection newConnection(SelectableChannel channel, EndPoint endpoint)
-    {
-        SSLEngine engine = __sslCtxFactory.newSSLEngine();
-        engine.setUseClientMode(false);
-        SslConnection sslConnection = new SslConnection(__byteBufferPool, _threadPool, endpoint, engine);
-        sslConnection.setRenegotiationAllowed(__sslCtxFactory.isRenegotiationAllowed());
-        sslConnection.setRenegotiationLimit(__sslCtxFactory.getRenegotiationLimit());
-        Connection appConnection = super.newConnection(channel,sslConnection.getDecryptedEndPoint());
-        sslConnection.getDecryptedEndPoint().setConnection(appConnection);
-        return sslConnection;
-    }
-
-    @Test
-    @Override
-    public void testEcho() throws Exception
-    {
-        super.testEcho();
-    }
-
-    @Ignore // SSL does not do half closes
-    @Override
-    public void testShutdown() throws Exception
-    {
-    }
-
-    @Test
-    @Override
-    public void testWriteBlocked() throws Exception
-    {
-        super.testWriteBlocked();
-    }
-
-    @Override
-    public void testReadBlocked() throws Exception
-    {
-        super.testReadBlocked();
-    }
-
-    @Override
-    public void testIdle() throws Exception
-    {
-        super.testIdle();
-    }
-
-    @Test
-    @Override
-    @Stress("Requires a relatively idle (network wise) environment")
-    public void testStress() throws Exception
-    {
-        super.testStress();
+        sslCtxFactory.stop();
     }
 
     @Test
@@ -129,8 +65,8 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     {
         Assume.assumeFalse(JDK.IS_9);
 
-        SSLEngine server = __sslCtxFactory.newSSLEngine();
-        SSLEngine client = __sslCtxFactory.newSSLEngine();
+        SSLEngine server = sslCtxFactory.newSSLEngine();
+        SSLEngine client = sslCtxFactory.newSSLEngine();
 
         ByteBuffer netC2S = ByteBuffer.allocate(server.getSession().getPacketBufferSize());
         ByteBuffer netS2C = ByteBuffer.allocate(server.getSession().getPacketBufferSize());
@@ -143,7 +79,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         // start the client
         client.setUseClientMode(true);
         client.beginHandshake();
-        Assert.assertEquals(HandshakeStatus.NEED_WRAP,client.getHandshakeStatus());
+        Assert.assertEquals(SSLEngineResult.HandshakeStatus.NEED_WRAP,client.getHandshakeStatus());
 
         // what if we try an unwrap?
         netS2C.flip();
@@ -152,7 +88,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         assertEquals(SSLEngineResult.Status.OK,result.getStatus());
         assertEquals(0,result.bytesConsumed());
         assertEquals(0,result.bytesProduced());
-        assertEquals(HandshakeStatus.NEED_WRAP,result.getHandshakeStatus());
+        assertEquals(SSLEngineResult.HandshakeStatus.NEED_WRAP,result.getHandshakeStatus());
         netS2C.clear();
 
         // do the needed WRAP of empty buffer
@@ -161,14 +97,14 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         assertEquals(SSLEngineResult.Status.OK,result.getStatus());
         assertEquals(0,result.bytesConsumed());
         assertThat(result.bytesProduced(),greaterThan(0));
-        assertEquals(HandshakeStatus.NEED_UNWRAP,result.getHandshakeStatus());
+        assertEquals(SSLEngineResult.HandshakeStatus.NEED_UNWRAP,result.getHandshakeStatus());
         netC2S.flip();
         assertEquals(netC2S.remaining(),result.bytesProduced());
 
         // start the server
         server.setUseClientMode(false);
         server.beginHandshake();
-        Assert.assertEquals(HandshakeStatus.NEED_UNWRAP,server.getHandshakeStatus());
+        Assert.assertEquals(SSLEngineResult.HandshakeStatus.NEED_UNWRAP,server.getHandshakeStatus());
 
         // what if we try a needless wrap?
         serverOut.put(BufferUtil.toBuffer("Hello World"));
@@ -178,14 +114,14 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         assertEquals(SSLEngineResult.Status.OK,result.getStatus());
         assertEquals(0,result.bytesConsumed());
         assertEquals(0,result.bytesProduced());
-        assertEquals(HandshakeStatus.NEED_UNWRAP,result.getHandshakeStatus());
+        assertEquals(SSLEngineResult.HandshakeStatus.NEED_UNWRAP,result.getHandshakeStatus());
 
         // Do the needed unwrap, to an empty buffer
         result=server.unwrap(netC2S,BufferUtil.EMPTY_BUFFER);
         assertEquals(SSLEngineResult.Status.BUFFER_OVERFLOW,result.getStatus());
         assertEquals(0,result.bytesConsumed());
         assertEquals(0,result.bytesProduced());
-        assertEquals(HandshakeStatus.NEED_UNWRAP,result.getHandshakeStatus());
+        assertEquals(SSLEngineResult.HandshakeStatus.NEED_UNWRAP,result.getHandshakeStatus());
 
         // Do the needed unwrap, to a full buffer
         serverIn.position(serverIn.limit());
@@ -193,7 +129,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         assertEquals(SSLEngineResult.Status.BUFFER_OVERFLOW,result.getStatus());
         assertEquals(0,result.bytesConsumed());
         assertEquals(0,result.bytesProduced());
-        assertEquals(HandshakeStatus.NEED_UNWRAP,result.getHandshakeStatus());
+        assertEquals(SSLEngineResult.HandshakeStatus.NEED_UNWRAP,result.getHandshakeStatus());
 
         // Do the needed unwrap, to an empty buffer
         serverIn.clear();
@@ -201,10 +137,10 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         assertEquals(SSLEngineResult.Status.OK,result.getStatus());
         assertThat(result.bytesConsumed(),greaterThan(0));
         assertEquals(0,result.bytesProduced());
-        assertEquals(HandshakeStatus.NEED_TASK,result.getHandshakeStatus());
+        assertEquals(SSLEngineResult.HandshakeStatus.NEED_TASK,result.getHandshakeStatus());
 
         server.getDelegatedTask().run();
 
-        assertEquals(HandshakeStatus.NEED_WRAP,server.getHandshakeStatus());
+        assertEquals(SSLEngineResult.HandshakeStatus.NEED_WRAP,server.getHandshakeStatus());
     }
 }
