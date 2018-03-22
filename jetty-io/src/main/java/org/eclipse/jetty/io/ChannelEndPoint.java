@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -100,7 +99,8 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         @Override
         public void update(Selector selector)
         {
-            updateKey();
+            if (updateKey())
+                _selector.notifyUpdatedKey(ChannelEndPoint.this);
         }
     };
 
@@ -360,12 +360,12 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     }
 
     @Override
-    public void updateKey()
+    public boolean updateKey()
     {
         /**
          * This method may run concurrently with {@link #changeInterests(int)}.
          */
-
+        boolean updated = false;
         try
         {
             int oldInterestOps;
@@ -377,6 +377,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
                 newInterestOps = _desiredInterestOps;
                 if (oldInterestOps != newInterestOps)
                 {
+                    updated = true;
                     _currentInterestOps = newInterestOps;
                     _key.interestOps(newInterestOps);
                 }
@@ -395,8 +396,15 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             LOG.warn("Ignoring key update for " + this, x);
             close();
         }
+        return updated;
     }
 
+    @Override
+    public SelectionKey getKey()
+    {
+        return _key;
+    }
+    
     private void changeInterests(int operation)
     {
         /**

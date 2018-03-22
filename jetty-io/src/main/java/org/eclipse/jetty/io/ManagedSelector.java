@@ -31,6 +31,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.EventListener;
@@ -72,6 +73,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private Selector _selector;
     private Deque<SelectorUpdate> _updates = new ArrayDeque<>();
     private Deque<SelectorUpdate> _updateable = new ArrayDeque<>();
+    private Collection<Listener> _listeners;
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
@@ -93,6 +95,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     protected void doStart() throws Exception
     {
         super.doStart();
+        
+        _listeners = getBeans(Listener.class);
 
         _selector = _selectorManager.newSelector();
 
@@ -133,7 +137,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             stop_selector._stopped.await();
         }
 
-        super.doStop();        
+        super.doStop();     
+        _listeners = null;
     }
 
     /**
@@ -245,18 +250,53 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
+    private void notifySelecting()
+    {
+        notifyEvent1(listener -> listener::onSelecting);
+    }
+    
     private void notifySelectedBegin()
     {
         notifyEvent1(listener -> listener::onSelectedBegin);
     }
 
-    private void notifySelectedKey(SelectionKey key)
+    void notifyUpdatedKey(Selectable selectable)
     {
-        for (Listener listener : getBeans(Listener.class))
+        for (Listener listener : _listeners)
         {
             try
             {
-                listener.onSelectedKey(this, key);
+                listener.onUpdatedKey(this, selectable);
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Failure invoking listener " + listener, x);
+            }
+        }
+    }
+
+    private void notifySelectedKey(Selectable selectable)
+    {
+        for (Listener listener : _listeners)
+        {
+            try
+            {
+                listener.onSelectedKey(this, selectable);
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Failure invoking listener " + listener, x);
+            }
+        }
+    }
+
+    private void notifyClosed(Selectable selectable)
+    {
+        for (Listener listener : _listeners)
+        {
+            try
+            {
+                listener.onClosed(this, selectable);
             }
             catch (Throwable x)
             {
@@ -272,7 +312,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private void notifyEvent1(Function<Listener, Consumer<ManagedSelector>> function)
     {
-        for (Listener listener : getBeans(Listener.class))
+        for (Listener listener : _listeners)
         {
             try
             {
@@ -345,7 +385,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
          * Callback method invoked when all the keys selected by the
          * {@link ManagedSelector} for this endpoint have been processed.
          */
-        void updateKey();
+        boolean updateKey();
+        
+        
+        SelectionKey getKey();
     }
 
     private class SelectorProducer implements ExecutionStrategy.Producer
@@ -425,6 +468,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} waiting on select", selector);
+                    notifySelecting();
                     int selected = selector.select();
                     if (selected == 0)
                         selected = selector.selectNow();
@@ -474,7 +518,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             {
                 SelectionKey key = _cursor.next();
 
-                notifySelectedKey(key);
+                if (key.attachment() instanceof Selectable)
+                    notifySelectedKey((Selectable)key.attachment());
 
                 if (key.isValid())
                 {
@@ -537,7 +582,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             {
                 Object attachment = key.attachment();
                 if (attachment instanceof Selectable)
-                    ((Selectable)attachment).updateKey();
+                {
+                    Selectable selectable = (Selectable)attachment;
+                    if (selectable.updateKey())
+                        notifyUpdatedKey(selectable);
+                }
             }
             _keys.clear();
         }
@@ -559,17 +608,31 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     public interface Listener extends EventListener
     {
+
+        public default void onUpdatedKey(ManagedSelector managedSelector, Selectable selectable)
+        {
+        }
+        
+        public default void onSelecting(ManagedSelector selector)
+        {
+        }
+
         public default void onSelectedBegin(ManagedSelector selector)
         {
         }
 
-        public default void onSelectedKey(ManagedSelector selector, SelectionKey key)
+        public default void onSelectedKey(ManagedSelector selector, Selectable selectable)
         {
         }
 
         public default void onSelectedEnd(ManagedSelector selector)
         {
         }
+        
+        public default void onClosed(ManagedSelector selector, Selectable selectable)
+        {
+        }
+
     }
 
     private static class DumpKeys implements SelectorUpdate
@@ -670,8 +733,15 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
 
         @Override
-        public void updateKey()
+        public boolean updateKey()
         {
+            return false;
+        }
+
+        @Override
+        public SelectionKey getKey()
+        {
+            return _key;
         }
 
         @Override
@@ -932,6 +1002,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (connection != null)
                 _selectorManager.connectionClosed(connection);
             _selectorManager.endPointClosed(endPoint);
+            if (endPoint instanceof Selectable)
+                notifyClosed((Selectable)endPoint);
         }
 
         @Override
