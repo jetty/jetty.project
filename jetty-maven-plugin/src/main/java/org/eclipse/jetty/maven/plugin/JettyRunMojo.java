@@ -164,7 +164,13 @@ public class JettyRunMojo extends AbstractJettyMojo
     
     
     protected Resource originalBaseResource;
-    
+
+    /**
+     * if for some reason your module is not war packaging but you still want to use the mojo
+     *
+     * @parameter property="jetty.skipPackagingTest" default-value="false"
+     */
+    protected boolean skipPackagingTest;
 
     @Parameter(defaultValue = "${reactorProjects}", readonly = true, required = true)
     private List<MavenProject> reactorProjects;
@@ -187,7 +193,9 @@ public class JettyRunMojo extends AbstractJettyMojo
      */
     @Override
     public void checkPackagingConfiguration() throws MojoExecutionException
-    { 
+    {
+        if (skipPackagingTest)
+            return;
         if ( !"war".equals( project.getPackaging() ))
             throw new MojoExecutionException("Not war packaging");
     }

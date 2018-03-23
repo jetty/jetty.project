@@ -57,10 +57,14 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
      */
     private File war;
 
-    
-   
-  
-   
+    /**
+     * if for some reason your module is not war packaging but you still want to use the mojo
+     *
+     * @parameter property="jetty.skipPackagingTest" default-value="false"
+     */
+    protected boolean skipPackagingTest;
+
+
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
      */
@@ -85,7 +89,9 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
      */
     @Override
     public void checkPackagingConfiguration() throws MojoExecutionException
-    { 
+    {
+        if (skipPackagingTest)
+            return;
         if ( !"war".equals( project.getPackaging() ))
             throw new MojoExecutionException("Not war packaging");
     }
