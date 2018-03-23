@@ -16,9 +16,7 @@
 //  ========================================================================
 //
 
-
-package org.eclipse.jetty.its.jetty_start_mojo_it;
-
+package org.eclipse.jetty.its.jetty_run_forked_mojo_it;
 
 import java.io.File;
 import java.io.FileReader;
@@ -31,12 +29,14 @@ import org.junit.Test;
 /**
  *
  */
-public class TestHelloServlet
+public class TestGetContent
+
 {
     @Test
-    public void hello_servlet()
+    public void get_ping_response()
         throws Exception
     {
+       
         int port = getPort();
         Assert.assertTrue(port > 0);
         HttpClient httpClient = new HttpClient();
@@ -57,6 +57,8 @@ public class TestHelloServlet
             httpClient.stop();
         }
     }
+
+
     public int getPort()
     throws Exception
     {
@@ -72,7 +74,7 @@ public class TestHelloServlet
                 try (FileReader r = new FileReader(f);
                      LineNumberReader lnr = new LineNumberReader(r);
                     )
-                {   
+                {
                     s = lnr.readLine();
                     Assert.assertNotNull(s);
                     port = Integer.parseInt(s.trim());
@@ -89,5 +91,4 @@ public class TestHelloServlet
         }        
         return port;
     }
-
 }
