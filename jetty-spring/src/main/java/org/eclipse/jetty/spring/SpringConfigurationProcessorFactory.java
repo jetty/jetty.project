@@ -33,6 +33,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class SpringConfigurationProcessorFactory implements ConfigurationProcessorFactory
 {
+    @Override
     public ConfigurationProcessor getConfigurationProcessor(String dtd, String tag)
     {
         if ("beans".equals(tag))

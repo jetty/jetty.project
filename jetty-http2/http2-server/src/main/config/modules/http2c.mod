@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Enables the HTTP2C protocol on the HTTP Connector
 The connector will accept both HTTP/1 and HTTP/2 connections.

@@ -566,14 +566,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             if (isLogUrlOnStart())
                 dumpUrl();
         }
-        catch (Exception e)
+        catch (Throwable t)
         {
-            //start up of the webapp context failed, make sure it is not started
-            LOG.warn("Failed startup of context "+this, e);
-            _unavailableException=e;
-            setAvailable(false);
+            // start up of the webapp context failed, make sure it is not started
+            LOG.warn("Failed startup of context "+this, t);
+            _unavailableException=t;
+            setAvailable(false); // webapp cannot be accessed (results in status code 503)
             if (isThrowUnavailableOnStartupException())
-                throw e;
+                throw t;
         }
     }
 
@@ -621,7 +621,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             String displayName = getDisplayName();
             if (displayName == null)
-                displayName = "WebApp@"+connectors.hashCode();
+                displayName = "WebApp@"+Arrays.hashCode(connectors);
 
             LOG.info(displayName + " at http://" + connectors[i].toString() + getContextPath());
         }

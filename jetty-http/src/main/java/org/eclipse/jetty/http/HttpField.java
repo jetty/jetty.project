@@ -276,9 +276,12 @@ public class HttpField
 
     public boolean isSameName(HttpField field)
     {
+        @SuppressWarnings("ReferenceEquality")
+        boolean sameObject = (field==this);
+
         if (field==null)
             return false;
-        if (field==this)
+        if (sameObject)
             return true;
         if (_header!=null && _header==field.getHeader())
             return true;

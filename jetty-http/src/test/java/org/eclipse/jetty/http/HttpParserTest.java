@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.Matchers.contains;
-
+import static org.eclipse.jetty.http.HttpComplianceSection.NO_FIELD_FOLDING;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -33,6 +32,8 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.contains;
 
 public class HttpParserTest
 {
@@ -261,6 +262,8 @@ public class HttpParserTest
                         "Host: localhost\r\n" +
                         "Name: value\r\n" +
                         " extra\r\n" +
+                        "Name2: \r\n" +
+                        "\tvalue2\r\n" +
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
@@ -270,10 +273,12 @@ public class HttpParserTest
         Assert.assertThat(_bad, Matchers.nullValue());
         Assert.assertEquals("Host", _hdr[0]);
         Assert.assertEquals("localhost", _val[0]);
+        Assert.assertEquals(2, _headers);
         Assert.assertEquals("Name", _hdr[1]);
         Assert.assertEquals("value extra", _val[1]);
-        Assert.assertEquals(1, _headers);
-        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_FIELD_FOLDING));
+        Assert.assertEquals("Name2", _hdr[2]);
+        Assert.assertEquals("value2", _val[2]);
+        Assert.assertThat(_complianceViolation, contains(NO_FIELD_FOLDING,NO_FIELD_FOLDING));
     }
 
     @Test
@@ -399,7 +404,7 @@ public class HttpParserTest
         ByteBuffer buffer = BufferUtil.toBuffer(
                 "HTTP/1.1 204 No Content\r\n" +
                 "Access-Control-Allow-Headers : Origin\r\n" +
-                "Other: value\r\n" +
+                "Other\t : value\r\n" +
                 "\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
@@ -422,7 +427,7 @@ public class HttpParserTest
         Assert.assertEquals("Other", _hdr[1]);
         Assert.assertEquals("value", _val[1]);
 
-        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME,HttpComplianceSection.NO_WS_AFTER_FIELD_NAME));
     }
 
     @Test
@@ -709,7 +714,9 @@ public class HttpParserTest
     public void testBadHeaderEncoding() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-                "GET / HTTP/1.0\r\nH\u00e6der0: value0\r\n\n\n");
+            "GET / HTTP/1.0\r\n"
+          + "H\u00e6der0: value0\r\n"
+          + "\n\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -2025,6 +2032,7 @@ public class HttpParserTest
         Assert.assertEquals(null, _bad);
     }
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testCachedField() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
@@ -2200,9 +2208,10 @@ public class HttpParserTest
         }
 
         @Override
-        public void badMessage(int status, String reason)
+        public void badMessage(BadMessageException failure)
         {
-            _bad = reason == null ? ("" + status) : reason;
+            String reason = failure.getReason();
+            _bad = reason == null ? String.valueOf(failure.getCode()) : reason;
         }
 
         @Override

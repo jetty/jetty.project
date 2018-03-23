@@ -193,6 +193,7 @@ public class TopologicalSortTest
         }
     }
     
+    @SuppressWarnings("ReferenceEquality")
     private int indexOf(String[] list,String s)
     {
         for (int i=0;i<list.length;i++)

@@ -123,10 +123,10 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
             socket.setSoTimeout(10 * MAX_IDLE_TIME);
             socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
             InputStream inputStream = socket.getInputStream();
-            long start = System.currentTimeMillis();
+            long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             String response = IO.toString(inputStream);
-            long timeElapsed = System.currentTimeMillis() - start;
-            Assert.assertTrue("Time elapsed should be at least MAX_IDLE_TIME",timeElapsed > MAX_IDLE_TIME);
+            long timeElapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
+            Assert.assertThat(timeElapsed,Matchers.greaterThanOrEqualTo(MAX_IDLE_TIME-100L));
             return response;
         }
     }

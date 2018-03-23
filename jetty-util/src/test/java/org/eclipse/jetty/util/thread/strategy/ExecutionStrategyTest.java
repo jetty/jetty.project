@@ -29,6 +29,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ExecutionStrategy.Producer;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -72,6 +74,7 @@ public class ExecutionStrategyTest
     @Before
     public void before() throws Exception
     {
+        _threads.setDetailedDump(true);
         _threads.start();
     }
     
@@ -150,23 +153,23 @@ public class ExecutionStrategyTest
     public void blockingProducerTest() throws Exception
     {
         final int TASKS = 3*_threads.getMaxThreads();
-        final BlockingQueue<CountDownLatch> q = new ArrayBlockingQueue<>(500);
+        final BlockingQueue<CountDownLatch> q = new ArrayBlockingQueue<>(_threads.getMaxThreads());
         
         Producer producer = new TestProducer()
         {
-            int tasks=TASKS;
+            AtomicInteger tasks = new AtomicInteger(TASKS);
             @Override
             public Runnable produce()
             {
-                final int id = --tasks;
+                final int id = tasks.decrementAndGet();
+
                 if (id>=0)
                 {
-                    try
+                    while(_threads.isRunning())
                     {
-                        final CountDownLatch latch = q.poll(10,TimeUnit.SECONDS);
-
-                        if (latch!=null)
+                        try
                         {
+                            final CountDownLatch latch = q.take();
                             return new Runnable()
                             {
                                 @Override
@@ -177,20 +180,19 @@ public class ExecutionStrategyTest
                                 }
                             };
                         }
-                    }
-                    catch(InterruptedException e)
-                    {
-                        e.printStackTrace();
+                        catch(InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
                     }
                 }
 
                 return null;
             }
         };
-        
+
         newExecutionStrategy(producer,_threads);
-        _threads.execute(()->_strategy.produce());
-        
+        _strategy.dispatch();
         
         
         final CountDownLatch latch = new CountDownLatch(TASKS);
@@ -205,7 +207,6 @@ public class ExecutionStrategyTest
                     {
                         Thread.sleep(20);
                         q.offer(latch);
-                        _strategy.produce();
                     }
                 }
                 catch(Exception e)
@@ -215,6 +216,12 @@ public class ExecutionStrategyTest
             }
         });
 
-        assertTrue(latch.await(10,TimeUnit.SECONDS));
+        if (!latch.await(30,TimeUnit.SECONDS))
+        {
+            System.err.println(_strategy);
+            System.err.printf("tasks=%d latch=%d q=%d%n",TASKS,latch.getCount(), q.size());
+            _threads.dumpStdErr();
+            Assert.fail();
+        }
     }
 }

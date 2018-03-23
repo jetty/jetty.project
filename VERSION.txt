@@ -1,5 +1,97 @@
 jetty-10.0.0-SNAPSHOT
 
+jetty-9.4.9.v20180320 - 20 March 2018
+ + 347 Avoid sending request using a connection that is idle timing out
+ + 1416 GzipHandler generated ETag suffix has problems with If-Match header
+   logic
+ + 1602 WebAppContext is started twice, once by deployer, again by lifecycle
+ + 1614 AbstractNCSARequestLog does not extract the user from the http header
+   when it has not been authenticated
+ + 1770 SniX509ExtendedKeyManager.chooseServerAlias() throws
+   NullPointerException when socket is null
+ + 1797 JEP 238 - Multi-Release JAR files break bytecode scanning
+ + 1832 Bad HTTP Close prevents proper TCP close
+ + 1918 Scalable scheduler implementation
+ + 1933 Use CLASSPATH for scanning java9 system classes
+ + 1940 Embedded CDI: SessionScoped gives a NPE
+ + 1949 Client-side problems with digest authentication
+ + 1956 Store and report build information of Jetty
+ + 1966 HttpMethod case sensitive
+ + 1970 ManagedSelector can lose selector thread under high concurrent load
+ + 1973 Implement minimum response data rate
+ + 1983 Improve warning for incompatible ALPN processor
+ + 1986 ServletContextHandler.Context addListener() methods support
+   session listeners
+ + 2003 Do not submit blocking tasks as managed selector actions
+ + 2006 ServletInputStream.isReady not registering interest when it should
+ + 2010 SniX509ExtendedKeyManager causes exception: "FIPS mode: only SunJSSE
+   KeyManagers may be used"
+ + 2014 Support unix domain sockets in HttpClient
+ + 2015 jetty-alpn-conscrypt-server needs appropriate osgi headers in manifest
+ + 2016 jetty-alpn-openjdk8-server needs correct osgi headers in manifest
+ + 2019 Expose HttpClientTransport in JMX
+ + 2020 Introduce a name for `HttpClient` instances
+ + 2022 Fine grained RFC HTTP Compliance modes: including OWS prior to field
+   colon
+ + 2028 Add osgi headers for alpn-java client and server
+ + 2030 NPE in AnnotationConfiguration with DEBUG enabled
+ + 2033 Improve HTTP/2 session and stream stall times report
+ + 2034 Improve HTTP2Session dump
+ + 2035 FlowControlStrategy keeps around reset streams
+ + 2037 HTTP/2 stream reset leaves stream frames in the flusher
+ + 2038 FileSessionDataStore.deleteAllFiles(File, String) can become slow
+ + 2043 ConcurrentModificationException during annotation parsing
+ + 2046 Server.stop not closing connections
+ + 2050 Clarify ObjectMBean getObject[Name|Context]Basis() methods
+ + 2079 Upgrade to apache jasper 8.5.24
+ + 2080 Exclude more maven machinery dependencies from the jetty-maven-plugin
+   server path
+ + 2081 No idle timeout exception when dispatch is delayed
+ + 2088 Recycle HTTP/2 channels on the client
+ + 2090 Jetty fails to start on OpenJDK 9: "Invalid Java version 9.0.1.3"
+ + 2093 Correcting Bom managed dependencies that do not exist
+ + 2114 Fix NPE in JettyHttpServerProvider
+ + 2117 Allow to configure HttpClient default request Content-Type
+ + 2130 Introduce thread pool module for simpler configuration of thread pool
+   in standalone
+ + 2131 Introduce a monitored thread pool
+ + 2136 maven & jetty-maven-plugin & offline
+   error:java.net.UnknownHostException: www.eclipse.org
+ + 2148 Limit BufferUtil.toDetailString() raw character display to USASCII
+   7-bit printable characters
+ + 2152 Produce jetty-home-source artifacts for Eclipse Jetty source jars
+ + 2160 Digest authentication should use absolute path
+ + 2164 Ensure all jetty modules that use ServiceLoader have correct OSGi
+   manifest headers
+ + 2190 HTTP/2 close and GOAWAY behavior
+ + 2203 Use GlobalWebAppConfigBinding rather than special methods on
+   DeploymentManager/WebAppProvider
+ + 2209 jetty-maven-plugin deploy-war silently fails (unless the pom has war
+   packaging)
+ + 2210 NPE at org.eclipse.jetty.client.HttpDestination.newExchangeQueue
+ + 2218 Adding workaround for Windows NIO Selector Bug
+ + 2232 Dependency Conflict: Conflicting JARs org.apache.maven:maven-project
+ + 2255 Notify SSL handshake failures on write failures
+ + 2275 jetty.server.ResourceService.doGet() + RequestDispatcher INCLUDE
+ + 2278 Could not find artifact
+   org.eclipse.jetty.tests:test-webapps-parent:pom:9.4.8.v20171121
+ + 2279 Jetty 9.4.x start.jar:  "?=" in [ini] defeats Issue #1139 functionality
+ + 2280 Default application/json to utf-8 encoding in encoding.properties
+ + 2284 NPE from start.jar during JVM version parsing
+ + 2288 Cleanup the statistics classes
+ + 2291 Expose HTTP/2 close reason in dumps
+ + 2293 HTTP/2 client multiplexed connection pool creates too many connections
+ + 2297 HTTP/2 client transport should honor HttpClient.connectBlocking
+ + 2298 Override the processor number with an environment variable
+ + 2307 Error page can have null charset in content type
+ + 2308 Type change in MonitorTask - int cannot be converted to
+   ThreadPoolExecutor
+ + 2312 HTTP/2 Connection.Listener notified after first request
+ + 2313 Dump HTTP/2 channel state
+ + 2318 HttpParser.Listener.onBadMessage() should take BadMessageException
+ + 2346 Missing stack traces in HTTPChannel.onException
+ + 2358 Add ALPN module file for JDK 10
+
 jetty-9.4.8.v20171121 - 21 November 2017
  + 212 HttpClient should support pluggable AuthenticationStore
  + 215 Add Conscrypt for native ALPN/TLS/SSL
@@ -170,6 +262,9 @@ jetty-9.4.7.v20170914 - 14 September 2017
    JDK 9
  + 475546 ClosedChannelException when connection to HTTPS over HTTP proxy
    with CONNECT
+
+jetty-9.2.24.v20180105 - 05 January 2018
+ + 2065 Backport #347 to Jetty 9.2.x
 
 jetty-9.2.23.v20171218 - 18 December 2017
  + 1556 Remove a timing channel in Password matching

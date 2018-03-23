@@ -56,38 +56,43 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     @Test
     public void test_FirstAcquire_WithEmptyQueue() throws Exception
     {
-        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
-        destination.start();
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-        Connection connection = connectionPool.acquire();
-        if (connection == null)
+        try(HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
-            // There are no queued requests, so the newly created connection will be idle
-            connection = timedPoll(connectionPool.getIdleConnections(), 5, TimeUnit.SECONDS);
+            destination.start();
+            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+            Connection connection = connectionPool.acquire();
+            if (connection == null)
+            {
+                // There are no queued requests, so the newly created connection will be idle
+                connection = timedPoll(connectionPool.getIdleConnections(), 5, TimeUnit.SECONDS);
+            }
+            Assert.assertNotNull(connection);
         }
-        Assert.assertNotNull(connection);
     }
 
     @Test
     public void test_SecondAcquire_AfterFirstAcquire_WithEmptyQueue_ReturnsSameConnection() throws Exception
     {
-        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
-        destination.start();
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-        Connection connection1 = connectionPool.acquire();
-        if (connection1 == null)
+        try(HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
-            // There are no queued requests, so the newly created connection will be idle
-            long start = System.nanoTime();
-            while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
-            {
-                TimeUnit.MILLISECONDS.sleep(50);
-                connection1 = connectionPool.getIdleConnections().peek();
-            }
-            Assert.assertNotNull(connection1);
+            destination.start();
 
-            Connection connection2 = connectionPool.acquire();
-            Assert.assertSame(connection1, connection2);
+            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+            Connection connection1 = connectionPool.acquire();
+            if (connection1 == null)
+            {
+                // There are no queued requests, so the newly created connection will be idle
+                long start = System.nanoTime();
+                while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+                {
+                    TimeUnit.MILLISECONDS.sleep(50);
+                    connection1 = connectionPool.getIdleConnections().peek();
+                }
+                Assert.assertNotNull(connection1);
+
+                Connection connection2 = connectionPool.acquire();
+                Assert.assertSame(connection1, connection2);
+            }
         }
     }
 
@@ -120,55 +125,67 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
                 };
             }
         };
-        destination.start();
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-        Connection connection1 = connectionPool.acquire();
+        
+        try
+        {
+            destination.start();
+            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+            Connection connection1 = connectionPool.acquire();
 
-        // Make sure we entered idleCreated().
-        Assert.assertTrue(idleLatch.await(5, TimeUnit.SECONDS));
+            // Make sure we entered idleCreated().
+            Assert.assertTrue(idleLatch.await(5, TimeUnit.SECONDS));
 
-        // There are no available existing connections, so acquire()
-        // returns null because we delayed idleCreated() above
-        Assert.assertNull(connection1);
+            // There are no available existing connections, so acquire()
+            // returns null because we delayed idleCreated() above
+            Assert.assertNull(connection1);
 
-        // Second attempt also returns null because we delayed idleCreated() above.
-        Connection connection2 = connectionPool.acquire();
-        Assert.assertNull(connection2);
+            // Second attempt also returns null because we delayed idleCreated() above.
+            Connection connection2 = connectionPool.acquire();
+            Assert.assertNull(connection2);
 
-        latch.countDown();
+            latch.countDown();
 
-        // There must be 2 idle connections.
-        Queue<Connection> idleConnections = connectionPool.getIdleConnections();
-        Connection connection = timedPoll(idleConnections, 5, TimeUnit.SECONDS);
-        Assert.assertNotNull(connection);
-        connection = timedPoll(idleConnections, 5, TimeUnit.SECONDS);
-        Assert.assertNotNull(connection);
+            // There must be 2 idle connections.
+            Queue<Connection> idleConnections = connectionPool.getIdleConnections();
+            Connection connection = timedPoll(idleConnections, 5, TimeUnit.SECONDS);
+            Assert.assertNotNull(connection);
+            connection = timedPoll(idleConnections, 5, TimeUnit.SECONDS);
+            Assert.assertNotNull(connection);
+        }
+        finally
+        {
+            destination.close();
+        }
     }
 
     @Test
     public void test_Acquire_Process_Release_Acquire_ReturnsSameConnection() throws Exception
     {
-        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
-        destination.start();
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-        HttpConnectionOverHTTP connection1 = (HttpConnectionOverHTTP)connectionPool.acquire();
-
-        long start = System.nanoTime();
-        while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+        try(HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
-            TimeUnit.MILLISECONDS.sleep(50);
-            connection1 = (HttpConnectionOverHTTP)connectionPool.getIdleConnections().peek();
+            destination.start();
+            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+            HttpConnectionOverHTTP connection1 = (HttpConnectionOverHTTP)connectionPool.acquire();
+
+            Assert.assertNull(connection1);
+            
+            long start = System.nanoTime();
+            while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+            {
+                TimeUnit.MILLISECONDS.sleep(50);
+                connection1 = (HttpConnectionOverHTTP)connectionPool.getIdleConnections().peek();
+            }
+            Assert.assertNotNull(connection1);
+
+            // Acquire the connection to make it active
+            Assert.assertSame("From idle", connection1, connectionPool.acquire());
+
+            destination.process(connection1);
+            destination.release(connection1);
+
+            Connection connection2 = connectionPool.acquire();
+            Assert.assertSame("After release", connection1, connection2);
         }
-        Assert.assertNotNull(connection1);
-
-        // Acquire the connection to make it active
-        Assert.assertSame(connection1, connectionPool.acquire());
-
-        destination.process(connection1);
-        destination.release(connection1);
-
-        Connection connection2 = connectionPool.acquire();
-        Assert.assertSame(connection1, connection2);
     }
 
     @Test
@@ -177,25 +194,27 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         long idleTimeout = 1000;
         client.setIdleTimeout(idleTimeout);
 
-        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
-        destination.start();
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-        Connection connection1 = connectionPool.acquire();
-        if (connection1 == null)
+        try(HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
-            // There are no queued requests, so the newly created connection will be idle
-            long start = System.nanoTime();
-            while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+            destination.start();
+            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+            Connection connection1 = connectionPool.acquire();
+            if (connection1 == null)
             {
-                TimeUnit.MILLISECONDS.sleep(50);
-                connection1 = connectionPool.getIdleConnections().peek();
+                // There are no queued requests, so the newly created connection will be idle
+                long start = System.nanoTime();
+                while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+                {
+                    TimeUnit.MILLISECONDS.sleep(50);
+                    connection1 = connectionPool.getIdleConnections().peek();
+                }
+                Assert.assertNotNull(connection1);
+
+                TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
+
+                connection1 = connectionPool.getIdleConnections().poll();
+                Assert.assertNull(connection1);
             }
-            Assert.assertNotNull(connection1);
-
-            TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
-
-            connection1 = connectionPool.getIdleConnections().poll();
-            Assert.assertNull(connection1);
         }
     }
 

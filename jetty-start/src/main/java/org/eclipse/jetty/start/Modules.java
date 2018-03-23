@@ -305,7 +305,7 @@ public class Modules implements Iterable<Module>
             {
                 for (Module p:providers)
                 { 
-                    if (p!=module && p.isEnabled())
+                    if (!p.equals(module) && p.isEnabled())
                     {
                         // If the already enabled module is transitive and this enable is not
                         if (p.isTransitive() && !transitive)
@@ -364,8 +364,8 @@ public class Modules implements Iterable<Module>
             }
             
             // If a provider is already enabled, then add a transitive enable
-            if (providers.stream().filter(Module::isEnabled).count()!=0)
-                providers.stream().filter(m->m.isEnabled()&&m!=module).forEach(m->enable(newlyEnabled,m,"transitive provider of "+dependsOn+" for "+module.getName(),true));
+            if (providers.stream().filter(Module::isEnabled).count()>0)
+                providers.stream().filter(m->m.isEnabled()&&!m.equals(module)).forEach(m->enable(newlyEnabled,m,"transitive provider of "+dependsOn+" for "+module.getName(),true));
             else
             {
                 // Is there an obvious default?

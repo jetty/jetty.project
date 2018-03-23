@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Ref refid="DeploymentManager">
+    <Call name="addLifeCycleBinding">
+      <Arg>
+        <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding">
+          <Set name="jettyXml">
+            <Property>
+              <Name>jetty.deploy.webappCommonConfig</Name>
+              <Default>
+                <Property name="jetty.base"/>/etc/webapp-common.xml
+              </Default>
+            </Property>
+          </Set>
+        </New>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>

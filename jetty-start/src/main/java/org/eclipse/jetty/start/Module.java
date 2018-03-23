@@ -37,7 +37,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.Props.Prop;
-import org.eclipse.jetty.start.config.CommandLineConfigSource;
 
 /**
  * Represents a Module metadata, as defined in Jetty.
@@ -527,9 +526,12 @@ public class Module implements Comparable<Module>
             if (m.matches() && m.groupCount()==3)
             {
                 String name = m.group(2);
+                String value = m.group(3);
                 Prop p = props.getProp(name);
-                if (p!=null && p.origin.startsWith(CommandLineConfigSource.ORIGIN_CMD_LINE))
+                
+                if (p!=null && (p.source==null || !p.source.endsWith("?=")) && ("#".equals(m.group(1)) || !value.equals(p.value)))
                 {
+                    System.err.printf("%s == %s :: %s%n",name,value,p.source);
                     StartLog.info("%-15s property set %s=%s",this._name,name,p.value);
                     out.printf("%s=%s%n",name,p.value);
                 }

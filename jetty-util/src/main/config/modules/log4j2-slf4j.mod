@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Provides a Log4j v2 binding to SLF4J logging.  
 

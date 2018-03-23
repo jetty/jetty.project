@@ -25,6 +25,8 @@ import org.junit.After;
 
 import static org.junit.Assert.*;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * NonClusteredSessionScavengingTest
  */
@@ -67,7 +69,7 @@ public class NonClusteredSessionScavengingTest
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         factory = new HazelcastSessionDataStoreFactory();
-        factory.setMapName( Long.toString( System.currentTimeMillis() ) );
+        factory.setMapName( Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) ) );
         return factory;
     }
 

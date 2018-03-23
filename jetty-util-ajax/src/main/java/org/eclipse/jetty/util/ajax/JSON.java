@@ -370,10 +370,12 @@ public class JSON
     {
         appendJSON(buffer,new Convertible()
         {
+            @Override
             public void fromJSON(Map object)
             {
             }
 
+            @Override
             public void toJSON(Output out)
             {
                 convertor.toJSON(object,out);
@@ -1316,6 +1318,7 @@ public class JSON
             }
         }
 
+        @Override
         public void add(Object obj)
         {
             if (c == 0)
@@ -1324,6 +1327,7 @@ public class JSON
             c = 0;
         }
 
+        @Override
         public void addClass(Class type)
         {
             try
@@ -1341,6 +1345,7 @@ public class JSON
             }
         }
 
+        @Override
         public void add(String name, Object value)
         {
             try
@@ -1359,6 +1364,7 @@ public class JSON
             }
         }
 
+        @Override
         public void add(String name, double value)
         {
             try
@@ -1377,6 +1383,7 @@ public class JSON
             }
         }
 
+        @Override
         public void add(String name, long value)
         {
             try
@@ -1395,6 +1402,7 @@ public class JSON
             }
         }
 
+        @Override
         public void add(String name, boolean value)
         {
             try
@@ -1436,6 +1444,7 @@ public class JSON
             string = s;
         }
 
+        @Override
         public boolean hasNext()
         {
             if (index < string.length())
@@ -1444,11 +1453,13 @@ public class JSON
             return false;
         }
 
+        @Override
         public char next()
         {
             return string.charAt(index++);
         }
 
+        @Override
         public char peek()
         {
             return string.charAt(index);
@@ -1460,6 +1471,7 @@ public class JSON
             return string.substring(0,index) + "|||" + string.substring(index);
         }
 
+        @Override
         public char[] scratchBuffer()
         {
             if (scratch == null)
@@ -1485,6 +1497,7 @@ public class JSON
             _next = -1;
         }
 
+        @Override
         public boolean hasNext()
         {
             getNext();
@@ -1496,6 +1509,7 @@ public class JSON
             return true;
         }
 
+        @Override
         public char next()
         {
             getNext();
@@ -1504,6 +1518,7 @@ public class JSON
             return c;
         }
 
+        @Override
         public char peek()
         {
             getNext();
@@ -1525,6 +1540,7 @@ public class JSON
             }
         }
 
+        @Override
         public char[] scratchBuffer()
         {
             if (scratch == null)
@@ -1629,6 +1645,7 @@ public class JSON
             return _json;
         }
 
+        @Override
         public void addJSON(Appendable buffer)
         {
             try

@@ -62,6 +62,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
     protected final void shutdownInput()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("shutdownInput {}",this);
         while(true)
         {
             State s = _state.get();
@@ -114,6 +116,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public final void shutdownOutput()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("shutdownOutput {}",this);
         while(true)
         {
             State s = _state.get();
@@ -166,11 +170,15 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public final void close()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("close {}",this);
         close(null);
     }
 
     protected final void close(Throwable failure)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("close({}) {}",failure,this);
         while(true)
         {
             State s = _state.get();

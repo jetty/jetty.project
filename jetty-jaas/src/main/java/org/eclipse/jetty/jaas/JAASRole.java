@@ -27,6 +27,7 @@ public class JAASRole extends JAASPrincipal
         super (name);
     }
 
+    @Override
     public boolean equals (Object o)
     {
         if (! (o instanceof JAASRole))

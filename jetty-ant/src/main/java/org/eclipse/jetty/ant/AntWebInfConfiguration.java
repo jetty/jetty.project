@@ -19,16 +19,8 @@
 package org.eclipse.jetty.ant;
 
 import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.List;
-import java.util.regex.Pattern;
 
-import org.apache.tools.ant.AntClassLoader;
-import org.eclipse.jetty.util.PatternMatcher;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -50,6 +42,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
      *
      * @see WebXmlConfiguration#configure(WebAppContext)
      */
+    @Override
     public void configure(WebAppContext context) throws Exception
     {
         if (context instanceof AntWebAppContext)

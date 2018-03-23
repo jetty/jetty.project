@@ -19,12 +19,10 @@
 package org.eclipse.jetty.util;
 
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.lang.reflect.Field;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -238,6 +236,17 @@ public class BufferUtil
             buffer.slice().get(to);
             return to;
         }
+    }
+
+    /**
+     * @param buf the buffer to check
+     * @return true if buf is equal to EMPTY_BUFFER
+     */
+    public static boolean isTheEmptyBuffer(ByteBuffer buf)
+    {
+        @SuppressWarnings("ReferenceEquality")
+        boolean isTheEmptyBuffer_ = (buf == EMPTY_BUFFER);
+        return isTheEmptyBuffer_;
     }
 
     /* ------------------------------------------------------------ */
@@ -1096,15 +1105,15 @@ public class BufferUtil
     private static void appendContentChar(StringBuilder buf, byte b)
     {
         if (b == '\\')
-            buf.append("\\\\");    
+            buf.append("\\\\");
+        else if ((b >= 0x20) && (b<=0x7E)) // limit to 7-bit printable US-ASCII character space
+            buf.append((char)b);
         else if (b == '\r')
             buf.append("\\r");
         else if (b == '\n')
             buf.append("\\n");
         else if (b == '\t')
             buf.append("\\t");
-        else if (b >= ' ' && b < 0x7f)
-            buf.append((char)b);
         else
             buf.append("\\x").append(TypeUtil.toHexString(b));
     }

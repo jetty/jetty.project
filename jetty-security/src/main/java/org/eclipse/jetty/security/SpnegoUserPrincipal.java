@@ -40,6 +40,7 @@ public class SpnegoUserPrincipal implements Principal
         _token = token;
     }
 
+    @Override
     public String getName()
     {
         return _name;

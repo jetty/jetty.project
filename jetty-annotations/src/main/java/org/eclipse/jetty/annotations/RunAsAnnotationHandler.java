@@ -44,6 +44,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
         _context = wac;
     }
 
+    @Override
     public void doHandle (Class clazz)
     {
         if (!Servlet.class.isAssignableFrom(clazz))

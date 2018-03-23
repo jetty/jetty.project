@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -296,6 +297,7 @@ public class BufferUtilTest
 
 
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testEnsureCapacity() throws Exception
     {
         ByteBuffer b = BufferUtil.toBuffer("Goodbye Cruel World");
@@ -325,7 +327,18 @@ public class BufferUtilTest
         assertEquals(64, b3.capacity());
         assertEquals("Cruel", BufferUtil.toString(b3));
         assertEquals(0, b3.arrayOffset());
+    }
 
+    @Test
+    public void testToDetail_WithDEL()
+    {
+        ByteBuffer b = ByteBuffer.allocate(40);
+        b.putChar('a').putChar('b').putChar('c');
+        b.put((byte)0x7F);
+        b.putChar('x').putChar('y').putChar('z');
+        b.flip();
+        String result = BufferUtil.toDetailString(b);
+        assertThat("result", result, containsString("\\x7f"));
     }
 
 

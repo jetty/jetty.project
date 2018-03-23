@@ -29,6 +29,7 @@ public class ServletMappingMBean extends ObjectMBean
         super(managedObject);
     }
 
+    @Override
     public String getObjectNameBasis()
     {
         if (_managed != null && _managed instanceof ServletMapping)

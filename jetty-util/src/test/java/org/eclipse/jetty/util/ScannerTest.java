@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -62,16 +63,19 @@ public class ScannerTest
         _scanner.setScanInterval(0);
         _scanner.addListener(new Scanner.DiscreteListener()
         {
+            @Override
             public void fileRemoved(String filename) throws Exception
             {
                 _queue.add(new Event(filename,Notification.REMOVED));
             }
 
+            @Override
             public void fileChanged(String filename) throws Exception
             {
                 _queue.add(new Event(filename,Notification.CHANGED));
             }
 
+            @Override
             public void fileAdded(String filename) throws Exception
             {
                 _queue.add(new Event(filename,Notification.ADDED));
@@ -79,6 +83,7 @@ public class ScannerTest
         });
         _scanner.addListener(new Scanner.BulkListener()
         {
+            @Override
             public void filesChanged(List<String> filenames) throws Exception
             {
                 _bulk.add(filenames);
@@ -239,7 +244,7 @@ public class ScannerTest
 
 
         // Create a new file by writing to it.
-        long now = System.currentTimeMillis();
+        long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         File file = new File(_directory,"st");
         try (OutputStream out = new FileOutputStream(file,true))
         {
@@ -300,7 +305,7 @@ public class ScannerTest
     {
         File file = new File(_directory,string);
         if (file.exists())
-            file.setLastModified(System.currentTimeMillis());
+            file.setLastModified(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
         else
             file.createNewFile();
     }

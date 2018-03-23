@@ -5,12 +5,8 @@ Thank you for your interest in this project!
 Project description
 --------------------
 Jetty is a lightweight highly scalable java based web server and servlet engine.
-Our goal is to support web protocols like HTTP, HTTP/2, and WebSocket in a high
-volume, low latency way that provides maximum performance while retaining the ease
-of use and compatibility with years of servlet development.
-Jetty is a modern fully async web server that has a long history as a component
-oriented technology easily embedded into applications while still offering a solid
-traditional distribution for webapp deployment.
+Our goal is to support web protocols like HTTP, HTTP/2, and WebSocket in a high volume, low latency way that provides maximum performance while retaining the ease of use and compatibility with years of servlet development.
+Jetty is a modern fully async web server that has a long history as a component oriented technology easily embedded into applications while still offering a solid traditional distribution for webapp deployment.
 
 - [https://projects.eclipse.org/projects/rt.jetty](https://projects.eclipse.org/projects/rt.jetty)
 
@@ -21,8 +17,7 @@ Information regarding source code management, builds, coding standards, and more
 - [https://www.eclipse.org/jetty/documentation/current/advanced-contributing.html](https://www.eclipse.org/jetty/documentation/current/advanced-contributing.html)
 
 The canonical Jetty git repository is located at [GitHub.](https://github.com/eclipse/jetty.project) Providing you have
-completed the contributors agreement mentioned below we will endeavor to pull
-your commit into Jetty proper.
+completed the contributors agreement mentioned below we will endeavor to pull your commit into Jetty proper.
 
 Eclipse Contributor Agreement
 ------------------------------
@@ -32,7 +27,11 @@ Before your contribution can be accepted by the project, you need to create and 
    create an account with the Eclipse Foundation if you have not already done so.
 2. Click on "Eclipse ECA", and complete the form.
 
-Be sure to use the same email address in your Eclipse account that you intend to use when you commit to Git.
+Be sure to use the same email address in your Eclipse account that you intend to use when you commit to GitHub.
+All committers, and all commits , are bound to the [Developer Certificate of Origin.](https://www.eclipse.org/legal/DCO.php)
+As such, all parties involved in a contribution must have valid ECAs and commits must include [valid "Signed-off-by" entries.](https://wiki.eclipse.org/Development_Resources/Contributing_via_Git)
+Commits can be signed off by included the `-s` attribute in your commit message, for example, `git commit -s -am 'Interesting Commit Message.`
+
 
 Contact
 --------

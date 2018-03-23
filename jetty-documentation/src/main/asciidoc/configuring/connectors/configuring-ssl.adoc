@@ -1,5 +1,6 @@
+//
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +14,7 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
+//
 
 [[configuring-ssl]]
 === Configuring SSL/TLS
@@ -717,10 +719,10 @@ This is _not_ a recommended usage.
 ____
 
 [[conscrypt]]
-===== Conscrypt SSL
+==== Conscrypt SSL
 
-Jetty also includes support for Google's https://github.com/google/conscrypt/[Conscrypt SSL], which is built on their fork of https://www.openssl.org/[OpenSSL], https://boringssl.googlesource.com/boringssl/[BoringSSL].
-Implementing Conscrypt is very straightforward process - simply instantiate an instance of Conscrypt's `OpenSSLProvider` and set `Conscrypt` as a provider for Jetty's `SslContextFactory`:
+Jetty includes support for Google's https://github.com/google/conscrypt/[Conscrypt SSL], which is built on their fork of https://www.openssl.org/[OpenSSL], https://boringssl.googlesource.com/boringssl/[BoringSSL].
+Implementing Conscrypt for the link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-conscrypt-server/src/test/java/org/eclipse/jetty/alpn/conscrypt/server/ConscryptHTTP2Server.java[server] or link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-conscrypt-client/src/test/java/org/eclipse/jetty/alpn/java/client/ConscryptHTTP2Client.java[client] is very straightforward process - simply instantiate an instance of Conscrypt's `OpenSSLProvider` and set `Conscrypt` as a provider for Jetty's `SslContextFactory`:
 
 [source, java, subs="{sub-order}"]
 ----

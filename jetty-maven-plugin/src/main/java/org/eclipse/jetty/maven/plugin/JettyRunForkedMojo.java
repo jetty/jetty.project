@@ -174,6 +174,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
             super("RunForkedShutdown");
         }
         
+        @Override
         public void run ()
         {
             if (forkedProcess != null && waitForChild)
@@ -190,6 +191,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
     /**
      * @see org.apache.maven.plugin.Mojo#execute()
      */
+    @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
         Runtime.getRuntime().addShutdownHook(new ShutdownThread());
@@ -430,6 +432,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
     
 
     
+    @Override
     public boolean isPluginArtifact(Artifact artifact)
     {
         if (pluginArtifacts == null || pluginArtifacts.isEmpty())

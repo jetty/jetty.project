@@ -40,6 +40,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.proxy.AsyncProxyServlet;
+import org.eclipse.jetty.util.ProcessorUtils;
 
 /**
  * Specific implementation of {@link org.eclipse.jetty.proxy.AsyncProxyServlet.Transparent} for FastCGI.
@@ -111,7 +112,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         String scriptRoot = config.getInitParameter(SCRIPT_ROOT_INIT_PARAM);
         if (scriptRoot == null)
             throw new IllegalArgumentException("Mandatory parameter '" + SCRIPT_ROOT_INIT_PARAM + "' not configured");
-        int selectors = Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
+        int selectors = Math.max( 1, ProcessorUtils.availableProcessors() / 2);
         String value = config.getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);

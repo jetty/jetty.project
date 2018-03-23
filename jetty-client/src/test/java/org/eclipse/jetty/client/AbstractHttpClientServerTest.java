@@ -38,7 +38,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public abstract class AbstractHttpClientServerTest
 {
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "ssl={0}")
     public static Collection<SslContextFactory[]> parameters()
     {
         return Arrays.asList(new SslContextFactory[]{null}, new SslContextFactory[]{new SslContextFactory()});

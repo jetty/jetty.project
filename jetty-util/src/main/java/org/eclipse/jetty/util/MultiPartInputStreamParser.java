@@ -190,6 +190,7 @@ public class MultiPartInputStreamParser
         /**
          * @see javax.servlet.http.Part#getContentType()
          */
+        @Override
         public String getContentType()
         {
             return _contentType;
@@ -198,6 +199,7 @@ public class MultiPartInputStreamParser
         /**
          * @see javax.servlet.http.Part#getHeader(java.lang.String)
          */
+        @Override
         public String getHeader(String name)
         {
             if (name == null)
@@ -208,6 +210,7 @@ public class MultiPartInputStreamParser
         /**
          * @see javax.servlet.http.Part#getHeaderNames()
          */
+        @Override
         public Collection<String> getHeaderNames()
         {
             return _headers.keySet();
@@ -216,6 +219,7 @@ public class MultiPartInputStreamParser
         /**
          * @see javax.servlet.http.Part#getHeaders(java.lang.String)
          */
+        @Override
         public Collection<String> getHeaders(String name)
         {
            return _headers.getValues(name);
@@ -224,6 +228,7 @@ public class MultiPartInputStreamParser
         /**
          * @see javax.servlet.http.Part#getInputStream()
          */
+        @Override
         public InputStream getInputStream() throws IOException
         {
            if (_file != null)
@@ -258,6 +263,7 @@ public class MultiPartInputStreamParser
         /**
          * @see javax.servlet.http.Part#getName()
          */
+        @Override
         public String getName()
         {
            return _name;
@@ -266,6 +272,7 @@ public class MultiPartInputStreamParser
         /**
          * @see javax.servlet.http.Part#getSize()
          */
+        @Override
         public long getSize()
         {
             return _size;
@@ -274,6 +281,7 @@ public class MultiPartInputStreamParser
         /**
          * @see javax.servlet.http.Part#write(java.lang.String)
          */
+        @Override
         public void write(String fileName) throws IOException
         {
             if (_file == null)
@@ -314,6 +322,7 @@ public class MultiPartInputStreamParser
          * (ie no longer temporary)
          * @see javax.servlet.http.Part#delete()
          */
+        @Override
         public void delete() throws IOException
         {
             if (_file != null && _file.exists())

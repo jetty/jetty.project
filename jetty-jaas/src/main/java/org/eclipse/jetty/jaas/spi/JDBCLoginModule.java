@@ -53,6 +53,7 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
      * @return the connection for this datasource
      * @throws Exception if unable to get the connection
      */
+    @Override
     public Connection getConnection ()
     throws Exception
     {
@@ -81,6 +82,7 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
      * @param sharedState the shared state map
      * @param options the options map
      */
+    @Override
     public void initialize(Subject subject,
                            CallbackHandler callbackHandler,
                            Map<String,?> sharedState,

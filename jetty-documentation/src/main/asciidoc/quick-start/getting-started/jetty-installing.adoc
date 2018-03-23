@@ -1,5 +1,6 @@
+//
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +14,7 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
+//
 
 [[jetty-downloading]]
 === Downloading Jetty
@@ -28,16 +30,16 @@ ____
 It is available in both zip and gzip formats; download the one most appropriate for your system.
 When you download and unpack the binary, it is extracted into a directory called `jetty-distribution-VERSION.`
 Put this directory in a convenient location.
-The rest of the instructions in this documentation refer to this location as either `JETTY_HOME` or as `$(jetty.home).`
+The rest of the instructions in this documentation refer to this location as either `$JETTY_HOME` or as `$(jetty.home).`
 
 _____
 [IMPORTANT]
-It is important that only stable releases are used in production environments.
-Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are not suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
+It is important that *only* stable releases are used in production environments.
+Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
 _____
 
 [[distribution-content]]
-==== Distribution Content
+===== Distribution Content
 
 A summary of the distribution's contents follows.
 The top-level directory contains:
@@ -79,7 +81,7 @@ When you download and unpack the binary, it is extracted into a directory called
 Put this directory in a convenient location.
 
 [[jetty-home-distribution-content]]
-==== Distribution Content
+===== Distribution Content
 
 A summary of the Jetty-Home's distribution contents follows.
 The top-level directory contains:

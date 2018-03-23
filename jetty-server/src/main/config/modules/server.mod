@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Enables the core Jetty server on the classpath.
 
@@ -6,6 +8,9 @@ jvm
 ext
 resources
 logging
+
+[depend]
+threadpool
 
 [lib]
 lib/servlet-api-4.0.jar
@@ -20,16 +25,6 @@ lib/jetty-io-${jetty.version}.jar
 etc/jetty.xml
 
 [ini-template]
-### ThreadPool configuration
-## Minimum number of threads
-# jetty.threadPool.minThreads=10
-
-## Maximum number of threads
-# jetty.threadPool.maxThreads=200
-
-## Thread idle timeout (in milliseconds)
-# jetty.threadPool.idleTimeout=60000
-
 ### Common HTTP configuration
 ## Scheme to use to build URIs for secure redirects
 # jetty.httpConfig.secureScheme=https

@@ -317,6 +317,7 @@ public class LocalConnector extends AbstractConnector
             setGrowOutput(true);
         }
         
+        @Override
         protected void execute(Runnable task)
         {
             getExecutor().execute(task);
@@ -325,7 +326,9 @@ public class LocalConnector extends AbstractConnector
         @Override
         public void onClose()
         {
-            getConnection().onClose();
+            Connection connection = getConnection();
+            if (connection!=null)
+              connection.onClose();
             LocalConnector.this.onEndPointClosed(this);
             super.onClose();
             _closed.countDown();
@@ -466,11 +469,6 @@ public class LocalConnector extends AbstractConnector
                 public boolean content(ByteBuffer item)
                 {
                     return false;
-                }
-                
-                @Override
-                public void badMessage(int status, String reason)
-                {
                 }
                 
                 @Override

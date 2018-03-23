@@ -37,6 +37,7 @@ public class JAASPrincipal implements Principal, Serializable
         this._name = userName;
     }
 
+    @Override
     public boolean equals (Object p)
     {
         if (! (p instanceof JAASPrincipal))
@@ -45,16 +46,19 @@ public class JAASPrincipal implements Principal, Serializable
         return getName().equals(((JAASPrincipal)p).getName());
     }
 
+    @Override
     public int hashCode ()
     {
         return getName().hashCode();
     }
 
+    @Override
     public String getName ()
     {
         return this._name;
     }
 
+    @Override
     public String toString ()
     {
         return getName();

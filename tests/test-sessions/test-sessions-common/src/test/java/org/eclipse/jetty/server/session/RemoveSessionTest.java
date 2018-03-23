@@ -121,6 +121,7 @@ public class RemoveSessionTest
     }
     public static class TestServlet extends HttpServlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             String action = request.getParameter("action");
@@ -149,11 +150,13 @@ public class RemoveSessionTest
         boolean wasCreated;
         boolean wasDestroyed;
 
+        @Override
         public void sessionCreated(HttpSessionEvent se)
         {
             wasCreated = true;
         }
 
+        @Override
         public void sessionDestroyed(HttpSessionEvent se)
         {
            wasDestroyed = true;

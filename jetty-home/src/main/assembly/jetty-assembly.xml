@@ -1,5 +1,5 @@
 <assembly>
-  <id>assembly</id>
+  <id>binary-assembly</id>
   <formats>
     <format>tar.gz</format>
     <format>zip</format>

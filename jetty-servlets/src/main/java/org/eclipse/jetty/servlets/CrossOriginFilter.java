@@ -54,7 +54,8 @@ import org.eclipse.jetty.util.log.Logger;
  * <dt>allowedOrigins</dt>
  * <dd>a comma separated list of origins that are
  * allowed to access the resources. Default value is <b>*</b>, meaning all
- * origins.
+ * origins.    Note that using wild cards can result in security problems
+ * for requests identifying hosts that do not exist. 
  * <p>
  * If an allowed origin contains one or more * characters (for example
  * http://*.domain.com), then "*" characters are converted to ".*", "."
@@ -166,6 +167,7 @@ public class CrossOriginFilter implements Filter
     private boolean allowCredentials;
     private boolean chainPreflight;
 
+    @Override
     public void init(FilterConfig config) throws ServletException
     {
         String allowedOriginsConfig = config.getInitParameter(ALLOWED_ORIGINS_PARAM);
@@ -257,6 +259,7 @@ public class CrossOriginFilter implements Filter
         return false;
     }
     
+    @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
         handle((HttpServletRequest)request, (HttpServletResponse)response, chain);
@@ -501,6 +504,7 @@ public class CrossOriginFilter implements Filter
         return builder.toString();
     }
 
+    @Override
     public void destroy()
     {
         anyOriginAllowed = false;

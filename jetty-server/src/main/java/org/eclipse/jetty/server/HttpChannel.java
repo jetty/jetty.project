@@ -566,7 +566,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
             else
-                LOG.warn("{} {}",_request.getRequestURI(), failure);
+                LOG.warn(_request.getRequestURI(), failure);
         }
         else
         {
@@ -615,13 +615,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s,c=%b,a=%s,uri=%s}",
+        long timeStamp = _request.getTimeStamp();
+        return String.format("%s@%x{r=%s,c=%b,a=%s,uri=%s,age=%d}",
                 getClass().getSimpleName(),
                 hashCode(),
                 _requests,
                 _committed.get(),
                 _state.getState(),
-                _request.getHttpURI());
+                _request.getHttpURI(),
+                timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
     }
 
     public void onRequest(MetaData.Request request)
@@ -705,12 +707,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _request.getHttpInput().earlyEOF();
     }
 
-    public void onBadMessage(int status, String reason)
+    public void onBadMessage(BadMessageException failure)
     {
+        int status = failure.getCode();
+        String reason = failure.getReason();
         if (status < 400 || status > 599)
-            status = HttpStatus.BAD_REQUEST_400;
+            failure = new BadMessageException(HttpStatus.BAD_REQUEST_400, reason, failure);
 
-        notifyRequestFailure(_request, new BadMessageException(status, reason));
+        notifyRequestFailure(_request, failure);
 
         Action action;
         try
@@ -719,10 +723,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch(IllegalStateException e)
         {
-            // The bad message cannot be handled in the current state, so throw
-            // to hopefull somebody that can handle
+            // The bad message cannot be handled in the current state,
+            // so rethrow, hopefully somebody will be able to handle.
             abort(e);
-            throw new BadMessageException(status,reason);
+            throw failure;
         }
 
         try
@@ -846,6 +850,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             throw new IllegalStateException("Committed");
     }
 
+    @Override
     public HttpOutput.Interceptor getNextInterceptor()
     {
         return null;

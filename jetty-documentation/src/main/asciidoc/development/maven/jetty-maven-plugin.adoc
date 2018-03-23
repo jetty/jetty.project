@@ -1,5 +1,6 @@
+//
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd. and others
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +14,7 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
+//
 
 [[jetty-maven-plugin]]
 === Configuring the Jetty Maven Plugin
@@ -504,7 +506,7 @@ Here's how to set it:
 ==== jetty:run-exploded
 
 The run-exploded goal first assembles your webapp into an exploded WAR file and then deploys it to Jetty.
-If you set a non-zero `scanInterval`, Jetty watches your `pom.xml`, `WEB-INF/lib`, `WEB-INF/` and `WEB-INF/web.xml` for changes and redeploys when necessary.
+If you set a non-zero `scanInterval`, Jetty watches your `pom.xml,`WEB-INF/lib`, `WEB-INF/` and `WEB-INF/web.xml` for changes and redeploys when necessary.
 
 [[configuring-exploded-war]]
 ===== Configuration
@@ -523,7 +525,7 @@ Here's how to set it:
 ...
     <plugin>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-maven-plugin</artifactId>
+      <artifactId>maven-jetty-plugin</artifactId>
       <version>{VERSION}</version>
       <configuration>
         <war>${project.basedir}/target/myfunkywebapp</war>
@@ -544,10 +546,9 @@ Unlike `run-war`, the phase in which this plugin executes is not bound to the "p
 war::
 The location of the WAR file. This defaults to `${project.build.directory}/${project.build.finalName}`, but you can override the default by setting this parameter.
 daemon::
-If true (the default), this plugin will start Jetty but let the build continue.
+If true, this plugin will start Jetty but let the build continue.
 This is useful if you want to start jetty as an execution binding in a particular phase and then stop it in another.
-Alternatively, you can set this parameter to false, in which case Jetty will block and you will need to use a ctrl-c to stop it. The parameter can also be set
-using the property `jetty.daemon`.
+Alternatively, you can set this parameter to false, in which case Jetty will block and you will need to use a ctrl-c to stop it.
 
 Here's the configuration:
 

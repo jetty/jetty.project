@@ -514,7 +514,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             if ((_welcomeServlets || _welcomeExactServlets) && welcome_servlet==null)
             {
                 MappedResource<ServletHolder> entry=_servletHandler.getMappedServlet(welcome_in_context);
-                if (entry!=null && entry.getResource()!=_defaultHolder &&
+                @SuppressWarnings("ReferenceEquality")
+                boolean isDefaultHolder = (entry.getResource()!=_defaultHolder);
+                if (entry!=null && isDefaultHolder &&
                         (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcome_in_context))))
                     welcome_servlet=welcome_in_context;
 

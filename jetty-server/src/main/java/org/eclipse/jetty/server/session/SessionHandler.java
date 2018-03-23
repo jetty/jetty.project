@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import static java.lang.Math.round;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,9 +61,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
+import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.Locker.Lock;
+
+import static java.lang.Math.round;
 
 /* ------------------------------------------------------------ */
 /**
@@ -1235,7 +1235,7 @@ public class SessionHandler extends ScopedHandler
 
             if (session != null)
             {
-                _sessionTimeStats.set(round((System.currentTimeMillis() - session.getSessionData().getCreated())/1000.0));
+                _sessionTimeStats.record(round((System.currentTimeMillis() - session.getSessionData().getCreated())/1000.0));
                 session.finishInvalidate();   
             }
         }

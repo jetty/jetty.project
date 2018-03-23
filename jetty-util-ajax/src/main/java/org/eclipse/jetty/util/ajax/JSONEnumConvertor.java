@@ -62,6 +62,7 @@ public class JSONEnumConvertor implements JSON.Convertor
         _fromJSON=fromJSON;
     }
 
+    @Override
     public Object fromJSON(Map map)
     {
         if (!_fromJSON)
@@ -78,6 +79,7 @@ public class JSONEnumConvertor implements JSON.Convertor
         return null;
     }
 
+    @Override
     public void toJSON(Object obj, Output out)
     {
         if (_fromJSON)

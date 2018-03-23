@@ -151,6 +151,18 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
+     * Compare inputParameters to NO_PARAMS by Reference
+     * @param inputParameters The parameters to compare to NO_PARAMS
+     * @return True if the inputParameters reference is equal to NO_PARAMS otherwise False
+     */
+    private static boolean isNoParams(MultiMap<String> inputParameters) {
+        @SuppressWarnings("ReferenceEquality")
+        boolean is_no_params = (inputParameters==NO_PARAMS);
+        return is_no_params;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
      * Obtain the base {@link Request} instance of a {@link ServletRequest}, by
      * coercion, unwrapping or special attribute.
      * @param request The request
@@ -392,9 +404,9 @@ public class Request implements HttpServletRequest
         }
 
         // Do parameters need to be combined?
-        if (_queryParameters==NO_PARAMS || _queryParameters.size()==0)
+        if (isNoParams(_queryParameters) || _queryParameters.size()==0)
             _parameters=_contentParameters;
-        else if (_contentParameters==NO_PARAMS || _contentParameters.size()==0)
+        else if (isNoParams(_contentParameters) || _contentParameters.size()==0)
             _parameters=_queryParameters;
         else
         {

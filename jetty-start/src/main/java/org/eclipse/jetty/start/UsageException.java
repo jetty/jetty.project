@@ -33,6 +33,12 @@ public class UsageException extends RuntimeException
     public static final int ERR_UNKNOWN = -9;
     private int exitCode;
 
+    public UsageException(int exitCode, String message)
+    {
+        super(message);
+        this.exitCode = exitCode;
+    }
+    
     public UsageException(int exitCode, String format, Object... objs)
     {
         super(String.format(format,objs));

@@ -27,6 +27,7 @@ import java.net.Socket;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
@@ -344,12 +345,12 @@ public class StressTest
     {
         if (persistent)
         {
-            long start=System.currentTimeMillis();
+            long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             Socket socket= new Socket("localhost", _connector.getLocalPort());
             socket.setSoTimeout(30000);
             socket.setSoLinger(false,0);
 
-            long connected=System.currentTimeMillis();
+            long connected=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
             for (int i=0;i<__tests.length;i++)
             {
@@ -367,12 +368,12 @@ public class StressTest
                 Thread.yield();
             }
 
-            long written=System.currentTimeMillis();
+            long written=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
             String response = IO.toString(socket.getInputStream());
             socket.close();
 
-            long end=System.currentTimeMillis();
+            long end=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
             int bodies = count(response,"HTTP/1.1 200 OK");
             if (__tests.length!=bodies)
@@ -406,7 +407,7 @@ public class StressTest
             {
                 String uri=__tests[i]+"/"+name+"/"+i;
 
-                long start=System.currentTimeMillis();
+                long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 String close="Connection: close\r\n";
                 String request =
                         "GET "+uri+" HTTP/1.1\r\n"+
@@ -418,16 +419,16 @@ public class StressTest
                 socket.setSoTimeout(10000);
                 socket.setSoLinger(false,0);
 
-                _latencies[0].add(new Long(System.currentTimeMillis()-start));
+                _latencies[0].add(new Long(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start));
 
                 socket.getOutputStream().write(request.getBytes());
                 socket.getOutputStream().flush();
 
-                _latencies[1].add(new Long(System.currentTimeMillis()-start));
+                _latencies[1].add(new Long(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start));
 
                 String response = IO.toString(socket.getInputStream());
                 socket.close();
-                long end=System.currentTimeMillis();
+                long end=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
                 String endOfResponse = "\r\n\r\n";
                 assertTrue("response = '" + response + "'", response.contains(endOfResponse));
@@ -459,7 +460,7 @@ public class StressTest
         @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
-            long now=System.currentTimeMillis();
+            long now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             long start=Long.parseLong(baseRequest.getHeader("start"));
             long received=baseRequest.getTimeStamp();
 
@@ -474,7 +475,7 @@ public class StressTest
             response.getOutputStream().print("DATA "+request.getPathInfo()+"\n\n");
             baseRequest.setHandled(true);
 
-            _latencies[4].add(new Long(System.currentTimeMillis()-start));
+            _latencies[4].add(new Long(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start));
 
             return;
         }

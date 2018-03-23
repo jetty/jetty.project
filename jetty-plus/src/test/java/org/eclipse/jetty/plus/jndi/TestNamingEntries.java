@@ -49,6 +49,7 @@ public class TestNamingEntries
 {
     public class ScopeA
     {
+        @Override
         public String toString()
         {
             return this.getClass().getName()+"@"+super.hashCode();
@@ -77,6 +78,7 @@ public class TestNamingEntries
         {
         }
 
+        @Override
         public Object getObjectInstance(Object arg0, Name arg1, Context arg2, Hashtable arg3) throws Exception
         {
             Reference ref = (Reference)arg0;
@@ -99,6 +101,7 @@ public class TestNamingEntries
             super(Integer.parseInt(value.trim()));
         }
 
+        @Override
         public Reference getReference() throws NamingException
         {
             RefAddr refAddr = new StringRefAddr("val", String.valueOf(getValue()));
@@ -112,6 +115,7 @@ public class TestNamingEntries
         {
         }
 
+        @Override
         public Object getObjectInstance(Object arg0, Name arg1, Context arg2, Hashtable arg3) throws Exception
         {
             Reference ref = (Reference)arg0;

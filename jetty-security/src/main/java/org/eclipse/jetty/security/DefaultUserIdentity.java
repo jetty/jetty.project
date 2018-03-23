@@ -43,16 +43,19 @@ public class DefaultUserIdentity implements UserIdentity
         _roles=roles;
     }
 
+    @Override
     public Subject getSubject()
     {
         return _subject;
     }
 
+    @Override
     public Principal getUserPrincipal()
     {
         return _userPrincipal;
     }
 
+    @Override
     public boolean isUserInRole(String role, Scope scope)
     {
         //Servlet Spec 3.1, pg 125

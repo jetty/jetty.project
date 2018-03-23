@@ -95,7 +95,9 @@ public abstract class Credential implements Serializable
      */
     protected static boolean stringEquals(String known, String unknown)
     {
-        if (known == unknown)
+        @SuppressWarnings("ReferenceEquality")
+        boolean sameObject = (known == unknown);
+        if (sameObject)
             return true;
         if (known == null || unknown == null)
             return false;

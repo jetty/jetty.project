@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Provides a Log4j v1.2 API and implementation.  
 To receive jetty logs enable the jetty-slf4j and slf4j-log4j modules.

@@ -61,6 +61,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
      * @param sharedState the shared state map
      * @param options the options map
      */
+    @Override
     public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options)
     {
         super.initialize(subject,callbackHandler,sharedState,options);
@@ -107,6 +108,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
      * @param userName the user name
      * @throws Exception if unable to get the user information
      */
+    @Override
     public UserInfo getUserInfo(String userName) throws Exception
     {
         PropertyUserStore propertyUserStore = _propertyUserStores.get(_filename);

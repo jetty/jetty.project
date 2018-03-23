@@ -297,6 +297,7 @@ public class OverlayConfig
         return false;
     }
     
+    @Override
     public String toString()
     {
         StringBuffer strbuff = new StringBuffer();

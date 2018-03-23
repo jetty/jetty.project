@@ -20,7 +20,6 @@ package org.eclipse.jetty.io;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
@@ -30,18 +29,19 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
 
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPoolBudget;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 /**
  * <p>{@link SelectorManager} manages a number of {@link ManagedSelector}s that
@@ -59,21 +59,20 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final Executor executor;
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
+    private final AtomicInteger _selectorIndex = new AtomicInteger();
+    private final IntUnaryOperator _selectorIndexUpdate;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-    private long _selectorIndex;
-    private int _reservedThreads = -1;
     private ThreadPoolBudget.Lease _lease;
-    private ReservedThreadExecutor _reservedThreadExecutor;
 
     private static int defaultSelectors(Executor executor)
     {
         if (executor instanceof ThreadPool.SizedThreadPool)
         {
             int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
-            int cpus = Runtime.getRuntime().availableProcessors();
+            int cpus = ProcessorUtils.availableProcessors();
             return Math.max(1,Math.min(cpus/2,threads/16));
         }
-        return Math.max(1,Runtime.getRuntime().availableProcessors()/2);
+        return Math.max(1,ProcessorUtils.availableProcessors()/2);
     }
 
     protected SelectorManager(Executor executor, Scheduler scheduler)
@@ -94,6 +93,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         this.executor = executor;
         this.scheduler = scheduler;
         _selectors = new ManagedSelector[selectors];
+        _selectorIndexUpdate = index -> (index+1)%_selectors.length;
     }
 
     @ManagedAttribute("The Executor")
@@ -130,36 +130,25 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     }
 
     /**
-     * Get the number of preallocated producing threads
-     * @see EatWhatYouKill
-     * @see ReservedThreadExecutor
-     * @return The number of threads preallocated to producing (default -1).
+     * @return -1
+     * @deprecated
      */
-    @ManagedAttribute("The number of reserved producer threads")
+    @Deprecated
     public int getReservedThreads()
     {
-        return _reservedThreads;
+        return -1;
     }
 
     /**
-     * Set the number of reserved threads for high priority tasks.
-     * <p>Reserved threads are used to take over producing duties, so that a
-     * producer thread may immediately consume a task it has produced (EatWhatYouKill
-     * scheduling). If a reserved thread is not available, then produced tasks must
-     * be submitted to an executor to be executed by a different thread.
-     * @see EatWhatYouKill
-     * @see ReservedThreadExecutor
-     * @param threads  The number of producing threads to preallocate. If
-     * less that 0 (the default), then a heuristic based on the number of CPUs and
-     * the thread pool size is used to select the number of threads. If 0, no
-     * threads are preallocated and the EatWhatYouKill scheduler will be
-     * disabled and all produced tasks will be executed in a separate thread.
+     * @param threads ignored
+     * @deprecated
      */
+    @Deprecated
     public void setReservedThreads(int threads)
     {
-        _reservedThreads = threads;
+        throw new UnsupportedOperationException();
     }
-
+    
     /**
      * Executes the given task in a different thread.
      *
@@ -179,48 +168,9 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         return _selectors.length;
     }
 
-    private ManagedSelector chooseSelector(SelectableChannel channel)
+    private ManagedSelector chooseSelector()
     {
-        // Ideally we would like to have all connections from the same client end
-        // up on the same selector (to try to avoid smearing the data from a single
-        // client over all cores), but because of proxies, the remote address may not
-        // really be the client - so we have to hedge our bets to ensure that all
-        // channels don't end up on the one selector for a proxy.
-        ManagedSelector candidate1 = null;
-        if (channel != null)
-        {
-            try
-            {
-                if (channel instanceof SocketChannel)
-                {
-                    SocketAddress remote = ((SocketChannel)channel).getRemoteAddress();
-                    if (remote instanceof InetSocketAddress)
-                    {
-                        byte[] addr = ((InetSocketAddress)remote).getAddress().getAddress();
-                        if (addr != null)
-                        {
-                            int s = addr[addr.length - 1] & 0xFF;
-                            candidate1 = _selectors[s % getSelectorCount()];
-                        }
-                    }
-                }
-            }
-            catch (IOException x)
-            {
-                LOG.ignore(x);
-            }
-        }
-
-        // The ++ increment here is not atomic, but it does not matter,
-        // so long as the value changes sometimes, then connections will
-        // be distributed over the available selectors.
-        long s = _selectorIndex++;
-        int index = (int)(s % getSelectorCount());
-        ManagedSelector candidate2 = _selectors[index];
-
-        if (candidate1 == null || candidate1.size() >= candidate2.size() * 2)
-            return candidate2;
-        return candidate1;
+        return _selectors[_selectorIndex.updateAndGet(_selectorIndexUpdate)];
     }
 
     /**
@@ -235,7 +185,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public void connect(SelectableChannel channel, Object attachment)
     {
-        ManagedSelector set = chooseSelector(channel);
+        ManagedSelector set = chooseSelector();
         set.submit(set.new Connect(channel, attachment));
     }
 
@@ -260,7 +210,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public void accept(SelectableChannel channel, Object attachment)
     {
-        final ManagedSelector selector = chooseSelector(channel);
+        final ManagedSelector selector = chooseSelector();
         selector.submit(selector.new Accept(channel, attachment));
     }
 
@@ -275,7 +225,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public Closeable acceptor(SelectableChannel server)
     {
-        final ManagedSelector selector = chooseSelector(null);
+        final ManagedSelector selector = chooseSelector();
         ManagedSelector.Acceptor acceptor = selector.new Acceptor(server);
         selector.submit(acceptor);
         return acceptor;
@@ -298,8 +248,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     protected void doStart() throws Exception
     {
-        _reservedThreadExecutor = new ReservedThreadExecutor(getExecutor(),_reservedThreads,this);
-        addBean(_reservedThreadExecutor,true);
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _selectors.length);
         for (int i = 0; i < _selectors.length; i++)
         {
@@ -337,9 +285,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
                     removeBean(selector);
             }
             Arrays.fill(_selectors,null);
-            if (_reservedThreadExecutor!=null)
-                removeBean(_reservedThreadExecutor);
-            _reservedThreadExecutor = null;
             if (_lease != null)
                 _lease.close();
         }

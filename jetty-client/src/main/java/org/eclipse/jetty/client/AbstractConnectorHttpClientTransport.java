@@ -88,20 +88,21 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
             context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, destination.getHost());
             context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, destination.getPort());
 
+            boolean connected = true;
             if (client.isConnectBlocking())
             {
                 channel.socket().connect(address, (int)client.getConnectTimeout());
                 channel.configureBlocking(false);
-                selectorManager.accept(channel, context);
             }
             else
             {
                 channel.configureBlocking(false);
-                if (channel.connect(address))
-                    selectorManager.accept(channel, context);
-                else
-                    selectorManager.connect(channel, context);
+                connected = channel.connect(address);
             }
+            if (connected)
+                selectorManager.accept(channel, context);
+            else
+                selectorManager.connect(channel, context);
         }
         // Must catch all exceptions, since some like
         // UnresolvedAddressException are not IOExceptions.

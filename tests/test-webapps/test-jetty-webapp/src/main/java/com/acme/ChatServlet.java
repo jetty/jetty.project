@@ -46,6 +46,7 @@ public class ChatServlet extends HttpServlet
 
     private long asyncTimeout = 10000;
 
+    @Override
     public void init()
     {
         String parameter = getServletConfig().getInitParameter("asyncTimeout");

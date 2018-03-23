@@ -40,6 +40,7 @@ public class DateCacheTest
     /* ------------------------------------------------------------ */
     @Test
     @Slow
+    @SuppressWarnings("ReferenceEquality")
     public void testDateCache() throws Exception
     {
         //@WAS: Test t = new Test("org.eclipse.jetty.util.DateCache");
@@ -48,7 +49,7 @@ public class DateCacheTest
 
         Thread.sleep(2000);
 
-        long now=System.currentTimeMillis();
+        long now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         long end=now+3000;
         String f=dc.formatNow(now);
         String last=f;
@@ -67,7 +68,7 @@ public class DateCacheTest
                 misses++;
 
             TimeUnit.MILLISECONDS.sleep(100);
-            now=System.currentTimeMillis();
+            now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
         Assert.assertThat(hits,Matchers.greaterThan(misses));
     }

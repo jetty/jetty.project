@@ -23,6 +23,9 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.AbstractClusteredSessionMigrationTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
@@ -35,7 +38,7 @@ import org.junit.Before;
 public class ClientSessionMigrationTest
     extends AbstractClusteredSessionMigrationTest
 {
-    private static final String MAP_NAME = Long.toString( System.currentTimeMillis() );
+    private static final String MAP_NAME = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
 
     private HazelcastInstance hazelcastInstance;
 
@@ -44,7 +47,7 @@ public class ClientSessionMigrationTest
         throws Exception
     {
         Config config = new Config().addMapConfig( new MapConfig().setName( MAP_NAME ) ) //
-            .setInstanceName( "beer" );
+            .setInstanceName( Long.toString( System.currentTimeMillis() ) );
         // start Hazelcast instance
         hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance( config );
     }

@@ -48,6 +48,7 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle imple
     * Call the doStart method of the ServletContainerInitializers
     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
     */
+    @Override
     public void doStart()
     {
         List<ContainerInitializer> initializers = (List<ContainerInitializer>)_context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);

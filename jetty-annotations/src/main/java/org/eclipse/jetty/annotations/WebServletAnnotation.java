@@ -65,6 +65,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
     /**
      * @see DiscoveredAnnotation#apply()
      */
+    @Override
     public void apply()
     {
         //TODO check this algorithm with new rules for applying descriptors and annotations in order

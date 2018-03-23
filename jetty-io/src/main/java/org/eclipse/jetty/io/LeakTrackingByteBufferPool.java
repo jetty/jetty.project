@@ -33,6 +33,7 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
 
     private final LeakDetector<ByteBuffer> leakDetector = new LeakDetector<ByteBuffer>()
     {
+        @Override
         public String id(ByteBuffer resource)
         {
             return BufferUtil.toIDString(resource);

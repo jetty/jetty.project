@@ -75,6 +75,7 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
         LOG.debug("Deserialized and relogged in {}",this);
     }
 
+    @Override
     public void logout()
     {
         if (_session!=null && _session.getAttribute(__J_AUTHENTICATED)!=null)

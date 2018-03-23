@@ -131,6 +131,7 @@ public class HpackContextTest
         assertNull(ctx.get("name"));
     }
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testGetAddStatic()
     {
         HpackContext ctx = new HpackContext(4096);

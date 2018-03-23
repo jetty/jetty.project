@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -1297,8 +1295,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         }
         catch(ExecutionException e)
         {
-            assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
-            assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
+            Assert.assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
+            Assert.assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
         }
     }
 
@@ -1311,8 +1309,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         }
         catch(ExecutionException e)
         {
-            assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
-            assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
+            Assert.assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
+            Assert.assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
         }
     }
 
@@ -1648,6 +1646,70 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .send();
 
         Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void test204WithContent() throws Exception
+    {
+        // This test only works with clear-text HTTP.
+        Assume.assumeTrue(sslContextFactory == null);
+
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            startClient();
+            client.setMaxConnectionsPerDestination(1);
+            int idleTimeout = 2000;
+            client.setIdleTimeout(idleTimeout);
+
+            Request request = client.newRequest("localhost", server.getLocalPort())
+                    .scheme(scheme)
+                    .timeout(5, TimeUnit.SECONDS);
+            FutureResponseListener listener = new FutureResponseListener(request);
+            request.send(listener);
+
+            try (Socket socket = server.accept())
+            {
+                socket.setSoTimeout(idleTimeout / 2);
+
+                InputStream input = socket.getInputStream();
+                consume(input, false);
+
+                // Send a bad response.
+                String httpResponse = "" +
+                        "HTTP/1.1 204 No Content\r\n" +
+                        "\r\n" +
+                        "No Content";
+                OutputStream output = socket.getOutputStream();
+                output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+                Assert.assertEquals(204, response.getStatus());
+
+                byte[] responseContent = response.getContent();
+                Assert.assertNotNull(responseContent);
+                Assert.assertEquals(0, responseContent.length);
+
+                // Send another request to verify we have handled the wrong response correctly.
+                request = client.newRequest("localhost", server.getLocalPort())
+                        .scheme(scheme)
+                        .timeout(5, TimeUnit.SECONDS);
+                listener = new FutureResponseListener(request);
+                request.send(listener);
+
+                consume(input, false);
+
+                httpResponse = "" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
+                output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                response = listener.get(5, TimeUnit.SECONDS);
+                Assert.assertEquals(200, response.getStatus());
+            }
+        }
     }
 
     private void assertCopyRequest(Request original)

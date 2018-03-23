@@ -38,21 +38,25 @@ public class JAASGroup implements Group
     }
    
     /* ------------------------------------------------------------ */
+    @Override
     public synchronized boolean addMember(Principal principal)
     {
         return _members.add(principal);
     }
 
+    @Override
     public synchronized boolean removeMember(Principal principal)
     {
         return _members.remove(principal);
     }
 
+    @Override
     public boolean isMember(Principal principal)
     {
         return _members.contains(principal);
     }
 
+    @Override
     public Enumeration<? extends Principal> members()
     {
 
@@ -65,12 +69,14 @@ public class JAASGroup implements Group
                 this.itor = itor;
             }
             
+            @Override
             public boolean hasMoreElements ()
             {
                 return this.itor.hasNext();
             }
 
 
+            @Override
             public Principal nextElement ()
             {
                 return this.itor.next();
@@ -81,11 +87,13 @@ public class JAASGroup implements Group
         return new MembersEnumeration (_members.iterator());
     }
 
+    @Override
     public int hashCode()
     {
         return getName().hashCode();
     }
 
+    @Override
     public boolean equals(Object object)
     {
         if (! (object instanceof JAASGroup))
@@ -94,11 +102,13 @@ public class JAASGroup implements Group
         return ((JAASGroup)object).getName().equals(getName());
     }
 
+    @Override
     public String toString()
     {
         return getName();
     }
 
+    @Override
     public String getName()
     {
         

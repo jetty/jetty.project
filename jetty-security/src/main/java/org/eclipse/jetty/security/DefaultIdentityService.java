@@ -48,40 +48,47 @@ public class DefaultIdentityService implements IdentityService
      * If there are roles refs present in the scope, then wrap the UserIdentity
      * with one that uses the role references in the {@link UserIdentity#isUserInRole(String, org.eclipse.jetty.server.UserIdentity.Scope)}
      */
+    @Override
     public Object associate(UserIdentity user)
     {
         return null;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void disassociate(Object previous)
     {
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Object setRunAs(UserIdentity user, RunAsToken token)
     {
         return token;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void unsetRunAs(Object lastToken)
     {
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public RunAsToken newRunAsToken(String runAsName)
     {
         return new RoleRunAsToken(runAsName);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public UserIdentity getSystemUserIdentity()
     {
         return null;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public UserIdentity newUserIdentity(final Subject subject, final Principal userPrincipal, final String[] roles)
     {
         return new DefaultUserIdentity(subject,userPrincipal,roles);

@@ -316,6 +316,7 @@ public class JettyDistro
         // Lets find it.
         File subdirs[] = distroUnpackDir.listFiles(new FileFilter()
         {
+            @Override
             public boolean accept(File path)
             {
                 if (!path.isDirectory())
@@ -839,6 +840,7 @@ public class JettyDistro
             this.parser = connector;
         }
 
+        @Override
         public void run()
         {
             String line;

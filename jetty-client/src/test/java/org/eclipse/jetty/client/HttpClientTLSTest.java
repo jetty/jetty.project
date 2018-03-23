@@ -44,6 +44,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -58,7 +59,7 @@ public class HttpClientTLSTest
 
     private void startServer(SslContextFactory sslContextFactory, Handler handler) throws Exception
     {
-        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        ExecutorThreadPool serverThreads = new ExecutorThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
 

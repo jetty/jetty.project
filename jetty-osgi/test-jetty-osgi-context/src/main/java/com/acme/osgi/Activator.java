@@ -42,6 +42,7 @@ public class Activator implements BundleActivator
      * 
      * @param context
      */
+    @Override
     public void start(final BundleContext context) throws Exception
     {
         ContextHandler ch = new ContextHandler();
@@ -72,6 +73,7 @@ public class Activator implements BundleActivator
      * @see
      * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
+    @Override
     public void stop(BundleContext context) throws Exception
     {
         _sr.unregister();

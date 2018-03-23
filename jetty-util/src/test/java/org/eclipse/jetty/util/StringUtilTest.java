@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -35,6 +36,7 @@ import static org.junit.Assert.assertTrue;
 public class StringUtilTest
 {
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testAsciiToLowerCase()
     {
         String lc="\u0690bc def 1\u06903";
@@ -87,6 +89,7 @@ public class StringUtilTest
     }
 
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testReplace()
     {
         String s="\u0690bc \u0690bc \u0690bc";
@@ -99,6 +102,7 @@ public class StringUtilTest
     }
 
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testUnquote()
     {
         String uq =" not quoted ";
@@ -111,9 +115,10 @@ public class StringUtilTest
 
 
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testNonNull()
     {
-        String nn="";
+        String nn="non empty string";
         assertTrue(nn==StringUtil.nonNull(nn));
         assertEquals("",StringUtil.nonNull(null));
     }
@@ -175,31 +180,31 @@ public class StringUtilTest
         Utf8StringBuffer strbuf = new Utf8StringBuffer(bytes.length);
         for (int i=0;i<10;i++)
         {
-            long s1=System.currentTimeMillis();
+            long s1=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             for (int j=1000000; j-->0;)
             {
                 calc+=new String(bytes,0,bytes.length,StandardCharsets.UTF_8).hashCode();
             }
-            long s2=System.currentTimeMillis();
+            long s2=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             for (int j=1000000; j-->0;)
             {
                 calc+=StringUtil.toUTF8String(bytes,0,bytes.length).hashCode();
             }
-            long s3=System.currentTimeMillis();
+            long s3=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             for (int j=1000000; j-->0;)
             {
                 Utf8StringBuffer buffer = new Utf8StringBuffer(bytes.length);
                 buffer.append(bytes,0,bytes.length);
                 calc+=buffer.toString().hashCode();
             }
-            long s4=System.currentTimeMillis();
+            long s4=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             for (int j=1000000; j-->0;)
             {
                 strbuf.reset();
                 strbuf.append(bytes,0,bytes.length);
                 calc+=strbuf.toString().hashCode();
             }
-            long s5=System.currentTimeMillis();
+            long s5=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
             System.err.println((s2-s1)+", "+(s3-s2)+", "+(s4-s3)+", "+(s5-s4));
         }

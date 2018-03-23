@@ -91,11 +91,12 @@ public class XmlConfiguration
     private static final XmlParser __parser = initParser();
     private static XmlParser initParser()
     {
+        ClassLoader loader = XmlConfiguration.class.getClassLoader();
         XmlParser parser = new XmlParser();
-        URL config60 = Loader.getResource("org/eclipse/jetty/xml/configure_6_0.dtd");
-        URL config76 = Loader.getResource("org/eclipse/jetty/xml/configure_7_6.dtd");
-        URL config90 = Loader.getResource("org/eclipse/jetty/xml/configure_9_0.dtd");
-        URL config93 = Loader.getResource("org/eclipse/jetty/xml/configure_9_3.dtd");
+        URL config60 = loader.getResource("org/eclipse/jetty/xml/configure_6_0.dtd");
+        URL config76 = loader.getResource("org/eclipse/jetty/xml/configure_7_6.dtd");
+        URL config90 = loader.getResource("org/eclipse/jetty/xml/configure_9_0.dtd");
+        URL config93 = loader.getResource("org/eclipse/jetty/xml/configure_9_3.dtd");
         parser.redirectEntity("configure.dtd",config90);
         parser.redirectEntity("configure_1_0.dtd",config60);
         parser.redirectEntity("configure_1_1.dtd",config60);
@@ -330,6 +331,7 @@ public class XmlConfiguration
         XmlParser.Node _root;
         XmlConfiguration _configuration;
 
+        @Override
         public void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
         {
             _url=url==null?null:url.toString();
@@ -337,6 +339,7 @@ public class XmlConfiguration
             _configuration=configuration;
         }
 
+        @Override
         public Object configure(Object obj) throws Exception
         {
             // Check the class of the object
@@ -353,6 +356,7 @@ public class XmlConfiguration
             return obj;
         }
 
+        @Override
         public Object configure() throws Exception
         {
             Class<?> oClass = nodeClass(_root);

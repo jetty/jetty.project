@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -311,10 +312,12 @@ public class DeploymentManager extends ContainerLifeCycle
      */
     public Collection<App> getApps(Node node)
     {
+        Objects.requireNonNull(node);
+        
         List<App> ret = new ArrayList<>();
         for (AppEntry entry : _apps)
         {
-            if (entry.lifecyleNode == node)
+            if (node.equals(entry.lifecyleNode))
             {
                 ret.add(entry.app);
             }
@@ -507,6 +510,18 @@ public class DeploymentManager extends ContainerLifeCycle
         catch (Throwable t)
         {
             LOG.warn("Unable to reach node goal: " + nodeName,t);
+            // migrate to FAILED node
+            Node failed = _lifecycle.getNodeByName(AppLifeCycle.FAILED);
+            appentry.setLifeCycleNode(failed);
+            try
+            {
+                _lifecycle.runBindings(failed, appentry.app, this);
+            }
+            catch (Throwable ignore)
+            {
+                // The runBindings failed for 'failed' node
+                LOG.ignore(ignore);
+            }
         }
     }
 

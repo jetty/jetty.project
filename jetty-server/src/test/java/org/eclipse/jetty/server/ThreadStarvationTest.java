@@ -298,7 +298,8 @@ public class ThreadStarvationTest
     
         List<Callable<Long>> clientTasks = new ArrayList<>();
     
-        for(int i=0; i<CLIENTS; i++) {
+        for(int i=0; i<CLIENTS; i++) 
+        {
             clientTasks.add(() ->
             {
                 try (Socket client = clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
@@ -324,12 +325,20 @@ public class ThreadStarvationTest
                     
                     byte buf[] = new byte[1024];
                     
-                    while((len = in.read(buf,0,buf.length)) != -1)
+                    try
                     {
-                        for(int x=0; x<len; x++)
+                        while((len = in.read(buf,0,buf.length)) != -1)
                         {
-                            if(buf[x] == '!') bodyCount++;
+                            for(int x=0; x<len; x++)
+                            {
+                                if(buf[x] == '!') bodyCount++;
+                            }
                         }
+                    }
+                    catch(Throwable th)
+                    {
+                        _server.dumpStdErr();
+                        throw th;
                     }
                     return bodyCount;
                 }
@@ -346,7 +355,8 @@ public class ThreadStarvationTest
                 Long bodyCount = responseFut.get();
                 assertThat(bodyCount.longValue(), is(expected));
             }
-        } finally
+        } 
+        finally
         {
             clientExecutors.shutdownNow();
         }
@@ -366,6 +376,7 @@ public class ThreadStarvationTest
             baseRequest.setHandled(true);
             response.setStatus(200);
 
+            response.setContentLength(BUFFERS*BUFFER_SIZE);
             OutputStream out = response.getOutputStream();
             for (int i=0;i<BUFFERS;i++)
             {

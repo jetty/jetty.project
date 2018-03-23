@@ -72,6 +72,7 @@ public abstract class Descriptor
         return _root;
     }
     
+    @Override
     public String toString()
     {
         return this.getClass().getSimpleName()+"("+_xml+")";

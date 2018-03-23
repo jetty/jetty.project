@@ -514,40 +514,28 @@ public class IOTest
         assertThat(key,notNullValue());
         assertThat(selector.selectNow(), is(0));
         
-        client.write(BufferUtil.toBuffer("X"));
-        assertThat(selector.select(), is(1));
-        assertThat(key.readyOps(), is(SelectionKey.OP_READ));
-        assertThat(selector.selectedKeys(), Matchers.contains(key));
-
-        assertThat(selector.select(), is(0));
-        assertThat(key.readyOps(), is(SelectionKey.OP_READ));
-        assertThat(selector.selectedKeys(), Matchers.contains(key));
-
-        client.write(BufferUtil.toBuffer("X"));
-        selector.selectedKeys().clear();
-        assertThat(selector.select(), is(1));
-        assertThat(key.readyOps(), is(SelectionKey.OP_READ));
-        assertThat(selector.selectedKeys(), Matchers.contains(key));
-        
-        ByteBuffer buf = BufferUtil.allocate(1024);
-        int p = BufferUtil.flipToFill(buf);
-        assertThat(server.read(buf),is(2));
-        BufferUtil.flipToFlush(buf,p);
-        
+        // Test wakeup before select
         selector.wakeup();
-        selector.selectedKeys().clear();
         assertThat(selector.select(), is(0));
-        assertThat(selector.selectedKeys().size(),is(0));
         
-        client.write(BufferUtil.toBuffer("X"));
-        selector.wakeup();
-        selector.selectedKeys().clear();
-        assertThat(selector.select(), is(1));
-        assertThat(selector.selectedKeys().size(),is(1));
-        
-        p = BufferUtil.flipToFill(buf);
-        assertThat(server.read(buf),is(1));
-        BufferUtil.flipToFlush(buf,p);
-
+        // Test wakeup after select
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    Thread.sleep(100);
+                    selector.wakeup();
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            
+        }.start();
+        assertThat(selector.select(), is(0));
     }
 }

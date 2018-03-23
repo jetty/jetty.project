@@ -620,9 +620,9 @@ public class Response implements HttpServletResponse
         }
 
 
-        _mimeType=null;
-        _characterEncoding=null;
         _outputType = OutputType.NONE;
+        setContentType(null);
+        setCharacterEncoding(null);
         setHeader(HttpHeader.EXPIRES,null);
         setHeader(HttpHeader.LAST_MODIFIED,null);
         setHeader(HttpHeader.CACHE_CONTROL,null);

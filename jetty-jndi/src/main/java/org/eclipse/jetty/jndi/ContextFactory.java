@@ -95,6 +95,7 @@ public class ContextFactory implements ObjectFactory
      * return null.
      * @see javax.naming.spi.ObjectFactory#getObjectInstance(java.lang.Object, javax.naming.Name, javax.naming.Context, java.util.Hashtable)
      */
+    @Override
     public Object getObjectInstance (Object obj,
                                      Name name,
                                      Context nameCtx,

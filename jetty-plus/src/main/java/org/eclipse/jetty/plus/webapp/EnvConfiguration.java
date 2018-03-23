@@ -64,8 +64,8 @@ public class EnvConfiguration extends AbstractConfiguration
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class);
         addDependents(PlusConfiguration.class, JettyWebXmlConfiguration.class);
         protectAndExpose("org.eclipse.jetty.jndi.");
-    }    
-    
+    }
+
     public void setJettyEnvXml (URL url)
     {
         this.jettyEnvXmlUrl = url;
@@ -109,10 +109,12 @@ public class EnvConfiguration extends AbstractConfiguration
                 final List<Bound> bindings = new ArrayList<Bound>();
                 NamingContext.Listener listener = new NamingContext.Listener()
                 {
+                    @Override
                     public void unbind(NamingContext ctx, Binding binding)
                     {
                     }
 
+                    @Override
                     public Binding bind(NamingContext ctx, Binding binding)
                     {
                         bindings.add(new Bound(ctx,binding.getName()));

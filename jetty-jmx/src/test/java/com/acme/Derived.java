@@ -33,6 +33,7 @@ public class Derived extends Base implements Signature
     SuperManaged superManagedInstance = new SuperManaged();
 
     @ManagedAttribute(value = "The full name of something", name = "fname", setter = "setFullName")
+    @Override
     public String getFullName()
     {
         return fname;
@@ -44,6 +45,7 @@ public class Derived extends Base implements Signature
     }
 
     @ManagedOperation("publish something")
+    @Override
     public void publish()
     {
         System.err.println("publish");

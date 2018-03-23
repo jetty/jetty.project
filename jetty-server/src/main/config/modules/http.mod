@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Enables a HTTP connector on the server.
 By default HTTP/1 is support, but HTTP2C can
@@ -39,9 +41,6 @@ etc/jetty-http.xml
 
 ## Thread priority delta to give to acceptor threads
 # jetty.http.acceptorPriorityDelta=0
-
-## Reserve threads for high priority tasks (-2 use number of selectors,-1 use number of CPUs, 0 no reserved threads)
-# jetty.http.reservedThreads=-2
 
 ## Connect Timeout in milliseconds
 # jetty.http.connectTimeout=15000

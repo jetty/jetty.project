@@ -137,6 +137,7 @@ public abstract class CyclicTimeout implements Destroyable
      * <p>Destroys this CyclicTimeout.</p>
      * <p>After being destroyed, this CyclicTimeout is not used anymore.</p>
      */
+    @Override
     public void destroy()
     {
         Timeout timeout = _timeout.getAndSet(NOT_SET);

@@ -1,5 +1,6 @@
+//
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +14,7 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
+//
 
 [[framework-jetty-osgi]]
 === OSGI
@@ -30,7 +32,7 @@ You will need to install some jetty jars into your OSGi container.
 You can always find the Jetty jars either in the Maven Central repository, or you can link:https://www.eclipse.org/jetty/download.html[download] a distribution of Jetty.
 Here's the absolute minimal set of Jetty jars:
 
-.Bundle Name Mapping
+.Minimal Bundles
 [cols=",",options="header",]
 |===================================================
 |Jar |Bundle Symbolic Name
@@ -43,12 +45,26 @@ Here's the absolute minimal set of Jetty jars:
 |jetty-webapp |org.eclipse.jetty.webapp
 |jetty-deploy |org.eclipse.jetty.deploy
 |jetty-xml |org.eclipse.jetty.xml
-|jetty-osgi-servlet-api |org.eclipse.jetty.toolchain
+|jetty-osgi-servlet-api |org.eclipse.jetty.osgi-servlet-api
 |===================================================
+
+You *must also install the Apache Aries SPI Fly bundles* as  many parts of Jetty - for example ALPN, websocket, annotations - use the `ServiceLoader` mechanism, which requires an OSGi Service Loader Mediator like SPI Fly:
+
+[[spifly]]
+.SPI Fly Bundles
+[cols=",,",options="header",]
+|=======================================================================
+|Jar |Bundle Symbolic Name |Location
+|org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle-1.0.1.jar |org.apache.aries.spifly.dynamic.bundle
+|http://central.maven.org/maven2/org/apache/aries/spifly/org.apache.aries.spifly.dynamic.bundle/[Maven central]
+|org.apache.aries:org.apache.aries.util-1.0.1.jar |org.apache.aries.util
+|http://central.maven.org/maven2/org/apache/aries/org.apache.aries.util/[Maven
+central]
+|=======================================================================
 
 ____
 [NOTE]
-We recommend that you also deploy the link:#osgi-annotations[annotation-related] jars also, as the Servlet Specification increasingly relies on annotations for functionality.
+We strongly recommend that you also deploy the link:#osgi-annotations[annotation-related] jars also, as the Servlet Specification increasingly relies on annotations for functionality.
 ____
 
 You will also need the **OSGi Event Management service** and the **OSGi Configuration Management service**.
@@ -650,6 +666,8 @@ In order to use JSPs with your webapps and bundles you will need to install the 
 Some you will find in the Jetty distribution, whereas others you will need to download from http://central.maven.org/maven2/org/eclipse/jetty/orbit/[Maven central].
 Here is the list of recommended jars (NOTE the version numbers may change in future):
 
+[[osgi-jsp]]
+
 .Jars Required for JSP
 [cols=",,",options="header",]
 |=======================================================================
@@ -670,8 +688,7 @@ Here is the list of recommended jars (NOTE the version numbers may change in fut
 
 |org.eclipse.jetty.osgi:jetty-osgi-boot-jsp
 |org.eclipse.jetty.osgi.boot.jsp
-|http://central.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp[Maven
-central]
+|http://central.maven.org/maven2/org/eclipse/jetty/osgi/jetty-osgi-boot-jsp[Maven central]
 |=======================================================================
 
 ____
@@ -688,14 +705,12 @@ For the JSTL library, we recommend the use of the implementation from Glassfish,
 .Jars Required for Glassfish JSTL
 [cols=",,",options="header",]
 |=======================================================================
-|Jar |Bundle Symbolic Name |Location
-|The jsp jars | |
+|Jar |Bundle Symbolic Name
+|The link:#osgi-jsp[jsp jars]|
 
-|org.eclipse.jetty.orbit:javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
-|javax.servlet.jsp.jstl |Distribution lib/jsp
+|org.eclipse.jetty.orbit:javax.servlet.jsp.jstl-1.2.0.v201105211821.jar| javax.servlet.jsp.jstl
 
-|org.glassfish.web:javax.servlet.jsp.jstl-1.2.2.jar
-|org.glassfish.web.javax.servlet.jsp.jstl |Distribution lib/jsp
+|org.glassfish.web:javax.servlet.jsp.jstl-1.2.2.jar|org.glassfish.web.javax.servlet.jsp.jstl
 |=======================================================================
 
 However, if you wish, you may use the JSTL implementation from Apache instead, although you will need to source some dependency jars with suitable OSGi manifests:
@@ -704,7 +719,7 @@ However, if you wish, you may use the JSTL implementation from Apache instead, a
 [cols=",,",options="header",]
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
-|The jsp jars | |
+|The link:#osgi-jsp[jsp jars] | |
 
 |org.apache.taglibs:taglibs-standard-spec:jar:1.2.1
 |org.apache.taglibs.taglibs-standard-spec |Distribution lib/apache-jstl
@@ -819,6 +834,7 @@ In order to use them with Jetty in OSGi, you will need to deploy some extra jars
 [cols=",,",options="header",]
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
+|The link:#spifly[spifly jars] | |
 |org.ow2.asm:asm-5.0.1.jar |org.objectweb.asm
 |http://central.maven.org/maven2/org/ow2/asm/asm[Maven central]
 
@@ -827,15 +843,6 @@ In order to use them with Jetty in OSGi, you will need to deploy some extra jars
 
 |org.ow2.asm:asm-tree-5.0.1.jar |org.objectweb.asm.tree
 |http://central.maven.org/maven2/org/ow2/asm/asm-tree[Maven central]
-
-|org.apache.aries:org.apache.aries.util-1.0.1.jar |org.apache.aries.util
-|http://central.maven.org/maven2/org/apache/aries/org.apache.aries.util/[Maven
-central]
-
-|org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle-1.0.1.jar
-|org.apache.aries.spifly.dynamic.bundle
-|http://central.maven.org/maven2/org/apache/aries/spifly/org.apache.aries.spifly.dynamic.bundle/[Maven
-central]
 
 |javax.annotation:javax.annotation-api-1.2.jar |javax.annotation-api
 |http://central.maven.org/maven2/javax/annotation/javax.annotation-api/[Maven
@@ -869,12 +876,12 @@ ____
 Even if your webapp itself does not not use annotations, you may need to deploy these jars because your webapp depends on a Jetty module or a 3rd party library that uses a http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerInitializer].
 This interface requires annotation support.
 It is implemented by providers of code that extend the capabilities of the container.
-An xample of this is the Jetty JSR356 Websocket implementation, although it is being used increasingly commonly in popular libraries like link:http://projects.spring.io/spring-framework/[Spring], link:https://jersey.java.net/[Jersey] and JSP containers.
+An example of this is the Jetty JSR356 Websocket implementation, although it is being used increasingly commonly in popular libraries like link:http://projects.spring.io/spring-framework/[Spring], link:https://jersey.java.net/[Jersey] and JSP containers.
 
 To find `ServletContainerInitializers` on the classpath, Jetty uses the Java http://docs.oracle.com/javase/7/docs/api/java/util/ServiceLoader.html[`ServiceLoader`]
 mechanism.
 For this to function in OSGi, you will need an OSGi R5 compatible container, and have support for the http://blog.osgi.org/2013/02/javautilserviceloader-in-osgi.html[Service Loader Mediator].
-Jetty has been tested with the http://aries.apache.org/modules/spi-fly.html[Aries SpiFly] module,which is the reference implementation of the Service Loader Mediator, and is listed in the jars above.
+Jetty has been tested with the http://aries.apache.org/modules/spi-fly.html[Aries SpiFly] module, which is the reference implementation of the Service Loader Mediator, and is listed in the jars above.
 
 ==== OSGi Containers
 

@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.lang.reflect.Constructor;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
-
-import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
-import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
-
 /**
  * <p>An {@link ExecutionStrategy} executes {@link Runnable} tasks produced by a {@link Producer}.
  * The strategy to execute the task may vary depending on the implementation; the task may be

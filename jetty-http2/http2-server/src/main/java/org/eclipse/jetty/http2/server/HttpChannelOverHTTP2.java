@@ -145,12 +145,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         }
         catch (BadMessageException x)
         {
-            onBadMessage(x.getCode(), x.getReason());
+            onBadMessage(x);
             return null;
         }
         catch (Throwable x)
         {
-            onBadMessage(HttpStatus.INTERNAL_SERVER_ERROR_500, null);
+            onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
             return null;
         }
     }
@@ -177,12 +177,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         }
         catch (BadMessageException x)
         {
-            onBadMessage(x.getCode(), x.getReason());
+            onBadMessage(x);
             return null;
         }
         catch (Throwable x)
         {
-            onBadMessage(HttpStatus.INTERNAL_SERVER_ERROR_500, null);
+            onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
             return null;
         }
     }
@@ -393,10 +393,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     public String toString()
     {
         IStream stream = getStream();
-        long streamId = -1;
-        if (stream != null)
-            streamId = stream.getId();
-        return String.format("%s#%d", super.toString(), getStream() == null ? -1 : streamId);
+        long streamId = stream == null ? -1 : stream.getId();
+        return String.format("%s#%d", super.toString(), streamId);
     }
 
     private class FailureTask implements Runnable
@@ -427,6 +425,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             {
                 callback.failed(x);
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s]", getClass().getName(), hashCode(), failure);
         }
     }
 }

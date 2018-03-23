@@ -47,7 +47,7 @@ public class PackageAdminServiceTracker implements ServiceListener
 {
     private BundleContext _context;
 
-    private List<BundleActivator> _activatedFragments = new ArrayList<BundleActivator>();
+    private List<BundleActivator> _activatedFragments = new ArrayList<>();
 
     private boolean _fragmentsWereActivated = false;
 
@@ -110,6 +110,7 @@ public class PackageAdminServiceTracker implements ServiceListener
      * 
      * @param event The <code>ServiceEvent</code> object.
      */
+    @Override
     public void serviceChanged(ServiceEvent event)
     {
         if (event.getType() == ServiceEvent.REGISTERED)
@@ -153,7 +154,7 @@ public class PackageAdminServiceTracker implements ServiceListener
             return null;
         }
         PackageAdmin admin = (PackageAdmin) _context.getService(sr);
-        LinkedHashMap<String, Bundle> deps = new LinkedHashMap<String, Bundle>();
+        LinkedHashMap<String, Bundle> deps = new LinkedHashMap<>();
         collectFragmentsAndRequiredBundles(bundle, admin, deps, false);
         return deps.values().toArray(new Bundle[deps.size()]);
     }

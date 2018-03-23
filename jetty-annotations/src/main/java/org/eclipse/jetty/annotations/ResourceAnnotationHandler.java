@@ -61,6 +61,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
      *  environment that will be looked up at runtime. They do
      *  not specify an injection.
      */
+    @Override
     public void doHandle(Class<?> clazz)
     {
         if (supportsResourceInjection(clazz))
