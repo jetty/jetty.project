@@ -28,6 +28,9 @@
     <jmh.version>1.20</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <surefireVersion>2.21.0</surefireVersion>
+
+    <mavenPluginToolsVersion>3.5</mavenPluginToolsVersion>
+    <mavenVersion>3.5.0</mavenVersion>
   </properties>
 
   <licenses>
@@ -956,12 +959,34 @@
         <version>1.2</version>
         <scope>provided</scope>
       </dependency>
-      <!-- Old Deps -->
+      <!-- maven deps -->
       <dependency>
         <groupId>org.apache.maven</groupId>
-        <artifactId>maven-plugin-tools-api</artifactId>
-        <version>2.0</version>
+        <artifactId>maven-plugin-api</artifactId>
+        <version>${mavenVersion}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-artifact</artifactId>
+        <version>${mavenVersion}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-core</artifactId>
+        <version>${mavenVersion}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-tools-api</artifactId>
+        <version>${mavenPluginToolsVersion}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${mavenPluginToolsVersion}</version>
+        <scope>provided</scope>
+      </dependency>
+      <!-- Old Deps -->
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
