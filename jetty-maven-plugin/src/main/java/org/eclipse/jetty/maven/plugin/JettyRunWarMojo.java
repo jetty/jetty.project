@@ -19,6 +19,7 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.plugin.MojoExecutionException;
@@ -56,11 +57,12 @@ public class JettyRunWarMojo extends AbstractJettyMojo
     private File war;
 
     /**
-     * if for some reason your module is not war packaging but you still want to use the mojo
+     * Per default this goal support only <code>war</code> packaging.
+     * If your project use an other type please configure it here.
      *
-     * @parameter property="jetty.skipPackagingTest" default-value="false"
+     * @parameter
      */
-    protected boolean skipPackagingTest;
+    protected List<String> supportedPackagings = Collections.singletonList( "war");
 
     /**
      * @see org.apache.maven.plugin.Mojo#execute()
@@ -110,10 +112,11 @@ public class JettyRunWarMojo extends AbstractJettyMojo
     @Override
     public void checkPackagingConfiguration() throws MojoExecutionException
     {
-        if (skipPackagingTest)
+        if (!supportedPackagings.contains( project.getPackaging() ))
+        {
+            getLog().info( "Your project packaging is not supported by this plugin" );
             return;
-        if ( !"war".equals( project.getPackaging() ))
-            throw new MojoExecutionException("Not war packaging");
+        }
     }
 
     

@@ -24,6 +24,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -166,11 +167,12 @@ public class JettyRunMojo extends AbstractJettyMojo
     protected Resource originalBaseResource;
 
     /**
-     * if for some reason your module is not war packaging but you still want to use the mojo
+     * Per default this goal support only <code>war</code> packaging.
+     * If your project use an other type please configure it here.
      *
-     * @parameter property="jetty.skipPackagingTest" default-value="false"
+     * @parameter
      */
-    protected boolean skipPackagingTest;
+    protected List<String> supportedPackagings = Collections.singletonList( "war");
 
     @Parameter(defaultValue = "${reactorProjects}", readonly = true, required = true)
     private List<MavenProject> reactorProjects;
@@ -194,10 +196,11 @@ public class JettyRunMojo extends AbstractJettyMojo
     @Override
     public void checkPackagingConfiguration() throws MojoExecutionException
     {
-        if (skipPackagingTest)
+        if (!supportedPackagings.contains( project.getPackaging() ))
+        {
+            getLog().info( "Your project packaging is not supported by this plugin" );
             return;
-        if ( !"war".equals( project.getPackaging() ))
-            throw new MojoExecutionException("Not war packaging");
+        }
     }
 
 
