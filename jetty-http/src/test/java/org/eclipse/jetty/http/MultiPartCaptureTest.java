@@ -33,7 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -56,10 +55,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.openjdk.jmh.runner.RunnerException;
 
 @RunWith(Parameterized.class)
-public class MultiPartParsingTest
+public class MultiPartCaptureTest
 {
 
     public static final int MAX_FILE_SIZE = 60 * 1024;
@@ -148,7 +146,7 @@ public class MultiPartParsingTest
     private final Path multipartRawFile;
     private final MultipartExpectations multipartExpectations;
 
-    public MultiPartParsingTest(String rawPrefix) throws IOException
+    public MultiPartCaptureTest(String rawPrefix) throws IOException
     {
         multipartRawFile = MavenTestingUtils.getTestResourcePathFile("multipart/" + rawPrefix + ".raw");
         Path expectationPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + rawPrefix + ".expected.txt");
@@ -185,7 +183,7 @@ public class MultiPartParsingTest
         MultipartConfigElement config = newMultipartConfigElement(outputDir);
         try (InputStream in = Files.newInputStream(multipartRawFile))
         {
-            MultiPartInputStreamParser parser = new MultiPartInputStreamParser(in, multipartExpectations.contentType, config, outputDir.toFile());
+            MultiPartFormInputStream parser = new MultiPartFormInputStream(in, multipartExpectations.contentType, config, outputDir.toFile());
 
             checkParts(parser.getParts(),s-> 
             { 
@@ -233,9 +231,10 @@ public class MultiPartParsingTest
         // Evaluate expected contents checksums
         for (NameValue expected : multipartExpectations.partSha1sums)
         {
+            System.err.println(expected.name);
             Part part = getPart.apply(expected.name);
             assertThat("Part[" + expected.name + "]", part, is(notNullValue()));
-            // System.err.println(BufferUtil.toDetailString(BufferUtil.toBuffer(IO.readBytes(part.getInputStream()))));
+            System.err.println(BufferUtil.toDetailString(BufferUtil.toBuffer(IO.readBytes(part.getInputStream()))));
             MessageDigest digest = MessageDigest.getInstance("SHA1");
             try (InputStream partInputStream = part.getInputStream();
                     NoOpOutputStream noop = new NoOpOutputStream();
