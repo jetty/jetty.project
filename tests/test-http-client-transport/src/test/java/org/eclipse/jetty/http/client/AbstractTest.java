@@ -312,9 +312,7 @@ public abstract class AbstractTest
     protected String newURI()
     {
         if (connector instanceof  ServerConnector)
-        {
-            return getScheme() + "://localhost:" + ServerConnector.class.cast( connector ).getLocalPort();
-        }
+            return getScheme() + "://localhost:" + ServerConnector.class.cast(connector).getLocalPort();
         return getScheme() + "://localhost";
     }
 

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.9-SNAPSHOT</version>
+    <version>9.4.10-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-distribution</artifactId>
@@ -398,29 +398,37 @@
   </build>
 
   <dependencies>
+    <!-- For users of jetty-distribution via maven, none of the following
+         dependencies should be mandatory to function.
+         These only exist to make the reactor sane during the build
+         of jetty-distribution itself -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>test-jetty-webapp</artifactId>
       <type>war</type>
       <version>${project.version}</version>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>test-proxy-webapp</artifactId>
       <type>war</type>
       <version>${project.version}</version>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.example-async-rest</groupId>
       <artifactId>example-async-rest-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -428,6 +436,7 @@
       <version>${project.version}</version>
       <classifier>html</classifier>
       <type>zip</type>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 </project>

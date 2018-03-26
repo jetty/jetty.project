@@ -1,0 +1,4 @@
+Content-Type|multipart/form-data; boundary="VA2isIGmYNkgC3qrrGXnlQcWO17WB3a4npVQey"
+Parts-Count|2
+Part-ContainsContents|japanese|健治
+Part-ContainsContents|hello|ャユ戆タ

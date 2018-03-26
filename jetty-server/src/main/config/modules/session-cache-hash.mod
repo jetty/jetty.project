@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Enable first level session cache in ConcurrentHashMap.
 If not enabled, sessions will use a HashSessionCache by default, so enabling

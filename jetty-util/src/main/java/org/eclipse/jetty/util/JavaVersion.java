@@ -32,98 +32,34 @@ public class JavaVersion
      * Acceptable values should correspond to those returned by JavaVersion.getPlatform().
      */
     public static final String JAVA_TARGET_PLATFORM = "org.eclipse.jetty.javaTargetPlatform";
+        
+    public static final JavaVersion VERSION = parse(System.getProperty("java.version"));
     
-    /** Regex for Java version numbers */
-    private static final String VNUM = "(?<VNUM>[1-9][0-9]*(?:(?:\\.0)*\\.[0-9]+)*)";
-    private static final String UPDATE = "(?:(?<UNDERSCORE>_)(?<UPDATE>[0-9]+))?";
-    private static final String PRE = "(?:-(?<PRE>[a-zA-Z0-9]+))?";
-    private static final String BUILD = "(?:(?<PLUS>\\+)(?<BUILD>[0-9]+))?";
-    private static final String OPT = "(?:-(?<OPT>[-a-zA-Z0-9.~]+))?";
-
-    private static final String VSTR_FORMAT = VNUM + UPDATE + PRE + BUILD + OPT;
-
-    static final Pattern VSTR_PATTERN = Pattern.compile(VSTR_FORMAT);
-    
-    public static final JavaVersion VERSION = parse(System.getProperty("java.runtime.version",System.getProperty("java.version")));
-
     public static JavaVersion parse(String v) 
-    {
-        Matcher m = VSTR_PATTERN.matcher(v);
-        if (!m.matches())
-            throw new IllegalArgumentException("Invalid version string: '" + v + "'");
-        
+    {        
         // $VNUM is a dot-separated list of integers of arbitrary length
-        String[] split = m.group("VNUM").split("\\.");
-        int[] version = new int[split.length];
-        for (int i = 0; i < split.length; i++)
-            version[i] = Integer.parseInt(split[i]);
-
-        if (m.group("UNDERSCORE")!=null)
+        String[] split = v.split("[^0-9]");
+        int len = Math.min(split.length,3);
+        int[] version = new int[len];
+        for (int i = 0; i < len; i++)
         {
-            return new JavaVersion(
-                    v,
-                    (version[0]>=9 || version.length==1)?version[0]:version[1],
-                    version[0],
-                    version.length>1?version[1]:0,
-                    version.length>2?version[2]:0,
-                    Integer.parseInt(m.group("UPDATE")),
-                    suffix(version,m.group("PRE"),m.group("OPT"))
-                    );
-        }
-        
-        if (m.group("PLUS")!=null)
-        {
-            return new JavaVersion(
-                    v,
-                    (version[0]>=9 || version.length==1)?version[0]:version[1],
-                    version[0],
-                    version.length>1?version[1]:0,
-                    version.length>2?version[2]:0,
-                    Integer.parseInt(m.group("BUILD")),
-                    suffix(version,m.group("PRE"),m.group("OPT"))
-                    );
+            try
+            {
+                version[i] = Integer.parseInt(split[i]);
+            }
+            catch(Throwable e)
+            {
+                len = i-1;
+                break;
+            }
         }
 
         return new JavaVersion(
                 v,
-                (version[0]>=9 || version.length==1)?version[0]:version[1],
+                (version[0]>=9 || len==1)?version[0]:version[1],
                 version[0],
-                version.length>1?version[1]:0,
-                version.length>2?version[2]:0,
-                0,
-                suffix(version,m.group("PRE"),m.group("OPT"))
-                );
-        
-    }
-
-    private static String suffix(int[] version, String pre, String opt)
-    {
-        StringBuilder buf = new StringBuilder();
-        for (int i=3;i<version.length;i++)
-        {
-            if (i>3)
-                buf.append(".");
-            buf.append(version[i]);
-        }
-               
-        if (pre!=null)
-        {
-            if (buf.length()>0)
-                buf.append('-');
-            buf.append(pre);
-        }
-        
-        if (opt!=null)
-        {
-            if (buf.length()>0)
-                buf.append('-');
-            buf.append(opt);
-        }
-        
-        if (buf.length()==0)
-            return null;
-        
-        return buf.toString();
+                len>1?version[1]:0,
+                len>2?version[2]:0);
     }
     
     private final String version;
@@ -131,18 +67,14 @@ public class JavaVersion
     private final int major;
     private final int minor;
     private final int micro;
-    private final int update;
-    private final String suffix;
 
-    private JavaVersion(String version, int platform, int major, int minor, int micro, int update, String suffix)
+    private JavaVersion(String version, int platform, int major, int minor, int micro)
     {
         this.version = version;
         this.platform = platform;
         this.major = major;
         this.minor = minor;
         this.micro = micro;
-        this.update = update;
-        this.suffix = suffix;
     }
 
     /**
@@ -198,9 +130,10 @@ public class JavaVersion
      *
      * @return the update number version
      */
+    @Deprecated
     public int getUpdate()
     {
-        return update;
+        return 0;
     }
 
     /**
@@ -209,9 +142,10 @@ public class JavaVersion
      *
      * @return the remaining string after the version numbers
      */
+    @Deprecated
     public String getSuffix()
     {
-        return suffix;
+        return null;
     }
 
     @Override

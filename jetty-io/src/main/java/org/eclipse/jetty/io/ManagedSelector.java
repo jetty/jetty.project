@@ -42,7 +42,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.io.ManagedSelector.Connect;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -246,16 +245,15 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
+        List<String> keys;
+        List<SelectorUpdate> updates;
         Selector selector = _selector;
-        List<String> keys = null;
-        List<SelectorUpdate> updates = null;
         if (selector != null && selector.isOpen())
         {
             DumpKeys dump = new DumpKeys();
-            String updatesAt;
+            String updatesAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
             synchronized(ManagedSelector.this)
             {
-                updatesAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
                 updates = new ArrayList<>(_updates);
                 _updates.addFirst(dump);
                 _selecting = false;
@@ -322,7 +320,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     return task;
 
                 processUpdates();
-                
+
                 updateKeys();
 
                 if (!select())
@@ -372,7 +370,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 LOG.debug("updates {}",updates);
             
             if (selector != null)
-                selector.wakeup();           
+                selector.wakeup();
         }
 
         private boolean select()
@@ -385,6 +383,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} waiting on select", selector);
                     int selected = selector.select();
+                    if (selected == 0)
+                        selected = selector.selectNow();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} woken up from select, {}/{} selected", selector, selected, selector.keys().size());
 
@@ -397,7 +397,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     }
 
                     _keys = selector.selectedKeys();
-                    _cursor = _keys.iterator();
+                    _cursor = _keys.isEmpty() ? Collections.emptyIterator() : _keys.iterator();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} processing {} keys, {} updates", selector, _keys.size(), updates);
 

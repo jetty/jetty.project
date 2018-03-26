@@ -1,0 +1,42 @@
+--kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGjx5eCuVFbaeUZ9oK57JCp_p5wP86S5nY4re5x
+Content-Disposition: form-data; name="reporter"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+
+<user@company.com>
+--kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGjx5eCuVFbaeUZ9oK57JCp_p5wP86S5nY4re5x
+Content-Disposition: form-data; name="timestamp"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+
+2018-03-21T18:52:18+00:00
+--kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGjx5eCuVFbaeUZ9oK57JCp_p5wP86S5nY4re5x
+Content-Disposition: form-data; name="comments"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+
+this couldn't be parsed
+--kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGjx5eCuVFbaeUZ9oK57JCp_p5wP86S5nY4re5x
+Content-Disposition: form-data; name="attachment"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+
+--kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGj
+Content-Disposition: form-data; name="fruit"
+
+banana
+--kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGj
+Content-Disposition: form-data; name="color"
+
+yellow
+--kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGj
+Content-Disposition: form-data; name="cost"
+
+$0.12 USG
+--kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGj
+Content-Disposition: form-data; name="comments"
+
+--kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGjx5eCuVFbaeUZ9oK57JCp_p5wP86S5nY4re5x
+--kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGj--
+
+--kCFSwstIsIZkZtQ5JM7193kJYcK5WkyvoxsGjx5eCuVFbaeUZ9oK57JCp_p5wP86S5nY4re5x--

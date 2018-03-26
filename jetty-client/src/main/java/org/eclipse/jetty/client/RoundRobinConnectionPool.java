@@ -29,17 +29,42 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 @ManagedObject
-public class RoundRobinConnectionPool extends AbstractConnectionPool
+public class RoundRobinConnectionPool extends AbstractConnectionPool implements ConnectionPool.Multiplexable
 {
     private final List<Entry> entries;
+    private int maxMultiplex;
     private int index;
 
     public RoundRobinConnectionPool(Destination destination, int maxConnections, Callback requester)
+    {
+        this(destination, maxConnections, requester, 1);
+    }
+
+    public RoundRobinConnectionPool(Destination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
         super(destination, maxConnections, requester);
         entries = new ArrayList<>(maxConnections);
         for (int i = 0; i < maxConnections; ++i)
             entries.add(new Entry());
+        this.maxMultiplex = maxMultiplex;
+    }
+
+    @Override
+    public int getMaxMultiplex()
+    {
+        synchronized (this)
+        {
+            return maxMultiplex;
+        }
+    }
+
+    @Override
+    public void setMaxMultiplex(int maxMultiplex)
+    {
+        synchronized (this)
+        {
+            this.maxMultiplex = maxMultiplex;
+        }
     }
 
     @Override
@@ -78,10 +103,10 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool
                 if (entry.connection == null)
                     break;
 
-                if (!entry.active)
+                if (entry.active < getMaxMultiplex())
                 {
-                    entry.active = true;
-                    entry.used++;
+                    ++entry.active;
+                    ++entry.used;
                     connection = entry.connection;
                     index += offset + 1;
                     if (index >= capacity)
@@ -103,7 +128,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool
             for (Entry entry : entries)
             {
                 if (entry.connection == connection)
-                    return entry.active;
+                    return entry.active > 0;
             }
             return false;
         }
@@ -112,56 +137,60 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool
     @Override
     public boolean release(Connection connection)
     {
-        boolean active = false;
+        boolean found = false;
+        boolean idle = false;
         synchronized (this)
         {
             for (Entry entry : entries)
             {
                 if (entry.connection == connection)
                 {
-                    entry.active = false;
-                    active = true;
+                    found = true;
+                    int active = --entry.active;
+                    idle = active == 0;
                     break;
                 }
             }
         }
-        if (active)
-            released(connection);
-        return idle(connection, isClosed());
+        if (!found)
+            return false;
+        released(connection);
+        if (idle)
+            return idle(connection, isClosed());
+        return true;
     }
 
     @Override
     public boolean remove(Connection connection)
     {
-        boolean active = false;
-        boolean removed = false;
+        boolean found = false;
         synchronized (this)
         {
             for (Entry entry : entries)
             {
                 if (entry.connection == connection)
                 {
-                    active = entry.active;
+                    found = true;
                     entry.reset();
-                    removed = true;
                     break;
                 }
             }
         }
-        if (active)
+        if (found)
+        {
             released(connection);
-        if (removed)
             removed(connection);
-        return removed;
+        }
+        return found;
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        List<Entry> connections = new ArrayList<>();
+        List<Entry> connections;
         synchronized (this)
         {
-            connections.addAll(entries);
+            connections = new ArrayList<>(entries);
         }
         ContainerLifeCycle.dumpObject(out, this);
         ContainerLifeCycle.dump(out, indent, connections);
@@ -179,7 +208,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool
                 if (entry.connection != null)
                 {
                     ++present;
-                    if (entry.active)
+                    if (entry.active > 0)
                         ++active;
                 }
             }
@@ -196,13 +225,13 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool
     private static class Entry
     {
         private Connection connection;
-        private boolean active;
+        private int active;
         private long used;
 
         private void reset()
         {
             connection = null;
-            active = false;
+            active = 0;
             used = 0;
         }
 

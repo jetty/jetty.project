@@ -243,6 +243,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 int filled = fillRequestBuffer();
                 if (filled>0)
                     bytesIn.add(filled);
+                else if (filled==-1 && getEndPoint().isOutputShutdown())
+                    close();
 
                 // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
@@ -251,13 +253,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // connection took over, nothing more to do here.
                 if (getEndPoint().getConnection()!=this)
                     break;
-
-                // Handle closed parser.
-                if (_parser.isClose() || _parser.isClosed())
-                {
-                    close();
-                    break;
-                }
 
                 // Handle channel event
                 if (handle)

@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Enables a Unix Domain Socket Connector that can receive
 requests from a local proxy and/or SSL offloader (eg haproxy) in either

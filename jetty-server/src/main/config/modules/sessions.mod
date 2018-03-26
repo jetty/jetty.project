@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 The session management. By enabling this module, it allows 
 session management to be configured via the ini templates

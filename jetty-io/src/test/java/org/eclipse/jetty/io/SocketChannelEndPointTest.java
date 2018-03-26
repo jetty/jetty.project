@@ -18,49 +18,832 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSocket;
 
-public class SocketChannelEndPointTest extends EndPointTest<SocketChannelEndPoint>
+import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.TimerScheduler;
+import org.hamcrest.Matchers;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+@SuppressWarnings("Duplicates")
+@RunWith(Parameterized.class)
+public class SocketChannelEndPointTest
 {
-    static ServerSocketChannel connector;
+    private static final Logger LOG = Log.getLogger(SocketChannelEndPoint.class);
 
-    @BeforeClass
-    public static void open() throws Exception
+    public interface Scenario
     {
-        connector = ServerSocketChannel.open();
-        connector.socket().bind(null);
+        Socket newClient(ServerSocketChannel connector) throws IOException;
+
+        Connection newConnection(SelectableChannel channel, EndPoint endPoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount);
+
+        boolean supportsHalfCloses();
     }
 
-    @AfterClass
-    public static void close() throws Exception
+    @Parameterized.Parameters(name = "{0}")
+    public static List<Object[]> data() throws Exception
     {
-        connector.close();
-        connector=null;
+        List<Object[]> ret = new ArrayList<>();
+
+        NormalScenario normalScenario = new NormalScenario();
+        ret.add(new Object[]{normalScenario});
+        ret.add(new Object[]{new SslScenario(normalScenario)});
+
+        return ret;
     }
 
-    @Override
-    protected EndPointPair<SocketChannelEndPoint> newConnection() throws Exception
-    {
-        EndPointPair<SocketChannelEndPoint> c = new EndPointPair<>();
+    @Rule
+    public TestTracker tracker = new TestTracker();
 
-        c.client=new SocketChannelEndPoint(SocketChannel.open(connector.socket().getLocalSocketAddress()),null,null,null);
-        c.server=new SocketChannelEndPoint(connector.accept(),null,null,null);
-        return c;
+    private final Scenario _scenario;
+
+    private ServerSocketChannel _connector;
+    private QueuedThreadPool _threadPool;
+    private Scheduler _scheduler;
+    private SelectorManager _manager;
+    private volatile EndPoint _lastEndPoint;
+    private CountDownLatch _lastEndPointLatch;
+
+    // Must be volatile or the test may fail spuriously
+    private AtomicInteger _blockAt = new AtomicInteger(0);
+    private AtomicInteger _writeCount = new AtomicInteger(1);
+
+    public SocketChannelEndPointTest(Scenario scenario) throws Exception
+    {
+        _scenario = scenario;
+        _threadPool = new QueuedThreadPool();
+        _scheduler = new TimerScheduler();
+        _manager = new ScenarioSelectorManager(_threadPool, _scheduler);
+
+        _lastEndPointLatch = new CountDownLatch(1);
+        _connector = ServerSocketChannel.open();
+        _connector.socket().bind(null);
+        _scheduler.start();
+        _threadPool.start();
+        _manager.start();
     }
 
-    @Override
-    public void testClientClose() throws Exception
+    @After
+    public void stopManager() throws Exception
     {
-        super.testClientClose();
+        _scheduler.stop();
+        _manager.stop();
+        _threadPool.stop();
+        _connector.close();
     }
 
-    @Override
-    public void testClientServerExchange() throws Exception
+    @Test
+    public void testEcho() throws Exception
     {
-        super.testClientServerExchange();
+        Socket client = _scenario.newClient(_connector);
+
+        client.setSoTimeout(60000);
+
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+
+        _manager.accept(server);
+
+        // Write client to server
+        client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+
+        // Verify echo server to client
+        for (char c : "HelloWorld".toCharArray())
+        {
+            int b = client.getInputStream().read();
+            assertTrue(b > 0);
+            assertEquals(c, (char) b);
+        }
+
+        // wait for read timeout
+        client.setSoTimeout(500);
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        try
+        {
+            client.getInputStream().read();
+            Assert.fail();
+        }
+        catch (SocketTimeoutException e)
+        {
+            long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
+            Assert.assertThat("timeout duration", duration, greaterThanOrEqualTo(400L));
+        }
+
+        // write then shutdown
+        client.getOutputStream().write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
+
+        // Verify echo server to client
+        for (char c : "Goodbye Cruel TLS".toCharArray())
+        {
+            int b = client.getInputStream().read();
+            Assert.assertThat("expect valid char integer", b, greaterThan(0));
+            assertEquals("expect characters to be same", c, (char) b);
+        }
+        client.close();
+
+        for (int i = 0; i < 10; ++i)
+        {
+            if (server.isOpen())
+                Thread.sleep(10);
+            else
+                break;
+        }
+        assertFalse(server.isOpen());
+    }
+
+    @Test
+    public void testShutdown() throws Exception
+    {
+        assumeTrue("Scenario supports half-close", _scenario.supportsHalfCloses());
+
+        Socket client = _scenario.newClient(_connector);
+
+        client.setSoTimeout(500);
+
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+
+        _manager.accept(server);
+
+        // Write client to server
+        client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+
+        // Verify echo server to client
+        for (char c : "HelloWorld".toCharArray())
+        {
+            int b = client.getInputStream().read();
+            assertTrue(b > 0);
+            assertEquals(c, (char) b);
+        }
+
+        // wait for read timeout
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        try
+        {
+            client.getInputStream().read();
+            Assert.fail();
+        }
+        catch (SocketTimeoutException e)
+        {
+            assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start >= 400);
+        }
+
+        // write then shutdown
+        client.getOutputStream().write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
+        client.shutdownOutput();
+
+        // Verify echo server to client
+        for (char c : "Goodbye Cruel TLS".toCharArray())
+        {
+            int b = client.getInputStream().read();
+            assertTrue(b > 0);
+            assertEquals(c, (char) b);
+        }
+
+        // Read close
+        assertEquals(-1, client.getInputStream().read());
+    }
+
+    @Test
+    public void testReadBlocked() throws Exception
+    {
+        Socket client = _scenario.newClient(_connector);
+
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+
+        _manager.accept(server);
+
+        OutputStream clientOutputStream = client.getOutputStream();
+        InputStream clientInputStream = client.getInputStream();
+
+        int specifiedTimeout = 1000;
+        client.setSoTimeout(specifiedTimeout);
+
+        // Write 8 and cause block waiting for 10
+        _blockAt.set(10);
+        clientOutputStream.write("12345678".getBytes(StandardCharsets.UTF_8));
+        clientOutputStream.flush();
+
+        Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
+        _lastEndPoint.setIdleTimeout(10 * specifiedTimeout);
+        Thread.sleep((11 * specifiedTimeout) / 10);
+
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        try
+        {
+            int b = clientInputStream.read();
+            Assert.fail("Should have timed out waiting for a response, but read " + b);
+        }
+        catch (SocketTimeoutException e)
+        {
+            int elapsed = Long.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start).intValue();
+            Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3 * specifiedTimeout / 4));
+        }
+
+        // write remaining characters
+        clientOutputStream.write("90ABCDEF".getBytes(StandardCharsets.UTF_8));
+        clientOutputStream.flush();
+
+        // Verify echo server to client
+        for (char c : "1234567890ABCDEF".toCharArray())
+        {
+            int b = clientInputStream.read();
+            assertTrue(b > 0);
+            assertEquals(c, (char) b);
+        }
+    }
+
+    @Test
+    public void testStress() throws Exception
+    {
+        Socket client = _scenario.newClient(_connector);
+        client.setSoTimeout(30000);
+
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+
+        _manager.accept(server);
+        final int writes = 200000;
+
+        final byte[] bytes = "HelloWorld-".getBytes(StandardCharsets.UTF_8);
+        byte[] count = "0\n".getBytes(StandardCharsets.UTF_8);
+        BufferedOutputStream out = new BufferedOutputStream(client.getOutputStream());
+        final CountDownLatch latch = new CountDownLatch(writes);
+        final InputStream in = new BufferedInputStream(client.getInputStream());
+        final long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        out.write(bytes);
+        out.write(count);
+        out.flush();
+
+        Assert.assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
+        _lastEndPoint.setIdleTimeout(5000);
+
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                Thread.currentThread().setPriority(MAX_PRIORITY);
+                long last = -1;
+                int count = -1;
+                try
+                {
+                    while (latch.getCount() > 0)
+                    {
+                        // Verify echo server to client
+                        for (byte b0 : bytes)
+                        {
+                            int b = in.read();
+                            Assert.assertThat(b, greaterThan(0));
+                            assertEquals(0xff & b0, b);
+                        }
+
+                        count = 0;
+                        int b = in.read();
+                        while (b > 0 && b != '\n')
+                        {
+                            count = count * 10 + (b - '0');
+                            b = in.read();
+                        }
+                        last = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+
+                        //if (latch.getCount()%1000==0)
+                        //    System.out.println(writes-latch.getCount());
+
+                        latch.countDown();
+                    }
+                }
+                catch (Throwable e)
+                {
+
+                    long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                    System.err.println("count=" + count);
+                    System.err.println("latch=" + latch.getCount());
+                    System.err.println("time=" + (now - start));
+                    System.err.println("last=" + (now - last));
+                    System.err.println("endp=" + _lastEndPoint);
+                    System.err.println("conn=" + _lastEndPoint.getConnection());
+
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+
+        // Write client to server
+        for (int i = 1; i < writes; i++)
+        {
+            out.write(bytes);
+            out.write(Integer.toString(i).getBytes(StandardCharsets.ISO_8859_1));
+            out.write('\n');
+            if (i % 1000 == 0)
+            {
+                //System.err.println(i+"/"+writes);
+                out.flush();
+            }
+            Thread.yield();
+        }
+        out.flush();
+
+        long last = latch.getCount();
+        while (!latch.await(5, TimeUnit.SECONDS))
+        {
+            //System.err.println(latch.getCount());
+            if (latch.getCount() == last)
+                Assert.fail();
+            last = latch.getCount();
+        }
+
+        assertEquals(0, latch.getCount());
+    }
+
+    @Test
+    public void testWriteBlocked() throws Exception
+    {
+        Socket client = _scenario.newClient(_connector);
+
+        client.setSoTimeout(10000);
+
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+
+        _manager.accept(server);
+
+        // Write client to server
+        _writeCount.set(10000);
+        String data = "Now is the time for all good men to come to the aid of the party";
+        client.getOutputStream().write(data.getBytes(StandardCharsets.UTF_8));
+        BufferedInputStream in = new BufferedInputStream(client.getInputStream());
+
+        int byteNum = 0;
+        try
+        {
+            for (int i = 0; i < _writeCount.get(); i++)
+            {
+                if (i % 1000 == 0)
+                    TimeUnit.MILLISECONDS.sleep(200);
+
+                // Verify echo server to client
+                for (int j = 0; j < data.length(); j++)
+                {
+                    char c = data.charAt(j);
+                    int b = in.read();
+                    byteNum++;
+                    assertTrue(b > 0);
+                    assertEquals("test-" + i + "/" + j, c, (char) b);
+                }
+
+                if (i == 0)
+                    _lastEndPoint.setIdleTimeout(60000);
+            }
+        }
+        catch (SocketTimeoutException e)
+        {
+            System.err.println("SelectorManager.dump() = " + _manager.dump());
+            LOG.warn("Server: " + server);
+            LOG.warn("Error reading byte #" + byteNum, e);
+            throw e;
+        }
+
+        client.close();
+
+        for (int i = 0; i < 10; ++i)
+        {
+            if (server.isOpen())
+                Thread.sleep(10);
+            else
+                break;
+        }
+        assertFalse(server.isOpen());
+    }
+
+
+    // TODO make this test reliable
+    @Test
+    @Ignore
+    public void testRejectedExecution() throws Exception
+    {
+        _manager.stop();
+        _threadPool.stop();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        BlockingQueue<Runnable> q = new ArrayBlockingQueue<>(4);
+        _threadPool = new QueuedThreadPool(4, 4, 60000, q);
+        _manager = new SelectorManager(_threadPool, _scheduler, 1)
+        {
+
+            @Override
+            protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
+            {
+                SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
+                _lastEndPoint = endp;
+                _lastEndPointLatch.countDown();
+                return endp;
+            }
+
+            @Override
+            public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
+            {
+                return new TestConnection(endpoint, latch, getExecutor(), _blockAt, _writeCount);
+            }
+        };
+
+        _threadPool.start();
+        _manager.start();
+
+        AtomicInteger timeout = new AtomicInteger();
+        AtomicInteger rejections = new AtomicInteger();
+        AtomicInteger echoed = new AtomicInteger();
+
+        CountDownLatch closed = new CountDownLatch(20);
+        for (int i = 0; i < 20; i++)
+        {
+            new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    try (Socket client = _scenario.newClient(_connector);)
+                    {
+                        client.setSoTimeout(5000);
+
+                        SocketChannel server = _connector.accept();
+                        server.configureBlocking(false);
+
+                        _manager.accept(server);
+
+                        // Write client to server
+                        client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+                        client.getOutputStream().flush();
+                        client.shutdownOutput();
+
+                        // Verify echo server to client
+                        for (char c : "HelloWorld".toCharArray())
+                        {
+                            int b = client.getInputStream().read();
+                            assertTrue(b > 0);
+                            assertEquals(c, (char) b);
+                        }
+                        assertEquals(-1, client.getInputStream().read());
+                        echoed.incrementAndGet();
+                    }
+                    catch (SocketTimeoutException x)
+                    {
+                        x.printStackTrace();
+                        timeout.incrementAndGet();
+                    }
+                    catch (Throwable x)
+                    {
+                        rejections.incrementAndGet();
+                    }
+                    finally
+                    {
+                        closed.countDown();
+                    }
+                }
+            }.start();
+        }
+
+        // unblock the handling
+        latch.countDown();
+
+        // wait for all clients to complete or fail
+        closed.await();
+
+        // assert some clients must have been rejected
+        Assert.assertThat(rejections.get(), Matchers.greaterThan(0));
+        // but not all of them
+        Assert.assertThat(rejections.get(), Matchers.lessThan(20));
+        // none should have timed out
+        Assert.assertThat(timeout.get(), Matchers.equalTo(0));
+        // and the rest should have worked
+        Assert.assertThat(echoed.get(), Matchers.equalTo(20 - rejections.get()));
+
+        // and the selector is still working for new requests
+        try (Socket client = _scenario.newClient(_connector))
+        {
+            client.setSoTimeout(5000);
+
+            SocketChannel server = _connector.accept();
+            server.configureBlocking(false);
+
+            _manager.accept(server);
+
+            // Write client to server
+            client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+            client.getOutputStream().flush();
+            client.shutdownOutput();
+
+            // Verify echo server to client
+            for (char c : "HelloWorld".toCharArray())
+            {
+                int b = client.getInputStream().read();
+                assertTrue(b > 0);
+                assertEquals(c, (char) b);
+            }
+            assertEquals(-1, client.getInputStream().read());
+        }
+    }
+
+    public class ScenarioSelectorManager extends SelectorManager
+    {
+        protected ScenarioSelectorManager(Executor executor, Scheduler scheduler)
+        {
+            super(executor, scheduler);
+        }
+
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
+        {
+            SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
+            endp.setIdleTimeout(60000);
+            _lastEndPoint = endp;
+            _lastEndPointLatch.countDown();
+            return endp;
+        }
+
+        @Override
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
+        {
+            return _scenario.newConnection(channel, endpoint, getExecutor(), _blockAt, _writeCount);
+        }
+    }
+
+    public static class NormalScenario implements Scenario
+    {
+        @Override
+        public Socket newClient(ServerSocketChannel connector) throws IOException
+        {
+            return new Socket(connector.socket().getInetAddress(), connector.socket().getLocalPort());
+        }
+
+        @Override
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
+        {
+            return new TestConnection(endpoint, executor, blockAt, writeCount);
+        }
+
+        @Override
+        public boolean supportsHalfCloses()
+        {
+            return true;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "normal";
+        }
+    }
+
+    public static class SslScenario implements Scenario
+    {
+        private final NormalScenario _normalScenario;
+        private final SslContextFactory __sslCtxFactory = new SslContextFactory();
+        private final ByteBufferPool __byteBufferPool = new MappedByteBufferPool();
+
+        public SslScenario(NormalScenario normalScenario) throws Exception
+        {
+            _normalScenario = normalScenario;
+            File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+            __sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
+            __sslCtxFactory.setKeyStorePassword("storepwd");
+            __sslCtxFactory.setKeyManagerPassword("keypwd");
+            __sslCtxFactory.setEndpointIdentificationAlgorithm("");
+            __sslCtxFactory.start();
+        }
+
+        @Override
+        public Socket newClient(ServerSocketChannel connector) throws IOException
+        {
+            SSLSocket socket = __sslCtxFactory.newSslSocket();
+            socket.connect(connector.socket().getLocalSocketAddress());
+            return socket;
+        }
+
+        @Override
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
+        {
+            SSLEngine engine = __sslCtxFactory.newSSLEngine();
+            engine.setUseClientMode(false);
+            SslConnection sslConnection = new SslConnection(__byteBufferPool, executor, endpoint, engine);
+            sslConnection.setRenegotiationAllowed(__sslCtxFactory.isRenegotiationAllowed());
+            sslConnection.setRenegotiationLimit(__sslCtxFactory.getRenegotiationLimit());
+            Connection appConnection = _normalScenario.newConnection(channel, sslConnection.getDecryptedEndPoint(), executor, blockAt, writeCount);
+            sslConnection.getDecryptedEndPoint().setConnection(appConnection);
+            return sslConnection;
+        }
+
+        @Override
+        public boolean supportsHalfCloses()
+        {
+            return false;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ssl";
+        }
+    }
+
+    @SuppressWarnings("Duplicates")
+    public static class TestConnection extends AbstractConnection
+    {
+        private static final Logger LOG = Log.getLogger(TestConnection.class);
+
+        volatile FutureCallback _blockingRead;
+        final AtomicInteger _blockAt;
+        final AtomicInteger _writeCount;
+        // volatile int _blockAt = 0;
+        ByteBuffer _in = BufferUtil.allocate(32 * 1024);
+        ByteBuffer _out = BufferUtil.allocate(32 * 1024);
+        long _last = -1;
+        final CountDownLatch _latch;
+
+        public TestConnection(EndPoint endp, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
+        {
+            super(endp, executor);
+            _latch = null;
+            this._blockAt = blockAt;
+            this._writeCount = writeCount;
+        }
+
+        public TestConnection(EndPoint endp, CountDownLatch latch, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
+        {
+            super(endp, executor);
+            _latch = latch;
+            this._blockAt = blockAt;
+            this._writeCount = writeCount;
+        }
+
+        @Override
+        public void onOpen()
+        {
+            super.onOpen();
+            fillInterested();
+        }
+
+        @Override
+        public void onFillInterestedFailed(Throwable cause)
+        {
+            Callback blocking = _blockingRead;
+            if (blocking != null)
+            {
+                _blockingRead = null;
+                blocking.failed(cause);
+                return;
+            }
+            super.onFillInterestedFailed(cause);
+        }
+
+        @Override
+        public void onFillable()
+        {
+            if (_latch != null)
+            {
+                try
+                {
+                    _latch.await();
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+
+            Callback blocking = _blockingRead;
+            if (blocking != null)
+            {
+                _blockingRead = null;
+                blocking.succeeded();
+                return;
+            }
+
+            EndPoint _endp = getEndPoint();
+            try
+            {
+                _last = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                boolean progress = true;
+                while (progress)
+                {
+                    progress = false;
+
+                    // Fill the input buffer with everything available
+                    BufferUtil.compact(_in);
+                    if (BufferUtil.isFull(_in))
+                        throw new IllegalStateException("FULL " + BufferUtil.toDetailString(_in));
+                    int filled = _endp.fill(_in);
+                    if (filled > 0)
+                        progress = true;
+
+                    // If the tests wants to block, then block
+                    while (_blockAt.get() > 0 && _endp.isOpen() && _in.remaining() < _blockAt.get())
+                    {
+                        FutureCallback future = _blockingRead = new FutureCallback();
+                        fillInterested();
+                        future.get();
+                        filled = _endp.fill(_in);
+                        progress |= filled > 0;
+                    }
+
+                    // Copy to the out buffer
+                    if (BufferUtil.hasContent(_in) && BufferUtil.append(_out, _in) > 0)
+                        progress = true;
+
+                    // Blocking writes
+                    if (BufferUtil.hasContent(_out))
+                    {
+                        ByteBuffer out = _out.duplicate();
+                        BufferUtil.clear(_out);
+                        for (int i = 0; i < _writeCount.get(); i++)
+                        {
+                            FutureCallback blockingWrite = new FutureCallback();
+                            _endp.write(blockingWrite, out.asReadOnlyBuffer());
+                            blockingWrite.get();
+                        }
+                        progress = true;
+                    }
+
+                    // are we done?
+                    if (_endp.isInputShutdown())
+                        _endp.shutdownOutput();
+                }
+
+                if (_endp.isOpen())
+                    fillInterested();
+            }
+            catch (ExecutionException e)
+            {
+                // Timeout does not close, so echo exception then shutdown
+                try
+                {
+                    FutureCallback blockingWrite = new FutureCallback();
+                    _endp.write(blockingWrite, BufferUtil.toBuffer("EE: " + BufferUtil.toString(_in)));
+                    blockingWrite.get();
+                    _endp.shutdownOutput();
+                }
+                catch (Exception e2)
+                {
+                    // e2.printStackTrace();
+                }
+            }
+            catch (InterruptedException | EofException e)
+            {
+                LOG.info(e);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+        }
     }
 }

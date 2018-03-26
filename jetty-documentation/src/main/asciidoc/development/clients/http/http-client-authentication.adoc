@@ -75,6 +75,17 @@ URI uri = URI.create("http://domain.com/secure");
 auth.addAuthenticationResult(new BasicAuthentication.BasicResult(uri, "username", "password"));
 ----
 
-In this way, the original request is enriched by `HttpClient` immediately with the `Authorization` header, and the server should respond with a 200 and the resource content rather than with the 401 and the challenge.
+In this way, requests for the given URI are enriched by `HttpClient` immediately with the `Authorization` header, and the server should respond with a 200 and the resource content rather than with the 401 and the challenge.
+
+It is also possible to preempt the authentication for a single request only, in this way:
+
+[source, java, subs="{sub-order}"]
+----
+URI uri = URI.create("http://domain.com/secure");
+Authentication.Result authn = new BasicAuthentication.BasicResult(uri, "username", "password")
+Request request = httpClient.newRequest(uri);
+authn.apply(request);
+request.send();
+----
 
 See also the link:#http-client-proxy-authentication[proxy authentication section] for further information about how authentication works with HTTP proxies.
