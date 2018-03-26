@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -55,11 +54,7 @@ public class OneHandler
     public static class MyHandler extends AbstractHandler
     {
         @Override
-        public void handle( String target,
-                            Request baseRequest,
-                            HttpServletRequest request,
-                            HttpServletResponse response ) throws IOException,
-                                                          ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException
         {
             System.err.println("HANDLE "+target);
 
@@ -80,8 +75,6 @@ public class OneHandler
         }
     }
 
-    
-    
     private static class MyListener implements ManagedSelector.Listener, Container.InheritedListener
     {
         private final ConcurrentMap<ManagedSelector, List<Long>> selections = new ConcurrentHashMap<>();
@@ -120,36 +113,37 @@ public class OneHandler
         }
 
         @Override
-        public void onUpdatedKey(ManagedSelector managedSelector, SelectionKey key)
+        public void onUpdatedKey(ManagedSelector selector, SelectionKey selectionKey)
         {
-            OnOffStatistic blocked = writeblocked.get(key);
-            if ((key.interestOps()&SelectionKey.OP_WRITE)!=0)
+            OnOffStatistic blocked = writeblocked.get(selectionKey);
+            boolean isWriteInterested = (selectionKey.interestOps() & SelectionKey.OP_WRITE) != 0;
+            if (isWriteInterested)
             {
                 if (blocked==null)
                 {
                     blocked=new OnOffStatistic(true);
-                    writeblocked.putIfAbsent(key,blocked);
+                    writeblocked.put(selectionKey, blocked);
                 }
                 else
+                {
                     blocked.record(true);
+                }
             }
             else if (blocked!=null && blocked.record(false))
             {
                 if (blocked.getLastOn(TimeUnit.MILLISECONDS)>200)
-                {
-                    System.err.printf("WRITE BLOCKED>200ms: %s %s%n",blocked,key.attachment());
-                }
+                    System.err.printf("WRITE BLOCKED>200ms: %s %s%n",blocked, selectionKey.attachment());
             }
         }
         
         @Override
-        public void onClosed(ManagedSelector selector, SelectionKey key)
+        public void onClosed(ManagedSelector selector, SelectionKey selectionKey)
         {
-            writeblocked.remove(key);
+            writeblocked.remove(selectionKey);
         }
 
         @Override
-        public void onSelectedKey(ManagedSelector selector, SelectionKey key)
+        public void onSelectedKey(ManagedSelector selector, SelectionKey selectionKey)
         {
             selections.get(selector).add(System.nanoTime());
         }
@@ -181,5 +175,4 @@ public class OneHandler
         {
         }
     }
-
 }

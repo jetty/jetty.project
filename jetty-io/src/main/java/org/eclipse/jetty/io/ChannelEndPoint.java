@@ -400,11 +400,11 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     }
 
     @Override
-    public SelectionKey getKey()
+    public SelectionKey getSelectionKey()
     {
         return _key;
     }
-    
+
     private void changeInterests(int operation)
     {
         /**

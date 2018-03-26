@@ -43,6 +43,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -137,8 +138,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             stop_selector._stopped.await();
         }
 
-        super.doStop();     
         _listeners = null;
+
+        super.doStop();
     }
 
     /**
@@ -250,6 +252,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
+    void notifyUpdatedKey(SelectionKey selectionKey)
+    {
+        notifyEvent2(listener -> listener::onUpdatedKey, selectionKey);
+    }
+
     private void notifySelecting()
     {
         notifyEvent1(listener -> listener::onSelecting);
@@ -260,54 +267,19 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         notifyEvent1(listener -> listener::onSelectedBegin);
     }
 
-    void notifyUpdatedKey(SelectionKey key)
+    private void notifySelectedKey(SelectionKey selectionKey)
     {
-        for (Listener listener : _listeners)
-        {
-            try
-            {
-                listener.onUpdatedKey(this, key);
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Failure invoking listener " + listener, x);
-            }
-        }
-    }
-
-    private void notifySelectedKey(SelectionKey key)
-    {
-        for (Listener listener : _listeners)
-        {
-            try
-            {
-                listener.onSelectedKey(this, key);
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Failure invoking listener " + listener, x);
-            }
-        }
-    }
-
-    private void notifyClosed(SelectionKey key)
-    {
-        for (Listener listener : _listeners)
-        {
-            try
-            {
-                listener.onClosed(this, key);
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Failure invoking listener " + listener, x);
-            }
-        }
+        notifyEvent2(listener -> listener::onSelectedKey, selectionKey);
     }
 
     private void notifySelectedEnd()
     {
         notifyEvent1(listener -> listener::onSelectedEnd);
+    }
+
+    private void notifyClosed(SelectionKey selectionKey)
+    {
+        notifyEvent2(listener -> listener::onClosed, selectionKey);
     }
 
     private void notifyEvent1(Function<Listener, Consumer<ManagedSelector>> function)
@@ -317,6 +289,21 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             try
             {
                 function.apply(listener).accept(this);
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Failure invoking listener " + listener, x);
+            }
+        }
+    }
+
+    private void notifyEvent2(Function<Listener, BiConsumer<ManagedSelector, SelectionKey>> function, SelectionKey selectionKey)
+    {
+        for (Listener listener : _listeners)
+        {
+            try
+            {
+                function.apply(listener).accept(this, selectionKey);
             }
             catch (Throwable x)
             {
@@ -386,9 +373,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
          * {@link ManagedSelector} for this endpoint have been processed.
          */
         boolean updateKey();
-        
-        
-        SelectionKey getKey();
+
+        SelectionKey getSelectionKey();
     }
 
     private class SelectorProducer implements ExecutionStrategy.Producer
@@ -518,8 +504,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             {
                 SelectionKey key = _cursor.next();
 
-                if (key.attachment() instanceof Selectable)
-                    notifySelectedKey(key);
+                notifySelectedKey(key);
 
                 if (key.isValid())
                 {
@@ -583,8 +568,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 Object attachment = key.attachment();
                 if (attachment instanceof Selectable)
                 {
-                    Selectable selectable = (Selectable)attachment;
-                    if (selectable.updateKey())
+                    if (((Selectable)attachment).updateKey())
                         notifyUpdatedKey(key);
                 }
             }
@@ -606,33 +590,67 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         public void update(Selector selector);
     }
 
+    /**
+     * Listener for ManagedSelector events.
+     */
     public interface Listener extends EventListener
     {
-
-        public default void onUpdatedKey(ManagedSelector managedSelector, SelectionKey key)
+        /**
+         * Callback invoked just after a {@link SelectionKey} interest operations are updated.
+         *
+         * @param selector the ManagedSelector that emitted the event
+         * @param selectionKey the SelectionKey that was updated
+         */
+        public default void onUpdatedKey(ManagedSelector selector, SelectionKey selectionKey)
         {
         }
-        
+
+        /**
+         * Callback invoked just before the {@link Selector#select()} call.
+         *
+         * @param selector the ManagedSelector that emitted the event
+         */
         public default void onSelecting(ManagedSelector selector)
         {
         }
 
+        /**
+         * Callback invoked just after the {@link Selector#select()} call.
+         *
+         * @param selector the ManagedSelector that emitted the event
+         */
         public default void onSelectedBegin(ManagedSelector selector)
         {
         }
 
-        public default void onSelectedKey(ManagedSelector selector, SelectionKey key)
+        /**
+         * Callback invoked when a selected SelectionKey is being processed.
+         *
+         * @param selector the ManagedSelector that emitted the event
+         * @param selectionKey the SelectionKey that was selected
+         */
+        public default void onSelectedKey(ManagedSelector selector, SelectionKey selectionKey)
         {
         }
 
+        /**
+         * Callback invoked when all the selected SelectionKeys have been processed.
+         *
+         * @param selector the ManagedSelector that emitted the event
+         */
         public default void onSelectedEnd(ManagedSelector selector)
         {
         }
-        
-        public default void onClosed(ManagedSelector selector, SelectionKey key)
+
+        /**
+         * Callback invoked when a SelectionKey is closed.
+         *
+         * @param selector the ManagedSelector that emitted the event
+         * @param selectionKey the SelectionKey that was closed
+         */
+        public default void onClosed(ManagedSelector selector, SelectionKey selectionKey)
         {
         }
-
     }
 
     private static class DumpKeys implements SelectorUpdate
@@ -739,7 +757,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
 
         @Override
-        public SelectionKey getKey()
+        public SelectionKey getSelectionKey()
         {
             return _key;
         }
@@ -1003,7 +1021,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 _selectorManager.connectionClosed(connection);
             _selectorManager.endPointClosed(endPoint);
             if (endPoint instanceof Selectable)
-                notifyClosed(((Selectable)endPoint).getKey());
+                notifyClosed(((Selectable)endPoint).getSelectionKey());
         }
 
         @Override

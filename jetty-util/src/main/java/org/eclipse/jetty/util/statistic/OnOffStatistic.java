@@ -22,13 +22,13 @@ import java.util.concurrent.TimeUnit;
 
 public class OnOffStatistic
 {
-    boolean _on;
-    long _last;
-    long _activations;
-    long _lastOn;
-    long _totalOn;
-    long _totalOff;
-    long _maxOn;
+    private boolean _on;
+    private long _last;
+    private long _activations;
+    private long _lastOn;
+    private long _totalOn;
+    private long _totalOff;
+    private long _maxOn;
     
     public OnOffStatistic()
     {   
@@ -70,12 +70,26 @@ public class OnOffStatistic
         return true;
     }
 
-    public String toString()
+    public long getLastOn(TimeUnit unit)
     {
-        return toString(TimeUnit.MILLISECONDS);
+        synchronized (this)
+        {
+            if (_on)
+                return unit.convert(System.nanoTime()-_last,TimeUnit.NANOSECONDS);
+            return unit.convert(_lastOn,TimeUnit.NANOSECONDS);
+        }
     }
 
-    public String toString(TimeUnit units)
+    public long getMaxOn(TimeUnit unit)
+    {
+        synchronized (this)
+        {
+            long l = _on?System.nanoTime()-_last:_lastOn;
+            return unit.convert(Math.max(l,_maxOn),TimeUnit.NANOSECONDS);
+        }
+    }
+
+    public String toString(TimeUnit unit)
     {
         synchronized (this)
         {
@@ -99,54 +113,19 @@ public class OnOffStatistic
             
             long totalTime = totalOn+totalOff;
             return String.format("{(%s) on=%d/%d(%d%%) last/ave/max on=%d/%d/%d activations=%d}",
-                    units,
-                    units.convert(totalOn,TimeUnit.NANOSECONDS),
-                    units.convert(totalTime,TimeUnit.NANOSECONDS),
+                    unit,
+                    unit.convert(totalOn,TimeUnit.NANOSECONDS),
+                    unit.convert(totalTime,TimeUnit.NANOSECONDS),
                     totalOn*100/totalTime,
-                    units.convert(lastOn,TimeUnit.NANOSECONDS),
-                    units.convert(totalOn/_activations,TimeUnit.NANOSECONDS),
-                    units.convert(maxOn,TimeUnit.NANOSECONDS),
+                    unit.convert(lastOn,TimeUnit.NANOSECONDS),
+                    unit.convert(totalOn/_activations,TimeUnit.NANOSECONDS),
+                    unit.convert(maxOn,TimeUnit.NANOSECONDS),
                     _activations);
         }
     }
 
-    public long getLastOn(TimeUnit units)
+    public String toString()
     {
-        synchronized (this)
-        {
-            if (_on)
-                return units.convert(System.nanoTime()-_last,TimeUnit.NANOSECONDS);
-            return units.convert(_lastOn,TimeUnit.NANOSECONDS);
-        }
+        return toString(TimeUnit.MILLISECONDS);
     }
-    
-    public long getMaxOn(TimeUnit units)
-    {
-        synchronized (this)
-        {
-            long l = _on?System.nanoTime()-_last:_lastOn;
-            return units.convert(Math.max(l,_maxOn),TimeUnit.NANOSECONDS);
-        }
-    }
-    
-    
-    public static void main(String... arg) throws Exception
-    {
-        OnOffStatistic oos = new OnOffStatistic();
-        System.err.println(oos);
-        Thread.sleep(100);
-        System.err.println(oos);
-        oos.record(true);
-        System.err.println(oos);
-        Thread.sleep(100);
-        System.err.println(oos);
-        Thread.sleep(100);
-        System.err.println(oos);
-        oos.record(false);
-        System.err.println(oos);
-        Thread.sleep(100);
-        System.err.println(oos);
-        
-    }
-    
 }
