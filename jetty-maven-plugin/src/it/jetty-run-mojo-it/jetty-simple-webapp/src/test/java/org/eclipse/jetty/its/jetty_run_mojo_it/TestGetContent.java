@@ -29,10 +29,11 @@ import org.junit.Test;
 /**
  *
  */
-public class TestHelloServlet
+public class TestGetContent
+
 {
     @Test
-    public void hello_servlet()
+    public void get_ping_response()
         throws Exception
     {
        
