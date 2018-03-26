@@ -16,8 +16,7 @@
 //  ========================================================================
 //
 
-
-package org.eclipse.jetty.its.jetty_run_war_mojo_it;
+package org.eclipse.jetty.its.jetty_run_forked_mojo_it;
 
 import java.io.File;
 import java.io.FileReader;
@@ -30,12 +29,14 @@ import org.junit.Test;
 /**
  *
  */
-public class TestHelloServlet
+public class TestGetContent
+
 {
     @Test
-    public void hello_servlet()
+    public void get_ping_response()
         throws Exception
     {
+       
         int port = getPort();
         Assert.assertTrue(port > 0);
         HttpClient httpClient = new HttpClient();
@@ -56,6 +57,7 @@ public class TestHelloServlet
             httpClient.stop();
         }
     }
+
 
     public int getPort()
     throws Exception
@@ -86,8 +88,7 @@ public class TestHelloServlet
                 else
                     Thread.currentThread().sleep(100);
             }
-        }
+        }        
         return port;
     }
-
 }

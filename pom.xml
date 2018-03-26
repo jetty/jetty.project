@@ -30,6 +30,9 @@
     <jmh.version>1.20</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <surefireVersion>2.21.0</surefireVersion>
+
+    <mavenPluginToolsVersion>3.5</mavenPluginToolsVersion>
+    <mavenVersion>3.5.0</mavenVersion>
   </properties>
 
   <licenses>
@@ -626,7 +629,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.0</version>
+          <version>0.8.1</version>
         </plugin>
         <plugin>
           <groupId>com.agilejava.docbkx</groupId>
@@ -952,12 +955,34 @@
         <version>1.2</version>
         <scope>provided</scope>
       </dependency>
-      <!-- Old Deps -->
+      <!-- maven deps -->
       <dependency>
         <groupId>org.apache.maven</groupId>
-        <artifactId>maven-plugin-tools-api</artifactId>
-        <version>2.0</version>
+        <artifactId>maven-plugin-api</artifactId>
+        <version>${mavenVersion}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-artifact</artifactId>
+        <version>${mavenVersion}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-core</artifactId>
+        <version>${mavenVersion}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-tools-api</artifactId>
+        <version>${mavenPluginToolsVersion}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${mavenPluginToolsVersion}</version>
+        <scope>provided</scope>
+      </dependency>
+      <!-- Old Deps -->
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
@@ -1007,51 +1032,6 @@
   </dependencyManagement>
 
   <profiles>
-    <!-- use last snapshot of jacoco for jdk10 -->
-    <profile>
-      <id>jdk10</id>
-      <activation>
-        <jdk>10</jdk>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <!-- https://github.com/jacoco/jacoco/pull/629 -->
-            <plugin>
-              <groupId>org.jacoco</groupId>
-              <artifactId>jacoco-maven-plugin</artifactId>
-              <version>0.8.1-SNAPSHOT</version>
-              <configuration>
-                <skip>false</skip>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-      <pluginRepositories>
-        <pluginRepository>
-          <id>oss.snapshots</id>
-          <name>OSS Snapshots</name>
-          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-          <id>apache.snapshots</id>
-          <url>https://repository.apache.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </pluginRepository>
-      </pluginRepositories>
-    </profile>
     <!-- use last snapshot of jacoco for jdk11 -->
     <profile>
       <id>jdk11</id>
@@ -1064,7 +1044,7 @@
             <plugin>
               <groupId>org.jacoco</groupId>
               <artifactId>jacoco-maven-plugin</artifactId>
-              <version>0.8.1-SNAPSHOT</version>
+              <version>0.8.2-SNAPSHOT</version>
               <configuration>
                 <skip>true</skip>
               </configuration>
