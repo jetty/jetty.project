@@ -35,9 +35,11 @@ import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Function;
 
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.Part;
@@ -45,13 +47,16 @@ import javax.servlet.http.Part;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.openjdk.jmh.runner.RunnerException;
 
 @RunWith(Parameterized.class)
 public class MultiPartParsingTest
@@ -151,56 +156,94 @@ public class MultiPartParsingTest
     }
 
     @Test
-    public void testParse() throws IOException, NoSuchAlgorithmException
+    public void testUtilParse() throws Exception
+    {
+        Path outputDir = testingDir.getEmptyPathDir();
+        MultipartConfigElement config = newMultipartConfigElement(outputDir);
+        try (InputStream in = Files.newInputStream(multipartRawFile))
+        {
+            org.eclipse.jetty.util.MultiPartInputStreamParser parser = new org.eclipse.jetty.util.MultiPartInputStreamParser(in,multipartExpectations.contentType,config,outputDir.toFile());
+
+            checkParts(parser.getParts(),s-> 
+            { 
+                try
+                {
+                    return parser.getPart(s);
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                } 
+            });
+        }
+    }
+
+    @Test
+    public void testHttpParse() throws Exception
     {
         Path outputDir = testingDir.getEmptyPathDir();
         MultipartConfigElement config = newMultipartConfigElement(outputDir);
         try (InputStream in = Files.newInputStream(multipartRawFile))
         {
             MultiPartInputStreamParser parser = new MultiPartInputStreamParser(in, multipartExpectations.contentType, config, outputDir.toFile());
-            parser.parse();
 
-            // Evaluate Count
-            if (multipartExpectations.partCount >= 0)
-            {
-                assertThat("Mulitpart.parts.size", parser.getParts().size(), is(multipartExpectations.partCount));
-            }
-
-            // Evaluate expected Contents
-            for (NameValue expected : multipartExpectations.partContainsContents)
-            {
-                Part part = parser.getPart(expected.name);
-                assertThat("Part[" + expected.name + "]", part, is(notNullValue()));
-                try (InputStream partInputStream = part.getInputStream())
+            checkParts(parser.getParts(),s-> 
+            { 
+                try
                 {
-                    String charset = getCharsetFromContentType(part.getContentType(), UTF_8);
-                    String contents = IO.toString(partInputStream, charset);
-                    assertThat("Part[" + expected.name + "].contents", contents, containsString(expected.value));
+                    return parser.getPart(s);
                 }
-            }
-
-            // Evaluate expected filenames
-            for (NameValue expected : multipartExpectations.partFilenames)
-            {
-                Part part = parser.getPart(expected.name);
-                assertThat("Part[" + expected.name + "]", part, is(notNullValue()));
-                assertThat("Part[" + expected.name + "]", part.getSubmittedFileName(), is(expected.value));
-            }
-
-            // Evaluate expected contents checksums
-            for (NameValue expected : multipartExpectations.partSha1sums)
-            {
-                Part part = parser.getPart(expected.name);
-                assertThat("Part[" + expected.name + "]", part, is(notNullValue()));
-                MessageDigest digest = MessageDigest.getInstance("SHA1");
-                try (InputStream partInputStream = part.getInputStream();
-                     NoOpOutputStream noop = new NoOpOutputStream();
-                     DigestOutputStream digester = new DigestOutputStream(noop, digest))
+                catch (Exception e)
                 {
-                    IO.copy(partInputStream, digester);
-                    String actualSha1sum = Hex.asHex(digest.digest()).toLowerCase(Locale.US);
-                    assertThat("Part[" + expected.name + "].sha1sum", actualSha1sum, containsString(expected.value));
-                }
+                    throw new RuntimeException(e);
+                } 
+            });
+        }
+    }
+    
+    private void checkParts(Collection<Part> parts, Function<String, Part> getPart) throws Exception
+    {
+        // Evaluate Count
+        if (multipartExpectations.partCount >= 0)
+        {
+            assertThat("Mulitpart.parts.size", parts.size(), is(multipartExpectations.partCount));
+        }
+
+        // Evaluate expected Contents
+        for (NameValue expected : multipartExpectations.partContainsContents)
+        {
+            Part part = getPart.apply(expected.name);
+            assertThat("Part[" + expected.name + "]", part, is(notNullValue()));
+            try (InputStream partInputStream = part.getInputStream())
+            {
+                String charset = getCharsetFromContentType(part.getContentType(), UTF_8);
+                String contents = IO.toString(partInputStream, charset);
+                assertThat("Part[" + expected.name + "].contents", contents, containsString(expected.value));
+            }
+        }
+
+        // Evaluate expected filenames
+        for (NameValue expected : multipartExpectations.partFilenames)
+        {
+            Part part = getPart.apply(expected.name);
+            assertThat("Part[" + expected.name + "]", part, is(notNullValue()));
+            assertThat("Part[" + expected.name + "]", part.getSubmittedFileName(), is(expected.value));
+        }
+
+        // Evaluate expected contents checksums
+        for (NameValue expected : multipartExpectations.partSha1sums)
+        {
+            Part part = getPart.apply(expected.name);
+            assertThat("Part[" + expected.name + "]", part, is(notNullValue()));
+            // System.err.println(BufferUtil.toDetailString(BufferUtil.toBuffer(IO.readBytes(part.getInputStream()))));
+            MessageDigest digest = MessageDigest.getInstance("SHA1");
+            try (InputStream partInputStream = part.getInputStream();
+                    NoOpOutputStream noop = new NoOpOutputStream();
+                    DigestOutputStream digester = new DigestOutputStream(noop, digest))
+            {
+                IO.copy(partInputStream, digester);
+                String actualSha1sum = Hex.asHex(digest.digest()).toLowerCase(Locale.US);
+                assertThat("Part[" + expected.name + "].sha1sum", actualSha1sum, Matchers.equalToIgnoringCase(expected.value));
             }
         }
     }
