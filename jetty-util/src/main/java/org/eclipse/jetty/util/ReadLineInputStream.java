@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
  *
  * Read from an input stream, accepting CR/LF, LF or just CR.
  */
+@Deprecated
 public class ReadLineInputStream extends BufferedInputStream
 {
     boolean _seenCRLF;

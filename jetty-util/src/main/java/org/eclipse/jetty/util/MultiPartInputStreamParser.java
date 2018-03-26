@@ -55,7 +55,15 @@ import org.eclipse.jetty.util.log.Logger;
  * MultiPartInputStream
  *
  * Handle a MultiPart Mime input stream, breaking it up on the boundary into files and strings.
+ * 
+ * Non Compliance warnings are documented by the method {@link #getNonComplianceWarnings()}
+ *
+ * @deprecated Replaced by {@link org.eclipse.jetty.http#MultiPartFormInputStream}
+ * The code for MultiPartInputStream is slower than its replacement MultiPartFormInputStream. However
+ * this class accepts formats non compliant the RFC that the new MultiPartFormInputStream does not accept. 
+ * 
  */
+@Deprecated
 public class MultiPartInputStreamParser
 {
     private static final Logger LOG = Log.getLogger(MultiPartInputStreamParser.class);
@@ -71,7 +79,7 @@ public class MultiPartInputStreamParser
     protected boolean _deleteOnExit;
     protected boolean _writeFilesWithFilenames;
 
-    EnumSet<NonCompliance> nonComplianceWarnings = EnumSet.noneOf(NonCompliance.class);
+    private EnumSet<NonCompliance> nonComplianceWarnings = EnumSet.noneOf(NonCompliance.class);
     public enum NonCompliance
     {
         CR_TERMINATION,
@@ -80,15 +88,12 @@ public class MultiPartInputStreamParser
         BASE64_TRANSFER_ENCODING, 
         QUOTED_PRINTABLE_TRANSFER_ENCODING
     }
+    
+    /**
+     * @return an EnumSet of non compliances with the RFC that were accepted by this parser
+     */
     public EnumSet<NonCompliance> getNonComplianceWarnings()
-    {         
-        EnumSet<Termination> term = ((ReadLineInputStream)_in).getLineTerminations();
-        
-        if(term.contains(Termination.CR))
-            nonComplianceWarnings.add(NonCompliance.CR_TERMINATION);
-        if(term.contains(Termination.LF))
-            nonComplianceWarnings.add(NonCompliance.LF_TERMINATION);
-        
+    {                 
         return nonComplianceWarnings; 
     }
 
@@ -838,6 +843,13 @@ public class MultiPartInputStreamParser
             {
                 while(line!=null)
                     line=((ReadLineInputStream)_in).readLine();
+                
+                EnumSet<Termination> term = ((ReadLineInputStream)_in).getLineTerminations();
+                
+                if(term.contains(Termination.CR))
+                    nonComplianceWarnings.add(NonCompliance.CR_TERMINATION);
+                if(term.contains(Termination.LF))
+                    nonComplianceWarnings.add(NonCompliance.LF_TERMINATION);
             }
             else
                 throw new IOException("Incomplete parts");
@@ -846,6 +858,7 @@ public class MultiPartInputStreamParser
         {
             _err = e;
         }
+        
     }
 
     public void setDeleteOnExit(boolean deleteOnExit)

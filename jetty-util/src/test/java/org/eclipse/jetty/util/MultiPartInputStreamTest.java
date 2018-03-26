@@ -47,7 +47,6 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart;
 import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 /**
@@ -55,6 +54,7 @@ import org.junit.Test;
  *
  *
  */
+@SuppressWarnings("deprecation")
 public class MultiPartInputStreamTest
 {
     private static final String FILENAME = "stuff.txt";
