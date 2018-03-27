@@ -610,6 +610,8 @@ public class MultiPartFormInputStream
 
     }
 
+    //TODO implement proper toString
+    //TODO more debugging
     class Handler implements MultiPartParser.Handler
     {
 
@@ -642,8 +644,13 @@ public class MultiPartFormInputStream
         @Override
         public boolean headerComplete()
         {
-            try
+            if(LOG.isDebugEnabled())
             {
+                LOG.debug("headerComplete {}",this);
+            }
+            
+            try
+            {                
                 // Extract content-disposition
                 boolean form_data = false;
                 if (contentDisposition == null)
@@ -658,7 +665,7 @@ public class MultiPartFormInputStream
                 {
                     String t = tok.nextToken().trim();
                     String tl = StringUtil.asciiToLowerCase(t);
-                    if (t.startsWith("form-data"))
+                    if (tl.startsWith("form-data"))
                         form_data = true;
                     else if (tl.startsWith("name="))
                         name = value(t);
@@ -708,7 +715,10 @@ public class MultiPartFormInputStream
 
         @Override
         public boolean content(ByteBuffer buffer, boolean last)
-        {            
+        {   
+            if(_part == null)
+                return false;
+            
             if (BufferUtil.hasContent(buffer))
             {
                 try
@@ -718,6 +728,7 @@ public class MultiPartFormInputStream
                 catch (IOException e)
                 {
                     _err = e;
+                    reset();
                     return true;
                 }
             }

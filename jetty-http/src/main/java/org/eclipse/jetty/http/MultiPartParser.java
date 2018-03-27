@@ -482,6 +482,14 @@ public class MultiPartParser
                             setState(FieldState.AFTER_NAME);
                             break;
 
+                        case LINE_FEED:
+                        {
+                            // TODO warn? debug?
+                            handleField();
+                            setState(FieldState.FIELD);
+                            break;
+                        }
+
                         default:
                             _string.append(b);
                             _length = _string.length();
