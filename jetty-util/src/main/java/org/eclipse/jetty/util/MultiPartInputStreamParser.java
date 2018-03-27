@@ -674,7 +674,7 @@ public class MultiPartInputStreamParser
                 {
                     String t=tok.nextToken().trim();
                     String tl=t.toLowerCase(Locale.ENGLISH);
-                    if(t.startsWith("form-data"))
+                    if(tl.startsWith("form-data"))
                         form_data=true;
                     else if(tl.startsWith("name="))
                         name=value(t);
