@@ -19,6 +19,7 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.plugin.MojoExecutionException;
@@ -57,10 +58,6 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
      */
     private File war;
 
-    
-   
-  
-   
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
      */
@@ -78,18 +75,6 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
         server.setStopAtShutdown(true); //as we will normally be stopped with a cntrl-c, ensure server stopped 
         super.finishConfigurationBeforeStart();
     }
-
-    
-    /** 
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#checkPackagingConfiguration()
-     */
-    @Override
-    public void checkPackagingConfiguration() throws MojoExecutionException
-    { 
-        if ( !"war".equals( project.getPackaging() ))
-            throw new MojoExecutionException("Not war packaging");
-    }
-    
     
     /**
      * 

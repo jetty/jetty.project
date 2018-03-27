@@ -48,15 +48,6 @@ public class JettyStartMojo extends JettyRunMojo
         super.execute();
     }
     
-    /** 
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#checkPackagingConfiguration()
-     */
-    @Override
-    public void checkPackagingConfiguration() throws MojoExecutionException
-    {
-        return; //don't check that the project is a war
-    }
-    
     @Override
     public void finishConfigurationBeforeStart() throws Exception
     {
