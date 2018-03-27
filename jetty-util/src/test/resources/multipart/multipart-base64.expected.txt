@@ -1,4 +1,0 @@
-Content-Type|multipart/form-data; boundary="8GbcZNTauFWYMt7GeM9BxFMdlNBJ6aLJhGdXp"
-Parts-Count|1
-Part-Filename|png|jetty-avatar-256.png
-Part-Sha1sum|png|e75b73644afe9b234d70da9ff225229de68cdff8
