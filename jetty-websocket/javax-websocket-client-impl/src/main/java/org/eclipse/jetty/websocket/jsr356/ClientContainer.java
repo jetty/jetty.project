@@ -98,6 +98,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         // This constructor is used with Standalone JSR Client usage.
         this(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()));
         client.setDaemon(true);
+        client.addManaged(client.getHttpClient());
     }
     
     /**
@@ -108,6 +109,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     public ClientContainer(final WebSocketContainerScope scope)
     {
         this(scope, null);
+        client.addManaged(client.getHttpClient());
     }
     
     /**
@@ -136,8 +138,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
                 new JsrEventDriverFactory(scopeDelegate),
                 new JsrSessionFactory(this),
                 httpClient);
-        this.client.addBean(httpClient);
-    
+
         if(jsr356TrustAll != null)
         {
             boolean trustAll = Boolean.parseBoolean(jsr356TrustAll);

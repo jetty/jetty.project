@@ -48,7 +48,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     /**
      * Map of Bundle to App. Used when a Bundle contains a webapp.
      */
-    private Map<Bundle, App> _bundleMap = new HashMap<Bundle, App>();
+    private Map<Bundle, App> _bundleMap = new HashMap<>();
     
     private ServiceRegistration _serviceRegForBundles;
     
@@ -119,12 +119,13 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         _webappTracker = new WebAppTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), getServerInstanceWrapper().getManagedServerName());
         _webappTracker.open();
         //register as an osgi service for deploying bundles, advertising the name of the jetty Server instance we are related to
-        Dictionary<String,String> properties = new Hashtable<String,String>();
+        Dictionary<String,String> properties = new Hashtable<>();
         properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, getServerInstanceWrapper().getManagedServerName());
         _serviceRegForBundles = FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(BundleProvider.class.getName(), this, properties);
         super.doStart();
@@ -165,6 +166,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
      * A bundle has been added that could be a webapp 
      * @param bundle the bundle
      */
+    @Override
     public boolean bundleAdded (Bundle bundle) throws Exception
     {
         if (bundle == null)
@@ -175,6 +177,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         String contextPath = null;
         try 
         {
+            @SuppressWarnings("unchecked")
             Dictionary<String,String> headers = bundle.getHeaders();
 
             //does the bundle have a OSGiWebappConstants.JETTY_WAR_FOLDER_PATH 
@@ -249,6 +252,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
      * @param bundle the bundle
      * @return true if this was a webapp we had deployed, false otherwise
      */
+    @Override
     public boolean bundleRemoved (Bundle bundle) throws Exception
     {
         App app = _bundleMap.remove(bundle);

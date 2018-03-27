@@ -219,6 +219,7 @@ public class JDBCLoginService extends AbstractLoginService
     
 
     /* ------------------------------------------------------------ */
+    @Override
     public UserPrincipal loadUserInfo (String username)
     {
         try
@@ -255,6 +256,7 @@ public class JDBCLoginService extends AbstractLoginService
 
     
     /* ------------------------------------------------------------ */
+    @Override
     public String[] loadRoleInfo (UserPrincipal user)
     {
         JDBCUserPrincipal jdbcUser = (JDBCUserPrincipal)user;

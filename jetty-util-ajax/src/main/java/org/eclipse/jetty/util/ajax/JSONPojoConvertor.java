@@ -176,6 +176,7 @@ public class JSONPojoConvertor implements JSON.Convertor
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Object fromJSON(Map object)
     {        
         Object obj = null;
@@ -221,6 +222,7 @@ public class JSONPojoConvertor implements JSON.Convertor
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void toJSON(Object obj, Output out)
     {
         if(_fromJSON)
@@ -377,6 +379,7 @@ public class JSONPojoConvertor implements JSON.Convertor
     
     public static final NumberType SHORT = new NumberType()
     {
+        @Override
         public Object getActualValue(Number number)
         {            
             return new Short(number.shortValue());
@@ -385,6 +388,7 @@ public class JSONPojoConvertor implements JSON.Convertor
 
     public static final NumberType INTEGER = new NumberType()
     {
+        @Override
         public Object getActualValue(Number number)
         {            
             return new Integer(number.intValue());
@@ -393,6 +397,7 @@ public class JSONPojoConvertor implements JSON.Convertor
     
     public static final NumberType FLOAT = new NumberType()
     {
+        @Override
         public Object getActualValue(Number number)
         {            
             return new Float(number.floatValue());
@@ -401,6 +406,7 @@ public class JSONPojoConvertor implements JSON.Convertor
 
     public static final NumberType LONG = new NumberType()
     {
+        @Override
         public Object getActualValue(Number number)
         {            
             return number instanceof Long ? number : new Long(number.longValue());
@@ -409,6 +415,7 @@ public class JSONPojoConvertor implements JSON.Convertor
 
     public static final NumberType DOUBLE = new NumberType()
     {
+        @Override
         public Object getActualValue(Number number)
         {            
             return number instanceof Double ? number : new Double(number.doubleValue());

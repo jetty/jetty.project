@@ -589,6 +589,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 public ByteBuffer current;
 
                 @Override
+                @SuppressWarnings("ReferenceEquality")
                 public boolean hasNext()
                 {
                     if (current == null)

@@ -25,6 +25,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -80,7 +81,8 @@ import org.eclipse.jetty.util.thread.Invocable;
 public class SslConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(SslConnection.class);
-
+    private static final ThreadLocal<Boolean> __tryWriteAgain = new ThreadLocal<>();
+    
     private final List<SslHandshakeListener> handshakeListeners = new ArrayList<>();
     private final ByteBufferPool _bufferPool;
     private final SSLEngine _sslEngine;
@@ -94,7 +96,7 @@ public class SslConnection extends AbstractConnection
     private int _renegotiationLimit = -1;
     private boolean _closedOutbound;
     private boolean _allowMissingCloseMessage = true;
-
+    
     private abstract class RunnableTask  implements Runnable, Invocable
     {
         private final String _operation;
@@ -427,7 +429,7 @@ public class SslConnection extends AbstractConnection
         private boolean _fillRequiresFlushToProgress;
         private boolean _flushRequiresFillToProgress;
         private boolean _cannotAcceptMoreAppDataToFlush;
-        private boolean _handshaken;
+        private AtomicReference<Handshake> _handshake = new AtomicReference<>(Handshake.INITIAL);
         private boolean _underFlown;
 
         private final Callback _writeCallback = new WriteCallBack();
@@ -505,11 +507,12 @@ public class SslConnection extends AbstractConnection
                 }
                 else
                 {
+                    // TODO This should not be required and we should be able to do all retries within flush
                     // We can get here because the WriteFlusher might not see progress
                     // when it has just flushed the encrypted data, but not consumed anymore
                     // of the application buffers.  This is mostly avoided by another iteration
-                    // within DecryptedEndPoint flush(), but I cannot convince myself that
-                    // this is never ever the case.
+                    // within DecryptedEndPoint flush(), but this still occurs sometime on some
+                    // tests on some systems??? More investigation is needed!
                     try_again = true;
                 }
             }
@@ -525,14 +528,35 @@ public class SslConnection extends AbstractConnection
                 {
                     // don't bother writing, just notify of close
                     getWriteFlusher().onClose();
+                    return;
                 }
-                // Else,
+             
+                // TODO this ugly recursion protection is only needed until we remove the try again
+                // logic from this method and make flush do the try again.
+                Boolean tryWriteAgain = __tryWriteAgain.get();
+                if (tryWriteAgain==null)
+                {
+                    try
+                    {   
+                        // Keep running complete write until
+                        __tryWriteAgain.set(Boolean.FALSE);
+                        do
+                        {
+                            _runCompleteWrite.run();
+                        }
+                        while (Boolean.TRUE.equals(__tryWriteAgain.get()));
+                    }
+                    finally
+                    {
+                        __tryWriteAgain.remove();
+                    }
+                }
                 else
                 {
-                    // try to flush what is pending
-                    // execute to avoid recursion
-                    getExecutor().execute(_runCompleteWrite);
+                    // Don't recurse but get top caller to iterate
+                    __tryWriteAgain.set(Boolean.TRUE);
                 }
+                
             }
         }
 
@@ -626,8 +650,12 @@ public class SslConnection extends AbstractConnection
 
                         // We also need an app buffer, but can use the passed buffer if it is big enough
                         ByteBuffer app_in;
+                        boolean used_passed_buffer = false;
                         if (BufferUtil.space(buffer) > _sslEngine.getSession().getApplicationBufferSize())
+                        {
                             app_in = buffer;
+                            used_passed_buffer = true;
+                        }
                         else if (_decryptedInput == null)
                             app_in = _decryptedInput = _bufferPool.acquire(_sslEngine.getSession().getApplicationBufferSize(), _decryptedDirectBuffers);
                         else
@@ -639,7 +667,7 @@ public class SslConnection extends AbstractConnection
                             // Let's try reading some encrypted data... even if we have some already.
                             int net_filled = getEndPoint().fill(_encryptedInput);
 
-                            if (net_filled > 0 && !_handshaken && _sslEngine.isOutboundDone())
+                            if (net_filled > 0 && _handshake.get() == Handshake.INITIAL && _sslEngine.isOutboundDone())
                                 throw new SSLHandshakeException("Closed during handshake");
 
                             decryption: while (true)
@@ -718,7 +746,7 @@ public class SslConnection extends AbstractConnection
                                     case OK:
                                     {
                                         if (unwrapHandshakeStatus == HandshakeStatus.FINISHED)
-                                            handshakeFinished();
+                                            handshakeSucceeded();
 
                                         // Check whether re-negotiation is allowed
                                         if (!allowRenegotiate(handshakeStatus))
@@ -729,7 +757,7 @@ public class SslConnection extends AbstractConnection
                                         // another call to fill() or flush().
                                         if (unwrapResult.bytesProduced() > 0)
                                         {
-                                            if (app_in == buffer)
+                                            if (used_passed_buffer)
                                                 return unwrapResult.bytesProduced();
                                             return BufferUtil.append(buffer,_decryptedInput);
                                         }
@@ -791,24 +819,9 @@ public class SslConnection extends AbstractConnection
                             }
                         }
                     }
-                    catch (SSLHandshakeException x)
-                    {
-                        notifyHandshakeFailed(_sslEngine, x);
-                        failure = x;
-                        throw x;
-                    }
-                    catch (SSLException x)
-                    {
-                        if (!_handshaken)
-                        {
-                            x = (SSLException)new SSLHandshakeException(x.getMessage()).initCause(x);
-                            notifyHandshakeFailed(_sslEngine, x);
-                        }
-                        failure = x;
-                        throw x;
-                    }
                     catch (Throwable x)
                     {
+                        handshakeFailed(x);
                         failure = x;
                         throw x;
                     }
@@ -841,18 +854,10 @@ public class SslConnection extends AbstractConnection
             }
         }
 
-        private void handshakeFinished()
+        private void handshakeSucceeded()
         {
-            if (_handshaken)
+            if (_handshake.compareAndSet(Handshake.INITIAL, Handshake.SUCCEEDED))
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Renegotiated {}", SslConnection.this);
-                if (_renegotiationLimit>0)
-                    _renegotiationLimit--;
-            }
-            else
-            {
-                _handshaken = true;
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} handshake succeeded {}/{} {}",
                         _sslEngine.getUseClientMode() ? "client" : "resumed server",
@@ -860,11 +865,28 @@ public class SslConnection extends AbstractConnection
                             SslConnection.this);
                 notifyHandshakeSucceeded(_sslEngine);
             }
+            else if (_handshake.get() == Handshake.SUCCEEDED)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Renegotiated {}", SslConnection.this);
+                if (_renegotiationLimit>0)
+                    _renegotiationLimit--;
+            }
+        }
+
+        private void handshakeFailed(Throwable failure)
+        {
+            if (_handshake.compareAndSet(Handshake.INITIAL, Handshake.FAILED))
+            {
+                if (!(failure instanceof SSLHandshakeException))
+                    failure = new SSLHandshakeException(failure.getMessage()).initCause(failure);
+                notifyHandshakeFailed(_sslEngine, failure);
+            }
         }
 
         private boolean allowRenegotiate(HandshakeStatus handshakeStatus)
         {   
-            if (!_handshaken || handshakeStatus == HandshakeStatus.NOT_HANDSHAKING)
+            if (_handshake.get() == Handshake.INITIAL || handshakeStatus == HandshakeStatus.NOT_HANDSHAKING)
                 return true;
 
             if (!isRenegotiationAllowed())
@@ -1006,7 +1028,7 @@ public class SslConnection extends AbstractConnection
                                         LOG.debug("wrap {} {} {}", wrapResultStatus, BufferUtil.toHexSummary(_encryptedOutput), SslConnection.this);
 
                                     if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
-                                        handshakeFinished();
+                                        handshakeSucceeded();
 
                                     HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
 
@@ -1016,7 +1038,7 @@ public class SslConnection extends AbstractConnection
                                         getEndPoint().shutdownOutput();
                                         return allConsumed;
                                     }
-                                    
+
                                     // if we have net bytes, let's try to flush them
                                     if (BufferUtil.hasContent(_encryptedOutput))
                                         if (!getEndPoint().flush(_encryptedOutput))
@@ -1065,9 +1087,9 @@ public class SslConnection extends AbstractConnection
                             }
                         }
                     }
-                    catch (SSLHandshakeException x)
+                    catch (Throwable x)
                     {
-                        notifyHandshakeFailed(_sslEngine, x);
+                        handshakeFailed(x);
                         throw x;
                     }
                     finally
@@ -1235,5 +1257,12 @@ public class SslConnection extends AbstractConnection
                 return getWriteFlusher().getCallbackInvocationType();
             }
         }
+    }
+
+    private enum Handshake
+    {
+        INITIAL,
+        SUCCEEDED,
+        FAILED
     }
 }

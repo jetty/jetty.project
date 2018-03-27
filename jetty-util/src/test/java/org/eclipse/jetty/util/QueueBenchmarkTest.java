@@ -47,7 +47,7 @@ public class QueueBenchmarkTest
     @Test
     public void testQueues() throws Exception
     {
-        int cores = Runtime.getRuntime().availableProcessors();
+        int cores = ProcessorUtils.availableProcessors();
         Assume.assumeTrue(cores > 1);
 
         final int readers = cores / 2;
@@ -66,7 +66,7 @@ public class QueueBenchmarkTest
     @Test
     public void testBlockingQueues() throws Exception
     {
-        int cores = Runtime.getRuntime().availableProcessors();
+        int cores = ProcessorUtils.availableProcessors();
         Assume.assumeTrue(cores > 1);
 
         final int readers = cores / 2;

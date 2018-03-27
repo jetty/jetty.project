@@ -64,6 +64,7 @@ public class SessionInvalidateCreateScavengeTest extends AbstractTestBase
 
 
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testSessionScavenge() throws Exception
     {
         String contextPath = "/";
@@ -149,11 +150,13 @@ public class SessionInvalidateCreateScavengeTest extends AbstractTestBase
         private static final long serialVersionUID = 1L;
         private boolean unbound = false;
         
+        @Override
         public void valueUnbound(HttpSessionBindingEvent event)
         {
             unbound = true;
         }
 
+        @Override
         public void valueBound(HttpSessionBindingEvent event)
         {
 

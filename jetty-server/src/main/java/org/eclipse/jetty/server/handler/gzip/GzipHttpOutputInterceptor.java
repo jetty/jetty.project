@@ -84,6 +84,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         _syncFlush=syncFlush;
     }
 
+    @Override
     public HttpOutput.Interceptor getNextInterceptor()
     {
         return _interceptor;

@@ -23,6 +23,7 @@
 
 package org.eclipse.jetty.util.security;
 
+import java.nio.charset.StandardCharsets;
 
 /* ------------------------------------------------------------ */
 /**
@@ -444,7 +445,7 @@ public class UnixCrypt
             rsltblock >>= 6;
         }
 
-        return new String(cryptresult, 0, 13);
+        return new String(cryptresult, 0, 13, StandardCharsets.US_ASCII);
     }
 
     public static void main(String[] arg)

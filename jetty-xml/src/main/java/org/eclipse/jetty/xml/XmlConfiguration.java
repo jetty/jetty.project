@@ -32,10 +32,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,7 +45,6 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
@@ -330,6 +327,7 @@ public class XmlConfiguration
         XmlParser.Node _root;
         XmlConfiguration _configuration;
 
+        @Override
         public void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
         {
             _url=url==null?null:url.toString();
@@ -337,6 +335,7 @@ public class XmlConfiguration
             _configuration=configuration;
         }
 
+        @Override
         public Object configure(Object obj) throws Exception
         {
             // Check the class of the object
@@ -353,6 +352,7 @@ public class XmlConfiguration
             return obj;
         }
 
+        @Override
         public Object configure() throws Exception
         {
             Class<?> oClass = nodeClass(_root);
@@ -1512,22 +1512,6 @@ public class XmlConfiguration
                 {
                     Properties properties = null;
 
-                    // Look for properties from start.jar
-                    try
-                    {
-                        Class<?> config = XmlConfiguration.class.getClassLoader().loadClass("org.eclipse.jetty.start.Config");
-                        properties = (Properties)config.getMethod("getProperties").invoke(null);
-                        LOG.debug("org.eclipse.jetty.start.Config properties = {}",properties);
-                    }
-                    catch (NoClassDefFoundError | ClassNotFoundException e)
-                    {
-                        LOG.ignore(e);
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.warn(e);
-                    }
-
                     // If no start.config properties, use clean slate
                     if (properties == null)
                     {
@@ -1567,7 +1551,7 @@ public class XmlConfiguration
                                 }
                                 configuration.getProperties().putAll(props);
                             }
-                            
+
                             Object obj = configuration.configure();
                             if (obj!=null && !objects.contains(obj))
                                 objects.add(obj);
@@ -1577,7 +1561,7 @@ public class XmlConfiguration
 
                     // For all objects created by XmlConfigurations, start them if they are lifecycles.
                     for (Object obj : objects)
-                    {           
+                    {
                         if (obj instanceof LifeCycle)
                         {
                             LifeCycle lc = (LifeCycle)obj;

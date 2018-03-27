@@ -151,11 +151,13 @@ public class RemoveSessionTest
         boolean wasCreated;
         boolean wasDestroyed;
 
+        @Override
         public void sessionCreated(HttpSessionEvent se)
         {
             wasCreated = true;
         }
 
+        @Override
         public void sessionDestroyed(HttpSessionEvent se)
         {
            wasDestroyed = true;

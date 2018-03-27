@@ -91,6 +91,7 @@ public class JavaUtilLog extends AbstractLogger
                 {
                     AccessController.doPrivileged(new PrivilegedAction<Object>()
                     {
+                        @Override
                         public Object run()
                         {
                             try
@@ -139,6 +140,7 @@ public class JavaUtilLog extends AbstractLogger
         configuredLevel = _logger.getLevel();
     }
 
+    @Override
     public String getName()
     {
         return _logger.getName();
@@ -167,47 +169,55 @@ public class JavaUtilLog extends AbstractLogger
         _logger.log(record);
     }
     
+    @Override
     public void warn(String msg, Object... args)
     {
         if (_logger.isLoggable(Level.WARNING))
             log(Level.WARNING,format(msg,args),null);
     }
 
+    @Override
     public void warn(Throwable thrown)
     {
         if (_logger.isLoggable(Level.WARNING))
             log(Level.WARNING,"",thrown);
     }
 
+    @Override
     public void warn(String msg, Throwable thrown)
     {
         if (_logger.isLoggable(Level.WARNING))
             log(Level.WARNING,msg,thrown);
     }
 
+    @Override
     public void info(String msg, Object... args)
     {
         if (_logger.isLoggable(Level.INFO))
             log(Level.INFO, format(msg, args),null);
     }
 
+    @Override
     public void info(Throwable thrown)
     {
         if (_logger.isLoggable(Level.INFO))
             log(Level.INFO, "",thrown);
     }
 
+    @Override
     public void info(String msg, Throwable thrown)
     {
         if (_logger.isLoggable(Level.INFO))
             log(Level.INFO,msg,thrown);
     }
 
+    @Override
     public boolean isDebugEnabled()
     {
         return _logger.isLoggable(Level.FINE);
     }
 
+    @Override
     public void setDebugEnabled(boolean enabled)
     {
         if (enabled)
@@ -221,24 +231,28 @@ public class JavaUtilLog extends AbstractLogger
         }
     }
 
+    @Override
     public void debug(String msg, Object... args)
     {
         if (_logger.isLoggable(Level.FINE))
             log(Level.FINE,format(msg, args),null);
     }
 
+    @Override
     public void debug(String msg, long arg)
     {
         if (_logger.isLoggable(Level.FINE))
             log(Level.FINE,format(msg, arg),null);
     }
 
+    @Override
     public void debug(Throwable thrown)
     {
         if (_logger.isLoggable(Level.FINE))
             log(Level.FINE,"",thrown);
     }
 
+    @Override
     public void debug(String msg, Throwable thrown)
     {
         if (_logger.isLoggable(Level.FINE))
@@ -248,11 +262,13 @@ public class JavaUtilLog extends AbstractLogger
     /**
      * Create a Child Logger of this Logger.
      */
+    @Override
     protected Logger newLogger(String fullname)
     {
         return new JavaUtilLog(fullname);
     }
 
+    @Override
     public void ignore(Throwable ignored)
     {
         if (_logger.isLoggable(Level.FINEST))

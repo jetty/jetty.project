@@ -185,24 +185,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (connect.timeout.cancel())
                 {
                     key.interestOps(0);
-                    execute(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            try
-                            {
-                                createEndPoint(channel,key);
-                            }
-                            catch(Throwable failure)
-                            {
-                                closeNoExceptions(channel);
-                                LOG.warn(String.valueOf(failure));
-                                LOG.debug(failure);
-                                connect.failed(failure);
-                            }
-                        }
-                    });    
+                    execute(new CreateEndPoint(connect,key));    
                 }
                 else
                 {
@@ -262,16 +245,15 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
+        List<String> keys;
+        List<SelectorUpdate> updates;
         Selector selector = _selector;
-        List<String> keys = null;
-        List<SelectorUpdate> updates = null;
         if (selector != null && selector.isOpen())
         {
             DumpKeys dump = new DumpKeys();
-            String updatesAt;
+            String updatesAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
             synchronized(ManagedSelector.this)
             {
-                updatesAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
                 updates = new ArrayList<>(_updates);
                 _updates.addFirst(dump);
                 _selecting = false;
@@ -338,7 +320,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     return task;
 
                 processUpdates();
-                
+
                 updateKeys();
 
                 if (!select())
@@ -388,7 +370,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 LOG.debug("updates {}",updates);
             
             if (selector != null)
-                selector.wakeup();           
+                selector.wakeup();
         }
 
         private boolean select()
@@ -401,6 +383,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} waiting on select", selector);
                     int selected = selector.select();
+                    if (selected == 0)
+                        selected = selector.selectNow();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} woken up from select, {}/{} selected", selector, selected, selector.keys().size());
 
@@ -413,7 +397,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     }
 
                     _keys = selector.selectedKeys();
-                    _cursor = _keys.iterator();
+                    _cursor = _keys.isEmpty() ? Collections.emptyIterator() : _keys.iterator();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} processing {} keys, {} updates", selector, _keys.size(), updates);
 
@@ -423,6 +407,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             catch (Throwable x)
             {
                 closeNoExceptions(_selector);
+                _selector = null;
                 if (isRunning())
                     LOG.warn(x);
                 else
@@ -440,7 +425,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     Object attachment = key.attachment();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("selected {} {} ",key,attachment);
+                        LOG.debug("selected {} {} {} ",key.readyOps(),key,attachment);
                     try
                     {
                         if (attachment instanceof Selectable)
@@ -490,15 +475,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             // This will update only those keys whose selection did not cause an
             // updateKeys update to be submitted.
             for (SelectionKey key : _keys)
-                updateKey(key);
+            {
+                Object attachment = key.attachment();
+                if (attachment instanceof Selectable)
+                    ((Selectable)attachment).updateKey();
+            }
             _keys.clear();
-        }
-
-        private void updateKey(SelectionKey key)
-        {
-            Object attachment = key.attachment();
-            if (attachment instanceof Selectable)
-                ((Selectable)attachment).updateKey();
         }
 
         @Override
@@ -732,6 +714,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 ManagedSelector.this._selectorManager.connectionFailed(channel, failure, attachment);
             }
         }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("Connect@%x{%s,%s}",hashCode(),channel,attachment);
+        }
     }
 
     private class CloseConnections implements SelectorUpdate
@@ -818,7 +806,40 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
+    private final class CreateEndPoint implements Runnable
+    {
+        private final Connect _connect;
+        private final SelectionKey _key;
 
+        private CreateEndPoint(Connect connect, SelectionKey key)
+        {
+            _connect = connect;
+            _key = key;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                createEndPoint(_connect.channel,_key);
+            }
+            catch(Throwable failure)
+            {
+                closeNoExceptions(_connect.channel);
+                LOG.warn(String.valueOf(failure));
+                LOG.debug(failure);
+                _connect.failed(failure);
+            }
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("CreateEndPoint@%x{%s,%s}",hashCode(),_connect,_key);
+        }
+    }
+    
     private class DestroyEndPoint implements Runnable, Closeable
     {
         private final EndPoint endPoint;

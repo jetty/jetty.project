@@ -66,6 +66,7 @@ public class JettyBootstrapActivator implements BundleActivator
      * 
      * @param context the bundle context
      */
+    @Override
     public void start(final BundleContext context) throws Exception
     {
         INSTANCE = this;
@@ -79,7 +80,7 @@ public class JettyBootstrapActivator implements BundleActivator
         _jettyServerServiceTracker.open();
         
         // Create a default jetty instance right now.
-        Server defaultServer = DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
+        DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
     }
 
 
@@ -91,6 +92,7 @@ public class JettyBootstrapActivator implements BundleActivator
      * @see
      * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
+    @Override
     public void stop(BundleContext context) throws Exception
     {
         try

@@ -63,6 +63,7 @@ import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -112,10 +113,13 @@ public class ResponseTest
     
     private Server _server;
     private HttpChannel _channel;
+    private ByteBuffer _content = BufferUtil.allocate(16*1024);
 
     @Before
     public void init() throws Exception
     {
+        BufferUtil.clear(_content);
+        
         _server = new Server();
         Scheduler _scheduler = new TimerScheduler();
         HttpConfiguration config = new HttpConfiguration();
@@ -139,6 +143,12 @@ public class ResponseTest
             @Override
             public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
             {
+                if(BufferUtil.hasContent(content))
+                {
+                    BufferUtil.append(_content, content);
+                }
+            
+                
                 if (_channelError==null)
                     callback.succeeded();
                 else
@@ -172,6 +182,7 @@ public class ResponseTest
             {
                 return false;
             }
+            
         });
     }
 
@@ -364,6 +375,54 @@ public class ResponseTest
         assertTrue(response.toString().indexOf("charset=utf-8") > 0);
     }
 
+    @Test
+    public void testLocaleFormat() throws Exception
+    {
+        Response response = getResponse();
+
+        ContextHandler context = new ContextHandler();
+        context.addLocaleEncoding(Locale.ENGLISH.toString(), "ISO-8859-1");
+        context.addLocaleEncoding(Locale.ITALIAN.toString(), "ISO-8859-2");
+        response.getHttpChannel().getRequest().setContext(context.getServletContext());
+
+        response.setLocale(java.util.Locale.ITALIAN);
+        
+        PrintWriter out = response.getWriter();
+        
+        out.format("TestA1 %,.2f%n", 1234567.89);
+        out.format("TestA2 %,.2f%n", 1234567.89);
+        
+        out.format((java.util.Locale)null,"TestB1 %,.2f%n", 1234567.89);
+        out.format((java.util.Locale)null,"TestB2 %,.2f%n", 1234567.89);
+        
+        out.format(Locale.ENGLISH,"TestC1 %,.2f%n", 1234567.89);
+        out.format(Locale.ENGLISH,"TestC2 %,.2f%n", 1234567.89);
+        
+        out.format(Locale.ITALIAN,"TestD1 %,.2f%n", 1234567.89);
+        out.format(Locale.ITALIAN,"TestD2 %,.2f%n", 1234567.89);
+
+        out.close();
+        
+        /* Test A */
+        Assert.assertThat(BufferUtil.toString(_content),Matchers.containsString("TestA1 1.234.567,89"));
+        Assert.assertThat(BufferUtil.toString(_content),Matchers.containsString("TestA2 1.234.567,89"));
+        
+        /* Test B */
+        Assert.assertThat(BufferUtil.toString(_content),Matchers.containsString("TestB1 1.234.567,89"));
+        Assert.assertThat(BufferUtil.toString(_content),Matchers.containsString("TestB2 1.234.567,89"));
+        
+        /* Test C */
+        Assert.assertThat(BufferUtil.toString(_content),Matchers.containsString("TestC1 1,234,567.89"));
+        Assert.assertThat(BufferUtil.toString(_content),Matchers.containsString("TestC2 1,234,567.89"));
+        
+        /* Test D */
+        Assert.assertThat(BufferUtil.toString(_content),Matchers.containsString("TestD1 1.234.567,89"));
+        Assert.assertThat(BufferUtil.toString(_content),Matchers.containsString("TestD2 1.234.567,89"));
+        
+        
+    }
+
+    
     @Test
     public void testContentTypeCharacterEncoding() throws Exception
     {

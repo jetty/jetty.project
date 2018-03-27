@@ -121,6 +121,7 @@ public class Holder<T> extends BaseHolder<T>
     /**
      * @param className The className to set.
      */
+    @Override
     public void setClassName(String className)
     {
         super.setClassName(className);
@@ -132,6 +133,7 @@ public class Holder<T> extends BaseHolder<T>
     /**
      * @param held The class to hold
      */
+    @Override
     public void setHeldClass(Class<? extends T> held)
     {
         super.setHeldClass(held);
@@ -239,6 +241,7 @@ public class Holder<T> extends BaseHolder<T>
     /* -------------------------------------------------------- */
     protected class HolderRegistration implements Registration.Dynamic
     {
+        @Override
         public void setAsyncSupported(boolean isAsyncSupported)
         {
             illegalStateIfContextStarted();
@@ -251,26 +254,31 @@ public class Holder<T> extends BaseHolder<T>
                 LOG.debug(this+" is "+description);
         }
 
+        @Override
         public String getClassName()
         {
             return Holder.this.getClassName();
         }
 
+        @Override
         public String getInitParameter(String name)
         {
             return Holder.this.getInitParameter(name);
         }
 
+        @Override
         public Map<String, String> getInitParameters()
         {
             return Holder.this.getInitParameters();
         }
 
+        @Override
         public String getName()
         {
             return Holder.this.getName();
         }
 
+        @Override
         public boolean setInitParameter(String name, String value)
         {
             illegalStateIfContextStarted();
@@ -286,6 +294,7 @@ public class Holder<T> extends BaseHolder<T>
             return true;
         }
 
+        @Override
         public Set<String> setInitParameters(Map<String, String> initParameters)
         {
             illegalStateIfContextStarted();

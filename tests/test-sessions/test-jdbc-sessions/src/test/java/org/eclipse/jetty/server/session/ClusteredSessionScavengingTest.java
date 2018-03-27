@@ -25,7 +25,6 @@ import org.junit.After;
  */
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
-
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
@@ -34,7 +33,6 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     {
        return JdbcTestHelper.newSessionDataStoreFactory();
     }
-
 
     
     @After

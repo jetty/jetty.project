@@ -282,6 +282,7 @@ public class JspcMojo extends AbstractMojo
     private boolean scanAllDirectories;
     
 
+    @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
         if (getLog().isDebugEnabled())
@@ -414,6 +415,7 @@ public class JspcMojo extends AbstractMojo
             {
                 delete(generatedClassesDir, new FileFilter()
                 {
+                    @Override
                     public boolean accept(File f)
                     {
                         return f.isDirectory() || f.getName().endsWith(".java");

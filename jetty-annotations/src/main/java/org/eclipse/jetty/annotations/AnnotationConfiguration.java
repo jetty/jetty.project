@@ -47,6 +47,7 @@ import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -153,6 +154,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
            _stat = stat; 
         }
 
+        @Override
         public Void call() throws Exception
         {            
             if (_stat != null)
@@ -261,6 +263,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             return _indexMap.size();
         }
         
+        @Override
         public String toString()
         {
             if (_ordering == null)
@@ -451,7 +454,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         start = System.nanoTime();
         
         //execute scan, either effectively synchronously (1 thread only), or asynchronously (limited by number of processors available) 
-        final Semaphore task_limit = (isUseMultiThreading(context)? new Semaphore(Runtime.getRuntime().availableProcessors()):new Semaphore(1));     
+        final Semaphore task_limit = (isUseMultiThreading(context)? new Semaphore(ProcessorUtils.availableProcessors()):new Semaphore( 1));
         final CountDownLatch latch = new CountDownLatch(_parserTasks.size());
         final MultiException me = new MultiException();
     

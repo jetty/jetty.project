@@ -12,6 +12,7 @@ PROP|main.prop=value0
 PROP|name=value
 PROP|name0=changed0
 PROP|name1=changed1
+PROP|name2=two
 PROP|property=value
 PROP|property0=value0
 

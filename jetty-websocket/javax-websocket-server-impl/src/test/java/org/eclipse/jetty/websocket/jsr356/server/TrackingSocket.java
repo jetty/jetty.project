@@ -23,12 +23,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCode;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
@@ -41,8 +41,8 @@ public abstract class TrackingSocket
     private static final Logger LOG = Log.getLogger(TrackingSocket.class);
     
     public CloseReason closeReason;
-    public EventQueue<String> eventQueue = new EventQueue<String>();
-    public EventQueue<Throwable> errorQueue = new EventQueue<>();
+    public LinkedBlockingQueue<String> eventQueue = new LinkedBlockingQueue<>();
+    public LinkedBlockingQueue<Throwable> errorQueue = new LinkedBlockingQueue<>();
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch dataLatch = new CountDownLatch(1);
@@ -50,12 +50,12 @@ public abstract class TrackingSocket
     protected void addError(Throwable t)
     {
         LOG.warn(t);
-        errorQueue.add(t);
+        errorQueue.offer(t);
     }
 
     protected void addEvent(String format, Object... args)
     {
-        eventQueue.add(String.format(format,args));
+        eventQueue.offer(String.format(format,args));
     }
 
     public void assertClose(CloseCode expectedCode, String expectedReason) throws InterruptedException
@@ -74,12 +74,6 @@ public abstract class TrackingSocket
     private void assertCloseReason(String expectedReason)
     {
         Assert.assertThat("Close Reason",closeReason.getReasonPhrase(),is(expectedReason));
-    }
-
-    public void assertEvent(String expected)
-    {
-        String actual = eventQueue.poll();
-        Assert.assertEquals("Event",expected,actual);
     }
 
     public void assertIsOpen() throws InterruptedException

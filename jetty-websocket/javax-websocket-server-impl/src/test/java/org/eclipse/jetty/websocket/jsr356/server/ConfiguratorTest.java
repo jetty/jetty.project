@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -51,18 +53,21 @@ import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.HttpResponse;
-import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
+import org.eclipse.jetty.websocket.common.test.BlockheadClientRequest;
+import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -356,7 +361,8 @@ public class ConfiguratorTest
             return dateFormat;
         }
     }
-    
+
+    private static BlockheadClient client;
     private static Server server;
     private static URI baseServerUri;
 
@@ -408,18 +414,35 @@ public class ConfiguratorTest
         server.stop();
     }
 
+    @BeforeClass
+    public static void startClient() throws Exception
+    {
+        client = new BlockheadClient();
+        client.setIdleTimeout(TimeUnit.SECONDS.toMillis(2));
+        client.start();
+    }
+
+    @AfterClass
+    public static void stopClient() throws Exception
+    {
+        client.stop();
+    }
+
     @Test
     public void testEmptyConfigurator() throws Exception
     {
         URI uri = baseServerUri.resolve("/empty");
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        request.header(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "identity");
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.addExtensions("identity");
-            client.connect();
-            client.sendStandardRequest();
-            HttpResponse response = client.readResponseHeader();
-            Assert.assertThat("response.extensions", response.getExtensionsHeader(), is("identity"));
+            HttpFields responseHeaders = clientConn.getUpgradeResponseHeaders();
+            HttpField extensionHeader = responseHeaders.getField(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
+            Assert.assertThat("response.extensions", extensionHeader.getValue(), is("identity"));
         }
     }
 
@@ -428,17 +451,20 @@ public class ConfiguratorTest
     {
         URI uri = baseServerUri.resolve("/no-extensions");
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        request.header(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "identity");
+
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            client.addExtensions("identity");
-            client.connect();
-            client.sendStandardRequest();
-            HttpResponse response = client.expectUpgradeResponse();
-            assertThat("response.extensions", response.getExtensionsHeader(), nullValue());
+            HttpFields responseHeaders = clientConn.getUpgradeResponseHeaders();
+            HttpField extensionHeader = responseHeaders.getField(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
+            assertThat("response.extensions", extensionHeader, is(nullValue()));
     
-            client.write(new TextFrame().setPayload("NegoExts"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+            clientConn.write(new TextFrame().setPayload("NegoExts"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("Frame Response", frame.getPayloadAsUTF8(), is("negotiatedExtensions=[]"));
         }
     }
@@ -448,16 +474,16 @@ public class ConfiguratorTest
     {
         URI uri = baseServerUri.resolve("/capture-request-headers");
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
-        {
-            client.addHeader("X-Dummy: Bogus\r\n");
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        request.header("X-Dummy", "Bogus");
 
-            client.write(new TextFrame().setPayload("X-Dummy"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("X-Dummy"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Request Header [X-Dummy]: \"Bogus\""));
         }
     }
@@ -468,33 +494,32 @@ public class ConfiguratorTest
         URI uri = baseServerUri.resolve("/unique-user-props");
 
         // First request
-        try (IBlockheadClient client = new BlockheadClient(uri))
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        Future<BlockheadConnection> connFut = request.sendAsync();
 
-            client.write(new TextFrame().setPayload("apple"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("apple"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [apple] = \"fruit from tree\""));
         }
         
         // Second request
-        try (IBlockheadClient client = new BlockheadClient(uri))
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
 
-            client.write(new TextFrame().setPayload("apple"));
-            client.write(new TextFrame().setPayload("blueberry"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(2, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+        request = client.newWsRequest(uri);
+        connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("apple"));
+            clientConn.write(new TextFrame().setPayload("blueberry"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             // should have no value
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [apple] = <null>"));
             
-            frame = frames.poll();
+            frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [blueberry] = \"fruit from bush\""));
         }
     }
@@ -504,19 +529,17 @@ public class ConfiguratorTest
     {
         URI uri = baseServerUri.resolve("/addr");
 
-        // First request
-        try (IBlockheadClient client = new BlockheadClient(uri))
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-            
-            InetSocketAddress expectedLocal = client.getLocalSocketAddress();
-            InetSocketAddress expectedRemote = client.getRemoteSocketAddress();
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        Future<BlockheadConnection> connFut = request.sendAsync();
 
-            client.write(new TextFrame().setPayload("addr"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            InetSocketAddress expectedLocal = clientConn.getLocalSocketAddress();
+            InetSocketAddress expectedRemote = clientConn.getRemoteSocketAddress();
+
+            clientConn.write(new TextFrame().setPayload("addr"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             
             StringWriter expected = new StringWriter();
             PrintWriter out = new PrintWriter(expected);
@@ -540,16 +563,15 @@ public class ConfiguratorTest
         URI uri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
-        {
-            client.addHeader("Sec-WebSocket-Protocol: echo\r\n");
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        request.header(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "echo");
+        Future<BlockheadConnection> connFut = request.sendAsync();
 
-            client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("getProtocols"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\"]"));
         }
     }
@@ -564,16 +586,15 @@ public class ConfiguratorTest
         URI uri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
-        {
-            client.addHeader("Sec-WebSocket-Protocol: echo, chat, status\r\n");
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        request.header(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "echo, chat, status");
+        Future<BlockheadConnection> connFut = request.sendAsync();
 
-            client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("getProtocols"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
         }
     }
@@ -588,16 +609,15 @@ public class ConfiguratorTest
         URI uri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
-        {
-            client.addHeader("sec-websocket-protocol: echo, chat, status\r\n");
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        request.header("sec-websocket-protocol", "echo, chat, status");
+        Future<BlockheadConnection> connFut = request.sendAsync();
 
-            client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("getProtocols"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
         }
     }
@@ -612,16 +632,16 @@ public class ConfiguratorTest
         URI uri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
-        {
-            client.addHeader("Sec-Websocket-Protocol: echo, chat, status\r\n");
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        // We see "Websocket" (no capital "S" often)
+        request.header("Sec-Websocket-Protocol", "echo, chat, status");
+        Future<BlockheadConnection> connFut = request.sendAsync();
 
-            client.write(new TextFrame().setPayload("getProtocols"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("getProtocols"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
         }
     }
@@ -634,16 +654,16 @@ public class ConfiguratorTest
     {
         URI uri = baseServerUri.resolve("/timedecoder");
 
-        try (BlockheadClient client = new BlockheadClient(uri))
-        {
-            client.addHeader("Sec-Websocket-Protocol: gmt\r\n");
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        // We see "Websocket" (no capital "S" often)
+        request.header("SeC-WeBsOcKeT-PrOtOcOl", "gmt");
+        Future<BlockheadConnection> connFut = request.sendAsync();
 
-            client.write(new TextFrame().setPayload("2016-06-20T14:27:44"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.poll();
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("2016-06-20T14:27:44"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("cal=2016.06.20 AD at 14:27:44 +0000"));
         }
     }

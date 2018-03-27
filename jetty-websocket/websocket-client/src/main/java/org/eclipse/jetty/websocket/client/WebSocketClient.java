@@ -25,6 +25,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
@@ -368,6 +369,15 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
             throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
         }
 
+        if ("wss".equals(scheme))
+        {
+            // test for ssl context
+            if (httpClient.getSslContextFactory() == null)
+            {
+                throw new IllegalStateException("HttpClient has no SslContextFactory, wss:// URI's are not supported in this configuration");
+            }
+        }
+
         request.setRequestURI(toUri);
         request.setLocalEndpoint(websocket);
 
@@ -389,6 +399,17 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
         wsReq.setUpgradeListener(upgradeListener);
         return wsReq.sendAsync();
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        Objects.requireNonNull(httpClient, "Provided HttpClient is null");
+
+        super.doStart();
+
+        if (!httpClient.isRunning())
+            throw new IllegalStateException("HttpClient is not running (did you forget to start it?): " + httpClient);
     }
 
     @Override
@@ -426,6 +447,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return httpClient.getBindAddress();
     }
 
+    @Override
     public ByteBufferPool getBufferPool()
     {
         return httpClient.getByteBufferPool();
@@ -452,6 +474,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return eventDriverFactory;
     }
 
+    @Override
     public Executor getExecutor()
     {
         return httpClient.getExecutor();
@@ -522,6 +545,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return getPolicy().getMaxTextMessageSize();
     }
 
+    @Override
     public DecoratedObjectFactory getObjectFactory()
     {
         return this.containerScope.getObjectFactory();
@@ -532,6 +556,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return Collections.unmodifiableSet(new HashSet<>(getBeans(WebSocketSession.class)));
     }
 
+    @Override
     public WebSocketPolicy getPolicy()
     {
         return this.containerScope.getPolicy();
@@ -551,6 +576,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @return the {@link SslContextFactory} that manages TLS encryption
      * @see #WebSocketClient(SslContextFactory)
      */
+    @Override
     public SslContextFactory getSslContextFactory()
     {
         return httpClient.getSslContextFactory();

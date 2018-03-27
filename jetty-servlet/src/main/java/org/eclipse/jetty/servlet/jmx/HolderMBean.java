@@ -29,6 +29,7 @@ public class HolderMBean extends ObjectMBean
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getObjectNameBasis()
     {
         if (_managed!=null && _managed instanceof Holder)

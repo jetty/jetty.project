@@ -39,16 +39,19 @@ public class SpnegoUserIdentity implements UserIdentity
     }
 
 
+    @Override
     public Subject getSubject()
     {
         return _subject;
     }
 
+    @Override
     public Principal getUserPrincipal()
     {
         return _principal;
     }
 
+    @Override
     public boolean isUserInRole(String role, Scope scope)
     {
         return _roles.contains(role);

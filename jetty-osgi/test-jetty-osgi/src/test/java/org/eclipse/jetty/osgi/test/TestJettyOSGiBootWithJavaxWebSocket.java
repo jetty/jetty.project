@@ -23,7 +23,6 @@ import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
-import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
@@ -36,7 +35,6 @@ import javax.websocket.RemoteEndpoint;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,9 +64,9 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     @Configuration
     public static Option[] configure()
     {
-        ArrayList<Option> options = new ArrayList<Option>();
+        ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort("jetty-http-boot-with-javax-websocket.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-javax-websocket.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
@@ -83,30 +81,6 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         return options.toArray(new Option[options.size()]);
     }
 
-    public static List<Option> configureJettyHomeAndPort(String jettySelectorFileName)
-    {
-        File etc = new File("src/test/config/etc");
-      
-        List<Option> options = new ArrayList<Option>();
-        StringBuffer xmlConfigs = new StringBuffer();
-        xmlConfigs.append(new File(etc, "jetty.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc,jettySelectorFileName).toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-deployer.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
-        
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
-        options.add(systemProperty("jetty.http.port").value("0"));
-        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
-        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
-        return options;
-    }
 
     public static List<Option> jspDependencies()
     {
@@ -115,7 +89,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
 
     public static List<Option> annotationDependencies()
     {
-        List<Option> res = new ArrayList<Option>();
+        List<Option> res = new ArrayList<>();
         res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.mail.glassfish" ).version( "1.4.1.v201005082020" ).noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-mock-resources").versionAsInProject());
         //test webapp bundle
@@ -124,7 +98,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     }
     public static List<Option> extraDependencies()
     {
-        List<Option> res = new ArrayList<Option>();
+        List<Option> res = new ArrayList<>();
         res.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("bndlib").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").version("2.1.1").start());        
         return res;
@@ -151,7 +125,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
                    "osgi.serviceloader;filter:=\"(osgi.serviceloader=javax.websocket.ContainerProvider)\";resolution:=optional;cardinality:=multiple, osgi.extender; filter:=\"(osgi.extender=osgi.serviceloader.processor)\"");
         bundle.set(Constants.BUNDLE_SYMBOLICNAME, "javax.websocket.api.fragment");
         InputStream is = bundle.build(TinyBundles.withBnd());        
-        Bundle installed = bundleContext.installBundle("dummyLocation", is);
+        bundleContext.installBundle("dummyLocation", is);
         
         Bundle websocketApiBundle = TestOSGiUtil.getBundle(bundleContext, "javax.websocket-api");
         assertNotNull(websocketApiBundle);
@@ -168,9 +142,8 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         javaxWebsocketServer.start();
         
         
-        String tmp = System.getProperty("boot.javax.websocket.port");
-        assertNotNull(tmp);
-        int port = Integer.valueOf(tmp.trim()).intValue();
+        String port = System.getProperty("boot.javax.websocket.port");
+        assertNotNull(port);
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         assertNotNull(container);

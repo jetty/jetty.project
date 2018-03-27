@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,11 +48,13 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 {
     private static final Logger LOG = Log.getLogger(HTTP2Stream.class);
 
+    private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final AtomicReference<Callback> writing = new AtomicReference<>();
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
+    private final long timeStamp = System.nanoTime();
     private final ISession session;
     private final int streamId;
     private final boolean local;
@@ -71,6 +74,18 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     public int getId()
     {
         return streamId;
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return attachment.get();
+    }
+
+    @Override
+    public void setAttachment(Object attachment)
+    {
+        this.attachment.set(attachment);
     }
 
     @Override
@@ -460,7 +475,15 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,reset=%b,%s}", getClass().getSimpleName(),
-                hashCode(), getId(), sendWindow, recvWindow, isReset(), closeState);
+        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,reset=%b,%s,age=%d,attachment=%s}",
+                getClass().getSimpleName(),
+                hashCode(),
+                getId(),
+                sendWindow,
+                recvWindow,
+                isReset(),
+                closeState,
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStamp),
+                attachment);
     }
 }

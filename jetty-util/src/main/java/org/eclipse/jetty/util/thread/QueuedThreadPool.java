@@ -623,21 +623,22 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (isDetailedDump())
             jobs = new ArrayList<>(getQueue());
 
-        dumpBeans(out, indent, threads, Collections.singletonList(new DumpableCollection("jobs", jobs)));
+        dumpBeans(out, indent, threads, Collections.singletonList(new DumpableCollection("jobs - size=" + jobs.size(), jobs)));
     }
 
     @Override
     public String toString()
     {
-        return String.format("QueuedThreadPool@%s{%s,%d<=%d<=%d,i=%d,q=%d,r=%s}", 
+        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,q=%d}",
+            getClass().getSimpleName(),
             _name,
+            hashCode(),
             getState(),
             getMinThreads(),
             getThreads(),
             getMaxThreads(),
             getIdleThreads(),
-            _jobs.size(),
-            _tryExecutor);
+            _jobs.size());
     }
 
     private Runnable idleJobPoll() throws InterruptedException

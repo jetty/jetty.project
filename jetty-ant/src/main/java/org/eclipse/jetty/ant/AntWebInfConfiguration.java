@@ -59,6 +59,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
         //match any of the container jars
         PatternMatcher containerJarNameMatcher = new PatternMatcher ()
         {
+            @Override
             public void matched(URI uri) throws Exception
             {
                 context.getMetaData().addContainerResource(Resource.newResource(uri));
@@ -149,6 +150,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
      *
      * @see WebXmlConfiguration#configure(WebAppContext)
      */
+    @Override
     public void configure(WebAppContext context) throws Exception
     {
         if (context instanceof AntWebAppContext)

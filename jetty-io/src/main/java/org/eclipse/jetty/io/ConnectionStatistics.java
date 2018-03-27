@@ -94,7 +94,7 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
         _connections.decrement();
 
         long elapsed = System.currentTimeMillis() - connection.getCreatedTimeStamp();
-        _connectionsDuration.set(elapsed);
+        _connectionsDuration.record(elapsed);
 
         long bytesIn = connection.getBytesIn();
         if (bytesIn > 0)

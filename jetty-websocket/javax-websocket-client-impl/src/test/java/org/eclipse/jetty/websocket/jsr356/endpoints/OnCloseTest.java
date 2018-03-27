@@ -23,15 +23,16 @@ import static org.hamcrest.Matchers.is;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
@@ -118,9 +119,8 @@ public class OnCloseTest
         driver.onClose(new CloseInfo(StatusCode.NORMAL,"normal"));
 
         // Test captured event
-        EventQueue<String> events = endpoint.eventQueue;
-        Assert.assertThat("Number of Events Captured",events.size(),is(1));
-        String closeEvent = events.poll();
+        LinkedBlockingQueue<String> events = endpoint.eventQueue;
+        String closeEvent = events.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
         Assert.assertThat("Close Event",closeEvent,is(testcase.expectedCloseEvent));
     }
 }

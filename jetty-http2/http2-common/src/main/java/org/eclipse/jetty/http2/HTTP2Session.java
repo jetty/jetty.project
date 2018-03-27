@@ -89,6 +89,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private int initialSessionRecvWindow;
     private boolean pushEnabled;
     private long idleTime;
+    private GoAwayFrame closeFrame;
 
     public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
@@ -430,6 +431,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     {
                         // We received a GO_AWAY, so try to write
                         // what's in the queue and then disconnect.
+                        closeFrame = frame;
                         notifyClose(this, frame, new DisconnectCallback());
                         return;
                     }
@@ -597,8 +599,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 {
                     if (closed.compareAndSet(current, CloseState.LOCALLY_CLOSED))
                     {
-                        GoAwayFrame frame = newGoAwayFrame(error, reason);
-                        control(null, callback, frame);
+                        closeFrame = newGoAwayFrame(CloseState.LOCALLY_CLOSED, error, reason);
+                        control(null, callback, closeFrame);
                         return true;
                     }
                     break;
@@ -614,7 +616,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    private GoAwayFrame newGoAwayFrame(int error, String reason)
+    private GoAwayFrame newGoAwayFrame(CloseState closeState, int error, String reason)
     {
         byte[] payload = null;
         if (reason != null)
@@ -623,7 +625,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             reason = reason.substring(0, Math.min(reason.length(), 32));
             payload = reason.getBytes(StandardCharsets.UTF_8);
         }
-        return new GoAwayFrame(lastStreamId.get(), error, payload);
+        return new GoAwayFrame(closeState, lastStreamId.get(), error, payload);
     }
 
     @Override
@@ -1125,7 +1127,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public String toString()
     {
-        return String.format("%s@%x{l:%s <-> r:%s,sendWindow=%s,recvWindow=%s,streams=%d,%s}",
+        return String.format("%s@%x{l:%s <-> r:%s,sendWindow=%s,recvWindow=%s,streams=%d,%s,%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 getEndPoint().getLocalAddress(),
@@ -1133,7 +1135,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 sendWindow,
                 recvWindow,
                 streams.size(),
-                closed);
+                closed,
+                closeFrame);
     }
 
     private class ControlEntry extends HTTP2Flusher.Entry
@@ -1158,6 +1161,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             frameBytes -= bytesFlushed;
         }
 
+        @Override
         protected boolean generate(ByteBufferPool.Lease lease)
         {
             bytes = frameBytes = generator.control(lease, frame);
@@ -1299,6 +1303,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             return dataBytes;
         }
 
+        @Override
         protected boolean generate(ByteBufferPool.Lease lease)
         {
             int dataBytes = getDataBytesRemaining();
@@ -1451,7 +1456,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         private void complete()
         {
-            frames(null, Callback.NOOP, newGoAwayFrame(ErrorCode.NO_ERROR.code, null), new DisconnectFrame());
+            frames(null, Callback.NOOP, newGoAwayFrame(CloseState.CLOSED, ErrorCode.NO_ERROR.code, null), new DisconnectFrame());
         }
     }
 

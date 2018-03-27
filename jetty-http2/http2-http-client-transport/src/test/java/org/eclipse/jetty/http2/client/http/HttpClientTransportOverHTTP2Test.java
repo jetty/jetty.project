@@ -25,6 +25,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -532,6 +533,34 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 }
             }
         }
+    }
+
+    @Test
+    public void test204WithContent() throws Exception
+    {
+        byte[] bytes = "No Content".getBytes(StandardCharsets.UTF_8);
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                int streamId = stream.getId();
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.NO_CONTENT_204, new HttpFields());
+                HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
+                Callback.Completable callback = new Callback.Completable();
+                stream.headers(responseFrame, callback);
+                callback.thenRun(() -> stream.data(new DataFrame(streamId, ByteBuffer.wrap(bytes), true), Callback.NOOP));
+                return null;
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+        // No logic on the client to discard content for no-content status codes.
+        Assert.assertArrayEquals(bytes, response.getContent());
     }
 
     @Ignore

@@ -21,8 +21,8 @@ package org.eclipse.jetty.util;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.io.File;
-import java.io.FileReader;
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -34,14 +34,19 @@ import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.hamcrest.Matchers;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class RolloverFileOutputStreamTest
 {
+    @Rule
+    public TestingDir testingDir = new TestingDir();
+
     private static ZoneId toZoneId(String timezoneId)
     {
         ZoneId zone = TimeZone.getTimeZone(timezoneId).toZoneId();
@@ -183,17 +188,16 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testFileHandling() throws Exception
     {
-        File testDir = MavenTestingUtils.getTargetTestingDir(RolloverFileOutputStreamTest.class.getName() + "_testFileHandling");
-        Path testPath = testDir.toPath();
-        FS.ensureEmpty(testDir);
+        Path testPath = testingDir.getEmptyPathDir();
 
         ZoneId zone = toZoneId("Australia/Sydney");
         ZonedDateTime now = toDateTime("2016.04.10-08:30:12.3 AM AEDT", zone);
         
-        File template = new File(testDir,"test-rofos-yyyy_mm_dd.log");
+        Path template = testPath.resolve("test-rofos-yyyy_mm_dd.log");
+        String templateString = template.toAbsolutePath().toString();
 
         try (RolloverFileOutputStream rofos = 
-            new RolloverFileOutputStream(template.getAbsolutePath(),false,3,TimeZone.getTimeZone(zone),null,null,now))
+            new RolloverFileOutputStream(templateString,false,3,TimeZone.getTimeZone(zone),null,null,now))
         {
             rofos.write("TICK".getBytes());
             rofos.flush();
@@ -202,11 +206,11 @@ public class RolloverFileOutputStreamTest
         now = now.plus(5,ChronoUnit.MINUTES);
         
         try (RolloverFileOutputStream rofos = 
-            new RolloverFileOutputStream(template.getAbsolutePath(),false,3,TimeZone.getTimeZone(zone),null,null,now))
+            new RolloverFileOutputStream(templateString,false,3,TimeZone.getTimeZone(zone),null,null,now))
         {
             rofos.write("TOCK".getBytes());
             rofos.flush();
-            String[] ls = testDir.list();
+            String[] ls = ls(testPath);
             assertThat(ls.length,is(2));
             String backup = null;
             for (String n: ls)
@@ -245,7 +249,7 @@ public class RolloverFileOutputStreamTest
                 time = time.minus(1,ChronoUnit.DAYS);
             }
 
-            ls = testDir.list();
+            ls = ls(testPath);
             assertThat(ls.length,is(14));
             assertThat(Arrays.asList(ls),Matchers.containsInAnyOrder(
                 "test-rofos-2016_04_05.log",
@@ -265,7 +269,7 @@ public class RolloverFileOutputStreamTest
                 ));
 
             rofos.removeOldFiles(now);
-            ls = testDir.list();
+            ls = ls(testPath);
             assertThat(ls.length,is(10));
             assertThat(Arrays.asList(ls),Matchers.containsInAnyOrder(
                 "test-rofos-2016_04_08.log", 
@@ -279,41 +283,39 @@ public class RolloverFileOutputStreamTest
                 "unrelated-6",
                 "unrelated-5"));
             
-
-            assertThat(IO.toString(new FileReader(new File(testDir,backup))),is("TICK"));
-            assertThat(IO.toString(new FileReader(new File(testDir,"test-rofos-2016_04_10.log"))),is("TOCK"));
-            
+            assertThat(readPath(testPath.resolve(backup)), is("TICK"));
+            assertThat(readPath(testPath.resolve("test-rofos-2016_04_10.log")), is("TOCK"));
         }
     }
 
     @Test
     public void testRollover() throws Exception
     {
-        File testDir = MavenTestingUtils.getTargetTestingDir(RolloverFileOutputStreamTest.class.getName() + "_testRollover");
-        FS.ensureEmpty(testDir);
+        Path testPath = testingDir.getEmptyPathDir();
 
         ZoneId zone = toZoneId("Australia/Sydney");
         ZonedDateTime now = toDateTime("2016.04.10-11:59:55.0 PM AEDT", zone);
         
-        File template = new File(testDir,"test-rofos-yyyy_mm_dd.log");
+        Path template = testPath.resolve("test-rofos-yyyy_mm_dd.log");
+        String templateString = template.toAbsolutePath().toString();
         
         try (RolloverFileOutputStream rofos = 
-            new RolloverFileOutputStream(template.getAbsolutePath(),false,0,TimeZone.getTimeZone(zone),null,null,now))
+            new RolloverFileOutputStream(templateString,false,0,TimeZone.getTimeZone(zone),null,null,now))
         {
             rofos.write("BEFORE".getBytes());
             rofos.flush();
-            String[] ls = testDir.list();
+            String[] ls = ls(testPath);
             assertThat(ls.length,is(1));
             assertThat(ls[0],is("test-rofos-2016_04_10.log"));
 
             TimeUnit.SECONDS.sleep(10);
             rofos.write("AFTER".getBytes());
-            ls = testDir.list();
+            ls = ls(testPath);
             assertThat(ls.length,is(2));
             
             for (String n : ls)
             {
-                String content = IO.toString(new FileReader(new File(testDir,n)));
+                String content = readPath(testPath.resolve(n));
                 if ("test-rofos-2016_04_10.log".equals(n))
                 {
                     assertThat(content,is("BEFORE"));
@@ -329,31 +331,31 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testRolloverBackup() throws Exception
     {
-        File testDir = MavenTestingUtils.getTargetTestingDir(RolloverFileOutputStreamTest.class.getName() + "_testRollover");
-        FS.ensureEmpty(testDir);
+        Path testPath = testingDir.getEmptyPathDir();
 
         ZoneId zone = toZoneId("Australia/Sydney");
         ZonedDateTime now = toDateTime("2016.04.10-11:59:55.0 PM AEDT", zone);
-        
-        File template = new File(testDir,"test-rofosyyyy_mm_dd.log");
+
+        Path template = testPath.resolve("test-rofosyyyy_mm_dd.log");
+        String templateString = template.toAbsolutePath().toString();
         
         try (RolloverFileOutputStream rofos = 
-            new RolloverFileOutputStream(template.getAbsolutePath(),false,0,TimeZone.getTimeZone(zone),"",null,now))
+            new RolloverFileOutputStream(templateString,false,0,TimeZone.getTimeZone(zone),"",null,now))
         {
             rofos.write("BEFORE".getBytes());
             rofos.flush();
-            String[] ls = testDir.list();
-            assertThat(ls.length,is(1));
+            String[] ls = ls(testPath);
+            assertThat("File List.length", ls.length,is(1));
             assertThat(ls[0],is("test-rofos.log"));
 
             TimeUnit.SECONDS.sleep(10);
             rofos.write("AFTER".getBytes());
-            ls = testDir.list();
-            assertThat(ls.length,is(2));
+            ls = ls(testPath);
+            assertThat("File List.length", ls.length,is(2));
             
             for (String n : ls)
             {
-                String content = IO.toString(new FileReader(new File(testDir,n)));
+                String content = readPath(testPath.resolve(n));
                 if ("test-rofos.log".equals(n))
                 {
                     assertThat(content,is("AFTER"));
@@ -364,5 +366,18 @@ public class RolloverFileOutputStreamTest
                 }
             }
         }
+    }
+
+    private String readPath(Path path) throws IOException
+    {
+        try(BufferedReader reader = Files.newBufferedReader(path))
+        {
+            return IO.toString(reader);
+        }
+    }
+
+    private String[] ls(Path path) throws IOException
+    {
+        return Files.list(path).map(p->p.getFileName().toString()).collect(Collectors.toList()).toArray(new String[0]);
     }
 }

@@ -24,17 +24,18 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.After;
 import org.junit.Assert;
@@ -47,58 +48,56 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class SessionTest
 {
-    private interface Case
+    private static class Case
     {
-        void customize(WebAppContext context);
+        public final String description;
+        public final Consumer<WebAppContext> customizer;
+
+        public Case(String desc, Consumer<WebAppContext> consumer)
+        {
+            this.description = desc;
+            this.customizer = consumer;
+        }
+
+        @Override
+        public String toString()
+        {
+            return description;
+        }
+
+        public void addTo(List<Case[]> data)
+        {
+            data.add(new Case[] { this } );
+        }
     }
 
-    @Parameters
+    @Parameters(name = "{0}")
     public static Collection<Case[]> data()
     {
         List<Case[]> cases = new ArrayList<>();
-        cases.add(new Case[]
-        { new Case()
-        {
-            @Override
-            public void customize(WebAppContext context)
-            {
-                // no customization
-            }
-        } });
-        cases.add(new Case[]
-        { new Case()
-        {
-            @Override
-            public void customize(WebAppContext context)
-            {
-                // Test with DefaultServlet only
-                context.addServlet(DefaultServlet.class,"/");
-            }
-        } });
-        cases.add(new Case[]
-        { new Case()
-        {
-            @Override
-            public void customize(WebAppContext context)
-            {
-                // Test with Servlet mapped to "/*"
-                context.addServlet(DefaultServlet.class,"/*");
-            }
-        } });
-        cases.add(new Case[]
-        { new Case()
-        {
-            @Override
-            public void customize(WebAppContext context)
-            {
-                // Test with Servlet mapped to "/info/*"
-                context.addServlet(DefaultServlet.class,"/info/*");
-            }
-        } });
+
+        new Case("no customization", (context) -> {
+                // no customization here
+        }).addTo(cases);
+
+        new Case("with DefaultServlet only",
+                (context) -> context.addServlet(DefaultServlet.class, "/")
+        ).addTo(cases);
+
+
+        new Case("with Servlet mapped to root-glob",
+                (context) -> context.addServlet(DefaultServlet.class, "/*")
+        ).addTo(cases);
+
+
+        new Case("with Servlet mapped to info-glob",
+                // this tests the overlap of websocket paths and servlet paths
+                // the SessionInfoSocket below is also mapped to "/info/"
+                (context) -> context.addServlet(DefaultServlet.class, "/info/*")
+        ).addTo(cases);
+
         return cases;
     }
-
-    public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     private final Case testcase;
     private final static AtomicInteger ID = new AtomicInteger(0);
@@ -121,7 +120,7 @@ public class SessionTest
         serverUri = server.getServerBaseURI();
 
         WebAppContext webapp = server.createWebAppContext();
-        testcase.customize(webapp);
+        testcase.customizer.accept(webapp);
         server.deployWebapp(webapp);
     }
 
@@ -133,17 +132,16 @@ public class SessionTest
 
     private void assertResponse(String requestPath, String requestMessage, String expectedResponse) throws Exception
     {
-        WebSocketClient client = new WebSocketClient(bufferPool);
+        WebSocketClient client = new WebSocketClient();
         try
         {
             client.start();
-            JettyEchoSocket clientEcho = new JettyEchoSocket();
+            ClientEchoSocket clientEcho = new ClientEchoSocket();
             Future<Session> future = client.connect(clientEcho,serverUri.resolve(requestPath));
-            // wait for connect
-            future.get(1,TimeUnit.SECONDS);
-            clientEcho.sendMessage(requestMessage);
-            Queue<String> msgs = clientEcho.awaitMessages(1);
-            Assert.assertThat("Expected message",msgs.poll(),is(expectedResponse));
+            Session session = future.get(1,TimeUnit.SECONDS);
+            session.getRemote().sendString(requestMessage);
+            String msg = clientEcho.messages.poll(5, TimeUnit.SECONDS);
+            Assert.assertThat("Expected message",msg,is(expectedResponse));
         }
         finally
         {
@@ -239,5 +237,17 @@ public class SessionTest
     {
         URI expectedUri = serverUri.resolve("einfo/apple/banana/?fruit=fresh&store=grandmasfarm");
         assertResponse("einfo/apple/banana/?fruit=fresh&store=grandmasfarm","requestUri","requestUri=" + expectedUri.toASCIIString());
+    }
+
+    @WebSocket
+    public static class ClientEchoSocket
+    {
+        public LinkedBlockingQueue<String> messages = new LinkedBlockingQueue<>();
+
+        @OnWebSocketMessage
+        public void onText(String msg)
+        {
+            messages.offer(msg);
+        }
     }
 }

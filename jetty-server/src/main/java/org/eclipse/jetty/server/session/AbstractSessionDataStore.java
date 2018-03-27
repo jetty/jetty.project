@@ -68,6 +68,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
      */
+    @Override
     public void initialize (SessionContext context) throws Exception
     {
         if (isStarted())

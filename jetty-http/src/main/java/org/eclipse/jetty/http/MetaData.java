@@ -123,6 +123,7 @@ public class MetaData implements Iterable<HttpField>
      * @return an iterator over the HTTP fields
      * @see #getFields()
      */
+    @Override
     public Iterator<HttpField> iterator()
     {
         HttpFields fields = getFields();
@@ -180,6 +181,7 @@ public class MetaData implements Iterable<HttpField>
             this(request.getMethod(),new HttpURI(request.getURI()), request.getHttpVersion(), new HttpFields(request.getFields()), request.getContentLength());
         }
 
+        @Override
         public void recycle()
         {
             super.recycle();

@@ -8,3 +8,4 @@ name1=changed1
 --update-ini
 property0=changed0
 property1=changed1
+name0=updated0

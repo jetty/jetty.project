@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -277,21 +278,43 @@ public class RolloverFileOutputStream extends OutputStream
                 oldFile = _file;
                 _file=file;
                 newFile = _file;
+
+                OutputStream oldOut=_out;
+                if (oldOut!=null)
+                    oldOut.close();
+
                 if (!_append && file.exists())
                 {
                     backupFile = new File(file.toString()+"."+_fileBackupFormat.format(new Date(now.toInstant().toEpochMilli())));
-                    file.renameTo(backupFile);
+                    renameFile(file, backupFile);
                 }
-                OutputStream oldOut=_out;
                 _out=new FileOutputStream(file.toString(),_append);
-                if (oldOut!=null)
-                    oldOut.close();
                 //if(log.isDebugEnabled())log.debug("Opened "+_file);
             }
         }
         
         if (newFile!=null)
             rollover(oldFile,backupFile,newFile);
+    }
+
+    private void renameFile(File src, File dest) throws IOException
+    {
+        // Try old school rename
+        if(!src.renameTo(dest))
+        {
+            try
+            {
+                // Try new move
+                Files.move(src.toPath(), dest.toPath());
+            }
+            catch(IOException e)
+            {
+                // Copy
+                Files.copy(src.toPath(), dest.toPath());
+                // Delete
+                Files.deleteIfExists(src.toPath());
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -338,6 +361,7 @@ public class RolloverFileOutputStream extends OutputStream
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void write(int b) throws IOException
     {
         synchronized(this)
@@ -369,6 +393,7 @@ public class RolloverFileOutputStream extends OutputStream
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void flush() throws IOException
     {
         synchronized(this)

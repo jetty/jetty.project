@@ -29,30 +29,30 @@ public class ListenerBasicSocket implements WebSocketListener
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
-        capture.add("onWebSocketBinary([%d], %d, %d)",payload.length,offset,len);
+        capture.offer("onWebSocketBinary([%d], %d, %d)",payload.length,offset,len);
     }
 
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        capture.add("onWebSocketClose(%d, %s)",statusCode,capture.q(reason));
+        capture.offer("onWebSocketClose(%d, %s)",statusCode,capture.q(reason));
     }
 
     @Override
     public void onWebSocketConnect(Session session)
     {
-        capture.add("onWebSocketConnect(%s)",session);
+        capture.offer("onWebSocketConnect(%s)",session);
     }
 
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        capture.add("onWebSocketError((%s) %s)",cause.getClass().getSimpleName(),cause.getMessage());
+        capture.offer("onWebSocketError((%s) %s)",cause.getClass().getSimpleName(),cause.getMessage());
     }
 
     @Override
     public void onWebSocketText(String message)
     {
-        capture.add("onWebSocketText(%s)",capture.q(message));
+        capture.offer("onWebSocketText(%s)",capture.q(message));
     }
 }

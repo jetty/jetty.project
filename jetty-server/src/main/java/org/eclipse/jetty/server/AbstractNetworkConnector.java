@@ -106,6 +106,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
         return super.shutdown();
     }
     
+    @Override
     protected boolean handleAcceptFailure(Throwable ex)
     {
         if (isOpen())

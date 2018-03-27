@@ -265,7 +265,7 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
   
             //ensure work has finished on the server side
-            _synchronizer.await();
+            _synchronizer.await(2*inactivePeriod, TimeUnit.SECONDS);
             
             //check that the sessions exist persisted
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(_servlet._id));
@@ -371,6 +371,8 @@ public class CreationTest
                 {
                     session = request.getSession(false);
                     assertNotNull(session);
+                    assertEquals(_id, session.getId());
+                    assertNotNull(session.getAttribute("value"));
                     assertNull(session.getAttribute("B")); //check we don't see stuff from other context
                     
                 }

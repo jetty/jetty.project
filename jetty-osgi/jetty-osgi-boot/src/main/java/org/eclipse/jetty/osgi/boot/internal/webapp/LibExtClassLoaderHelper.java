@@ -68,7 +68,7 @@ public class LibExtClassLoaderHelper
 
     
     
-    public static final Set<IFilesInJettyHomeResourcesProcessor> registeredFilesInJettyHomeResourcesProcessors = new HashSet<IFilesInJettyHomeResourcesProcessor>();
+    public static final Set<IFilesInJettyHomeResourcesProcessor> registeredFilesInJettyHomeResourcesProcessors = new HashSet<>();
 
     
     /* ------------------------------------------------------------ */
@@ -83,12 +83,12 @@ public class LibExtClassLoaderHelper
     public static ClassLoader createLibEtcClassLoader(File jettyHome, ClassLoader parentClassLoader) throws MalformedURLException
     {
         if (jettyHome == null) { return parentClassLoader; }
-        ArrayList<URL> urls = new ArrayList<URL>();
+        ArrayList<URL> urls = new ArrayList<>();
         File jettyResources = new File(jettyHome, "resources");
         if (jettyResources.exists())
         {
             // make sure it contains something else than README:
-            Map<String, File> jettyResFiles = new HashMap<String, File>();
+            Map<String, File> jettyResFiles = new HashMap<>();
             for (File f : jettyResources.listFiles())
             {
                 jettyResFiles.put(f.getName(), f);
@@ -143,7 +143,7 @@ public class LibExtClassLoaderHelper
     throws MalformedURLException
     {
         if (jarsContainerOrJars == null && otherJarsOrFolder == null) { return parentClassLoader; }
-        List<URL> urls = new ArrayList<URL>();
+        List<URL> urls = new ArrayList<>();
         if (otherJarsOrFolder != null)
         {
             urls.addAll(otherJarsOrFolder);

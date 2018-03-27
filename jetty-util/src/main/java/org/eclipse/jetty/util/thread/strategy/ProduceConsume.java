@@ -90,7 +90,7 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
             }
 
             // Run the task.
-            Invocable.invokePreferNonBlocking(task);
+            task.run();
         }
     }
 

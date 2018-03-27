@@ -592,76 +592,91 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             return _endp.isOptimizedForDirectBuffers();
         }
 
+        @Override
         public InetSocketAddress getLocalAddress()
         {
             return _local;
         }
 
+        @Override
         public InetSocketAddress getRemoteAddress()
         {
             return _remote;
         }
 
+        @Override
         public boolean isOpen()
         {
             return _endp.isOpen();
         }
 
+        @Override
         public long getCreatedTimeStamp()
         {
             return _endp.getCreatedTimeStamp();
         }
 
+        @Override
         public void shutdownOutput()
         {
             _endp.shutdownOutput();
         }
 
+        @Override
         public boolean isOutputShutdown()
         {
             return _endp.isOutputShutdown();
         }
 
+        @Override
         public boolean isInputShutdown()
         {
             return _endp.isInputShutdown();
         }
 
+        @Override
         public void close()
         {
             _endp.close();
         }
 
+        @Override
         public int fill(ByteBuffer buffer) throws IOException
         {
             return _endp.fill(buffer);
         }
 
+        @Override
         public boolean flush(ByteBuffer... buffer) throws IOException
         {
             return _endp.flush(buffer);
         }
 
+        @Override
         public Object getTransport()
         {
             return _endp.getTransport();
         }
 
+        @Override
         public long getIdleTimeout()
         {
             return _endp.getIdleTimeout();
         }
 
+        @Override
         public void setIdleTimeout(long idleTimeout)
         {
             _endp.setIdleTimeout(idleTimeout);
         }
 
+        @Override
         public void fillInterested(Callback callback) throws ReadPendingException
         {
             _endp.fillInterested(callback);
         }
 
+        @Override
         public boolean tryFillInterested(Callback callback)
         {
             return _endp.tryFillInterested(callback);
@@ -673,26 +688,31 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             return _endp.isFillInterested();
         }
 
+        @Override
         public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
         {
             _endp.write(callback,buffers);
         }
 
+        @Override
         public Connection getConnection()
         {
             return _endp.getConnection();
         }
 
+        @Override
         public void setConnection(Connection connection)
         {
             _endp.setConnection(connection);
         }
 
+        @Override
         public void onOpen()
         {
             _endp.onOpen();
         }
 
+        @Override
         public void onClose()
         {
             _endp.onClose();

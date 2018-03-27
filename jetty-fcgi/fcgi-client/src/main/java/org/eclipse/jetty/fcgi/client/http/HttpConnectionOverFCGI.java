@@ -127,7 +127,9 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     private void releaseBuffer(ByteBuffer buffer)
     {
-        assert this.buffer == buffer;
+        @SuppressWarnings("ReferenceEquality")
+        boolean isCurrentBuffer = (this.buffer == buffer);
+        assert(isCurrentBuffer);
         HttpClient client = destination.getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
         bufferPool.release(buffer);

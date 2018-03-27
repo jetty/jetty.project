@@ -19,6 +19,8 @@
 package org.eclipse.jetty.client;
 
 import java.nio.channels.Selector;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,14 +32,37 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class LivelockTest
 {
+    @Parameterized.Parameters(name = "server={0}, client={1}")
+    public static List<Object[]> data()
+    {
+        List<Object[]> data = new ArrayList<>();
+        // Server-live-lock, Client-live-lock
+        data.add(new Object[] { true, true });
+        data.add(new Object[] { true, false });
+        data.add(new Object[] { false, true });
+        data.add(new Object[] { false, false });
+        return data;
+    }
+
+    @Parameterized.Parameter(0)
+    public boolean serverLiveLock;
+
+    @Parameterized.Parameter(1)
+    public boolean clientLiveLock;
+
     private Server server;
     private ServerConnector connector;
     private HttpClient client;
@@ -73,7 +98,7 @@ public class LivelockTest
         // ManagedSelectors that submit themselves in an attempt to cause a live lock
         // as there will always be an action available to run.
         
-        int count = 25;
+        int count = 5;
         HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
         client = new HttpClient(transport, null);
         client.setMaxConnectionsPerDestination(2 * count);
@@ -88,34 +113,21 @@ public class LivelockTest
         
         AtomicBoolean busy = new AtomicBoolean(true);
 
-        ManagedSelector clientSelector = client.getContainedBeans(ManagedSelector.class).stream().findAny().get();
-        ManagedSelector.SelectorUpdate clientLivelock = new ManagedSelector.SelectorUpdate()
+        if (clientLiveLock)
         {
-            @Override 
-            public void update(Selector selector)
-            {
-                sleep(10);
-                if (busy.get())
-                    clientSelector.submit(this); 
-            }
-        };
-        clientSelector.submit(clientLivelock);
-        
-        ManagedSelector serverSelector = connector.getContainedBeans(ManagedSelector.class).stream().findAny().get();
-        ManagedSelector.SelectorUpdate serverLivelock = new ManagedSelector.SelectorUpdate()
+            ManagedSelector clientSelector = client.getContainedBeans(ManagedSelector.class).stream().findAny().get();
+            busyLiveLock(busy, clientSelector);
+        }
+
+        if (serverLiveLock)
         {
-            @Override 
-            public void update(Selector selector)
-            {
-                sleep(10);
-                if (busy.get())
-                    serverSelector.submit(this); 
-            }
-        };
-        serverSelector.submit(serverLivelock);
+            ManagedSelector serverSelector = connector.getContainedBeans(ManagedSelector.class).stream().findAny().get();
+            busyLiveLock(busy, serverSelector);
+        }
 
         int requestRate = 5;
         long pause = 1000 / requestRate;
+        Logger clientLog = Log.getLogger("TESTClient");
         CountDownLatch latch = new CountDownLatch(count);
         for (int i = 0; i < count; ++i)
         {
@@ -125,6 +137,13 @@ public class LivelockTest
                     {
                         if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
                             latch.countDown();
+                        else
+                        {
+                            if(result.getRequestFailure() != null)
+                                clientLog.warn(result.getRequestFailure());
+                            if(result.getResponseFailure() != null)
+                                clientLog.warn(result.getResponseFailure());
+                        }
                     });
             sleep(pause);
         }
@@ -134,11 +153,26 @@ public class LivelockTest
         busy.set(false);
     }
 
-    private void sleep(long time)
+    private void busyLiveLock(AtomicBoolean busy, ManagedSelector managedSelector)
+    {
+        ManagedSelector.SelectorUpdate liveLock = new ManagedSelector.SelectorUpdate()
+        {
+            @Override
+            public void update(Selector selector)
+            {
+                sleep(10);
+                if (busy.get())
+                    managedSelector.submit(this);
+            }
+        };
+        managedSelector.submit(liveLock);
+    }
+
+    private void sleep(long millis)
     {
         try
         {
-            Thread.sleep(time);
+            TimeUnit.MILLISECONDS.sleep(millis);
         }
         catch (InterruptedException x)
         {

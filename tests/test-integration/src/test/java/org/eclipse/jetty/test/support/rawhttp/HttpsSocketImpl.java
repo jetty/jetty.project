@@ -49,6 +49,7 @@ public class HttpsSocketImpl implements HttpSocket
         @SuppressWarnings("unused")
         HostnameVerifier hostnameVerifier = new HostnameVerifier()
         {
+            @Override
             public boolean verify(String urlHostName, SSLSession session)
             {
                 LOG.warn("Warning: URL Host: " + urlHostName + " vs." + session.getPeerHost());
@@ -72,6 +73,7 @@ public class HttpsSocketImpl implements HttpSocket
         
     }
 
+    @Override
     public Socket connect(InetAddress host, int port) throws IOException
     {
         SSLSocket sslsock = (SSLSocket)sslfactory.createSocket();

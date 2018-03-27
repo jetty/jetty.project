@@ -211,7 +211,9 @@ public class StdErrLog extends AbstractLogger
      */
     public StdErrLog(String name, Properties props)
     {
-        if (props!=null && props!=Log.__props)
+        @SuppressWarnings("ReferenceEquality")
+        boolean sameObject = (props!=Log.__props);
+        if (props!=null && sameObject)
             Log.__props.putAll(props);
         _name = name == null?"":name;
         _abbrevname = condensePackageString(this._name);
@@ -240,6 +242,7 @@ public class StdErrLog extends AbstractLogger
         }        
     }
 
+    @Override
     public String getName()
     {
         return _name;
@@ -288,6 +291,7 @@ public class StdErrLog extends AbstractLogger
         _source = source;
     }
 
+    @Override
     public void warn(String msg, Object... args)
     {
         if (_level <= LEVEL_WARN)
@@ -298,11 +302,13 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
+    @Override
     public void warn(Throwable thrown)
     {
         warn("",thrown);
     }
 
+    @Override
     public void warn(String msg, Throwable thrown)
     {
         if (_level <= LEVEL_WARN)
@@ -313,6 +319,7 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
+    @Override
     public void info(String msg, Object... args)
     {
         if (_level <= LEVEL_INFO)
@@ -323,11 +330,13 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
+    @Override
     public void info(Throwable thrown)
     {
         info("",thrown);
     }
 
+    @Override
     public void info(String msg, Throwable thrown)
     {
         if (_level <= LEVEL_INFO)
@@ -339,6 +348,7 @@ public class StdErrLog extends AbstractLogger
     }
 
     @ManagedAttribute("is debug enabled for root logger Log.LOG")
+    @Override
     public boolean isDebugEnabled()
     {
         return (_level <= LEVEL_DEBUG);
@@ -397,6 +407,7 @@ public class StdErrLog extends AbstractLogger
         this._stderr = stream==System.err?null:stream;
     }
 
+    @Override
     public void debug(String msg, Object... args)
     {
         if (_level <= LEVEL_DEBUG)
@@ -407,6 +418,7 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
+    @Override
     public void debug(String msg, long arg)
     {
         if (isDebugEnabled())
@@ -417,11 +429,13 @@ public class StdErrLog extends AbstractLogger
         }
     }
     
+    @Override
     public void debug(Throwable thrown)
     {
         debug("",thrown);
     }
 
+    @Override
     public void debug(String msg, Throwable thrown)
     {
         if (_level <= LEVEL_DEBUG)
@@ -672,6 +686,7 @@ public class StdErrLog extends AbstractLogger
         return s.toString();
     }
 
+    @Override
     public void ignore(Throwable ignored)
     {
         if (_level <= LEVEL_ALL)

@@ -22,8 +22,8 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 
 import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -37,8 +37,8 @@ import org.junit.Assert;
 public class IncomingFramesCapture implements IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(IncomingFramesCapture.class);
-    private EventQueue<WebSocketFrame> frames = new EventQueue<>();
-    private EventQueue<Throwable> errors = new EventQueue<>();
+    private LinkedBlockingQueue<WebSocketFrame> frames = new LinkedBlockingQueue<>();
+    private LinkedBlockingQueue<Throwable> errors = new LinkedBlockingQueue<>();
 
     public void assertErrorCount(int expectedCount)
     {

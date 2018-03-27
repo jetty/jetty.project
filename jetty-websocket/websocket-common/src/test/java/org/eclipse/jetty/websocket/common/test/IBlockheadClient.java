@@ -21,9 +21,9 @@ package org.eclipse.jetty.websocket.common.test;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 /**
@@ -37,6 +37,7 @@ public interface IBlockheadClient extends AutoCloseable
 
     public boolean awaitDisconnect(long timeout, TimeUnit unit) throws InterruptedException;
 
+    @Override
     public void close();
 
     public void close(int statusCode, String message);
@@ -55,7 +56,7 @@ public interface IBlockheadClient extends AutoCloseable
 
     public InetSocketAddress getRemoteSocketAddress();
 
-    public EventQueue<WebSocketFrame> readFrames(int expectedFrameCount, int timeoutDuration, TimeUnit timeoutUnit) throws Exception;
+    public LinkedBlockingQueue<WebSocketFrame> getFrameQueue();
 
     public HttpResponse readResponseHeader() throws IOException;
 

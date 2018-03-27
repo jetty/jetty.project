@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.LeakDetector;
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -59,8 +60,8 @@ public abstract class AbstractHttpClientServerTest
 
         ServerFCGIConnectionFactory fcgiConnectionFactory = new ServerFCGIConnectionFactory(new HttpConfiguration());
         serverBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-        connector = new ServerConnector(server, null, null, serverBufferPool,
-                1, Math.max(1, Runtime.getRuntime().availableProcessors() / 2), fcgiConnectionFactory);
+        connector = new ServerConnector( server, null, null, serverBufferPool,
+                                         1, Math.max( 1, ProcessorUtils.availableProcessors() / 2), fcgiConnectionFactory);
 //        connector.setPort(9000);
 
         server.addConnector(connector);

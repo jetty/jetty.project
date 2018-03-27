@@ -40,6 +40,7 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
         _wac = wac;
     }
     
+    @Override
     public void doHandle (Class<?> clazz)
     {
         Resources resources = (Resources)clazz.getAnnotation(Resources.class);

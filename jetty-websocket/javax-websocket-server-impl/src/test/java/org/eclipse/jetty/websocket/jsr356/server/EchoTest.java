@@ -18,22 +18,23 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.server.EchoCase.PartialBinary;
 import org.eclipse.jetty.websocket.jsr356.server.EchoCase.PartialText;
 import org.eclipse.jetty.websocket.jsr356.server.samples.binary.ByteBufferSocket;
@@ -248,14 +249,13 @@ public class EchoTest
     public EchoTest(EchoCase testcase)
     {
         this.testcase = testcase;
-        System.err.println(testcase);
     }
 
     @Test(timeout=2000)
     public void testEcho() throws Exception
     {
         int messageCount = testcase.getMessageCount();
-        EchoClientSocket socket = new EchoClientSocket(messageCount);
+        EchoClientSocket socket = new EchoClientSocket();
         URI toUri = serverUri.resolve(testcase.path.substring(1));
 
         try
@@ -284,13 +284,13 @@ public class EchoTest
             }
 
             // Collect Responses
-            socket.awaitAllEvents(1,TimeUnit.SECONDS);
-            EventQueue<String> received = socket.eventQueue;
+            LinkedBlockingQueue<String> received = socket.eventQueue;
 
             // Validate Responses
             for (String expected : testcase.expectedStrings)
             {
-                Assert.assertThat("Received Echo Responses",received,contains(expected));
+                String actual = received.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+                Assert.assertThat("Received Echo Responses",actual,containsString(expected));
             }
         }
         finally

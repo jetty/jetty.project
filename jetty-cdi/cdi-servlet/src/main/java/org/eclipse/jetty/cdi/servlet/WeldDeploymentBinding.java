@@ -30,11 +30,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
 @Deprecated
 public class WeldDeploymentBinding implements AppLifeCycle.Binding
 {
+    @Override
     public String[] getBindingTargets()
     {
         return new String[] { "deploying" };
     }
 
+    @Override
     public void processBinding(Node node, App app) throws Exception
     {
         ContextHandler handler = app.getContextHandler();

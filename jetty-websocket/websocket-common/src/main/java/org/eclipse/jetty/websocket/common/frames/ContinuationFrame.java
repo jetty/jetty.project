@@ -30,6 +30,7 @@ public class ContinuationFrame extends DataFrame
         super(OpCode.CONTINUATION);
     }
 
+    @Override
     public ContinuationFrame setPayload(ByteBuffer buf)
     {
         super.setPayload(buf);

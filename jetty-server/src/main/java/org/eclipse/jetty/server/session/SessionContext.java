@@ -78,6 +78,7 @@ public class SessionContext
         return _vhost;
     }
     
+    @Override
     public String toString ()
     {
         return _workerName+"_"+_canonicalContextPath +"_"+_vhost;

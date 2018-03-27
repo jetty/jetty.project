@@ -36,6 +36,7 @@ import static org.junit.Assert.assertTrue;
 public class StringUtilTest
 {
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testAsciiToLowerCase()
     {
         String lc="\u0690bc def 1\u06903";
@@ -88,6 +89,7 @@ public class StringUtilTest
     }
 
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testReplace()
     {
         String s="\u0690bc \u0690bc \u0690bc";
@@ -100,6 +102,7 @@ public class StringUtilTest
     }
 
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testUnquote()
     {
         String uq =" not quoted ";
@@ -112,9 +115,10 @@ public class StringUtilTest
 
 
     @Test
+    @SuppressWarnings("ReferenceEquality")
     public void testNonNull()
     {
-        String nn="";
+        String nn="non empty string";
         assertTrue(nn==StringUtil.nonNull(nn));
         assertEquals("",StringUtil.nonNull(null));
     }

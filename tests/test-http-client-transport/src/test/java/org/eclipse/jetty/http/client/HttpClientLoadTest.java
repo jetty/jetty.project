@@ -56,6 +56,7 @@ import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LeakDetector;
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -86,7 +87,7 @@ public class HttpClientLoadTest extends AbstractTest
             unixSocketConnector.setUnixSocket( sockFile.toString() );
             return unixSocketConnector;
         }
-        int cores = Runtime.getRuntime().availableProcessors();
+        int cores = ProcessorUtils.availableProcessors();
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         byteBufferPool = new LeakTrackingByteBufferPool(byteBufferPool);
         return new ServerConnector(server, null, null, byteBufferPool,

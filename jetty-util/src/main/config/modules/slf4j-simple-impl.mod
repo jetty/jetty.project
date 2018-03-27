@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Provides SLF4J simple logging implementation.
 To receive jetty logs enable the jetty-slf4j module.

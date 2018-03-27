@@ -88,6 +88,7 @@ public class InvokerTest
 
     public static class TestServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             response.getWriter().append("Invoked TestServlet!");

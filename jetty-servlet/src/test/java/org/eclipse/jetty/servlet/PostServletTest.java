@@ -55,6 +55,7 @@ public class PostServletTest
 
     public static class BasicReadPostServlet extends HttpServlet
     {
+        @Override
         protected void doPost(HttpServletRequest request, HttpServletResponse response)
         {
             posted.set(true);

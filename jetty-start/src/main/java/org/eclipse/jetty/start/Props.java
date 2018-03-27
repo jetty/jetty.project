@@ -48,20 +48,13 @@ public final class Props implements Iterable<Prop>
     {
         public String key;
         public String value;
-        public String origin;
-        public Prop overrides;
+        public String source;
 
-        public Prop(String key, String value, String origin)
+        public Prop(String key, String value, String source)
         {
             this.key = key;
             this.value = value;
-            this.origin = origin;
-        }
-
-        public Prop(String key, String value, String origin, Prop overrides)
-        {
-            this(key,value,origin);
-            this.overrides = overrides;
+            this.source = source;
         }
 
         @Override
@@ -72,15 +65,12 @@ public final class Props implements Iterable<Prop>
             builder.append(key);
             builder.append(", value=");
             builder.append(value);
-            builder.append(", origin=");
-            builder.append(origin);
-            builder.append(", overrides=");
-            builder.append(overrides);
+            builder.append(", source=");
+            builder.append(source);
             builder.append("]");
             return builder.toString();
         }
     }
-
     public static final String ORIGIN_SYSPROP = "<system-property>";
     
     public static String getValue(String arg)
@@ -342,16 +332,7 @@ public final class Props implements Iterable<Prop>
 
     public void setProperty(String key, String value, String origin)
     {
-        Prop prop = props.get(key);
-        if (prop == null)
-        {
-            prop = new Prop(key,value,origin);
-        }
-        else
-        {
-            prop = new Prop(key,value,origin,prop);
-        }
-        props.put(key,prop);
+        props.put(key,new Prop(key,value,origin));
     }
 
     public int size()

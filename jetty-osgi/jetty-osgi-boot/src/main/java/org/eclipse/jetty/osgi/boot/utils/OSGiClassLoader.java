@@ -62,6 +62,7 @@ public class OSGiClassLoader extends URLClassLoader
      * 
      * Copied from WebAppClassLoader
      */
+    @Override
     public URL getResource(String name)
     {
         URL url= null;
@@ -165,7 +166,7 @@ public class OSGiClassLoader extends URLClassLoader
      */
     private List<URL> toList(Enumeration<URL> e, Enumeration<URL> e2)
     {
-        List<URL> list = new ArrayList<URL>();
+        List<URL> list = new ArrayList<>();
         while (e != null && e.hasMoreElements())
             list.add(e.nextElement());
         while (e2 != null && e2.hasMoreElements())

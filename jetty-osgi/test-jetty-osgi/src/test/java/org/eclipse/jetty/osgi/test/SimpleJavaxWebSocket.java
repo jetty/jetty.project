@@ -20,15 +20,15 @@ package org.eclipse.jetty.osgi.test;
 
 
 import static org.junit.Assert.fail;
-import java.io.IOException;
+
 import java.util.concurrent.CountDownLatch;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
+import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
-import javax.websocket.OnError;
 import javax.websocket.Session;
 
 @ClientEndpoint(

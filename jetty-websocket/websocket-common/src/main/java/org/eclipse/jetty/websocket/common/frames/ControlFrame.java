@@ -35,6 +35,7 @@ public abstract class ControlFrame extends WebSocketFrame
         super(opcode);
     }
 
+    @Override
     public void assertValid()
     {
         if (isControlFrame())
@@ -109,6 +110,7 @@ public abstract class ControlFrame extends WebSocketFrame
         return true;
     }
 
+    @Override
     public boolean isControlFrame()
     {
         return true;

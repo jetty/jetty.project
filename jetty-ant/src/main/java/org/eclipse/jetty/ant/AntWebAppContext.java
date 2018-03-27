@@ -627,6 +627,7 @@ public class AntWebAppContext extends WebAppContext
     /**
      * 
      */
+    @Override
     public void doStart()
     {
         try
@@ -662,6 +663,7 @@ public class AntWebAppContext extends WebAppContext
         }
     }
 
+    @Override
     public void doStop()
     {
         try

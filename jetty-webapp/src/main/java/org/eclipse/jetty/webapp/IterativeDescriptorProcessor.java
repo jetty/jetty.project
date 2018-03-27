@@ -51,6 +51,7 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
     /** 
      * {@inheritDoc}
      */
+    @Override
     public void process(WebAppContext context, Descriptor descriptor)
     throws Exception
     {

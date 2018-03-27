@@ -49,6 +49,7 @@ public class HttpResponse implements Response
         return request;
     }
 
+    @Override
     public HttpVersion getVersion()
     {
         return version;
@@ -72,6 +73,7 @@ public class HttpResponse implements Response
         return this;
     }
 
+    @Override
     public String getReason()
     {
         return reason;

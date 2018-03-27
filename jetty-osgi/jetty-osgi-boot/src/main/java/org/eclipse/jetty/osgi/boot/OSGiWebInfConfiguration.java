@@ -95,7 +95,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         // 2. DeployerManager.setContextAttribute CONTAINER_BUNDLE_PATTERN
         String tmp = (String)context.getAttribute(CONTAINER_BUNDLE_PATTERN);
         Pattern pattern = (tmp==null?null:Pattern.compile(tmp));
-        List<String> names = new ArrayList<String>();
+        List<String> names = new ArrayList<>();
         tmp = System.getProperty(SYS_PROP_TLD_BUNDLES);
         if (tmp != null)
         {
@@ -103,7 +103,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
             while (tokenizer.hasMoreTokens())
                 names.add(tokenizer.nextToken());
         }
-        HashSet<Resource> matchingResources = new HashSet<Resource>();
+        HashSet<Resource> matchingResources = new HashSet<>();
         if ( !names.isEmpty() || pattern != null)
         {
             Bundle[] bundles = FrameworkUtil.getBundle(OSGiWebInfConfiguration.class).getBundleContext().getBundles();
@@ -153,7 +153,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
     protected List<Resource> findJars (WebAppContext context) 
     throws Exception
     {
-        List<Resource> mergedResources = new ArrayList<Resource>();
+        List<Resource> mergedResources = new ArrayList<>();
         //get jars from WEB-INF/lib if there are any
         List<Resource> webInfJars = super.findJars(context);
         if (webInfJars != null)
@@ -163,17 +163,19 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         Bundle[] bundles = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles((Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
         if (bundles != null && bundles.length > 0)
         {
+            @SuppressWarnings("unchecked")
             Set<Bundle> fragsAndReqsBundles = (Set<Bundle>)context.getAttribute(FRAGMENT_AND_REQUIRED_BUNDLES);
             if (fragsAndReqsBundles == null)
             {
-                fragsAndReqsBundles = new HashSet<Bundle>();
+                fragsAndReqsBundles = new HashSet<>();
                 context.setAttribute(FRAGMENT_AND_REQUIRED_BUNDLES, fragsAndReqsBundles);
             }
             
+            @SuppressWarnings("unchecked")
             Set<Resource> fragsAndReqsResources = (Set<Resource>)context.getAttribute(FRAGMENT_AND_REQUIRED_RESOURCES);
             if (fragsAndReqsResources == null)
             {
-                fragsAndReqsResources = new HashSet<Resource>();
+                fragsAndReqsResources = new HashSet<>();
                 context.setAttribute(FRAGMENT_AND_REQUIRED_RESOURCES, fragsAndReqsResources);
             }
             
@@ -207,12 +209,13 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        TreeMap<String, Resource> prependedResourcesPath = new TreeMap<String, Resource>();
-        TreeMap<String, Resource> appendedResourcesPath = new TreeMap<String, Resource>();
+        TreeMap<String, Resource> prependedResourcesPath = new TreeMap<>();
+        TreeMap<String, Resource> appendedResourcesPath = new TreeMap<>();
              
         Bundle bundle = (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
         if (bundle != null)
         {
+            @SuppressWarnings("unchecked")
             Set<Bundle> fragments = (Set<Bundle>)context.getAttribute(FRAGMENT_AND_REQUIRED_BUNDLES);
             if (fragments != null && !fragments.isEmpty())
             {
@@ -238,8 +241,9 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
                 }
                 if (!appendedResourcesPath.isEmpty())
                 {
-                    LinkedHashSet<Resource> resources = new LinkedHashSet<Resource>();
+                    LinkedHashSet<Resource> resources = new LinkedHashSet<>();
                     //Add in any existing setting of extra resource dirs
+                    @SuppressWarnings("unchecked")
                     Set<Resource> resourceDirs = (Set<Resource>)context.getAttribute(WebInfConfiguration.RESOURCE_DIRS);
                     if (resourceDirs != null && !resourceDirs.isEmpty())
                         resources.addAll(resourceDirs);
@@ -272,7 +276,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
     private  List<Resource> getBundleAsResource(Bundle bundle)
     throws Exception
     {
-        List<Resource> resources = new ArrayList<Resource>();
+        List<Resource> resources = new ArrayList<>();
 
         File file = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
         if (file.isDirectory())

@@ -114,6 +114,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     /**
      * @param houseKeeper the housekeeper
      */
+    @Override
     public void setSessionHouseKeeper (HouseKeeper houseKeeper)
     {
         updateBean(_houseKeeper, houseKeeper);
@@ -125,6 +126,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     /**
      * @return the housekeeper
      */
+    @Override
     public HouseKeeper getSessionHouseKeeper()
     {
         return _houseKeeper;
@@ -474,6 +476,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void invalidateAll (String id)
     {        
         //tell all contexts that may have a session object with this id to
@@ -515,6 +518,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      * 
      * @return all session managers
      */
+    @Override
     public Set<SessionHandler> getSessionHandlers()
     {
         Set<SessionHandler> handlers = new HashSet<>();
