@@ -684,17 +684,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected IStream createLocalStream(int streamId, Promise<Stream> promise)
     {
-        while (true)
+        int maxLocalStreams = getMaxLocalStreams();
+        if (!incrementStreamCount(2, maxLocalStreams, true))
         {
-            int localCount = localStreamCount.get();
-            int maxCount = getMaxLocalStreams();
-            if (maxCount >= 0 && localCount >= maxCount)
-            {
-                promise.failed(new IllegalStateException("Max local stream count " + maxCount + " exceeded"));
-                return null;
-            }
-            if (localStreamCount.compareAndSet(localCount, localCount + 1))
-                break;
+            promise.failed(new IllegalStateException("Max local stream count " + maxLocalStreams + " exceeded"));
+            return null;
         }
 
         IStream stream = newStream(streamId, true);
@@ -716,17 +710,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     protected IStream createRemoteStream(int streamId)
     {
         // SPEC: exceeding max concurrent streams is treated as stream error.
-        while (true)
+        if (!incrementStreamCount(2, getMaxRemoteStreams(), false))
         {
-            int remoteCount = remoteStreamCount.get();
-            int maxCount = getMaxRemoteStreams();
-            if (maxCount >= 0 && remoteCount >= maxCount)
-            {
-                reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
-                return null;
-            }
-            if (remoteStreamCount.compareAndSet(remoteCount, remoteCount + 1))
-                break;
+            reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
+            return null;
         }
 
         IStream stream = newStream(streamId, false);
@@ -753,24 +740,37 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         return new HTTP2Stream(scheduler, this, streamId, local);
     }
 
+    private boolean incrementStreamCount(int halves, int maxCount, boolean local)
+    {
+        AtomicInteger counter = local ? localStreamCount : remoteStreamCount;
+        int maxHalves = 2 * maxCount + 2;
+        while (true)
+        {
+            int currentHalves = counter.get();
+            int newHalves = currentHalves + halves;
+            if (maxCount >= 0 && newHalves >= maxHalves)
+                return false;
+            if (counter.compareAndSet(currentHalves, newHalves))
+                return true;
+        }
+    }
+
+    void decrementStreamCount(int halves, boolean local)
+    {
+        AtomicInteger counter = local ? localStreamCount : remoteStreamCount;
+        counter.addAndGet(-halves);
+    }
+
     @Override
     public void removeStream(IStream stream)
     {
         IStream removed = streams.remove(stream.getId());
         if (removed != null)
         {
-            boolean local = stream.isLocal();
-            if (local)
-                localStreamCount.decrementAndGet();
-            else
-                remoteStreamCount.decrementAndGet();
-
             onStreamClosed(stream);
-
             flowControl.onStreamDestroyed(stream);
-
             if (LOG.isDebugEnabled())
-                LOG.debug("Removed {} {}", local ? "local" : "remote", stream);
+                LOG.debug("Removed {} {}", stream.isLocal() ? "local" : "remote", stream);
         }
     }
 

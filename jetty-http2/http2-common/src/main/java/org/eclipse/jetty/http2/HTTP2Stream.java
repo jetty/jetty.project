@@ -339,22 +339,35 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 {
                     CloseState newValue = local ? CloseState.LOCALLY_CLOSED : CloseState.REMOTELY_CLOSED;
                     if (closeState.compareAndSet(current, newValue))
+                    {
+                        decrementStreamCount(1);
                         return false;
+                    }
                     break;
                 }
                 case LOCALLY_CLOSED:
                 {
                     if (local)
                         return false;
-                    close();
-                    return true;
+                    if (closeState.compareAndSet(CloseState.LOCALLY_CLOSED, CloseState.CLOSED))
+                    {
+                        decrementStreamCount(1);
+                        onClose();
+                        return true;
+                    }
+                    break;
                 }
                 case REMOTELY_CLOSED:
                 {
                     if (!local)
                         return false;
-                    close();
-                    return true;
+                    if (closeState.compareAndSet(CloseState.REMOTELY_CLOSED, CloseState.CLOSED))
+                    {
+                        decrementStreamCount(1);
+                        onClose();
+                        return true;
+                    }
+                    break;
                 }
                 default:
                 {
@@ -389,8 +402,29 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public void close()
     {
-        if (closeState.getAndSet(CloseState.CLOSED) != CloseState.CLOSED)
+        int halves = 0;
+        switch (closeState.getAndSet(CloseState.CLOSED))
+        {
+            case NOT_CLOSED:
+                halves = 2;
+                break;
+            case LOCALLY_CLOSED:
+            case REMOTELY_CLOSED:
+                halves = 1;
+                break;
+            default:
+                break;
+        }
+        if (halves != 0)
+        {
+            decrementStreamCount(halves);
             onClose();
+        }
+    }
+
+    private void decrementStreamCount(int halves)
+    {
+        ((HTTP2Session)session).decrementStreamCount(halves, isLocal());
     }
 
     @Override
