@@ -21,13 +21,12 @@ package org.eclipse.jetty.util;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * An AtomicLong with additional methods to treat it has 
- * two hi/lo integers.
+ * An AtomicLong with additional methods to treat it as two hi/lo integers.
  */
 public class AtomicBiInteger extends AtomicLong
 {    
     /**
-     * @return the hi integer value
+     * @return the hi value
      */
     public int getHi()
     {
@@ -35,7 +34,7 @@ public class AtomicBiInteger extends AtomicLong
     }
     
     /**
-     * @return the lo integer value
+     * @return the lo value
      */
     public int getLo()
     {
@@ -43,12 +42,12 @@ public class AtomicBiInteger extends AtomicLong
     }
 
     /**
-     * Atomically set the hi integer value without changing
-     * the lo value. 
+     * Atomically sets the hi value without changing the lo value.
+     *
      * @param hi the new hi value
-     * @return the hi int value
+     * @return the previous hi value
      */
-    public int setHi(int hi)
+    public int getAndSetHi(int hi)
     {
         while(true)
         {
@@ -60,11 +59,12 @@ public class AtomicBiInteger extends AtomicLong
     }
 
     /**
-     * Atomically set the lo integer value without changing
-     * the hi value. 
+     * Atomically sets the lo value without changing the hi value.
+     *
      * @param lo the new lo value
+     * @return the previous lo value
      */
-    public int setLo(int lo)
+    public int getAndSetLo(int lo)
     {
         while(true)
         {
@@ -76,7 +76,8 @@ public class AtomicBiInteger extends AtomicLong
     }
     
     /**
-     * Set the hi and lo integer values.
+     * Sets the hi and lo values.
+     *
      * @param hi the new hi value
      * @param lo the new lo value
      */
@@ -86,20 +87,21 @@ public class AtomicBiInteger extends AtomicLong
     }
 
     /**
-     * Atomically sets the hi int value to the given updated value
-     * only if the current value {@code ==} the expected value.
-     * Concurrent changes to the lo value result in a retry.
-     * @param expect the expected value
-     * @param hi the new value
+     * <p>Atomically sets the hi value to the given updated value
+     * only if the current value {@code ==} the expected value.</p>
+     * <p>Concurrent changes to the lo value result in a retry.</p>
+     *
+     * @param expectHi the expected hi value
+     * @param hi the new hi value
      * @return {@code true} if successful. False return indicates that
-     * the actual value was not equal to the expected value.
+     * the actual hi value was not equal to the expected hi value.
      */
-    public boolean compareAndSetHi(int expect, int hi)
+    public boolean compareAndSetHi(int expectHi, int hi)
     {
         while(true)
         {
             long encoded = get();
-            if (getHi(encoded)!=expect)
+            if (getHi(encoded)!=expectHi)
                 return false;
             long update = encodeHi(encoded,hi);
             if (compareAndSet(encoded,update))
@@ -108,20 +110,21 @@ public class AtomicBiInteger extends AtomicLong
     }
 
     /**
-     * Atomically sets the lo int value to the given updated value
-     * only if the current value {@code ==} the expected value.
-     * Concurrent changes to the hi value result in a retry.
-     * @param expect the expected value
-     * @param lo the new value
+     * <p>Atomically sets the lo value to the given updated value
+     * only if the current value {@code ==} the expected value.</p>
+     * <p>Concurrent changes to the hi value result in a retry.</p>
+     *
+     * @param expectLo the expected lo value
+     * @param lo the new lo value
      * @return {@code true} if successful. False return indicates that
-     * the actual value was not equal to the expected value.
+     * the actual lo value was not equal to the expected lo value.
      */
-    public boolean compareAndSetLo(int expect, int lo)
+    public boolean compareAndSetLo(int expectLo, int lo)
     {
         while(true)
         {
             long encoded = get();
-            if (getLo(encoded)!=expect)
+            if (getLo(encoded)!=expectLo)
                 return false;
             long update = encodeLo(encoded,lo);
             if (compareAndSet(encoded,update))
@@ -130,30 +133,31 @@ public class AtomicBiInteger extends AtomicLong
     }
 
     /**
-     * Atomically sets the values to the given updated values
-     * only if the current encoded value {@code ==} the expected value.
-     * @param expect the expected encoded values
+     * Atomically sets the values to the given updated values only if
+     * the current encoded value {@code ==} the expected encoded value.
+     *
+     * @param encoded the expected encoded value
      * @param hi the new hi value
      * @param lo the new lo value
      * @return {@code true} if successful. False return indicates that
-     * the actual value was not equal to the expected value.
+     * the actual encoded value was not equal to the expected encoded value.
      */
-    public boolean compareAndSet(long expect, int hi, int lo)
+    public boolean compareAndSet(long encoded, int hi, int lo)
     {
-        long encoded = get();
         long update = encode(hi,lo);
         return compareAndSet(encoded,update);
     }
 
     /**
-     * Atomically sets the values to the given updated values
-     * only if the current encoded value {@code ==} the expected value.
-     * @param expectHi the expected hi values
+     * Atomically sets the hi and lo values to the given updated values only if
+     * the current hi and lo values {@code ==} the expected hi and lo values.
+     *
+     * @param expectHi the expected hi value
      * @param hi the new hi value
-     * @param expectLo the expected lo values
+     * @param expectLo the expected lo value
      * @param lo the new lo value
      * @return {@code true} if successful. False return indicates that
-     * the actual value was not equal to the expected value.
+     * the actual hi and lo values were not equal to the expected hi and lo value.
      */
     public boolean compareAndSet(int expectHi, int hi, int expectLo, int lo)
     {
@@ -163,13 +167,12 @@ public class AtomicBiInteger extends AtomicLong
     }
 
     /**
-     * Atomically updates the current hi value with the results of
-     * applying the given delta, returning the updated value. 
+     * Atomically adds the given delta to the current hi value, returning the updated hi value.
      *
      * @param delta the delta to apply
-     * @return the updated value
+     * @return the updated hi value
      */
-    public int updateHi(int delta)
+    public int addAndGetHi(int delta)
     {
         while(true)
         {
@@ -182,13 +185,12 @@ public class AtomicBiInteger extends AtomicLong
     }  
 
     /**
-     * Atomically updates the current lo value with the results of
-     * applying the given delta, returning the updated value. 
+     * Atomically adds the given delta to the current lo value, returning the updated lo value.
      *
      * @param delta the delta to apply
-     * @return the updated value
+     * @return the updated lo value
      */
-    public int updateLo(int delta)
+    public int addAndGetLo(int delta)
     {
         while(true)
         {
@@ -201,13 +203,12 @@ public class AtomicBiInteger extends AtomicLong
     }
 
     /**
-     * Atomically updates the current values with the results of
-     * applying the given deltas. 
+     * Atomically adds the given deltas to the current hi and lo values.
      *
      * @param deltaHi the delta to apply to the hi value
      * @param deltaLo the delta to apply to the lo value
      */
-    public void update(int deltaHi, int deltaLo)
+    public void add(int deltaHi, int deltaLo)
     {
         while(true)
         {
@@ -219,73 +220,66 @@ public class AtomicBiInteger extends AtomicLong
     }    
     
     /**
-     * Get a hi int value from an encoded long
+     * Gets a hi value from the given encoded value.
+     *
      * @param encoded the encoded value
-     * @return the hi int value
+     * @return the hi value
      */
     public static int getHi(long encoded)
     {
-        return (int) ((encoded>>32)&0xFFFF_FFFFl);
+        return (int) ((encoded>>32)&0xFFFF_FFFFL);
     }
 
     /**
-     * Get a lo int value from an encoded long
+     * Gets a lo value from the given encoded value.
+     *
      * @param encoded the encoded value
-     * @return the lo int value
+     * @return the lo value
      */
     public static int getLo(long encoded)
     {
-        return (int) (encoded&0xFFFF_FFFFl);
+        return (int) (encoded&0xFFFF_FFFFL);
     }
     
     /**
-     * Encode hi and lo int values into a long
-     * @param hi the hi int value
-     * @param lo the lo int value
+     * Encodes hi and lo values into a long.
+     *
+     * @param hi the hi value
+     * @param lo the lo value
      * @return the encoded value
-     *  
      */
     public static long encode(int hi, int lo)
     {
-        long h = ((long)hi)&0xFFFF_FFFFl;
-        long l = ((long)lo)&0xFFFF_FFFFl;
-        long encoded = (h<<32)+l;
-        return encoded;
+        long h = ((long)hi)&0xFFFF_FFFFL;
+        long l = ((long)lo)&0xFFFF_FFFFL;
+        return (h<<32)+l;
     }
 
-
     /**
-     * Encode hi int values into an already encoded long
+     * Sets the hi value into the given encoded value.
+     *
      * @param encoded the encoded value
-     * @param hi the hi int value
-     * @return the encoded value
-     *  
+     * @param hi the hi value
+     * @return the new encoded value
      */
     public static long encodeHi(long encoded, int hi)
     {
-        long h = ((long)hi)&0xFFFF_FFFFl;
-        long l = encoded&0xFFFF_FFFFl;
-        encoded = (h<<32)+l;
-        return encoded;
+        long h = ((long)hi)&0xFFFF_FFFFL;
+        long l = getLo(encoded);
+        return (h<<32)+l;
     }
     
     /**
-     * Encode lo int values into an already encoded long
+     * Sets the lo value into the given encoded value.
+     *
      * @param encoded the encoded value
-     * @param lo the lo int value
-     * @return the encoded value
-     *  
+     * @param lo the lo value
+     * @return the new encoded value
      */
     public static long encodeLo(long encoded, int lo)
     {
-        long h = (encoded>>32)&0xFFFF_FFFFl;
-        long l = ((long)lo)&0xFFFF_FFFFl;
-        encoded = (h<<32)+l;
-        return encoded;
+        long h = getHi(encoded);
+        long l = ((long)lo)&0xFFFF_FFFFL;
+        return (h<<32)+l;
     }
-    
-    
-    
-    
-    
 }
