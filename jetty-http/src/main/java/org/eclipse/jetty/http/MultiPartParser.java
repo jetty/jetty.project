@@ -304,10 +304,17 @@ public class MultiPartParser
             if (_state == State.EPILOGUE)
             {
                 _state = State.END;
+                
+                if(LOG.isDebugEnabled())
+                    LOG.debug("messageComplete {}", this);
+                
                 return _handler.messageComplete();
             }
             else
             {
+                if(LOG.isDebugEnabled())
+                    LOG.debug("earlyEOF {}", this);
+                
                 _handler.earlyEOF();
                 return true;
             }
@@ -366,6 +373,10 @@ public class MultiPartParser
             if (b == '\n')
             {
                 setState(State.BODY_PART);
+                
+                if(LOG.isDebugEnabled())
+                    LOG.debug("startPart {}",this);
+                
                 _handler.startPart();
                 return;
             }
@@ -449,6 +460,10 @@ public class MultiPartParser
                             handleField();
                             setState(State.FIRST_OCTETS);
                             _partialBoundary = 2; // CRLF is option for empty parts
+                            
+                            if(LOG.isDebugEnabled())
+                                LOG.debug("headerComplete {}", this);
+                            
                             if (_handler.headerComplete())
                                 return true;
                             break;
@@ -484,7 +499,9 @@ public class MultiPartParser
 
                         case LINE_FEED:
                         {
-                            // TODO warn? debug?
+                            if(LOG.isDebugEnabled())
+                                LOG.debug("Line Feed in Name {}", this);
+                            
                             handleField();
                             setState(FieldState.FIELD);
                             break;
@@ -580,6 +597,9 @@ public class MultiPartParser
     /* ------------------------------------------------------------------------------- */
     private void handleField()
     {
+        if(LOG.isDebugEnabled())
+            LOG.debug("parsedField:  _fieldName={} _fieldValue={} {}", _fieldName, _fieldValue, this);
+        
         if (_fieldName != null && _fieldValue != null)
             _handler.parsedField(_fieldName,_fieldValue);
         _fieldName = _fieldValue = null;
@@ -601,6 +621,10 @@ public class MultiPartParser
                     buffer.position(buffer.position() + _delimiterSearch.getLength() - _partialBoundary);
                     setState(State.DELIMITER);
                     _partialBoundary = 0;
+                    
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("Content={}, Last={} {}",BufferUtil.toDetailString(BufferUtil.EMPTY_BUFFER),true,this);
+                    
                     return _handler.content(BufferUtil.EMPTY_BUFFER,true);
                 }
 
@@ -620,6 +644,9 @@ public class MultiPartParser
                 content.limit(_partialBoundary);
                 _partialBoundary = 0;
 
+                if(LOG.isDebugEnabled())
+                    LOG.debug("Content={}, Last={} {}",BufferUtil.toDetailString(content),false,this);
+                
                 if (_handler.content(content,false))
                     return true;
             }
@@ -635,6 +662,9 @@ public class MultiPartParser
             buffer.position(delimiter - buffer.arrayOffset() + _delimiterSearch.getLength());
             setState(State.DELIMITER);
 
+            if(LOG.isDebugEnabled())
+                LOG.debug("Content={}, Last={} {}",BufferUtil.toDetailString(content),true,this);
+            
             return _handler.content(content,true);
         }
 
@@ -645,12 +675,19 @@ public class MultiPartParser
             ByteBuffer content = buffer.slice();
             content.limit(content.limit() - _partialBoundary);
 
+            if(LOG.isDebugEnabled())
+                LOG.debug("Content={}, Last={} {}",BufferUtil.toDetailString(content),false,this);
+            
             BufferUtil.clear(buffer);
             return _handler.content(content,false);
         }
 
         // There is normal content with no delimiter
         ByteBuffer content = buffer.slice();
+        
+        if(LOG.isDebugEnabled())
+            LOG.debug("Content={}, Last={} {}",BufferUtil.toDetailString(content),false,this);
+        
         BufferUtil.clear(buffer);
         return _handler.content(content,false);
     }

@@ -728,7 +728,6 @@ public class MultiPartFormInputStream
                 catch (IOException e)
                 {
                     _err = e;
-                    reset();
                     return true;
                 }
             }
@@ -744,10 +743,22 @@ public class MultiPartFormInputStream
                     _err = e;
                     return true;
                 }
-                reset();
             }
 
             return false;
+        }
+
+        @Override
+        public void startPart() 
+        {
+            reset();
+        }
+        
+        @Override
+        public void earlyEOF()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Early EOF {}",MultiPartFormInputStream.this);
         }
 
         public void reset()
@@ -757,14 +768,6 @@ public class MultiPartFormInputStream
             contentType = null;
             headers = new MultiMap<>();
         }
-
-        @Override
-        public void earlyEOF()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Early EOF {}",MultiPartFormInputStream.this);
-        }
-
     }
 
     public void setDeleteOnExit(boolean deleteOnExit)
