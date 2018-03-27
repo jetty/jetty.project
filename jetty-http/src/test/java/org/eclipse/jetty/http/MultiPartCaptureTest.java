@@ -71,8 +71,8 @@ public class MultiPartCaptureTest
 
         // Capture of raw request body contents from Apache HttpComponents 4.5.5
         ret.add(new String[]{"multipart-text-files"});
-        ret.add(new String[]{"multipart-base64"});
-        ret.add(new String[]{"multipart-base64-long"});
+        // ret.add(new String[]{"multipart-base64"});  // base64 transfer encoding deprecated
+        // ret.add(new String[]{"multipart-base64-long"}); // base64 transfer encoding deprecated
         ret.add(new String[]{"multipart-complex"});
         ret.add(new String[]{"multipart-duplicate-names-1"});
         ret.add(new String[]{"multipart-encoding-mess"});

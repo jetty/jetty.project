@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -625,13 +626,17 @@ public class MultiPartFormInputStream
 
         @Override
         public void parsedField(String key, String value)
-        {
+        {            
             // Add to headers and mark if one of these fields. //
             headers.put(key.toLowerCase(Locale.ENGLISH),value);
             if (key.equalsIgnoreCase("content-disposition"))
                 contentDisposition = value;
             else if (key.equalsIgnoreCase("content-type"))
                 contentType = value;
+            
+            // Transfer encoding is not longer considers as it is deprecated as per
+            // https://tools.ietf.org/html/rfc7578#section-4.7
+
         }
 
         @Override
