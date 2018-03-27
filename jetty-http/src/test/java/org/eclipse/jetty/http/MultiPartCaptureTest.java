@@ -231,10 +231,8 @@ public class MultiPartCaptureTest
         // Evaluate expected contents checksums
         for (NameValue expected : multipartExpectations.partSha1sums)
         {
-            System.err.println(expected.name);
             Part part = getPart.apply(expected.name);
             assertThat("Part[" + expected.name + "]", part, is(notNullValue()));
-            System.err.println(BufferUtil.toDetailString(BufferUtil.toBuffer(IO.readBytes(part.getInputStream()))));
             MessageDigest digest = MessageDigest.getInstance("SHA1");
             try (InputStream partInputStream = part.getInputStream();
                     NoOpOutputStream noop = new NoOpOutputStream();

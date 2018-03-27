@@ -26,87 +26,15 @@ import java.util.EnumSet;
 import org.eclipse.jetty.http.HttpParser.RequestHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.SearchPattern;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
-/*
- * RFC2046 and RFC7578
+/** A parser for MultiPart content type.
  * 
- * example:
-------WebKitFormBoundaryzWHSH95mOxQwmKln
-Content-Disposition: form-data; name="TextField"
-
-Text value:;"' x ---- 
-------WebKitFormBoundaryzWHSH95mOxQwmKln
-Content-Disposition: form-data; name="file1"; filename="file with :%22; in name.txt"
-Content-Type: text/plain
-
-
-------WebKitFormBoundaryzWHSH95mOxQwmKln
-Content-Disposition: form-data; name="file2"; filename="ManagedSelector.java"
-Content-Type: text/x-java
-
-
-------WebKitFormBoundaryzWHSH95mOxQwmKln
-Content-Disposition: form-data; name="Action"
-
-Submit
-------WebKitFormBoundaryzWHSH95mOxQwmKln--
- *
- * BNF:
- * 
-     boundary := 0*69<bchars> bcharsnospace
-
-     bchars := bcharsnospace / " "
-
-     bcharsnospace := DIGIT / ALPHA / "'" / "(" / ")" /
-                      "+" / "_" / "," / "-" / "." /
-                      "/" / ":" / "=" / "?"
-
-     dash-boundary := "--" boundary
-                      ; boundary taken from the value of
-                      ; boundary parameter of the
-                      ; Content-Type field.
-
-     multipart-body := [preamble CRLF]
-                       dash-boundary transport-padding CRLF
-                       body-part *encapsulation
-                       close-delimiter transport-padding
-                       [CRLF epilogue]
- 
- 
-     transport-padding := *LWSP-char
-                          ; Composers MUST NOT generate
-                          ; non-zero length transport
-                          ; padding, but receivers MUST
-                          ; be able to handle padding
-                          ; added by message transports.
-
-     encapsulation := delimiter transport-padding
-                      CRLF body-part
-
-     delimiter := CRLF dash-boundary
-
-     close-delimiter := delimiter "--"
-
-     preamble := discard-text
-
-     epilogue := discard-text
-
-     discard-text := *(*text CRLF) *text
-                     ; May be ignored or discarded.
-
-     body-part := MIME-part-headers [CRLF *OCTET]
-                  ; Lines in a body-part must not start
-                  ; with the specified dash-boundary and
-                  ; the delimiter must not appear anywhere
-                  ; in the body part.  Note that the
-                  ; semantics of a body-part differ from
-                  ; the semantics of a message, as
-                  ; described in the text.
-
-     OCTET := <any 0-255 octet value>
+ * @see https://tools.ietf.org/html/rfc2046#section-5.1
+ * @see https://tools.ietf.org/html/rfc2045
  * 
  */
 public class MultiPartParser
@@ -161,7 +89,7 @@ public class MultiPartParser
     private boolean _cr;
     private ByteBuffer _patternBuffer;
 
-    private final StringBuilder _string = new StringBuilder();
+    private final Utf8StringBuilder _string = new Utf8StringBuilder();
     private int _length;
 
     private int _totalHeaderLineLength = -1;
@@ -303,17 +231,22 @@ public class MultiPartParser
     /* ------------------------------------------------------------------------------- */
     private void setString(String s)
     {
-        _string.setLength(0);
+        _string.reset();
         _string.append(s);
         _length = s.length();
     }
 
     /* ------------------------------------------------------------------------------- */
+    /*
+     * Mime Field strings are treated as UTF-8 as per https://tools.ietf.org/html/rfc7578#section-5.1
+     */
     private String takeString()
     {
-        _string.setLength(_length);
         String s = _string.toString();
-        _string.setLength(0);
+        // trim trailing whitespace.
+        if (s.length()>_length)
+            s = s.substring(0,_length);
+        _string.reset();
         _length = -1;
         return s;
     }
@@ -497,7 +430,7 @@ public class MultiPartParser
 
                             if (_fieldValue == null)
                             {
-                                _string.setLength(0);
+                                _string.reset();
                                 _length = 0;
                             }
                             else
@@ -528,8 +461,8 @@ public class MultiPartParser
 
                             // New header
                             setState(FieldState.IN_NAME);
-                            _string.setLength(0);
-                            _string.append((char)b);
+                            _string.reset();
+                            _string.append(b);
                             _length = 1;
                         }
                     }
@@ -550,7 +483,7 @@ public class MultiPartParser
                             break;
 
                         default:
-                            _string.append((char)b);
+                            _string.append(b);
                             _length = _string.length();
                             break;
                     }
@@ -567,7 +500,7 @@ public class MultiPartParser
 
                         case LINE_FEED:
                             _fieldName = takeString();
-                            _string.setLength(0);
+                            _string.reset();
                             _fieldValue = "";
                             _length = -1;
                             break;
@@ -584,7 +517,7 @@ public class MultiPartParser
                     switch (b)
                     {
                         case LINE_FEED:
-                            _string.setLength(0);
+                            _string.reset();
                             _fieldValue = "";
                             _length = -1;
 
@@ -596,7 +529,7 @@ public class MultiPartParser
                             break;
 
                         default:
-                            _string.append((char)(0xff & b));
+                            _string.append(b);
                             _length = _string.length();
                             setState(FieldState.IN_VALUE);
                             break;
@@ -607,7 +540,7 @@ public class MultiPartParser
                     switch (b)
                     {
                         case SPACE:
-                            _string.append((char)(0xff & b));
+                            _string.append(b);
                             break;
 
                         case LINE_FEED:
@@ -621,7 +554,7 @@ public class MultiPartParser
                             break;
 
                         default:
-                            _string.append((char)(0xff & b));
+                            _string.append(b);
                             if (b > SPACE || b < 0)
                                 _length = _string.length();
                             break;
