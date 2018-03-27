@@ -462,12 +462,12 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     public void close()
     {
         CloseState oldState = closeState.getAndSet(CloseState.CLOSED);
-        if (oldState == CloseState.CLOSING)
-            updateStreamCount(-1, -1);
-        else
-            updateStreamCount(-1, 0);
         if (oldState != CloseState.CLOSED)
+        {
+            int deltaClosing = oldState == CloseState.CLOSING ? -1 : 0;
+            updateStreamCount(-1, deltaClosing);
             onClose();
+        }
     }
 
     private void updateStreamCount(int deltaStream, int deltaClosing)
