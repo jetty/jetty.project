@@ -95,23 +95,6 @@ public class JettyRunWarMojo extends AbstractJettyMojo
        return;        
     }
 
-    
-
-    
-    /** 
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#checkPackagingConfiguration()
-     */
-    @Override
-    public void checkPackagingConfiguration() throws MojoExecutionException
-    {
-        if (!supportedPackagings.contains( project.getPackaging() ))
-        {
-            getLog().info( "Your project packaging is not supported by this plugin" );
-            return;
-        }
-    }
-
-    
     /**
      * @see AbstractJettyMojo#configureScanner()
      */

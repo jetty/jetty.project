@@ -303,13 +303,18 @@ public abstract class AbstractJettyMojo extends AbstractMojo
 
     
     public abstract void checkPomConfiguration() throws MojoExecutionException;
-    
-    public abstract void checkPackagingConfiguration() throws MojoExecutionException;  
-    
-    public abstract void configureScanner () throws MojoExecutionException;
-    
 
-    
+    public abstract void configureScanner () throws MojoExecutionException;
+
+
+    public void checkPackagingConfiguration() throws MojoExecutionException
+    {
+        if (!supportedPackagings.contains( project.getPackaging() ))
+        {
+            getLog().info( "Your project packaging is not supported by this plugin" );
+            return;
+        }
+    }
 
 
     /** 
