@@ -58,15 +58,6 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
      */
     private File war;
 
-    /**
-     * Per default this goal support only <code>war</code> packaging.
-     * If your project use an other type please configure it here.
-     *
-     * @parameter
-     */
-    protected List<String> supportedPackagings = Collections.singletonList( "war");
-
-
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
      */

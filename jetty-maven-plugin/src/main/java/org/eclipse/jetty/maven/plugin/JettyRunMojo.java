@@ -166,14 +166,6 @@ public class JettyRunMojo extends AbstractJettyMojo
     
     protected Resource originalBaseResource;
 
-    /**
-     * Per default this goal support only <code>war</code> packaging.
-     * If your project use an other type please configure it here.
-     *
-     * @parameter
-     */
-    protected List<String> supportedPackagings = Collections.singletonList( "war");
-
     @Parameter(defaultValue = "${reactorProjects}", readonly = true, required = true)
     private List<MavenProject> reactorProjects;
 

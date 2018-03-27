@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -288,6 +289,14 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @parameter  default-value="false"
      */
     protected boolean nonBlocking = false;
+
+    /**
+     * Per default this goal support only <code>war</code> packaging.
+     * If your project use an other type please configure it here.
+     *
+     * @parameter
+     */
+    protected List<String> supportedPackagings = Collections.singletonList( "war");
       
     
     public abstract void restartWebApp(boolean reconfigureScanner) throws Exception;
