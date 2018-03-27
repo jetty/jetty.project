@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -156,7 +155,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
-    private boolean _checkGzExists = true;
     private boolean _syncFlush = false;
     private int _inflateBufferSize = -1;
     private EnumSet<DispatcherType> _dispatchers = EnumSet.of(DispatcherType.REQUEST);
@@ -399,9 +397,16 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         super.doStart();
     }
 
+    /**
+     * Get the Check-GZ configuration setting.
+     *
+     * @return always returns false
+     * @deprecated no replacement, will be removed in Jetty 10.x
+     */
+    @Deprecated
     public boolean getCheckGzExists()
     {
-        return _checkGzExists;
+        return false;
     }
 
     public int getCompressionLevel()
@@ -690,22 +695,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             }
         }
         
-        if (_checkGzExists && context!=null)
-        {
-            String realpath=request.getServletContext().getRealPath(path);
-            if (realpath!=null)
-            {
-                File gz=new File(realpath+".gz");
-                if (gz.exists())
-                {
-                    LOG.debug("{} gzip exists {}",this,request);
-                    // allow default servlet to handle
-                    _handler.handle(target,baseRequest, request, response);
-                    return;
-                }
-            }
-        }
-      
         HttpOutput.Interceptor orig_interceptor = out.getInterceptor();
         try
         {
@@ -778,12 +767,13 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     /**
      * Set the Check if {@code *.gz} file for the incoming file exists.
      *
-     * @param checkGzExists whether to check if a static gz file exists for
-     * the resource that the DefaultServlet may serve as precompressed.
+     * @param checkGzExists ignored
+     * @deprecated no replacement (will be removed in Jetty 10.x)
      */
+    @Deprecated
     public void setCheckGzExists(boolean checkGzExists)
     {
-        _checkGzExists = checkGzExists;
+        /* do nothing */
     }
     
     /**
