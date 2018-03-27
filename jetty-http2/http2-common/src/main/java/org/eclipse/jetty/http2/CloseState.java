@@ -21,20 +21,20 @@ package org.eclipse.jetty.http2;
 /**
  * The set of close states for a stream or a session.
  * <pre>
- *                rcv eos
- * NOT_CLOSED ---------------> REMOTELY_CLOSED
+ *                rcv hc
+ * NOT_CLOSED ---------------&gt; REMOTELY_CLOSED
  *      |                             |
  *   gen|                             |gen
- *   eos|                             |eos
+ *    hc|                             |hc
  *      |                             |
- *      v              rcv eos        v
- * LOCALLY_CLOSING --------------> CLOSING
+ *      v              rcv hc         v
+ * LOCALLY_CLOSING --------------&gt; CLOSING
  *      |                             |
  *   snd|                             |gen
- *   eos|                             |eos
+ *    hc|                             |hc
  *      |                             |
- *      v              rcv eos        v
- * LOCALLY_CLOSED ----------------> CLOSED
+ *      v              rcv hc         v
+ * LOCALLY_CLOSED ----------------&gt; CLOSED
  * </pre>
  */
 public enum CloseState
