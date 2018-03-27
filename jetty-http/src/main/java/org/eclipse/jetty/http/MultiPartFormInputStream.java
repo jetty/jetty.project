@@ -201,7 +201,7 @@ public class MultiPartFormInputStream
         {
             if (name == null)
                 return null;
-            return _headers.getValue(name.toLowerCase(Locale.ENGLISH),0);
+            return _headers.getValue(StringUtil.asciiToLowerCase(name),0);
         }
 
         /**
@@ -628,7 +628,7 @@ public class MultiPartFormInputStream
         public void parsedField(String key, String value)
         {            
             // Add to headers and mark if one of these fields. //
-            headers.put(key.toLowerCase(Locale.ENGLISH),value);
+            headers.put(StringUtil.asciiToLowerCase(key),value);
             if (key.equalsIgnoreCase("content-disposition"))
                 contentDisposition = value;
             else if (key.equalsIgnoreCase("content-type"))
@@ -657,7 +657,7 @@ public class MultiPartFormInputStream
                 while (tok.hasMoreTokens())
                 {
                     String t = tok.nextToken().trim();
-                    String tl = t.toLowerCase(Locale.ENGLISH);
+                    String tl = StringUtil.asciiToLowerCase(t);
                     if (t.startsWith("form-data"))
                         form_data = true;
                     else if (tl.startsWith("name="))
@@ -708,7 +708,7 @@ public class MultiPartFormInputStream
 
         @Override
         public boolean content(ByteBuffer buffer, boolean last)
-        {
+        {            
             if (BufferUtil.hasContent(buffer))
             {
                 try
