@@ -10,7 +10,7 @@
   <name>Jetty :: Documentation</name>
   <packaging>pom</packaging>
   <properties>
-    <html.directory>${project.build.directory}/current</html.directory>
+    <html.directory>${project.build.directory}/html/common</html.directory>
     <javadoc.version>${project.version}</javadoc.version>
   </properties>
   <build>
@@ -19,7 +19,7 @@
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
           <execution>
-            <id>copy-assets</id>
+            <id>copy-base-html-assets</id>
             <phase>process-resources</phase>
             <goals>
               <goal>copy-resources</goal>
@@ -27,7 +27,7 @@
             <configuration>
               <resources>
                 <resource>
-                  <directory>src/main/resources</directory>
+                  <directory>src/main/resources/html</directory>
                   <includes>
                     <include>**</include>
                   </includes>
@@ -41,31 +41,73 @@
       <plugin>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
+        <version>1.5.6</version>
+        <configuration>
+          <backend>docbook</backend>
+          <doctype>book</doctype>
+          <sub-order>attributes+</sub-order>
+          <imagesdir />
+          <linkcss>true</linkcss>
+          <allow-uri-read>true</allow-uri-read>
+          <toc>true</toc>
+          <revnumber>${project.version}</revnumber>
+          <basedir>${basedir}/src/main/asciidoc</basedir>
+          <attributes>
+            <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
+            <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
+            <SRCDIR>${basedir}/..</SRCDIR>
+            <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/master</GITBROWSEURL>
+            <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
+            <VERSION>${project.version}</VERSION>
+          </attributes>
+        </configuration>
         <executions>
           <execution>
-            <id>output-html</id>
-            <phase>compile</phase>
+            <id>administration-guide</id>
+            <phase>generate-resources</phase>
             <goals>
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <backend>docbook</backend>
-              <doctype>book</doctype>
+              <sourceDirectory>${basedir}/src/main/asciidoc/administration-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <attributes>
-                <sub-order>attributes+</sub-order>
-                <imagesdir />
-                <linkcss>true</linkcss>
-                <allow-uri-read>true</allow-uri-read>
-                <toc>true</toc>
-                <revnumber>${project.version}</revnumber>
-                <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
-                <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
-                <SRCDIR>${basedir}/..</SRCDIR>
-                <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/master</GITBROWSEURL>
-                <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
-                <VERSION>${project.version}</VERSION>
-              </attributes>
+              <outputDirectory>${project.build.directory}/docbook/administrative-guide</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>contribution-guide</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>process-asciidoc</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
+              <sourceDocumentName>index.adoc</sourceDocumentName>
+              <outputDirectory>${project.build.directory}/docbook/contribution-guide</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>developer-guide</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>process-asciidoc</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${basedir}/src/main/asciidoc/developer-guide</sourceDirectory>
+              <sourceDocumentName>index.adoc</sourceDocumentName>
+              <outputDirectory>${project.build.directory}/docbook/developer-guide</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>topic-index</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>process-asciidoc</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${basedir}/src/main/asciidoc/index</sourceDirectory>
+              <sourceDocumentName>index.adoc</sourceDocumentName>
+              <outputDirectory>${project.build.directory}/docbook/index</outputDirectory>
             </configuration>
           </execution>
         </executions>
@@ -74,50 +116,89 @@
         <groupId>com.agilejava.docbkx</groupId>
         <artifactId>docbkx-maven-plugin</artifactId>
         <version>2.0.17</version>
+        <configuration>
+          <htmlStylesheet>../common/css/docbook.css</htmlStylesheet>
+          <chunkedOutput>true</chunkedOutput>
+          <highlightSource>true</highlightSource>
+          <preProcess>
+            <!-- TODO determine how best to copy content topic resources
+            <copy todir="target/docbkx/html/images" flatten="true">
+              <fileset dir="src/main/asciidoc">
+                <include name="**/*.png" />
+                <include name="**/*.jpg" />
+                <include name="**/*.svg" />
+                <include name="**/*.dot" />
+              </fileset>
+            </copy>
+            <copy todir="target/docbkx/html/images">
+              <fileset dir="src/main/docbkx-resources/images" />
+            </copy>
+            <copy todir="target/docbkx/html/css">
+              <fileset dir="src/main/docbkx-resources/css" />
+            </copy>
+            <copy todir="target/docbkx/html/fonts">
+              <fileset dir="src/main/docbkx-resources/fonts" />
+            </copy>
+            <copy todir="target/docbkx/html/js">
+              <fileset dir="src/main/docbkx-resources/js" />
+            </copy>
+          -->
+          </preProcess>
+        </configuration>
         <executions>
           <execution>
-            <id>html</id>
+            <id>administation-guide-html</id>
             <phase>compile</phase>
             <goals>
               <goal>generate-html</goal>
             </goals>
             <configuration>
-              <htmlStylesheet>css/docbook.css</htmlStylesheet>
-              <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/docbook.xsl</htmlCustomization>
-              <preProcess>
-                <!-- pull over the images from the source material -->
-                <copy todir="target/docbkx/html/images" flatten="true">
-                  <fileset dir="src/main/asciidoc">
-                    <include name="**/*.png" />
-                    <include name="**/*.jpg" />
-                    <include name="**/*.svg" />
-                    <include name="**/*.dot" />
-                  </fileset>
-                </copy>
-                <copy todir="target/docbkx/html/images">
-                  <fileset dir="src/main/docbkx-resources/images" />
-                </copy>
-                <copy todir="target/docbkx/html/css">
-                  <fileset dir="src/main/docbkx-resources/css" />
-                </copy>
-                <copy todir="target/docbkx/html/fonts">
-                  <fileset dir="src/main/docbkx-resources/fonts" />
-                </copy>
-                <copy todir="target/docbkx/html/js">
-                  <fileset dir="src/main/docbkx-resources/js" />
-                </copy>
-              </preProcess>
+              <sourceDirectory>${project.build.directory}/docbook/administrative-guide</sourceDirectory>
+              <targetDirectory>${project.build.directory}/html/administration-guide</targetDirectory>
+              <includes>index.xml</includes>
+              <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/book.xsl</htmlCustomization>
+            </configuration>
+          </execution>
+          <execution>
+            <id>contribution-guide-html</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>generate-html</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${project.build.directory}/docbook/contribution-guide</sourceDirectory>
+              <targetDirectory>${project.build.directory}/html/contribution-guide</targetDirectory>
+              <includes>index.xml</includes>
+              <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/book.xsl</htmlCustomization>
+            </configuration>
+          </execution>
+          <execution>
+            <id>developer-guide-html</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>generate-html</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${project.build.directory}/docbook/developer-guide</sourceDirectory>
+              <targetDirectory>${project.build.directory}/html/developer-guide</targetDirectory>
+              <includes>index.xml</includes>
+              <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/book.xsl</htmlCustomization>
+            </configuration>
+          </execution>
+          <execution>
+            <id>index-html</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>generate-html</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${project.build.directory}/docbook/index</sourceDirectory>
+              <targetDirectory>${project.build.directory}/html/index</targetDirectory>
+              <includes>index.xml</includes>
+              <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/index.xsl</htmlCustomization>
             </configuration>
           </execution>
         </executions>
-        <configuration>
-          <!-- shared configuration -->
-          <sourceDirectory>${project.build.directory}/generated-docs</sourceDirectory>
-          <includes>index.xml</includes>
-          <generatedSourceDirectory>${project.build.directory}/docbkx/generated</generatedSourceDirectory>
-          <chunkedOutput>true</chunkedOutput>
-          <highlightSource>true</highlightSource>
-        </configuration>
         <dependencies>
           <dependency>
             <groupId>net.sf.docbook</groupId>
@@ -141,6 +222,7 @@
           </dependency>
         </dependencies>
       </plugin>
+    <!--
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
@@ -158,6 +240,7 @@
           </execution>
         </executions>
       </plugin>
+    -->
     </plugins>
   </build>
   <profiles>
