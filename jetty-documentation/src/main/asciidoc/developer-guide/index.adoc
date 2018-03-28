@@ -1,6 +1,5 @@
-//
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -14,12 +13,10 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
-//
 
-[[quick-start]]
+= Jetty: A Developer Guide
+:docinfo:
+:revnumber: {VERSION}
+:toc:
 
-= Getting Started With Jetty
-
-include::introduction/chapter.adoc[]
-include::getting-started/chapter.adoc[]
-include::configuring/chapter.adoc[]
+include::1-introduction.adoc[]

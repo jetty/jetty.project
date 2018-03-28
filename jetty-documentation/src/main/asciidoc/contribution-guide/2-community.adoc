@@ -1,6 +1,5 @@
-//
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -14,21 +13,11 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
-//
 
-[[jetty-admin-guide]]
+[[cg-community]]
+== Community
 
-= Jetty Administration Guide
+There are many ways to interact with the developers and other users of Jetty.  We are active on a number of open source support forums as well as fully funding the ongoing development of Jetty with paid support through Webtide.
 
-include::startup/chapter.adoc[]
-include::sessions/chapter.adoc[]
-include::logging/chapter.adoc[]
-include::jndi/chapter.adoc[]
-include::annotations/chapter.adoc[]
-include::jmx/chapter.adoc[]
-include::alpn/chapter.adoc[]
-include::http2/chapter.adoc[]
-include::fastcgi/chapter.adoc[]
-include::extras/chapter.adoc[]
-include::runner/chapter.adoc[]
-include::tuning/chapter.adoc[]
+include::../topics/contributing/community.adoc[]
+include::../topics/contributing/bugs.adoc[]
