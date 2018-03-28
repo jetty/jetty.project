@@ -23,10 +23,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.IO;
 
 /**
@@ -141,6 +151,105 @@ public class FileTestHelper
         file.createNewFile();
     }
     
+    
+
+    public static void createFile (String id, String contextPath, String vhost, 
+                                   String lastNode, long created, long accessed, 
+                                   long lastAccessed, long maxIdle, long expiry,
+                                   long cookieSet, Map<String,Object> attributes)
+    throws Exception
+    {
+        String filename = ""+expiry+"_"+contextPath+"_"+vhost+"_"+id;
+        File file = new File(_tmpDir, filename);
+        try(FileOutputStream fos = new FileOutputStream(file,false))
+        {
+            DataOutputStream out = new DataOutputStream(fos);
+            out.writeUTF(id);
+            out.writeUTF(contextPath);
+            out.writeUTF(vhost);
+            out.writeUTF(lastNode);
+            out.writeLong(created);
+            out.writeLong(accessed);
+            out.writeLong(lastAccessed);
+            out.writeLong(cookieSet);
+            out.writeLong(expiry);
+            out.writeLong(maxIdle);
+
+            if (attributes != null)
+            {
+                List<String> keys = new ArrayList<String>(attributes.keySet());
+                out.writeInt(keys.size());
+                ObjectOutputStream oos = new ObjectOutputStream(out);
+                for (String name:keys)
+                {
+                    oos.writeUTF(name);
+                    oos.writeObject(attributes.get(name));
+                }
+            }
+        }
+    }
+    
+    
+    public static boolean checkSessionPersisted (SessionData data)
+    throws Exception
+    {
+        String filename = ""+data.getExpiry()+"_"+data.getContextPath()+"_"+data.getVhost()+"_"+data.getId();
+        File file = new File(_tmpDir, filename);
+        assertTrue(file.exists());
+        
+        try (FileInputStream in = new FileInputStream(file))
+        {
+            DataInputStream di = new DataInputStream(in);
+
+            String id = di.readUTF();
+            String contextPath = di.readUTF();
+            String vhost = di.readUTF();
+            String lastNode = di.readUTF();
+            long created = di.readLong();
+            long accessed = di.readLong();
+            long lastAccessed = di.readLong();
+            long cookieSet = di.readLong();
+            long expiry = di.readLong();
+            long maxIdle = di.readLong();
+            
+            assertEquals(data.getId(), id);
+            assertEquals(data.getContextPath(), contextPath);
+            assertEquals(data.getVhost(), vhost);
+            assertEquals(data.getLastNode(), lastNode);
+            assertEquals(data.getCreated(), created);
+            assertEquals(data.getAccessed(), accessed);
+            assertEquals(data.getLastAccessed(), lastAccessed);
+            assertEquals(data.getCookieSet(), cookieSet);
+            assertEquals(data.getExpiry(), expiry);
+            assertEquals(data.getMaxInactiveMs(), maxIdle);
+
+            Map<String,Object> attributes = new HashMap<>();
+            
+            int size = di.readInt();
+            if (size > 0)
+            {
+               ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(di);
+                for (int i=0; i<size;i++)
+                {
+                    String key = ois.readUTF();
+                    Object value = ois.readObject();
+                    attributes.put(key,value);
+                }
+            }
+            
+            //same number of attributes
+            assertEquals(data.getAllAttributes().size(), attributes.size());
+            //same keys
+            assertTrue(data.getKeys().equals(attributes.keySet()));
+            //same values
+            for (String name:data.getKeys())
+            {
+                assertTrue(data.getAttribute(name).equals(attributes.get(name)));
+            }
+        }
+        
+        return true;
+    }
     
     public static void deleteFile (String sessionId)
     {

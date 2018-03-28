@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
+import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -55,23 +56,22 @@ public class HazelcastSessionDataStore
         throws Exception
     {
 
-        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
-        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        final AtomicReference<SessionData> reference = new AtomicReference<>();
+        final AtomicReference<Exception> exception = new AtomicReference<>();
 
         //ensure the load runs in the context classloader scope
         _context.run( () -> {
             try
             {
                 if (LOG.isDebugEnabled())
-                {
                     LOG.debug( "Loading session {} from hazelcast", id );
-                }
+
                 SessionData sd = sessionDataMap.get( getCacheKey( id ) );
                 reference.set(sd);
             }
             catch (Exception e)
             {
-                exception.set(e);
+                exception.set(new UnreadableSessionDataException(id, _context, e));
             }
         } );
 
@@ -126,12 +126,13 @@ public class HazelcastSessionDataStore
         {
             return Collections.emptySet();
         }
+        
         long now = System.currentTimeMillis();
         return candidates.stream().filter( candidate -> {
+            
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug( "Checking expiry for candidate {}", candidate );
-            }
+            
             try
             {
                 SessionData sd = load(candidate);
@@ -193,9 +194,17 @@ public class HazelcastSessionDataStore
 
     @Override
     public boolean exists( String id )
-        throws Exception
+    throws Exception
     {
-        return this.sessionDataMap.containsKey( getCacheKey( id ) );
+        //TODO find way to do query without pulling in whole session data
+        SessionData sd = load(id);
+        if (sd == null)
+            return false;
+
+        if (sd.getExpiry() <= 0)
+            return true; //never expires
+        else
+            return (Boolean.valueOf(sd.getExpiry() > System.currentTimeMillis())); //not expired yet
     }
 
     public String getCacheKey( String id )

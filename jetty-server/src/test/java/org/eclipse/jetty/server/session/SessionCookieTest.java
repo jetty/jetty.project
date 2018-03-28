@@ -46,80 +46,49 @@ public class SessionCookieTest
             super(manager);
         }
 
-      
-        /** 
-         * @see org.eclipse.jetty.server.session.SessionCache#shutdown()
-         */
         @Override
         public void shutdown()
-        {
-            // TODO Auto-generated method stub
-            
+        {        
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(org.eclipse.jetty.server.session.SessionData)
-         */
+
         @Override
         public Session newSession(SessionData data)
         {
-            // TODO Auto-generated method stub
             return null;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionCache#doGet(String)
-         */
+
         @Override
         public Session doGet(String key)
         {
-            // TODO Auto-generated method stub
             return null;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionCache#doPutIfAbsent(String, Session)
-         */
+
         @Override
         public Session doPutIfAbsent(String key, Session session)
         {
             return null;
         }
-
       
-
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionCache#doDelete(String)
-         */
         @Override
         public Session doDelete(String key)
         {
             return null;
         }
 
-      
-
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionCache#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
-         */
         @Override
         public boolean doReplace(String id, Session oldValue, Session newValue)
         {
-            // TODO Auto-generated method stub
             return false;
         }
 
-        /** 
-         * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
-         */
         @Override
         public Session newSession(HttpServletRequest request, SessionData data)
         {
-            // TODO Auto-generated method stub
             return null;
         }
-
-   
     }
 
     
@@ -131,18 +100,12 @@ public class SessionCookieTest
             super(server);
         }
 
-        /**
-         * @see org.eclipse.jetty.server.SessionIdManager#isIdInUse(java.lang.String)
-         */
         @Override
         public boolean isIdInUse(String id)
         {
             return false;
         }
 
-        /**
-         * @see org.eclipse.jetty.server.SessionIdManager#expireAll(java.lang.String)
-         */
         @Override
         public void expireAll(String id)
         {
@@ -206,8 +169,5 @@ public class SessionCookieTest
         //cookie is not secure: not on secured requests and request is secure
         cookie = mgr.getSessionCookie(session, "/foo", true);
         assertFalse(cookie.isSecure());
-
-
     }
-
 }
