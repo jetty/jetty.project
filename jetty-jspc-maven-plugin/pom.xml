@@ -114,11 +114,10 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-home</artifactId>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-mongodb-sessions</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-      <type>zip</type>
     </dependency>
   </dependencies>
   <reporting>
