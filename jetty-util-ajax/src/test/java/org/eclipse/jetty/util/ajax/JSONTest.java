@@ -18,9 +18,14 @@
 
 package org.eclipse.jetty.util.ajax;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
@@ -32,7 +37,7 @@ import java.util.TimeZone;
 
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.ajax.JSON.Output;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 
@@ -55,15 +60,17 @@ public class JSONTest
     "\"undefined\": undefined," +
     "}";
 
-    @BeforeClass
-    public static void setUp() throws Exception
+    @Before
+    public void resetJSON()
     {
-        JSON.registerConvertor(Gadget.class,new JSONObjectConvertor(false));
+        // Reset JSON configuration to default with each testcase
+        JSON.reset();
     }
 
     @Test
     public void testToString()
     {
+        JSON.registerConvertor(Gadget.class,new JSONObjectConvertor(false));
         HashMap map = new HashMap();
         HashMap obj6 = new HashMap();
         HashMap obj7 = new HashMap();
@@ -109,14 +116,13 @@ public class JSONTest
         gadget.setWoggles(new Woggle[]{w0,w1});
 
         s = JSON.toString(new Gadget[]{gadget});
-        assertTrue(s.startsWith("["));
-        assertTrue(s.indexOf("\"modulated\":false")>=0);
-        assertTrue(s.indexOf("\"shields\":42")>=0);
-        assertTrue(s.indexOf("\"name\":\"woggle0\"")>=0);
-        assertTrue(s.indexOf("\"name\":\"woggle1\"")>=0);
+        assertThat(s, startsWith("["));
+        assertThat(s, containsString("\"modulated\":false"));
+        assertThat(s, containsString("\"shields\":42"));
+        assertThat(s, containsString("\"name\":\"woggle0\""));
+        assertThat(s, containsString("\"name\":\"woggle1\""));
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testParse()
     {
@@ -137,7 +143,84 @@ public class JSONTest
         map = (Map)JSON.parse(test);
     }
 
-    /* ------------------------------------------------------------ */
+    @Test
+    public void testToString_LineFeed()
+    {
+        Map<String,String> map = new HashMap<>();
+        map.put("str", "line\nfeed");
+        String jsonStr = JSON.toString(map);
+        assertThat(jsonStr, is("{\"str\":\"line\\nfeed\"}"));
+    }
+
+    @Test
+    public void testToString_Tab()
+    {
+        Map<String,String> map = new HashMap<>();
+        map.put("str", "tab\tchar");
+        String jsonStr = JSON.toString(map);
+        assertThat(jsonStr, is("{\"str\":\"tab\\tchar\"}"));
+    }
+
+    @Test
+    public void testToString_Bel()
+    {
+        Map<String,String> map = new HashMap<>();
+        map.put("str", "ascii\u0007bel");
+        String jsonStr = JSON.toString(map);
+        assertThat(jsonStr, is("{\"str\":\"ascii\\u0007bel\"}"));
+    }
+
+    @Test
+    public void testToString_Utf8()
+    {
+        Map<String,String> map = new HashMap<>();
+        map.put("str", "japanese: 桟橋");
+        String jsonStr = JSON.toString(map);
+        assertThat(jsonStr, is("{\"str\":\"japanese: 桟橋\"}"));
+    }
+
+    @Test
+    public void testToJson_Utf8_Encoded()
+    {
+        JSON jsonUnicode = new JSON()
+        {
+            @Override
+            protected void escapeUnicode(Appendable buffer, char c) throws IOException
+            {
+                buffer.append(String.format("\\u%04x", (int)c));
+            }
+        };
+
+        Map<String,String> map = new HashMap<>();
+        map.put("str", "japanese: 桟橋");
+        String jsonStr = jsonUnicode.toJSON(map);
+        assertThat(jsonStr, is("{\"str\":\"japanese: \\u685f\\u6a4b\"}"));
+    }
+
+    @Test
+    public void testParse_Utf8_JsonEncoded()
+    {
+        String jsonStr = "{\"str\": \"japanese: \\u685f\\u6a4b\"}";
+        Map map = (Map)JSON.parse(jsonStr);
+        assertThat(map.get("str"), is("japanese: 桟橋"));
+    }
+
+    @Test
+    public void testParse_Utf8_JavaEncoded()
+    {
+        String jsonStr = "{\"str\": \"japanese: \u685f\u6a4b\"}";
+        Map map = (Map)JSON.parse(jsonStr);
+        assertThat(map.get("str"), is("japanese: 桟橋"));
+    }
+
+    @Test
+    public void testParse_Utf8_Raw()
+    {
+        String jsonStr = "{\"str\": \"japanese: 桟橋\"}";
+        Map map = (Map)JSON.parse(jsonStr);
+        assertThat(map.get("str"), is("japanese: 桟橋"));
+    }
+
     @Test
     public void testParseReader() throws Exception
     {
@@ -153,7 +236,6 @@ public class JSONTest
         map = (Map)JSON.parse(test);
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testStripComment()
     {
@@ -176,7 +258,6 @@ public class JSONTest
 
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testQuote()
     {
@@ -186,7 +267,6 @@ public class JSONTest
         assertEquals("abc123|\"|\\|/|\b|\f|\n|\r|\t|\uaaaa|",result);
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testBigDecimal()
     {
@@ -199,7 +279,6 @@ public class JSONTest
     }
 
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testZeroByte()
     {
@@ -207,13 +286,11 @@ public class JSONTest
         JSON.toString(withzero);
     }
 
-    /* ------------------------------------------------------------ */
     public static class Gadget
     {
         private boolean modulated;
         private long shields;
         private Woggle[] woggles;
-        /* ------------------------------------------------------------ */
         /**
          * @return the modulated
          */
@@ -221,7 +298,6 @@ public class JSONTest
         {
             return modulated;
         }
-        /* ------------------------------------------------------------ */
         /**
          * @param modulated the modulated to set
          */
@@ -229,7 +305,6 @@ public class JSONTest
         {
             this.modulated=modulated;
         }
-        /* ------------------------------------------------------------ */
         /**
          * @return the shields
          */
@@ -237,7 +312,6 @@ public class JSONTest
         {
             return shields;
         }
-        /* ------------------------------------------------------------ */
         /**
          * @param shields the shields to set
          */
@@ -245,7 +319,6 @@ public class JSONTest
         {
             this.shields=shields;
         }
-        /* ------------------------------------------------------------ */
         /**
          * @return the woggles
          */
@@ -253,7 +326,6 @@ public class JSONTest
         {
             return woggles;
         }
-        /* ------------------------------------------------------------ */
         /**
          * @param woggles the woggles to set
          */
@@ -263,7 +335,6 @@ public class JSONTest
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testConvertor()
     {
@@ -292,7 +363,7 @@ public class JSONTest
         json.append(buf,map);
         String js=buf.toString();
 
-        assertTrue(js.indexOf("\"date\":\"01/01/1970 00:00:00 GMT\"")>=0);
+        assertTrue(js.indexOf("\"date\":\"01\\/01\\/1970 00:00:00 GMT\"")>=0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);
         assertTrue(js.indexOf("\"tested\":true")>=0);
@@ -406,7 +477,6 @@ public class JSONTest
 
     }
 
-    /* ------------------------------------------------------------ */
     public static class Gizmo
     {
         String name;
@@ -437,7 +507,6 @@ public class JSONTest
         }
     }
 
-    /* ------------------------------------------------------------ */
     public static class Woggle extends Gizmo implements JSON.Convertible
     {
 
