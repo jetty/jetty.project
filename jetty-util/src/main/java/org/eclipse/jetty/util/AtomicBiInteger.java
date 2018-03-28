@@ -265,7 +265,7 @@ public class AtomicBiInteger extends AtomicLong
     public static long encodeHi(long encoded, int hi)
     {
         long h = ((long)hi)&0xFFFF_FFFFL;
-        long l = getLo(encoded);
+        long l = encoded&0xFFFF_FFFFl;
         return (h<<32)+l;
     }
     
@@ -278,7 +278,7 @@ public class AtomicBiInteger extends AtomicLong
      */
     public static long encodeLo(long encoded, int lo)
     {
-        long h = getHi(encoded);
+        long h = (encoded>>32)&0xFFFF_FFFFl;
         long l = ((long)lo)&0xFFFF_FFFFL;
         return (h<<32)+l;
     }
