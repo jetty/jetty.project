@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -156,7 +155,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
-    private boolean _checkGzExists = true;
     private boolean _syncFlush = false;
     private int _inflateBufferSize = -1;
     private EnumSet<DispatcherType> _dispatchers = EnumSet.of(DispatcherType.REQUEST);
@@ -397,11 +395,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         _vary=(_agentPatterns.size()>0)?GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING_USER_AGENT:GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
         super.doStart();
-    }
-
-    public boolean getCheckGzExists()
-    {
-        return _checkGzExists;
     }
 
     public int getCompressionLevel()
@@ -690,22 +683,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             }
         }
         
-        if (_checkGzExists && context!=null)
-        {
-            String realpath=request.getServletContext().getRealPath(path);
-            if (realpath!=null)
-            {
-                File gz=new File(realpath+".gz");
-                if (gz.exists())
-                {
-                    LOG.debug("{} gzip exists {}",this,request);
-                    // allow default servlet to handle
-                    _handler.handle(target,baseRequest, request, response);
-                    return;
-                }
-            }
-        }
-      
         HttpOutput.Interceptor orig_interceptor = out.getInterceptor();
         try
         {
@@ -775,17 +752,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             deflater.end();
     }
 
-    /**
-     * Set the Check if {@code *.gz} file for the incoming file exists.
-     *
-     * @param checkGzExists whether to check if a static gz file exists for
-     * the resource that the DefaultServlet may serve as precompressed.
-     */
-    public void setCheckGzExists(boolean checkGzExists)
-    {
-        _checkGzExists = checkGzExists;
-    }
-    
     /**
      * Set the Compression level that {@link Deflater} uses.
      *
