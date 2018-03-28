@@ -118,7 +118,6 @@
         <version>2.0.17</version>
         <configuration>
           <htmlStylesheet>../common/css/docbook.css</htmlStylesheet>
-          <chunkedOutput>true</chunkedOutput>
           <highlightSource>true</highlightSource>
           <preProcess>
             <!-- TODO determine how best to copy content topic resources
@@ -157,6 +156,7 @@
               <targetDirectory>${project.build.directory}/html/administration-guide</targetDirectory>
               <includes>index.xml</includes>
               <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/book.xsl</htmlCustomization>
+              <chunkedOutput>false</chunkedOutput>
             </configuration>
           </execution>
           <execution>
@@ -170,6 +170,7 @@
               <targetDirectory>${project.build.directory}/html/contribution-guide</targetDirectory>
               <includes>index.xml</includes>
               <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/book.xsl</htmlCustomization>
+              <chunkedOutput>false</chunkedOutput>
             </configuration>
           </execution>
           <execution>
@@ -183,6 +184,7 @@
               <targetDirectory>${project.build.directory}/html/developer-guide</targetDirectory>
               <includes>index.xml</includes>
               <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/book.xsl</htmlCustomization>
+              <chunkedOutput>false</chunkedOutput>
             </configuration>
           </execution>
           <execution>
@@ -196,6 +198,7 @@
               <targetDirectory>${project.build.directory}/html/index</targetDirectory>
               <includes>index.xml</includes>
               <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/index.xsl</htmlCustomization>
+              <chunkedOutput>true</chunkedOutput>
             </configuration>
           </execution>
         </executions>
