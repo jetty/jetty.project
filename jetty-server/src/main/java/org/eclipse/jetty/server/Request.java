@@ -465,14 +465,14 @@ public class Request implements HttpServletRequest
             _contentParameters=new MultiMap<>();
             contentType = HttpFields.valueParameters(contentType, null);
             int contentLength = getContentLength();
-            if (contentLength != 0)
+            if (contentLength != 0 && _inputState == __NONE)
             {
-                if (MimeTypes.Type.FORM_ENCODED.is(contentType) && _inputState == __NONE &&
+                if (MimeTypes.Type.FORM_ENCODED.is(contentType) &&
                     _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
                     extractFormParameters(_contentParameters);
                 }
-                else if (contentType.startsWith("multipart/form-data") &&
+                else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentType) &&
                         getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
                         _multiPartInputStream == null)
                 {
@@ -550,6 +550,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private void extractMultipartParameters(MultiMap<String> result)
     {
+        // TODO do we need this method? 
         try
         {
             getParts(result);
@@ -2321,7 +2322,9 @@ public class Request implements HttpServletRequest
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
-        if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
+        // TODO should content type be case sensitive
+        if (getContentType() == null || 
+                !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(getContentType(),null)))
             throw new ServletException("Content-Type != multipart/form-data");
         return getParts(null);
     }
@@ -2334,7 +2337,6 @@ public class Request implements HttpServletRequest
         if (_multiPartInputStream == null)
         {
             MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
-
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
@@ -2353,10 +2355,10 @@ public class Request implements HttpServletRequest
                 {
                     // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
                     String charset = null;
-                    if (mp.getContentType() != null)
-                        charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
+                    if (p.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(p.getContentType());
 
-                    try (InputStream is = mp.getInputStream())
+                    try (InputStream is = p.getInputStream())
                     {
                         if (os == null)
                             os = new ByteArrayOutputStream();
@@ -2364,7 +2366,7 @@ public class Request implements HttpServletRequest
                         String content=new String(os.toByteArray(),charset==null?StandardCharsets.UTF_8:Charset.forName(charset));
                         if (_contentParameters == null)
                             _contentParameters = params == null ? new MultiMap<>() : params;
-                        _contentParameters.add(mp.getName(), content);
+                        _contentParameters.add(p.getName(), content);
                     }
                     os.reset();
                 }
