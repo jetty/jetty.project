@@ -24,6 +24,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -164,7 +165,6 @@ public class JettyRunMojo extends AbstractJettyMojo
     
     
     protected Resource originalBaseResource;
-    
 
     @Parameter(defaultValue = "${reactorProjects}", readonly = true, required = true)
     private List<MavenProject> reactorProjects;
@@ -178,21 +178,6 @@ public class JettyRunMojo extends AbstractJettyMojo
         warPluginInfo = new WarPluginInfo(project);
         super.execute();
     }
-    
-    
-
-    
-    /** 
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#checkPackagingConfiguration()
-     */
-    @Override
-    public void checkPackagingConfiguration() throws MojoExecutionException
-    { 
-        if ( !"war".equals( project.getPackaging() ))
-            throw new MojoExecutionException("Not war packaging");
-    }
-
-
 
     /**
      * Verify the configuration given in the pom.

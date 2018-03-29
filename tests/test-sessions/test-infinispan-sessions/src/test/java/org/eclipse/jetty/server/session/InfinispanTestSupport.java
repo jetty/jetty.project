@@ -19,6 +19,9 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 
 import org.eclipse.jetty.util.IO;
@@ -104,6 +107,7 @@ public class InfinispanTestSupport
 
     public void teardown () throws Exception
     {
+        _cache.clear();
         _manager.removeCache(_name);
         if (_useFileStore)
         {
@@ -112,5 +116,63 @@ public class InfinispanTestSupport
                 IO.delete(_tmpdir);
             }
         }
+    }
+    
+    
+    @SuppressWarnings("unchecked")
+    public void createSession (SessionData data)
+    throws Exception
+    {
+        _cache.put(data.getContextPath()+"_"+data.getVhost()+"_"+data.getId(), data);
+    }
+
+    
+    public void createUnreadableSession (SessionData data)
+    {
+        
+    }
+    
+    
+    public boolean checkSessionExists (SessionData data)
+    throws Exception
+    {
+        return (_cache.get(data.getContextPath()+"_"+data.getVhost()+"_"+data.getId()) != null);
+    }
+    
+    
+    public boolean checkSessionPersisted (SessionData data)
+    throws Exception
+    {
+        Object obj = _cache.get(data.getContextPath()+"_"+data.getVhost()+"_"+data.getId());
+        if (obj == null)
+            return false;
+        
+        SessionData saved = (SessionData)obj;
+        
+        
+        //turn an Entity into a Session
+        assertEquals(data.getId(), saved.getId());
+        assertEquals(data.getContextPath(), saved.getContextPath());
+        assertEquals(data.getVhost(), saved.getVhost());
+        assertEquals(data.getAccessed(), saved.getAccessed());
+        assertEquals(data.getLastAccessed(), saved.getLastAccessed());
+        assertEquals(data.getCreated(), saved.getCreated());
+        assertEquals(data.getCookieSet(), saved.getCookieSet());
+        assertEquals(data.getLastNode(), saved.getLastNode());
+        //don't test lastSaved, because that is set only on the SessionData after it returns from SessionDataStore.save()
+        assertEquals(data.getExpiry(), saved.getExpiry());
+        assertEquals(data.getMaxInactiveMs(), saved.getMaxInactiveMs());
+
+        //same number of attributes
+        assertEquals(data.getAllAttributes().size(), saved.getAllAttributes().size());
+        //same keys
+        assertTrue(data.getKeys().equals(saved.getKeys()));
+        //same values
+        for (String name:data.getKeys())
+        {
+            assertTrue(data.getAttribute(name).equals(saved.getAttribute(name)));
+        }
+        
+        return true;
     }
 }

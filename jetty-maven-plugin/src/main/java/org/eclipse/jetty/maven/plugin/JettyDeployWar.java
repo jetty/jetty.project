@@ -64,24 +64,6 @@ public class JettyDeployWar extends JettyRunWarMojo
         nonBlocking = daemon;
         super.execute();
     }
-    
-
-
-  
-
-
-    /** 
-     * @see org.eclipse.jetty.maven.plugin.JettyRunWarMojo#checkPackagingConfiguration()
-     */
-    @Override
-    public void checkPackagingConfiguration() throws MojoExecutionException
-    {
-        return; //do not require this to be a war project
-    }
-
-
-
-
 
 
     @Override

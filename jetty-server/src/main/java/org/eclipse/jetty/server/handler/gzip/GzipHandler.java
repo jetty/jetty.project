@@ -397,6 +397,10 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         super.doStart();
     }
 
+    /**
+     * @deprecated feature will be removed in Jetty 10.x, with no replacement.
+     */
+    @Deprecated
     public int getCompressionLevel()
     {
         return _compressionLevel;
@@ -753,6 +757,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
+     * @deprecated feature will be removed in Jetty 10.x, with no replacement.
+    @Deprecated
      * Set the Compression level that {@link Deflater} uses.
      *
      * @param compressionLevel  The compression level to use to initialize {@link Deflater#setLevel(int)}

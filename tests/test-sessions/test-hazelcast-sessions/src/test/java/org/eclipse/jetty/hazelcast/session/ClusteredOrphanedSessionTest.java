@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.After;
+import org.junit.Before;
 
 /**
  * ClusteredOrphanedSessionTest
@@ -34,20 +35,26 @@ public class ClusteredOrphanedSessionTest
 
     HazelcastSessionDataStoreFactory factory;
 
+    HazelcastTestHelper _testHelper;
+
+    @Before
+    public void setUp()
+    {
+        _testHelper = new HazelcastTestHelper();
+    }
+
+    @After
+    public void shutdown()
+    {
+        _testHelper.tearDown();
+    }
+
     /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        factory = new HazelcastSessionDataStoreFactory();
-        factory.setMapName( Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) ) );
-        return factory;
-    }
-
-    @After
-    public void shutdown()
-    {
-        factory.getHazelcastInstance().getMap( factory.getMapName() ).clear();
+        return _testHelper.createSessionDataStoreFactory(false);
     }
 }

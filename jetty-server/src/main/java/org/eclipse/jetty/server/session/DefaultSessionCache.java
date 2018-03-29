@@ -44,7 +44,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     /**
      * The cache of sessions in a hashmap
      */
-    protected ConcurrentHashMap<String, Session> _sessions = new ConcurrentHashMap<String, Session>();
+    protected ConcurrentHashMap<String, Session> _sessions = new ConcurrentHashMap<>();
     
     private final CounterStatistic _stats = new CounterStatistic();
     
