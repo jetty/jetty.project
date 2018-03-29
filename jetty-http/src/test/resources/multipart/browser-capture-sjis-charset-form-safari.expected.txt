@@ -12,4 +12,4 @@ Request-Header|User-Agent|Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleW
 Parts-Count|3
 Part-ContainsContents|_charset_|Shift_JIS
 Part-ContainsContents|japanese|健治
-Part-ContainsContents|hello|ャユ戆タ
+Part-ContainsContents|hello|ャユ&#25094;タ

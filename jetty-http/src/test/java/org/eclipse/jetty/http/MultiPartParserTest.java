@@ -620,6 +620,52 @@ public class MultiPartParserTest
     }
     
 
+    @Test
+    public void testGeneratedForm() 
+    {
+        TestHandler handler = new TestHandler() 
+        {
+            @Override
+            public boolean messageComplete()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean content(ByteBuffer buffer, boolean last)
+            {
+                super.content(buffer,last);
+                return false;
+            }
+            
+            @Override
+            public boolean headerComplete()
+            {
+                return false;
+            }
+        };
+        
+        MultiPartParser parser = new MultiPartParser(handler,"WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW");
+        ByteBuffer data = BufferUtil.toBuffer(""
+                + "Content-Type: multipart/form-data; boundary=WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n" + 
+                "\r\n" + 
+                "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n" + 
+                "Content-Disposition: form-data; name=\"part1\"\r\n" + 
+                "\n" + 
+                "wNfﾐxVam﾿t\r\n" + 
+                "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\n" + 
+                "Content-Disposition: form-data; name=\"part2\"\r\n" + 
+                "\r\n" + 
+                "&ﾳﾺ￙￹ￖￃO\r\n" + 
+                "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW--");
+    
+        parser.parse(data,true);
+        assertThat(parser.getState(), is(State.END));
+        assertThat(handler.fields.size(), is(2));
+
+    }
+    
+    
     static class TestHandler implements MultiPartParser.Handler
     {
         List<String> fields = new ArrayList<>();

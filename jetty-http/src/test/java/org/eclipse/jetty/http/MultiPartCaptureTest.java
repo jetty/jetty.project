@@ -110,14 +110,14 @@ public class MultiPartCaptureTest
         // ret.add(new String[]{"browser-capture-sjis-form-safari"}); // contains html encoded character and unspecified charset defaults to utf-8
 
         // form submitted as shift-jis (with HTML5 specific hidden _charset_ field)
-        // ret.add(new String[]{"browser-capture-sjis-charset-form-android-chrome"}); // contains html encoded character
-        // ret.add(new String[]{"browser-capture-sjis-charset-form-android-firefox"}); // contains html encoded character
-        // ret.add(new String[]{"browser-capture-sjis-charset-form-chrome"}); // contains html encoded character
+        ret.add(new String[]{"browser-capture-sjis-charset-form-android-chrome"}); // contains html encoded character
+        ret.add(new String[]{"browser-capture-sjis-charset-form-android-firefox"}); // contains html encoded character
+        ret.add(new String[]{"browser-capture-sjis-charset-form-chrome"}); // contains html encoded character
         ret.add(new String[]{"browser-capture-sjis-charset-form-edge"});
-        // ret.add(new String[]{"browser-capture-sjis-charset-form-firefox"}); // contains html encoded character
-        // ret.add(new String[]{"browser-capture-sjis-charset-form-ios-safari"}); // contains html encoded character
+        ret.add(new String[]{"browser-capture-sjis-charset-form-firefox"}); // contains html encoded character
+        ret.add(new String[]{"browser-capture-sjis-charset-form-ios-safari"}); // contains html encoded character
         ret.add(new String[]{"browser-capture-sjis-charset-form-msie"});
-        // ret.add(new String[]{"browser-capture-sjis-charset-form-safari"}); // contains html encoded character
+        ret.add(new String[]{"browser-capture-sjis-charset-form-safari"}); // contains html encoded character
 
         // form submitted with simple file upload
         ret.add(new String[]{"browser-capture-form-fileupload-android-chrome"});

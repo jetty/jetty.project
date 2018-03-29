@@ -610,8 +610,6 @@ public class MultiPartFormInputStream
 
     }
 
-    //TODO implement proper toString
-    //TODO more debugging
     class Handler implements MultiPartParser.Handler
     {
 
@@ -768,6 +766,12 @@ public class MultiPartFormInputStream
             contentType = null;
             headers = new MultiMap<>();
         }
+    
+        @Override
+        public String toString() {
+            return("contentDisposition: "+contentDisposition+" contentType:"+contentType);
+        }
+    
     }
 
     public void setDeleteOnExit(boolean deleteOnExit)

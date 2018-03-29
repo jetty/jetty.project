@@ -1062,7 +1062,40 @@ public class MultiPartFormInputStreamTest
     }
 
 
+    @Test
+    public void testGeneratedForm()
+    throws Exception
+    {
+        String contentType = "multipart/form-data, boundary=WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW";
+        String body = "Content-Type: multipart/form-data; boundary=WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n" + 
+                "\r\n" + 
+                "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n" + 
+                "Content-Disposition: form-data; name=\"part1\"\r\n" + 
+                "\n" + 
+                "wNfﾐxVam﾿t\r\n" + 
+                "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\n" + 
+                "Content-Disposition: form-data; name=\"part2\"\r\n" + 
+                "\r\n" + 
+                "&ﾳﾺ￙￹ￖￃO\r\n" + 
+                "--WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW--";
 
+
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(body.getBytes()),
+                                                                         contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+
+        Collection<Part> parts =    mpis.getParts();
+        assertThat(parts, notNullValue());
+        assertThat(parts.size(), is(2));
+        
+        Part part1 = mpis.getPart("part1");
+        assertThat(part1, notNullValue());
+        Part part2 = mpis.getPart("part2");
+        assertThat(part2, notNullValue());
+    }
 
     
     private String createMultipartRequestString(String filename)
