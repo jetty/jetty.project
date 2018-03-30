@@ -42,6 +42,11 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.tomcat.JarScanner;
 import org.apache.tomcat.util.scan.StandardJarScanner;
@@ -64,11 +69,9 @@ import org.eclipse.jetty.util.resource.Resource;
  * href="https://www.eclipse.org/jetty/documentation/current/jetty-jspc-maven-plugin.html">Usage
  * Guide</a> for instructions on using this plugin.
  * </p>
- * @goal jspc
- * @phase process-classes
- * @requiresDependencyResolution compile+runtime
- * @description Runs jspc compiler to produce .java and .class files
+ * Runs jspc compiler to produce .java and .class files
  */
+@Mojo( name = "jspc", defaultPhase = LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class JspcMojo extends AbstractMojo
 {
     public static final String END_OF_WEBAPP = "</web-app>";
@@ -124,46 +127,39 @@ public class JspcMojo extends AbstractMojo
      * Use WITH CAUTION as you may wind up with duplicate jars/classes.
      * 
      * @since jetty-7.6.3
-     * @parameter  default-value="false"
      */
+    @Parameter(defaultValue = "false")
     private boolean useProvidedScope;
     
     /**
      * The artifacts for the project.
      * 
      * @since jetty-7.6.3
-     * @parameter default-value="${project.artifacts}"
-     * @readonly
      */
+    @Parameter(defaultValue = "${project.artifacts}", readonly = true)
     private Set projectArtifacts;
     
     
     /**
      * The maven project.
-     * 
-     * @parameter default-value="${project}"
-     * @required
-     * @readonly
      */
+    @Parameter(defaultValue = "${project}", readonly = true , required = true)
     private MavenProject project;
 
     
 
     /**
      * The artifacts for the plugin itself.
-     * 
-     * @parameter default-value="${plugin.artifacts}"
-     * @readonly
      */
+    @Parameter(defaultValue = "${plugin.artifacts}", readonly = true)
     private List pluginArtifacts;
     
     
     /**
      * File into which to generate the &lt;servlet&gt; and
      * &lt;servlet-mapping&gt; tags for the compiled jsps
-     * 
-     * @parameter default-value="${basedir}/target/webfrag.xml"
      */
+    @Parameter(defaultValue = "${basedir}/target/webfrag.xml")
     private String webXmlFragment;
 
     /**
@@ -172,103 +168,89 @@ public class JspcMojo extends AbstractMojo
      * will NOT be preserved during the insertion. Can be left blank, in which
      * case the generated fragment is inserted just before the &lt;/web-app&gt;
      * line
-     * 
-     * @parameter
      */
+    @Parameter
     private String insertionMarker;
 
     /**
      * Merge the generated fragment file with the web.xml from
      * webAppSourceDirectory. The merged file will go into the same directory as
      * the webXmlFragment.
-     * 
-     * @parameter default-value="true"
      */
+    @Parameter(defaultValue = "true")
     private boolean mergeFragment;
 
     /**
      * The destination directory into which to put the compiled jsps.
-     * 
-     * @parameter default-value="${project.build.outputDirectory}"
      */
+    @Parameter(defaultValue = "${project.build.outputDirectory}")
     private String generatedClasses;
 
     /**
      * Controls whether or not .java files generated during compilation will be
      * preserved.
-     * 
-     * @parameter default-value="false"
      */
+    @Parameter(defaultValue = "false")
     private boolean keepSources;
-
 
     /**
      * Root directory for all html/jsp etc files
-     * 
-     * @parameter default-value="${basedir}/src/main/webapp"
-     * 
      */
+    @Parameter(defaultValue = "${basedir}/src/main/webapp")
     private String webAppSourceDirectory;
-    
-   
-    
+
     /**
      * Location of web.xml. Defaults to src/main/webapp/web.xml.
-     * @parameter default-value="${basedir}/src/main/webapp/WEB-INF/web.xml"
      */
+    @Parameter(defaultValue = "${basedir}/src/main/webapp/WEB-INF/web.xml")
     private String webXml;
 
 
     /**
      * The comma separated list of patterns for file extensions to be processed. By default
      * will include all .jsp and .jspx files.
-     * 
-     * @parameter default-value="**\/*.jsp, **\/*.jspx"
      */
+    @Parameter(defaultValue = "**\\/*.jsp, **\\/*.jspx")
     private String includes;
 
     /**
      * The comma separated list of file name patters to exclude from compilation.
-     * 
-     * @parameter default_value="**\/.svn\/**";
      */
+    @Parameter(defaultValue = "**\\/.svn\\/**")
     private String excludes;
 
     /**
      * The location of the compiled classes for the webapp
-     * 
-     * @parameter default-value="${project.build.outputDirectory}"
      */
+    @Parameter(defaultValue = "${project.build.outputDirectory}")
     private File classesDirectory;
 
     
     /**
      * Patterns of jars on the system path that contain tlds. Use | to separate each pattern.
-     * 
-     * @parameter default-value=".*taglibs[^/]*\.jar|.*jstl[^/]*\.jar$
      */
+    @Parameter(defaultValue = ".*taglibs[^/]*\\.jar|.*jstl[^/]*\\.jar$")
     private String tldJarNamePatterns;
     
     
     /**
      * Source version - if not set defaults to jsp default (currently 1.7)
-     * @parameter 
      */
+    @Parameter
     private String sourceVersion;
     
     
     /**
      * Target version - if not set defaults to jsp default (currently 1.7)
-     * @parameter 
      */
+    @Parameter
     private String targetVersion;
     
     /**
      * 
      * The JspC instance being used to compile the jsps.
-     * 
-     * @parameter
      */
+    @Parameter
     private JettyJspC jspc;
 
 
@@ -276,9 +258,8 @@ public class JspcMojo extends AbstractMojo
      * Whether dirs on the classpath should be scanned as well as jars.
      * True by default. This allows for scanning for tlds of dependent projects that
      * are in the reactor as unassembled jars.
-     * 
-     * @parameter default-value=true
      */
+    @Parameter(defaultValue = "true")
     private boolean scanAllDirectories;
     
 
@@ -326,13 +307,13 @@ public class JspcMojo extends AbstractMojo
  
 
         //Make a classloader so provided jars will be on the classpath
-        List<URL> sysUrls = new ArrayList<URL>();      
+        List<URL> sysUrls = new ArrayList<>();
         sysUrls.addAll(providedJars);     
-        URLClassLoader sysClassLoader = new URLClassLoader((URL[])sysUrls.toArray(new URL[0]), currentClassLoader);
+        URLClassLoader sysClassLoader = new URLClassLoader(sysUrls.toArray(new URL[0]), currentClassLoader);
       
         //make a classloader with the webapp classpath
-        URLClassLoader webAppClassLoader = new URLClassLoader((URL[]) webAppUrls.toArray(new URL[0]), sysClassLoader);
-        StringBuffer webAppClassPath = new StringBuffer();
+        URLClassLoader webAppClassLoader = new URLClassLoader(webAppUrls.toArray(new URL[0]), sysClassLoader);
+        StringBuilder webAppClassPath = new StringBuilder();
 
         for (int i = 0; i < webAppUrls.size(); i++)
         {
@@ -340,7 +321,7 @@ public class JspcMojo extends AbstractMojo
                 getLog().debug("webappclassloader contains: " + webAppUrls.get(i));                
             webAppClassPath.append(new File(webAppUrls.get(i).toURI()).getCanonicalPath());
             if (getLog().isDebugEnabled())
-                getLog().debug("added to classpath: " + ((URL) webAppUrls.get(i)).getFile());
+                getLog().debug("added to classpath: " + (webAppUrls.get(i)).getFile());
             if (i+1<webAppUrls.size())
                 webAppClassPath.append(System.getProperty("path.separator"));
         }
@@ -385,7 +366,6 @@ public class JspcMojo extends AbstractMojo
         }
         finally
         {
-
             Thread.currentThread().setContextClassLoader(currentClassLoader);
         }
     }
@@ -413,13 +393,8 @@ public class JspcMojo extends AbstractMojo
 
             if(generatedClassesDir.exists() && generatedClassesDir.isDirectory())
             {
-                delete(generatedClassesDir, new FileFilter()
-                {
-                    @Override
-                    public boolean accept(File f)
-                    {
-                        return f.isDirectory() || f.getName().endsWith(".java");
-                    }                
+                delete(generatedClassesDir, pathname -> {
+                    return pathname.isDirectory() || pathname.getName().endsWith(".java");
                 });
             }
         }
