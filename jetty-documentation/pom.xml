@@ -43,8 +43,6 @@
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <version>1.5.6</version>
         <configuration>
-          <backend>docbook</backend>
-          <doctype>book</doctype>
           <sub-order>attributes+</sub-order>
           <imagesdir />
           <linkcss>true</linkcss>
@@ -60,6 +58,7 @@
             <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
             <VERSION>${project.version}</VERSION>
           </attributes>
+
         </configuration>
         <executions>
           <execution>
@@ -69,9 +68,10 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
+              <backend>html</backend>
               <sourceDirectory>${basedir}/src/main/asciidoc/administration-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/docbook/administrative-guide</outputDirectory>
+              <outputDirectory>${project.build.directory}/html/administrative-guide</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -81,9 +81,10 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
+              <backend>html</backend>
               <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/docbook/contribution-guide</outputDirectory>
+              <outputDirectory>${project.build.directory}/html/contribution-guide</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -93,9 +94,10 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
+              <backend>html</backend>
               <sourceDirectory>${basedir}/src/main/asciidoc/developer-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/docbook/developer-guide</outputDirectory>
+              <outputDirectory>${project.build.directory}/html/developer-guide</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -105,6 +107,7 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
+              <doctype>book</doctype>
               <sourceDirectory>${basedir}/src/main/asciidoc/index</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/docbook/index</outputDirectory>
@@ -145,6 +148,7 @@
           </preProcess>
         </configuration>
         <executions>
+          <!--
           <execution>
             <id>administation-guide-html</id>
             <phase>compile</phase>
@@ -187,6 +191,7 @@
               <chunkedOutput>false</chunkedOutput>
             </configuration>
           </execution>
+        -->
           <execution>
             <id>index-html</id>
             <phase>compile</phase>
