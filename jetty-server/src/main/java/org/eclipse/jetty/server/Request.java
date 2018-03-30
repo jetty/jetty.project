@@ -75,6 +75,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -83,6 +84,7 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
@@ -214,7 +216,7 @@ public class Request implements HttpServletRequest
     private HttpSession _session;
     private SessionHandler _sessionHandler;
     private long _timeStamp;
-    private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
+    private MultiPartInputStream _multiPartInputStream; //if the request is a multi-part mime
     private AsyncContextState _async;
 
     /* ------------------------------------------------------------ */
@@ -476,7 +478,15 @@ public class Request implements HttpServletRequest
                         getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
                         _multiPartInputStream == null)
                 {
-                    extractMultipartParameters(_contentParameters);
+                    try
+                    {
+                        getParts(_contentParameters);
+                    }
+                    catch (IOException | ServletException e)
+                    {
+                        LOG.debug(e);
+                        throw new RuntimeIOException(e);
+                    }
                 }
             }
         }
@@ -541,21 +551,6 @@ public class Request implements HttpServletRequest
             UrlEncoded.decodeTo(in,params,getCharacterEncoding(),contentLength<0?maxFormContentSize:-1,maxFormKeys);
         }
         catch (IOException e)
-        {
-            LOG.debug(e);
-            throw new RuntimeIOException(e);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    private void extractMultipartParameters(MultiMap<String> result)
-    {
-        // TODO do we need this method? 
-        try
-        {
-            getParts(result);
-        }
-        catch (IOException | ServletException e)
         {
             LOG.debug(e);
             throw new RuntimeIOException(e);
@@ -2322,7 +2317,6 @@ public class Request implements HttpServletRequest
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
-        // TODO should content type be case sensitive
         if (getContentType() == null || 
                 !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(getContentType(),null)))
             throw new ServletException("Content-Type != multipart/form-data");
@@ -2332,7 +2326,7 @@ public class Request implements HttpServletRequest
     private Collection<Part> getParts(MultiMap<String> params) throws IOException, ServletException
     {
         if (_multiPartInputStream == null)
-            _multiPartInputStream = (MultiPartInputStreamParser)getAttribute(__MULTIPART_INPUT_STREAM);
+            _multiPartInputStream = (MultiPartInputStream)getAttribute(__MULTIPART_INPUT_STREAM);
 
         if (_multiPartInputStream == null)
         {
@@ -2340,9 +2334,9 @@ public class Request implements HttpServletRequest
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
-            _multiPartInputStream = new MultiPartInputStreamParser(getInputStream(),
-                                                             getContentType(), config,
-                                                             (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            _multiPartInputStream = new MultiPartInputStream(getInputStream(),
+                                       getContentType(), config,
+                                       (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
 
             setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
             setAttribute(__MULTIPART_CONTEXT, _context);
@@ -2350,8 +2344,7 @@ public class Request implements HttpServletRequest
             ByteArrayOutputStream os = null;
             for (Part p:parts)
             {
-                MultiPartInputStreamParser.MultiPart mp = (MultiPartInputStreamParser.MultiPart)p;
-                if (mp.getContentDispositionFilename() == null)
+                if (_multiPartInputStream.getContentDispositionFilename(p) == null)
                 {
                     // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
                     String charset = null;
@@ -2376,6 +2369,7 @@ public class Request implements HttpServletRequest
         return _multiPartInputStream.getParts();
     }
 
+    
     /* ------------------------------------------------------------ */
     @Override
     public void login(String username, String password) throws ServletException
@@ -2474,5 +2468,92 @@ public class Request implements HttpServletRequest
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
         throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
+    }
+    
+    
+    
+    /* --------------------------------------------------------------------------------------------------- */
+    /*
+     * Used to switch between the old and new implementation of MultiPart Form InputStream Parsing.
+     * The new implementation is prefered will be used as default unless specified otherwise constructor.
+     */
+    @SuppressWarnings("deprecation") 
+    public class MultiPartInputStream
+    {   
+        private boolean usingNewParser = true;
+        private MultiPartFormInputStream _newParser = null;
+        private MultiPartInputStreamParser _oldParser = null;
+        
+        public MultiPartInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
+        {
+            this(in, contentType, config, contextTmpDir, false);
+        }
+
+        public MultiPartInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, boolean useOldParser)
+        {
+            if(useOldParser)
+                usingNewParser = false;
+            else
+                usingNewParser = true;
+            
+            if(usingNewParser)
+                _newParser = new MultiPartFormInputStream(in, contentType, config, contextTmpDir);
+            else
+                _oldParser = new MultiPartInputStreamParser(in, contentType, config, contextTmpDir);
+        }
+        
+        public Collection<Part> getParts() throws IOException {
+            Collection<Part> parts = null;
+            
+            if(usingNewParser)
+                parts = _newParser.getParts();
+            else
+                parts = _oldParser.getParts();
+            
+            return parts;
+        }
+            
+        public Part getPart(String name) throws IOException {
+            Part part = null;
+            
+            if(usingNewParser)
+                part = _newParser.getPart(name);
+            else
+                part = _oldParser.getPart(name);
+            
+            return part;
+        }
+            
+        public String getContentDispositionFilename(Part p)
+        {
+            String contentDisposition = null;
+            
+            if(usingNewParser)
+                contentDisposition = ((MultiPartFormInputStream.MultiPart)p).getContentDispositionFilename();
+            else
+                contentDisposition = ((MultiPartInputStreamParser.MultiPart)p).getContentDispositionFilename();
+            
+            return contentDisposition;
+        }
+    
+        public void deleteParts() throws MultiException
+        {
+            if(usingNewParser)
+                _newParser.deleteParts();
+            else
+                _oldParser.deleteParts();
+        }
+        
+        public Collection<Part> getParsedParts()
+        {
+            Collection<Part> parsedParts = null;
+            
+            if(usingNewParser)
+                parsedParts = _newParser.getParsedParts();
+            else
+                parsedParts = _oldParser.getParsedParts();
+            
+            return parsedParts;
+        }
     }
 }

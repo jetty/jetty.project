@@ -364,7 +364,7 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                MultiPartInputStreamParser m = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
+                Request.MultiPartInputStream m = (Request.MultiPartInputStream)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
                 ContextHandler.Context c = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);
                 assertNotNull (m);
                 assertNotNull (c);
@@ -426,7 +426,7 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                MultiPartInputStreamParser m = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
+                Request.MultiPartInputStream m = (Request.MultiPartInputStream)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
                 ContextHandler.Context c = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);
                 assertNotNull (m);
                 assertNotNull (c);
