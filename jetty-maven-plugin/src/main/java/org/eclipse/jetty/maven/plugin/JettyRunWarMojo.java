@@ -24,6 +24,11 @@ import java.util.List;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 
@@ -39,21 +44,18 @@ import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
  *  You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
  *  This can be used, for example, to deploy a static webapp that is not part of your maven build. 
  *  </p>
- * 
- * @goal run-war
- * @requiresDependencyResolution compile+runtime
- * @execute phase="package"
- * @description Runs jetty on a war file
- *
+ *  Runs jetty on a war file
  */
+@Mojo( name = "run-war", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Execute(phase = LifecyclePhase.PACKAGE)
 public class JettyRunWarMojo extends AbstractJettyMojo
 {
 
     /**
      * The location of the war file.
-     * @parameter default-value="${project.build.directory}/${project.build.finalName}.war"
-     * @required
+     *
      */
+    @Parameter(defaultValue="${project.build.directory}/${project.build.finalName}.war", required = true)
     private File war;
 
     /**
