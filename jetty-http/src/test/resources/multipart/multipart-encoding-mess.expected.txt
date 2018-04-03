@@ -1,4 +1,0 @@
-Content-Type|multipart/form-data; boundary="CVnTR46ddexmZjsh1ORHg9QbCOiLhUYl"
-Parts-Count|168
-Part-ContainsContents|persian-UTF-8|برج بابل
-Part-ContainsContents|persian-CESU-8|برج بابل

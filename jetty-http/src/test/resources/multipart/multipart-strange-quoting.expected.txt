@@ -1,5 +1,0 @@
-Content-Type|multipart/form-data; boundary="tR61vgdxSzzv2FDycET2lt-OUZ1IW1GqA"
-Parts-Count|4
-Part-ContainsContents|and "I" quote|Value 1
-Part-ContainsContents|and+%22I%22+quote|Value 2
-Part-ContainsContents|value"; what="whoa"|Value 3
