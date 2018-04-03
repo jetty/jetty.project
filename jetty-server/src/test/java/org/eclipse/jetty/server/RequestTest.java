@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -70,7 +69,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -162,7 +160,7 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
-                Map<String, String[]> map = request.getParameterMap();
+                request.getParameterMap();
                 // should have thrown a BadMessageException
                 return false;
             }
@@ -189,7 +187,7 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
-                Map<String, String[]> map = request.getParameterMap();
+                request.getParameterMap();
                 // should have thrown a BadMessageException
                 return false;
             }
@@ -364,12 +362,12 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                Request.MultiPartInputStream m = (Request.MultiPartInputStream)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
-                ContextHandler.Context c = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);
+                Request.MultiParts m = (Request.MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
                 assertNotNull (m);
+                ContextHandler.Context c = m.getContext();
                 assertNotNull (c);
                 assertTrue(c == sre.getServletContext());
-                assertTrue(!m.getParsedParts().isEmpty());
+                assertTrue(!m.isEmpty());
                 assertTrue(testTmpDir.list().length == 2);
                 super.requestDestroyed(sre);
                 String[] files = testTmpDir.list();
@@ -401,7 +399,7 @@ public class RequestTest
         multipart;
 
         String responses=_connector.getResponse(request);
-        // System.err.println(responses);
+        //System.err.println(responses);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
 
@@ -426,9 +424,9 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                Request.MultiPartInputStream m = (Request.MultiPartInputStream)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
-                ContextHandler.Context c = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);
+                Request.MultiParts m = (Request.MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
                 assertNotNull (m);
+                ContextHandler.Context c = m.getContext();
                 assertNotNull (c);
                 assertTrue(c == sre.getServletContext());
                 super.requestDestroyed(sre);

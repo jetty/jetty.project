@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +35,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.List;
@@ -84,9 +86,9 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
+import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -136,8 +138,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
-    public static final String __MULTIPART_INPUT_STREAM = "org.eclipse.jetty.multiPartInputStream";
-    public static final String __MULTIPART_CONTEXT = "org.eclipse.jetty.multiPartContext";
+    public static final String __MULTIPARTS = "org.eclipse.jetty.multiPartInputStream";
 
     private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
@@ -216,7 +217,7 @@ public class Request implements HttpServletRequest
     private HttpSession _session;
     private SessionHandler _sessionHandler;
     private long _timeStamp;
-    private MultiPartInputStream _multiPartInputStream; //if the request is a multi-part mime
+    private MultiParts _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
 
     /* ------------------------------------------------------------ */
@@ -476,7 +477,7 @@ public class Request implements HttpServletRequest
                 }
                 else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentType) &&
                         getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
-                        _multiPartInputStream == null)
+                        _multiParts == null)
                 {
                     try
                     {
@@ -1869,7 +1870,7 @@ public class Request implements HttpServletRequest
         _parameters = null;
         _contentParamsExtracted = false;
         _inputState = __NONE;
-        _multiPartInputStream = null;
+        _multiParts = null;
         _remote=null;
         _input.recycle();
     }
@@ -2310,7 +2311,7 @@ public class Request implements HttpServletRequest
     {
         getParts();
 
-        return _multiPartInputStream.getPart(name);
+        return _multiParts.getPart(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -2325,26 +2326,52 @@ public class Request implements HttpServletRequest
 
     private Collection<Part> getParts(MultiMap<String> params) throws IOException, ServletException
     {
-        if (_multiPartInputStream == null)
-            _multiPartInputStream = (MultiPartInputStream)getAttribute(__MULTIPART_INPUT_STREAM);
+        if (_multiParts == null)
+            _multiParts = (MultiParts)getAttribute(__MULTIPARTS);
 
-        if (_multiPartInputStream == null)
+        if (_multiParts == null)
         {
             MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
-            _multiPartInputStream = new MultiPartInputStream(getInputStream(),
+            _multiParts = newMultiParts(getInputStream(),
                                        getContentType(), config,
-                                       (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+                                       (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null),
+                                       true);
 
-            setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
-            setAttribute(__MULTIPART_CONTEXT, _context);
-            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
+            setAttribute(__MULTIPARTS, _multiParts);
+            Collection<Part> parts = _multiParts.getParts(); //causes parsing
+                       
+            String _charset_ = null;
+            Part charsetPart = _multiParts.getPart("_charset_");
+            if(charsetPart != null)
+            {
+                try (InputStream is = charsetPart.getInputStream())
+                {
+                    ByteArrayOutputStream os = new ByteArrayOutputStream();
+                    IO.copy(is, os);
+                    _charset_ = new String(os.toByteArray(),StandardCharsets.UTF_8);
+                }
+            }
+
+            // charset should be:
+            //  1. the charset set in the parts content type; else
+            //  2. the default charset set in the _charset_ part; else
+            //  3. the default charset set in the request.setCharacterEncoding; else
+            //  4. the default charset set to UTF_8
+            Charset defaultCharset;
+            if (_charset_ != null)
+                defaultCharset = Charset.forName(_charset_);
+            else if (getCharacterEncoding() != null)
+                defaultCharset = Charset.forName(getCharacterEncoding());
+            else
+                defaultCharset = StandardCharsets.UTF_8;
+            
             ByteArrayOutputStream os = null;
             for (Part p:parts)
             {
-                if (_multiPartInputStream.getContentDispositionFilename(p) == null)
+                if (p.getSubmittedFileName() == null)
                 {
                     // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
                     String charset = null;
@@ -2356,7 +2383,8 @@ public class Request implements HttpServletRequest
                         if (os == null)
                             os = new ByteArrayOutputStream();
                         IO.copy(is, os);
-                        String content=new String(os.toByteArray(),charset==null?StandardCharsets.UTF_8:Charset.forName(charset));
+                        
+                        String content=new String(os.toByteArray(),charset==null?defaultCharset:Charset.forName(charset));
                         if (_contentParameters == null)
                             _contentParameters = params == null ? new MultiMap<>() : params;
                         _contentParameters.add(p.getName(), content);
@@ -2366,10 +2394,28 @@ public class Request implements HttpServletRequest
             }
         }
 
-        return _multiPartInputStream.getParts();
+        return _multiParts.getParts();
     }
 
     
+    private MultiParts newMultiParts(ServletInputStream inputStream, String contentType, MultipartConfigElement config, Object object, boolean useNewParser) throws IOException
+    {
+        MultiParts multiParts;
+        
+        if(useNewParser)
+        {
+            multiParts = new MultiPartsHttpParser(getInputStream(), getContentType(), config,
+                    (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+        }
+        else
+        {
+            multiParts = new MultiPartsUtilParser(getInputStream(), getContentType(), config,
+                    (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null)); 
+        }
+        
+        return multiParts;
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public void login(String username, String password) throws ServletException
@@ -2477,83 +2523,144 @@ public class Request implements HttpServletRequest
      * Used to switch between the old and new implementation of MultiPart Form InputStream Parsing.
      * The new implementation is prefered will be used as default unless specified otherwise constructor.
      */
-    @SuppressWarnings("deprecation") 
-    public class MultiPartInputStream
+    public interface MultiParts extends Closeable
     {   
-        private boolean usingNewParser = true;
-        private MultiPartFormInputStream _newParser = null;
-        private MultiPartInputStreamParser _oldParser = null;
-        
-        public MultiPartInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
-        {
-            this(in, contentType, config, contextTmpDir, false);
-        }
+        public Collection<Part> getParts();
+        public Part getPart(String name);
+        public boolean isEmpty();
+        public ContextHandler.Context getContext();
+    }
+    
+    
+    public class MultiPartsHttpParser implements MultiParts
+    {   
+        private final MultiPartFormInputStream _httpParser;
+        private final ContextHandler.Context _context;
 
-        public MultiPartInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, boolean useOldParser)
+        public MultiPartsHttpParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir) throws IOException
         {
-            if(useOldParser)
-                usingNewParser = false;
-            else
-                usingNewParser = true;
-            
-            if(usingNewParser)
-                _newParser = new MultiPartFormInputStream(in, contentType, config, contextTmpDir);
-            else
-                _oldParser = new MultiPartInputStreamParser(in, contentType, config, contextTmpDir);
+            _httpParser = new MultiPartFormInputStream(in, contentType, config, contextTmpDir);
+            _context = Request.this._context;
+            _httpParser.getParts();
         }
         
-        public Collection<Part> getParts() throws IOException {
-            Collection<Part> parts = null;
-            
-            if(usingNewParser)
-                parts = _newParser.getParts();
-            else
-                parts = _oldParser.getParts();
-            
-            return parts;
-        }
-            
-        public Part getPart(String name) throws IOException {
-            Part part = null;
-            
-            if(usingNewParser)
-                part = _newParser.getPart(name);
-            else
-                part = _oldParser.getPart(name);
-            
-            return part;
-        }
-            
-        public String getContentDispositionFilename(Part p)
+        @Override
+        public Collection<Part> getParts() 
         {
-            String contentDisposition = null;
+            try
+            {
+                return _httpParser.getParts();
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
             
-            if(usingNewParser)
-                contentDisposition = ((MultiPartFormInputStream.MultiPart)p).getContentDispositionFilename();
-            else
-                contentDisposition = ((MultiPartInputStreamParser.MultiPart)p).getContentDispositionFilename();
-            
-            return contentDisposition;
+        @Override
+        public Part getPart(String name) {
+            try
+            {
+                return _httpParser.getPart(name);
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     
-        public void deleteParts() throws MultiException
+        @Override
+        public void close()
         {
-            if(usingNewParser)
-                _newParser.deleteParts();
-            else
-                _oldParser.deleteParts();
+            _httpParser.deleteParts();
         }
         
-        public Collection<Part> getParsedParts()
+        @Override
+        public boolean isEmpty()
         {
-            Collection<Part> parsedParts = null;
-            
-            if(usingNewParser)
-                parsedParts = _newParser.getParsedParts();
-            else
-                parsedParts = _oldParser.getParsedParts();
-            
-            return parsedParts;
+            return _httpParser.isEmpty();
         }
+
+        @Override
+        public Context getContext()
+        {
+            return _context;
+        }
+       
+    }
+    
+    
+    @SuppressWarnings("deprecation") 
+    public class MultiPartsUtilParser implements MultiParts
+    {   
+        private final MultiPartInputStreamParser _utilParser;
+        private final ContextHandler.Context _context;
+        
+        public MultiPartsUtilParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir) throws IOException
+        {
+            _utilParser = new MultiPartInputStreamParser(in, contentType, config, contextTmpDir);
+            _context = Request.this._context;
+            _utilParser.getParts();
+            
+            EnumSet<NonCompliance> nonComplianceWarnings = _utilParser.getNonComplianceWarnings();
+            if (!nonComplianceWarnings.isEmpty())
+            {
+                @SuppressWarnings("unchecked")
+                List<String> violations = (List<String>)getAttribute(HttpChannelOverHttp.ATTR_COMPLIANCE_VIOLATIONS);
+                if (violations==null)
+                {
+                    violations = new ArrayList<>();
+                    setAttribute(HttpChannelOverHttp.ATTR_COMPLIANCE_VIOLATIONS,violations);
+                }
+                
+                for(NonCompliance nc : nonComplianceWarnings)
+                    violations.add(nc.name()+": "+nc.getURL());
+            }
+        }
+        
+        @Override
+        public Collection<Part> getParts()
+        {
+            try
+            {
+                return _utilParser.getParts();
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+            
+        @Override
+        public Part getPart(String name)
+        {
+            try
+            {
+                return _utilParser.getPart(name);
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    
+        @Override
+        public void close()
+        {
+            _utilParser.deleteParts();
+        }
+        
+        @Override
+        public boolean isEmpty()
+        {
+            return _utilParser.getParsedParts().isEmpty();
+        }
+
+        @Override
+        public Context getContext()
+        {
+            return _context;
+        }
+       
     }
 }

@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
@@ -73,6 +72,7 @@ public class MultiPartFormInputStream
     protected File _contextTmpDir;
     protected boolean _deleteOnExit;
     protected boolean _writeFilesWithFilenames;
+    protected boolean _parsed;
 
     public class MultiPart implements Part
     {
@@ -384,6 +384,7 @@ public class MultiPartFormInputStream
             if (((ServletInputStream)in).isFinished())
             {
                 _parts = EMPTY_MAP;
+                _parsed = true;
                 return;
             }
         }
@@ -391,10 +392,29 @@ public class MultiPartFormInputStream
     }
 
     /**
+     * @return whether the list of parsed parts is empty
+     */
+    public boolean isEmpty()
+    {
+        if (_parts == null)
+            return true;
+        
+        Collection<List<Part>> values = _parts.values();
+        for (List<Part> partList : values)
+        {
+            if(partList.size() != 0)
+                return false;
+        }
+
+        return true;
+    }
+    
+    /**
      * Get the already parsed parts.
      * 
      * @return the parts that were parsed
      */
+    @Deprecated
     public Collection<Part> getParsedParts()
     {
         if (_parts == null)
@@ -412,14 +432,23 @@ public class MultiPartFormInputStream
 
     /**
      * Delete any tmp storage for parts, and clear out the parts list.
-     *
-     * @throws MultiException
-     *             if unable to delete the parts
      */
-    public void deleteParts() throws MultiException
+    public void deleteParts()
     {
-        Collection<Part> parts = getParsedParts();
+        if (!_parsed)
+            return;        
+
+        Collection<Part> parts;
+        try
+        {
+            parts = getParts();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
         MultiException err = new MultiException();
+        
         for (Part p : parts)
         {
             try
@@ -433,7 +462,7 @@ public class MultiPartFormInputStream
         }
         _parts.clear();
 
-        err.ifExceptionThrowMulti();
+        err.ifExceptionThrowRuntime();
     }
 
     /**
@@ -445,7 +474,8 @@ public class MultiPartFormInputStream
      */
     public Collection<Part> getParts() throws IOException
     {
-        parse();
+        if (!_parsed)
+            parse();
         throwIfError();
 
         Collection<List<Part>> values = _parts.values();
@@ -469,7 +499,8 @@ public class MultiPartFormInputStream
      */
     public Part getPart(String name) throws IOException
     {
-        parse();
+        if(!_parsed)
+            parse();
         throwIfError();
         return _parts.getValue(name,0);
     }
@@ -500,8 +531,10 @@ public class MultiPartFormInputStream
     protected void parse()
     {
         // have we already parsed the input?
-        if (_parts != null || _err != null)
+        if (_parsed)
             return;
+        _parsed = true;
+        
         try
         {
 
@@ -612,7 +645,6 @@ public class MultiPartFormInputStream
 
     class Handler implements MultiPartParser.Handler
     {
-
         private MultiPart _part = null;
         private String contentDisposition = null;
         private String contentType = null;
@@ -673,18 +705,16 @@ public class MultiPartFormInputStream
 
                 // Check disposition
                 if (!form_data)
-                {
-                    return false;
-                }
+                    throw new IOException("Part not form-data");
+                
                 // It is valid for reset and submit buttons to have an empty name.
                 // If no name is supplied, the browser skips sending the info for that field.
                 // However, if you supply the empty string as the name, the browser sends the
                 // field, with name as the empty string. So, only continue this loop if we
                 // have not yet seen a name field.
                 if (name == null)
-                {
-                    return false;
-                }
+                    throw new IOException("No name in part");
+
 
                 // create the new part
                 _part = new MultiPart(name,filename);
@@ -766,12 +796,6 @@ public class MultiPartFormInputStream
             contentType = null;
             headers = new MultiMap<>();
         }
-    
-        @Override
-        public String toString() {
-            return("contentDisposition: "+contentDisposition+" contentType:"+contentType);
-        }
-    
     }
 
     public void setDeleteOnExit(boolean deleteOnExit)

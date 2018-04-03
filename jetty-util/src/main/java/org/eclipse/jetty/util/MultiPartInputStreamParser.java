@@ -78,15 +78,28 @@ public class MultiPartInputStreamParser
     protected File _contextTmpDir;
     protected boolean _deleteOnExit;
     protected boolean _writeFilesWithFilenames;
+    protected boolean _parsed;
 
     private EnumSet<NonCompliance> nonComplianceWarnings = EnumSet.noneOf(NonCompliance.class);
     public enum NonCompliance
     {
-        CR_TERMINATION,
-        LF_TERMINATION,
-        NO_INITIAL_CRLF, 
-        BASE64_TRANSFER_ENCODING, 
-        QUOTED_PRINTABLE_TRANSFER_ENCODING
+        CR_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1"),
+        LF_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1"),
+        NO_CRLF_AFTER_PREAMBLE("https://tools.ietf.org/html/rfc2046#section-5.1.1"), 
+        BASE64_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7"), 
+        QUOTED_PRINTABLE_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7");
+        
+        final String _rfcRef;
+        
+        NonCompliance(String rfcRef)
+        {
+            _rfcRef = rfcRef;
+        }
+        
+        public String getURL()
+        {
+            return _rfcRef;
+        }
     }
     
     /**
@@ -414,6 +427,7 @@ public class MultiPartInputStreamParser
             if (((ServletInputStream)in).isFinished())
             {
                 _parts = EMPTY_MAP;
+                _parsed = true;
                 return;
             }
         }
@@ -441,12 +455,12 @@ public class MultiPartInputStreamParser
 
     /**
      * Delete any tmp storage for parts, and clear out the parts list.
-     *
-     * @throws MultiException if unable to delete the parts
      */
     public void deleteParts ()
-    throws MultiException
     {
+        if(!_parsed)
+            return;
+        
         Collection<Part> parts = getParsedParts();
         MultiException err = new MultiException();
         for (Part p:parts)
@@ -462,7 +476,7 @@ public class MultiPartInputStreamParser
         }
         _parts.clear();
 
-        err.ifExceptionThrowMulti();
+        err.ifExceptionThrowRuntime();
     }
 
 
@@ -475,7 +489,8 @@ public class MultiPartInputStreamParser
     public Collection<Part> getParts()
     throws IOException
     {
-        parse();
+        if(!_parsed)
+            parse();
         throwIfError();
 
         
@@ -500,7 +515,8 @@ public class MultiPartInputStreamParser
     public Part getPart(String name)
     throws IOException
     {
-        parse();
+        if(_parsed)
+            parse();
         throwIfError();   
         return _parts.getValue(name, 0);
     }
@@ -530,8 +546,9 @@ public class MultiPartInputStreamParser
     protected void parse ()
     {
         //have we already parsed the input?
-        if (_parts != null || _err != null)
+        if (_parsed)
             return;
+        _parsed = true;
 
 
         //initialize
@@ -616,7 +633,7 @@ public class MultiPartInputStreamParser
 
             // check compliance of preamble
             if (Character.isWhitespace(untrimmed.charAt(0)))
-                nonComplianceWarnings.add(NonCompliance.NO_INITIAL_CRLF);
+                nonComplianceWarnings.add(NonCompliance.NO_CRLF_AFTER_PREAMBLE);
 
             // Read each part
             boolean lastPart=false;
@@ -847,9 +864,9 @@ public class MultiPartInputStreamParser
                 EnumSet<Termination> term = ((ReadLineInputStream)_in).getLineTerminations();
                 
                 if(term.contains(Termination.CR))
-                    nonComplianceWarnings.add(NonCompliance.CR_TERMINATION);
+                    nonComplianceWarnings.add(NonCompliance.CR_LINE_TERMINATION);
                 if(term.contains(Termination.LF))
-                    nonComplianceWarnings.add(NonCompliance.LF_TERMINATION);
+                    nonComplianceWarnings.add(NonCompliance.LF_LINE_TERMINATION);
             }
             else
                 throw new IOException("Incomplete parts");

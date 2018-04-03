@@ -378,7 +378,7 @@ public class MultiPartInputStreamTest
         IO.copy(stuff.getInputStream(), baos);
         assertTrue(baos.toString("US-ASCII").contains("aaaa"));
         
-        assertEquals(EnumSet.of(NonCompliance.LF_TERMINATION), mpis.getNonComplianceWarnings());
+        assertEquals(EnumSet.of(NonCompliance.LF_LINE_TERMINATION), mpis.getNonComplianceWarnings());
     }
     
 
@@ -420,7 +420,7 @@ public class MultiPartInputStreamTest
         IO.copy(stuff.getInputStream(), baos);
         assertTrue(baos.toString("US-ASCII").contains("bbbbb"));
 
-        assertEquals(EnumSet.of(NonCompliance.NO_INITIAL_CRLF), mpis.getNonComplianceWarnings());
+        assertEquals(EnumSet.of(NonCompliance.NO_CRLF_AFTER_PREAMBLE), mpis.getNonComplianceWarnings());
     }
     
     
@@ -631,7 +631,7 @@ public class MultiPartInputStreamTest
         IO.copy(p2.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Other"));
         
-        assertEquals(EnumSet.of(NonCompliance.LF_TERMINATION), mpis.getNonComplianceWarnings());
+        assertEquals(EnumSet.of(NonCompliance.LF_LINE_TERMINATION), mpis.getNonComplianceWarnings());
     }
     
     @Test
@@ -671,7 +671,7 @@ public class MultiPartInputStreamTest
         IO.copy(p2.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Other"));
         
-        assertEquals(EnumSet.of(NonCompliance.CR_TERMINATION), mpis.getNonComplianceWarnings());
+        assertEquals(EnumSet.of(NonCompliance.CR_LINE_TERMINATION), mpis.getNonComplianceWarnings());
     }
 
     @Test
@@ -710,7 +710,7 @@ public class MultiPartInputStreamTest
         IO.copy(p2.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Other")); 
         
-        assertEquals(EnumSet.of(NonCompliance.CR_TERMINATION), mpis.getNonComplianceWarnings());
+        assertEquals(EnumSet.of(NonCompliance.CR_LINE_TERMINATION), mpis.getNonComplianceWarnings());
     }
     
     @Test
