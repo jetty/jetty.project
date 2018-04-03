@@ -19,10 +19,15 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -34,195 +39,116 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
 /**
  * AbstractClusteredSessionScavengingTest
+ * 
+ * Test that a session that was live on node1, but then more
+ * recently used on node2 does not expire over on node1.
  */
 public abstract class AbstractClusteredSessionScavengingTest extends AbstractTestBase
 {
 
-    public void pause(int scavengePeriod)
+    public void pause(int secs)
+            throws InterruptedException
     {
-        try
-        {
-            Thread.sleep(scavengePeriod * 1000L);
-        }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
+        Thread.sleep(TimeUnit.SECONDS.toMillis(secs));
     }
-    
-    
-    public static class SessionListener implements HttpSessionListener
-    {
-        public CounterStatistic count = new CounterStatistic();
-        /** 
-         * @see javax.servlet.http.HttpSessionListener#sessionCreated(javax.servlet.http.HttpSessionEvent)
-         */
-        @Override
-        public void sessionCreated(HttpSessionEvent se)
-        {
-            count.increment();
-        }
 
-        /** 
-         * @see javax.servlet.http.HttpSessionListener#sessionDestroyed(javax.servlet.http.HttpSessionEvent)
-         */
-        @Override
-        public void sessionDestroyed(HttpSessionEvent se)
-        {
-           count.decrement();
-        }
-    }
+
+
     
+
     @Test
-    public void testNoScavenging() throws Exception
+    public void testClusteredScavenge() throws Exception
     {
         String contextPath = "/";
         String servletMapping = "/server";
-        int inactivePeriod = 3;
-        int scavengePeriod = 0;
-
+        int maxInactivePeriod = 5; //session will timeout after 5 seconds
+        int scavengePeriod = 1; //scavenging occurs every 1 seconds
+        
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-
-
-        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod, 
-                                                            cacheFactory, storeFactory);
-        ServletContextHandler context1 = server1.addContext(contextPath);
-        context1.addServlet(TestServlet.class, servletMapping);
-        SessionListener listener = new SessionListener();
-        context1.getSessionHandler().addEventListener(listener);
-
-
-        try
-        {
-            server1.start();
-            int port1 = server1.getPort();
-
-            HttpClient client = new HttpClient();
-            client.start();
-            try
-            {
-                String url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
-
-
-                // Create the session
-                ContentResponse response1 = client.GET(url + "?action=init");
-                assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
-                String sessionCookie = response1.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
-                SessionHandler m1 = context1.getSessionHandler();
-                assertEquals(1,  m1.getSessionsCreated());
-
-
-                // Wait a while to ensure that the session should have expired, if the
-                //scavenger was running
-                pause(2*inactivePeriod);
-
-                assertEquals(1,  m1.getSessionsCreated());
-               
-
-                if (m1 instanceof TestSessionHandler)
-                {
-                    ((TestSessionHandler)m1).assertCandidatesForExpiry(0);
-                }
-
-                //check a session removed listener did not get called
-                assertEquals(1, listener.count.getCurrent());
-            }
-            finally
-            {
-                client.stop();
-            }
-        }
-        finally
-        {
-            server1.stop();
-        }
-    }
-
-
-    @Test
-    public void testLocalSessionsScavenging() throws Exception
-    {
-        String contextPath = "";
-        String servletMapping = "/server";
-        int inactivePeriod = 4;
-        int scavengePeriod = 1;
-
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT); //don't evict sessions
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+        ((AbstractSessionDataStoreFactory)storeFactory).setSavePeriodSec(0); //always save when the session exits
         
-        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
-                                                            cacheFactory, storeFactory);
-        ServletContextHandler context1 = server1.addContext(contextPath);
-        context1.addServlet(TestServlet.class, servletMapping);
+        TestServer server1 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        TestServlet servlet1 = new TestServlet();
+        ServletHolder holder1 = new ServletHolder(servlet1);
+        ServletContextHandler context = server1.addContext(contextPath);
+        TestSessionListener listener1 = new TestSessionListener();
+        context.getSessionHandler().addEventListener(listener1);
+        context.addServlet(holder1, servletMapping);
+        SessionHandler m1 = context.getSessionHandler();
+        
 
         try
         {
             server1.start();
-            int port1 = server1.getPort();
-            TestServer server2 = new TestServer(0, inactivePeriod, scavengePeriod * 2, cacheFactory, storeFactory);
+            int port1=server1.getPort();
+            
+            TestServer server2 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
             ServletContextHandler context2 = server2.addContext(contextPath);
             context2.addServlet(TestServlet.class, servletMapping);
+            SessionHandler m2 = context2.getSessionHandler();
 
+            
             try
             {
                 server2.start();
-                int port2 = server2.getPort();
+                int port2=server2.getPort();
                 HttpClient client = new HttpClient();
                 client.start();
                 try
                 {
-                    String[] urls = new String[2];
-                    urls[0] = "http://localhost:" + port1 + contextPath + servletMapping;
-                    urls[1] = "http://localhost:" + port2 + contextPath + servletMapping;
-
-                    // Create the session on node1
-                    ContentResponse response1 = client.GET(urls[0] + "?action=init");
-                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                    // Perform one request to server1 to create a session
+                    ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=init");
+                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
+                    assertEquals("test", response1.getContentAsString());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
-                    assertTrue(sessionCookie != null);
+                    assertTrue( sessionCookie != null );
+                    assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsCurrent());
+                    assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsMax());
+                    assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsTotal());
                     // Mangle the cookie, replacing Path with $Path, etc.
-                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                    SessionHandler m1 = context1.getSessionHandler();
-                    assertEquals(1,  m1.getSessionsCreated());
-
-                    // Be sure the session is also present in node2
-                    org.eclipse.jetty.client.api.Request request = client.newRequest(urls[1] + "?action=test");
-                    request.header("Cookie", sessionCookie);
-                    ContentResponse response2 = request.send();
-                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-                    SessionHandler m2 = context2.getSessionHandler();
-
-                    // Wait for the scavenger to run on node1
-                    pause(inactivePeriod+(2*scavengePeriod));
-
-                    assertEquals(1,  m1.getSessionsCreated());
-
-                    // Check that node1 does not have any local session cached
-                    request = client.newRequest(urls[0] + "?action=check");
-                    response1 = request.send();
-                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");        
+                    String id = TestServer.extractSessionId(sessionCookie);
+                    Session s1 = ((DefaultSessionCache)m1.getSessionCache()).get(id);
+                    assertNotNull(s1);
+                    long expiry = s1.getSessionData().getExpiry();
                     
-                    assertEquals(1,  m1.getSessionsCreated());
-
-                    // Wait for the scavenger to run on node2, waiting 3 times the scavenger period
-                    // This ensures that the scavenger on node2 runs at least once.
-                    pause(inactivePeriod+(2*scavengePeriod));
                     
-                    // Check that node2 does not have any local session cached
-                    request = client.newRequest(urls[1] + "?action=check");
-                    response2 = request.send();
-                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                    //Now do requests for the session to node2. This will update the expiry time on the session.
+                    //Send requests for the next maxInactiveInterval, pausing a little between each request. 
+                    int requestInterval = 500; //ms pause between requests
+                    long start = System.currentTimeMillis();
+                    long end = expiry;
+                    long time = start;
+                    while (time < end)
+                    {
+                        Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1));
+                        request.header("Cookie", sessionCookie); //use existing session
+                        ContentResponse response2 = request.send();
+                        assertEquals(HttpServletResponse.SC_OK , response2.getStatus());
+                        assertEquals("test", response2.getContentAsString());
+                        Thread.sleep(requestInterval);
+                        assertSessionCounts(1,1,1, m2);
+                        time = System.currentTimeMillis();
+                    }
+
+                    //session on node1 should be eligible for scavenge
+                    //ensure scavenger has run on node1
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(scavengePeriod)); // wait until just after the original expiry time has passed
+
+
+                    //check that the session wasn't in fact scavenged because it was in use on node1
+                    assertFalse(listener1._destroys.contains(TestServer.extractSessionId(sessionCookie)));
+                    assertAfterScavenge(m1);
                 }
                 finally
                 {
@@ -239,9 +165,51 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
             server1.stop();
         }
     }
+    
+    
+    
+    public void assertAfterSessionCreated (SessionHandler m)
+    {
+        assertSessionCounts(1, 1, 1, m);
+    }
+    
+    public void assertAfterScavenge (SessionHandler manager)
+    {
+        assertSessionCounts(1,1,1, manager);
+    }
+    
+    public void assertSessionCounts (int current, int max, int total, SessionHandler manager)
+    {
+        assertEquals(current, ((DefaultSessionCache)manager.getSessionCache()).getSessionsCurrent());
+        assertEquals(max, ((DefaultSessionCache)manager.getSessionCache()).getSessionsMax());
+        assertEquals(total, ((DefaultSessionCache)manager.getSessionCache()).getSessionsTotal());
+    }
+
+    
+    public static class TestSessionListener implements HttpSessionListener
+    {
+        public Set<String> _creates = new HashSet<>();
+        public Set<String> _destroys = new HashSet<>();
+
+        @Override
+        public void sessionDestroyed(HttpSessionEvent se)
+        {
+           _destroys.add(se.getSession().getId());
+        }
+
+        @Override
+        public void sessionCreated(HttpSessionEvent se)
+        {
+            _creates.add(se.getSession().getId());
+        }
+    }
+
+
 
     public static class TestServlet extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {
@@ -250,18 +218,34 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
             {
                 HttpSession session = request.getSession(true);
                 session.setAttribute("test", "test");
+                sendResult(session, httpServletResponse.getWriter());
+
             }
-            else if ("test".equals(action))
+            else
             {
                 HttpSession session = request.getSession(false);
-                assertNotNull(session);
-                session.setAttribute("test", "test");
+
+                // if we node hopped we should get the session and test should already be present
+                sendResult(session, httpServletResponse.getWriter());
+
+                if (session!=null)
+                {
+                    session.setAttribute("test", "test");
+                }
             }
-            else if ("check".equals(action))
+        }
+
+        private void sendResult(HttpSession session, PrintWriter writer)
+        {
+            if (session != null)
             {
-                HttpSession session = request.getSession(false);
-                assertTrue(session == null);
+                writer.print(session.getAttribute("test"));
+            }
+            else
+            {
+                writer.print("null");
             }
         }
     }
+
 }

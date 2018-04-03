@@ -81,7 +81,7 @@ public class RemoveSessionTest
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
-                //ensure sessionCreated listener is called
+                //ensure sessionCreated bindingListener is called
                 assertTrue (testListener.isCreated());
                 assertEquals(1, m.getSessionsCreated());
                 assertEquals(1, ((DefaultSessionCache)m.getSessionCache()).getSessionsMax());
@@ -91,7 +91,7 @@ public class RemoveSessionTest
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=delete");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                //ensure sessionDestroyed listener is called
+                //ensure sessionDestroyed bindingListener is called
                 assertTrue(testListener.isDestroyed());
                 assertEquals(0, ((DefaultSessionCache)m.getSessionCache()).getSessionsCurrent());
                 assertEquals(1, ((DefaultSessionCache)m.getSessionCache()).getSessionsMax());
@@ -121,7 +121,8 @@ public class RemoveSessionTest
     }
     public static class TestServlet extends HttpServlet
     {
-        @Override
+        private static final long serialVersionUID = 1L;
+
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             String action = request.getParameter("action");

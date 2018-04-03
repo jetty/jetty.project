@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
-
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class AtomicBiIntegerTest
 {
@@ -75,11 +77,11 @@ public class AtomicBiIntegerTest
         assertThat(abi.getHi(),is(0));
         assertThat(abi.getLo(),is(0));
         
-        abi.setHi(Integer.MAX_VALUE);
+        abi.getAndSetHi(Integer.MAX_VALUE);
         assertThat(abi.getHi(),is(Integer.MAX_VALUE));
         assertThat(abi.getLo(),is(0));
         
-        abi.setLo(Integer.MIN_VALUE);
+        abi.getAndSetLo(Integer.MIN_VALUE);
         assertThat(abi.getHi(),is(Integer.MAX_VALUE));
         assertThat(abi.getLo(),is(Integer.MIN_VALUE));
     }

@@ -49,13 +49,4 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
         return MongoTestHelper.newSessionDataStoreFactory();
     }
 
-
-    @Override
-    public void testLocalSessionsScavenging() throws Exception
-    {
-        super.testLocalSessionsScavenging();
-    }
-    
-    
-
 }

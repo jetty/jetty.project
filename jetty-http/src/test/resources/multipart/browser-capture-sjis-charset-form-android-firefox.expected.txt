@@ -11,4 +11,4 @@ Request-Header|User-Agent|Mozilla/5.0 (Android 8.1.0; Mobile; rv:59.0) Gecko/59.
 Parts-Count|3
 Part-ContainsContents|_charset_|Shift_JIS
 Part-ContainsContents|japanese|健治
-Part-ContainsContents|hello|ャユ戆タ
+Part-ContainsContents|hello|ャユ&#25094;タ

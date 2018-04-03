@@ -201,7 +201,7 @@ public class MultiPartFormInputStream
         {
             if (name == null)
                 return null;
-            return _headers.getValue(name.toLowerCase(Locale.ENGLISH),0);
+            return _headers.getValue(StringUtil.asciiToLowerCase(name),0);
         }
 
         /**
@@ -628,7 +628,7 @@ public class MultiPartFormInputStream
         public void parsedField(String key, String value)
         {            
             // Add to headers and mark if one of these fields. //
-            headers.put(key.toLowerCase(Locale.ENGLISH),value);
+            headers.put(StringUtil.asciiToLowerCase(key),value);
             if (key.equalsIgnoreCase("content-disposition"))
                 contentDisposition = value;
             else if (key.equalsIgnoreCase("content-type"))
@@ -642,8 +642,13 @@ public class MultiPartFormInputStream
         @Override
         public boolean headerComplete()
         {
-            try
+            if(LOG.isDebugEnabled())
             {
+                LOG.debug("headerComplete {}",this);
+            }
+            
+            try
+            {                
                 // Extract content-disposition
                 boolean form_data = false;
                 if (contentDisposition == null)
@@ -657,8 +662,8 @@ public class MultiPartFormInputStream
                 while (tok.hasMoreTokens())
                 {
                     String t = tok.nextToken().trim();
-                    String tl = t.toLowerCase(Locale.ENGLISH);
-                    if (t.startsWith("form-data"))
+                    String tl = StringUtil.asciiToLowerCase(t);
+                    if (tl.startsWith("form-data"))
                         form_data = true;
                     else if (tl.startsWith("name="))
                         name = value(t);
@@ -708,7 +713,10 @@ public class MultiPartFormInputStream
 
         @Override
         public boolean content(ByteBuffer buffer, boolean last)
-        {
+        {   
+            if(_part == null)
+                return false;
+            
             if (BufferUtil.hasContent(buffer))
             {
                 try
@@ -733,10 +741,22 @@ public class MultiPartFormInputStream
                     _err = e;
                     return true;
                 }
-                reset();
             }
 
             return false;
+        }
+
+        @Override
+        public void startPart() 
+        {
+            reset();
+        }
+        
+        @Override
+        public void earlyEOF()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Early EOF {}",MultiPartFormInputStream.this);
         }
 
         public void reset()
@@ -746,14 +766,12 @@ public class MultiPartFormInputStream
             contentType = null;
             headers = new MultiMap<>();
         }
-
+    
         @Override
-        public void earlyEOF()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Early EOF {}",MultiPartFormInputStream.this);
+        public String toString() {
+            return("contentDisposition: "+contentDisposition+" contentType:"+contentType);
         }
-
+    
     }
 
     public void setDeleteOnExit(boolean deleteOnExit)

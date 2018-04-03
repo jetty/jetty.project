@@ -14,4 +14,4 @@ Request-Header|User-Agent|Mozilla/5.0 (Linux; Android 8.1.0; Pixel 2 XL Build/OP
 Parts-Count|3
 Part-ContainsContents|_charset_|Shift_JIS
 Part-ContainsContents|japanese|健治
-Part-ContainsContents|hello|ャユ戆タ
+Part-ContainsContents|hello|ャユ&#25094;タ

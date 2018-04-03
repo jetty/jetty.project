@@ -12,4 +12,4 @@ Request-Header|User-Agent|Mozilla/5.0 (iPad; CPU OS 11_2_6 like Mac OS X) AppleW
 Parts-Count|3
 Part-ContainsContents|_charset_|Shift_JIS
 Part-ContainsContents|japanese|健治
-Part-ContainsContents|hello|ャユ戆タ
+Part-ContainsContents|hello|ャユ&#25094;タ

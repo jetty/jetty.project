@@ -24,7 +24,7 @@ import javax.servlet.ServletRequestListener;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
+
 
 public class MultiPartCleanerListener implements ServletRequestListener
 {
@@ -38,7 +38,7 @@ public class MultiPartCleanerListener implements ServletRequestListener
     public void requestDestroyed(ServletRequestEvent sre)
     {
         //Clean up any tmp files created by MultiPartInputStream
-        MultiPartInputStreamParser mpis = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
+        Request.MultiPartInputStream mpis = (Request.MultiPartInputStream)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
         if (mpis != null)
         {
             ContextHandler.Context context = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);

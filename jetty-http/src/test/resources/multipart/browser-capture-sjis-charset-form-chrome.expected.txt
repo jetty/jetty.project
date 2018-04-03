@@ -15,4 +15,4 @@ Request-Header|User-Agent|Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 Parts-Count|3
 Part-ContainsContents|_charset_|Shift_JIS
 Part-ContainsContents|japanese|健治
-Part-ContainsContents|hello|ャユ戆タ
+Part-ContainsContents|hello|ャユ&#25094;タ

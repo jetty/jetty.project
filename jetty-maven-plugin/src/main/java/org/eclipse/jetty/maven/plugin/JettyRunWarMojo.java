@@ -19,6 +19,7 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.plugin.MojoExecutionException;
@@ -55,7 +56,6 @@ public class JettyRunWarMojo extends AbstractJettyMojo
      */
     private File war;
 
-    
     /**
      * @see org.apache.maven.plugin.Mojo#execute()
      */
@@ -95,20 +95,6 @@ public class JettyRunWarMojo extends AbstractJettyMojo
        return;        
     }
 
-    
-
-    
-    /** 
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#checkPackagingConfiguration()
-     */
-    @Override
-    public void checkPackagingConfiguration() throws MojoExecutionException
-    { 
-        if ( !"war".equals( project.getPackaging() ))
-            throw new MojoExecutionException("Not war packaging");
-    }
-
-    
     /**
      * @see AbstractJettyMojo#configureScanner()
      */

@@ -303,9 +303,10 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 commit = this.commit;
                 if (state == State.WRITING)
                 {
+                    this.state = State.IDLE;
                     callback = this.callback;
                     this.callback = null;
-                    this.state = State.IDLE;
+                    this.commit = false;
                 }
             }
             if (LOG.isDebugEnabled())
@@ -330,13 +331,13 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 if (state == State.WRITING)
                 {
                     this.state = State.FAILED;
-                    this.failure = failure;
                     callback = this.callback;
                     this.callback = null;
+                    this.failure = failure;
                 }
             }
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HTTP2 Response #%d/%h failed to %s", stream.getId(), stream.getSession(), commit ? "commit" : "flush"), failure);
+                LOG.debug(String.format("HTTP2 Response #%d/%h %s %s", stream.getId(), stream.getSession(), commit ? "commit" : "flush", callback == null ? "ignored" : "failed"), failure);
             if (callback != null)
                 callback.failed(failure);
         }

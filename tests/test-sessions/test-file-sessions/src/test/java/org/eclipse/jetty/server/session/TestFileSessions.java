@@ -21,21 +21,14 @@ package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,205 +53,396 @@ public class TestFileSessions extends AbstractTestBase
     }
  
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
+   
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         return FileTestHelper.newSessionDataStoreFactory();
     }
     
+    /**
+     * Test that passing in a filename that contains ".." chars does not
+     * remove a file outside of the store dir.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testLoadForeignContext() throws Exception
+    {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
+        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(context.getSessionHandler());
+        store.setDeleteUnrestorableFiles(true);
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+        
+ 
+        //make a file for foobar context
+        FileTestHelper.createFile((System.currentTimeMillis()+TimeUnit.DAYS.toMillis(1))+"__foobar_0.0.0.0_1234");
+        
+        store.start();
+        
+        //test this context can't load it
+        assertNull(store.load("1234"));
+    }
     
-    
-    
-    
-   
+
     
     @Test
-    public void testSweep () throws Exception
+    public void testFilenamesWithContext() throws Exception
     {
-        int scavengePeriod = 2;      
-        String contextPath = "/test";
-        String servletMapping = "/server";
-        int inactivePeriod = 5;
-        int gracePeriod = 10;
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        FileSessionDataStoreFactory storeFactory = (FileSessionDataStoreFactory)createSessionDataStoreFactory();
-        storeFactory.setGracePeriodSec(gracePeriod);
-        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
-        server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
+        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+        
+        String s = store.getIdWithContext("1234");
+        assertEquals("_test_0.0.0.0_1234", s);
+        
+        s = store.getIdFromFilename("0__test_0.0.0.0_1234");
+        assertEquals("1234", s);
+        
+        s = store.getIdFromFilename(null);
+        assertNull(s);  
+        
+        long l = store.getExpiryFromFilename("100__test_0.0.0.0_1234");
+        assertEquals(100, l);
+        
         
         try
         {
-            server1.start();
-            
-            //create file not for our context that expired long ago and should be removed by sweep
-            FileTestHelper.createFile("101_foobar_0.0.0.0_sessiona");
-            FileTestHelper.assertSessionExists("sessiona", true);
-            
-            //create a file not for our context that is not expired and should be ignored
-            String nonExpiredForeign = (System.currentTimeMillis()+TimeUnit.DAYS.toMillis(1))+"_foobar_0.0.0.0_sessionb";
-            FileTestHelper.createFile(nonExpiredForeign);
-            FileTestHelper.assertFileExists(nonExpiredForeign, true);
-            
-            //create a file not for our context that is recently expired, a thus ignored by sweep
-            String expiredForeign = (System.currentTimeMillis()-TimeUnit.SECONDS.toMillis(1))+"_foobar_0.0.0.0_sessionc";
-            FileTestHelper.createFile(expiredForeign);
-            FileTestHelper.assertFileExists(expiredForeign, true);
-            
-            //create a file that is not a session file, it should be ignored
-            FileTestHelper.createFile("whatever.txt");
-            FileTestHelper.assertFileExists("whatever.txt", true);
-            
-            //create a file that is a non-expired session file for our context that should be ignored
-            String nonExpired = (System.currentTimeMillis()+TimeUnit.DAYS.toMillis(1))+"_test_0.0.0.0_sessionb";
-            FileTestHelper.createFile(nonExpired);
-            FileTestHelper.assertFileExists(nonExpired, true);
-            
-            //create a file that is a never-expire session file for our context that should be ignored
-            String neverExpired = "0_test_0.0.0.0_sessionc";
-            FileTestHelper.createFile(neverExpired);
-            FileTestHelper.assertFileExists(neverExpired, true);
-            
-            //create a file that is a never-expire session file for another context that should be ignored
-            String foreignNeverExpired = "0_test_0.0.0.0_sessionc";
-            FileTestHelper.createFile(foreignNeverExpired);
-            FileTestHelper.assertFileExists(foreignNeverExpired, true);
-            
-            
-            //need to wait to ensure scavenge runs so sweeper runs
-            Thread.currentThread().sleep(2000L*scavengePeriod);
-            FileTestHelper.assertSessionExists("sessiona", false);
-            FileTestHelper.assertFileExists("whatever.txt", true);
-            FileTestHelper.assertFileExists(nonExpired, true);
-            FileTestHelper.assertFileExists(nonExpiredForeign, true);
-            FileTestHelper.assertFileExists(expiredForeign, true);
-            FileTestHelper.assertFileExists(neverExpired, true);
-            FileTestHelper.assertFileExists(foreignNeverExpired, true);
+            long ll = store.getExpiryFromFilename("nonnumber__test_0.0.0.0_1234");
+            fail ("Should be non numeric");
         }
-        finally
+        catch (Exception e)
         {
-            server1.stop();
+            //expected
         }
-    }
-    
-    
-    
-    
-    
-  
-    @Test
-    public void test () throws Exception
-    {
-        String contextPath = "/test";
-        String servletMapping = "/server";
-        int inactivePeriod = 5;
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        TestServer server1 = new TestServer(0, inactivePeriod, 2, cacheFactory, storeFactory);
-        server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+        
         try
         {
-            server1.start();
-            int port1 = server1.getPort();
-            
-            HttpClient client = new HttpClient();
-            client.start();
-            
-            try
-            {
-                // Connect to server1 to create a session and get its session cookie
-                ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
-                assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
-                String sessionCookie = response1.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                
-                //check that the file for the session exists after creating the session
-                FileTestHelper.assertSessionExists(TestServer.extractSessionId(sessionCookie), true);
-                File file1 = FileTestHelper.getFile(TestServer.extractSessionId(sessionCookie));
-                
-                
-                //request the session and check that the file for the session was changed
-                Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=check");
-                request.header("Cookie", sessionCookie);
-                ContentResponse response2 = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-                FileTestHelper.assertSessionExists(TestServer.extractSessionId(sessionCookie), true);
-                File file2 = FileTestHelper.getFile(TestServer.extractSessionId(sessionCookie));
-                
-                assertFalse (file1.exists());
-                assertTrue(file2.exists());
-                
-                //check expiry time in filename changed
-                String tmp = file1.getName();
-                tmp = tmp.substring(0,  tmp.indexOf("_"));
-                
-                long f1 = Long.valueOf(tmp);
-                tmp = file2.getName();
-                tmp = tmp.substring(0,  tmp.indexOf("_"));
-                long f2 = Long.valueOf(tmp);
-                assertTrue (f2>f1);
-                
-                //invalidate the session and verify that the session file is deleted
-                request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=remove");
-                request.header("Cookie", sessionCookie);
-                response2 = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-                FileTestHelper.assertSessionExists(TestServer.extractSessionId(sessionCookie), false);
-                
-                //make another session
-                response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
-                assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
-                sessionCookie = response1.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                FileTestHelper.assertSessionExists(TestServer.extractSessionId(sessionCookie), true);
-                
-                //wait for it to be scavenged
-                Thread.currentThread().sleep((inactivePeriod + 2)*1000);
-                FileTestHelper.assertSessionExists(TestServer.extractSessionId(sessionCookie), false);
-                
-            }
-            finally
-            {
-                client.stop();
-            }
+            long ll = store.getExpiryFromFilename(null);
+            fail("Should throw ISE");
         }
-        finally
+        catch (Exception e)
         {
-            server1.stop();
+            //expected;
         }
+        
+        try
+        {
+            long ll = store.getExpiryFromFilename("thisisnotavalidsessionfilename");
+            fail("Should throw ISE");
+        }
+        catch (IllegalStateException e)
+        {
+            //expected;
+        }
+        
+        s = store.getContextFromFilename("100__test_0.0.0.0_1234");
+        assertEquals("_test_0.0.0.0", s);
+
+        assertNull (store.getContextFromFilename(null));
+
+        try
+        {
+            s = store.getContextFromFilename("thisisnotavalidfilename");
+            fail("Should throw exception");
+        }
+        catch (StringIndexOutOfBoundsException e)
+        {
+            //expected;
+        }
+        
+        s = store.getIdWithContextFromFilename("100__test_0.0.0.0_1234");
+        assertEquals("_test_0.0.0.0_1234",s);
+        
+        assertNull(store.getIdWithContextFromFilename(null));
+        assertNull(store.getIdWithContextFromFilename("thisisnotavalidfilename"));
+        
+        assertTrue(store.isOurContextSessionFilename("100__test_0.0.0.0_1234"));
+        assertFalse(store.isOurContextSessionFilename("100__other_0.0.0.0_1234"));
     }
-    
-    public static class TestServlet extends HttpServlet
+
+
+
+
+    @Test
+    public void testFilenamesWithDefaultContext() throws Exception
     {
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
+        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+        
+        String s = store.getIdWithContext("1234");
+        assertEquals("_0.0.0.0_1234", s);
+        
+        s = store.getIdFromFilename("0__0.0.0.0_1234");
+        assertEquals("1234", s);
+        
+        long l = store.getExpiryFromFilename("100__0.0.0.0_1234");
+        assertEquals(100, l);
+        
+        try
         {
-            String action = request.getParameter("action");
-            if ("init".equals(action))
-            {
-                HttpSession session = request.getSession(true);
-                session.setAttribute("A", "A");
-            }
-            else if ("remove".equals(action))
-            {
-                HttpSession session = request.getSession(false);
-                session.invalidate();
-            }
-            else if ("check".equals(action))
-            {
-                HttpSession session = request.getSession(false);
-                assertTrue(session != null);
-                try {Thread.currentThread().sleep(1);}catch (Exception e) {e.printStackTrace();}
-            }
+            long ll = store.getExpiryFromFilename("nonnumber__0.0.0.0_1234");
+            fail ("Should be non numeric");
         }
+        catch (Exception e)
+        {
+            //expected
+        }
+        
+        s = store.getContextFromFilename("100__0.0.0.0_1234");
+        assertEquals("_0.0.0.0", s);
+        
+        s = store.getIdWithContextFromFilename("100__0.0.0.0_1234");
+        assertEquals("_0.0.0.0_1234",s);
+        
+        assertTrue(store.isOurContextSessionFilename("100__0.0.0.0_1234"));
+        assertFalse(store.isOurContextSessionFilename("100__other_0.0.0.0_1234"));
+    }
+   
+    
+    
+    /**
+     * Test the FileSessionDataStore sweeper function
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testSweep () throws Exception
+    {
+
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+
+        store.start();
+
+        //create file not for our context that expired long ago and should be removed by sweep
+        FileTestHelper.createFile("101__foobar_0.0.0.0_sessiona");
+        FileTestHelper.assertSessionExists("sessiona", true);
+
+        //create a file not for our context that is not expired and should be ignored
+        String nonExpiredForeign = (System.currentTimeMillis()+TimeUnit.DAYS.toMillis(1))+"__foobar_0.0.0.0_sessionb";
+        FileTestHelper.createFile(nonExpiredForeign);
+        FileTestHelper.assertFileExists(nonExpiredForeign, true);
+
+        //create a file not for our context that is recently expired, a thus ignored by sweep
+        String expiredForeign = (System.currentTimeMillis()-TimeUnit.SECONDS.toMillis(1))+"__foobar_0.0.0.0_sessionc";
+        FileTestHelper.createFile(expiredForeign);
+        FileTestHelper.assertFileExists(expiredForeign, true);
+
+        //create a file that is not a session file, it should be ignored
+        FileTestHelper.createFile("whatever.txt");
+        FileTestHelper.assertFileExists("whatever.txt", true);
+        
+        //create a file that is not a valid session filename, should be ignored
+        FileTestHelper.createFile("nonNumber__0.0.0.0_spuriousFile");
+        FileTestHelper.assertFileExists("nonNumber__0.0.0.0_spuriousFile", true);
+        
+        //create a file that is a non-expired session file for our context that should be ignored
+        String nonExpired = (System.currentTimeMillis()+TimeUnit.DAYS.toMillis(1))+"__test_0.0.0.0_sessionb";
+        FileTestHelper.createFile(nonExpired);
+        FileTestHelper.assertFileExists(nonExpired, true);
+
+        //create a file that is a never-expire session file for our context that should be ignored
+        String neverExpired = "0__test_0.0.0.0_sessionc";
+        FileTestHelper.createFile(neverExpired);
+        FileTestHelper.assertFileExists(neverExpired, true);
+
+        //create a file that is a never-expire session file for another context that should be ignored
+        String foreignNeverExpired = "0__other_0.0.0.0_sessionc";
+        FileTestHelper.createFile(foreignNeverExpired);
+        FileTestHelper.assertFileExists(foreignNeverExpired, true);
+
+        //sweep
+        ((FileSessionDataStore)store).sweepDisk();
+
+        //check results
+        FileTestHelper.assertSessionExists("sessiona", false);
+        FileTestHelper.assertFileExists("whatever.txt", true);
+        FileTestHelper.assertFileExists("nonNumber__0.0.0.0_spuriousFile", true);
+        FileTestHelper.assertFileExists(nonExpired, true);
+        FileTestHelper.assertFileExists(nonExpiredForeign, true);
+        FileTestHelper.assertFileExists(expiredForeign, true);
+        FileTestHelper.assertFileExists(neverExpired, true);
+        FileTestHelper.assertFileExists(foreignNeverExpired, true);
     }
     
     
+    /**
+     * Test that when it initializes, the FileSessionDataStore deletes old expired sessions.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testInitialize ()
+    throws Exception
+    {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+
+        //create file not for our context that expired long ago and should be removed 
+        FileTestHelper.createFile("101_foobar_0.0.0.0_sessiona");
+        FileTestHelper.assertSessionExists("sessiona", true);
+
+        //create a file not for our context that is not expired and should be ignored
+        String nonExpiredForeign = (System.currentTimeMillis()+TimeUnit.DAYS.toMillis(1))+"_foobar_0.0.0.0_sessionb";
+        FileTestHelper.createFile(nonExpiredForeign);
+        FileTestHelper.assertFileExists(nonExpiredForeign, true);
+
+        //create a file not for our context that is recently expired, a thus ignored 
+        String expiredForeign = (System.currentTimeMillis()-TimeUnit.SECONDS.toMillis(1))+"_foobar_0.0.0.0_sessionc";
+        FileTestHelper.createFile(expiredForeign);
+        FileTestHelper.assertFileExists(expiredForeign, true);
+
+        //create a file that is not a session file, it should be ignored
+        FileTestHelper.createFile("whatever.txt");
+        FileTestHelper.assertFileExists("whatever.txt", true);
+        
+        //create a file that is not a valid session filename, should be ignored
+        FileTestHelper.createFile("nonNumber_0.0.0.0_spuriousFile");
+        FileTestHelper.assertFileExists("nonNumber_0.0.0.0_spuriousFile", true);
+
+        //create a file that is a non-expired session file for our context that should be ignored
+        String nonExpired = (System.currentTimeMillis()+TimeUnit.DAYS.toMillis(1))+"_test_0.0.0.0_sessionb";
+        FileTestHelper.createFile(nonExpired);
+        FileTestHelper.assertFileExists(nonExpired, true);
+
+        //create a file that is a never-expire session file for our context that should be ignored
+        String neverExpired = "0_test_0.0.0.0_sessionc";
+        FileTestHelper.createFile(neverExpired);
+        FileTestHelper.assertFileExists(neverExpired, true);
+
+        //create a file that is a never-expire session file for another context that should be ignored
+        String foreignNeverExpired = "0_test_0.0.0.0_sessionc";
+        FileTestHelper.createFile(foreignNeverExpired);
+        FileTestHelper.assertFileExists(foreignNeverExpired, true);
+
+        //walk all files in the store
+        ((FileSessionDataStore)store).initializeStore();
+        
+        //check results
+        FileTestHelper.assertSessionExists("sessiona", false);
+        FileTestHelper.assertFileExists("whatever.txt", true);
+        FileTestHelper.assertFileExists("nonNumber_0.0.0.0_spuriousFile", true);
+        FileTestHelper.assertFileExists(nonExpired, true);
+        FileTestHelper.assertFileExists(nonExpiredForeign, true);
+        FileTestHelper.assertFileExists(expiredForeign, true);
+        FileTestHelper.assertFileExists(neverExpired, true);
+        FileTestHelper.assertFileExists(foreignNeverExpired, true);
+    }
+
+
+    /**
+     * If deleteUnrestorableFiles option is true, a damaged or unrestorable
+     * file should be deleted.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testDeleteUnrestorableFiles ()
+    throws Exception
+    {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        ((FileSessionDataStore)store).setDeleteUnrestorableFiles(true); //invalid file will be removed
+        store.initialize(sessionContext);
+  
+        String expectedFilename = (System.currentTimeMillis() + 10000)+"__test_0.0.0.0_validFile123";
+        FileTestHelper.createFile(expectedFilename);
+        FileTestHelper.assertFileExists(expectedFilename, true);
+
+        store.start();
+        
+        try
+        {
+            store.load("validFile123");
+            fail("Load should fail");
+        }
+        catch (Exception e)
+        {
+            //expected exception
+        }
+        
+        FileTestHelper.assertFileExists(expectedFilename, false);
+    }
+    
+    
+    /**
+     * Tests that only the most recent file will be
+     * loaded into the cache, even if it is already
+     * expired. Other recently expired files for
+     * same session should be deleted.
+     * @throws Exception
+     */
+    @Test
+    public void testLoadOnlyMostRecentFiles ()
+    throws Exception
+    {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");       
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(100);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+        
+        long now = System.currentTimeMillis();
+        
+        //create a file for session abc that expired 5sec ago
+        long exp = now - 5000L; 
+        String name1 =  Long.toString(exp)+"__test_0.0.0.0_abc"; 
+        FileTestHelper.createFile(name1);
+
+        
+        //create a file for same session that expired 4 sec ago
+        exp = now - 4000L;
+        String name2 = Long.toString(exp)+"__test_0.0.0.0_abc"; 
+        FileTestHelper.createFile(name2);
+
+
+        //make a file for same session that expired 3 sec ago
+        exp = now - 3000L;
+        String name3 = Long.toString(exp)+"__test_0.0.0.0_abc";
+        FileTestHelper.createFile(name3);
+        
+        store.start();
+        
+        FileTestHelper.assertFileExists(name1, false);
+        FileTestHelper.assertFileExists(name2, false);
+        FileTestHelper.assertFileExists(name3, true);        
+    }
+
 }
