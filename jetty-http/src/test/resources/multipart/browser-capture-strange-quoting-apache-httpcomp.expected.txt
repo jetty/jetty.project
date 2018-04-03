@@ -1,0 +1,11 @@
+Request-Header|Accept-Encoding|gzip,deflate
+Request-Header|Connection|keep-alive
+Request-Header|Content-Length|798
+Request-Header|Content-Type|multipart/form-data; boundary=z5xWs05oeiE0TAdFlrrlAX5RSgHrHzVcgskrru
+Request-Header|Host|localhost:9090
+Request-Header|User-Agent|Apache-HttpClient/4.5.5 (Java/1.8.0_162)
+Request-Header|X-BrowserId|apache-httpcomp
+Parts-Count|4
+Part-ContainsContents|and "I" quote|Value 1
+Part-ContainsContents|and+%22I%22+quote|Value 2
+Part-ContainsContents|value"; what="whoa"|Value 3

@@ -28,7 +28,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestOutputStream;
@@ -46,7 +45,6 @@ import javax.servlet.http.Part;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -60,8 +58,8 @@ import org.junit.runners.Parameterized;
 public class MultiPartCaptureTest
 {
 
-    public static final int MAX_FILE_SIZE = 60 * 1024;
-    public static final int MAX_REQUEST_SIZE = 1024 * 1024;
+    public static final int MAX_FILE_SIZE = 2 * 1024 * 1024;
+    public static final int MAX_REQUEST_SIZE = MAX_FILE_SIZE + (60 * 1024);
     public static final int FILE_SIZE_THRESHOLD = 50;
 
     @Parameterized.Parameters(name = "{0}")
@@ -69,25 +67,41 @@ public class MultiPartCaptureTest
     {
         List<Object[]> ret = new ArrayList<>();
 
-        // Capture of raw request body contents from Apache HttpComponents 4.5.5
-        ret.add(new String[]{"multipart-text-files"});
+        // == Arbitrary / Non-Standard Examples ==
+
+        ret.add(new String[]{"multipart-uppercase"});
         // ret.add(new String[]{"multipart-base64"});  // base64 transfer encoding deprecated
         // ret.add(new String[]{"multipart-base64-long"}); // base64 transfer encoding deprecated
-        // ret.add(new String[]{"multipart-complex"}); // TODO joakime bad capture includes ? in sjis content
-        ret.add(new String[]{"multipart-duplicate-names-1"});
-        ret.add(new String[]{"multipart-encoding-mess"});
-        // ret.add(new String[]{"multipart-inside-itself"}); // impossible test, badly chosen boundary
-        // ret.add(new String[]{"multipart-inside-itself-binary"}); // impossible test, badly chosen boundary
-        ret.add(new String[]{"multipart-number-browser"});
-        ret.add(new String[]{"multipart-number-strict"});
-        // ret.add(new String[]{"multipart-sjis"}); // TODO joakime bad capture includes ? in sjis content
-        ret.add(new String[]{"multipart-strange-quoting"});
-        ret.add(new String[]{"multipart-unicode-names"});
-        ret.add(new String[]{"multipart-uppercase"});
-        // ret.add(new String[]{"multipart-x-www-form-urlencoded"}); // not our job to decode content
-        ret.add(new String[]{"multipart-zencoding"});
 
-        // Capture of raw request body contents from various browsers
+        // == Capture of raw request body contents from Apache HttpClient 4.5.5 ==
+
+        ret.add(new String[]{"browser-capture-company-urlencoded-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-complex-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-duplicate-names-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-encoding-mess-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-nested-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-nested-binary-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-number-only2-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-number-only-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-sjis-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-strange-quoting-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-text-files-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-unicode-names-apache-httpcomp"});
+        ret.add(new String[]{"browser-capture-zalgo-text-plain-apache-httpcomp"});
+
+        // == Capture of raw request body contents from Eclipse Jetty Http Client 9.4.9 ==
+
+        ret.add(new String[]{"browser-capture-complex-jetty-client"});
+        ret.add(new String[]{"browser-capture-duplicate-names-jetty-client"});
+        ret.add(new String[]{"browser-capture-encoding-mess-jetty-client"});
+        ret.add(new String[]{"browser-capture-nested-jetty-client"});
+        ret.add(new String[]{"browser-capture-number-only-jetty-client"});
+        ret.add(new String[]{"browser-capture-sjis-jetty-client"});
+        ret.add(new String[]{"browser-capture-text-files-jetty-client"});
+        ret.add(new String[]{"browser-capture-unicode-names-jetty-client"});
+        ret.add(new String[]{"browser-capture-whitespace-only-jetty-client"});
+
+        // == Capture of raw request body contents from various browsers ==
 
         // simple form - 2 fields
         ret.add(new String[]{"browser-capture-form1-android-chrome"});
@@ -100,13 +114,14 @@ public class MultiPartCaptureTest
         ret.add(new String[]{"browser-capture-form1-osx-safari"});
 
         // form submitted as shift-jis
+        ret.add(new String[]{"browser-capture-sjis-form-edge"});
+        ret.add(new String[]{"browser-capture-sjis-form-msie"});
+        // TODO: these might be addressable via Issue #2398
         // ret.add(new String[]{"browser-capture-sjis-form-android-chrome"}); // contains html encoded character and unspecified charset defaults to utf-8
         // ret.add(new String[]{"browser-capture-sjis-form-android-firefox"}); // contains html encoded character and unspecified charset defaults to utf-8
         // ret.add(new String[]{"browser-capture-sjis-form-chrome"}); // contains html encoded character and unspecified charset defaults to utf-8
-        ret.add(new String[]{"browser-capture-sjis-form-edge"}); 
         // ret.add(new String[]{"browser-capture-sjis-form-firefox"}); // contains html encoded character and unspecified charset defaults to utf-8
         // ret.add(new String[]{"browser-capture-sjis-form-ios-safari"}); // contains html encoded character and unspecified charset defaults to utf-8
-        ret.add(new String[]{"browser-capture-sjis-form-msie"});
         // ret.add(new String[]{"browser-capture-sjis-form-safari"}); // contains html encoded character and unspecified charset defaults to utf-8
 
         // form submitted as shift-jis (with HTML5 specific hidden _charset_ field)
@@ -133,7 +148,6 @@ public class MultiPartCaptureTest
         ret.add(new String[]{"browser-capture-form-fileupload-alt-chrome"});
         ret.add(new String[]{"browser-capture-form-fileupload-alt-edge"});
         ret.add(new String[]{"browser-capture-form-fileupload-alt-firefox"});
-        // ret.add(new String[]{"browser-capture-form-fileupload-alt-ios-safari"}); // is Sha1sum correct new parser gives same result as old parser
         ret.add(new String[]{"browser-capture-form-fileupload-alt-msie"});
         ret.add(new String[]{"browser-capture-form-fileupload-alt-safari"});
 
