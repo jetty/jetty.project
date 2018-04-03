@@ -143,13 +143,13 @@ public class OverlayConfig
             for (int j=0; list != null && j < list.length;j++)
             {
                 if (includes == null)
-                    includes = new ArrayList<String>();
+                    includes = new ArrayList<>();
                 includes.add(list[j].getValue());
             }
         }
         if (includes == null && defaultIncludes != null)
         {
-            includes = new ArrayList<String>();
+            includes = new ArrayList<>();
             includes.addAll(defaultIncludes);
         }
         setIncludes(includes);
@@ -163,13 +163,13 @@ public class OverlayConfig
             for (int j=0; list != null && j < list.length;j++)
             {
                 if (excludes == null)
-                    excludes = new ArrayList<String>();
+                    excludes = new ArrayList<>();
                 excludes.add(list[j].getValue());
             }
         }
         if (excludes == null && defaultExcludes != null)
         {
-            excludes = new ArrayList<String>();
+            excludes = new ArrayList<>();
             excludes.addAll(defaultExcludes);
         }
         setExcludes(excludes);
@@ -300,7 +300,7 @@ public class OverlayConfig
     @Override
     public String toString()
     {
-        StringBuffer strbuff = new StringBuffer();
+        StringBuilder strbuff = new StringBuilder();
         strbuff.append((groupId != null ? groupId : "")+",");
         strbuff.append((artifactId != null ? artifactId : "")+",");
         strbuff.append((classifier != null ? classifier : "")+",");
