@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,7 +34,6 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.List;
@@ -66,7 +64,6 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -78,7 +75,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -88,8 +84,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
-import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -2405,13 +2399,13 @@ public class Request implements HttpServletRequest
         switch(compliance)
         {
             case RFC7578:
-                return new MultiPartsHttpParser(getInputStream(), getContentType(), config,
-                        (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+                return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
+                        (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
                 
             case LEGACY: 
             default:
-                return new MultiPartsUtilParser(getInputStream(), getContentType(), config,
-                    (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null)); 
+                return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
+                    (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
                         
         }
     }
@@ -2514,153 +2508,5 @@ public class Request implements HttpServletRequest
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
         throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
-    }
-    
-    
-    
-    /* --------------------------------------------------------------------------------------------------- */
-    /*
-     * Used to switch between the old and new implementation of MultiPart Form InputStream Parsing.
-     * The new implementation is prefered will be used as default unless specified otherwise constructor.
-     */
-    public interface MultiParts extends Closeable
-    {   
-        public Collection<Part> getParts();
-        public Part getPart(String name);
-        public boolean isEmpty();
-        public ContextHandler.Context getContext();
-    }
-    
-    
-    public class MultiPartsHttpParser implements MultiParts
-    {   
-        private final MultiPartFormInputStream _httpParser;
-        private final ContextHandler.Context _context;
-
-        public MultiPartsHttpParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir) throws IOException
-        {
-            _httpParser = new MultiPartFormInputStream(in, contentType, config, contextTmpDir);
-            _context = Request.this._context;
-            _httpParser.getParts();
-        }
-        
-        @Override
-        public Collection<Part> getParts() 
-        {
-            try
-            {
-                return _httpParser.getParts();
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-            
-        @Override
-        public Part getPart(String name) {
-            try
-            {
-                return _httpParser.getPart(name);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-    
-        @Override
-        public void close()
-        {
-            _httpParser.deleteParts();
-        }
-        
-        @Override
-        public boolean isEmpty()
-        {
-            return _httpParser.isEmpty();
-        }
-
-        @Override
-        public Context getContext()
-        {
-            return _context;
-        }
-       
-    }
-    
-    
-    @SuppressWarnings("deprecation") 
-    public class MultiPartsUtilParser implements MultiParts
-    {   
-        private final MultiPartInputStreamParser _utilParser;
-        private final ContextHandler.Context _context;
-        
-        public MultiPartsUtilParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir) throws IOException
-        {
-            _utilParser = new MultiPartInputStreamParser(in, contentType, config, contextTmpDir);
-            _context = Request.this._context;
-            _utilParser.getParts();
-            
-            EnumSet<NonCompliance> nonComplianceWarnings = _utilParser.getNonComplianceWarnings();
-            if (!nonComplianceWarnings.isEmpty())
-            {
-                @SuppressWarnings("unchecked")
-                List<String> violations = (List<String>)getAttribute(HttpCompliance.VIOLATIONS_ATTR);
-                if (violations==null)
-                {
-                    violations = new ArrayList<>();
-                    setAttribute(HttpCompliance.VIOLATIONS_ATTR,violations);
-                }
-                
-                for(NonCompliance nc : nonComplianceWarnings)
-                    violations.add(nc.name()+": "+nc.getURL());
-            }
-        }
-        
-        @Override
-        public Collection<Part> getParts()
-        {
-            try
-            {
-                return _utilParser.getParts();
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-            
-        @Override
-        public Part getPart(String name)
-        {
-            try
-            {
-                return _utilParser.getPart(name);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-    
-        @Override
-        public void close()
-        {
-            _utilParser.deleteParts();
-        }
-        
-        @Override
-        public boolean isEmpty()
-        {
-            return _utilParser.getParsedParts().isEmpty();
-        }
-
-        @Override
-        public Context getContext()
-        {
-            return _context;
-        }
-       
     }
 }

@@ -38,7 +38,7 @@ public class MultiPartCleanerListener implements ServletRequestListener
     public void requestDestroyed(ServletRequestEvent sre)
     {
         //Clean up any tmp files created by MultiPartInputStream
-        Request.MultiParts parts = (Request.MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
+        MultiParts parts = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
         if (parts != null)
         {
             ContextHandler.Context context = parts.getContext();

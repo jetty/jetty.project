@@ -363,7 +363,7 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                Request.MultiParts m = (Request.MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
+                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
                 assertNotNull (m);
                 ContextHandler.Context c = m.getContext();
                 assertNotNull (c);
@@ -424,7 +424,7 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                Request.MultiParts m = (Request.MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
+                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
                 assertNotNull (m);
                 ContextHandler.Context c = m.getContext();
                 assertNotNull (c);
@@ -533,7 +533,7 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                Request.MultiParts m = (Request.MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
+                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
                 assertNotNull (m);
                 ContextHandler.Context c = m.getContext();
                 assertNotNull (c);
