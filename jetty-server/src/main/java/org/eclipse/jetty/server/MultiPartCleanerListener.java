@@ -50,7 +50,7 @@ public class MultiPartCleanerListener implements ServletRequestListener
                 {
                     parts.close();
                 }
-                catch (Exception e)
+                catch (Throwable e)
                 {
                     sre.getServletContext().log("Errors deleting multipart tmp files", e);
                 }

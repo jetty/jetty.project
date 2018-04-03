@@ -66,6 +66,7 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -2605,11 +2606,11 @@ public class Request implements HttpServletRequest
             if (!nonComplianceWarnings.isEmpty())
             {
                 @SuppressWarnings("unchecked")
-                List<String> violations = (List<String>)getAttribute(HttpChannelOverHttp.ATTR_COMPLIANCE_VIOLATIONS);
+                List<String> violations = (List<String>)getAttribute(HttpCompliance.VIOLATIONS_ATTR);
                 if (violations==null)
                 {
                     violations = new ArrayList<>();
-                    setAttribute(HttpChannelOverHttp.ATTR_COMPLIANCE_VIOLATIONS,violations);
+                    setAttribute(HttpCompliance.VIOLATIONS_ATTR,violations);
                 }
                 
                 for(NonCompliance nc : nonComplianceWarnings)
