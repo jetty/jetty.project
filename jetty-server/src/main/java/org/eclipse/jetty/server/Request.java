@@ -2325,10 +2325,7 @@ public class Request implements HttpServletRequest
     }
 
     private Collection<Part> getParts(MultiMap<String> params) throws IOException, ServletException
-    {
-        // TODO use this
-        MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
-        
+    {        
         if (_multiParts == null)
             _multiParts = (MultiParts)getAttribute(__MULTIPARTS);
 
@@ -2340,8 +2337,7 @@ public class Request implements HttpServletRequest
 
             _multiParts = newMultiParts(getInputStream(),
                                        getContentType(), config,
-                                       (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null),
-                                       true);
+                                       (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
 
             setAttribute(__MULTIPARTS, _multiParts);
             Collection<Part> parts = _multiParts.getParts(); //causes parsing
@@ -2401,22 +2397,22 @@ public class Request implements HttpServletRequest
     }
 
     
-    private MultiParts newMultiParts(ServletInputStream inputStream, String contentType, MultipartConfigElement config, Object object, boolean useNewParser) throws IOException
+    private MultiParts newMultiParts(ServletInputStream inputStream, String contentType, MultipartConfigElement config, Object object) throws IOException
     {
-        MultiParts multiParts;
+        MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
         
-        if(useNewParser)
+        switch(compliance)
         {
-            multiParts = new MultiPartsHttpParser(getInputStream(), getContentType(), config,
-                    (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
-        }
-        else
-        {
-            multiParts = new MultiPartsUtilParser(getInputStream(), getContentType(), config,
+            case RFC7578:
+                return new MultiPartsHttpParser(getInputStream(), getContentType(), config,
+                        (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+                
+            case LEGACY: 
+            default:
+                return new MultiPartsUtilParser(getInputStream(), getContentType(), config,
                     (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null)); 
+                        
         }
-        
-        return multiParts;
     }
 
     /* ------------------------------------------------------------ */
