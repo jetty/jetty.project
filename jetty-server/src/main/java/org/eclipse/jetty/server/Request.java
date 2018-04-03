@@ -2328,6 +2328,9 @@ public class Request implements HttpServletRequest
 
     private Collection<Part> getParts(MultiMap<String> params) throws IOException, ServletException
     {
+        // TODO use this
+        MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
+        
         if (_multiPartInputStream == null)
             _multiPartInputStream = (MultiPartInputStreamParser)getAttribute(__MULTIPART_INPUT_STREAM);
 

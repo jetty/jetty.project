@@ -47,7 +47,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 public class HttpConfiguration
 {
     public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
-
     private final List<Customizer> _customizers=new CopyOnWriteArrayList<>();
     private final Trie<Boolean> _formEncodedMethods = new TreeTrie<>();
     private int _outputBufferSize=32*1024;
@@ -68,6 +67,7 @@ public class HttpConfiguration
     private long _minRequestDataRate;
     private long _minResponseDataRate;
     private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
+    private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.LEGACY; // TODO change default in jetty-10
     private boolean _notifyRemoteAsyncErrors = true;
 
     /**
@@ -536,6 +536,22 @@ public class HttpConfiguration
         return _cookieCompliance.equals(compliance);
     }
 
+    /**
+     * Sets the compliance level for multipart/form-data handling.
+     * 
+     * @param multiPartCompliance The multipart/form-data compliance level.
+     */
+    public void setMultiPartFormDataCompliance(MultiPartFormDataCompliance multiPartCompliance)
+    {
+        // TODO change default in jetty-10 
+        _multiPartCompliance = multiPartCompliance==null?MultiPartFormDataCompliance.LEGACY:multiPartCompliance;
+    }
+
+    public MultiPartFormDataCompliance getMultipartFormDataCompliance()
+    {
+        return _multiPartCompliance;
+    }
+    
     /**
      * @param notifyRemoteAsyncErrors whether remote errors, when detected, are notified to async applications
      */
