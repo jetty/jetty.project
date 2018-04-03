@@ -28,13 +28,6 @@ import org.junit.Test;
 public class ClusteredInvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
 
-    @Test
-    @Override
-    public void testInvalidation() throws Exception
-    {
-        super.testInvalidation();
-    }  
-    
     
     @After
     public void tearDown() throws Exception 

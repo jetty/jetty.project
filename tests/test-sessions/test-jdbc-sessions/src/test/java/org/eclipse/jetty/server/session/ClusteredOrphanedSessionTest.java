@@ -35,12 +35,7 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
        return JdbcTestHelper.newSessionDataStoreFactory();
     }
 
-    @Test
-    @Override
-    public void testOrphanedSession() throws Exception
-    {
-        super.testOrphanedSession();
-    }
+
     
     @After
     public void tearDown() throws Exception 

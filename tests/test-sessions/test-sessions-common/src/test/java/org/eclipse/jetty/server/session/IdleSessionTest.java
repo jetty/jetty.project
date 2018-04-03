@@ -23,6 +23,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -44,31 +45,18 @@ import org.junit.Test;
 /**
  * IdleSessionTest
  *
- * Checks that a session can be idled and de-idled on the next request if it hasn't expired.
- * 
- *
- *
+ * Checks that a session can be passivated and re-activated on the next request if it hasn't expired.
  */
 public class IdleSessionTest
 {
 
     protected TestServlet _servlet = new TestServlet();
     protected TestServer _server1 = null;
- 
 
-    /**
-     * @param sec
-     */
-    public void pause (int sec)
+
+    public void pause (int sec)throws InterruptedException
     {
-        try
-        {
-            Thread.sleep(sec * 1000L);
-        }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
+        Thread.sleep(TimeUnit.SECONDS.toMillis(sec));
     }
 
     /**
@@ -81,7 +69,7 @@ public class IdleSessionTest
         String servletMapping = "/server";
         int inactivePeriod = 20;
         int scavengePeriod = 3;
-        int evictionSec = 5;
+        int evictionSec = 5; //evict from cache if idle for 5 sec
   
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(evictionSec);
@@ -106,32 +94,32 @@ public class IdleSessionTest
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
 
-            //and wait until the session should be idled out
-            pause(evictionSec*3);
+            //and wait until the session should be passivated out
+            pause(evictionSec*2);
 
             //check that the session has been idled
             String id = TestServer.extractSessionId(sessionCookie);
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
 
-            //make another request to de-idle the session
+            //make another request to reactivate the session
             Request request = client.newRequest(url + "?action=test");
             ContentResponse response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
-            //check session de-idled
+            //check session reactivated
             assertTrue(contextHandler.getSessionHandler().getSessionCache().contains(id));
 
             
-            //wait again for the session to be idled
-            pause(evictionSec*3);
+            //wait again for the session to be passivated
+            pause(evictionSec*2);
             
             //check that it is
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
            
 
-            //While idle, take some action to ensure that a deidle won't work, like
+            //While passivated, take some action to ensure that a reactivate won't work, like
             //deleting the sessions in the store
            ((TestSessionDataStore)contextHandler.getSessionHandler().getSessionCache().getSessionDataStore())._map.clear();
 
@@ -140,7 +128,7 @@ public class IdleSessionTest
             response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
             
-            //Test trying to de-idle an expired session (ie before the scavenger can get to it)
+            //Test trying to reactivate an expired session (ie before the scavenger can get to it)
             //make a request to set up a session on the server
             response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
@@ -149,20 +137,20 @@ public class IdleSessionTest
             id = TestServer.extractSessionId(sessionCookie);
             
             //and wait until the session should be idled out
-            pause(evictionSec * 3);
+            pause(evictionSec * 2);
 
             //stop the scavenger
             if (_server1.getHouseKeeper() != null)
                 _server1.getHouseKeeper().stop();
             
-            //check that the session is idle
+            //check that the session is passivated
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
 
             //wait until the session should be expired
             pause (inactivePeriod + (3*scavengePeriod));
 
-            //make another request to de-idle the session
+            //make another request to reactivate the session
             request = client.newRequest(url + "?action=testfail");
             response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());

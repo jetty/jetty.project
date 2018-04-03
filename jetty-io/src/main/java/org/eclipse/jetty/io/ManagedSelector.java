@@ -154,8 +154,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 _selecting = false;
             }
         }
+        
         if (selector != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("wakeup on submit {}", this);
             selector.wakeup();
+        }
     }
 
     private void execute(Runnable task)
@@ -258,6 +263,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 _updates.addFirst(dump);
                 _selecting = false;
             }
+            if (LOG.isDebugEnabled())
+                LOG.debug("wakeup on dump {}", this);
             selector.wakeup();
             keys = dump.get(5, TimeUnit.SECONDS);
             String keysAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
@@ -370,7 +377,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 LOG.debug("updates {}",updates);
             
             if (selector != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("wakeup on updates {}", this);
                 selector.wakeup();
+            }
         }
 
         private boolean select()
@@ -381,12 +392,16 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (selector != null && selector.isOpen())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Selector {} waiting on select", selector);
+                        LOG.debug("Selector {} waiting with {} keys", selector, selector.keys().size());
                     int selected = selector.select();
                     if (selected == 0)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Selector {} woken with none selected", selector);
                         selected = selector.selectNow();
+                    }
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Selector {} woken up from select, {}/{} selected", selector, selected, selector.keys().size());
+                        LOG.debug("Selector {} woken up from select, {}/{}/{} selected", selector, selected, selector.selectedKeys().size(), selector.keys().size());
 
                     int updates;
                     synchronized(ManagedSelector.this)
