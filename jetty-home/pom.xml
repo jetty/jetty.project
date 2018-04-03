@@ -304,6 +304,19 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-servlet-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>javax.servlet</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/servlet-api</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-annotations-deps</id>
             <phase>generate-resources</phase>
             <goals>
