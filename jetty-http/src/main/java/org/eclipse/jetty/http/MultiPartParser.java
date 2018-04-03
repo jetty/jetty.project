@@ -33,9 +33,8 @@ import org.eclipse.jetty.util.log.Logger;
 /* ------------------------------------------------------------ */
 /** A parser for MultiPart content type.
  * 
- * @see https://tools.ietf.org/html/rfc2046#section-5.1
- * @see https://tools.ietf.org/html/rfc2045
- * 
+ * @see <a href="https://tools.ietf.org/html/rfc2046#section-5.1">https://tools.ietf.org/html/rfc2046#section-5.1</a>
+ * @see <a href="https://tools.ietf.org/html/rfc2045">https://tools.ietf.org/html/rfc2045</a>
  */
 public class MultiPartParser
 {
@@ -255,8 +254,8 @@ public class MultiPartParser
     /**
      * Parse until next Event.
      * 
-     * @param buffer
-     *            the buffer to parse
+     * @param buffer the buffer to parse
+     * @param last whether this buffer contains last bit of content
      * @return True if an {@link RequestHandler} method was called and it returned true;
      */
     public boolean parse(ByteBuffer buffer, boolean last)

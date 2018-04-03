@@ -58,7 +58,7 @@ import org.eclipse.jetty.util.log.Logger;
  * 
  * Non Compliance warnings are documented by the method {@link #getNonComplianceWarnings()}
  *
- * @deprecated Replaced by {@link org.eclipse.jetty.http#MultiPartFormInputStream}
+ * @deprecated Replaced by org.eclipse.jetty.http.MultiPartFormInputStream
  * The code for MultiPartInputStream is slower than its replacement MultiPartFormInputStream. However
  * this class accepts formats non compliant the RFC that the new MultiPartFormInputStream does not accept. 
  * 

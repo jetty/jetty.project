@@ -55,7 +55,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * Handle a MultiPart Mime input stream, breaking it up on the boundary into files and strings.
  * 
- * @see https://tools.ietf.org/html/rfc7578
+ * @see <a href="https://tools.ietf.org/html/rfc7578">https://tools.ietf.org/html/rfc7578</a>
  */
 public class MultiPartFormInputStream
 {
