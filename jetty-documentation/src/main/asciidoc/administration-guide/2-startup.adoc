@@ -14,8 +14,16 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[ag-introduction]]
+[[ag-startup]]
 
-== Welcome!
+== Starting Jetty
 
-Welcome to the Eclipse Jetty Administration Guide.
+include::../topics/startup/startup-overview.adoc[]
+include::../topics/startup/start-jar.adoc[]
+include::../topics/startup/startup-base-vs-home.adoc[]
+include::../topics/startup/startup-classpath.adoc[]
+include::../topics/startup/startup-modules.adoc[]
+include::../topics/startup/custom-modules.adoc[]
+include::../topics/startup/startup-xml-config.adoc[]
+include::../topics/startup/startup-unix-service.adoc[]
+include::../topics/startup/startup-windows-service.adoc[]

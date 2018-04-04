@@ -14,8 +14,15 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[ag-introduction]]
+[[ag-optimizing]]
+== Optimizing Jetty
 
-== Welcome!
+There are many ways to optimize Jetty which vary depending on the situation.
+Are you trying to optimize for number of requests within a given amount of time?
+Are you trying to optimize the serving of static content?
+Do you have a large bit of hardware that you want to give entirely over to Jetty to use to its heart's delight?
+This chapter examines a few of the many different ways to optimize Jetty.
 
-Welcome to the Eclipse Jetty Administration Guide.
+include::../topics/tuning/garbage-collection.adoc[]
+include::../topics/tuning/high-load.adoc[]
+include::../topics/tuning/limit-load.adoc[]

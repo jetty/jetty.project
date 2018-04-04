@@ -43,14 +43,15 @@
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <version>1.5.6</version>
         <configuration>
-          <sub-order>attributes+</sub-order>
           <imagesdir />
-          <linkcss>true</linkcss>
-          <allow-uri-read>true</allow-uri-read>
-          <toc>true</toc>
-          <revnumber>${project.version}</revnumber>
+          <backend>docbook</backend>
           <basedir>${basedir}/src/main/asciidoc</basedir>
           <attributes>
+            <sub-order>attributes+</sub-order>
+            <linkcss>true</linkcss>
+            <allow-uri-read>true</allow-uri-read>
+            <toc>true</toc>
+            <revnumber>${project.version}</revnumber>
             <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
             <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
             <SRCDIR>${basedir}/..</SRCDIR>
@@ -76,7 +77,7 @@
           </execution>
           <execution>
             <id>contribution-guide</id>
-            <phase>process-resources</phase>
+            <phase>generate-resources</phase>
             <goals>
               <goal>process-asciidoc</goal>
             </goals>
@@ -89,7 +90,7 @@
           </execution>
           <execution>
             <id>developer-guide</id>
-            <phase>process-resources</phase>
+            <phase>generate-resources</phase>
             <goals>
               <goal>process-asciidoc</goal>
             </goals>

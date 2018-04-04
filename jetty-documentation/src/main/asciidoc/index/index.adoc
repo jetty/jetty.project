@@ -13,12 +13,19 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
-
-Jetty: Index
-================================
+= Jetty Index
 :docinfo:
+:docinfodir: ..
 :revnumber: {VERSION}
 
 :toc:
 
-include::../topics/topic/content.adoc[]
+include::../topics/jndi/topic.adoc[]
+include::../topics/jmx/topic.adoc[]
+include::../topics/clients/http/topic.adoc[]
+include::../topics/contexts/topic.adoc[]
+include::../topics/connectors/topic.adoc[]
+// include::../topics/startup/topic.adoc[]
+// include::../topics/configuring/topic.adoc[]
+include::../topics/troubleshooting/topic.adoc[]
+include::../topics/sessions/topic.adoc[]

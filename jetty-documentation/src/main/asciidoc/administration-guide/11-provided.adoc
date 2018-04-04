@@ -1,0 +1,44 @@
+//  ========================================================================
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[ag-extras]]
+== Provided Servlets, Filters, and Handlers
+
+Jetty ships with a bundle of servlets that interact with the key classes.
+Most are in the org.eclipse.jetty.servlets package.
+These servlets and filters are among the principle elements of Jetty as a component-based infrastructure that holds and runs J2EE applications.
+As described, they play a major role in running and maintaining the Jetty server.
+
+Also included are a number of Jetty specific handlers that allow access to internals of jetty that would not normally be exposed and are very useful testing environments and many production scenarios.
+
+include::../topics/extras/prodefault-servlet.adoc[]
+include::../topics/extras/proxy-servlet.adoc[]
+include::../topics/extras/balancer-servlet.adoc[]
+include::../topics/extras/cgi-servlet.adoc[]
+include::../topics/extras/qos-filter.adoc[]
+include::../topics/extras/dos-filter.adoc[]
+include::../topics/extras/header-filter.adoc[]
+include::../topics/extras/gzip-filter.adoc[]
+include::../topics/extras/cross-origin-filter.adoc[]
+include::../topics/extras/resource-handler.adoc[]
+include::../topics/extras/debug-handler.adoc[]
+include::../topics/extras/statistics-handler.adoc[]
+include::../topics/extras/ipaccess-handler.adoc[]
+include::../topics/extras/moved-context-handler.adoc[]
+include::../topics/extras/shutdown-handler.adoc[]
+include::../topics/extras/default-handler.adoc[]
+include::../topics/extras/error-handler.adoc[]
+include::../topics/extras/rewrite-handler.adoc[]
