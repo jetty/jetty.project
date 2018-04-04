@@ -1,0 +1,11 @@
+Request-Header|Accept-Encoding|gzip,deflate
+Request-Header|Connection|keep-alive
+Request-Header|Content-Length|475
+Request-Header|Content-Type|multipart/form-data; boundary=yRxfRSltW63lJPc9oHOOVyCn-SmDG6i4Ts9M4E6
+Request-Header|Host|localhost:9090
+Request-Header|User-Agent|Apache-HttpClient/4.5.5 (Java/1.8.0_162)
+Request-Header|X-BrowserId|apache-httpcomp
+Parts-Count|2
+Part-ContainsContents|こんにちは世界|Greetings 1
+Part-ContainsContents|%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF%E4%B8%96%E7%95%8C|Greetings 2
+

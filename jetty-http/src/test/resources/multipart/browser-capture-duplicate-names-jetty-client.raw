@@ -1,0 +1,51 @@
+--JettyHttpClientBoundary14beb4to333d91v8
+Content-Disposition: form-data; name="pi"
+Content-Type: text/plain;charset=UTF-8
+
+3.14159265358979323846264338327950288419716939937510
+--JettyHttpClientBoundary14beb4to333d91v8
+Content-Disposition: form-data; name="pi"
+Content-Type: text/plain;charset=UTF-8
+
+3.14159
+--JettyHttpClientBoundary14beb4to333d91v8
+Content-Disposition: form-data; name="pi"
+Content-Type: text/plain;charset=UTF-8
+
+3
+--JettyHttpClientBoundary14beb4to333d91v8
+Content-Disposition: form-data; name="pi"
+Content-Type: text/plain;charset=UTF-8
+
+π
+--JettyHttpClientBoundary14beb4to333d91v8
+Content-Disposition: form-data; name="pi"
+Content-Type: text/plain;charset=UTF-8
+
+π
+--JettyHttpClientBoundary14beb4to333d91v8
+Content-Disposition: form-data; name="pi"
+Content-Type: text/plain;charset=UTF-8
+
+%CF%80
+--JettyHttpClientBoundary14beb4to333d91v8
+Content-Disposition: form-data; name="pi"
+Content-Type: text/plain;charset=UTF-8
+
+π = C/d
+--JettyHttpClientBoundary14beb4to333d91v8
+Content-Disposition: form-data; name="π"
+Content-Type: text/plain;charset=UTF-8
+
+3.14
+--JettyHttpClientBoundary14beb4to333d91v8
+Content-Disposition: form-data; name="%CF%80"
+Content-Type: text/plain;charset=UTF-8
+
+Approximately 3.14
+--JettyHttpClientBoundary14beb4to333d91v8
+Content-Disposition: form-data; name="%FE%FF%03%C0"
+Content-Type: text/plain;charset=UTF-8
+
+Approximately 3.14
+--JettyHttpClientBoundary14beb4to333d91v8--

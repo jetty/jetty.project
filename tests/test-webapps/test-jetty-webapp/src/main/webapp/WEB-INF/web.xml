@@ -46,21 +46,6 @@
     <url-pattern>/*</url-pattern>
   </filter-mapping>
 
-
-  <filter>
-    <filter-name>MultiPart</filter-name>
-    <filter-class>org.eclipse.jetty.servlets.MultiPartFilter</filter-class>
-    <async-supported>true</async-supported>
-    <init-param>
-      <param-name>deleteFiles</param-name>
-      <param-value>true</param-value>
-    </init-param>
-  </filter>
-  <filter-mapping>
-    <filter-name>MultiPart</filter-name>
-    <url-pattern>/dump/*</url-pattern>
-  </filter-mapping>
-  
   <servlet>
     <servlet-name>Login</servlet-name>
     <servlet-class>com.acme.LoginServlet</servlet-class>
@@ -90,6 +75,10 @@
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>
     <run-as><role-name>admin</role-name></run-as>
+    <multipart-config>
+      <location>upload</location>
+      <file-size-threshold>4096</file-size-threshold>
+    </multipart-config>
   </servlet>
 
   <servlet-mapping>
