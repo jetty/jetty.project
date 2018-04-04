@@ -15,7 +15,6 @@
 //  ========================================================================
 
 = Jetty: A Developer Guide
-:docinfo:
 :revnumber: {VERSION}
 :toc:
 
