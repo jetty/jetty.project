@@ -110,12 +110,14 @@ public class ZipFsResourceTest
         MultiReleaseJarCreator creator = new MultiReleaseJarCreator(testingDir);
         Path jarPath = creator.createMultiReleaseJar9();
 
-        ZipFsResource resource1 = new ZipFsResource(jarPath.toUri(), "9");
-        resource1.close();
-        ZipFsResource resource2 = new ZipFsResource(jarPath.toUri(), "9");
-
-        System.out.println("resource1 = " + resource1);
-        System.out.println("resource2 = " + resource2);
+        try(ZipFsResource resource1 = new ZipFsResource(jarPath.toUri(), "9"))
+        {
+            System.out.println("resource1 = " + resource1);
+            try(ZipFsResource resource2 = new ZipFsResource(jarPath.toUri(), "9"))
+            {
+                System.out.println("resource2 = " + resource2);
+            }
+        }
 
         // reference counting
         // close issues?

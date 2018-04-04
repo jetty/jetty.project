@@ -27,6 +27,7 @@ import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -81,7 +82,22 @@ public class ZipFsResource extends Resource implements Iterable<String>
         env.put("multi-release", multiReleaseMode);
 
         // The ZipFs FileSystem
-        zipFs = FileSystems.newFileSystem(zipFsUri, env);
+        FileSystem fs;
+        try
+        {
+            fs = FileSystems.getFileSystem(zipFsUri);
+        }
+        catch (FileSystemNotFoundException ignore)
+        {
+            fs = null;
+        }
+
+        if ((fs == null) || !fs.isOpen())
+        {
+            fs = FileSystems.newFileSystem(zipFsUri, env);
+        }
+
+        zipFs = fs;
 
         // We only care about the 1 root that a zip/jar has
         Iterable<Path> rootDirs = zipFs.getRootDirectories();
