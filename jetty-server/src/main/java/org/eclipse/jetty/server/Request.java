@@ -133,7 +133,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
-    public static final String __MULTIPARTS = "org.eclipse.jetty.multiPartInputStream";
+    public static final String __MULTIPARTS = "org.eclipse.jetty.multiParts";
 
     private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
