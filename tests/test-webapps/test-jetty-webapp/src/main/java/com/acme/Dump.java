@@ -29,6 +29,7 @@ import java.io.Reader;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
@@ -54,6 +55,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
+import javax.servlet.http.Part;
 
 
 /** 
@@ -579,6 +581,27 @@ public class Dump extends HttpServlet
                 }
             }
 
+            try
+            {
+                Collection<Part> parts = request.getParts();
+                if (parts!=null && !parts.isEmpty())
+                {
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Parts:</big></th>");
+                    for (Part p : parts)
+                    {
+                        pout.write("</tr><tr>\n");
+                        pout.write("<th align=\"right\">"+notag(p.getName())+":&nbsp;</th>");
+                        pout.write("<td>"+p+"</td>");
+                    }
+                }
+            }
+            catch(ServletException e)
+            {
+                pout.write("</tr><tr>\n");
+                pout.write("<th align=\"left\" colspan=\"2\"><big><br/>No Parts!</big></th>");
+            }
+            
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Cookies:</big></th>");
             Cookie[] cookies = request.getCookies();

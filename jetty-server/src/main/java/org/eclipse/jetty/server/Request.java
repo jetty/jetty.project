@@ -2395,6 +2395,8 @@ public class Request implements HttpServletRequest
     private MultiParts newMultiParts(ServletInputStream inputStream, String contentType, MultipartConfigElement config, Object object) throws IOException
     {
         MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
+        if(LOG.isDebugEnabled())
+            LOG.debug("newMultiParts {} {}",compliance, this);
         
         switch(compliance)
         {

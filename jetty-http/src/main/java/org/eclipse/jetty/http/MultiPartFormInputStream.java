@@ -95,7 +95,7 @@ public class MultiPartFormInputStream
         @Override
         public String toString()
         {
-            return String.format("Part{n=%s,fn=%s,ct=%s,s=%d,t=%b,f=%s}",_name,_filename,_contentType,_size,_temporary,_file);
+            return String.format("Part{n=%s,fn=%s,ct=%s,s=%d,tmp=%b,file=%s}",_name,_filename,_contentType,_size,_temporary,_file);
         }
 
         protected void setContentType(String contentType)
