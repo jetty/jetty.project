@@ -14,11 +14,13 @@ a:visited {
 body {
   font-family: Verdana, Helvetica, arial, freesans, clean, sans-serif;
   font-size: 10pt;
-  width: 960px;
   margin-left: auto;
   margin-right: auto;
   background-color: #FFF;
   color: #444;
+  padding-left: 10px;
+  padding-right: 10px;
+  max-width: 1100px;
 }
 
 code {
@@ -32,7 +34,7 @@ code {
   font-size: 10pt;
 }
 
-.navfooter hr, 
+.navfooter hr,
 .navheader hr {
   border: 0px;
   border-bottom: 1px solid #fc390e; /* jetty orange */
@@ -252,9 +254,9 @@ div.variablelist {
 
 .jetty-callout {
   background-color: #DEF;
-  text-align: left; 
-  border: thin solid #CCF; 
-  padding: 4px; 
+  text-align: left;
+  border: thin solid #CCF;
+  padding: 4px;
 }
 
 .jetty-callout h5 {
@@ -282,10 +284,10 @@ div.variablelist {
 }
 
 div.draft {
-  background-color: #FF3300; 
-  text-align: left; 
-  font-size: 110%; 
-  border:thin dotted blue; 
+  background-color: #FF3300;
+  text-align: left;
+  font-size: 110%;
+  border:thin dotted blue;
   padding: 4px;
   margin-top: 2.0em;
   margin-bottom: 2.0em;
@@ -307,4 +309,41 @@ div.draft h5 {
 div.draft a {
   color: yellow;
 }
+div.toc {
+  display: table;      /* Required for table-cell to work on li's */
+  padding: 0;          /* Override defaults for lists */
+  margin: 0;           /* Override defaults for lists */
+  width: 100%;         /* Get the row full width */
+  text-align: left;  /* Centre align grid items */
+}
 
+dl.toc > div.toc-item-set {
+  padding: 14px;
+  color: black;
+  display: inline-block;
+  height: 130px;
+  margin: 10px 40px 10px 20px;
+  position: relative;
+  width: 270px;
+  vertical-align: top;
+}
+
+dl.toc > div.toc-item-set span.section {
+ display: list-item;
+ list-style-type: disc;
+}
+
+@media (max-width: 960px) and (min-width: 501px) {
+  dl.toc > div { width: 50%; } /* Show 2 logos per row on medium devices (tablets, phones in landscape) */
+}
+
+@media (max-width: 500px) {
+  dl.toc > div { width: 100%; } /* On small screens, show one logo per row */
+}
+
+@media (max-width: 960px) {
+  dl.toc {
+    display: block;
+  }
+
+}

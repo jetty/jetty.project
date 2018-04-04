@@ -24,12 +24,14 @@ xmlns:date="http://exslt.org/dates-and-times"
   <!-- tweak the generation of toc generation -->
   <xsl:param name="generate.section.toc.level" select="1"/>
   <xsl:param name="toc.section.depth" select="1"/>
+  <!--xsl:param name="manual.toc" select="1"/-->
+  <!--xsl:param name="toc.list.type" select="ul"/-->
   <!--xsl:param name="chunk.tocs.and.lots" select="1"/-->
   <xsl:param name="generate.toc">
     appendix  toc,title
     article/appendix  nop
     article   toc,title
-    book      toc,title,figure,table,example,equation
+    book      toc,title,example,equation
     chapter   toc,title
     part      toc,title
     preface   toc,title
@@ -95,7 +97,7 @@ xmlns:date="http://exslt.org/dates-and-times"
     <xsl:if test="ancestor-or-self::*[@status][1]/@status = 'draft'">
       <style type="text/css">
         <xsl:text>
-          body { 
+          body {
             background-image: url('images/draft-ribbon.png');
             background-repeat: no-repeat;
             background-position: top left;
@@ -106,7 +108,7 @@ xmlns:date="http://exslt.org/dates-and-times"
     <xsl:if test="ancestor-or-self::*[@status][1]/@status = 'migrate'">
       <style type="text/css">
         <xsl:text>
-          body { 
+          body {
             background-image: url('images/draft-ribbon.png');
             background-repeat: no-repeat;
             background-position: top left;
@@ -122,11 +124,11 @@ xmlns:date="http://exslt.org/dates-and-times"
         <td style="width: 25%">
           <a href="http://www.eclipse.org/jetty"><img src="images/jetty-header-logo.png" alt="Jetty Logo"></img></a>
           <br/>
-         
+
           <span style="font-size: small">
             Version: <xsl:value-of select="/d:book/d:info/d:revhistory/d:revision[1]/d:revnumber"/>
           </span>
-        
+
         </td>
         <td style="width: 50%">
 <!--          <script>
@@ -183,7 +185,7 @@ xmlns:date="http://exslt.org/dates-and-times"
   <xsl:template name="user.footer.content">
     <!-- content here is in a custom footer text -->
     <xsl:apply-templates select="//copyright[1]" mode="titlepage.mode"/>
-    
+
     <xsl:element name="script">
       <xsl:attribute name="type">text/javascript</xsl:attribute>
       SyntaxHighlighter.all()
@@ -192,7 +194,7 @@ xmlns:date="http://exslt.org/dates-and-times"
   </xsl:template>
 
   <xsl:template name="user.footer.navigation">
-    
+
       <p>
             <div class="jetty-callout">
             See an error or something missing?
@@ -220,8 +222,8 @@ xmlns:date="http://exslt.org/dates-and-times"
     </script>
   </xsl:template>
 
- <!-- 
-   - synxtax highlighting 
+ <!--
+   - synxtax highlighting
    -->
   <xsl:template match="d:programlisting">
     <xsl:choose>
@@ -243,7 +245,7 @@ xmlns:date="http://exslt.org/dates-and-times"
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
-  
+
 
   <!-- By default, DocBook surrounds highlighted elements with one or more HTML elements
   that already have an explicit style, which makes difficult to customize them via CSS.
@@ -360,7 +362,7 @@ Override the default header navigation to insert a home button on the top.
 
   <xsl:variable name="row1" select="$navig.showtitles != 0"/>
   <xsl:variable name="row2" select="count($prev) &gt; 0
-                                    or (count($up) &gt; 0 
+                                    or (count($up) &gt; 0
                                         and generate-id($up) != generate-id($home)
                                         and $navig.showtitles != 0)
                                     or count($next) &gt; 0"/>
@@ -446,6 +448,181 @@ Override the default header navigation to insert a home button on the top.
     </div>
   </xsl:if>
 </xsl:template>
+
+<xsl:template name="subtoc">
+  <xsl:param name="toc-context" select="."/>
+  <xsl:param name="nodes" select="NOT-AN-ELEMENT"/>
+
+  <xsl:variable name="nodes.plus" select="$nodes | qandaset"/>
+
+  <xsl:variable name="subtoc">
+    <xsl:element name="{$toc.list.type}">
+      <xsl:choose>
+        <xsl:when test="$qanda.in.toc != 0">
+          <xsl:apply-templates mode="toc" select="$nodes.plus">
+            <xsl:with-param name="toc-context" select="$toc-context"/>
+          </xsl:apply-templates>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:apply-templates mode="toc" select="$nodes">
+            <xsl:with-param name="toc-context" select="$toc-context"/>
+          </xsl:apply-templates>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:element>
+  </xsl:variable>
+
+  <xsl:variable name="depth">
+    <xsl:choose>
+      <xsl:when test="local-name(.) = 'section'">
+        <xsl:value-of select="count(ancestor::section) + 1"/>
+      </xsl:when>
+      <xsl:when test="local-name(.) = 'sect1'">1</xsl:when>
+      <xsl:when test="local-name(.) = 'sect2'">2</xsl:when>
+      <xsl:when test="local-name(.) = 'sect3'">3</xsl:when>
+      <xsl:when test="local-name(.) = 'sect4'">4</xsl:when>
+      <xsl:when test="local-name(.) = 'sect5'">5</xsl:when>
+      <xsl:when test="local-name(.) = 'refsect1'">1</xsl:when>
+      <xsl:when test="local-name(.) = 'refsect2'">2</xsl:when>
+      <xsl:when test="local-name(.) = 'refsect3'">3</xsl:when>
+      <xsl:when test="local-name(.) = 'topic'">1</xsl:when>
+      <xsl:when test="local-name(.) = 'simplesect'">
+        <!-- sigh... -->
+        <xsl:choose>
+          <xsl:when test="local-name(..) = 'section'">
+            <xsl:value-of select="count(ancestor::section)"/>
+          </xsl:when>
+          <xsl:when test="local-name(..) = 'sect1'">2</xsl:when>
+          <xsl:when test="local-name(..) = 'sect2'">3</xsl:when>
+          <xsl:when test="local-name(..) = 'sect3'">4</xsl:when>
+          <xsl:when test="local-name(..) = 'sect4'">5</xsl:when>
+          <xsl:when test="local-name(..) = 'sect5'">6</xsl:when>
+          <xsl:when test="local-name(..) = 'topic'">2</xsl:when>
+          <xsl:when test="local-name(..) = 'refsect1'">2</xsl:when>
+          <xsl:when test="local-name(..) = 'refsect2'">3</xsl:when>
+          <xsl:when test="local-name(..) = 'refsect3'">4</xsl:when>
+          <xsl:otherwise>1</xsl:otherwise>
+        </xsl:choose>
+      </xsl:when>
+      <xsl:otherwise>0</xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable name="depth.from.context" select="count(ancestor::*)-count($toc-context/ancestor::*)"/>
+
+  <xsl:variable name="subtoc.list">
+    <xsl:choose>
+      <xsl:when test="$toc.dd.type = ''">
+        <xsl:copy-of select="$subtoc"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:comment>subtoc-dd</xsl:comment>
+        <xsl:element name="{$toc.dd.type}">
+          <xsl:copy-of select="$subtoc"/>
+        </xsl:element>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
+<xsl:choose>
+  <xsl:when test="$depth = '0'">
+  <xsl:element name="div">
+    <xsl:attribute name="class">toc-item-set</xsl:attribute>
+  <xsl:element name="{$toc.listitem.type}">
+    <xsl:call-template name="toc.line">
+      <xsl:with-param name="toc-context" select="$toc-context"/>
+    </xsl:call-template>
+    <xsl:if test="$toc.listitem.type = 'li' and
+                  ( (self::set or self::book or self::part) or
+                        $toc.section.depth > $depth) and
+                  ( ($qanda.in.toc = 0 and count($nodes)&gt;0) or
+                    ($qanda.in.toc != 0 and count($nodes.plus)&gt;0) )
+                  and $toc.max.depth > $depth.from.context">
+      <xsl:copy-of select="$subtoc.list"/>
+    </xsl:if>
+  </xsl:element>
+  <xsl:if test="$toc.listitem.type != 'li' and
+                  ( (self::set or self::book or self::part) or
+                        $toc.section.depth > $depth) and
+                ( ($qanda.in.toc = 0 and count($nodes)&gt;0) or
+                  ($qanda.in.toc != 0 and count($nodes.plus)&gt;0) )
+                and $toc.max.depth > $depth.from.context">
+    <xsl:copy-of select="$subtoc.list"/>
+  </xsl:if>
+</xsl:element>
+</xsl:when>
+<xsl:otherwise>
+  <xsl:element name="{$toc.listitem.type}">
+    <xsl:call-template name="toc.line">
+      <xsl:with-param name="toc-context" select="$toc-context"/>
+    </xsl:call-template>
+    <xsl:if test="$toc.listitem.type = 'li' and
+                  ( (self::set or self::book or self::part) or
+                        $toc.section.depth > $depth) and
+                  ( ($qanda.in.toc = 0 and count($nodes)&gt;0) or
+                    ($qanda.in.toc != 0 and count($nodes.plus)&gt;0) )
+                  and $toc.max.depth > $depth.from.context">
+      <xsl:copy-of select="$subtoc.list"/>
+    </xsl:if>
+  </xsl:element>
+  <xsl:if test="$toc.listitem.type != 'li' and
+                  ( (self::set or self::book or self::part) or
+                        $toc.section.depth > $depth) and
+                ( ($qanda.in.toc = 0 and count($nodes)&gt;0) or
+                  ($qanda.in.toc != 0 and count($nodes.plus)&gt;0) )
+                and $toc.max.depth > $depth.from.context">
+    <xsl:copy-of select="$subtoc.list"/>
+  </xsl:if>
+</xsl:otherwise>
+</xsl:choose>
+</xsl:template>
+
+
+<xsl:template name="toc.line">
+  <xsl:param name="toc-context" select="."/>
+  <xsl:param name="depth" select="1"/>
+  <xsl:param name="depth.from.context" select="8"/>
+
+ <span>
+  <xsl:attribute name="class"><xsl:value-of select="local-name(.)"/></xsl:attribute>
+
+  <!-- * if $autotoc.label.in.hyperlink is zero, then output the label -->
+  <!-- * before the hyperlinked title (as the DSSSL stylesheet does) -->
+  <xsl:if test="$autotoc.label.in.hyperlink = 0">
+    <xsl:variable name="label">
+      <xsl:apply-templates select="." mode="label.markup"/>
+    </xsl:variable>
+    <xsl:copy-of select="$label"/>
+    <xsl:if test="$label != ''">
+      <xsl:value-of select="$autotoc.label.separator"/>
+    </xsl:if>
+  </xsl:if>
+
+  <a>
+    <xsl:attribute name="href">
+      <xsl:call-template name="href.target">
+        <xsl:with-param name="context" select="$toc-context"/>
+        <xsl:with-param name="toc-context" select="$toc-context"/>
+      </xsl:call-template>
+    </xsl:attribute>
+
+  <!-- * if $autotoc.label.in.hyperlink is non-zero, then output the label -->
+  <!-- * as part of the hyperlinked title -->
+  <xsl:if test="not($autotoc.label.in.hyperlink = 0)">
+    <xsl:variable name="label">
+      <xsl:apply-templates select="." mode="label.markup"/>
+    </xsl:variable>
+    <xsl:copy-of select="$label"/>
+    <xsl:if test="$label != ''">
+      <xsl:value-of select="$autotoc.label.separator"/>
+    </xsl:if>
+  </xsl:if>
+
+    <xsl:apply-templates select="." mode="titleabbrev.markup"/>
+  </a>
+  </span>
+</xsl:template>
+
 
 
 </xsl:stylesheet>

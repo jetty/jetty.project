@@ -14,8 +14,11 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[ag-introduction]]
+[[ag-http2]]
+== HTTP/2
 
-== Welcome!
-
-Welcome to the Eclipse Jetty Administration Guide.
+include::../topics/http2/introduction.adoc[]
+include::../topics/http2/enabling-http2.adoc[]
+include::../topics/http2/configuring-http2.adoc[]
+include::../topics/http2/configuring-push.adoc[]
+include::../topics/http2/configuring-haproxy.adoc[]

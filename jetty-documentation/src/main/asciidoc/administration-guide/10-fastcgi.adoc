@@ -14,8 +14,8 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[ag-introduction]]
+[[ag-fastcgi]]
+== FastCGI Support
 
-== Welcome!
-
-Welcome to the Eclipse Jetty Administration Guide.
+include::../topics/fastcgi/fastcgi-intro.adoc[]
+include::../topics/fastcgi/configuring-fastcgi.adoc[]

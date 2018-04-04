@@ -16,7 +16,19 @@
 
 .Jetty: An Administrative Guide
 :docinfo:
+:docinfodir: ..
 :revnumber: {VERSION}
 :toc:
 
 include::1-introduction.adoc[]
+include::2-startup.adoc[]
+include::3-sessions.adoc[]
+include::4-logging.adoc[]
+include::5-jndi.adoc[]
+include::6-annotations.adoc[]
+include::7-jmx.adoc[]
+include::8-alpn.adoc[]
+include::9-http2.adoc[]
+include::10-fastcgi.adoc[]
+include::11-provided.adoc[]
+include::12-tuning.adoc[]

@@ -14,8 +14,13 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[ag-introduction]]
+[[ag-logging]]
 
-== Welcome!
+== Logging
 
-Welcome to the Eclipse Jetty Administration Guide.
+include::../topics/logging/configuring-jetty-logging.adoc[]
+include::../topics/logging/default-logging-with-stderrlog.adoc[]
+include::../topics/logging/configuring-jetty-request-logs.adoc[]
+include::../topics/logging/configuring-logging-modules.adoc[]
+include::../topics/logging/example-logback-centralized-logging.adoc[]
+include::../topics/logging/dump-tool.adoc[]

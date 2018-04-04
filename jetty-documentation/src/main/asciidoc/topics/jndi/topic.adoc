@@ -16,20 +16,14 @@
 //  ========================================================================
 //
 
-[[jmx-chapter]]
-== Java Management Extensions (JMX)
+[[t-jndi]]
+== Configuring JNDI
 
+Jetty supports `java:comp/env` lookups in webapps.
+This is an optional feature for which some configuration is required.
 
-The http://java.sun.com/products/JavaManagement/[Java Management Extensions (JMX) API] is a standard API for managing and monitoring resources such as applications, devices, services, and the Java virtual machine.
-
-Typical uses of the JMX technology include:
-
-* Consulting and changing application configuration
-* Accumulating and making available statistics about application behavior
-* Notifying of state changes and erroneous conditions
-
-The JMX API includes remote access, so a remote management program can interact with a running application for these purposes.
-
-include::using-jmx.adoc[]
-include::jetty-jmx-annotations.adoc[]
-include::jetty-jconsole.adoc[]
+include::quick-jndi-setup.adoc[]
+include::using-jndi.adoc[]
+include::jndi-configuration.adoc[]
+include::jndi-embedded.adoc[]
+include::jndi-datasources.adoc[]
