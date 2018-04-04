@@ -29,4 +29,4 @@ as of 2016.
 For those browsers that support HTTP/2, they all now support ALPN.
 Starting with Jetty 9.3.0, only ALPN is supported by Jetty.
 
-include::../topics/alsp/alpn.adoc[]
+include::../topics/alpn/alpn.adoc[]

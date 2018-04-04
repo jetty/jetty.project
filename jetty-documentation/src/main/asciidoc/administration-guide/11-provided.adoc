@@ -24,7 +24,7 @@ As described, they play a major role in running and maintaining the Jetty server
 
 Also included are a number of Jetty specific handlers that allow access to internals of jetty that would not normally be exposed and are very useful testing environments and many production scenarios.
 
-include::../topics/extras/prodefault-servlet.adoc[]
+include::../topics/extras/default-servlet.adoc[]
 include::../topics/extras/proxy-servlet.adoc[]
 include::../topics/extras/balancer-servlet.adoc[]
 include::../topics/extras/cgi-servlet.adoc[]
