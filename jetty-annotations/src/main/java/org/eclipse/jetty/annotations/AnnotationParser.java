@@ -85,6 +85,7 @@ public class AnnotationParser
     public static int asmVersion ()
     {
         int asmVersion = ASM_OPCODE_VERSION;
+
         Package asm = Package.getPackage("org.objectweb.asm");
         if (asm == null)
             LOG.warn("Unknown asm runtime version, assuming version {}", asmVersion);
@@ -92,7 +93,7 @@ public class AnnotationParser
         {
             String s = asm.getImplementationVersion();
             if (s==null)
-                LOG.warn("Unknown asm runtime version, assuming version {}", asmVersion);
+                LOG.warn("Unknown asm implementation version, assuming version {}", asmVersion);
             else
             {
                 int dot = s.indexOf('.');
