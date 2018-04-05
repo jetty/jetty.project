@@ -363,7 +363,7 @@ public class JSONTest
         json.append(buf,map);
         String js=buf.toString();
 
-        assertTrue(js.indexOf("\"date\":\"01\\/01\\/1970 00:00:00 GMT\"")>=0);
+        assertTrue(js.indexOf("\"date\":\"01/01/1970 00:00:00 GMT\"")>=0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);
         assertTrue(js.indexOf("\"tested\":true")>=0);

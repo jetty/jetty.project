@@ -273,7 +273,9 @@ public class JSON
             if ((c >= 0x20) && (c <= 0x7E))
             {
                 // Special cases for quotation-mark, reverse-solidus, and solidus
-                if ((c == '"') || (c == '\\') || (c == '/'))
+                if ((c == '"') || (c == '\\')
+                  /* solidus is optional - per Carsten Bormann (IETF)
+                     || (c == '/') */)
                 {
                     buffer.append('\\').append(c);
                 }
