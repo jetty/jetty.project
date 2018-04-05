@@ -16,8 +16,7 @@
 
 = Jetty: An Administrative Guide
 :revnumber: {VERSION}
-
-:toc:
+:toc: left
 
 include::1-introduction.adoc[]
 include::2-startup.adoc[]

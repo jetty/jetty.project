@@ -16,9 +16,8 @@
 
 = Jetty: Quickstart Guide
 :revnumber: {VERSION}
-
-:toc:
+:toc: left
 
 include::1-introduction.adoc[]
-include::2-startup.adoc[]
-include::3-sessions.adoc[]
+include::2-using.adoc[]
+include::3-Configuring.adoc[]

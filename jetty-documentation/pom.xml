@@ -50,7 +50,6 @@
             <sub-order>attributes+</sub-order>
             <linkcss>true</linkcss>
             <allow-uri-read>true</allow-uri-read>
-            <toc>true</toc>
             <revnumber>${project.version}</revnumber>
             <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
             <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
