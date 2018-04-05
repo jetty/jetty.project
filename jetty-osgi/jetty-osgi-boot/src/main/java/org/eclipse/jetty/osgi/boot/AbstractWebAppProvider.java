@@ -590,15 +590,20 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         Configuration.ClassList defaults = Configuration.ClassList.serverDefault(_serverWrapper.getServer());
 
         //add before JettyWebXmlConfiguration
-        if (annotationsAvailable())
+        if (annotationsAvailable() && !defaults.contains("org.eclipse.jetty.osgi.annotations.AnnotationConfiguration"))
             defaults.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration", 
                                "org.eclipse.jetty.osgi.annotations.AnnotationConfiguration");
 
         //add in EnvConfiguration and PlusConfiguration just after FragmentConfiguration
         if (jndiAvailable())
-            defaults.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration",
-                              "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                              "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+        {
+            if (!defaults.contains("org.eclipse.jetty.plus.webapp.EnvConfiguration"))
+                defaults.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration",
+                                  "org.eclipse.jetty.plus.webapp.EnvConfiguration");
+            if (!defaults.contains("org.eclipse.jetty.plus.webapp.PlusConfiguration"))
+                defaults.addAfter("org.eclipse.jetty.plus.webapp.EnvConfiguration", "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+        }
+
        String[] asArray = new String[defaults.size()];
        return defaults.toArray(asArray);
     }
