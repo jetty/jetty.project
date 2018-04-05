@@ -24,6 +24,7 @@ import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.Connection;
@@ -62,6 +63,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
                 throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: "+p);
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
         addBean(httpConfiguration);
+        setInputBufferSize(Frame.DEFAULT_MAX_LENGTH + Frame.HEADER_LENGTH);
     }
 
     @ManagedAttribute("The HPACK dynamic table maximum size")

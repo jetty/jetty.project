@@ -1141,7 +1141,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     private class ControlEntry extends HTTP2Flusher.Entry
     {
-        private int bytes;
         private int frameBytes;
 
         private ControlEntry(Frame frame, IStream stream, Callback callback)
@@ -1150,23 +1149,15 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
 
         @Override
-        public int getFrameBytesRemaining()
+        public int getFrameBytesGenerated()
         {
             return frameBytes;
         }
 
         @Override
-        public void onFrameBytesFlushed(int bytesFlushed)
-        {
-            frameBytes -= bytesFlushed;
-        }
-
-        @Override
         protected boolean generate(ByteBufferPool.Lease lease)
         {
-            bytes = frameBytes = generator.control(lease, frame);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Generated {}", frame);
+            frameBytes = generator.control(lease, frame);
             prepare();
             return true;
         }
@@ -1206,7 +1197,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void succeeded()
         {
-            bytesWritten.addAndGet(bytes);
+            bytesWritten.addAndGet(frameBytes);
+            frameBytes = 0;
+
             switch (frame.getType())
             {
                 case HEADERS:
@@ -1255,6 +1248,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     break;
                 }
             }
+
             super.succeeded();
         }
 
@@ -1269,10 +1263,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     private class DataEntry extends HTTP2Flusher.Entry
     {
-        private int bytes;
         private int frameBytes;
+        private int dataRemaining;
         private int dataBytes;
-        private int dataWritten;
 
         private DataEntry(DataFrame frame, IStream stream, Callback callback)
         {
@@ -1282,50 +1275,51 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             // of data frames that cannot be completely written due to
             // the flow control window exhausting, since in that case
             // we would have to count the padding only once.
-            dataBytes = frame.remaining();
+            dataRemaining = frame.remaining();
         }
 
         @Override
-        public int getFrameBytesRemaining()
+        public int getFrameBytesGenerated()
         {
             return frameBytes;
         }
 
         @Override
-        public void onFrameBytesFlushed(int bytesFlushed)
-        {
-            frameBytes -= bytesFlushed;
-        }
-
-        @Override
-        public int getDataBytesRemaining()
+        public int getDataBytesGenerated()
         {
             return dataBytes;
         }
 
         @Override
+        public int getDataBytesRemaining()
+        {
+            return dataRemaining;
+        }
+
+        @Override
         protected boolean generate(ByteBufferPool.Lease lease)
         {
-            int dataBytes = getDataBytesRemaining();
+            int dataRemaining = getDataBytesRemaining();
 
             int sessionSendWindow = getSendWindow();
             int streamSendWindow = stream.updateSendWindow(0);
             int window = Math.min(streamSendWindow, sessionSendWindow);
-            if (window <= 0 && dataBytes > 0)
+            if (window <= 0 && dataRemaining > 0)
                 return false;
 
-            int length = Math.min(dataBytes, window);
+            int length = Math.min(dataRemaining, window);
 
             // Only one DATA frame is generated.
-            bytes = frameBytes = generator.data(lease, (DataFrame)frame, length);
-            int written = bytes - Frame.HEADER_LENGTH;
+            int frameBytes = generator.data(lease, (DataFrame)frame, length);
+            this.frameBytes += frameBytes;
+
+            int dataBytes = frameBytes - Frame.HEADER_LENGTH;
+            this.dataBytes += dataBytes;
+            this.dataRemaining -= dataBytes;
             if (LOG.isDebugEnabled())
-                LOG.debug("Generated {}, length/window/data={}/{}/{}", frame, written, window, dataBytes);
+                LOG.debug("Generated {}, length/window/data={}/{}/{}", frame, dataBytes, window, dataRemaining);
 
-            this.dataWritten = written;
-            this.dataBytes -= written;
-
-            flowControl.onDataSending(stream, written);
+            flowControl.onDataSending(stream, dataBytes);
 
             return true;
         }
@@ -1333,8 +1327,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void succeeded()
         {
-            bytesWritten.addAndGet(bytes);
-            flowControl.onDataSent(stream, dataWritten);
+            bytesWritten.addAndGet(frameBytes);
+            frameBytes = 0;
+
+            flowControl.onDataSent(stream, dataBytes);
+            dataBytes = 0;
 
             // Do we have more to send ?
             DataFrame dataFrame = (DataFrame)frame;

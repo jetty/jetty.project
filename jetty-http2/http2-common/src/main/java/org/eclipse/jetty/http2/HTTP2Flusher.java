@@ -23,8 +23,10 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
@@ -46,10 +48,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private final Queue<WindowEntry> windows = new ArrayDeque<>();
     private final Deque<Entry> entries = new ArrayDeque<>();
     private final Queue<Entry> pendingEntries = new ArrayDeque<>();
-    private final List<Entry> currentEntries = new ArrayList<>();
+    private final List<Entry> completedEntries = new ArrayList<>();
+    private final Set<Integer> dataStreams = new HashSet<>();
     private final HTTP2Session session;
     private final ByteBufferPool.Lease lease;
     private Throwable terminated;
+    private final long writeThreshold = 32 * 1024;
 
     public HTTP2Flusher(HTTP2Session session)
     {
@@ -136,20 +140,13 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             if (terminated != null)
                 throw terminated;
 
-            while (!windows.isEmpty())
-            {
-                WindowEntry entry = windows.poll();
-                entry.perform();
-            }
+            WindowEntry windowEntry;
+            while ((windowEntry = windows.poll()) != null)
+                windowEntry.perform();
 
-            if (!pendingEntries.isEmpty())
-                currentEntries.addAll(pendingEntries);
-            for (Entry entry : entries)
-            {
+            Entry entry;
+            while ((entry = entries.poll()) != null)
                 pendingEntries.offer(entry);
-                currentEntries.add(entry);
-            }
-            entries.clear();
         }
 
         if (pendingEntries.isEmpty())
@@ -159,41 +156,76 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             return Action.IDLE;
         }
 
-        int size = pendingEntries.size();
-        for (int i = 0; i < size; ++i)
+        while (true)
         {
-            Entry entry = pendingEntries.poll();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Processing {}", entry);
+            int framesGenerated = 0;
+            dataStreams.clear();
 
-            // If the stream has been reset or removed, don't send the frame.
-            if (entry.isStale())
+            int size = pendingEntries.size();
+            if (size == 0)
+                break;
+
+            for (int i = 0; i < size; ++i)
             {
+                Entry entry = pendingEntries.poll();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Stale {}", entry);
-                continue;
-            }
+                    LOG.debug("Processing {}", entry);
 
-            try
-            {
-                if (entry.generate(lease))
+                // If the stream has been reset or removed,
+                // don't send the frame and fail it here.
+                if (entry.isStale())
                 {
-                    if (entry.getDataBytesRemaining() > 0)
-                        pendingEntries.offer(entry);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Stale {}", entry);
+                    entry.failed(new EofException("reset"));
+                    continue;
                 }
-                else
+
+                // If we already generated a DATA frame for a stream,
+                // skip the other DATA frames for the same stream.
+                if (entry.isData() && dataStreams.contains(entry.stream.getId()))
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Skipping {}", entry);
                     pendingEntries.offer(entry);
+                    continue;
+                }
+
+                try
+                {
+                    if (entry.generate(lease))
+                    {
+                        ++framesGenerated;
+                        if (entry.isData())
+                            dataStreams.add(entry.stream.getId());
+                        if (entry.getDataBytesRemaining() > 0)
+                            pendingEntries.offer(entry);
+                        else
+                            completedEntries.add(entry);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Generated data/frame {}/{} bytes for {}", entry.getDataBytesGenerated(), entry.getFrameBytesGenerated(), entry);
+                    }
+                    else
+                    {
+                        pendingEntries.offer(entry);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Stalled {}", entry);
+                    }
+                }
+                catch (Throwable failure)
+                {
+                    // Failure to generate the entry is catastrophic.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Failure generating " + entry, failure);
+                    failed(failure);
+                    return Action.SUCCEEDED;
                 }
             }
-            catch (Throwable failure)
-            {
-                // Failure to generate the entry is catastrophic.
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Failure generating frame " + entry.frame, failure);
-                failed(failure);
-                return Action.SUCCEEDED;
-            }
+
+            if (framesGenerated == 0)
+                break;
+            if (lease.getTotalLength() >= writeThreshold)
+                break;
         }
 
         List<ByteBuffer> byteBuffers = lease.getByteBuffers();
@@ -204,41 +236,61 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Writing {} buffers ({} bytes) for {} frames {}", byteBuffers.size(), lease.getTotalLength(), currentEntries.size(), currentEntries);
+            LOG.debug("Writing {} buffers ({} bytes) - entries completed/pending {}/{}: {}/{}",
+                    byteBuffers.size(),
+                    lease.getTotalLength(),
+                    completedEntries.size(),
+                    pendingEntries.size(),
+                    completedEntries,
+                    pendingEntries);
         session.getEndPoint().write(this, byteBuffers.toArray(EMPTY_BYTE_BUFFERS));
         return Action.SCHEDULED;
     }
 
     void onFlushed(long bytes) throws IOException
     {
+        for (Entry entry : completedEntries)
+            bytes = onFlushed(bytes, entry);
+        for (Entry entry : pendingEntries)
+            bytes = onFlushed(bytes, entry);
+    }
+
+    private long onFlushed(long bytes, Entry entry) throws IOException
+    {
         // For the given flushed bytes, we want to only
         // forward those that belong to data frame content.
-        for (Entry entry : currentEntries)
+        int frameBytesGenerated = entry.getFrameBytesGenerated();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Flushed {}/{} frame bytes for {}", frameBytesGenerated, bytes, entry);
+        if (frameBytesGenerated > 0)
         {
-            int frameBytesLeft = entry.getFrameBytesRemaining();
-            if (frameBytesLeft > 0)
+            bytes -= frameBytesGenerated;
+            if (entry.isData())
             {
-                int update = (int)Math.min(bytes, frameBytesLeft);
-                entry.onFrameBytesFlushed(update);
-                bytes -= update;
-                IStream stream = entry.stream;
-                if (stream != null && !entry.isControl())
+                Object channel = entry.stream.getAttachment();
+                if (channel instanceof WriteFlusher.Listener)
                 {
-                    Object channel = stream.getAttachment();
-                    if (channel instanceof WriteFlusher.Listener)
-                        ((WriteFlusher.Listener)channel).onFlushed(update - Frame.HEADER_LENGTH);
+                    int dataBytesGenerated = entry.getDataBytesGenerated();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Flushed {} data bytes for {}", dataBytesGenerated, entry);
+                    if (dataBytesGenerated > 0)
+                        ((WriteFlusher.Listener)channel).onFlushed(dataBytesGenerated);
                 }
-                if (bytes == 0)
-                    break;
             }
         }
+        return bytes;
     }
 
     @Override
     public void succeeded()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Written {} frames for {}", currentEntries.size(), currentEntries);
+            LOG.debug("Written {} buffers - entries completed/pending {}/{}: {}/{}",
+                    lease.getByteBuffers().size(),
+                    completedEntries.size(),
+                    pendingEntries.size(),
+                    completedEntries,
+                    pendingEntries);
         finish();
         super.succeeded();
     }
@@ -246,8 +298,11 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private void finish()
     {
         lease.recycle();
-        currentEntries.forEach(Entry::finish);
-        currentEntries.clear();
+
+        completedEntries.forEach(Entry::succeeded);
+        completedEntries.clear();
+
+        pendingEntries.forEach(Entry::succeeded);
     }
 
     @Override
@@ -267,13 +322,18 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             closed = terminated;
             terminated = x;
             if (LOG.isDebugEnabled())
-                LOG.debug("{}, active/queued={}/{}", closed != null ? "Closing" : "Failing", currentEntries.size(), entries.size());
-            currentEntries.addAll(entries);
+                LOG.debug("{}, entries completed/pending/queued={}/{}/{}",
+                        closed != null ? "Closing" : "Failing",
+                        completedEntries.size(),
+                        pendingEntries.size(),
+                        entries.size());
+            pendingEntries.addAll(entries);
             entries.clear();
         }
 
-        currentEntries.forEach(entry -> entry.failed(x));
-        currentEntries.clear();
+        completedEntries.forEach(entry -> entry.failed(x));
+        completedEntries.clear();
+        pendingEntries.forEach(entry -> entry.failed(x));
         pendingEntries.clear();
 
         // If the failure came from within the
@@ -316,11 +376,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s[window_queue=%d,frame_queue=%d,actives=%d]",
+        return String.format("%s[window_queue=%d,frame_queue=%d,completed/pending=%d/%d]",
                 super.toString(),
                 getWindowQueueSize(),
                 getFrameQueueSize(),
-                currentEntries.size());
+                completedEntries.size(),
+                pendingEntries.size());
     }
 
     public static abstract class Entry extends Callback.Nested
@@ -335,9 +396,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             this.stream = stream;
         }
 
-        public abstract int getFrameBytesRemaining();
+        public abstract int getFrameBytesGenerated();
 
-        public abstract void onFrameBytesFlushed(int bytesFlushed);
+        public int getDataBytesGenerated()
+        {
+            return 0;
+        }
 
         public int getDataBytesRemaining()
         {
@@ -346,6 +410,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         protected abstract boolean generate(ByteBufferPool.Lease lease);
 
+/*
         private void finish()
         {
             if (isStale())
@@ -353,6 +418,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             else
                 succeeded();
         }
+*/
 
         @Override
         public void failed(Throwable x)
@@ -393,14 +459,14 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             }
         }
 
-        private boolean isControl()
+        private boolean isData()
         {
             switch (frame.getType())
             {
                 case DATA:
-                    return false;
-                default:
                     return true;
+                default:
+                    return false;
             }
         }
 
