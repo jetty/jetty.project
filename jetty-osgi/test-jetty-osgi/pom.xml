@@ -590,5 +590,25 @@
       </plugins>
      </build>
     </profile>
+    <profile>
+      <id>jdk10</id>
+      <activation>
+        <jdk>10</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>${skipTests}</skipTests>
+              <excludes>
+                <exclude>**/**/TestJettyOSGiBoot**</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
