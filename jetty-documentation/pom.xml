@@ -1,17 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
- <parent>
+  <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
     <version>10.0.0-SNAPSHOT</version>
- </parent>
+  </parent>
   <artifactId>jetty-documentation</artifactId>
   <name>Jetty :: Documentation</name>
   <packaging>pom</packaging>
   <properties>
     <html.directory>${project.build.directory}/html/common</html.directory>
     <javadoc.version>${project.version}</javadoc.version>
+    <asciidoctor.maven.plugin.version>1.5.6</asciidoctor.maven.plugin.version>
+    <asciidoctorj.pdf.version>1.5.0-alpha.16</asciidoctorj.pdf.version>
+    <asciidoctorj.epub.version>1.5.0-alpha.7</asciidoctorj.epub.version>
+    <asciidoctorj.version>1.5.6</asciidoctorj.version>
+    <jruby.version>1.7.26</jruby.version>
   </properties>
   <build>
     <plugins>
@@ -41,9 +46,9 @@
       <plugin>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
-        <version>1.5.6</version>
+        <version>${asciidoctor.maven.plugin.version}</version>
         <configuration>
-          <imagesdir />
+          <imagesdir/>
           <backend>docbook</backend>
           <basedir>${basedir}/src/main/asciidoc</basedir>
           <attributes>
@@ -58,7 +63,6 @@
             <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
             <VERSION>${project.version}</VERSION>
           </attributes>
-
         </configuration>
         <executions>
           <execution>
@@ -114,231 +118,135 @@
             </configuration>
           </execution>
           <execution>
-            <id>topic-index</id>
+            <id>generate-pdf-doc</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <doctype>book</doctype>
-              <sourceDirectory>${basedir}/src/main/asciidoc/index</sourceDirectory>
+              <backend>pdf</backend>
+              <!-- Since 1.5.0-alpha.9 PDF back-end can use 'rouge' as well as 'coderay' for source highlighting -->
+              <!-- Due to a known issue on windows, it is recommended to use 'coderay' until an new version of 'rouge' is released. see discussions: https://github.com/asciidoctor/asciidoctor-maven-examples/pull/58
+              https://github.com/asciidoctor/asciidoctorj-pdf/issues/3 https://github.com/jneen/rouge/issues/661 -->
+              <sourceHighlighter>rouge</sourceHighlighter>
+              <attributes>
+                <icons>font</icons>
+                <pagenums/>
+                <toc/>
+                <idprefix/>
+                <idseparator>-</idseparator>
+              </attributes>
+              <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/docbook/index</outputDirectory>
+              <outputDirectory>${project.build.directory}/pdf/contribution-guide</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>generate-spine-epub</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>process-asciidoc</goal>
+            </goals>
+            <configuration>
+              <backend>epub3</backend>
+              <sourceHighlighter>coderay</sourceHighlighter>
+              <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
+              <sourceDocumentName>index.adoc</sourceDocumentName>
+              <outputDirectory>${project.build.directory}/epub3/contribution-guide</outputDirectory>
             </configuration>
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>com.agilejava.docbkx</groupId>
-        <artifactId>docbkx-maven-plugin</artifactId>
-        <version>2.0.17</version>
-        <configuration>
-          <htmlStylesheet>../common/css/docbook.css</htmlStylesheet>
-          <highlightSource>true</highlightSource>
-          <preProcess>
-            <!-- TODO determine how best to copy content topic resources
-            <copy todir="target/docbkx/html/images" flatten="true">
-              <fileset dir="src/main/asciidoc">
-                <include name="**/*.png" />
-                <include name="**/*.jpg" />
-                <include name="**/*.svg" />
-                <include name="**/*.dot" />
-              </fileset>
-            </copy>
-            <copy todir="target/docbkx/html/images">
-              <fileset dir="src/main/docbkx-resources/images" />
-            </copy>
-            <copy todir="target/docbkx/html/css">
-              <fileset dir="src/main/docbkx-resources/css" />
-            </copy>
-            <copy todir="target/docbkx/html/fonts">
-              <fileset dir="src/main/docbkx-resources/fonts" />
-            </copy>
-            <copy todir="target/docbkx/html/js">
-              <fileset dir="src/main/docbkx-resources/js" />
-            </copy>
-          -->
-          </preProcess>
-        </configuration>
-        <executions>
-          <!--
-          <execution>
-            <id>administation-guide-html</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>generate-html</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.build.directory}/docbook/administrative-guide</sourceDirectory>
-              <targetDirectory>${project.build.directory}/html/administration-guide</targetDirectory>
-              <includes>index.xml</includes>
-              <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/book.xsl</htmlCustomization>
-              <chunkedOutput>false</chunkedOutput>
-            </configuration>
-          </execution>
-          <execution>
-            <id>contribution-guide-html</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>generate-html</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.build.directory}/docbook/contribution-guide</sourceDirectory>
-              <targetDirectory>${project.build.directory}/html/contribution-guide</targetDirectory>
-              <includes>index.xml</includes>
-              <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/book.xsl</htmlCustomization>
-              <chunkedOutput>false</chunkedOutput>
-            </configuration>
-          </execution>
-          <execution>
-            <id>developer-guide-html</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>generate-html</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.build.directory}/docbook/developer-guide</sourceDirectory>
-              <targetDirectory>${project.build.directory}/html/developer-guide</targetDirectory>
-              <includes>index.xml</includes>
-              <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/book.xsl</htmlCustomization>
-              <chunkedOutput>false</chunkedOutput>
-            </configuration>
-          </execution>
-        -->
-          <execution>
-            <id>index-html</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>generate-html</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.build.directory}/docbook/index</sourceDirectory>
-              <targetDirectory>${project.build.directory}/html/index</targetDirectory>
-              <includes>index.xml</includes>
-              <htmlCustomization>${project.basedir}/src/main/docbkx-stylesheet/html/index.xsl</htmlCustomization>
-              <chunkedOutput>true</chunkedOutput>
-            </configuration>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>net.sf.docbook</groupId>
-            <artifactId>docbook-xml</artifactId>
-            <version>5.1b4-all</version>
-            <classifier>resources</classifier>
-            <type>zip</type>
-            <scope>runtime</scope>
-          </dependency>
-          <dependency>
-            <groupId>net.sf.xslthl</groupId>
-            <artifactId>xslthl</artifactId>
-            <version>2.0.1</version>
-            <scope>runtime</scope>
-          </dependency>
-          <dependency>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-xslt-tools</artifactId>
-            <version>1.3</version>
-            <scope>runtime</scope>
-          </dependency>
-        </dependencies>
-      </plugin>
-    <!--
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <descriptors>
-            <descriptor>src/main/assembly/html.xml</descriptor>
-          </descriptors>
-        </configuration>
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    -->
     </plugins>
   </build>
   <profiles>
-    <!--
-      Couple of different approaches to generating pdf's
-    -->
     <profile>
-      <id>generate-pdf</id>
+      <id>alt-formats</id>
       <build>
         <plugins>
           <plugin>
-            <groupId>com.agilejava.docbkx</groupId>
-            <artifactId>docbkx-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>generate-pdf</id>
-                <phase>compile</phase>
-                <goals>
-                  <goal>generate-pdf</goal>
-                </goals>
-                <configuration>
-                  <includes>index.xml</includes>
-                  <fop1Extensions>1</fop1Extensions>
-                  <paperType>A4</paperType>
-                  <foCustomization>src/main/docbkx-stylesheet/fo/docbook.xsl</foCustomization>
-                </configuration>
-              </execution>
-            </executions>
-            <dependencies>
-              <dependency>
-                <groupId>net.sf.offo</groupId>
-                <artifactId>fop-hyph</artifactId>
-                <version>1.2</version>
-                <scope>runtime</scope>
-              </dependency>
-            </dependencies>
-          </plugin>
-          <plugin>
             <groupId>org.asciidoctor</groupId>
             <artifactId>asciidoctor-maven-plugin</artifactId>
+            <version>${asciidoctor.maven.plugin.version}</version>
             <dependencies>
               <dependency>
                 <groupId>org.asciidoctor</groupId>
                 <artifactId>asciidoctorj-pdf</artifactId>
-                <version>1.5.0-alpha.11</version>
+                <version>${asciidoctorj.pdf.version}</version>
+              </dependency>
+              <dependency>
+                <groupId>org.asciidoctor</groupId>
+                <artifactId>asciidoctorj-epub3</artifactId>
+                <version>${asciidoctorj.epub.version}</version>
+              </dependency>
+              <dependency>
+                <groupId>org.jruby</groupId>
+                <artifactId>jruby-complete</artifactId>
+                <version>${jruby.version}</version>
+              </dependency>
+              <dependency>
+                <groupId>org.asciidoctor</groupId>
+                <artifactId>asciidoctorj</artifactId>
+                <version>${asciidoctorj.version}</version>
               </dependency>
             </dependencies>
+            <configuration>
+              <imagesdir/>
+              <backend>docbook</backend>
+              <basedir>${basedir}/src/main/asciidoc</basedir>
+              <attributes>
+                <sub-order>attributes+</sub-order>
+                <linkcss>true</linkcss>
+                <allow-uri-read>true</allow-uri-read>
+                <revnumber>${project.version}</revnumber>
+                <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
+                <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
+                <SRCDIR>${basedir}/..</SRCDIR>
+                <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/master</GITBROWSEURL>
+                <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
+                <VERSION>${project.version}</VERSION>
+              </attributes>
+            </configuration>
             <executions>
               <execution>
-                <id>output-pdf</id>
-                <phase>generate-sources</phase>
+                <id>generate-pdf-doc</id>
+                <phase>generate-resources</phase>
                 <goals>
                   <goal>process-asciidoc</goal>
                 </goals>
                 <configuration>
                   <backend>pdf</backend>
+                  <!-- Since 1.5.0-alpha.9 PDF back-end can use 'rouge' as well as 'coderay' for source highlighting -->
+                  <!-- Due to a known issue on windows, it is recommended to use 'coderay' until an new version of 'rouge' is released. see discussions: https://github.com/asciidoctor/asciidoctor-maven-examples/pull/58
+                  https://github.com/asciidoctor/asciidoctorj-pdf/issues/3 https://github.com/jneen/rouge/issues/661 -->
                   <sourceHighlighter>rouge</sourceHighlighter>
-                  <sourceDocumentName>index.adoc</sourceDocumentName>
                   <attributes>
-                    <imagesdir />
-                    <version>${project.version}</version>
-                    <linkcss>true</linkcss>
-                    <allow-uri-read>true</allow-uri-read>
-                    <toc>true</toc>
-                    <revnumber>${project.version}</revnumber>
-                    <JDURL>http://download.eclipse.org/jetty/stable-9/apidocs</JDURL>
-                    <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
-                    <SRCDIR>${basedir}/../jetty.project/</SRCDIR>
-                    <GITBROWSEURL>https://github.com/eclipse/jetty.project/master</GITBROWSEURL>
                     <icons>font</icons>
-                    <pagenums />
-                    <toc />
-                    <idprefix />
+                    <pagenums/>
+                    <toc/>
+                    <idprefix/>
                     <idseparator>-</idseparator>
                   </attributes>
+                  <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
+                  <sourceDocumentName>index.adoc</sourceDocumentName>
+                  <outputDirectory>${project.build.directory}/pdf/contribution-guide</outputDirectory>
                 </configuration>
               </execution>
+              <execution>
+                <id>generate-spine-epub</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>process-asciidoc</goal>
+                </goals>
+                <configuration>
+                  <backend>epub3</backend>
+                  <sourceHighlighter>coderay</sourceHighlighter>
+                  <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
+                  <sourceDocumentName>index.adoc</sourceDocumentName>
+                  <outputDirectory>${project.build.directory}/epub3/contribution-guide</outputDirectory>
+                </configuration>
+              </execution>
+
             </executions>
           </plugin>
         </plugins>
