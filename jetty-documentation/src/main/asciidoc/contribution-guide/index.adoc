@@ -16,6 +16,7 @@
 
 = Jetty: Contribution Guide
 :revnumber: {VERSION}
+:sectids!:
 :toc: left
 
 include::1-introduction.adoc[]

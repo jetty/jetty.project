@@ -17,7 +17,9 @@
 [[cg-community]]
 == Community
 
-There are many ways to interact with the developers and other users of Jetty.  We are active on a number of open source support forums as well as fully funding the ongoing development of Jetty with paid support through Webtide.
+There are many ways to interact with the developers and other users of Jetty.  We are active on a number of open source support forums as well as fully funding the ongoing development of Jetty (((Jetty, Server))) with paid support through Webtide.
+
+
 
 include::../topics/contributing/community.adoc[]
 include::../topics/contributing/bugs.adoc[]
