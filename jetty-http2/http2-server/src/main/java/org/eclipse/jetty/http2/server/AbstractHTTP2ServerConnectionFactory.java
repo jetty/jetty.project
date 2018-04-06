@@ -187,7 +187,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
             streamIdleTimeout = endPoint.getIdleTimeout();
         session.setStreamIdleTimeout(streamIdleTimeout);
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
-        
+        session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
+
         ServerParser parser = newServerParser(connector, session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
                         endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);

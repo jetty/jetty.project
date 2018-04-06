@@ -87,6 +87,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private int maxRemoteStreams;
     private long streamIdleTimeout;
     private int initialSessionRecvWindow;
+    private int writeThreshold;
     private boolean pushEnabled;
     private long idleTime;
     private GoAwayFrame closeFrame;
@@ -183,6 +184,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void setInitialSessionRecvWindow(int initialSessionRecvWindow)
     {
         this.initialSessionRecvWindow = initialSessionRecvWindow;
+    }
+
+    public int getWriteThreshold()
+    {
+        return writeThreshold;
+    }
+
+    public void setWriteThreshold(int writeThreshold)
+    {
+        this.writeThreshold = writeThreshold;
     }
 
     public EndPoint getEndPoint()
