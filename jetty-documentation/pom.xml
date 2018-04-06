@@ -117,44 +117,6 @@
               <outputDirectory>${project.build.directory}/html/quickstart-guide</outputDirectory>
             </configuration>
           </execution>
-          <execution>
-            <id>generate-pdf-doc</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>process-asciidoc</goal>
-            </goals>
-            <configuration>
-              <backend>pdf</backend>
-              <!-- Since 1.5.0-alpha.9 PDF back-end can use 'rouge' as well as 'coderay' for source highlighting -->
-              <!-- Due to a known issue on windows, it is recommended to use 'coderay' until an new version of 'rouge' is released. see discussions: https://github.com/asciidoctor/asciidoctor-maven-examples/pull/58
-              https://github.com/asciidoctor/asciidoctorj-pdf/issues/3 https://github.com/jneen/rouge/issues/661 -->
-              <sourceHighlighter>rouge</sourceHighlighter>
-              <attributes>
-                <icons>font</icons>
-                <pagenums/>
-                <toc/>
-                <idprefix/>
-                <idseparator>-</idseparator>
-              </attributes>
-              <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
-              <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/pdf/contribution-guide</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>generate-spine-epub</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>process-asciidoc</goal>
-            </goals>
-            <configuration>
-              <backend>epub3</backend>
-              <sourceHighlighter>coderay</sourceHighlighter>
-              <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
-              <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/epub3/contribution-guide</outputDirectory>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
     </plugins>
