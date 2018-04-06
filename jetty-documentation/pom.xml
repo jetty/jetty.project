@@ -216,10 +216,7 @@
                 </goals>
                 <configuration>
                   <backend>pdf</backend>
-                  <!-- Since 1.5.0-alpha.9 PDF back-end can use 'rouge' as well as 'coderay' for source highlighting -->
-                  <!-- Due to a known issue on windows, it is recommended to use 'coderay' until an new version of 'rouge' is released. see discussions: https://github.com/asciidoctor/asciidoctor-maven-examples/pull/58
-                  https://github.com/asciidoctor/asciidoctorj-pdf/issues/3 https://github.com/jneen/rouge/issues/661 -->
-                  <sourceHighlighter>rouge</sourceHighlighter>
+                  <sourceHighlighter>coderay</sourceHighlighter>
                   <attributes>
                     <icons>font</icons>
                     <pagenums/>
@@ -246,7 +243,6 @@
                   <outputDirectory>${project.build.directory}/epub3/contribution-guide</outputDirectory>
                 </configuration>
               </execution>
-
             </executions>
           </plugin>
         </plugins>
