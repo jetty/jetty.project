@@ -18,5 +18,5 @@
 
 == Starting Jetty
 
-//include::../topics/startup/startup-overview.adoc[]
-//include::../topics/startup/start-jar.adoc[]
+include::../topics/downloading/downloading.adoc[]
+include::../topics/getting-started/jetty-running.adoc[]

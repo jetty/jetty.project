@@ -17,5 +17,5 @@
 [[qsg-configuring]]
 == Configuring Jetty
 
-//include::../topics/sessions/session-hierarchy.adoc[]
-//include::../topics/sessions/sessions-details.adoc[]
+include::../topics/getting-started/jetty-deploying.adoc[]
+include::../topics/getting-started/jetty-common-configuration.adoc[]

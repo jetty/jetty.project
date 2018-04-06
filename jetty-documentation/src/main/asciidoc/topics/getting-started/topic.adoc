@@ -1,5 +1,6 @@
+//
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -13,13 +14,14 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
+//
 
-[[qsg-introduction]]
+[[quick-start-getting-started]]
+== Using Jetty
 
-== Welcome!
+You can use Jetty in many different ways ranging from embedding Jetty in applications, launching it from different build systems, from different JVM-based languages, or as a standalone distribution.
+This guide covers the latter, a standalone distribution suitable for deploying web applications.
 
-Welcome to the Eclipse Jetty Quickstart Guide.
-
-include::../topics/introduction/what-is-jetty.adoc[]
-include::../topics/introduction/what-version.adoc[]
-include::../topics/introduction/jetty-javaee.adoc[]
+include::jetty-running.adoc[]
+include::jetty-common-configuration.adoc[]
+include::jetty-deploying.adoc[]

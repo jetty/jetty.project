@@ -22,4 +22,3 @@
 include::what-is-jetty.adoc[]
 include::what-version.adoc[]
 include::jetty-javaee.adoc[]
-include::jetty-coordinates.adoc[]
