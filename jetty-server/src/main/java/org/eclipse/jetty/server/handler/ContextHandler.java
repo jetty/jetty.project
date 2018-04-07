@@ -970,38 +970,39 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (_vhosts != null && _vhosts.length > 0)
         {
             String vhost = normalizeHostname(baseRequest.getServerName());
-
-            boolean match = false;
-            boolean connectorName = false;
-            boolean connectorMatch = false;
-
-            for (String contextVhost:_vhosts)
+            String connectorName = baseRequest.getHttpChannel().getConnector().getName();
+            for (String contextVhost : _vhosts)
             {
-                if (contextVhost == null || contextVhost.length()==0)
+                if (contextVhost == null || contextVhost.length() == 0)
                     continue;
-                char c=contextVhost.charAt(0);
-                switch (c)
-                {
-                    case '*':
-                        if (contextVhost.startsWith("*."))
-                            // wildcard only at the beginning, and only for one additional subdomain level
-                            match = match || contextVhost.regionMatches(true,2,vhost,vhost.indexOf(".") + 1,contextVhost.length() - 2);
-                        break;
-                    case '@':
-                        connectorName=true;
-                        String name=baseRequest.getHttpChannel().getConnector().getName();
-                        boolean m=name!=null && contextVhost.length()==name.length()+1 && contextVhost.endsWith(name);
-                        match = match || m;
-                        connectorMatch = connectorMatch || m;
-                        break;
-                    default:
-                        match = match || contextVhost.equalsIgnoreCase(vhost);
-                }
 
+                int connectorPos = contextVhost.indexOf('@') + 1;
+                if (connectorPos > 0)
+                {
+                    // If connector specifier in vhost entry and no match then continue to next entry
+                    // no need to check host
+                    if (connectorName == null || !contextVhost.regionMatches(true,connectorPos,connectorName,0,connectorName.length()))
+                        continue;
+                    // If we matched connector and no host portion was specified we match
+                    if (connectorPos == 1)
+                        return true;
+                }
+                // At this point either connector was specified and there was a connector match,
+                // we then check host portion, or no connector was specified in entry so we check
+                // whole original vhost entry
+                if (contextVhost.startsWith("*."))
+                {
+                    // wildcard only at the beginning, and only for one additional subdomain level
+                    if (contextVhost.regionMatches(true,2,vhost,vhost.indexOf(".") + 1,contextVhost.length() - (connectorPos + 2)))
+                        return true;
+                }
+                else if (contextVhost.regionMatches(true,0,vhost,0,contextVhost.length() - connectorPos))
+                    return true;
             }
-            if (!match || connectorName && !connectorMatch)
-                return false;
+            // vhosts were specified but no matches so fail
+            return false;
         }
+        // If no vhost entries we always match
         return true;
     }
 
