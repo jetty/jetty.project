@@ -980,9 +980,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 int connectorPos = contextVhost.indexOf('@') + 1;
                 if (connectorPos > 0)
                 {
+                    // If there is no connector name and we have a match for connector only
+                    // we fail to match.  If we have connector and host we can continue
+                    // to check for other host only matches.
+                    if (connectorName == null || connectorName.length() == 0 )
+                    {
+                        if (connectorPos > 1)
+                            continue;
+                        else
+                            return false;
+                    }
                     // If connector specifier in vhost entry and no match then continue to next entry
                     // no need to check host
-                    if (connectorName == null || !contextVhost.regionMatches(true,connectorPos,connectorName,0,connectorName.length()))
+                    if (!contextVhost.regionMatches(true,connectorPos,connectorName,0,connectorName.length()))
                         continue;
                     // If we matched connector and no host portion was specified we match
                     if (connectorPos == 1)
