@@ -20,6 +20,10 @@ package org.eclipse.jetty.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 
 /**
@@ -33,11 +37,10 @@ import org.apache.maven.plugin.MojoFailureException;
  *  the webapp already exist.
  *  </p>
  * 
- * @goal start
- * @requiresDependencyResolution test
- * @execute phase="validate"
- * @description Runs jetty directly from a maven project from a binding to an execution in your pom
+ *  Runs jetty directly from a maven project from a binding to an execution in your pom
  */
+@Mojo( name = "start", requiresDependencyResolution = ResolutionScope.TEST)
+@Execute(phase = LifecyclePhase.VALIDATE)
 public class JettyStartMojo extends JettyRunMojo
 {
 
@@ -46,15 +49,6 @@ public class JettyStartMojo extends JettyRunMojo
     {
         nonBlocking = true; //ensure that starting jetty won't hold up the thread
         super.execute();
-    }
-    
-    /** 
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#checkPackagingConfiguration()
-     */
-    @Override
-    public void checkPackagingConfiguration() throws MojoExecutionException
-    {
-        return; //don't check that the project is a war
     }
     
     @Override

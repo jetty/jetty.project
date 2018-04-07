@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.log.Logger;
  * be altered in code and will affect all usages of the mode.
  */
 public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so that extra custom modes can be defined dynamically
-{ 
+{
     /** A Legacy compliance mode to match jetty's behavior prior to RFC2616 and RFC7230. It only
      * contains {@link HttpComplianceSection#METHOD_CASE_SENSITIVE}
      */
@@ -82,6 +82,8 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     @Deprecated
     CUSTOM3(sectionsByProperty("CUSTOM3"));
   
+    public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
+
     private static final Logger LOG = Log.getLogger(HttpParser.class);
     private static EnumSet<HttpComplianceSection> sectionsByProperty(String property)
     {

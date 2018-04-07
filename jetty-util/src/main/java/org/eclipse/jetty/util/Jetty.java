@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.InputStream;
+import java.time.Instant;
+import java.util.Properties;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Properties;
 
 public class Jetty
 {
@@ -88,8 +87,8 @@ public class Jetty
     {
         try
         {
-            return new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ssXXX" )
-                .format( new Date( Long.valueOf( timestamp ) ) );
+            long epochMillis = Long.parseLong(timestamp);
+            return Instant.ofEpochMilli(epochMillis).toString();
         }
         catch ( NumberFormatException e )
         {

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.eclipse.jetty.its.jetty-run-package-jar-mojo-it</groupId>
+    <artifactId>jetty-simple-project</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>jetty-simple-webapp</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Jetty :: Simple :: Webapp as a Jar</name>
+
+
+  <properties>
+    <jetty.port.file>${project.build.directory}/jetty-run-war-port.txt</jetty.port.file>
+  </properties>
+
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.its.jetty-run-package-jar-mojo-it</groupId>
+      <artifactId>jetty-simple-base</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>@project.version@</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>@surefireVersion@</version>
+        <configuration>
+          <skip>true</skip>
+          <systemPropertyVariables>
+            <jetty.port.file>${jetty.port.file}</jetty.port.file>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>@surefireVersion@</version>
+        <configuration>
+          <systemPropertyVariables>
+            <jetty.port.file>${jetty.port.file}</jetty.port.file>
+          </systemPropertyVariables>
+          <includes>
+            <include>**/*TestHelloServlet*</include>
+          </includes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <goals>
+              <goal>integration-test</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>verify</id>
+            <goals>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>start-jetty</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>run-war</goal>
+            </goals>
+            <configuration>
+              <supportedPackagings>
+                <supportedPackaging>jar</supportedPackaging>
+              </supportedPackagings>
+              <nonBlocking>true</nonBlocking>
+              <systemProperties>
+                <systemProperty>
+                  <name>jetty.port.file</name>
+                  <value>${jetty.port.file}</value>
+                </systemProperty>
+              </systemProperties>
+              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+
+</project>

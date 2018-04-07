@@ -107,6 +107,7 @@ public class ClientCrossContextSessionTest
 
     public static class TestServletA extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
         public String sessionId;
 
         @Override
@@ -130,6 +131,7 @@ public class ClientCrossContextSessionTest
 
     public static class TestServletB extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
         public String sessionId;
 
         @Override
@@ -141,8 +143,6 @@ public class ClientCrossContextSessionTest
 
             sessionId = session.getId();
 
-
-
             // Add something to the session
             session.setAttribute("B", "B");
 
@@ -151,6 +151,4 @@ public class ClientCrossContextSessionTest
             assertTrue(objectA == null);
         }
     }
-
- 
 }

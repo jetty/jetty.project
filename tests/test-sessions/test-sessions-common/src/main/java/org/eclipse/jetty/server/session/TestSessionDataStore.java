@@ -27,35 +27,39 @@ import java.util.Set;
 /**
  * TestSessionDataStore
  *
- * Make a fake session data store that creates a new SessionData object
+ * Make a fake session data store (non clustered!) that creates a new SessionData object
  * every time load(id) is called.
  */
 public class TestSessionDataStore extends AbstractSessionDataStore
 {
     public Map<String,SessionData> _map = new HashMap<>();
+    public boolean _passivating;
 
+    
+    public TestSessionDataStore ()
+    {
+        _passivating = false;
+    }
+    
+    public TestSessionDataStore (boolean passivating)
+    {
+        _passivating = passivating;
+    }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-     */
     @Override
     public boolean isPassivating()
     {
-        return false;
+        return _passivating;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-     */
+
     @Override
     public boolean exists(String id) throws Exception
     {
         return _map.containsKey(id);
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataMap#load(java.lang.String)
-     */
+
     @Override
     public SessionData load(String id) throws Exception
     {
@@ -67,27 +71,21 @@ public class TestSessionDataStore extends AbstractSessionDataStore
         return nsd;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataMap#delete(java.lang.String)
-     */
+
     @Override
     public boolean delete(String id) throws Exception
     {
         return (_map.remove(id) != null);
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(java.lang.String, org.eclipse.jetty.server.session.SessionData, long)
-     */
+
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         _map.put(id,  data);
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doGetExpired(java.util.Set)
-     */
+ 
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
     {
@@ -102,5 +100,4 @@ public class TestSessionDataStore extends AbstractSessionDataStore
         }
         return set;
     }
-
 }

@@ -64,8 +64,7 @@ public class SameContextForwardedSessionTest
     
     @Test
     public void testSessionCreateInForward() throws Exception
-    {
-        
+    {      
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
@@ -77,8 +76,6 @@ public class SameContextForwardedSessionTest
         testServletContextHandler.addServlet(Servlet2.class, "/two");
         testServletContextHandler.addServlet(Servlet3.class, "/three");
         testServletContextHandler.addServlet(Servlet4.class, "/four");
-       
-      
 
         try
         {
@@ -122,6 +119,7 @@ public class SameContextForwardedSessionTest
 
     public static class Servlet1 extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
         CountDownLatch _synchronizer;
         
         public void setSynchronizer(CountDownLatch sync)
@@ -151,6 +149,8 @@ public class SameContextForwardedSessionTest
 
     public static class Servlet2 extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
@@ -171,6 +171,8 @@ public class SameContextForwardedSessionTest
 
     public static class Servlet3 extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {    
@@ -189,6 +191,8 @@ public class SameContextForwardedSessionTest
     
     public static class Servlet4 extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
+        
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {    

@@ -91,41 +91,61 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (info != null)
         {
             metaData = info;
-
             int status = info.getStatus();
-            boolean informational = HttpStatus.isInformational(status) && status != HttpStatus.SWITCHING_PROTOCOLS_101;
-            if (informational)
+            boolean interimResponse = status == HttpStatus.CONTINUE_100 || status == HttpStatus.PROCESSING_102;
+            if (interimResponse)
             {
-                if (transportCallback.start(callback, false))
-                    sendHeaders(info, false, transportCallback);
+                // Must not commit interim responses.
+                if (hasContent)
+                {
+                    callback.failed(new IllegalStateException("Interim response cannot have content"));
+                }
+                else
+                {
+                    if (transportCallback.start(callback, false))
+                        sendHeadersFrame(info, false, transportCallback);
+                }
             }
             else
             {
-                boolean needsCommit = commit.compareAndSet(false, true);
-                if (needsCommit)
+                if (commit.compareAndSet(false, true))
                 {
-                    Supplier<HttpFields> trailers = info.getTrailerSupplier();
-
                     if (hasContent)
                     {
-                        Callback nested = trailers == null || !lastContent ? callback : new SendTrailers(callback);
-                        Callback commitCallback = new Callback.Nested(nested)
+                        Callback commitCallback = new Callback.Nested(callback)
                         {
                             @Override
                             public void succeeded()
                             {
-                                if (transportCallback.start(nested, false))
-                                    sendContent(content, lastContent, trailers == null && lastContent, transportCallback);
+                                if (lastContent)
+                                {
+                                    Supplier<HttpFields> trailers = info.getTrailerSupplier();
+                                    if (transportCallback.start(new SendTrailers(getCallback(), trailers), false))
+                                        sendDataFrame(content, true, trailers == null, transportCallback);
+                                }
+                                else
+                                {
+                                    if (transportCallback.start(getCallback(), false))
+                                        sendDataFrame(content, false, false, transportCallback);
+                                }
                             }
                         };
                         if (transportCallback.start(commitCallback, true))
-                            sendHeaders(info, false, transportCallback);
+                            sendHeadersFrame(info, false, transportCallback);
                     }
                     else
                     {
-                        Callback nested = trailers == null ? callback : new SendTrailers(callback);
-                        if (transportCallback.start(nested, true))
-                            sendHeaders(info, trailers == null && lastContent, transportCallback);
+                        if (lastContent)
+                        {
+                            Supplier<HttpFields> trailers = info.getTrailerSupplier();
+                            if (transportCallback.start(new SendTrailers(callback, trailers), true))
+                                sendHeadersFrame(info, trailers == null, transportCallback);
+                        }
+                        else
+                        {
+                            if (transportCallback.start(callback, true))
+                                sendHeadersFrame(info, false, transportCallback);
+                        }
                     }
                 }
                 else
@@ -138,10 +158,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         {
             if (hasContent || lastContent)
             {
-                Supplier<HttpFields> trailers = metaData.getTrailerSupplier();
-                Callback nested = trailers == null ? callback : new SendTrailers(callback);
-                if (transportCallback.start(nested, false))
-                    sendContent(content, lastContent, trailers == null && lastContent, transportCallback);
+                if (lastContent)
+                {
+                    Supplier<HttpFields> trailers = metaData.getTrailerSupplier();
+                    if (transportCallback.start(new SendTrailers(callback, trailers), false))
+                        sendDataFrame(content, true, trailers == null, transportCallback);
+                }
+                else
+                {
+                    if (transportCallback.start(callback, false))
+                        sendDataFrame(content, false, false, transportCallback);
+                }
             }
             else
             {
@@ -186,7 +213,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }, new Stream.Listener.Adapter()); // TODO: handle reset from the client ?
     }
 
-    private void sendHeaders(MetaData.Response info, boolean endStream, Callback callback)
+    private void sendHeadersFrame(MetaData.Response info, boolean endStream, Callback callback)
     {
         if (LOG.isDebugEnabled())
         {
@@ -200,7 +227,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         stream.headers(frame, callback);
     }
 
-    private void sendContent(ByteBuffer content, boolean lastContent, boolean endStream, Callback callback)
+    private void sendDataFrame(ByteBuffer content, boolean lastContent, boolean endStream, Callback callback)
     {
         if (LOG.isDebugEnabled())
         {
@@ -212,7 +239,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         stream.data(frame, callback);
     }
 
-    private void sendTrailers(MetaData metaData, Callback callback)
+    private void sendTrailersFrame(MetaData metaData, Callback callback)
     {
         if (LOG.isDebugEnabled())
         {
@@ -303,9 +330,10 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 commit = this.commit;
                 if (state == State.WRITING)
                 {
+                    this.state = State.IDLE;
                     callback = this.callback;
                     this.callback = null;
-                    this.state = State.IDLE;
+                    this.commit = false;
                 }
             }
             if (LOG.isDebugEnabled())
@@ -330,13 +358,13 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 if (state == State.WRITING)
                 {
                     this.state = State.FAILED;
-                    this.failure = failure;
                     callback = this.callback;
                     this.callback = null;
+                    this.failure = failure;
                 }
             }
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HTTP2 Response #%d/%h failed to %s", stream.getId(), stream.getSession(), commit ? "commit" : "flush"), failure);
+                LOG.debug(String.format("HTTP2 Response #%d/%h %s %s", stream.getId(), stream.getSession(), commit ? "commit" : "flush", callback == null ? "ignored" : "failed"), failure);
             if (callback != null)
                 callback.failed(failure);
         }
@@ -384,16 +412,26 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
     private class SendTrailers extends Callback.Nested
     {
-        private SendTrailers(Callback callback)
+        private final Supplier<HttpFields> trailers;
+
+        private SendTrailers(Callback callback, Supplier<HttpFields> trailers)
         {
             super(callback);
+            this.trailers = trailers;
         }
 
         @Override
         public void succeeded()
         {
-            if (transportCallback.start(getCallback(), false))
-                sendTrailers(new MetaData(HttpVersion.HTTP_2, metaData.getTrailerSupplier().get()), transportCallback);
+            if (trailers != null)
+            {
+                if (transportCallback.start(getCallback(), false))
+                    sendTrailersFrame(new MetaData(HttpVersion.HTTP_2, trailers.get()), transportCallback);
+            }
+            else
+            {
+                super.succeeded();
+            }
         }
     }
 }

@@ -1046,8 +1046,16 @@ public class URIUtil
             if (uriB.getScheme()!=null)
                 return false;
         }
-        else if (!uriA.getScheme().equals(uriB.getScheme()))
+        else if (!uriA.getScheme().equalsIgnoreCase(uriB.getScheme()))
             return false;
+
+        if ("jar".equalsIgnoreCase(uriA.getScheme()))
+        {
+            // at this point we know that both uri's are "jar:"
+            URI uriAssp = URI.create(uriA.getSchemeSpecificPart());
+            URI uriBssp = URI.create(uriB.getSchemeSpecificPart());
+            return equalsIgnoreEncodings(uriAssp, uriBssp);
+        }
 
         if (uriA.getAuthority()==null)
         {
@@ -1057,7 +1065,7 @@ public class URIUtil
         else if (!uriA.getAuthority().equals(uriB.getAuthority()))
             return false;
 
-        return equalsIgnoreEncodings(uriA.getPath(),uriB.getPath());
+        return equalsIgnoreEncodings(uriA.getPath(), uriB.getPath());
     }
 
     /**

@@ -156,7 +156,11 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
-    private boolean _checkGzExists = true;
+    /**
+     * @deprecated feature will be removed in Jetty 10.x, with no replacement.
+     */
+    @Deprecated
+    private boolean _checkGzExists = false;
     private boolean _syncFlush = false;
     private int _inflateBufferSize = -1;
     private EnumSet<DispatcherType> _dispatchers = EnumSet.of(DispatcherType.REQUEST);
@@ -399,6 +403,10 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         super.doStart();
     }
 
+    /**
+     * @deprecated feature will be removed in Jetty 10.x, with no replacement.
+     */
+    @Deprecated
     public boolean getCheckGzExists()
     {
         return _checkGzExists;
@@ -780,7 +788,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      *
      * @param checkGzExists whether to check if a static gz file exists for
      * the resource that the DefaultServlet may serve as precompressed.
+     * @deprecated feature will be removed in Jetty 10.x, with no replacement.
      */
+    @Deprecated
     public void setCheckGzExists(boolean checkGzExists)
     {
         _checkGzExists = checkGzExists;
