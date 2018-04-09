@@ -14,10 +14,19 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-= Jetty: Contribution Guide
-:revnumber: {VERSION}
+:icons: font
 :sectids!:
 :toc: left
+:imagesdir: ../common/images
+
+[#jetty-logo]
+.Eclipse Jetty Logo
+[link="https://eclipse.org/jetty"]
+image::jetty-logo.svg[]
+
+= Eclipse Jetty: Contribution Guide
+Jetty Developers <jetty-dev@eclipse.org>
+:revnumber: {VERSION}
 
 include::1-introduction.adoc[]
 include::2-community.adoc[]
