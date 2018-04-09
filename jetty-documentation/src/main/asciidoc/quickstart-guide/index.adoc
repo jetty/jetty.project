@@ -25,7 +25,7 @@
 image::jetty-logo.svg[]
 
 = Eclipse Jetty: Quickstart Guide
-Jetty Developers <jetty-users@eclipse.org>
+Jetty Users <jetty-users@eclipse.org>
 :revnumber: {VERSION}
 
 include::1-introduction.adoc[]
