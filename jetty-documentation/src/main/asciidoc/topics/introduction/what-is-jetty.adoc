@@ -19,29 +19,11 @@
 [[what-is-jetty]]
 === What is Jetty?
 
-Jetty is an open-source project providing an HTTP server, HTTP client, and javax.servlet container.
+At the most basic level, Jetty is an Open-Source HTTP web server and Java servlet container.
+Development of Jetty began in 1995 with the original foundations laid by Greg Wilkins, who still actively contributes to the project.
+Today, Jetty is one of the most widely distributed web servers around.
+It has been use to power projects from small websites to massive applications with tens of millions of users.
+Companies like Yahoo, Google, Salesforce.com and many more count Jetty as an integral part of their own product offerings.
 
-This guide is broken up in to five parts:
-
-* The link:#quick-start[first section] emphasizes beginning to use Jetty.
-It provides information about what Jetty is and where you can download it, and where to find Jetty in repositories like Central Maven.
-It also provides a Quick Start guide on how to get Jetty up and running as well as an overview of how and what to configure in Jetty.
-
-* The link:#jetty-config-guide[second section] of the guide deals with configuring Jetty at a more granular level.
-It explains how to use Jetty to deploy web applications, configure contexts and connects, and how to implement SSL and other security measures.
-
-* Administration of Jetty is the focus of the link:#jetty-admin-guide[third section] of the guide.
-From server startup to session management, logging, HTTP/2 support and Jetty optimization, these chapters will help administrators get the most out of their Jetty server instances.
-This section also covers configuring many of the most common servlet container features such as JNDI and JMX.
-
-* Aimed at advanced users of Jetty, the link:#jetty-dev-guide[fourth section] of the guide focuses on Jetty development.
-A large portion of this section is focused on using Jetty as an embedded server in existing applications.
-It contains several examples and how-to guides for making the most out of the Jetty framework.
-This section also includes a guide on using the Jetty Maven plugin as well as information on debugging Jetty.
-
-* The link:#jetty-ref-guide[final section] of the guide is a reference section.
-Included there are guides on Jetty architecture and Jetty XML syntax, alternate distributions of Jetty and even troubleshooting of common issues.
-There is also a chapter on getting involved in the Jetty community including information on how to contribute code and how to find help.
-
-Feedback is always welcome!
-Additionally, if you are interested in how to contribute to the open source project there is a link:#community[section on that as well!]
+From the start, Jetty was built to be as flexible as possible while at the same time providing support for the most popular and robust technologies available.
+Since it's inception Jetty has been on the forefront of technological innovation and was among the first to offer support for HTTP/1.1, asynchronous servlets, Comet, WebSocket and HTTP/2.

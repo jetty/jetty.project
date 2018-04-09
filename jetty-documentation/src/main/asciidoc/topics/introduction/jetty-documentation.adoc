@@ -1,0 +1,39 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+The Jetty Documentation is broken up in to several guides:
+
+* The link:#qsg-introduction[Quickstart Guide] is designed for users who are new to Jetty.
+It provides information about what Jetty is and where you can download it, and where to find Jetty in repositories like Maven Central.
+It also provides instructions on how to get Jetty up and running as well as an overview of how and what to configure in Jetty.
+
+* The link:#ag-introduction[Administration Guide] deals with configuring Jetty as a distribution.
+From server startup to session management, logging, HTTP/2 support and Jetty optimization, this guide helps administrators get the most out of their Jetty server instances.
+It explains how to use Jetty to deploy web applications, configure contexts and connects, and how to implement SSL and other security measures.
+This guide also covers configuring many of the most common servlet container features such as JNDI and JMX.
+
+* Aimed at advanced users of Jetty, the link:#dg-introduction[Developer Guide] focuses on implementing Jetty as an embedded technology to complement existing applications.
+It contains several examples and how-to guides for making the most out of the Jetty framework.
+This guide also includes instructions on using the Jetty Maven plugin and information on debugging Jetty.
+
+* The link:#cg-introduction[Contribution Guide] provides an overview of the resources available to users of Jetty.
+It provides on getting involved in the Jetty community, such as mailing lists and GitHub, and includes resources on where to find help.
+Additionally, it contains information on how to contribute to the Jetty Project.
+
+
+Feedback is always welcome!
