@@ -1,6 +1,6 @@
 #!groovy
 
-def jdks = ["jdk8", "jdk9"]
+def jdks = ["jdk8", "jdk9","jdk10"]
 def oss = ["linux"] //windows?  ,"linux-docker"
 def builds = [:]
 for (def os in oss) {
