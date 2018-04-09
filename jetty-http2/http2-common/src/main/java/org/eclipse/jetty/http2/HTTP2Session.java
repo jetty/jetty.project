@@ -51,6 +51,7 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
@@ -1176,6 +1177,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             return true;
         }
 
+        @Override
+        public long onFlushed(long bytes)
+        {
+            long flushed = Math.min(frameBytes, bytes);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Flushed {}/{} frame bytes for {}", flushed, bytes, this);
+            frameBytes -= flushed;
+            return bytes - flushed;
+        }
+
         /**
          * <p>Performs actions just before writing the frame to the network.</p>
          * <p>Some frame, when sent over the network, causes the receiver
@@ -1284,8 +1295,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private class DataEntry extends HTTP2Flusher.Entry
     {
         private int frameBytes;
-        private int dataRemaining;
+        private int frameRemaining;
         private int dataBytes;
+        private int dataRemaining;
 
         private DataEntry(DataFrame frame, IStream stream, Callback callback)
         {
@@ -1302,12 +1314,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         public int getFrameBytesGenerated()
         {
             return frameBytes;
-        }
-
-        @Override
-        public int getDataBytesGenerated()
-        {
-            return dataBytes;
         }
 
         @Override
@@ -1332,6 +1338,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             // Only one DATA frame is generated.
             int frameBytes = generator.data(lease, (DataFrame)frame, length);
             this.frameBytes += frameBytes;
+            this.frameRemaining += frameBytes;
 
             int dataBytes = frameBytes - Frame.HEADER_LENGTH;
             this.dataBytes += dataBytes;
@@ -1345,10 +1352,26 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
 
         @Override
+        public long onFlushed(long bytes) throws IOException
+        {
+            long flushed = Math.min(frameRemaining, bytes);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Flushed {}/{} frame bytes for {}", flushed, bytes, this);
+            frameRemaining -= flushed;
+            // We should only forward data (not frame) bytes,
+            // but we trade precision for simplicity.
+            Object channel = stream.getAttachment();
+            if (channel instanceof WriteFlusher.Listener)
+                ((WriteFlusher.Listener)channel).onFlushed(flushed);
+            return bytes - flushed;
+        }
+
+        @Override
         public void succeeded()
         {
             bytesWritten.addAndGet(frameBytes);
             frameBytes = 0;
+            frameRemaining = 0;
 
             flowControl.onDataSent(stream, dataBytes);
             dataBytes = 0;

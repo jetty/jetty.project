@@ -32,7 +32,6 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -185,7 +184,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                     if (entry.generate(lease))
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Generated data/frame {}/{} bytes for {}", entry.getDataBytesGenerated(), entry.getFrameBytesGenerated(), entry);
+                            LOG.debug("Generated {} frame bytes for {}", entry.getFrameBytesGenerated(), entry);
 
                         progress = true;
 
@@ -216,6 +215,9 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             }
 
             if (!progress)
+                break;
+
+            if (stalledEntry != null)
                 break;
 
             int writeThreshold = session.getWriteThreshold();
@@ -249,34 +251,9 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     void onFlushed(long bytes) throws IOException
     {
+        // A single EndPoint write may be flushed multiple times (for example with SSL).
         for (Entry entry : processedEntries)
-            bytes = onFlushed(bytes, entry);
-    }
-
-    private long onFlushed(long bytes, Entry entry) throws IOException
-    {
-        // For the given flushed bytes, we want to only
-        // forward those that belong to data frame content.
-        int frameBytesGenerated = entry.getFrameBytesGenerated();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Flushed {}/{} frame bytes for {}", frameBytesGenerated, bytes, entry);
-        if (frameBytesGenerated > 0)
-        {
-            bytes -= frameBytesGenerated;
-            if (entry.isData())
-            {
-                Object channel = entry.stream.getAttachment();
-                if (channel instanceof WriteFlusher.Listener)
-                {
-                    int dataBytesGenerated = entry.getDataBytesGenerated();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Flushed {} data bytes for {}", dataBytesGenerated, entry);
-                    if (dataBytesGenerated > 0)
-                        ((WriteFlusher.Listener)channel).onFlushed(dataBytesGenerated);
-                }
-            }
-        }
-        return bytes;
+            bytes = entry.onFlushed(bytes);
     }
 
     @Override
@@ -410,11 +387,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         public abstract int getFrameBytesGenerated();
 
-        public int getDataBytesGenerated()
-        {
-            return 0;
-        }
-
         public int getDataBytesRemaining()
         {
             return 0;
@@ -422,15 +394,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         protected abstract boolean generate(ByteBufferPool.Lease lease);
 
-/*
-        private void finish()
-        {
-            if (isStale())
-                failed(new EofException("reset"));
-            else
-                succeeded();
-        }
-*/
+        public abstract long onFlushed(long bytes) throws IOException;
 
         @Override
         public void failed(Throwable x)
@@ -468,17 +432,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                     return true;
                 default:
                     throw new IllegalStateException();
-            }
-        }
-
-        private boolean isData()
-        {
-            switch (frame.getType())
-            {
-                case DATA:
-                    return true;
-                default:
-                    return false;
             }
         }
 
