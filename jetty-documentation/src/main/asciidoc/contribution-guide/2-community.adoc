@@ -15,11 +15,11 @@
 //  ========================================================================
 
 [[cg-community]]
-== Community
+== Participate in the Community
 
-There are many ways to interact with the developers and other users of Jetty.  We are active on a number of open source support forums as well as fully funding the ongoing development of Jetty (((Jetty, Server))) with paid support through Webtide.
-
-
+One of the best ways to start contribute and work with Eclipse Jetty is to get plugged into one of the existing communities.  In any one of these you will come across users of neophyte to expert experience and as time permits the developers of Jetty themselves.
 
 include::../topics/contributing/community.adoc[]
-include::../topics/contributing/bugs.adoc[]
+include::../topics/contributing/issues.adoc[]
+
+Long story short, if you are interested in getting involved with the community, there are a number of options available and you are encouraged to participate at whatever level you like!
