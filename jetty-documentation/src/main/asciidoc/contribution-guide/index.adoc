@@ -14,19 +14,28 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
+
+:doctitle: Eclipse Jetty: Contribution Guide
+:author: Jetty Developers
+:email: jetty-dev@eclipse.org
+:revnumber: 1.0
+:revdate: {TIMESTAMP}
+:toc: left
+:toc-title: Contribution Guide
+:imagesdir: ../common/images
+:stylesdir: ../../resources/html/css
+:stylesheet: guidebook.css
+:sub-order: attributes+
+:nofooter:
+:allow-uri-read: true
 :icons: font
 :sectids!:
-:toc: left
-:imagesdir: ../common/images
 
-[#jetty-logo]
-.Eclipse Jetty Logo
-[link="https://eclipse.org/jetty"]
-image::jetty-logo.svg[]
+//[#jetty-logo]
+//.Eclipse Jetty Logo
+//[link="https://eclipse.org/jetty"]
+//image::jetty-logo.svg[]
 
-= Eclipse Jetty: Contribution Guide
-Jetty Developers <jetty-dev@eclipse.org>
-:revnumber: {VERSION}
 
 include::1-introduction.adoc[]
 include::2-community.adoc[]
