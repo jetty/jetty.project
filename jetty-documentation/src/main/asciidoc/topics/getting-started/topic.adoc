@@ -23,5 +23,6 @@ You can use Jetty in many different ways ranging from embedding Jetty in applica
 This guide covers the latter, a standalone distribution suitable for deploying web applications.
 
 include::jetty-running.adoc[]
-include::jetty-common-configuration.adoc[]
+include::jetty-demo-base.adoc[]
 include::jetty-deploying.adoc[]
+include::jetty-common-configuration.adoc[]

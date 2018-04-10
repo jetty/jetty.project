@@ -21,5 +21,7 @@
 Welcome to the Eclipse Jetty Quickstart Guide.
 
 include::../topics/introduction/what-is-jetty.adoc[]
+include::../topics/introduction/jetty-documentation.adoc[]
 include::../topics/introduction/what-version.adoc[]
 include::../topics/introduction/jetty-javaee.adoc[]
+include::../topics/downloading/downloading-jetty.adoc[]

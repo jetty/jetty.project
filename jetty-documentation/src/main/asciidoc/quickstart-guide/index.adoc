@@ -14,9 +14,19 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-= Jetty: Quickstart Guide
-:revnumber: {VERSION}
+:icons: font
+:sectids!:
 :toc: left
+:imagesdir: ../common/images
+
+[#jetty-logo]
+.Eclipse Jetty Logo
+[link="https://eclipse.org/jetty"]
+image::jetty-logo.svg[]
+
+= Eclipse Jetty: Quickstart Guide
+Jetty Users <jetty-users@eclipse.org>
+:revnumber: {VERSION}
 
 include::1-introduction.adoc[]
 include::2-using.adoc[]
