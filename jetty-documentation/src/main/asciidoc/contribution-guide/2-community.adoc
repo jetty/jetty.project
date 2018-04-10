@@ -17,7 +17,8 @@
 [[cg-community]]
 == Participate in the Community
 
-One of the best ways to start contribute and work with Eclipse Jetty is to get plugged into one of the existing communities.  In any one of these you will come across users of neophyte to expert experience and as time permits the developers of Jetty themselves.
+One of the best ways to start contribute and work with Eclipse Jetty is to get plugged into one of the existing communities.
+In any one of these you will come across users of neophyte to expert experience and as time permits the developers of Jetty themselves.
 
 include::../topics/contributing/community.adoc[]
 include::../topics/contributing/issues.adoc[]

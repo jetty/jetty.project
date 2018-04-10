@@ -15,9 +15,11 @@
 //  ========================================================================
 
 [[cg-conclusion]]
-== Thank you!
+== Congratulations!
 
-Your interest in contributing to Eclipse Jetty is welcome and if there is anything you feel this guide is lacking please let us know.
-Feel free to open an Issue as described in this document and perhaps even contribute your suggestion to {GITDOCURL}/contribution-guide[this document] itself!
+In this Quickstart Guide we've covered the basics of what Jetty is, what version to use, and where to download Jetty.
+We also covered getting Jetty up and running for the first time and some of the most common configuration options.
+This is only the beginning.
+Please see our other guides for fleshing out your Jetty implementation or for information how you can contribute to the Jetty project!
 
-include::../topics/contributing/guides.adoc[]
+include::../topics/documentation/guides.adoc[]
