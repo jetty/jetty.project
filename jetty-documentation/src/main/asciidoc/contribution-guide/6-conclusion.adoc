@@ -14,23 +14,9 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-:icons: font
-:sectids!:
-:toc: left
-:imagesdir: ../common/images
+[[cg-conclusion]]
+== Thank you!
 
-[#jetty-logo]
-.Eclipse Jetty Logo
-[link="https://eclipse.org/jetty"]
-image::jetty-logo.svg[]
+Your interest in contributing to Eclipse Jetty is welcome and if there is anything you feel this guide is lacking please let us know.  Feel free to open an Issue as described in this document and perhaps even contribute your suggestion to {GITDOCURL}/contribution-guide[this document] itself!
 
-= Eclipse Jetty: Contribution Guide
-Jetty Developers <jetty-dev@eclipse.org>
-:revnumber: {VERSION}
-
-include::1-introduction.adoc[]
-include::2-community.adoc[]
-include::3-source.adoc[]
-include::4-documentation.adoc[]
-include::5-security.adoc[]
-include::6-conclusion.adoc[]
+include::../topics/contributing/guides.adoc[]

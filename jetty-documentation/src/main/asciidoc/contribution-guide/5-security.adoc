@@ -15,6 +15,6 @@
 //  ========================================================================
 
 [[cg-security]]
-== Reporting Security Concerns or Issues
+== Security
 
-include::../topics/contributing/security.adoc[]
+include::../topics/security/reporting.adoc[]

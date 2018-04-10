@@ -16,17 +16,17 @@
 //  ========================================================================
 //
 
-[[security-reporting]]
+[[t-security-reporting]]
 === Reporting Security Issues
 
 There are a number of avenues for reporting security issues to the Jetty project available.
 If the issue is directly related to Jetty itself then reporting to the Jetty developers is encouraged.
-The most direct method is to mail _security@webtide.com_.
+The most direct method is to send e-mail to _security@webtide.com_.
 Since Webtide is comprised of the active committers of the Jetty project this is our preferred reporting method.
-We are generally flexible in how we work with reporters of security issues but we reserve the right to act in the interests of the Jetty project in all circumstances.
+We are generally flexible in how we work with reporters of security issues from an attribution perspective but we reserve the right to act in the interests of the Jetty project in all circumstances.
 
 If the issue is related to Eclipse or its Jetty integration then we encourage you to reach out to _security@eclipse.org_.
 
-If the issue is related to integrations with Jetty we are happy to work with you to identify the proper entity and either of the approaches above is fine.
+If the issue is related to some third party integration with Jetty we are happy to work with you to identify the proper entity and worth with them to properly address any issue so either of the above outreaches is fine.
 
-We prefer that security issues are reported directly to Jetty developers as opposed through GitHub Issues since it has no facility to tag issues as _private_.
+We prefer that security issues are reported directly to Jetty developers via email as opposed through GitHub Issues since there is currently no facility for _private_ issues.  There is an https://github.com/isaacs/github/issues/37[unofficial thread] for this support at github you are welcome to follow along on.
