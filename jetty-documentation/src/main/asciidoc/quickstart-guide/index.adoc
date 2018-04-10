@@ -41,4 +41,5 @@
 
 include::1-introduction.adoc[]
 include::2-using.adoc[]
-include::3-Configuring.adoc[]
+include::3-configuring.adoc[]
+include::4-conclusion.adoc[]

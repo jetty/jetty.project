@@ -17,6 +17,7 @@
 [[cg-documentation]]
 == Participate in the Documentation
 
-Another wonderful way to help with Eclipse Jetty is to help contribute to our corpus of documentation.  We have taken every every to reduce the barriers to contributing to our documentation and many contributors find our documentation as a low key way to participate and learn the process.
+Another wonderful way to help with Eclipse Jetty is to help contribute to our corpus of documentation.
+We have taken every every to reduce the barriers to contributing to our documentation and many contributors find our documentation as a low key way to participate and learn the process.
 
-include::../topics/contributing/documentation.adoc[]
+include::../topics/documentation/documentation-format.adoc[]

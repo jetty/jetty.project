@@ -20,3 +20,6 @@
 
 include::../topics/getting-started/jetty-running.adoc[]
 include::../topics/getting-started/jetty-demo-base.adoc[]
+
+You've now run a server not once, but twice (or more), complete with working web applications and content.
+In the following section we will take a look at some of the common configuration options for Jetty which will serve as an introduction to customizing the server to meet the needs of your implementation.
