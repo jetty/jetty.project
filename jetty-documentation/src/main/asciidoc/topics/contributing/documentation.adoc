@@ -99,13 +99,8 @@ id's::
   voodoo.
   A url using these 'e12c8673' type links will not be durable across generations of the documentation.
   These id's need to be used on chapters and sections two deep, and anywhere that you intend to cross link deeper.
-+
-The id values go into a global namespace so they must be unique across the entire document or the last example will win and any cross links will go there.
-Below is an example of an id.
-
-....
-[[this-id-an-id]]
-....
+  The id values go into a global namespace so they must be unique across the entire document or the last example will win and any cross links will go there.
+  Links inside of a guides narrative structure should be prefixed with an acronym (contributor guide = cg-) while any links within the topics structure should be prefixed with t- and ideally the name of the topic it corresponds to.
 
 link vs xref::
   The `link:` item should be generally used for linking around the document when you want to choose the text that will be rendered in the link itself.
