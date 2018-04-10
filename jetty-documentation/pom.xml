@@ -49,7 +49,6 @@
         <version>${asciidoctor.maven.plugin.version}</version>
         <configuration>
           <basedir>${basedir}/src/main/asciidoc</basedir>
-          <linkcss>true</linkcss>
           <attributes>
             <sub-order>attributes+</sub-order>
             <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
