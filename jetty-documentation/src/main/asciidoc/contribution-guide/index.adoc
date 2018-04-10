@@ -25,9 +25,11 @@
 :toc: left
 :toc-title: Contribution Guide
 :imagesdir: ../common/images
+ifdef::backend-html5[]
 :stylesdir: ../common/css
 :stylesheet: guidebook.css
 :linkcss:
+endif::[]
 :sub-order: attributes+
 :nofooter:
 :allow-uri-read: true
