@@ -14,12 +14,12 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[qsg-startup]]
+[[qsge-conclusion]]
+== Congratulations!
 
-== Starting Jetty
+In this Quickstart Guide we've covered the basics of what Jetty is, what version to use, and where to download Jetty.
+We also covered getting Jetty up and running for the first time and some of the most common configuration options.
+This is only the beginning.
+Please see our other guides for fleshing out your Jetty implementation or for information how you can contribute to the Jetty project!
 
-include::../topics/getting-started/jetty-running.adoc[]
-include::../topics/getting-started/jetty-demo-base.adoc[]
-
-You've now run a server not once, but twice (or more), complete with working web applications and content.
-In the following section we will take a look at some of the common configuration options for Jetty which will serve as an introduction to customizing the server to meet the needs of your implementation.
+include::../topics/documentation/guides.adoc[]

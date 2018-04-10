@@ -1,0 +1,28 @@
+//  ========================================================================
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[qsgd-introduction]]
+
+== Welcome!
+
+Welcome to the Eclipse Jetty Distribution Quickstart Guide.
+This guide is set up to introduce new users to the Jetty distribution, including downloading and running their first Jetty server.
+
+include::../topics/introduction/what-is-jetty.adoc[]
+include::../topics/documentation/jetty-documentation.adoc[]
+include::../topics/introduction/what-version.adoc[]
+include::../topics/introduction/jetty-javaee.adoc[]
+include::../topics/downloading/downloading-jetty.adoc[]

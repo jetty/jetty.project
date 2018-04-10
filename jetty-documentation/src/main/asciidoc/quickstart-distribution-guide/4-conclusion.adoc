@@ -14,15 +14,12 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[qsg-introduction]]
+[[qsgd-conclusion]]
+== Congratulations!
 
-== Welcome!
+In this Quickstart Guide we've covered the basics of what Jetty is, what version to use, and where to download Jetty.
+We also covered getting Jetty up and running for the first time and some of the most common configuration options.
+This is only the beginning.
+Please see our other guides for fleshing out your Jetty implementation or for information how you can contribute to the Jetty project!
 
-Welcome to the Eclipse Jetty Quickstart Guide.
-This guide is set up to introduce new users to Jetty, including downloading and running their first Jetty server.
-
-include::../topics/introduction/what-is-jetty.adoc[]
-include::../topics/documentation/jetty-documentation.adoc[]
-include::../topics/introduction/what-version.adoc[]
-include::../topics/introduction/jetty-javaee.adoc[]
-include::../topics/downloading/downloading-jetty.adoc[]
+include::../topics/documentation/guides.adoc[]
