@@ -17,4 +17,6 @@
 [[cg-introduction]]
 == Welcome!
 
-Eclipse Jetty is an open source project with a long pedigree of contribution.  Starting over 20 years ago, Jetty has had many committers over the years and owes much of its success to the people that make up the community.  There are many ways that you may contribute to Jetty and the goal of this guide is help you get there!
+Eclipse Jetty is an open source project with a long pedigree of contribution.
+Starting over 20 years ago, Jetty has had many committers over the years and owes much of its success to the people that make up the community.
+There are many ways that you may contribute to Jetty and the goal of this guide is help you get there!

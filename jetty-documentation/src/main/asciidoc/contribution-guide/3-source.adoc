@@ -17,12 +17,16 @@
 [[cg-source]]
 == Participate in the Code
 
-If you are more interested in digging into what makes Jetty tick then this some information that you will need to arm yourself with.  First we start with how to checkout and build Jetty, then on to our general coding standards followed by the actual patch contribution process.
+If you are more interested in digging into what makes Jetty tick then this some information that you will need to arm yourself with.
+First we start with how to checkout and build Jetty, then on to our general coding standards followed by the actual patch contribution process.
 
 include::../topics/contributing/source.adoc[]
 include::../topics/contributing/build.adoc[]
 include::../topics/contributing/coding-standards.adoc[]
 
-While Eclipse Jetty is an open source project it is also a member of the Eclipse Foundation which carries along some additional responsibilities.  Intellectual Property is a hallmark concern of the Eclipse Foundation so you are encouraged to understand what that entails before diving in. As much as we would like to accept a tremendous pull request, without the proper chain of events being completed our hands are tied.  That being said, the steps are not particularly onerous and we are happy to work with you to get them accomplished.
+While Eclipse Jetty is an open source project it is also a member of the Eclipse Foundation which carries along some additional responsibilities.
+Intellectual Property is a hallmark concern of the Eclipse Foundation so you are encouraged to understand what that entails before diving in.
+As much as we would like to accept a tremendous pull request, without the proper chain of events being completed our hands are tied.
+That being said, the steps are not particularly onerous and we are happy to work with you to get them accomplished.
 
 include::../topics/contributing/patches.adoc[]

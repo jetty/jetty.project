@@ -21,7 +21,7 @@
 
 ==== Downloading the Jetty Distribution
 
-The standalone Jetty distribution is available for download from the Eclipse Foundation:
+As part of the Eclipse Foundation, Jetty's website is located in their network of sites and can be found at:
 ____
 *Jetty*
 https://www.eclipse.org/jetty/download.html
