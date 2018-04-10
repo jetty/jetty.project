@@ -108,6 +108,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         this.streamIdleTimeout = endPoint.getIdleTimeout();
         this.sendWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        this.writeThreshold = 32 * 1024;
         this.pushEnabled = true; // SPEC: by default, push is enabled.
         this.idleTime = System.nanoTime();
         addBean(flowControl);
