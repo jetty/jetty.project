@@ -71,7 +71,7 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <backend>html</backend>
+              <backend>html5</backend>
               <sourceDirectory>${basedir}/src/main/asciidoc/administration-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/administrative-guide</outputDirectory>
@@ -84,7 +84,7 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <backend>html</backend>
+              <backend>html5</backend>
               <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/contribution-guide</outputDirectory>
@@ -97,7 +97,7 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <backend>html</backend>
+              <backend>html5</backend>
               <sourceDirectory>${basedir}/src/main/asciidoc/developer-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/developer-guide</outputDirectory>
@@ -110,7 +110,7 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <backend>html</backend>
+              <backend>html5</backend>
               <sourceDirectory>${basedir}/src/main/asciidoc/quickstart-distribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/quickstart-distribution-guide</outputDirectory>
@@ -123,7 +123,7 @@
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
-              <backend>html</backend>
+              <backend>html5</backend>
               <sourceDirectory>${basedir}/src/main/asciidoc/quickstart-embedded-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/quickstart-embedded-guide</outputDirectory>
