@@ -14,12 +14,6 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[cg-conclusion]]
-== Congratulations!
+[[qsge-configuring]]
 
-In this Quickstart Guide we've covered the basics of what Jetty is, what version to use, and where to download Jetty.
-We also covered getting Jetty up and running for the first time and some of the most common configuration options.
-This is only the beginning.
-Please see our other guides for fleshing out your Jetty implementation or for information how you can contribute to the Jetty project!
-
-include::../topics/documentation/guides.adoc[]
+== Configuring Jetty

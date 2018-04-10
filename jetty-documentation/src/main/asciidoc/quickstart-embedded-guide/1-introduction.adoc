@@ -14,10 +14,15 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[qsg-configuring]]
-== Configuring Jetty
+[[qsge-introduction]]
 
-include::../topics/getting-started/jetty-deploying.adoc[]
-include::../topics/getting-started/qs-jetty-base.adoc[]
-include::../topics/getting-started/qs-jetty-port.adoc[]
-include::../topics/getting-started/qs-ssl-https.adoc[]
+== Welcome!
+
+Welcome to the Eclipse Jetty Embedded Quickstart Guide.
+This guide is set up to introduce new users to Jetty, including downloading and running their first Jetty server.
+
+include::../topics/introduction/what-is-jetty.adoc[]
+include::../topics/documentation/jetty-documentation.adoc[]
+include::../topics/introduction/what-version.adoc[]
+include::../topics/introduction/jetty-javaee.adoc[]
+include::../topics/downloading/downloading-jetty.adoc[]
