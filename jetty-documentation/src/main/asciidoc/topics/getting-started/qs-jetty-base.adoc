@@ -16,12 +16,8 @@
 //  ========================================================================
 //
 
-[[quickstart-common-config]]
-
-=== Common Jetty Configuration
-
 [[creating-jetty-base]]
-==== Creating a new Jetty Base
+=== Creating a new Jetty Base
 
 The `demo-base` directory described earlier is an example of the link:#startup-base-and-home[`jetty.base`] mechanism.
 A Jetty base directory allows the configuration and web applications of a server instance to be stored separately from the Jetty distribution, so that upgrades can be done with minimal disruption.

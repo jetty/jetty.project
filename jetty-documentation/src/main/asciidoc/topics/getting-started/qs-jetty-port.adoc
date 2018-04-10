@@ -17,7 +17,7 @@
 //
 
 [[quickstart-changing-jetty-port]]
-==== Changing the Jetty Port
+=== Changing the Jetty Port
 
 You can configure Jetty to run on a different port by setting the `jetty.http.port` property on the command line:
 
