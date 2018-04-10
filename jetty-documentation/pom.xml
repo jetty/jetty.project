@@ -103,16 +103,29 @@
             </configuration>
           </execution>
           <execution>
-            <id>quickstart-guide</id>
+            <id>quickstart-distribution-guide</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>process-asciidoc</goal>
             </goals>
             <configuration>
               <backend>html</backend>
-              <sourceDirectory>${basedir}/src/main/asciidoc/quickstart-guide</sourceDirectory>
+              <sourceDirectory>${basedir}/src/main/asciidoc/quickstart-distribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/html/quickstart-guide</outputDirectory>
+              <outputDirectory>${project.build.directory}/html/quickstart-distribution-guide</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>quickstart-embedded-guide</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>process-asciidoc</goal>
+            </goals>
+            <configuration>
+              <backend>html</backend>
+              <sourceDirectory>${basedir}/src/main/asciidoc/quickstart-embedded-guide</sourceDirectory>
+              <sourceDocumentName>index.adoc</sourceDocumentName>
+              <outputDirectory>${project.build.directory}/html/quickstart-embedded-guide</outputDirectory>
             </configuration>
           </execution>
         </executions>
