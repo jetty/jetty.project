@@ -25,4 +25,6 @@ This guide covers the latter, a standalone distribution suitable for deploying w
 include::jetty-running.adoc[]
 include::jetty-demo-base.adoc[]
 include::jetty-deploying.adoc[]
-include::jetty-common-configuration.adoc[]
+include::qs-jetty-base.adoc[]
+include::qs-jetty-port.adoc[]
+include::qs-ssl-https.adoc[]

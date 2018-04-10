@@ -18,4 +18,6 @@
 == Configuring Jetty
 
 include::../topics/getting-started/jetty-deploying.adoc[]
-include::../topics/getting-started/jetty-common-configuration.adoc[]
+include::../topics/getting-started/qs-jetty-base.adoc[]
+include::../topics/getting-started/qs-jetty-port.adoc[]
+include::../topics/getting-started/qs-ssl-https.adoc[]
