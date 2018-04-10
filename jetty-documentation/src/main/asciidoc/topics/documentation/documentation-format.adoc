@@ -19,9 +19,11 @@
 [[t-community-documentation]]
 === Source Control and Maven Build.
 
-The Jetty documentation is a module within the overall Jetty project and is build as a part of the standard build process.  As such to checkout the documentation you can follow the link:#t-community-source[same process] as checking out Jetty itself.
+The Jetty documentation is a module within the overall Jetty project and is build as a part of the standard build process.
+As such to checkout the documentation you can follow the link:#t-community-source[same process] as checking out Jetty itself.
 
-As a part of the main Jetty project the documentation is build through the link:#t-community-build[same process] as Jetty.  However, it is a more independent module and can be worked with much simpler by building strictly the jetty-documentation module.
+As a part of the main Jetty project the documentation is build through the link:#t-community-build[same process] as Jetty.
+However, it is a more independent module and can be worked with much simpler by building strictly the jetty-documentation module.
 
 [source, screen, subs="{sub-order}"]
 ....
@@ -57,11 +59,14 @@ ____
 
 === The Render Chain Explained
 
-The Jetty documentation is all written in https://asciidoctor.org/docs/user-manual/[asciidoc].  The maven build uses the asciidoctor-maven-plugin to process specific index.adoc[] files which act as the root structure for various guides (Administrative, Developer, QuickStart, etc).  The main pom.xml file also provides a maven profile which when activated can produce the guides in both pdf and epub formats.
+The Jetty documentation is all written in https://asciidoctor.org/docs/user-manual/[asciidoc].
+The maven build uses the asciidoctor-maven-plugin to process specific index.adoc[] files which act as the root structure for various guides (Administrative, Developer, QuickStart, etc).
+The main pom.xml file also provides a maven profile which when activated can produce the guides in both pdf and epub formats.
 
 === Project Structure
 
-It may be useful to understand the layout of the documentation before digging into the details.  The following table lists some helpful directories and their purpose.
+It may be useful to understand the layout of the documentation before digging into the details.
+The following table lists some helpful directories and their purpose.
 
 .Documentation Layout
 [cols="2"]
@@ -77,9 +82,12 @@ It may be useful to understand the layout of the documentation before digging in
 
 === Guide Structure
 
-Each guide starts with an *index.adoc* file which acts as the point of origin for the document structure.  It will declare useful metadata for the proper rendering of the overall guide and use the asciidoc *include* directive to pull in content for each chapter which are conveniently named by chapter number and name.
+Each guide starts with an *index.adoc* file which acts as the point of origin for the document structure.
+It will declare useful metadata for the proper rendering of the overall guide and use the asciidoc *include* directive to pull in content for each chapter which are conveniently named by chapter number and name.
 
-The individual chapter *adoc* files contain the narrative structure of each guide and in turn use the *include* directive to pull in specific topic content.  The topic content is all located within the *src/main/asciidoc/topics* structure and is intended to be context free and unrelated to any specific guide.  In this way, any narrative requirements that setup or weave together topics are located in their associated guide chapters and any topics can stand on their own.
+The individual chapter *adoc* files contain the narrative structure of each guide and in turn use the *include* directive to pull in specific topic content.
+he topic content is all located within the *src/main/asciidoc/topics* structure and is intended to be context free and unrelated to any specific guide.
+In this way, any narrative requirements that setup or weave together topics are located in their associated guide chapters and any topics can stand on their own.
 
 === Conventions
 
