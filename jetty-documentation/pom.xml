@@ -182,7 +182,7 @@
             </configuration>
             <executions>
               <execution>
-                <id>generate-pdf-doc</id>
+                <id>contribution-guide-pdf</id>
                 <phase>generate-resources</phase>
                 <goals>
                   <goal>process-asciidoc</goal>
@@ -199,11 +199,32 @@
                   </attributes>
                   <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
                   <sourceDocumentName>index.adoc</sourceDocumentName>
-                  <outputDirectory>${project.build.directory}/pdf/contribution-guide</outputDirectory>
+                  <outputFile>${project.build.directory}/pdf/contribution-guide/contribution-guide.pdf</outputFile>
                 </configuration>
               </execution>
               <execution>
-                <id>generate-spine-epub</id>
+                <id>quickstart-distribution-guide-pdf</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>process-asciidoc</goal>
+                </goals>
+                <configuration>
+                  <backend>pdf</backend>
+                  <sourceHighlighter>coderay</sourceHighlighter>
+                  <attributes>
+                    <icons>font</icons>
+                    <pagenums/>
+                    <toc/>
+                    <idprefix/>
+                    <idseparator>-</idseparator>
+                  </attributes>
+                  <sourceDirectory>${basedir}/src/main/asciidoc/quickstart-distribution-guide</sourceDirectory>
+                  <sourceDocumentName>index.adoc</sourceDocumentName>
+                  <outputFile>${project.build.directory}/pdf/quickstart-distribution-guide/quickstart-distribution-guide.pdf</outputFile>
+                </configuration>
+              </execution>
+              <execution>
+                <id>contribution-guide-epub</id>
                 <phase>generate-resources</phase>
                 <goals>
                   <goal>process-asciidoc</goal>
@@ -213,7 +234,21 @@
                   <sourceHighlighter>coderay</sourceHighlighter>
                   <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
                   <sourceDocumentName>index.adoc</sourceDocumentName>
-                  <outputDirectory>${project.build.directory}/epub3/contribution-guide</outputDirectory>
+                  <outputFile>${project.build.directory}/epub/contribution-guide/contribution-guide.epub</outputFile>
+                </configuration>
+              </execution>
+              <execution>
+                <id>quickstart-distribution-guide-epub</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>process-asciidoc</goal>
+                </goals>
+                <configuration>
+                  <backend>epub3</backend>
+                  <sourceHighlighter>coderay</sourceHighlighter>
+                  <sourceDirectory>${basedir}/src/main/asciidoc/quickstart-distribution-guide</sourceDirectory>
+                  <sourceDocumentName>index.adoc</sourceDocumentName>
+                  <outputFile>${project.build.directory}/epub/quickstart-distribution-guide/quickstart-distribution-guide.epub</outputFile>
                 </configuration>
               </execution>
             </executions>
