@@ -1,0 +1,46 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+[[quickstart-changing-jetty-port]]
+==== Changing the Jetty Port
+
+You can configure Jetty to run on a different port by setting the `jetty.http.port` property on the command line:
+
+[source, screen, subs="{sub-order}"]
+----
+> cd $JETTY_BASE
+> java -jar $JETTY_HOME/start.jar jetty.http.port=8081
+...
+----
+
+When the server starts, it will now run on port `8081`.
+It is important to note that setting properties on the command line will only take affect for that instance of the server.
+To change the configuration so that the server will always start on the desired port, you will need to edit the `start.d/http.ini`
+
+____
+[NOTE]
+--
+The configuration by properties works via the following chain:
+
+* The `start.d/http.ini` file is part of the effective command line and contains the `--module=http` argument which activates the http module.
+* The `modules/http.mod` file defines the http module which specifies the `etc/jetty-http.xml` configuration file and the template ini properties it uses.
+* The `jetty.http.port` property is used by the Property XML element in `etc/jetty.http.xml` to inject the `ServerConnector` instance with the port.
+
+For more information see the link:#quick-start-configure[Quickstart Configuration Guide] and link:#configuring-connectors[Configuring Connectors].
+--
+____
