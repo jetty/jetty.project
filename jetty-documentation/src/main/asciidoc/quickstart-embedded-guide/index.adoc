@@ -17,12 +17,12 @@
 :doctitle: Eclipse Jetty: Embedded Quickstart Guide
 :author: Jetty Developers
 :email: jetty-dev@eclipse.org
-:revnumber: 1.0
+:revnumber: {VERSION}
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Embedded Quickstart Guide
 :imagesdir: ../common/images
-:stylesdir: ../../resources/html/css
+:stylesdir: ../common/css
 :stylesheet: guidebook.css
 :sub-order: attributes+
 :nofooter:

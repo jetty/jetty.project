@@ -22,7 +22,7 @@
 :toc: left
 :toc-title: Distribution Quickstart Guide
 :imagesdir: ../common/images
-:stylesdir: ../../resources/html/css
+:stylesdir: ../common/css
 :stylesheet: guidebook.css
 :sub-order: attributes+
 :nofooter:
