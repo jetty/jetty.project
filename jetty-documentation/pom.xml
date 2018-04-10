@@ -25,7 +25,7 @@
         <executions>
           <execution>
             <id>copy-base-html-assets</id>
-            <phase>process-resources</phase>
+            <phase>generate-resources</phase>
             <goals>
               <goal>copy-resources</goal>
             </goals>

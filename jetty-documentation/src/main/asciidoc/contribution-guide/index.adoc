@@ -23,8 +23,9 @@
 :toc: left
 :toc-title: Contribution Guide
 :imagesdir: ../common/images
-:stylesdir: ../../resources/html/css
+:stylesdir: ../common/css
 :stylesheet: guidebook.css
+:linkcss:
 :sub-order: attributes+
 :nofooter:
 :allow-uri-read: true

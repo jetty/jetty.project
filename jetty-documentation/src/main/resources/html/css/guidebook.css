@@ -154,7 +154,15 @@ p a>code:hover{color:rgba(0,0,0,.9)}
 #toc li{line-height:1.3334;margin-top:.3334em}
 #toc a{text-decoration:none}
 #toc a:active{text-decoration:underline}
-#toctitle{color:#7a2518;font-size:1.2em}
+#toctitle
+{
+  background-image: url(../images/jetty-logo.svg);
+  background-position: left top;
+  background-repeat: no-repeat;
+  background-size: 200px 50px;
+  color:#7a2518;
+  font-size:1.2em
+}
 @media only screen and (min-width:768px){#toctitle{font-size:1.375em}
 body.toc2{padding-left:15em;padding-right:0}
 #toc.toc2{margin-top:0!important;background-color:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #efefed;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
@@ -166,16 +174,7 @@ body.toc2.toc-right{padding-left:0;padding-right:15em}
 body.toc2.toc-right #toc.toc2{border-right-width:0;border-left:1px solid #efefed;left:auto;right:0}}
 @media only screen and (min-width:1280px){body.toc2{padding-left:20em;padding-right:0}
 #toc.toc2{width:20em}
-
-#toc.toc2 #toctitle {
-  background-image: url(../common/images/jetty-logo.svg);
-  background-position: left top;
-  background-repeat: no-repeat;
-  background-size: 200px 50px;
-  padding-top:68px;
-  font-size:1.375em
-}
-
+#toc.toc2 #toctitle {padding-top:68px;font-size:1.375em}
 #toc.toc2>ul{font-size:.95em}
 #toc.toc2 ul ul{padding-left:1.25em}
 body.toc2.toc-right{padding-left:0;padding-right:20em}}
