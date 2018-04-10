@@ -17,7 +17,7 @@
 //
 
 [[quickstart-starting-https]]
-==== Adding SSL for HTTPS & HTTP2
+=== Adding SSL for HTTPS & HTTP2
 
 Building on the example above, we can activate additional modules to add support HTTPS and HTTP2 for the server.
 To add HTTPS and HTTP2 connectors to a Jetty configuration, the modules can be activated by the following command:
@@ -66,7 +66,7 @@ The `--add-to-start` command sets up the effective command line in the ini files
 * checks for the existence of a `etc/keystore` file and if not present, downloads a demonstration keystore file.
 
 [[quickstart-changing-https-port]]
-===== Changing the Jetty HTTPS Port
+==== Changing the Jetty HTTPS Port
 
 You can configure the SSL connector to run on a different port by setting the `jetty.ssl.port` property on the command line:
 
