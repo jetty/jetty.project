@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
@@ -29,8 +30,8 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class ClosePayloadParserTest
 {
@@ -61,7 +62,7 @@ public class ClosePayloadParserTest
         capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
         CloseInfo close = new CloseInfo(capture.getFrames().poll());
-        Assert.assertThat("CloseFrame.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
-        Assert.assertThat("CloseFrame.data",close.getReason(),is(expectedReason));
+        assertThat("CloseFrame.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
+        assertThat("CloseFrame.data",close.getReason(),is(expectedReason));
     }
 }

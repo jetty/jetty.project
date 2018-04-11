@@ -22,14 +22,14 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.test.support.TestableJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocketImpl;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 /**
  * Perform the RFC2616 tests against a server running with the Jetty NIO Connector and listening on standard HTTP.
  */
 public class RFC2616NIOHttpTest extends RFC2616BaseTest
 {
-    @BeforeClass
+    @BeforeAll
     public static void setupServer() throws Exception
     {
         TestableJettyServer server = new TestableJettyServer();

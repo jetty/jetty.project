@@ -19,6 +19,7 @@
 package org.eclipse.jetty.start;
 
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -32,44 +33,38 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Various Home + Base use cases
  */
-@RunWith(Parameterized.class)
 public class TestUseCases
 {
-    @Parameters(name = "{0}")
-    public static List<Object[]> getCases() throws Exception
+    public static Stream<Arguments> getCases()
     {
         File usecases = MavenTestingUtils.getTestResourceDir("usecases/");
         File[] cases = usecases.listFiles((dir, name) -> name.endsWith(".assert.txt"));
         Arrays.sort(cases);
         
-        List<Object[]> ret = new ArrayList<>();
+        List<Arguments> ret = new ArrayList<>();
         for (File assertTxt : cases)
         {
             String caseName = assertTxt.getName().replace(".assert.txt", "");
-            ret.add(new Object[]{caseName});
+            ret.add(Arguments.of(caseName));
         }
         
-        return ret;
+        return ret.stream();
     }
     
-    @Parameter(0)
-    public String caseName;
-    
-    @Test
-    public void testUseCase() throws Exception
+    @ParameterizedTest
+    @MethodSource("getCases")
+    public void testUseCase(String caseName) throws Exception
     {
         String baseName = caseName.replaceFirst("\\..*$", "");
         File assertFile = MavenTestingUtils.getTestResourceFile("usecases/" + caseName + ".assert.txt");
@@ -126,7 +121,7 @@ public class TestUseCases
             for (String ex : exceptions)
             {
                 ex = ex.substring(3);
-                Assert.assertThat(e.toString(), Matchers.containsString(ex));
+                assertThat(e.toString(), Matchers.containsString(ex));
             }
         }
         finally

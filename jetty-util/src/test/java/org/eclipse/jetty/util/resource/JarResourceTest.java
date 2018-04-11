@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -32,11 +34,11 @@ import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class JarResourceTest
 {
-    private String testResURI = MavenTestingUtils.getTestResourcesDir().getAbsoluteFile().toURI().toASCIIString();
+    private String testResURI = MavenTestingUtils.getTestResourcesPath().toUri().toASCIIString();
 
     @Test
     public void testJarFile()
@@ -46,10 +48,7 @@ public class JarResourceTest
         Resource r = Resource.newResource(s);
 
         Set<String> entries = new HashSet<>(Arrays.asList(r.list()));
-        assertEquals(3,entries.size());
-        assertTrue(entries.contains("alphabet"));
-        assertTrue(entries.contains("numbers"));
-        assertTrue(entries.contains("subsubdir/"));
+        assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
 
         File extract = File.createTempFile("extract", null);
         if (extract.exists())
@@ -62,19 +61,15 @@ public class JarResourceTest
         Resource e = Resource.newResource(extract.getAbsolutePath());
 
         entries = new HashSet<>(Arrays.asList(e.list()));
-        assertEquals(3,entries.size());
-        assertTrue(entries.contains("alphabet"));
-        assertTrue(entries.contains("numbers"));
-        assertTrue(entries.contains("subsubdir/"));
+        assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
+
         IO.delete(extract);
 
         s = "jar:"+testResURI+"TestData/test.zip!/subdir/subsubdir/";
         r = Resource.newResource(s);
 
         entries = new HashSet<>(Arrays.asList(r.list()));
-        assertEquals(2,entries.size());
-        assertTrue(entries.contains("alphabet"));
-        assertTrue(entries.contains("numbers"));
+        assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
 
         extract = File.createTempFile("extract", null);
         if (extract.exists())
@@ -87,11 +82,8 @@ public class JarResourceTest
         e = Resource.newResource(extract.getAbsolutePath());
 
         entries = new HashSet<>(Arrays.asList(e.list()));
-        assertEquals(2,entries.size());
-        assertTrue(entries.contains("alphabet"));
-        assertTrue(entries.contains("numbers"));
+        assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
         IO.delete(extract);
-
     }
 
     /* ------------------------------------------------------------ */

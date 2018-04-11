@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,10 +52,10 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests various close scenarios
@@ -204,20 +204,20 @@ public class WebSocketCloseTest
     private static SimpleServletServer server;
     private static AbstractCloseSocket closeSocket;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new CloseServlet());
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = new BlockheadClient();
@@ -225,7 +225,7 @@ public class WebSocketCloseTest
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopClient() throws Exception
     {
         client.stop();
@@ -304,7 +304,7 @@ public class WebSocketCloseTest
      *             on test failure
      */
     @Test
-    @Ignore("Flappy test, needs work")
+    @Disabled("Flappy test, needs work")
     public void testOpenSessionCleanup() throws Exception
     {
         fastFail();

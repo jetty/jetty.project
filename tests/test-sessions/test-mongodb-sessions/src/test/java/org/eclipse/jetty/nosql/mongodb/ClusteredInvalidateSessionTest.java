@@ -21,20 +21,20 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 public class ClusteredInvalidateSessionTest extends AbstractClusteredInvalidationSessionTest
 {
     
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws Exception
     {
         MongoTestHelper.dropCollection();
         MongoTestHelper.createCollection();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws Exception
     {
         MongoTestHelper.dropCollection();

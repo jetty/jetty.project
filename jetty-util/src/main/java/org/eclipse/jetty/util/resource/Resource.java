@@ -28,6 +28,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -199,6 +200,19 @@ public abstract class Resource implements ResourceFactory, Closeable
     public static Resource newResource(File file)
     {
         return new PathResource(file.toPath());
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Construct a Resource from provided path
+     *
+     * @param path the path
+     * @return the Resource for the provided path
+     * @since 9.4.10
+     */
+    public static Resource newResource(Path path)
+    {
+        return new PathResource(path);
     }
 
     /* ------------------------------------------------------------ */

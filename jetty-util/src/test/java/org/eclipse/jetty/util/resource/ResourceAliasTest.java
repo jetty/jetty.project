@@ -18,27 +18,32 @@
 
 package org.eclipse.jetty.util.resource;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.net.MalformedURLException;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ResourceAliasTest
 {
     static File __dir;
     
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass()
     {
         __dir=MavenTestingUtils.getTargetTestingDir("RAT");
     }
     
-    @Before
+    @BeforeEach
     public void before()
     {
         FS.ensureDirExists(__dir);
@@ -51,59 +56,59 @@ public class ResourceAliasTest
     public void testNullCharEndingFilename() throws Exception
     {
         File file=new File(__dir,"test.txt");
-        Assert.assertFalse(file.exists());
-        Assert.assertTrue(file.createNewFile());
-        Assert.assertTrue(file.exists());
+        assertFalse(file.exists());
+        assertTrue(file.createNewFile());
+        assertTrue(file.exists());
 
         File file0=new File(__dir,"test.txt\0");
         if (!file0.exists())
             return;  // this file system does not suffer this problem
         
-        Assert.assertTrue(file0.exists()); // This is an alias!
+        assertTrue(file0.exists()); // This is an alias!
 
         Resource dir = Resource.newResource(__dir); 
         
         // Test not alias paths
         Resource resource = Resource.newResource(file);
-        Assert.assertTrue(resource.exists());
-        Assert.assertNull(resource.getAlias());
+        assertTrue(resource.exists());
+        assertNull(resource.getAlias());
         resource = Resource.newResource(file.getAbsoluteFile());
-        Assert.assertTrue(resource.exists());
-        Assert.assertNull(resource.getAlias());
+        assertTrue(resource.exists());
+        assertNull(resource.getAlias());
         resource = Resource.newResource(file.toURI());
-        Assert.assertTrue(resource.exists());
-        Assert.assertNull(resource.getAlias());
+        assertTrue(resource.exists());
+        assertNull(resource.getAlias());
         resource = Resource.newResource(file.toURI().toString());
-        Assert.assertTrue(resource.exists());
-        Assert.assertNull(resource.getAlias());
+        assertTrue(resource.exists());
+        assertNull(resource.getAlias());
         resource = dir.addPath("test.txt");
-        Assert.assertTrue(resource.exists());
-        Assert.assertNull(resource.getAlias());
+        assertTrue(resource.exists());
+        assertNull(resource.getAlias());
         
         
         // Test alias paths
         resource = Resource.newResource(file0);
-        Assert.assertTrue(resource.exists());
-        Assert.assertNotNull(resource.getAlias());
+        assertTrue(resource.exists());
+        assertNotNull(resource.getAlias());
         resource = Resource.newResource(file0.getAbsoluteFile());
-        Assert.assertTrue(resource.exists());
-        Assert.assertNotNull(resource.getAlias());
+        assertTrue(resource.exists());
+        assertNotNull(resource.getAlias());
         resource = Resource.newResource(file0.toURI());
-        Assert.assertTrue(resource.exists());
-        Assert.assertNotNull(resource.getAlias());
+        assertTrue(resource.exists());
+        assertNotNull(resource.getAlias());
         resource = Resource.newResource(file0.toURI().toString());
-        Assert.assertTrue(resource.exists());
-        Assert.assertNotNull(resource.getAlias());
+        assertTrue(resource.exists());
+        assertNotNull(resource.getAlias());
         
         try
         {
             resource = dir.addPath("test.txt\0");
-            Assert.assertTrue(resource.exists());
-            Assert.assertNotNull(resource.getAlias());
+            assertTrue(resource.exists());
+            assertNotNull(resource.getAlias());
         }
         catch(MalformedURLException e)
         {
-            Assert.assertTrue(true);
+            assertTrue(true);
         }
     }
 }

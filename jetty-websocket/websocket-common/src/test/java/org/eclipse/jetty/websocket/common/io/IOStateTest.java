@@ -19,14 +19,14 @@
 package org.eclipse.jetty.websocket.common.io;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.LinkedList;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class IOStateTest
 {

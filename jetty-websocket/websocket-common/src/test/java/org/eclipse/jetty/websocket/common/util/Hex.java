@@ -22,6 +22,9 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 
+/**
+ * @deprecated use {@link org.eclipse.jetty.toolchain.test.Hex} instead
+ */
 public final class Hex
 {
     private static final char[] hexcodes = "0123456789ABCDEF".toCharArray();

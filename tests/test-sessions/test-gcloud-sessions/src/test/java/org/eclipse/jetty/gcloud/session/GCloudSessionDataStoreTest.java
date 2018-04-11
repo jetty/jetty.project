@@ -22,7 +22,7 @@ package org.eclipse.jetty.gcloud.session;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * GCloudSessionDataStoreTest
@@ -32,7 +32,7 @@ import org.junit.After;
 public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
 
-    @After
+    @AfterEach
     public void teardown () throws Exception
     {
        GCloudTestSuite.__testSupport.deleteSessions();

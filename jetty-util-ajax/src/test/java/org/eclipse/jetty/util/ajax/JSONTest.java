@@ -21,9 +21,9 @@ package org.eclipse.jetty.util.ajax;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -37,8 +37,8 @@ import java.util.TimeZone;
 
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.ajax.JSON.Output;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 
 public class JSONTest
@@ -60,7 +60,7 @@ public class JSONTest
     "\"undefined\": undefined," +
     "}";
 
-    @Before
+    @BeforeEach
     public void resetJSON()
     {
         // Reset JSON configuration to default with each testcase

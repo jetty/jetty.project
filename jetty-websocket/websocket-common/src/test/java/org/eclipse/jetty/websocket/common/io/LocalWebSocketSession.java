@@ -24,18 +24,17 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
-import org.junit.rules.TestName;
 
 public class LocalWebSocketSession extends WebSocketSession
 {
     private String id;
     private OutgoingFramesCapture outgoingCapture;
 
-    public LocalWebSocketSession(WebSocketContainerScope containerScope, TestName testname, EventDriver driver)
+    public LocalWebSocketSession(WebSocketContainerScope containerScope, String id, EventDriver driver)
     {
-        super(containerScope,URI.create("ws://localhost/LocalWebSocketSesssion/" + testname.getMethodName()),driver,
-                new LocalWebSocketConnection(testname,containerScope.getBufferPool()));
-        this.id = testname.getMethodName();
+        super(containerScope,URI.create("ws://localhost/LocalWebSocketSesssion/" + id),driver,
+                new LocalWebSocketConnection(id,containerScope.getBufferPool()));
+        this.id = id;
         outgoingCapture = new OutgoingFramesCapture();
         setOutgoingHandler(outgoingCapture);
     }

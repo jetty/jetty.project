@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
@@ -30,22 +34,12 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AdvancedRunner.class)
+import org.junit.jupiter.api.Test;
+
 public class HttpVersionCustomizerTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     @Test
     public void testCustomizeHttpVersion() throws Exception
     {
@@ -61,7 +55,7 @@ public class HttpVersionCustomizerTest
             {
                 baseRequest.setHandled(true);
                 response.setStatus(500);
-                Assert.assertEquals(HttpVersion.HTTP_1_1.asString(), request.getProtocol());
+                assertEquals(HttpVersion.HTTP_1_1.asString(), request.getProtocol());
                 response.setStatus(200);
                 response.getWriter().println("OK");
             }
@@ -77,8 +71,8 @@ public class HttpVersionCustomizerTest
                 socket.write(request.generate());
 
                 HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
-                Assert.assertNotNull(response);
-                Assert.assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
+                assertNotNull(response);
+                assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
             }
         }
         finally

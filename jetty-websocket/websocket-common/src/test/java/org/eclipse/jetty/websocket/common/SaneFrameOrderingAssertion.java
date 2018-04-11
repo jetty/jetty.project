@@ -19,9 +19,9 @@
 package org.eclipse.jetty.websocket.common;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
@@ -45,22 +45,22 @@ public class SaneFrameOrderingAssertion implements OutgoingFrames
         switch (opcode)
         {
             case OpCode.TEXT:
-                assertFalse("Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION", priorDataFrame);
+                assertFalse(priorDataFrame, "Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION");
                 break;
             case OpCode.BINARY:
-                assertFalse("Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION", priorDataFrame);
+                assertFalse(priorDataFrame, "Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION");
                 break;
             case OpCode.CONTINUATION:
-                assertTrue("CONTINUATION frame without prior !FIN", priorDataFrame);
+                assertTrue(priorDataFrame, "CONTINUATION frame without prior !FIN");
                 break;
             case OpCode.CLOSE:
-                assertFalse("Fragmented Close Frame [" + OpCode.name(opcode) + "]", frame.isFin());
+                assertFalse(frame.isFin(), "Fragmented Close Frame [" + OpCode.name(opcode) + "]");
                 break;
             case OpCode.PING:
-                assertFalse("Fragmented Close Frame [" + OpCode.name(opcode) + "]", frame.isFin());
+                assertFalse(frame.isFin(), "Fragmented Close Frame [" + OpCode.name(opcode) + "]");
                 break;
             case OpCode.PONG:
-                assertFalse("Fragmented Close Frame [" + OpCode.name(opcode) + "]", frame.isFin());
+                assertFalse(frame.isFin(), "Fragmented Close Frame [" + OpCode.name(opcode) + "]");
                 break;
         }
 

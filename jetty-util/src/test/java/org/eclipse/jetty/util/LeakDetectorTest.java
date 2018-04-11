@@ -18,11 +18,14 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class LeakDetectorTest
 {
@@ -67,7 +70,7 @@ public class LeakDetectorTest
 
         gc();
 
-        Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
+        assertFalse(latch.await(1, TimeUnit.SECONDS));
     }
 
     @Test
@@ -87,6 +90,6 @@ public class LeakDetectorTest
 
         gc();
 
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 }

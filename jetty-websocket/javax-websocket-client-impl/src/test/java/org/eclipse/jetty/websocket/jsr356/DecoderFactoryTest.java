@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.ByteBuffer;
 import java.util.Date;
@@ -39,9 +41,9 @@ import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
 import org.eclipse.jetty.websocket.jsr356.samples.Fruit;
 import org.eclipse.jetty.websocket.jsr356.samples.FruitDecoder;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class DecoderFactoryTest
 {
@@ -51,12 +53,12 @@ public class DecoderFactoryTest
     private void assertMetadataFor(Class<?> type, Class<? extends Decoder> expectedDecoderClass, MessageType expectedType)
     {
         DecoderMetadata metadata = factory.getMetadataFor(type);
-        Assert.assertEquals("metadata.coderClass",metadata.getCoderClass(),expectedDecoderClass);
-        Assert.assertThat("metadata.messageType",metadata.getMessageType(),is(expectedType));
-        Assert.assertEquals("metadata.objectType",metadata.getObjectType(),type);
+        assertEquals(metadata.getCoderClass(), expectedDecoderClass, "metadata.coderClass");
+        assertThat("metadata.messageType",metadata.getMessageType(),is(expectedType));
+        assertEquals(metadata.getObjectType(), type, "metadata.objectType");
     }
 
-    @Before
+    @BeforeEach
     public void initDecoderFactory()
     {
         WebSocketContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());

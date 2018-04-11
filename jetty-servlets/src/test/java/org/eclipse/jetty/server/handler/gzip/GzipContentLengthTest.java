@@ -18,42 +18,37 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.handler.gzip.GzipTester.ContentMetadata;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test the GzipHandler support for Content-Length setting variations.
  *
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
-@RunWith(Parameterized.class)
+@ExtendWith(WorkDirExtension.class)
 public class GzipContentLengthTest
 {
-    @Rule
-    public final TestTracker tracker = new TestTracker();
-
-    @Rule
-    public TestingDir testingdir = new TestingDir();
+    public WorkDir workDir;
     
     private static final HttpConfiguration defaultHttp = new HttpConfiguration();
     private static final int LARGE = defaultHttp.getOutputBufferSize() * 8;
@@ -62,33 +57,25 @@ public class GzipContentLengthTest
     private static final int TINY = GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2;
     private static final boolean EXPECT_COMPRESSED = true;
 
-    @Parameters(name = "{0} bytes - {1} - compressed({2})")
-    public static List<Object[]> data()
+    public static Stream<Arguments> scenarios()
     {
-        List<Object[]> ret = new ArrayList<Object[]>();
+        List<Scenario> ret = new ArrayList<>();
 
-        ret.add(new Object[] { 0, "empty.txt", !EXPECT_COMPRESSED});
-        ret.add(new Object[] { TINY, "file-tiny.txt", !EXPECT_COMPRESSED});
-        ret.add(new Object[] { SMALL, "file-small.txt", EXPECT_COMPRESSED});
-        ret.add(new Object[] { SMALL, "file-small.mp3", !EXPECT_COMPRESSED});
-        ret.add(new Object[] { MEDIUM, "file-med.txt", EXPECT_COMPRESSED});
-        ret.add(new Object[] { MEDIUM, "file-medium.mp3", !EXPECT_COMPRESSED});
-        ret.add(new Object[] { LARGE, "file-large.txt", EXPECT_COMPRESSED});
-        ret.add(new Object[] { LARGE, "file-large.mp3", !EXPECT_COMPRESSED});
+        ret.add(new Scenario( 0, "empty.txt", !EXPECT_COMPRESSED));
+        ret.add(new Scenario( TINY, "file-tiny.txt", !EXPECT_COMPRESSED));
+        ret.add(new Scenario( SMALL, "file-small.txt", EXPECT_COMPRESSED));
+        ret.add(new Scenario( SMALL, "file-small.mp3", !EXPECT_COMPRESSED));
+        ret.add(new Scenario( MEDIUM, "file-med.txt", EXPECT_COMPRESSED));
+        ret.add(new Scenario( MEDIUM, "file-medium.mp3", !EXPECT_COMPRESSED));
+        ret.add(new Scenario( LARGE, "file-large.txt", EXPECT_COMPRESSED));
+        ret.add(new Scenario( LARGE, "file-large.mp3", !EXPECT_COMPRESSED));
 
-        return ret;
+        return ret.stream().map(Arguments::of);
     }
 
-    @Parameter(0)
-    public int fileSize;
-    @Parameter(1)
-    public String fileName;
-    @Parameter(2)
-    public boolean expectCompressed;
-    
-    private void testWithGzip(Class<? extends TestDirContentServlet> contentServlet) throws Exception
+    private void testWithGzip(Scenario scenario, Class<? extends TestDirContentServlet> contentServlet) throws Exception
     {
-        GzipTester tester = new GzipTester(testingdir, GzipHandler.GZIP);
+        GzipTester tester = new GzipTester(workDir.getPath(), GzipHandler.GZIP);
         
         // Add AsyncGzip Configuration
         tester.getGzipHandler().setIncludedMimeTypes("text/plain");
@@ -99,8 +86,8 @@ public class GzipContentLengthTest
         
         try
         {
-            String testFilename = String.format("%s-%s", contentServlet.getSimpleName(), fileName);
-            File testFile = tester.prepareServerFile(testFilename,fileSize);
+            String testFilename = String.format("%s-%s", contentServlet.getSimpleName(), scenario.fileName);
+            File testFile = tester.prepareServerFile(testFilename,scenario.fileSize);
             
             tester.start();
             
@@ -111,7 +98,7 @@ public class GzipContentLengthTest
             
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
             
-            if (expectCompressed)
+            if (scenario.expectCompressed)
             {
                 // Must be gzip compressed
                 assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipHandler.GZIP));
@@ -122,7 +109,7 @@ public class GzipContentLengthTest
             
             // Uncompressed content Size
             ContentMetadata content = tester.getResponseMetadata(response);
-            assertThat("(Uncompressed) Content Length", content.size, is((long)fileSize));
+            assertThat("(Uncompressed) Content Length", content.size, is((long)scenario.fileSize));
         }
         finally
         {
@@ -135,10 +122,11 @@ public class GzipContentLengthTest
      * AsyncContext create -> timeout -> onTimeout -> write-response -> complete
      * @throws Exception on test failure
      */
-    @Test
-    public void testAsyncTimeoutCompleteWrite_Default() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testAsyncTimeoutCompleteWrite_Default(Scenario scenario) throws Exception
     {
-        testWithGzip(AsyncTimeoutCompleteWrite.Default.class);
+        testWithGzip(scenario, AsyncTimeoutCompleteWrite.Default.class);
     }
     
     /**
@@ -146,10 +134,11 @@ public class GzipContentLengthTest
      * AsyncContext create -> timeout -> onTimeout -> write-response -> complete
      * @throws Exception on test failure
      */
-    @Test
-    public void testAsyncTimeoutCompleteWrite_Passed() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testAsyncTimeoutCompleteWrite_Passed(Scenario scenario) throws Exception
     {
-        testWithGzip(AsyncTimeoutCompleteWrite.Passed.class);
+        testWithGzip(scenario, AsyncTimeoutCompleteWrite.Passed.class);
     }
     
     /**
@@ -157,10 +146,11 @@ public class GzipContentLengthTest
      * AsyncContext create -> timeout -> onTimeout -> dispatch -> write-response
      * @throws Exception on test failure
      */
-    @Test
-    public void testAsyncTimeoutDispatchWrite_Default() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testAsyncTimeoutDispatchWrite_Default(Scenario scenario) throws Exception
     {
-        testWithGzip(AsyncTimeoutDispatchWrite.Default.class);
+        testWithGzip(scenario, AsyncTimeoutDispatchWrite.Default.class);
     }
     
     /**
@@ -168,10 +158,11 @@ public class GzipContentLengthTest
      * AsyncContext create -> timeout -> onTimeout -> dispatch -> write-response
      * @throws Exception on test failure
      */
-    @Test
-    public void testAsyncTimeoutDispatchWrite_Passed() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testAsyncTimeoutDispatchWrite_Passed(Scenario scenario) throws Exception
     {
-        testWithGzip(AsyncTimeoutDispatchWrite.Passed.class);
+        testWithGzip(scenario, AsyncTimeoutDispatchWrite.Passed.class);
     }
 
     /**
@@ -179,10 +170,11 @@ public class GzipContentLengthTest
      * AsyncContext create -> no-timeout -> scheduler.schedule -> dispatch -> write-response
      * @throws Exception on test failure
      */
-    @Test
-    public void testAsyncScheduledDispatchWrite_Default() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testAsyncScheduledDispatchWrite_Default(Scenario scenario) throws Exception
     {
-        testWithGzip(AsyncScheduledDispatchWrite.Default.class);
+        testWithGzip(scenario, AsyncScheduledDispatchWrite.Default.class);
     }
     
     /**
@@ -190,10 +182,11 @@ public class GzipContentLengthTest
      * AsyncContext create -> no-timeout -> scheduler.schedule -> dispatch -> write-response
      * @throws Exception on test failure
      */
-    @Test
-    public void testAsyncScheduledDispatchWrite_Passed() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testAsyncScheduledDispatchWrite_Passed(Scenario scenario) throws Exception
     {
-        testWithGzip(AsyncScheduledDispatchWrite.Passed.class);
+        testWithGzip(scenario, AsyncScheduledDispatchWrite.Passed.class);
     }
 
     /**
@@ -206,10 +199,11 @@ public class GzipContentLengthTest
      * @throws Exception on test failure
      * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
-    @Test
-    public void testServletLengthStreamTypeWrite() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testServletLengthStreamTypeWrite(Scenario scenario) throws Exception
     {
-        testWithGzip(TestServletLengthStreamTypeWrite.class);
+        testWithGzip(scenario, TestServletLengthStreamTypeWrite.class);
     }
 
     /**
@@ -222,10 +216,11 @@ public class GzipContentLengthTest
      * @throws Exception on test failure
      * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
-    @Test
-    public void testServletLengthTypeStreamWrite() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testServletLengthTypeStreamWrite(Scenario scenario) throws Exception
     {
-        testWithGzip(TestServletLengthTypeStreamWrite.class);
+        testWithGzip(scenario, TestServletLengthTypeStreamWrite.class);
     }
 
     /**
@@ -238,10 +233,11 @@ public class GzipContentLengthTest
      * @throws Exception on test failure
      * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
-    @Test
-    public void testServletStreamLengthTypeWrite() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testServletStreamLengthTypeWrite(Scenario scenario) throws Exception
     {
-        testWithGzip(TestServletStreamLengthTypeWrite.class);
+        testWithGzip(scenario, TestServletStreamLengthTypeWrite.class);
     }
 
     /**
@@ -254,10 +250,11 @@ public class GzipContentLengthTest
      * @throws Exception on test failure
      * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
-    @Test
-    public void testServletStreamLengthTypeWriteWithFlush() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testServletStreamLengthTypeWriteWithFlush(Scenario scenario) throws Exception
     {
-        testWithGzip(TestServletStreamLengthTypeWriteWithFlush.class);
+        testWithGzip(scenario, TestServletStreamLengthTypeWriteWithFlush.class);
     }
 
     /**
@@ -270,10 +267,11 @@ public class GzipContentLengthTest
      * @throws Exception on test failure
      * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
-    @Test
-    public void testServletStreamTypeLengthWrite() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testServletStreamTypeLengthWrite(Scenario scenario) throws Exception
     {
-        testWithGzip(TestServletStreamTypeLengthWrite.class);
+        testWithGzip(scenario, TestServletStreamTypeLengthWrite.class);
     }
 
     /**
@@ -286,10 +284,11 @@ public class GzipContentLengthTest
      * @throws Exception on test failure
      * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
-    @Test
-    public void testServletTypeLengthStreamWrite() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testServletTypeLengthStreamWrite(Scenario scenario) throws Exception
     {
-        testWithGzip(TestServletTypeLengthStreamWrite.class);
+        testWithGzip(scenario, TestServletTypeLengthStreamWrite.class);
     }
 
     /**
@@ -302,10 +301,11 @@ public class GzipContentLengthTest
      * @throws Exception on test failure
      * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
-    @Test
-    public void testServletTypeStreamLengthWrite() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testServletTypeStreamLengthWrite(Scenario scenario) throws Exception
     {
-        testWithGzip(TestServletTypeStreamLengthWrite.class);
+        testWithGzip(scenario, TestServletTypeStreamLengthWrite.class);
     }
 
     /**
@@ -321,9 +321,30 @@ public class GzipContentLengthTest
      * @throws Exception on test failure
      * @see <a href="http://bugs.eclipse.org/450873">Eclipse Bug 450873</a>
      */
-    @Test
-    public void testHttpOutputWrite() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testHttpOutputWrite(Scenario scenario) throws Exception
     {
-        testWithGzip(TestServletBufferTypeLengthWrite.class);
+        testWithGzip(scenario, TestServletBufferTypeLengthWrite.class);
+    }
+
+    public static class Scenario
+    {
+        final int fileSize;
+        final String fileName;
+        final boolean expectCompressed;
+
+        public Scenario(int fileSize, String fileName, boolean expectCompressed)
+        {
+            this.fileSize = fileSize;
+            this.fileName = fileName;
+            this.expectCompressed = expectCompressed;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s [%,d bytes, compressed=%b]", fileName, fileSize, expectCompressed);
+        }
     }
 }

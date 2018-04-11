@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.metadata;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
@@ -32,33 +35,29 @@ import org.eclipse.jetty.websocket.jsr356.decoders.DateDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.IntegerDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.TimeDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.ValidDualDecoder;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class DecoderMetadataSetTest
 {
     private void assertMetadata(CoderMetadata<?> metadata, Class<?> expectedType, Class<?> expectedCoder, MessageType expectedMessageType)
     {
-        Assert.assertEquals("metadata.coderClass",expectedCoder,metadata.getCoderClass());
-        Assert.assertThat("metadata.messageType",metadata.getMessageType(),is(expectedMessageType));
-        Assert.assertEquals("metadata.objectType",expectedType,metadata.getObjectType());
+        assertEquals(expectedCoder, metadata.getCoderClass(), "metadata.coderClass");
+        assertThat("metadata.messageType",metadata.getMessageType(),is(expectedMessageType));
+        assertEquals(expectedType, metadata.getObjectType(), "metadata.objectType");
     }
 
     @Test
     public void testAddBadDualDecoders()
     {
-        try
-        {
+        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> {
             DecoderMetadataSet coders = new DecoderMetadataSet();
 
             // has duplicated support for the same target Type
             coders.add(BadDualDecoder.class);
-            Assert.fail("Should have thrown IllegalStateException for attempting to register Decoders with duplicate implementation");
-        }
-        catch (IllegalStateException e)
-        {
-            Assert.assertThat(e.getMessage(),containsString("Duplicate"));
-        }
+            // Should have thrown IllegalStateException for attempting to register Decoders with duplicate implementation
+        });
+        assertThat(e.getMessage(),containsString("Duplicate"));
     }
 
     @Test
@@ -69,16 +68,12 @@ public class DecoderMetadataSetTest
         // Add DateDecoder (decodes java.util.Date)
         coders.add(DateDecoder.class);
 
-        try
-        {
+        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> {
             // Add TimeDecoder (which also wants to decode java.util.Date)
             coders.add(TimeDecoder.class);
-            Assert.fail("Should have thrown IllegalStateException for attempting to register Decoders with duplicate implementation");
-        }
-        catch (IllegalStateException e)
-        {
-            Assert.assertThat(e.getMessage(),containsString("Duplicate"));
-        }
+            // Should have thrown IllegalStateException for attempting to register Decoders with duplicate implementation
+        });
+        assertThat(e.getMessage(),containsString("Duplicate"));
     }
 
     @Test
@@ -88,7 +83,7 @@ public class DecoderMetadataSetTest
 
         coders.add(IntegerDecoder.class);
         Class<? extends Decoder> actualClazz = coders.getCoder(Integer.class);
-        Assert.assertEquals("Coder Class",IntegerDecoder.class,actualClazz);
+        assertEquals(IntegerDecoder.class, actualClazz, "Coder Class");
     }
 
     @Test
@@ -98,7 +93,7 @@ public class DecoderMetadataSetTest
 
         coders.add(IntegerDecoder.class);
         List<DecoderMetadata> metadatas = coders.getMetadataByImplementation(IntegerDecoder.class);
-        Assert.assertThat("Metadatas (by impl) count",metadatas.size(),is(1));
+        assertThat("Metadatas (by impl) count",metadatas.size(),is(1));
         DecoderMetadata metadata = metadatas.get(0);
         assertMetadata(metadata,Integer.class,IntegerDecoder.class,MessageType.TEXT);
     }
@@ -121,8 +116,8 @@ public class DecoderMetadataSetTest
         coders.add(ValidDualDecoder.class);
 
         List<Class<? extends Decoder>> decodersList = coders.getList();
-        Assert.assertThat("Decoder List",decodersList,notNullValue());
-        Assert.assertThat("Decoder List count",decodersList.size(),is(2));
+        assertThat("Decoder List",decodersList,notNullValue());
+        assertThat("Decoder List count",decodersList.size(),is(2));
 
         DecoderMetadata metadata;
         metadata = coders.getMetadataByType(Integer.class);

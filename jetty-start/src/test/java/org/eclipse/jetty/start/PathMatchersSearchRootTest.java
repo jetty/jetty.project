@@ -18,72 +18,68 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
-import org.eclipse.jetty.toolchain.test.OS;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class PathMatchersSearchRootTest
 {
-    @Parameters(name="{0}")
-    public static List<String[]> data()
+    public static Stream<Arguments> pathPatterns()
     {
-        List<String[]> cases = new ArrayList<>();
-        
-        if (OS.IS_UNIX)
+        List<Arguments> arguments = new ArrayList<>();
+
+        if (OS.LINUX.isCurrentOs() || OS.MAC.isCurrentOs())
         {
             // absolute first
-            cases.add(new String[]{"/opt/app/*.jar","/opt/app"});
-            cases.add(new String[]{"/lib/jvm/**/jre/lib/*.jar","/lib/jvm"});
-            cases.add(new String[]{"glob:/var/lib/*.xml","/var/lib"});
-            cases.add(new String[]{"glob:/var/lib/*.{xml,java}","/var/lib"});
-            cases.add(new String[]{"glob:/opt/corporate/lib-{dev,prod}/*.ini","/opt/corporate"});
-            cases.add(new String[]{"regex:/opt/jetty/.*/lib-(dev|prod)/*.ini","/opt/jetty"});
+            arguments.add(Arguments.of("/opt/app/*.jar", "/opt/app"));
+            arguments.add(Arguments.of("/lib/jvm/**/jre/lib/*.jar", "/lib/jvm"));
+            arguments.add(Arguments.of("glob:/var/lib/*.xml", "/var/lib"));
+            arguments.add(Arguments.of("glob:/var/lib/*.{xml,java}", "/var/lib"));
+            arguments.add(Arguments.of("glob:/opt/corporate/lib-{dev,prod}/*.ini", "/opt/corporate"));
+            arguments.add(Arguments.of("regex:/opt/jetty/.*/lib-(dev|prod)/*.ini", "/opt/jetty"));
 
-            cases.add(new String[]{"/*.ini","/"});
-            cases.add(new String[]{"/etc/jetty.conf","/etc"});
-            cases.add(new String[]{"/common.conf","/"});
+            arguments.add(Arguments.of("/*.ini", "/"));
+            arguments.add(Arguments.of("/etc/jetty.conf", "/etc"));
+            arguments.add(Arguments.of("/common.conf", "/"));
         }
 
-        if (OS.IS_WINDOWS)
+        if (OS.WINDOWS.isCurrentOs())
         {
             // absolute declaration
-            cases.add(new String[]{"D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs\\example.jar",
-                    "D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs"});
+            arguments.add(Arguments.of("D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs\\example.jar",
+                    "D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs"));
             // escaped declaration
             // absolute patterns (complete with required windows slash escaping)
-            cases.add(new String[]{"C:\\\\corp\\\\lib\\\\*.jar","C:\\corp\\lib"});
-            cases.add(new String[]{"D:\\\\lib\\\\**\\\\jre\\\\lib\\\\*.jar","D:\\lib"});
+            arguments.add(Arguments.of("C:\\\\corp\\\\lib\\\\*.jar", "C:\\corp\\lib"));
+            arguments.add(Arguments.of("D:\\\\lib\\\\**\\\\jre\\\\lib\\\\*.jar", "D:\\lib"));
         }
 
         // some relative paths
-        cases.add(new String[]{"lib/*.jar","lib"});
-        cases.add(new String[]{"etc/jetty.xml","etc"});
-        cases.add(new String[]{"start.ini","."});
-        cases.add(new String[]{"start.d/","start.d"});
-        return cases;
+        arguments.add(Arguments.of("lib/*.jar", "lib"));
+        arguments.add(Arguments.of("etc/jetty.xml", "etc"));
+        arguments.add(Arguments.of("start.ini", "."));
+        arguments.add(Arguments.of("start.d/", "start.d"));
+
+        return Stream.of(
+                arguments.toArray(new Arguments[0])
+        );
     }
-    
-    @Parameter(value=0)
-    public String pattern;
-    @Parameter(value=1)
-    public String expectedSearchRoot;
-    
-    @Test
-    public void testSearchRoot()
+
+    @ParameterizedTest
+    @MethodSource("pathPatterns")
+    public void testSearchRoot(String pattern, String expectedSearchRoot)
     {
         Path actual = PathMatchers.getSearchRoot(pattern);
         String expectedNormal = FS.separators(expectedSearchRoot);
-        Assert.assertThat(".getSearchRoot(\"" + pattern + "\")",actual.toString(),is(expectedNormal));
+        assertThat(".getSearchRoot(\"" + pattern + "\")", actual.toString(), is(expectedNormal));
     }
 }

@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.OutputStream;
 import java.net.Socket;
@@ -31,10 +33,9 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class DefaultHandlerTest
 {
@@ -42,7 +43,7 @@ public class DefaultHandlerTest
     private ServerConnector connector;
     private DefaultHandler handler;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         server = new Server();
@@ -65,7 +66,7 @@ public class DefaultHandlerTest
         server.start();
     }
     
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         server.stop();
@@ -87,13 +88,13 @@ public class DefaultHandlerTest
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
 
-            Assert.assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
-            Assert.assertEquals("text/html;charset=ISO-8859-1", response.get(HttpHeader.CONTENT_TYPE));
+            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            assertEquals("text/html;charset=ISO-8859-1", response.get(HttpHeader.CONTENT_TYPE));
 
             String content = new String(response.getContentBytes(),StandardCharsets.ISO_8859_1);
-            Assert.assertThat(content,containsString("Contexts known to this server are:"));
-            Assert.assertThat(content,containsString("/foo"));
-            Assert.assertThat(content,containsString("/bar"));
+            assertThat(content,containsString("Contexts known to this server are:"));
+            assertThat(content,containsString("/foo"));
+            assertThat(content,containsString("/bar"));
         }
     }
     
@@ -113,13 +114,13 @@ public class DefaultHandlerTest
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
 
-            Assert.assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
-            Assert.assertEquals("text/html;charset=ISO-8859-1", response.get(HttpHeader.CONTENT_TYPE));
+            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            assertEquals("text/html;charset=ISO-8859-1", response.get(HttpHeader.CONTENT_TYPE));
 
             String content = new String(response.getContentBytes(),StandardCharsets.ISO_8859_1);
-            Assert.assertThat(content,not(containsString("Contexts known to this server are:")));
-            Assert.assertThat(content,not(containsString("/foo")));
-            Assert.assertThat(content,not(containsString("/bar")));
+            assertThat(content,not(containsString("Contexts known to this server are:")));
+            assertThat(content,not(containsString("/foo")));
+            assertThat(content,not(containsString("/bar")));
         }
     }
     
@@ -139,8 +140,8 @@ public class DefaultHandlerTest
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
 
-            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
-            Assert.assertEquals("image/x-icon", response.get(HttpHeader.CONTENT_TYPE));
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("image/x-icon", response.get(HttpHeader.CONTENT_TYPE));
         }
     }
 

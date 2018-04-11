@@ -67,7 +67,7 @@
           <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
           <settingsFile>src/it/settings.xml</settingsFile>
           <scriptVariables>
-            <surefireVersion>${surefireVersion}</surefireVersion>
+            <surefire.version>${surefire.version}</surefire.version>
           </scriptVariables>
           <skipInvocation>${skipTests}</skipInvocation>
           <goals>

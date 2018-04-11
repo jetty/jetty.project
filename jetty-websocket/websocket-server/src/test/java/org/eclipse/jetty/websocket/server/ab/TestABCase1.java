@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.eclipse.jetty.websocket.common.test.Fuzzer.SendMode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestABCase1 extends AbstractABCase
 {

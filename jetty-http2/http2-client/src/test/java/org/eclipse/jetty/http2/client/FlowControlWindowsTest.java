@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http2.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +45,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 public class FlowControlWindowsTest
 {
@@ -77,7 +79,7 @@ public class FlowControlWindowsTest
         client.start();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
         if (client != null)
@@ -106,9 +108,9 @@ public class FlowControlWindowsTest
         Thread.sleep(1000);
 
         int sessionSendWindow = clientSession.updateSendWindow(0);
-        Assert.assertEquals(serverSessionRecvWindow, sessionSendWindow);
+        assertEquals(serverSessionRecvWindow, sessionSendWindow);
         int sessionRecvWindow = clientSession.updateRecvWindow(0);
-        Assert.assertEquals(clientSessionRecvWindow, sessionRecvWindow);
+        assertEquals(clientSessionRecvWindow, sessionRecvWindow);
 
         HostPortHttpField hostPort = new HostPortHttpField("localhost:" + connector.getLocalPort());
         MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP, hostPort, "/", HttpVersion.HTTP_2, new HttpFields());
@@ -118,9 +120,9 @@ public class FlowControlWindowsTest
         IStream clientStream = (IStream)promise.get(5, TimeUnit.SECONDS);
 
         int streamSendWindow = clientStream.updateSendWindow(0);
-        Assert.assertEquals(serverStreamRecvWindow, streamSendWindow);
+        assertEquals(serverStreamRecvWindow, streamSendWindow);
         int streamRecvWindow = clientStream.updateRecvWindow(0);
-        Assert.assertEquals(clientStreamRecvWindow, streamRecvWindow);
+        assertEquals(clientStreamRecvWindow, streamRecvWindow);
     }
 
     @Test
@@ -150,27 +152,27 @@ public class FlowControlWindowsTest
 
         ISession clientSession = newClient(new Session.Listener.Adapter());
 
-        Assert.assertTrue(sessionLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(sessionLatch.await(5, TimeUnit.SECONDS));
         ISession serverSession = sessionRef.get();
         // Wait while client and server exchange SETTINGS and WINDOW_UPDATE frames.
         Thread.sleep(1000);
 
         int sessionSendWindow = serverSession.updateSendWindow(0);
-        Assert.assertEquals(clientSessionRecvWindow, sessionSendWindow);
+        assertEquals(clientSessionRecvWindow, sessionSendWindow);
         int sessionRecvWindow = serverSession.updateRecvWindow(0);
-        Assert.assertEquals(serverSessionRecvWindow, sessionRecvWindow);
+        assertEquals(serverSessionRecvWindow, sessionRecvWindow);
 
         HostPortHttpField hostPort = new HostPortHttpField("localhost:" + connector.getLocalPort());
         MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP, hostPort, "/", HttpVersion.HTTP_2, new HttpFields());
         HeadersFrame frame = new HeadersFrame(request, null, true);
         clientSession.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter());
 
-        Assert.assertTrue(streamLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(streamLatch.await(5, TimeUnit.SECONDS));
         IStream serverStream = streamRef.get();
 
         int streamSendWindow = serverStream.updateSendWindow(0);
-        Assert.assertEquals(clientStreamRecvWindow, streamSendWindow);
+        assertEquals(clientStreamRecvWindow, streamSendWindow);
         int streamRecvWindow = serverStream.updateRecvWindow(0);
-        Assert.assertEquals(serverStreamRecvWindow, streamRecvWindow);
+        assertEquals(serverStreamRecvWindow, streamRecvWindow);
     }
 }

@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.deploy;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,18 +29,18 @@ import java.util.List;
 import org.eclipse.jetty.deploy.graph.GraphOutputDot;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.graph.Path;
-import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Just an overly picky test case to validate the potential paths.
  */
+@ExtendWith(WorkDirExtension.class)
 public class AppLifeCycleTest
 {
-    @Rule
-    public TestingDir testdir = new TestingDir();
+    public WorkDir testdir;
 
     private void assertNoPath(String from, String to)
     {
@@ -50,7 +53,7 @@ public class AppLifeCycleTest
         Node toNode = lifecycle.getNodeByName(to);
         Path actual = lifecycle.getPath(fromNode,toNode);
         String msg = "LifeCycle path from " + from + " to " + to;
-        Assert.assertNotNull(msg + " should never be null",actual);
+        assertNotNull(actual,msg + " should never be null");
 
         if (expected.size() != actual.nodes())
         {
@@ -67,12 +70,12 @@ public class AppLifeCycleTest
                 System.out.println(path.getName());
             }
 
-            Assert.assertEquals(msg + " / count",expected.size(),actual.nodes());
+            assertEquals(expected.size(),actual.nodes(),msg + " / count");
         }
 
         for (int i = 0, n = expected.size(); i < n; i++)
         {
-            Assert.assertEquals(msg + "[" + i + "]",expected.get(i),actual.getNode(i).getName());
+            assertEquals(expected.get(i),actual.getNode(i).getName(),msg + "[" + i + "]");
         }
     }
 

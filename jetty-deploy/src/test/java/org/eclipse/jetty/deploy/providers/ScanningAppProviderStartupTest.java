@@ -19,25 +19,26 @@
 package org.eclipse.jetty.deploy.providers;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
-import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Tests {@link ScanningAppProvider} as it starts up for the first time.
  */
+@ExtendWith(WorkDirExtension.class)
 public class ScanningAppProviderStartupTest
 {
-        @Rule
-        public TestingDir testdir = new TestingDir();
+    public WorkDir testdir;
     private static XmlConfiguredJetty jetty;
 
-    @Before
+    @BeforeEach
     public void setupEnvironment() throws Exception
     {
-        jetty = new XmlConfiguredJetty(testdir);
+        jetty = new XmlConfiguredJetty(testdir.getEmptyPathDir());
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-http.xml");
         jetty.addConfiguration("jetty-deploymgr-contexts.xml");
@@ -53,7 +54,7 @@ public class ScanningAppProviderStartupTest
         jetty.start();
     }
 
-    @After
+    @AfterEach
     public void teardownEnvironment() throws Exception
     {
         // Stop jetty.

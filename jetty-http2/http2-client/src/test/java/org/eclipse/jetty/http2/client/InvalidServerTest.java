@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http2.client;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -29,8 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Promise;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class InvalidServerTest extends AbstractTest
 {
@@ -60,9 +62,9 @@ public class InvalidServerTest extends AbstractTest
                 output.write("enough_junk_bytes".getBytes(StandardCharsets.UTF_8));
 
                 Session session = promise.get(5, TimeUnit.SECONDS);
-                Assert.assertNotNull(session);
+                assertNotNull(session);
 
-                Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+                assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
 
                 // Verify that the client closed the socket.
                 InputStream input = socket.getInputStream();

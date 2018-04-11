@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.server;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.HttpCookie;
 import java.net.URI;
@@ -42,9 +42,9 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class RequestHeadersTest
 {
@@ -96,7 +96,7 @@ public class RequestHeadersTest
     private static SimpleServletServer server;
     private static EchoCreator echoCreator;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         echoCreator = new EchoCreator();
@@ -104,13 +104,13 @@ public class RequestHeadersTest
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = new BlockheadClient();
@@ -118,7 +118,7 @@ public class RequestHeadersTest
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopClient() throws Exception
     {
         client.stop();

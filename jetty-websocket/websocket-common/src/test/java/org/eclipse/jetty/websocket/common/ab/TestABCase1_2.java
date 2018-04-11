@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
@@ -35,8 +36,8 @@ import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Binary Message Spec testing the {@link Generator} and {@link Parser}
@@ -80,7 +81,7 @@ public class TestABCase1_2
 
         BufferUtil.flipToFlush(expected,0);
 
-        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+        ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
 
     @Test
@@ -121,7 +122,7 @@ public class TestABCase1_2
 
         BufferUtil.flipToFlush(expected,0);
 
-        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+        ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
 
     @Test
@@ -163,7 +164,7 @@ public class TestABCase1_2
 
         BufferUtil.flipToFlush(expected,0);
 
-        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+        ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
 
     @Test
@@ -204,7 +205,7 @@ public class TestABCase1_2
 
         BufferUtil.flipToFlush(expected,0);
 
-        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+        ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
 
     }
 
@@ -244,7 +245,7 @@ public class TestABCase1_2
 
         BufferUtil.flipToFlush(expected,0);
 
-        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+        ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
 
     @Test
@@ -284,7 +285,7 @@ public class TestABCase1_2
 
         BufferUtil.flipToFlush(expected,0);
 
-        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+        ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
 
     @Test
@@ -301,7 +302,7 @@ public class TestABCase1_2
 
         BufferUtil.flipToFlush(expected,0);
 
-        ByteBufferAssert.assertEquals("buffers do not match",expected,actual);
+        ByteBufferAssert.assertEquals(expected, actual, "buffers do not match");
     }
 
     @Test
@@ -333,8 +334,8 @@ public class TestABCase1_2
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        // assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
 
     @Test
@@ -367,8 +368,8 @@ public class TestABCase1_2
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        // assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
 
     @Test
@@ -401,8 +402,8 @@ public class TestABCase1_2
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        // .assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        // .assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
 
     @Test
@@ -435,8 +436,8 @@ public class TestABCase1_2
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        // assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
 
     @Test
@@ -470,8 +471,8 @@ public class TestABCase1_2
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        // assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
 
 
@@ -507,8 +508,8 @@ public class TestABCase1_2
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        // assertEquals(length, pActual.getPayloadData().length, "BinaryFrame.payload");
     }
 
     @Test
@@ -531,7 +532,7 @@ public class TestABCase1_2
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(0));
-        // Assert.assertNull("BinaryFrame.payload",pActual.getPayloadData());
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(0));
+        // assertNull(pActual.getPayloadData(), "BinaryFrame.payload");
     }
 }
