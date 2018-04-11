@@ -7,7 +7,7 @@
   <baseDirectory>${project.version}</baseDirectory>
   <fileSets>
     <fileSet>
-      <directory>${project.basedir}/target/docbkx/html</directory>
+      <directory>${project.basedir}/target/html</directory>
       <outputDirectory></outputDirectory>
       <includes>
         <include>**</include>
