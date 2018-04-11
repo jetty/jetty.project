@@ -26,7 +26,6 @@ import java.io.RandomAccessFile;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.charset.Charset;
@@ -922,25 +921,17 @@ public class BufferUtil
         }
     }
 
+    /**
+     * @param buffer the buffer to test
+     * @return {@code false}
+     * @deprecated don't use - there is no way to reliably tell if a ByteBuffer is mapped.
+     */
+    @Deprecated
     public static boolean isMappedBuffer(ByteBuffer buffer)
     {
-        if (!(buffer instanceof MappedByteBuffer))
-            return false;
-        MappedByteBuffer mapped = (MappedByteBuffer) buffer;
-
-        try 
-        {
-            // Check if it really is a mapped buffer
-            mapped.isLoaded();
-            return true;
-        }
-        catch(UnsupportedOperationException e)
-        {
-            return false;
-        }
+        return false;
     }
-    
-    
+
     public static ByteBuffer toBuffer(Resource resource,boolean direct) throws IOException
     {
         int len=(int)resource.length();
