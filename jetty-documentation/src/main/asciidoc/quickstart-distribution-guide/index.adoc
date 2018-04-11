@@ -1,3 +1,4 @@
+///
 //  ========================================================================
 //  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
@@ -13,20 +14,18 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
+//
 
 :doctitle: Eclipse Jetty: Distribution Quickstart Guide
 :author: Jetty Developers
 :email: jetty-dev@eclipse.org
-:revnumber: {VERSION}
+:revnumber: 1.0
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Distribution Quickstart Guide
 :imagesdir: ../common/images
-ifdef::backend-html5[]
-:stylesdir: ../common/css
+:stylesdir: ../cmmm/css
 :stylesheet: guidebook.css
-:linkcss:
-endif::[]
 :sub-order: attributes+
 :nofooter:
 :allow-uri-read: true
