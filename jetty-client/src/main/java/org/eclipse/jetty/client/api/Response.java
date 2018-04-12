@@ -270,4 +270,17 @@ public interface Response
             }
         }
     }
+
+    public interface Content
+    {
+        public ByteBuffer getByteBuffer();
+
+        public void demand(long n);
+
+        public void release();
+
+        public void succeed();
+
+        public void fail(Throwable failure);
+    }
 }

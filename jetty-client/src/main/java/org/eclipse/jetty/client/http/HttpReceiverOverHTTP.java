@@ -20,12 +20,15 @@ package org.eclipse.jetty.client.http;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
@@ -39,10 +42,14 @@ import org.eclipse.jetty.util.CompletableCallback;
 
 public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler
 {
+    private final Queue<NetworkBuffer> pendingBuffers = new ConcurrentLinkedDeque<>();
+    private final Object lock = new Object();
     private final HttpParser parser;
-    private ByteBuffer buffer;
+    private NetworkBuffer currentBuffer;
     private boolean shutdown;
     private boolean complete;
+    private long demand = 1;
+    private boolean stalled;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -61,54 +68,64 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return getHttpChannel().getHttpConnection();
     }
 
+    // TODO: restore or remove this method.
     protected ByteBuffer getResponseBuffer()
     {
-        return buffer;
+        return null;
     }
 
     public void receive()
     {
-        if (buffer == null)
-            acquireBuffer();
         process();
     }
 
-    private void acquireBuffer()
+    private NetworkBuffer acquireBuffer()
     {
         HttpClient client = getHttpDestination().getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        buffer = bufferPool.acquire(client.getResponseBufferSize(), true);
+        ByteBuffer buffer = bufferPool.acquire(client.getResponseBufferSize(), true);
+        return new NetworkBuffer(buffer);
     }
 
     private void releaseBuffer()
     {
-        if (buffer == null)
+        if (currentBuffer == null)
             throw new IllegalStateException();
-        if (BufferUtil.hasContent(buffer))
+        if (currentBuffer.hasRemaining())
             throw new IllegalStateException();
+        releaseBuffer(currentBuffer);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Released {}", currentBuffer);
+        currentBuffer = null;
+    }
+
+    private void releaseBuffer(NetworkBuffer networkBuffer)
+    {
         HttpClient client = getHttpDestination().getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        bufferPool.release(buffer);
-        buffer = null;
+        bufferPool.release(networkBuffer.buffer);
     }
 
     protected ByteBuffer onUpgradeFrom()
     {
-        if (BufferUtil.hasContent(buffer))
-        {
-            ByteBuffer upgradeBuffer = ByteBuffer.allocate(buffer.remaining());
-            upgradeBuffer.put(buffer).flip();
-            return upgradeBuffer;
-        }
-        return null;
+        if (currentBuffer == null || !currentBuffer.hasRemaining())
+            return null;
+        ByteBuffer buffer = currentBuffer.buffer;
+        ByteBuffer upgradeBuffer = ByteBuffer.allocate(buffer.remaining());
+        upgradeBuffer.put(buffer).flip();
+        return upgradeBuffer;
     }
 
     private void process()
     {
         try
         {
+            if (currentBuffer == null)
+                currentBuffer = acquireBuffer();
+
             HttpConnectionOverHTTP connection = getHttpConnection();
             EndPoint endPoint = connection.getEndPoint();
+
             while (true)
             {
                 boolean upgraded = connection != endPoint.getConnection();
@@ -125,9 +142,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 if (parse())
                     return;
 
-                int read = endPoint.fill(buffer);
+                int read = endPoint.fill(currentBuffer.buffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Read {} bytes {} from {}", read, BufferUtil.toDetailString(buffer), endPoint);
+                    LOG.debug("Read {} bytes {} from {}", read, currentBuffer, endPoint);
 
                 if (read > 0)
                 {
@@ -153,9 +170,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
-            BufferUtil.clear(buffer);
-            if (buffer != null)
+            if (currentBuffer != null)
+            {
+                currentBuffer.clear();
                 releaseBuffer();
+            }
             failAndClose(x);
         }
     }
@@ -169,20 +188,39 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         while (true)
         {
-            boolean handle = parser.parseNext(buffer);
+            synchronized (lock)
+            {
+                if (demand <= 0)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("No demand for {}", parser);
+                    stalled = true;
+                    return true;
+                }
+            }
+
+            boolean handle = parser.parseNext(currentBuffer.buffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Parsed {}, remaining {} {}", handle, currentBuffer.getRemaining(), parser);
+
             boolean complete = this.complete;
             this.complete = false;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Parsed {}, remaining {} {}", handle, buffer.remaining(), parser);
+
             if (handle)
                 return true;
-            if (!buffer.hasRemaining())
+
+            if (!currentBuffer.hasRemaining())
+            {
+                if (!currentBuffer.tryRelease())
+                    currentBuffer = acquireBuffer();
                 return false;
+            }
+
             if (complete)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Discarding unexpected content after response: {}", BufferUtil.toDetailString(buffer));
-                BufferUtil.clear(buffer);
+                    LOG.debug("Discarding unexpected content after response: {}", currentBuffer);
+                currentBuffer.clear();
                 return false;
             }
         }
@@ -263,25 +301,17 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
-        CompletableCallback callback = new CompletableCallback()
-        {
-            @Override
-            public void resume()
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Content consumed asynchronously, resuming processing");
-                process();
-            }
+        currentBuffer.retain();
 
-            @Override
-            public void abort(Throwable x)
-            {
-                failAndClose(x);
-            }
-        };
+        synchronized (lock)
+        {
+            --demand;
+        }
+
+        Content content = new Content(currentBuffer, buffer);
         // Do not short circuit these calls.
-        boolean proceed = responseContent(exchange, buffer, callback);
-        boolean async = callback.tryComplete();
+        boolean proceed = responseContent(exchange, buffer, content);
+        boolean async = content.tryComplete();
         return !proceed || async;
     }
 
@@ -374,5 +404,163 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public String toString()
     {
         return String.format("%s[%s]", super.toString(), parser);
+    }
+
+    private class NetworkBuffer
+    {
+        private final ByteBuffer buffer;
+        private int refCount;
+
+        private NetworkBuffer(ByteBuffer buffer)
+        {
+            this.buffer = buffer;
+        }
+
+        private boolean hasRemaining()
+        {
+            return buffer.hasRemaining();
+        }
+
+        private int getRemaining()
+        {
+            return buffer.remaining();
+        }
+
+        private void clear()
+        {
+            BufferUtil.clear(buffer);
+        }
+
+        private void retain()
+        {
+            synchronized (this)
+            {
+                ++refCount;
+            }
+        }
+
+        private void release()
+        {
+            boolean release = false;
+            synchronized (this)
+            {
+                --refCount;
+                if (refCount == 0 && !hasRemaining())
+                    release = pendingBuffers.remove(this);
+            }
+            if (release)
+            {
+                releaseBuffer(this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released retained {}", this);
+            }
+        }
+
+        private boolean tryRelease()
+        {
+            synchronized (this)
+            {
+                if (refCount > 0)
+                {
+                    pendingBuffers.add(currentBuffer);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Retained {}", this);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), buffer);
+        }
+    }
+
+    private class Content extends CompletableCallback implements Response.Content
+    {
+        private final NetworkBuffer networkBuffer;
+        private final ByteBuffer contentBuffer;
+
+        private Content(NetworkBuffer networkBuffer, ByteBuffer contentBuffer)
+        {
+            this.networkBuffer = networkBuffer;
+            this.contentBuffer = contentBuffer;
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return contentBuffer;
+        }
+
+        @Override
+        public void demand(long n)
+        {
+            if (n <= 0)
+                throw new IllegalArgumentException("Invalid demand " + n);
+            boolean proceed = false;
+            synchronized (lock)
+            {
+                demand = cappedAdd(demand, n);
+                if (stalled)
+                {
+                    stalled = false;
+                    proceed = true;
+                }
+            }
+            if (proceed)
+                process();
+        }
+
+        @Override
+        public void release()
+        {
+            networkBuffer.release();
+        }
+
+        @Override
+        public void succeed()
+        {
+            succeeded();
+        }
+
+        @Override
+        public void succeeded()
+        {
+            release();
+            demand(1);
+            super.succeeded();
+        }
+
+        @Override
+        public void fail(Throwable failure)
+        {
+            failed(failure);
+        }
+
+        @Override
+        public void resume()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Content consumed asynchronously, resuming processing");
+            process();
+        }
+
+        @Override
+        public void abort(Throwable x)
+        {
+            failAndClose(x);
+        }
+    }
+
+    private static long cappedAdd(long x, long y) {
+        long r = x + y;
+        // Overflow ?
+        if (((x ^ r) & (y ^ r)) < 0) {
+            return Long.MAX_VALUE;
+        }
+        return r;
     }
 }
