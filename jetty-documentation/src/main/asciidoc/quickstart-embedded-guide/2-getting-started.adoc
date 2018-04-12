@@ -16,6 +16,6 @@
 //  ========================================================================
 //
 
-[[qsge-startup]]
+[[qsge-getting-started]]
 
-== Starting Jetty
+== Getting Started with Embedded Jetty

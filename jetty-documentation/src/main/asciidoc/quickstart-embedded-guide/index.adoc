@@ -27,7 +27,7 @@
 
 // docinfo lets you pull in shared content and/or influence via render type
 :docinfodir: ../docinfo
-:docinfo1:
+:docinfo: shared
 
 // html specific directives
 ifdef::backend-html5[]
@@ -54,6 +54,6 @@ endif::[]
 :sectids!:
 
 include::1-introduction.adoc[]
-include::2-using.adoc[]
+include::2-getting-started.adoc[]
 include::3-configuring.adoc[]
 include::4-conclusion.adoc[]

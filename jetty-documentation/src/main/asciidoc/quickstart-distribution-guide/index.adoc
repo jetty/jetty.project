@@ -27,7 +27,7 @@
 
 // docinfo lets you pull in shared content and/or influence via render type
 :docinfodir: ../docinfo
-:docinfo1:
+:docinfo: shared
 
 // html specific directives
 ifdef::backend-html5[]
