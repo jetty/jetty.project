@@ -24,12 +24,16 @@
 :toc: left
 :toc-title: Contribution Guide
 :imagesdir: ../common/images
+:docinfodir: ../docinfo
+:docinfo1:
 
 // html specific directives
 ifdef::backend-html5[]
+:safe-mode-unsafe:
 :stylesdir: ../common/css
 :stylesheet: guidebook.css
 :linkcss:
+:scriptsdir: ../common/js
 endif::[]
 
 // options for special blocks, code snippets, screen, etc

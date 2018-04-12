@@ -19,27 +19,33 @@
 :doctitle: Eclipse Jetty: Distribution Quickstart Guide
 :author: Jetty Developers
 :email: jetty-dev@eclipse.org
-:revnumber: 1.0
+:revnumber:
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Distribution Quickstart Guide
 :imagesdir: ../common/images
-:stylesdir: ../cmmm/css
-:stylesheet: guidebook.css
-:sub-order: attributes+
-:nofooter:
-:allow-uri-read: true
-:icons: font
-:sectids!:
 
-// [#jetty-logo]
-// .Eclipse Jetty Logo
-// [link="https://eclipse.org/jetty"]
-// image::jetty-logo.svg[]
-//
-// = Eclipse Jetty: Quickstart Guide
-// Jetty Users <jetty-users@eclipse.org>
-// :revnumber: {VERSION}
+// html specific directives
+ifdef::backend-html5[]
+:stylesdir: ../common/css
+:stylesheet: guidebook.css
+:linkcss:
+endif::[]
+
+// options for special blocks, code snippets, screen, etc
+:sub-order: attributes+
+
+// suppress document footer generation
+:nofooter:
+
+// uncomment to allow include::https:// style content inclusion
+//:allow-uri-read: true
+
+// use fonts for admonitions
+:icons: font
+
+// suppress automatic id generation
+:sectids!:
 
 include::1-introduction.adoc[]
 include::2-using.adoc[]
