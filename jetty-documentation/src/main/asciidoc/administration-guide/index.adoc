@@ -16,9 +16,42 @@
 //  ========================================================================
 //
 
-= Jetty: An Administrative Guide
-:revnumber: {VERSION}
+:doctitle: Eclipse Jetty: Administration Guide
+:author: Jetty Developers
+:email: jetty-dev@eclipse.org
+:revnumber:  {VERSION}
+:revdate: {TIMESTAMP}
 :toc: left
+:toc-title: Administration Guide
+:imagesdir: ../common/images
+
+// docinfo lets you pull in shared content and/or influence via render type
+:docinfodir: ../docinfo
+:docinfo1:
+
+// html specific directives
+ifdef::backend-html5[]
+:safe-mode-unsafe:
+:stylesdir: ../common/css
+:stylesheet: guidebook.css
+:linkcss:
+:scriptsdir: ../common/js
+endif::[]
+
+// options for special blocks, code snippets, screen, etc
+:sub-order: attributes+
+
+// suppress document footer generation
+:nofooter:
+
+// uncomment to allow include::https:// style content inclusion
+//:allow-uri-read: true
+
+// use fonts for admonitions
+:icons: font
+
+// suppress automatic id generation
+:sectids!:
 
 include::1-introduction.adoc[]
 include::2-startup.adoc[]

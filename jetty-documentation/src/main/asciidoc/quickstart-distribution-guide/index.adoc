@@ -1,4 +1,4 @@
-///
+//
 //  ========================================================================
 //  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
@@ -19,17 +19,23 @@
 :doctitle: Eclipse Jetty: Distribution Quickstart Guide
 :author: Jetty Developers
 :email: jetty-dev@eclipse.org
-:revnumber:
+:revnumber: {VERSION}
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Distribution Quickstart Guide
 :imagesdir: ../common/images
 
+// docinfo lets you pull in shared content and/or influence via render type
+:docinfodir: ../docinfo
+:docinfo1:
+
 // html specific directives
 ifdef::backend-html5[]
+:safe-mode-unsafe:
 :stylesdir: ../common/css
 :stylesheet: guidebook.css
 :linkcss:
+:scriptsdir: ../common/js
 endif::[]
 
 // options for special blocks, code snippets, screen, etc

@@ -51,7 +51,6 @@
         <configuration>
           <basedir>${basedir}/src/main/asciidoc</basedir>
           <attributes>
-            <sub-order>attributes+</sub-order>
             <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
             <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
             <SRCDIR>${basedir}/..</SRCDIR>
@@ -186,10 +185,6 @@
               <backend>docbook</backend>
               <basedir>${basedir}/src/main/asciidoc</basedir>
               <attributes>
-                <sub-order>attributes+</sub-order>
-                <linkcss>true</linkcss>
-                <allow-uri-read>true</allow-uri-read>
-                <docinfo1>true</docinfo1>
                 <revnumber>${project.version}</revnumber>
                 <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
                 <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
