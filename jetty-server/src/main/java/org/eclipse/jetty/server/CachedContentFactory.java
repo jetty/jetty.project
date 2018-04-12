@@ -397,6 +397,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         private final Map<CompressedContentFormat, CachedPrecompressedHttpContent> _precompressed;
         private final AtomicReference<ByteBuffer> _indirectBuffer = new AtomicReference<>();
         private final AtomicReference<ByteBuffer> _directBuffer = new AtomicReference<>();
+        private final AtomicReference<ByteBuffer> _mappedBuffer = new AtomicReference<>();
         private volatile long _lastAccessed;
 
         CachedHttpContent(String pathInContext, Resource resource, Map<CompressedContentFormat, CachedHttpContent> precompressedResources)
@@ -481,14 +482,15 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
         protected void invalidate()
         {
-            ByteBuffer indirect = _indirectBuffer.get();
-            if (indirect != null && _indirectBuffer.compareAndSet(indirect, null))
+            ByteBuffer indirect = _indirectBuffer.getAndSet(null);
+            if (indirect != null)
                 _cachedSize.addAndGet(-BufferUtil.length(indirect));
 
-            ByteBuffer direct = _directBuffer.get();
-
-            if (direct != null && !BufferUtil.isMappedBuffer(direct) && _directBuffer.compareAndSet(direct, null))
+            ByteBuffer direct = _directBuffer.getAndSet(null);
+            if (direct != null)
                 _cachedSize.addAndGet(-BufferUtil.length(direct));
+
+            _mappedBuffer.getAndSet(null);
 
             _cachedFiles.decrementAndGet();
             _resource.close();
@@ -574,26 +576,42 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public ByteBuffer getDirectBuffer()
         {
-            ByteBuffer buffer = _directBuffer.get();
+            ByteBuffer buffer = _mappedBuffer.get();
+            if (buffer == null)
+                buffer = _directBuffer.get();
             if (buffer == null)
             {
                 ByteBuffer mapped = CachedContentFactory.this.getMappedBuffer(_resource);
-                ByteBuffer direct = mapped == null ? CachedContentFactory.this.getDirectBuffer(_resource) : mapped;
-
-                if (direct == null)
-                    LOG.warn("Could not load " + this);
-                else if (_directBuffer.compareAndSet(null, direct))
+                if (mapped != null)
                 {
-                    buffer = direct;
-                    if (mapped == null && _cachedSize.addAndGet(BufferUtil.length(buffer)) > _maxCacheSize)
-                        shrinkCache();
+                    if (_mappedBuffer.compareAndSet(null, mapped))
+                        buffer = mapped;
+                    else
+                        buffer = _mappedBuffer.get();
                 }
                 else
-                    buffer = _directBuffer.get();
+                {
+                    ByteBuffer direct = CachedContentFactory.this.getDirectBuffer(_resource);
+                    if (direct != null)
+                    {
+                        if (_directBuffer.compareAndSet(null, direct))
+                        {
+                            buffer = direct;
+                            if (_cachedSize.addAndGet(BufferUtil.length(buffer)) > _maxCacheSize)
+                                shrinkCache();
+                        }
+                        else
+                        {
+                            buffer = _directBuffer.get();
+                        }
+                    }
+                    else
+                    {
+                        LOG.warn("Could not load " + this);
+                    }
+                }
             }
-            if (buffer == null)
-                return null;
-            return buffer.asReadOnlyBuffer();
+            return buffer == null ? null : buffer.asReadOnlyBuffer();
         }
 
         @Override
