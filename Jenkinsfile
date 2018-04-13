@@ -15,7 +15,7 @@ def getFullBuild(jdk, os) {
   return {
     node(os) {
       // System Dependent Locations
-      def mvntool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
+      def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
       def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
 
       // Environment
@@ -60,7 +60,7 @@ def getFullBuild(jdk, os) {
           withEnv(mvnEnv) {
             timeout(time: 20, unit: 'MINUTES') {
               withMaven(
-                      maven: 'maven3',
+                      maven: 'maven3.5',
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: 'oss-settings.xml',
@@ -82,7 +82,7 @@ def getFullBuild(jdk, os) {
             timeout(time: 90, unit: 'MINUTES') {
               // Run test phase / ignore test failures
               withMaven(
-                      maven: 'maven3',
+                      maven: 'maven3.5',
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       //options: [invokerPublisher(disabled: false)],
@@ -138,7 +138,7 @@ def getFullBuild(jdk, os) {
           dir("aggregates/jetty-all-compact3") {
             withEnv(mvnEnv) {
               withMaven(
-                      maven: 'maven3',
+                      maven: 'maven3.5',
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: 'oss-settings.xml',
