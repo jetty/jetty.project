@@ -1,4 +1,39 @@
-jetty-9.4.10-SNAPSHOT
+jetty-9.4.10.RC0 - 13 April 2018
+ + 987 Can GzipHandler check if .gz file exists only by some paths?
+ + 1027 MultiPartInputStreamParser is slow for largish files
+ + 2018 No HttpClient API for receiving Server Sent Events
+ + 2109 Cleanup "Unused" warnings from maven-bundle-plugin
+ + 2145 Enabled h2, http/1.1 + https failed with invalid preface
+ + 2152 Produce jetty-home-source artifacts for Eclipse Jetty source jars
+ + 2164 Ensure all jetty modules that use ServiceLoader have correct OSGi
+   manifest headers
+ + 2205 100% CPU usage in Selector using Jetty on Windows
+ + 2213 Add deploy-war maven jetty plugin integration test
+ + 2225 JDK9 Test failure:
+   org.eclipse.jetty.http2.client.StreamResetTest.testBlockingWriteAfterStreamReceivingReset
+ + 2231 Refactor session integration tests
+ + 2311 TimeoutException when server sends unexpected content
+ + 2337 ServletUpgradeRequest getSubProtocols() creates an ArrayList even if
+   sub protocols is absent. 
+ + 2349 Review HTTP/2 max streams enforcement
+ + 2350 Support multiplexing in RoundRobinConnectionPool
+ + 2361 CachingWebAppClassLoader is not using cache properly
+ + 2366 Review HTTP/2 interleaving
+ + 2370 Rename classes in maven plugin integration tests
+ + 2372 Packaging check in maven jetty plugin breaking execution
+ + 2373 Align Maven version used in plugins
+ + 2387 NPE in URIUtil.equalsIgnoreEncodings when working with jar:file:// URIs
+ + 2388 AtomicBiInteger.compareAndSet(long,int,int) not using encoded parameter
+ + 2391 Allow for optional "\u####" escaping in
+   org.eclipse.jetty.util.ajax.JSON.toString()
+ + 2398 MultiPartFormInputStream parsing should default to UTF-8, but allowed
+   to be overridden by Request.setCharacterEncoding()
+ + 2404 use annotations for maven plugins
+ + 2409 jetty-osgi-boot-9.4.9.v20180320 -
+   javax.naming.NameAlreadyBoundException: env for all web apps
+ + 2413 Server log timestamp is inconsistent
+ + 2420 Simplify HttpTransportOverHTTP2
+ + 2425 Review BufferUtil.isMappedBuffer()
 
 jetty-9.4.9.v20180320 - 20 March 2018
  + 347 Avoid sending request using a connection that is idle timing out
@@ -20,8 +55,8 @@ jetty-9.4.9.v20180320 - 20 March 2018
  + 1970 ManagedSelector can lose selector thread under high concurrent load
  + 1973 Implement minimum response data rate
  + 1983 Improve warning for incompatible ALPN processor
- + 1986 ServletContextHandler.Context addListener() methods support
-   session listeners
+ + 1986 ServletContextHandler.Context addListener() methods support session
+   listeners
  + 2003 Do not submit blocking tasks as managed selector actions
  + 2006 ServletInputStream.isReady not registering interest when it should
  + 2010 SniX509ExtendedKeyManager causes exception: "FIPS mode: only SunJSSE
