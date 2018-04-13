@@ -77,7 +77,7 @@ public class ProxyServletLoadTest
 
     public ProxyServletLoadTest(Class<?> proxyServletClass) throws Exception
     {
-        proxyServlet = (AbstractProxyServlet)proxyServletClass.newInstance();
+        proxyServlet = (AbstractProxyServlet)proxyServletClass.getDeclaredConstructor().newInstance();
     }
 
     private void startServer(HttpServlet servlet) throws Exception

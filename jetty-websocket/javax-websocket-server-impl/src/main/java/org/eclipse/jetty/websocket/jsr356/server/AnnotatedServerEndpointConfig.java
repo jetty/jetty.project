@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -129,9 +130,9 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
         {
             try
             {
-                cfgr = anno.configurator().newInstance();
+                cfgr = anno.configurator().getDeclaredConstructor( ).newInstance();
             }
-            catch (InstantiationException | IllegalAccessException e)
+            catch (InstantiationException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
             {
                 StringBuilder err = new StringBuilder();
                 err.append("Unable to instantiate ClientEndpoint.configurator() of ");

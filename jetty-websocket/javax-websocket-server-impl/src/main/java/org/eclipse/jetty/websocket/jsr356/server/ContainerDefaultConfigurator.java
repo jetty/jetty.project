@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.ServiceLoader;
 
@@ -69,9 +70,9 @@ public final class ContainerDefaultConfigurator extends Configurator
         {
             // Since this is started via a ServiceLoader, this class has no Scope or context
             // that can be used to obtain a ObjectFactory from.
-            return endpointClass.newInstance();
+            return endpointClass.getDeclaredConstructor().newInstance();
         }
-        catch (IllegalAccessException e)
+        catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
         {
             throw new InstantiationException(String.format("%s: %s",e.getClass().getName(),e.getMessage()));
         }

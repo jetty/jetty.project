@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -2532,7 +2533,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         public <T> T createInstance (Class<T> clazz) throws Exception
         {
-            T o = clazz.newInstance();
+            T o = clazz.getDeclaredConstructor().newInstance();
             return o;
         }
 
@@ -2829,13 +2830,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             try
             {
-                return clazz.newInstance();
+                return clazz.getDeclaredConstructor().newInstance();
             }
-            catch (InstantiationException e)
-            {
-                throw new ServletException(e);
-            }
-            catch (IllegalAccessException e)
+            catch (InstantiationException | NoSuchMethodException | InvocationTargetException |IllegalAccessException e)
             {
                 throw new ServletException(e);
             }

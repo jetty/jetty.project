@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -194,7 +195,7 @@ public class DecoderFactory implements Configurable
             Decoder decoder = containerScope.getObjectFactory().createInstance(decoderClass);
             return new Wrapper(decoder,metadata);
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
         {
             throw new IllegalStateException("Unable to instantiate Decoder: " + decoderClass.getName());
         }

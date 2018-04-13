@@ -25,6 +25,8 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
+import java.lang.reflect.InvocationTargetException;
+
 public class WebSocketExtensionFactory extends ExtensionFactory
 {
     private WebSocketContainerScope container;
@@ -66,7 +68,7 @@ public class WebSocketExtensionFactory extends ExtensionFactory
             }
             return ext;
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
         {
             throw new WebSocketException("Cannot instantiate extension: " + extClass,e);
         }

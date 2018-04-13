@@ -20,6 +20,7 @@ package org.eclipse.jetty.servlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1284,14 +1285,15 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      * @throws IllegalAccessException if not allowed to create a new instance
      * @throws InstantiationException if creating new instance resulted in error
      */
-    protected Servlet newInstance() throws ServletException, IllegalAccessException, InstantiationException
+    protected Servlet newInstance() throws ServletException, IllegalAccessException, InstantiationException,
+        NoSuchMethodException, InvocationTargetException
     {
         try
         {
             ServletContext ctx = getServletHandler().getServletContext();
             if (ctx instanceof ServletContextHandler.Context)
                 return ((ServletContextHandler.Context)ctx).createServlet(getHeldClass());
-            return getHeldClass().newInstance();
+            return getHeldClass().getDeclaredConstructor().newInstance();
         }
         catch (ServletException se)
         {

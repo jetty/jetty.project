@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Map;
@@ -419,9 +420,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         try
         {
-            return newClientEndpointInstance(endpointClass.newInstance(),config);
+            return newClientEndpointInstance(endpointClass.getDeclaredConstructor().newInstance(),config);
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (InstantiationException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
         {
             throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getClass());
         }

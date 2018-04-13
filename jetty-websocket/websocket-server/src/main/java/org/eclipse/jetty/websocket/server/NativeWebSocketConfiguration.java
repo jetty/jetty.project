@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 
 import javax.servlet.ServletContext;
@@ -157,9 +158,9 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
         {
             try
             {
-                return endpointClass.newInstance();
+                return endpointClass.getDeclaredConstructor().newInstance();
             }
-            catch (InstantiationException | IllegalAccessException e)
+            catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
             {
                 throw new WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
             }

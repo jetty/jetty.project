@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.jaas.spi;
 
+import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Map;
@@ -105,17 +106,9 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
                 dbPassword = "";
 
             if (dbDriver != null)
-                Loader.loadClass(dbDriver).newInstance();
+                Loader.loadClass(dbDriver).getDeclaredConstructor().newInstance();
         }
-        catch (ClassNotFoundException e)
-        {
-            throw new IllegalStateException (e.toString());
-        }
-        catch (InstantiationException e)
-        {
-            throw new IllegalStateException (e.toString());
-        }
-        catch (IllegalAccessException e)
+        catch (ClassNotFoundException | InstantiationException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
         {
             throw new IllegalStateException (e.toString());
         }

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -181,7 +182,7 @@ public class EncoderFactory implements Configurable
             Encoder encoder = containerScope.getObjectFactory().createInstance(encoderClass);
             return new Wrapper(encoder,metadata);
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
         {
             throw new IllegalStateException("Unable to instantiate Encoder: " + encoderClass.getName());
         }

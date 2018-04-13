@@ -19,6 +19,7 @@
 package org.eclipse.jetty.jaas;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -207,7 +208,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                             }
                             else if (callback instanceof PasswordCallback)
                             {
-                                ((PasswordCallback)callback).setPassword((char[]) credentials.toString().toCharArray());
+                                ((PasswordCallback)callback).setPassword(credentials.toString().toCharArray());
                             }
                             else if (callback instanceof ObjectCallback)
                             {
@@ -228,7 +229,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
             else
             {
                 Class<?> clazz = Loader.loadClass(_callbackHandlerClass);
-                callbackHandler = (CallbackHandler)clazz.newInstance();
+                callbackHandler = (CallbackHandler)clazz.getDeclaredConstructor().newInstance();
             }
             //set up the login context
             //TODO jaspi requires we provide the Configuration parameter
@@ -243,27 +244,8 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
 
             return _identityService.newUserIdentity(subject,userPrincipal,getGroups(subject));
         }
-        catch (LoginException e)
-        {
-            LOG.warn(e);
-        }
-        catch (IOException e)
-        {
-            LOG.warn(e);
-        }
-        catch (UnsupportedCallbackException e)
-        {
-           LOG.warn(e);
-        }
-        catch (InstantiationException e)
-        {
-            LOG.warn(e);
-        }
-        catch (IllegalAccessException e)
-        {
-            LOG.warn(e);
-        }
-        catch (ClassNotFoundException e)
+        catch (LoginException | IOException | UnsupportedCallbackException | InstantiationException
+            | IllegalAccessException | NoSuchMethodException | InvocationTargetException | ClassNotFoundException e)
         {
             LOG.warn(e);
         }

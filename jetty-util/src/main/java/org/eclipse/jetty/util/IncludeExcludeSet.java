@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -77,8 +78,8 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     {
         try
         {
-            _includes = setClass.newInstance();
-            _excludes = setClass.newInstance();
+            _includes = setClass.getDeclaredConstructor().newInstance();
+            _excludes = setClass.getDeclaredConstructor().newInstance();
             
             if(_includes instanceof Predicate) 
             {
@@ -98,7 +99,7 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
                 _excludePredicate = new SetContainsPredicate(_excludes);
             }
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
         {
             throw new RuntimeException(e);
         }

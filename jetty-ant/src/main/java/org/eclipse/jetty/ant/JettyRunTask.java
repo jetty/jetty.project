@@ -19,6 +19,7 @@
 package org.eclipse.jetty.ant;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -147,13 +148,9 @@ public class JettyRunTask extends Task
     {
         try
         {
-            this.requestLog = (RequestLog) Class.forName(className).newInstance();
+            this.requestLog = (RequestLog) Class.forName(className).getDeclaredConstructor().newInstance();
         }
-        catch (InstantiationException e)
-        {
-            throw new BuildException("Request logger instantiation exception: " + e);
-        }
-        catch (IllegalAccessException e)
+        catch (InstantiationException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
         {
             throw new BuildException("Request logger instantiation exception: " + e);
         }

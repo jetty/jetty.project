@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -294,7 +295,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             return objectFactory.createInstance(firstClass);
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
         {
             throw new WebSocketException("Unable to create instance of " + firstClass, e);
         }
