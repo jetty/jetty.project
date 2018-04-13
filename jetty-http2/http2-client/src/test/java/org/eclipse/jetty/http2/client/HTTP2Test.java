@@ -236,7 +236,7 @@ public class HTTP2Test extends AbstractTest
             });
         }
 
-        Assert.assertTrue(latch.await(requests, TimeUnit.SECONDS));
+        Assert.assertTrue(server.dump() + System.lineSeparator() + client.dump(), latch.await(requests, TimeUnit.SECONDS));
     }
 
     @Test
