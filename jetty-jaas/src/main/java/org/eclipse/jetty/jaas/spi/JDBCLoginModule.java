@@ -108,7 +108,7 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
             if (dbDriver != null)
                 Loader.loadClass(dbDriver).getDeclaredConstructor().newInstance();
         }
-        catch (ClassNotFoundException | InstantiationException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
+        catch (Exception e)
         {
             throw new IllegalStateException (e.toString());
         }

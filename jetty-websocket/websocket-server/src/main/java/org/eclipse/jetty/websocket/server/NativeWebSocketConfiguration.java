@@ -160,7 +160,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
             {
                 return endpointClass.getDeclaredConstructor().newInstance();
             }
-            catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
+            catch (Exception e)
             {
                 throw new WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
             }

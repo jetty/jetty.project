@@ -99,7 +99,7 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
                 _excludePredicate = new SetContainsPredicate(_excludes);
             }
         }
-        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }

@@ -182,9 +182,9 @@ public class EncoderFactory implements Configurable
             Encoder encoder = containerScope.getObjectFactory().createInstance(encoderClass);
             return new Wrapper(encoder,metadata);
         }
-        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
+        catch (Exception e)
         {
-            throw new IllegalStateException("Unable to instantiate Encoder: " + encoderClass.getName());
+            throw new IllegalStateException("Unable to instantiate Encoder: " + encoderClass.getName(),e);
         }
     }
 }

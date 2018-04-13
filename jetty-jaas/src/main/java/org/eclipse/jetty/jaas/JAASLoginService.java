@@ -244,8 +244,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
 
             return _identityService.newUserIdentity(subject,userPrincipal,getGroups(subject));
         }
-        catch (LoginException | IOException | UnsupportedCallbackException | InstantiationException
-            | IllegalAccessException | NoSuchMethodException | InvocationTargetException | ClassNotFoundException e)
+        catch (Exception e)
         {
             LOG.warn(e);
         }

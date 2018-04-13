@@ -272,7 +272,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
                         deployableAnnotatedEndpoints.addAll(annotatedClasses);
                     }
                 }
-                catch (InstantiationException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
+                catch (Exception e)
                 {
                     throw new ServletException("Unable to instantiate: " + clazz.getName(),e);
                 }

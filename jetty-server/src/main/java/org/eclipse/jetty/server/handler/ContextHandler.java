@@ -2832,7 +2832,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             {
                 return clazz.getDeclaredConstructor().newInstance();
             }
-            catch (InstantiationException | NoSuchMethodException | InvocationTargetException |IllegalAccessException e)
+            catch (Exception e)
             {
                 throw new ServletException(e);
             }

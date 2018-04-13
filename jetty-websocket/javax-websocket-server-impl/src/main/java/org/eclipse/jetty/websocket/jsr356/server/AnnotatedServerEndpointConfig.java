@@ -132,7 +132,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
             {
                 cfgr = anno.configurator().getDeclaredConstructor( ).newInstance();
             }
-            catch (InstantiationException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
+            catch (Exception e)
             {
                 StringBuilder err = new StringBuilder();
                 err.append("Unable to instantiate ClientEndpoint.configurator() of ");

@@ -72,7 +72,7 @@ public final class ContainerDefaultConfigurator extends Configurator
             // that can be used to obtain a ObjectFactory from.
             return endpointClass.getDeclaredConstructor().newInstance();
         }
-        catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
+        catch (Exception e)
         {
             throw new InstantiationException(String.format("%s: %s",e.getClass().getName(),e.getMessage()));
         }
