@@ -177,5 +177,28 @@
         </plugins>
       </build>
     </profile>
+    <!-- if you want to run test even with jdk10/11 -->
+    <profile>
+      <id>alltests</id>
+      <activation>
+        <property>
+          <name>alltests</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <exclude>FOOBAR</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
