@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.frames;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.WindowUpdateGenerator;
@@ -48,6 +49,7 @@ public class WindowUpdateGenerateParseTest
                 frames.add(frame);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         int streamId = 13;
         int windowUpdate = 17;
@@ -88,6 +90,7 @@ public class WindowUpdateGenerateParseTest
                 frames.add(frame);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         int streamId = 13;
         int windowUpdate = 17;

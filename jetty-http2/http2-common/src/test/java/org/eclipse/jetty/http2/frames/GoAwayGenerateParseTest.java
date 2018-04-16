@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.generator.GoAwayGenerator;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
@@ -49,6 +50,7 @@ public class GoAwayGenerateParseTest
                 frames.add(frame);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         int lastStreamId = 13;
         int error = 17;
@@ -90,6 +92,7 @@ public class GoAwayGenerateParseTest
                 frames.add(frame);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         int lastStreamId = 13;
         int error = 17;

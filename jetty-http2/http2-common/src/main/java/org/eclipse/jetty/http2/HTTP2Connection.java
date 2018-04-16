@@ -21,10 +21,21 @@ package org.eclipse.jetty.http2;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PingFrame;
+import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -32,6 +43,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -66,6 +78,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             executor = new TryExecutor.NoTryExecutor(executor);
         this.strategy = new EatWhatYouKill(producer, executor);
         LifeCycle.start(strategy);
+        parser.init(ParserListener::new);
     }
 
     @Override
@@ -92,7 +105,8 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     protected void setInputBuffer(ByteBuffer buffer)
     {
-        producer.buffer = buffer;
+        if (buffer != null)
+            producer.setInputBuffer(buffer);
     }
 
     @Override
@@ -192,9 +206,17 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
+        private final List<NetworkBuffer> pendingBuffers = new LinkedList<>();
         private final Callback fillableCallback = new FillableCallback();
-        private ByteBuffer buffer;
+        private NetworkBuffer buffer;
         private boolean shutdown;
+
+        private void setInputBuffer(ByteBuffer byteBuffer)
+        {
+            if (buffer == null)
+                buffer = acquireNetworkBuffer();
+            buffer.put(byteBuffer);
+        }
 
         @Override
         public Runnable produce()
@@ -209,38 +231,48 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                 return null;
 
             if (buffer == null)
-                buffer = byteBufferPool.acquire(bufferSize, false); // TODO: make directness customizable
-            boolean looping = BufferUtil.hasContent(buffer);
+                buffer = acquireNetworkBuffer();
+            boolean parse = buffer.hasRemaining();
             while (true)
             {
-                if (looping)
+                if (parse)
                 {
                     while (buffer.hasRemaining())
-                        parser.parse(buffer);
+                        parser.parse(buffer.buffer);
+
+                    boolean released = buffer.tryReleased();
 
                     task = pollTask();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Dequeued new task {}", task);
                     if (task != null)
                     {
-                        release();
+                        if (released)
+                            releaseNetworkBuffer();
+                        else
+                            buffer = null;
                         return task;
+                    }
+                    else
+                    {
+                        if (!released)
+                            buffer = acquireNetworkBuffer();
                     }
                 }
 
-                int filled = fill(getEndPoint(), buffer);
+                int filled = fill(getEndPoint(), buffer.buffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Filled {} bytes", filled);
+                    LOG.debug("Filled {} bytes in {}", filled, buffer);
 
                 if (filled == 0)
                 {
-                    release();
+                    releaseNetworkBuffer();
                     getEndPoint().fillInterested(fillableCallback);
                     return null;
                 }
                 else if (filled < 0)
                 {
-                    release();
+                    releaseNetworkBuffer();
                     shutdown = true;
                     session.onShutdown();
                     return null;
@@ -248,17 +280,27 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                 else
                 {
                     bytesIn.addAndGet(filled);
+                    parse = true;
                 }
-
-                looping = true;
             }
         }
 
-        private void release()
+        private NetworkBuffer acquireNetworkBuffer()
         {
-            if (buffer != null && !buffer.hasRemaining())
+            NetworkBuffer networkBuffer = new NetworkBuffer();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Acquired {}", networkBuffer);
+            return networkBuffer;
+        }
+
+        private void releaseNetworkBuffer()
+        {
+            if (!buffer.hasRemaining())
             {
-                byteBufferPool.release(buffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released {}", buffer);
+                buffer.release();
+                byteBufferPool.release(buffer.buffer);
                 buffer = null;
             }
         }
@@ -288,6 +330,173 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         public InvocationType getInvocationType()
         {
             return InvocationType.EITHER;
+        }
+    }
+
+    private class ParserListener implements Parser.Listener
+    {
+        private final Parser.Listener listener;
+
+        private ParserListener(Parser.Listener listener)
+        {
+            this.listener = listener;
+        }
+
+        @Override
+        public void onData(DataFrame frame)
+        {
+            NetworkBuffer buffer = producer.buffer;
+            buffer.retain();
+            // TODO: remove downcast.
+            ((HTTP2Session)session).onData(frame, buffer);
+        }
+
+        @Override
+        public void onHeaders(HeadersFrame frame)
+        {
+            listener.onHeaders(frame);
+        }
+
+        @Override
+        public void onPriority(PriorityFrame frame)
+        {
+            listener.onPriority(frame);
+        }
+
+        @Override
+        public void onReset(ResetFrame frame)
+        {
+            listener.onReset(frame);
+        }
+
+        @Override
+        public void onSettings(SettingsFrame frame)
+        {
+            listener.onSettings(frame);
+        }
+
+        @Override
+        public void onPushPromise(PushPromiseFrame frame)
+        {
+            listener.onPushPromise(frame);
+        }
+
+        @Override
+        public void onPing(PingFrame frame)
+        {
+            listener.onPing(frame);
+        }
+
+        @Override
+        public void onGoAway(GoAwayFrame frame)
+        {
+            listener.onGoAway(frame);
+        }
+
+        @Override
+        public void onWindowUpdate(WindowUpdateFrame frame)
+        {
+            listener.onWindowUpdate(frame);
+        }
+
+        @Override
+        public void onConnectionFailure(int error, String reason)
+        {
+            listener.onConnectionFailure(error, reason);
+        }
+    }
+
+    private class NetworkBuffer implements Callback, Retainable
+    {
+        private final ByteBuffer buffer;
+        private int refCount;
+
+        private NetworkBuffer()
+        {
+            buffer = byteBufferPool.acquire(bufferSize, false); // TODO: make directness customizable
+        }
+
+        private void put(ByteBuffer source)
+        {
+            BufferUtil.append(buffer, source);
+        }
+
+        private boolean hasRemaining()
+        {
+            return buffer.hasRemaining();
+        }
+
+        @Override
+        public void retain()
+        {
+            synchronized (this)
+            {
+                ++refCount;
+            }
+        }
+
+        @Override
+        public void succeeded()
+        {
+            release();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            release();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        private void release()
+        {
+            boolean release = false;
+            synchronized (this)
+            {
+                --refCount;
+                if (refCount == 0 && !hasRemaining())
+                    release = producer.pendingBuffers.remove(this);
+            }
+            if (release)
+            {
+                byteBufferPool.release(buffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released retained {}", this);
+            }
+        }
+
+        /**
+         * <p>Similar to {@code isReleased()}, but with side effects.</p>
+         * <p>Atomically checks whether this NetworkBuffer is released,
+         * and if not stores it away for later, asynchronous, release.</p>
+         *
+         * @return whether this NetworkBuffer is released
+         */
+        private boolean tryReleased()
+        {
+            synchronized (this)
+            {
+                if (refCount > 0)
+                {
+                    List<NetworkBuffer> pendingBuffers = producer.pendingBuffers;
+                    pendingBuffers.add(this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Retained {}, total: {}", this, pendingBuffers.size());
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), buffer);
         }
     }
 }
