@@ -63,6 +63,16 @@ public class AttributeNormalizerTest
         data.add(new Object[]{arch, title, env});
         
         // ------
+        title = "Old Setup";
+        
+        env = new HashMap<>();
+        env.put("jetty.home", asTargetPath(title,"jetty-distro"));
+        env.put("jetty.base", asTargetPath(title,"jetty-distro"));
+        env.put("WAR", asTargetPath(title,"jetty-distro/webapps/FOO"));
+        
+        data.add(new Object[]{arch, title, env});
+        
+        // ------
         // This puts the jetty.home inside of the jetty.base
         title = "Overlap Setup";
         env = new HashMap<>();
@@ -82,6 +92,16 @@ public class AttributeNormalizerTest
         env.put("WAR", asTargetPath(title,"app%2Fnasty/base/webapps/FOO"));
         
         data.add(new Object[]{arch, title, env});
+
+        // ------
+        title = "Root Path Setup";
+        env = new HashMap<>();
+        env.put("jetty.home", "/");
+        env.put("jetty.base", "/");
+        env.put("WAR", asTargetPath(title,"webapps/root"));
+        
+        data.add(new Object[]{arch, title, env});
+        
         return data;
     }
     
@@ -183,7 +203,8 @@ public class AttributeNormalizerTest
     public void testNormalizeJettyHomeAsFile()
     {
         // Normalize jetty.home as File path
-        assertNormalize(new File(jettyHome), "${jetty.home}");
+        String expected = jettyBase.equals(jettyHome)?"${jetty.base}":"${jetty.home}";
+        assertNormalize(new File(jettyHome), expected);
     }
     
     @Test
@@ -196,8 +217,9 @@ public class AttributeNormalizerTest
     @Test
     public void testNormalizeJettyHomeAsURI()
     {
-        // Normalize jetty.home as URI path
-        assertNormalize(new File(jettyHome).toURI(), "${jetty.home.uri}");
+        // Normalize jetty.home as URI path        
+        String expected = jettyBase.equals(jettyHome)?"${jetty.base.uri}":"${jetty.home.uri}";
+        assertNormalize(new File(jettyHome).toURI(), expected);
     }
     
     @Test

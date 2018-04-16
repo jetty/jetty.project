@@ -81,11 +81,12 @@ public class AttributeNormalizer
     private static URI toCanonicalURI(URI uri)
     {
         uri = uri.normalize();
-        String ascii = uri.toASCIIString();
-        if (ascii.endsWith("/"))
+        String path = uri.getPath();
+        if (path!=null && path.length()>1 && path.endsWith("/"))
         {
             try
             {
+                String ascii = uri.toASCIIString();
                 uri = new URI(ascii.substring(0,ascii.length()-1));
             }
             catch(URISyntaxException e)
