@@ -27,7 +27,7 @@ The Jetty distribution contains example `DeploymentManager` configurations to de
 
 The `DeploymentManager` is the heart of the typical webapp deployment mechanism; it operates as a combination of an Application LifeCycle Graph, Application Providers that find and provide Applications into the Application LifeCycle Graph, and a set of bindings in the graph that control the deployment process.
 
-image:images/Jetty_DeployManager_DeploymentManager_Roles.png[image,width=195]
+image:deploying/images/Jetty_DeployManager_DeploymentManager_Roles.png[image,width=195]
 
 [[udm-application-providers]]
 ==== Application Providers
@@ -40,7 +40,7 @@ The main `AppProvider` with the Jetty distribution is the link:{JDURL}/org/eclip
 
 The core feature of the `DeploymentManager` is the link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.html[Application LifeCycle Graph].
 
-image:images/Jetty_DeployManager_AppLifeCycle-1.png[image,width=340]
+image:deploying/images/Jetty_DeployManager_AppLifeCycle-1.png[image,width=340]
 
 The nodes and edges of this graph are pre-defined in Jetty along the most common actions and states found.
 These nodes and edges are not hardcoded; they can be adjusted and added to depending on need (for example, any complex requirements for added workflow, approvals, staging, distribution, coordinated deploys for a cluster or cloud, etc.).
@@ -119,7 +119,7 @@ monitoredDirName::
   The file path or URL to the directory to scan for web applications.
 
   Scanning follows these rules:
-  
+
   1.  A base directory must exist.
   2.  Hidden Files (starting with `"."`) are ignored.
   3.  Directories with names ending in `".d"` are ignored.

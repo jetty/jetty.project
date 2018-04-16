@@ -11,7 +11,8 @@
   <packaging>pom</packaging>
   <properties>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
-    <html.directory>${project.build.directory}/html/common</html.directory>
+    <html.common.directory>${project.build.directory}/html/common</html.common.directory>
+    <html.image.directory>${project.build.directory}/html/common/images</html.image.directory>
     <javadoc.version>${project.version}</javadoc.version>
     <asciidoctor.maven.plugin.version>1.5.6</asciidoctor.maven.plugin.version>
     <asciidoctorj.pdf.version>1.5.0-alpha.16</asciidoctorj.pdf.version>
@@ -39,7 +40,26 @@
                   </includes>
                 </resource>
               </resources>
-              <outputDirectory>${html.directory}</outputDirectory>
+              <outputDirectory>${html.common.directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-topic-image-assets</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>src/main/asciidoc/topics</directory>
+                  <includes>
+                    <include>**/*.jpg</include>
+                    <include>**/*.png</include>
+                  </includes>
+                </resource>
+              </resources>
+              <outputDirectory>${html.image.directory}</outputDirectory>
             </configuration>
           </execution>
         </executions>

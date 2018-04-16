@@ -57,7 +57,7 @@ To monitor Jetty's server status with JConsole, start Jetty and then start JCons
 After you start Jetty, you will see a dialog box in JConsole with a list of running processes to which you can connect.
 It should look something like so:
 
-image:images/jconsole1.jpg[image,width=576]
+image:jmx/images/jconsole1.jpg[image,width=576]
 
 ____
 [IMPORTANT]
@@ -68,7 +68,7 @@ ____
 Select the start.jar entry and click the "Connect" button.
 A new JConsole window opens:
 
-image:images/jconsole2.jpg[image,width=576]
+image:jmx/images/jconsole2.jpg[image,width=576]
 
 From this window you can monitor memory usage, thread usage, classloading and VM statistics.
 You can also perform operations such as a manual garbage collect.
@@ -80,7 +80,7 @@ The MBean tab of JConsole allows access to managed objects within the Java appli
 If you also want to interact with the Jetty JMX implementation via JConsole, you need to start Jetty JMX in a form that JConsole can access.
 See xref:using-jmx[] for more information.
 
-image:images/jconsole3.png[image,width=576]
+image:jmx/images/jconsole3.png[image,width=576]
 
 [[jetty-jmc-monitoring]]
 ==== Monitoring Jetty with JMC
@@ -92,7 +92,7 @@ To monitor Jetty's server status with JMC, start Jetty and then start JMC by typ
 After you start Jetty, you will see a dialog box in JMC with a list of running processes to which you can connect.
 It should look something like so:
 
-image:images/jmc1.png[image,width=576]
+image:jmx/images/jmc1.png[image,width=576]
 
 ____
 [IMPORTANT]
@@ -103,7 +103,7 @@ ____
 Double-click the start.jar entry or right-click the start.jar entry and select "Start JMX Console".
 A new JMC window opens on the right:
 
-image:images/jmc2.png[image,width=576]
+image:jmx/images/jmc2.png[image,width=576]
 
 From this window you can monitor memory usage, thread usage, classloading and VM statistics.
 You can also perform operations such as a manual garbage collect.
@@ -115,4 +115,4 @@ The MBean tab of JMC allows access to managed objects within the Java applicatio
 If you also want to interact with the Jetty JMX implementation via JMC, you need to start Jetty JMX in a form that JMC can access.
 See xref:using-jmx[] for more information.
 
-image:images/jmc3.png[image,width=576]
+image:jmx/images/jmc3.png[image,width=576]

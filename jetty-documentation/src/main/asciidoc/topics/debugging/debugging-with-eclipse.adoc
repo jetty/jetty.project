@@ -30,15 +30,15 @@ Next we need to link the Eclipse project with the deployed webapp.
 1.  Within Eclipse, right-click on the project containing the webapp deployed into jetty and select *Debug -> Debug Configurations* and create a new configuration of **Remote Java Application**.
 Make sure the port you choose is the same as the one you added in xref:enable-remote-debugging[].
 +
-image:images/debug-eclipse-1.png[image,width=576]
+image:debugging/images/debug-eclipse-1.png[image,width=576]
 
 2.  Next in your webapp you can set a breakpoint within a servlet which when it is tripped will halt the remote jvm's processing thread to await for debugging commands from your Eclipse instance.
 +
-image:images/debug-eclipse-2.png[image,width=576]
+image:debugging/images/debug-eclipse-2.png[image,width=576]
 
 3.  Accessing that servlet within your browser, pointed at your remote debug configurated jetty-distribution, should transition your Eclipse instance to the standard Debug view.
 +
-image:images/debug-eclipse-3.png[image,width=576]
+image:debugging/images/debug-eclipse-3.png[image,width=576]
 
 [[eclipse-within-eclipse]]
 ==== Within Eclipse

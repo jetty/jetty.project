@@ -19,13 +19,13 @@
 [[basic-architecture]]
 === Jetty Architecture
 
-==== View from 20,000 feet 
+==== View from 20,000 feet
 
 The Jetty link:{JDURL}/org/eclipse/jetty/server/Server.html[Server] is the plumbing between
 a collection of `Connector`s that accept connections and a collection of `Handler`s that
 service requests from the connections and produce responses, with threads from a thread pool doing the work.
 
-image:images/jetty-high-level-architecture.png[image,width=576]
+image:architecture/images/jetty-high-level-architecture.png[image,width=576]
 
 While the Jetty request/responses are derived from the Servlet API, the full features of the Servlet API
 are only available if you configure the appropriate handlers.
@@ -45,12 +45,12 @@ and configuration of components by a variety of techniques:
 
 ==== Patterns
 
-The implementation of Jetty follows some fairly standard patterns. 
+The implementation of Jetty follows some fairly standard patterns.
 Most abstract concepts such as `Connector`s and `Handler`s are captured by interfaces.
 Generic handling for those interfaces is then provided in an abstract implementation
 such as `AbstractConnector` and `AbstractHandler`.
 
-image:images/basic-architecture-patterns.png[image,width=576]
+image:architecture/images/basic-architecture-patterns.png[image,width=576]
 
 The JSR77 inspired life cycle of most Jetty components is represented by the `LifeCycle`
 interface and the `AbstractLifeCycle` implementation used as the base of many Jetty components.
@@ -90,7 +90,7 @@ therefore using Jetty as a generic network server.
 A `Handler` is the component that deals with HTTP requests and responses.
 The core API of a handler is the handle method:
 
-image:images/basic-architecture-handlers.png[image,width=576]
+image:architecture/images/basic-architecture-handlers.png[image,width=576]
 
 [source, java, subs="{sub-order}"]
 ----
@@ -119,13 +119,13 @@ This gives three styles of Handler:
 You can combine handlers to handle different aspects of a request by nesting them,
 calling them in sequence, or by combining the two models.
 
-image:images/basic-architecture-nested-handlers.png[image,width=576]
+image:architecture/images/basic-architecture-nested-handlers.png[image,width=576]
 
-Handlers called in sequence perform actions that do not depend on the next invocation, nor on the handler order. 
-They handle a request and generate the response without interacting with other handlers. 
+Handlers called in sequence perform actions that do not depend on the next invocation, nor on the handler order.
+They handle a request and generate the response without interacting with other handlers.
 The main class for this model is `HandlerCollection`.
 
-Nested handlers are called according to a before/invokeNext/after pattern. 
+Nested handlers are called according to a before/invokeNext/after pattern.
 The main class for nested handlers is `HandlerWrapper`.
 Nested handlers are much more common than those called in sequence.
 
@@ -136,7 +136,7 @@ See also xref:writing-custom-handlers[].
 The `ServletHandler` is a `Handler` that generates content by passing the request to any
 configured Servlet Filters and then to a Servlet mapped by a URI pattern.
 
-image:images/basic-architecture-servlet-handler.png[image,width=576]
+image:architecture/images/basic-architecture-servlet-handler.png[image,width=576]
 
 A `ServletHandler` is normally deployed within the scope of a `ServletContext`, which is a
 `ContextHandler` that provides convenience methods for mapping URIs to servlets.
@@ -170,7 +170,7 @@ A `WebAppContext` is a derivation of `ServletContextHandler` that supports the s
 of a web application and configuration of session, security, listeners, filter, servlets, and JSP
 via a `web.xml` descriptor normally found in the `/WEB-INF` directory of a web application.
 
-image:images/basic-architecture-web-application.png[image,width=576]
+image:architecture/images/basic-architecture-web-application.png[image,width=576]
 
 Essentially `WebAppContext` is a convenience class that assists the construction and configuration
 of other handlers to achieve a standard web application configuration.
