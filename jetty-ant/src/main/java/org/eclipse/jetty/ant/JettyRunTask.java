@@ -19,7 +19,6 @@
 package org.eclipse.jetty.ant;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -48,7 +47,7 @@ public class JettyRunTask extends Task
     private File tempDirectory;
 
     /** List of web applications to be deployed. */
-    private List<AntWebAppContext> webapps = new ArrayList<AntWebAppContext>();
+    private List<AntWebAppContext> webapps = new ArrayList<>();
 
     /** Location of jetty.xml file. */
     private File jettyXml;
