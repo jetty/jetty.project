@@ -20,12 +20,14 @@ package org.eclipse.jetty.client;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.Authentication.HeaderInfo;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -35,6 +37,8 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -42,8 +46,10 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
-    private static final Pattern AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s(.*,\\s*)?realm=\"([^\"]*)\"\\s*,?\\s*(.*)", Pattern.CASE_INSENSITIVE);
 
+    private static final Pattern PARAM_PATTERN = Pattern.compile("([^=]+)=(.*)");
+    private static final Pattern TYPE_PATTERN = Pattern.compile("([^\\s]+)\\s+(.*)");
+    
     private final HttpClient client;
     private final int maxContentLength;
     private final ResponseNotifier notifier;
@@ -73,6 +79,43 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     {
         // Return new instances every time to keep track of the response content
         return new AuthenticationListener();
+    }
+    
+
+    protected HeaderInfo newHeaderInfo(String value) throws IllegalArgumentException
+    {
+        String type;
+        Map<String,String> params;
+        
+        Matcher m = TYPE_PATTERN.matcher(value);
+        if (m.matches())
+        {
+            type = m.group(1);
+            params = parseParameters(m.group(2));
+        }
+        else
+        {
+            throw new IllegalArgumentException("Invalid Authentication Format");
+        }
+        
+        return new HeaderInfo(getAuthorizationHeader(), type, params);
+    }
+    
+    protected Map<String, String> parseParameters(String wwwAuthenticate)
+    {
+        Map<String, String> result = new HashMap<>();
+        QuotedCSV parts = new QuotedCSV(false, wwwAuthenticate);
+        for (String part : parts)
+        {
+            Matcher matcher = PARAM_PATTERN.matcher(part);
+            if (matcher.matches())
+            {
+                String name = StringUtil.asciiToLowerCase(matcher.group(1));
+                String value = matcher.group(2);
+                result.put(name, value);
+            }
+        }
+        return result;
     }
 
     private class AuthenticationListener extends BufferingResponseListener
@@ -234,22 +277,18 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         {
             // TODO: these should be ordered by strength
             List<Authentication.HeaderInfo> result = new ArrayList<>();
-            List<String> values = Collections.list(response.getHeaders().getValues(header.asString()));
+            List<String> values = response.getHeaders().getValuesList(header);
             for (String value : values)
             {
-                Matcher matcher = AUTHENTICATE_PATTERN.matcher(value);
-                if (matcher.matches())
+                try
                 {
-                    String type = matcher.group(1);
-                    String realm = matcher.group(3);
-                    String params;
-                    if(matcher.group(2) != null)
-                        params = matcher.group(2) + matcher.group(4);
-                    else
-                        params = matcher.group(4);
-
-                    Authentication.HeaderInfo headerInfo = new Authentication.HeaderInfo(type, realm, params, getAuthorizationHeader());
+                    Authentication.HeaderInfo headerInfo = newHeaderInfo(value);
                     result.add(headerInfo);
+                }
+                catch(IllegalArgumentException e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Failed to parse authentication header", e);
                 }
             }
             return result;

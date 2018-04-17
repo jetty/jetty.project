@@ -19,9 +19,11 @@
 package org.eclipse.jetty.client.api;
 
 import java.net.URI;
+import java.util.Map;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * {@link Authentication} represents a mechanism to authenticate requests for protected resources.
@@ -76,19 +78,18 @@ public interface Authentication
      */
     public static class HeaderInfo
     {
-        private final String type;
-        private final String realm;
-        private final String params;
         private final HttpHeader header;
+        private final String type;
+        private final Map<String,String> params;
 
-        public HeaderInfo(String type, String realm, String params, HttpHeader header)
+        
+        public HeaderInfo(HttpHeader header, String type, Map<String,String> params) throws IllegalArgumentException
         {
-            this.type = type;
-            this.realm = realm;
-            this.params = params;
             this.header = header;
+            this.type = type;
+            this.params = params;
         }
-
+        
         /**
          * @return the authentication type (for example "Basic" or "Digest")
          */
@@ -98,19 +99,27 @@ public interface Authentication
         }
 
         /**
-         * @return the realm name
+         * @return the realm name or null if there is no realm parameter
          */
         public String getRealm()
         {
-            return realm;
+            return params.get("realm");
         }
 
         /**
          * @return additional authentication parameters
          */
-        public String getParameters()
+        public Map<String, String> getParameters()
         {
             return params;
+        }
+        
+        /**
+         * @return specified authentication parameter or null if does not exist
+         */
+        public String getParameter(String paramName)
+        {
+            return params.get(StringUtil.asciiToLowerCase(paramName));
         }
 
         /**

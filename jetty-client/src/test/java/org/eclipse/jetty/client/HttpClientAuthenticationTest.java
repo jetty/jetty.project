@@ -43,6 +43,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.api.Authentication.HeaderInfo;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.DigestAuthentication;
@@ -612,5 +613,35 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 }
             };
         }
+    }
+    
+    @Test
+    public void testParamOrdering() {
+        AuthenticationProtocolHandler aph = new WWWAuthenticationProtocolHandler(client);
+        
+        HeaderInfo headerInfo = aph.newHeaderInfo("Digest realm=\"thermostat\", qop=\"auth\", nonce=\"1523430383\"");
+        Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
+        Assert.assertTrue(headerInfo.getParameter("qop").equals("auth"));
+        Assert.assertTrue(headerInfo.getParameter("realm").equals("thermostat"));
+        Assert.assertTrue(headerInfo.getParameter("nonce").equals("1523430383"));
+        
+        headerInfo = aph.newHeaderInfo("Digest qop=\"auth\", realm=\"thermostat\", nonce=\"1523430383\"");
+        Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
+        Assert.assertTrue(headerInfo.getParameter("qop").equals("auth"));
+        Assert.assertTrue(headerInfo.getParameter("realm").equals("thermostat"));
+        Assert.assertTrue(headerInfo.getParameter("nonce").equals("1523430383"));
+        
+        headerInfo = aph.newHeaderInfo("Digest qop=\"auth\", nonce=\"1523430383\", realm=\"thermostat\"");
+        Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
+        Assert.assertTrue(headerInfo.getParameter("qop").equals("auth"));
+        Assert.assertTrue(headerInfo.getParameter("realm").equals("thermostat"));
+        Assert.assertTrue(headerInfo.getParameter("nonce").equals("1523430383"));
+        
+        headerInfo = aph.newHeaderInfo("Digest qop=\"auth\", nonce=\"1523430383\"");
+        Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
+        Assert.assertTrue(headerInfo.getParameter("qop").equals("auth"));
+        Assert.assertTrue(headerInfo.getParameter("realm") == null);
+        Assert.assertTrue(headerInfo.getParameter("nonce").equals("1523430383"));
+        
     }
 }
