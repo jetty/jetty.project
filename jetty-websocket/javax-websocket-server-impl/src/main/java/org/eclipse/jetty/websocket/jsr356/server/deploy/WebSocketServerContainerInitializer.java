@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.deploy;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Set;
 

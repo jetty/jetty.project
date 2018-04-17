@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.jaas.spi;
 
-import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Map;

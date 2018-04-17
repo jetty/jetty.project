@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 
 import javax.servlet.ServletContext;

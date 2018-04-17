@@ -285,10 +285,6 @@ public class PackageAdminServiceTracker implements ServiceListener
                     _activatedFragments.add(bActivator);
                 }
             }
-            catch (NullPointerException | InstantiationException | IllegalAccessException | ClassNotFoundException e)
-            {
-                // e.printStackTrace();
-            }
             catch (Exception e)
             {
                 e.printStackTrace();

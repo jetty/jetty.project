@@ -25,8 +25,6 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
-import java.lang.reflect.InvocationTargetException;
-
 public class WebSocketExtensionFactory extends ExtensionFactory
 {
     private WebSocketContainerScope container;

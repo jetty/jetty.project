@@ -1284,6 +1284,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      * @throws ServletException if unable to create a new instance
      * @throws IllegalAccessException if not allowed to create a new instance
      * @throws InstantiationException if creating new instance resulted in error
+     * @throws NoSuchMethodException if creating new instance resulted in error
+     * @throws InvocationTargetException If creating new instance throws an exception
      */
     protected Servlet newInstance() throws ServletException, IllegalAccessException, InstantiationException,
         NoSuchMethodException, InvocationTargetException
@@ -1302,6 +1304,10 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 throw (InstantiationException)cause;
             if (cause instanceof IllegalAccessException)
                 throw (IllegalAccessException)cause;
+            if (cause instanceof NoSuchMethodException)
+                throw (NoSuchMethodException)cause;
+            if (cause instanceof InvocationTargetException)
+                throw (InvocationTargetException)cause;
             throw se;
         }
     }

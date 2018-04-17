@@ -19,7 +19,6 @@
 package org.eclipse.jetty.jaas;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;

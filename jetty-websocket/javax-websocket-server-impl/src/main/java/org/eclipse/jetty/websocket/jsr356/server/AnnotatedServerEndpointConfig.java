@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

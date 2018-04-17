@@ -150,14 +150,15 @@ public class JettyRunTask extends Task
         {
             this.requestLog = (RequestLog) Class.forName(className).getDeclaredConstructor().newInstance();
         }
-        catch (InstantiationException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
-        {
-            throw new BuildException("Request logger instantiation exception: " + e);
-        }
         catch (ClassNotFoundException e)
         {
             throw new BuildException("Unknown request logger class: " + className);
         }
+        catch (Exception e)
+        {
+            throw new BuildException("Request logger instantiation exception: " + e);
+        }
+
     }
 
     public String getRequestLog()

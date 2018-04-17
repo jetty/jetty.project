@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
