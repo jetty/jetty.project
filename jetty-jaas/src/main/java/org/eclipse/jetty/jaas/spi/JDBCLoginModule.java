@@ -105,17 +105,9 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
                 dbPassword = "";
 
             if (dbDriver != null)
-                Loader.loadClass(dbDriver).newInstance();
+                Loader.loadClass(dbDriver).getDeclaredConstructor().newInstance();
         }
-        catch (ClassNotFoundException e)
-        {
-            throw new IllegalStateException (e.toString());
-        }
-        catch (InstantiationException e)
-        {
-            throw new IllegalStateException (e.toString());
-        }
-        catch (IllegalAccessException e)
+        catch (Exception e)
         {
             throw new IllegalStateException (e.toString());
         }

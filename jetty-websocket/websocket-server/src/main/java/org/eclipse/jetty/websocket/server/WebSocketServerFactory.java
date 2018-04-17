@@ -294,7 +294,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             return objectFactory.createInstance(firstClass);
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (Exception e)
         {
             throw new WebSocketException("Unable to create instance of " + firstClass, e);
         }

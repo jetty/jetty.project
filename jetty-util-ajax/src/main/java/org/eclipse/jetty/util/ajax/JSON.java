@@ -709,7 +709,7 @@ public class JSON
         {
             try
             {
-                Convertible conv = (Convertible)type.newInstance();
+                Convertible conv = (Convertible)type.getDeclaredConstructor().newInstance();
                 conv.fromJSON(map);
                 return conv;
             }

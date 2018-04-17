@@ -47,7 +47,7 @@ public class JettyRunTask extends Task
     private File tempDirectory;
 
     /** List of web applications to be deployed. */
-    private List<AntWebAppContext> webapps = new ArrayList<AntWebAppContext>();
+    private List<AntWebAppContext> webapps = new ArrayList<>();
 
     /** Location of jetty.xml file. */
     private File jettyXml;
@@ -147,20 +147,17 @@ public class JettyRunTask extends Task
     {
         try
         {
-            this.requestLog = (RequestLog) Class.forName(className).newInstance();
-        }
-        catch (InstantiationException e)
-        {
-            throw new BuildException("Request logger instantiation exception: " + e);
-        }
-        catch (IllegalAccessException e)
-        {
-            throw new BuildException("Request logger instantiation exception: " + e);
+            this.requestLog = (RequestLog) Class.forName(className).getDeclaredConstructor().newInstance();
         }
         catch (ClassNotFoundException e)
         {
             throw new BuildException("Unknown request logger class: " + className);
         }
+        catch (Exception e)
+        {
+            throw new BuildException("Request logger instantiation exception: " + e);
+        }
+
     }
 
     public String getRequestLog()

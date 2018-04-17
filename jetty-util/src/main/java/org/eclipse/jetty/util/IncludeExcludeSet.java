@@ -77,8 +77,8 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
     {
         try
         {
-            _includes = setClass.newInstance();
-            _excludes = setClass.newInstance();
+            _includes = setClass.getDeclaredConstructor().newInstance();
+            _excludes = setClass.getDeclaredConstructor().newInstance();
             
             if(_includes instanceof Predicate) 
             {
@@ -98,7 +98,11 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
                 _excludePredicate = new SetContainsPredicate(_excludes);
             }
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }

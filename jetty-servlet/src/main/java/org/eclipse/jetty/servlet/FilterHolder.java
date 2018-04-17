@@ -120,7 +120,7 @@ public class FilterHolder extends Holder<Filter>
                     ServletContext context=_servletHandler.getServletContext();
                     _filter=(context instanceof ServletContextHandler.Context)
                             ?((ServletContextHandler.Context)context).createFilter(getHeldClass())
-                            :getHeldClass().newInstance();
+                            :getHeldClass().getDeclaredConstructor().newInstance();
                 }
                 catch (ServletException se)
                 {
