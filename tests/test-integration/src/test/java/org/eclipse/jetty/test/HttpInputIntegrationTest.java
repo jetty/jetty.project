@@ -329,7 +329,7 @@ public class HttpInputIntegrationTest
     {
         System.err.printf("[%d] TEST   c=%s, m=%s, delayDispatch=%b delayInFrame=%s content-length:%d expect=%d read=%d content:%s%n",_id,_client.getSimpleName(),_mode,__config.isDelayDispatchUntilContent(),_delay,_length,_status,_read,_send);
 
-        TestClient client=_client.newInstance();
+        TestClient client=_client.getDeclaredConstructor().newInstance();
         String response = client.send("/ctx/test?mode="+_mode,50,_delay,_length,_send);
         
         int sum=0;
@@ -368,7 +368,7 @@ public class HttpInputIntegrationTest
             {
                 try
                 {
-                    TestClient client=_client.newInstance();
+                    TestClient client=_client.getDeclaredConstructor().newInstance();
                     for (int j=0;j<loops;j++)
                     {
                         String response = client.send("/ctx/test?mode="+_mode,10,_delay,_length,_send);
