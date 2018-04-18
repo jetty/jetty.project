@@ -31,15 +31,19 @@ import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 import javax.servlet.ServletRequest;
 
+import org.eclipse.jetty.jaas.callback.ServletRequestCallback;
+import org.eclipse.jetty.jaas.callback.DefaultCallbackHandler;
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.jaas.callback.RequestParameterCallback;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
@@ -69,11 +73,10 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     protected String _loginModuleName;
     protected JAASUserPrincipal _defaultUser = new JAASUserPrincipal(null, null, null);
     protected IdentityService _identityService;
+    protected Configuration _configuration;
 
 
-    /**
-     *
-     */
+
     public JAASLoginService()
     {
     }
@@ -117,7 +120,28 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     }
 
 
-    /** Get the identityService.
+    /**
+     * @return the configuration
+     */
+    public Configuration getConfiguration()
+    {
+        return _configuration;
+    }
+
+
+
+    /**
+     * @param configuration the configuration to set
+     */
+    public void setConfiguration(Configuration configuration)
+    {
+        _configuration = configuration;
+    }
+
+
+
+    /** 
+     * Get the identityService.
      * @return the identityService
      */
     @Override
@@ -127,7 +151,8 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     }
 
 
-    /** Set the identityService.
+    /** 
+     * Set the identityService.
      * @param identityService the identityService to set
      */
     @Override
@@ -189,8 +214,6 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         try
         {
             CallbackHandler callbackHandler = null;
-
-
             if (_callbackHandlerClass == null)
             {
                 callbackHandler = new CallbackHandler()
@@ -218,6 +241,10 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                                 if (request!=null)
                                     rpc.setParameterValues(Arrays.asList(request.getParameterValues(rpc.getParameterName())));
                             }
+                            else if (callback instanceof ServletRequestCallback)
+                            {
+                                ((ServletRequestCallback)callback).setRequest(request);
+                            }
                             else
                                 throw new UnsupportedCallbackException(callback);
                         }
@@ -228,11 +255,20 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
             {
                 Class<?> clazz = Loader.loadClass(_callbackHandlerClass);
                 callbackHandler = (CallbackHandler)clazz.newInstance();
+                if (DefaultCallbackHandler.class.isAssignableFrom(clazz))
+                {
+                    DefaultCallbackHandler dch = (DefaultCallbackHandler)callbackHandler;
+                    if  (request instanceof Request)
+                        dch.setRequest((Request)request);
+                    dch.setCredential(credentials);
+                    dch.setUserName(username);
+                }
             }
+            
             //set up the login context
-            //TODO jaspi requires we provide the Configuration parameter
             Subject subject = new Subject();
-            LoginContext loginContext = new LoginContext(_loginModuleName, subject, callbackHandler);
+            LoginContext loginContext = (_configuration==null?new LoginContext(_loginModuleName, subject, callbackHandler)
+                                                              :new LoginContext(_loginModuleName, subject, callbackHandler, _configuration));
 
             loginContext.login();
 
