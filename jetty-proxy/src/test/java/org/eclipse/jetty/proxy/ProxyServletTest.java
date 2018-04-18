@@ -126,7 +126,7 @@ public class ProxyServletTest
 
     public ProxyServletTest(Class<?> proxyServletClass) throws Exception
     {
-        this.proxyServlet = (AbstractProxyServlet)proxyServletClass.newInstance();
+        this.proxyServlet = (AbstractProxyServlet)proxyServletClass.getDeclaredConstructor().newInstance();
     }
 
     private void startServer(HttpServlet servlet) throws Exception

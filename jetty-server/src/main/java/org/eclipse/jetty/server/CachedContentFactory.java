@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
@@ -50,15 +49,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
-/**
- * Caching HttpContent.Factory
- */
 public class CachedContentFactory implements HttpContent.ContentFactory
 {
     private static final Logger LOG = Log.getLogger(CachedContentFactory.class);
     private final static Map<CompressedContentFormat, CachedPrecompressedHttpContent> NO_PRECOMPRESSED = Collections.unmodifiableMap(Collections.emptyMap());
 
-    private final ConcurrentMap<String,CachedHttpContent> _cache;
+    private final ConcurrentMap<String, CachedHttpContent> _cache;
     private final AtomicInteger _cachedSize;
     private final AtomicInteger _cachedFiles;
     private final ResourceFactory _factory;
@@ -66,84 +62,77 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     private final MimeTypes _mimeTypes;
     private final boolean _etags;
     private final CompressedContentFormat[] _precompressedFormats;
-    private final boolean  _useFileMappedBuffer;
-    
-    private int _maxCachedFileSize = 128*1024*1024;
-    private int _maxCachedFiles= 2048;
-    private int _maxCacheSize = 256*1024*1024;
-    
-    /* ------------------------------------------------------------ */
-    /** Constructor.
-     * @param parent the parent resource cache
-     * @param factory the resource factory
-     * @param mimeTypes Mimetype to use for meta data
-     * @param useFileMappedBuffer true to file memory mapped buffers
-     * @param etags true to support etags 
+    private final boolean _useFileMappedBuffer;
+
+    private int _maxCachedFileSize = 128 * 1024 * 1024;
+    private int _maxCachedFiles = 2048;
+    private int _maxCacheSize = 256 * 1024 * 1024;
+
+    /**
+     * Constructor.
+     *
+     * @param parent               the parent resource cache
+     * @param factory              the resource factory
+     * @param mimeTypes            Mimetype to use for meta data
+     * @param useFileMappedBuffer  true to file memory mapped buffers
+     * @param etags                true to support etags
      * @param precompressedFormats array of precompression formats to support
      */
-    public CachedContentFactory(CachedContentFactory parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer,boolean etags,CompressedContentFormat[] precompressedFormats)
+    public CachedContentFactory(CachedContentFactory parent, ResourceFactory factory, MimeTypes mimeTypes, boolean useFileMappedBuffer, boolean etags, CompressedContentFormat[] precompressedFormats)
     {
         _factory = factory;
-        _cache=new ConcurrentHashMap<String,CachedHttpContent>();
-        _cachedSize=new AtomicInteger();
-        _cachedFiles=new AtomicInteger();
-        _mimeTypes=mimeTypes;
-        _parent=parent;
-        _useFileMappedBuffer=useFileMappedBuffer;
-        _etags=etags;
-        _precompressedFormats=precompressedFormats;
+        _cache = new ConcurrentHashMap<>();
+        _cachedSize = new AtomicInteger();
+        _cachedFiles = new AtomicInteger();
+        _mimeTypes = mimeTypes;
+        _parent = parent;
+        _useFileMappedBuffer = useFileMappedBuffer;
+        _etags = etags;
+        _precompressedFormats = precompressedFormats;
     }
 
-    /* ------------------------------------------------------------ */
     public int getCachedSize()
     {
         return _cachedSize.get();
     }
-    
-    /* ------------------------------------------------------------ */
+
     public int getCachedFiles()
     {
         return _cachedFiles.get();
     }
-    
-    /* ------------------------------------------------------------ */
+
     public int getMaxCachedFileSize()
     {
         return _maxCachedFileSize;
     }
 
-    /* ------------------------------------------------------------ */
     public void setMaxCachedFileSize(int maxCachedFileSize)
     {
         _maxCachedFileSize = maxCachedFileSize;
         shrinkCache();
     }
 
-    /* ------------------------------------------------------------ */
     public int getMaxCacheSize()
     {
         return _maxCacheSize;
     }
 
-    /* ------------------------------------------------------------ */
     public void setMaxCacheSize(int maxCacheSize)
     {
         _maxCacheSize = maxCacheSize;
         shrinkCache();
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return Returns the maxCachedFiles.
+     * @return the max number of cached files.
      */
     public int getMaxCachedFiles()
     {
         return _maxCachedFiles;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
-     * @param maxCachedFiles The maxCachedFiles to set.
+     * @param maxCachedFiles the max number of cached files.
      */
     public void setMaxCachedFiles(int maxCachedFiles)
     {
@@ -151,106 +140,94 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         shrinkCache();
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isUseFileMappedBuffer()
     {
         return _useFileMappedBuffer;
     }
 
-    /* ------------------------------------------------------------ */
     public void flushCache()
     {
-        if (_cache!=null)
+        while (_cache.size() > 0)
         {
-            while (_cache.size()>0)
+            for (String path : _cache.keySet())
             {
-                for (String path : _cache.keySet())
-                {
-                    CachedHttpContent content = _cache.remove(path);
-                    if (content!=null)
-                        content.invalidate();
-                }
+                CachedHttpContent content = _cache.remove(path);
+                if (content != null)
+                    content.invalidate();
             }
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
-    public HttpContent lookup(String pathInContext)
-        throws IOException
+    public HttpContent lookup(String pathInContext) throws IOException
     {
-        return getContent(pathInContext,_maxCachedFileSize);
+        return getContent(pathInContext, _maxCachedFileSize);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get a Entry from the cache.
-     * Get either a valid entry object or create a new one if possible.
+    /**
+     * <p>Returns an entry from the cache, or creates a new one.</p>
      *
      * @param pathInContext The key into the cache
-     * @param maxBufferSize The maximum buffer to allocated for this request.  For cached content, a larger buffer may have
-     * previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
-     * @return The entry matching <code>pathInContext</code>, or a new entry 
-     * if no matching entry was found. If the content exists but is not cachable, 
-     * then a {@link ResourceHttpContent} instance is return. If 
+     * @param maxBufferSize The maximum buffer size allocated for this request.  For cached content, a larger buffer may have
+     *                      previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
+     * @return The entry matching {@code pathInContext}, or a new entry
+     * if no matching entry was found. If the content exists but is not cacheable,
+     * then a {@link ResourceHttpContent} instance is returned. If
      * the resource does not exist, then null is returned.
-     * @throws IOException Problem loading the resource
+     * @throws IOException if the resource cannot be retrieved
      */
     @Override
-    public HttpContent getContent(String pathInContext,int maxBufferSize)
-        throws IOException
+    public HttpContent getContent(String pathInContext, int maxBufferSize) throws IOException
     {
         // Is the content in this cache?
-        CachedHttpContent content =_cache.get(pathInContext);
-        if (content!=null && (content).isValid())
+        CachedHttpContent content = _cache.get(pathInContext);
+        if (content != null && (content).isValid())
             return content;
-       
+
         // try loading the content from our factory.
-        Resource resource=_factory.getResource(pathInContext);
-        HttpContent loaded = load(pathInContext,resource,maxBufferSize);
-        if (loaded!=null)
+        Resource resource = _factory.getResource(pathInContext);
+        HttpContent loaded = load(pathInContext, resource, maxBufferSize);
+        if (loaded != null)
             return loaded;
-        
+
         // Is the content in the parent cache?
-        if (_parent!=null)
+        if (_parent != null)
         {
-            HttpContent httpContent=_parent.getContent(pathInContext,maxBufferSize);
-            if (httpContent!=null)
+            HttpContent httpContent = _parent.getContent(pathInContext, maxBufferSize);
+            if (httpContent != null)
                 return httpContent;
         }
-        
+
         return null;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param resource the resource to test
-     * @return True if the resource is cacheable. The default implementation tests the cache sizes.
+     * @return whether the resource is cacheable. The default implementation tests the cache sizes.
      */
     protected boolean isCacheable(Resource resource)
     {
-        if (_maxCachedFiles<=0)
+        if (_maxCachedFiles <= 0)
             return false;
-        
+
         long len = resource.length();
 
         // Will it fit in the cache?
-        return  (len>0 && (_useFileMappedBuffer || (len<_maxCachedFileSize && len<_maxCacheSize)));
+        return (len > 0 && (_useFileMappedBuffer || (len < _maxCachedFileSize && len < _maxCacheSize)));
     }
-    
-    /* ------------------------------------------------------------ */
+
     private HttpContent load(String pathInContext, Resource resource, int maxBufferSize)
-        throws IOException
     {
         if (resource == null || !resource.exists())
             return null;
 
         if (resource.isDirectory())
-            return new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize());
+            return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(resource.toString()), getMaxCachedFileSize());
 
         // Will it fit in the cache?
         if (isCacheable(resource))
         {
-            CachedHttpContent content = null;
+            CachedHttpContent content;
 
             // Look for precompressed resources
             if (_precompressedFormats.length > 0)
@@ -267,8 +244,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                         if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
                                 && compressedResource.length() < resource.length())
                         {
-                            compressedContent = new CachedHttpContent(compressedPathInContext,compressedResource,null);
-                            CachedHttpContent added = _cache.putIfAbsent(compressedPathInContext,compressedContent);
+                            compressedContent = new CachedHttpContent(compressedPathInContext, compressedResource, null);
+                            CachedHttpContent added = _cache.putIfAbsent(compressedPathInContext, compressedContent);
                             if (added != null)
                             {
                                 compressedContent.invalidate();
@@ -277,15 +254,15 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                         }
                     }
                     if (compressedContent != null)
-                        precompresssedContents.put(format,compressedContent);
+                        precompresssedContents.put(format, compressedContent);
                 }
-                content = new CachedHttpContent(pathInContext,resource,precompresssedContents);
+                content = new CachedHttpContent(pathInContext, resource, precompresssedContents);
             }
             else
-                content = new CachedHttpContent(pathInContext,resource,null);
+                content = new CachedHttpContent(pathInContext, resource, null);
 
             // Add it to the cache.
-            CachedHttpContent added = _cache.putIfAbsent(pathInContext,content);
+            CachedHttpContent added = _cache.putIfAbsent(pathInContext, content);
             if (added != null)
             {
                 content.invalidate();
@@ -306,167 +283,154 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 String compressedPathInContext = pathInContext + format._extension;
                 CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
                 if (compressedContent != null && compressedContent.isValid() && compressedContent.getResource().lastModified() >= resource.lastModified())
-                    compressedContents.put(format,compressedContent);
+                    compressedContents.put(format, compressedContent);
 
                 // Is there a precompressed resource?
                 Resource compressedResource = _factory.getResource(compressedPathInContext);
                 if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
                         && compressedResource.length() < resource.length())
                     compressedContents.put(format,
-                            new ResourceHttpContent(compressedResource,_mimeTypes.getMimeByExtension(compressedPathInContext),maxBufferSize));
+                            new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
             }
             if (!compressedContents.isEmpty())
-                return new ResourceHttpContent(resource,mt,maxBufferSize,compressedContents);
+                return new ResourceHttpContent(resource, mt, maxBufferSize, compressedContents);
         }
 
-        return new ResourceHttpContent(resource,mt,maxBufferSize);
+        return new ResourceHttpContent(resource, mt, maxBufferSize);
     }
-    
-    /* ------------------------------------------------------------ */
+
     private void shrinkCache()
     {
         // While we need to shrink
-        while (_cache.size()>0 && (_cachedFiles.get()>_maxCachedFiles || _cachedSize.get()>_maxCacheSize))
+        while (_cache.size() > 0 && (_cachedFiles.get() > _maxCachedFiles || _cachedSize.get() > _maxCacheSize))
         {
             // Scan the entire cache and generate an ordered list by last accessed time.
-            SortedSet<CachedHttpContent> sorted= new TreeSet<CachedHttpContent>(
-                    new Comparator<CachedHttpContent>()
-                    {
-                        @Override
-                        public int compare(CachedHttpContent c1, CachedHttpContent c2)
-                        {
-                            if (c1._lastAccessed<c2._lastAccessed)
-                                return -1;
-                            
-                            if (c1._lastAccessed>c2._lastAccessed)
-                                return 1;
+            SortedSet<CachedHttpContent> sorted = new TreeSet<>((c1, c2) ->
+            {
+                if (c1._lastAccessed < c2._lastAccessed)
+                    return -1;
 
-                            if (c1._contentLengthValue<c2._contentLengthValue)
-                                return -1;
-                            
-                            return c1._key.compareTo(c2._key);
-                        }
-                    });
-            for (CachedHttpContent content : _cache.values())
-                sorted.add(content);
-            
+                if (c1._lastAccessed > c2._lastAccessed)
+                    return 1;
+
+                if (c1._contentLengthValue < c2._contentLengthValue)
+                    return -1;
+
+                return c1._key.compareTo(c2._key);
+            });
+            sorted.addAll(_cache.values());
+
             // Invalidate least recently used first
             for (CachedHttpContent content : sorted)
             {
-                if (_cachedFiles.get()<=_maxCachedFiles && _cachedSize.get()<=_maxCacheSize)
+                if (_cachedFiles.get() <= _maxCachedFiles && _cachedSize.get() <= _maxCacheSize)
                     break;
-                if (content==_cache.remove(content.getKey()))
+                if (content == _cache.remove(content.getKey()))
                     content.invalidate();
             }
         }
     }
-    
-    /* ------------------------------------------------------------ */
+
     protected ByteBuffer getIndirectBuffer(Resource resource)
     {
         try
         {
-            return BufferUtil.toBuffer(resource,true);
+            return BufferUtil.toBuffer(resource, true);
         }
-        catch(IOException|IllegalArgumentException e)
+        catch (IOException | IllegalArgumentException e)
         {
             LOG.warn(e);
             return null;
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected ByteBuffer getMappedBuffer(Resource resource)
     {
         // Only use file mapped buffers for cached resources, otherwise too much virtual memory commitment for
         // a non shared resource.  Also ignore max buffer size
         try
         {
-            if (_useFileMappedBuffer && resource.getFile()!=null && resource.length()<Integer.MAX_VALUE) 
-                return BufferUtil.toMappedBuffer(resource.getFile());            
+            if (_useFileMappedBuffer && resource.getFile() != null && resource.length() < Integer.MAX_VALUE)
+                return BufferUtil.toMappedBuffer(resource.getFile());
         }
-        catch(IOException|IllegalArgumentException e)
+        catch (IOException | IllegalArgumentException e)
         {
             LOG.warn(e);
         }
         return null;
     }
-    
-    /* ------------------------------------------------------------ */
+
     protected ByteBuffer getDirectBuffer(Resource resource)
     {
         try
         {
-            return BufferUtil.toBuffer(resource,true);
+            return BufferUtil.toBuffer(resource, true);
         }
-        catch(IOException|IllegalArgumentException e)
+        catch (IOException | IllegalArgumentException e)
         {
             LOG.warn(e);
         }
         return null;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
-        return "ResourceCache["+_parent+","+_factory+"]@"+hashCode();
+        return "ResourceCache[" + _parent + "," + _factory + "]@" + hashCode();
     }
-    
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /** MetaData associated with a context Resource.
+
+    /**
+     * MetaData associated with a context Resource.
      */
     public class CachedHttpContent implements HttpContent
     {
-        final String _key;
-        final Resource _resource;
-        final int _contentLengthValue;
-        final HttpField _contentType;
-        final String _characterEncoding;
-        final MimeTypes.Type _mimeType;
-        final HttpField _contentLength;
-        final HttpField _lastModified;
-        final long _lastModifiedValue;
-        final HttpField _etag;
-        final Map<CompressedContentFormat, CachedPrecompressedHttpContent> _precompressed;
-        
-        volatile long _lastAccessed;
-        AtomicReference<ByteBuffer> _indirectBuffer=new AtomicReference<ByteBuffer>();
-        AtomicReference<ByteBuffer> _directBuffer=new AtomicReference<ByteBuffer>();
+        private final String _key;
+        private final Resource _resource;
+        private final int _contentLengthValue;
+        private final HttpField _contentType;
+        private final String _characterEncoding;
+        private final MimeTypes.Type _mimeType;
+        private final HttpField _contentLength;
+        private final HttpField _lastModified;
+        private final long _lastModifiedValue;
+        private final HttpField _etag;
+        private final Map<CompressedContentFormat, CachedPrecompressedHttpContent> _precompressed;
+        private final AtomicReference<ByteBuffer> _indirectBuffer = new AtomicReference<>();
+        private final AtomicReference<ByteBuffer> _directBuffer = new AtomicReference<>();
+        private final AtomicReference<ByteBuffer> _mappedBuffer = new AtomicReference<>();
+        private volatile long _lastAccessed;
 
-        /* ------------------------------------------------------------ */
-        CachedHttpContent(String pathInContext,Resource resource,Map<CompressedContentFormat, CachedHttpContent> precompressedResources)
+        CachedHttpContent(String pathInContext, Resource resource, Map<CompressedContentFormat, CachedHttpContent> precompressedResources)
         {
-            _key=pathInContext;
-            _resource=resource;
+            _key = pathInContext;
+            _resource = resource;
 
             String contentType = _mimeTypes.getMimeByExtension(_resource.toString());
-            _contentType=contentType==null?null:new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,contentType);
-            _characterEncoding = _contentType==null?null:MimeTypes.getCharsetFromContentType(contentType);
-            _mimeType = _contentType==null?null:MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
-            
-            boolean exists=resource.exists();
-            _lastModifiedValue=exists?resource.lastModified():-1L;
-            _lastModified=_lastModifiedValue==-1?null
-                :new PreEncodedHttpField(HttpHeader.LAST_MODIFIED,DateGenerator.formatDate(_lastModifiedValue));
-            
-            _contentLengthValue=exists?(int)resource.length():0;
-            _contentLength=new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH,Long.toString(_contentLengthValue));
-            
-            if (_cachedFiles.incrementAndGet()>_maxCachedFiles)
+            _contentType = contentType == null ? null : new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, contentType);
+            _characterEncoding = _contentType == null ? null : MimeTypes.getCharsetFromContentType(contentType);
+            _mimeType = _contentType == null ? null : MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
+
+            boolean exists = resource.exists();
+            _lastModifiedValue = exists ? resource.lastModified() : -1L;
+            _lastModified = _lastModifiedValue == -1 ? null
+                    : new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_lastModifiedValue));
+
+            _contentLengthValue = exists ? (int)resource.length() : 0;
+            _contentLength = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, Long.toString(_contentLengthValue));
+
+            if (_cachedFiles.incrementAndGet() > _maxCachedFiles)
                 shrinkCache();
-            
-            _lastAccessed=System.currentTimeMillis();
-            
-            _etag=CachedContentFactory.this._etags?new PreEncodedHttpField(HttpHeader.ETAG,resource.getWeakETag()):null;
+
+            _lastAccessed = System.currentTimeMillis();
+
+            _etag = CachedContentFactory.this._etags ? new PreEncodedHttpField(HttpHeader.ETAG, resource.getWeakETag()) : null;
 
             if (precompressedResources != null)
             {
                 _precompressed = new HashMap<>(precompressedResources.size());
                 for (Map.Entry<CompressedContentFormat, CachedHttpContent> entry : precompressedResources.entrySet())
                 {
-                    _precompressed.put(entry.getKey(),new CachedPrecompressedHttpContent(this,entry.getValue(),entry.getKey()));
+                    _precompressed.put(entry.getKey(), new CachedPrecompressedHttpContent(this, entry.getValue(), entry.getKey()));
                 }
             }
             else
@@ -474,237 +438,223 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 _precompressed = NO_PRECOMPRESSED;
             }
         }
-        
 
-        /* ------------------------------------------------------------ */
         public String getKey()
         {
             return _key;
         }
 
-        /* ------------------------------------------------------------ */
         public boolean isCached()
         {
-            return _key!=null;
-        }
-        
-        /* ------------------------------------------------------------ */
-        public boolean isMiss()
-        {
-            return false;
+            return _key != null;
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public Resource getResource()
         {
             return _resource;
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public HttpField getETag()
         {
             return _etag;
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public String getETagValue()
         {
             return _etag.getValue();
         }
-        
-        /* ------------------------------------------------------------ */
+
         boolean isValid()
         {
-            if (_lastModifiedValue==_resource.lastModified() && _contentLengthValue==_resource.length())
+            if (_lastModifiedValue == _resource.lastModified() && _contentLengthValue == _resource.length())
             {
-                _lastAccessed=System.currentTimeMillis();
+                _lastAccessed = System.currentTimeMillis();
                 return true;
             }
 
-            if (this==_cache.remove(_key))
+            if (this == _cache.remove(_key))
                 invalidate();
             return false;
         }
 
-        /* ------------------------------------------------------------ */
         protected void invalidate()
         {
-            ByteBuffer indirect=_indirectBuffer.get();
-            if (indirect!=null && _indirectBuffer.compareAndSet(indirect,null))
+            ByteBuffer indirect = _indirectBuffer.getAndSet(null);
+            if (indirect != null)
                 _cachedSize.addAndGet(-BufferUtil.length(indirect));
-            
-            ByteBuffer direct=_directBuffer.get();
-           
-            if (direct!=null && !BufferUtil.isMappedBuffer(direct) && _directBuffer.compareAndSet(direct,null))
+
+            ByteBuffer direct = _directBuffer.getAndSet(null);
+            if (direct != null)
                 _cachedSize.addAndGet(-BufferUtil.length(direct));
-            
+
+            _mappedBuffer.getAndSet(null);
+
             _cachedFiles.decrementAndGet();
             _resource.close();
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public HttpField getLastModified()
         {
             return _lastModified;
         }
-        
-        /* ------------------------------------------------------------ */
+
         @Override
         public String getLastModifiedValue()
         {
-            return _lastModified==null?null:_lastModified.getValue();
+            return _lastModified == null ? null : _lastModified.getValue();
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public HttpField getContentType()
         {
             return _contentType;
         }
-        
-        /* ------------------------------------------------------------ */
+
         @Override
         public String getContentTypeValue()
         {
-            return _contentType==null?null:_contentType.getValue();
+            return _contentType == null ? null : _contentType.getValue();
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public HttpField getContentEncoding()
         {
             return null;
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public String getContentEncodingValue()
         {
             return null;
-        }   
-        
-        /* ------------------------------------------------------------ */
+        }
+
         @Override
         public String getCharacterEncoding()
         {
             return _characterEncoding;
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public Type getMimeType()
         {
             return _mimeType;
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public void release()
         {
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public ByteBuffer getIndirectBuffer()
         {
             ByteBuffer buffer = _indirectBuffer.get();
-            if (buffer==null)
+            if (buffer == null)
             {
-                ByteBuffer buffer2=CachedContentFactory.this.getIndirectBuffer(_resource);
-                
-                if (buffer2==null)
-                    LOG.warn("Could not load "+this);
-                else if (_indirectBuffer.compareAndSet(null,buffer2))
+                ByteBuffer buffer2 = CachedContentFactory.this.getIndirectBuffer(_resource);
+
+                if (buffer2 == null)
+                    LOG.warn("Could not load " + this);
+                else if (_indirectBuffer.compareAndSet(null, buffer2))
                 {
-                    buffer=buffer2;
-                    if (_cachedSize.addAndGet(BufferUtil.length(buffer))>_maxCacheSize)
+                    buffer = buffer2;
+                    if (_cachedSize.addAndGet(BufferUtil.length(buffer)) > _maxCacheSize)
                         shrinkCache();
                 }
                 else
-                    buffer=_indirectBuffer.get();
+                    buffer = _indirectBuffer.get();
             }
-            if (buffer==null)
+            if (buffer == null)
                 return null;
             return buffer.slice();
         }
-        
-        /* ------------------------------------------------------------ */
+
         @Override
         public ByteBuffer getDirectBuffer()
         {
-            ByteBuffer buffer = _directBuffer.get();
-            if (buffer==null)
+            ByteBuffer buffer = _mappedBuffer.get();
+            if (buffer == null)
+                buffer = _directBuffer.get();
+            if (buffer == null)
             {
                 ByteBuffer mapped = CachedContentFactory.this.getMappedBuffer(_resource);
-                ByteBuffer direct = mapped==null?CachedContentFactory.this.getDirectBuffer(_resource):mapped;
-                    
-                if (direct==null)
-                    LOG.warn("Could not load "+this);
-                else if (_directBuffer.compareAndSet(null,direct))
+                if (mapped != null)
                 {
-                    buffer=direct;
-                    if (mapped==null && _cachedSize.addAndGet(BufferUtil.length(buffer))>_maxCacheSize)
-                        shrinkCache(); 
+                    if (_mappedBuffer.compareAndSet(null, mapped))
+                        buffer = mapped;
+                    else
+                        buffer = _mappedBuffer.get();
                 }
                 else
-                    buffer=_directBuffer.get();
+                {
+                    ByteBuffer direct = CachedContentFactory.this.getDirectBuffer(_resource);
+                    if (direct != null)
+                    {
+                        if (_directBuffer.compareAndSet(null, direct))
+                        {
+                            buffer = direct;
+                            if (_cachedSize.addAndGet(BufferUtil.length(buffer)) > _maxCacheSize)
+                                shrinkCache();
+                        }
+                        else
+                        {
+                            buffer = _directBuffer.get();
+                        }
+                    }
+                    else
+                    {
+                        LOG.warn("Could not load " + this);
+                    }
+                }
             }
-            if (buffer==null)
-                return null;
-            return buffer.asReadOnlyBuffer();
+            return buffer == null ? null : buffer.asReadOnlyBuffer();
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public HttpField getContentLength()
         {
             return _contentLength;
         }
-        
-        /* ------------------------------------------------------------ */
+
         @Override
         public long getContentLengthValue()
         {
             return _contentLengthValue;
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public InputStream getInputStream() throws IOException
         {
             ByteBuffer indirect = getIndirectBuffer();
-            if (indirect!=null && indirect.hasArray())
-                return new ByteArrayInputStream(indirect.array(),indirect.arrayOffset()+indirect.position(),indirect.remaining());
-           
+            if (indirect != null && indirect.hasArray())
+                return new ByteArrayInputStream(indirect.array(), indirect.arrayOffset() + indirect.position(), indirect.remaining());
+
             return _resource.getInputStream();
-        }   
-        
-        /* ------------------------------------------------------------ */
+        }
+
         @Override
         public ReadableByteChannel getReadableByteChannel() throws IOException
         {
             return _resource.getReadableByteChannel();
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public String toString()
         {
-            return String.format("CachedContent@%x{r=%s,e=%b,lm=%s,ct=%s,c=%d}",hashCode(),_resource,_resource.exists(),_lastModified,_contentType,_precompressed.size());
+            return String.format("CachedContent@%x{r=%s,e=%b,lm=%s,ct=%s,c=%d}", hashCode(), _resource, _resource.exists(), _lastModified, _contentType, _precompressed.size());
         }
 
-        /* ------------------------------------------------------------ */
         @Override
-        public Map<CompressedContentFormat,? extends HttpContent> getPrecompressedContents()
+        public Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents()
         {
-            if (_precompressed.size()==0)
+            if (_precompressed.size() == 0)
                 return null;
-            Map<CompressedContentFormat, CachedPrecompressedHttpContent> ret=_precompressed;
-            for (Map.Entry<CompressedContentFormat, CachedPrecompressedHttpContent> entry:_precompressed.entrySet())
+            Map<CompressedContentFormat, CachedPrecompressedHttpContent> ret = _precompressed;
+            for (Map.Entry<CompressedContentFormat, CachedPrecompressedHttpContent> entry : _precompressed.entrySet())
             {
                 if (!entry.getValue().isValid())
                 {
@@ -717,22 +667,19 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     public class CachedPrecompressedHttpContent extends PrecompressedHttpContent
     {
-        private final CachedHttpContent _content; 
+        private final CachedHttpContent _content;
         private final CachedHttpContent _precompressedContent;
         private final HttpField _etag;
 
         CachedPrecompressedHttpContent(CachedHttpContent content, CachedHttpContent precompressedContent, CompressedContentFormat format)
         {
-            super(content,precompressedContent,format);
-            _content=content;
-            _precompressedContent=precompressedContent;
-            
-            _etag=(CachedContentFactory.this._etags)?new PreEncodedHttpField(HttpHeader.ETAG,_content.getResource().getWeakETag(format._etag)):null;
+            super(content, precompressedContent, format);
+            _content = content;
+            _precompressedContent = precompressedContent;
+
+            _etag = (CachedContentFactory.this._etags) ? new PreEncodedHttpField(HttpHeader.ETAG, _content.getResource().getWeakETag(format._etag)) : null;
         }
 
         public boolean isValid()
@@ -743,7 +690,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public HttpField getETag()
         {
-            if (_etag!=null)
+            if (_etag != null)
                 return _etag;
             return super.getETag();
         }
@@ -751,16 +698,15 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public String getETagValue()
         {
-            if (_etag!=null)
+            if (_etag != null)
                 return _etag.getValue();
             return super.getETagValue();
         }
-        
+
         @Override
         public String toString()
         {
-            return "Cached"+super.toString();
+            return "Cached" + super.toString();
         }
     }
-
 }

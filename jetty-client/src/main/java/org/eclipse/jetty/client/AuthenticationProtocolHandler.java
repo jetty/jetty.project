@@ -46,12 +46,12 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
-
+    
     private static final Pattern PARAM_PATTERN = Pattern.compile("([^=]+)=([^=]+)?");
     private static final Pattern TYPE_PATTERN = Pattern.compile("([^\\s]+)(\\s+(.*))?");
     private static final Pattern MULTIPLE_CHALLENGE_PATTERN = Pattern.compile("(.*),\\s*([^=\\s,]+(\\s+[^=\\s].*)?)\\s*");
     private static final Pattern BASE64_PATTERN = Pattern.compile("([^\\s,=]+=*)\\s*");
-
+    
     private final HttpClient client;
     private final int maxContentLength;
     private final ResponseNotifier notifier;

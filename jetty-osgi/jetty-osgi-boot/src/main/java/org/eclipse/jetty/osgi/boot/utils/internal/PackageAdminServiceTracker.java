@@ -280,26 +280,10 @@ public class PackageAdminServiceTracker implements ServiceListener
                 Class<?> c = Class.forName(fragmentActivator);
                 if (c != null)
                 {
-                    BundleActivator bActivator = (BundleActivator) c.newInstance();
+                    BundleActivator bActivator = (BundleActivator) c.getDeclaredConstructor().newInstance();
                     bActivator.start(_context);
                     _activatedFragments.add(bActivator);
                 }
-            }
-            catch (NullPointerException e)
-            {
-                // e.printStackTrace();
-            }
-            catch (InstantiationException e)
-            {
-                // e.printStackTrace();
-            }
-            catch (IllegalAccessException e)
-            {
-                // e.printStackTrace();
-            }
-            catch (ClassNotFoundException e)
-            {
-                // e.printStackTrace();
             }
             catch (Exception e)
             {

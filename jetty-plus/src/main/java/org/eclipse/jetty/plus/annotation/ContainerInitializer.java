@@ -61,7 +61,7 @@ public class ContainerInitializer
 
         try
         {
-            _target = (ServletContainerInitializer)loader.loadClass(m.group(1)).newInstance();
+            _target = (ServletContainerInitializer)loader.loadClass(m.group(1)).getDeclaredConstructor().newInstance();
             String[] interested = StringUtil.arrayFromString(m.group(2));
             _interestedTypes = new Class<?>[interested.length];
             for (int i=0;i<interested.length;i++)

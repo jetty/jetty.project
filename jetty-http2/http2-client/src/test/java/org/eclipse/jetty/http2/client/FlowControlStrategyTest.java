@@ -69,7 +69,6 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -314,7 +313,7 @@ public abstract class FlowControlStrategyTest
     {
         final int windowSize = 1536;
         final int length = 5 * windowSize;
-        final CountDownLatch settingsLatch = new CountDownLatch(1);
+        final CountDownLatch settingsLatch = new CountDownLatch(2);
         start(new ServerSessionListener.Adapter()
         {
             @Override
@@ -343,7 +342,9 @@ public abstract class FlowControlStrategyTest
 
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, windowSize);
-        session.settings(new SettingsFrame(settings, false), Callback.NOOP);
+        Callback.Completable completable = new Callback.Completable();
+        session.settings(new SettingsFrame(settings, false), completable);
+        completable.thenRun(settingsLatch::countDown);
 
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
@@ -659,88 +660,6 @@ public abstract class FlowControlStrategyTest
 
         Assert.assertTrue(latch.await(15, TimeUnit.SECONDS));
         Assert.assertArrayEquals(data, bytes);
-    }
-
-    // TODO
-    // Since we changed the API to disallow consecutive data() calls without waiting
-    // for the callback, it is now not possible to have DATA1, DATA2 in the queue for
-    // the same stream. Perhaps this test should just be deleted.
-    @Ignore
-    @Test
-    public void testServerTwoDataFramesWithStalledStream() throws Exception
-    {
-        // Frames in queue = DATA1, DATA2.
-        // Server writes part of DATA1, then stalls.
-        // A window update unstalls the session, verify that the data is correctly sent.
-
-        Random random = new Random();
-        final byte[] chunk1 = new byte[1024];
-        random.nextBytes(chunk1);
-        final byte[] chunk2 = new byte[2048];
-        random.nextBytes(chunk2);
-
-        // Two SETTINGS frames: the initial after the preface,
-        // and the explicit where we set the stream window size to zero.
-        final AtomicReference<CountDownLatch> settingsLatch = new AtomicReference<>(new CountDownLatch(2));
-        final CountDownLatch dataLatch = new CountDownLatch(1);
-        start(new ServerSessionListener.Adapter()
-        {
-            @Override
-            public void onSettings(Session session, SettingsFrame frame)
-            {
-                settingsLatch.get().countDown();
-            }
-
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
-            {
-                stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(chunk1), false), Callback.NOOP);
-                stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(chunk2), true), Callback.NOOP);
-                dataLatch.countDown();
-                return null;
-            }
-        });
-
-        Session session = newClient(new Session.Listener.Adapter());
-        Map<Integer, Integer> settings = new HashMap<>();
-        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, 0);
-        session.settings(new SettingsFrame(settings, false), Callback.NOOP);
-        Assert.assertTrue(settingsLatch.get().await(5, TimeUnit.SECONDS));
-
-        byte[] content = new byte[chunk1.length + chunk2.length];
-        final ByteBuffer buffer = ByteBuffer.wrap(content);
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
-        HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        final CountDownLatch responseLatch = new CountDownLatch(1);
-        session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
-        {
-            @Override
-            public void onData(Stream stream, DataFrame frame, Callback callback)
-            {
-                buffer.put(frame.getData());
-                callback.succeeded();
-                if (frame.isEndStream())
-                    responseLatch.countDown();
-            }
-        });
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
-
-        // Now we have the 2 DATA frames queued in the server.
-
-        // Unstall the stream window.
-        settingsLatch.set(new CountDownLatch(1));
-        settings.clear();
-        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, chunk1.length / 2);
-        session.settings(new SettingsFrame(settings, false), Callback.NOOP);
-        Assert.assertTrue(settingsLatch.get().await(5, TimeUnit.SECONDS));
-
-        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
-
-        // Check that the data is sent correctly.
-        byte[] expected = new byte[content.length];
-        System.arraycopy(chunk1, 0, expected, 0, chunk1.length);
-        System.arraycopy(chunk2, 0, expected, chunk1.length, chunk2.length);
-        Assert.assertArrayEquals(expected, content);
     }
 
     @Test

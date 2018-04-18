@@ -419,11 +419,11 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         try
         {
-            return newClientEndpointInstance(endpointClass.newInstance(),config);
+            return newClientEndpointInstance(endpointClass.getDeclaredConstructor().newInstance(),config);
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (Exception e)
         {
-            throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getClass());
+            throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getClass(), e);
         }
     }
 
