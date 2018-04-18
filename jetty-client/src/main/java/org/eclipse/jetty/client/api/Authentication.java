@@ -107,6 +107,14 @@ public interface Authentication
         }
 
         /**
+         * @return the base64 content as a string if it exists otherwise null
+         */
+        public String getBase64()
+        {
+            return params.get("base64");
+        }
+        
+        /**
          * @return additional authentication parameters
          */
         public Map<String, String> getParameters()

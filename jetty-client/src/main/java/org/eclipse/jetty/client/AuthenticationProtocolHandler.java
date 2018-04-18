@@ -47,9 +47,11 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
 
-    private static final Pattern PARAM_PATTERN = Pattern.compile("([^=]+)=(.*)");
-    private static final Pattern TYPE_PATTERN = Pattern.compile("([^\\s]+)\\s+(.*)");
-    
+    private static final Pattern PARAM_PATTERN = Pattern.compile("([^=]+)=([^=]+)?");
+    private static final Pattern TYPE_PATTERN = Pattern.compile("([^\\s]+)(\\s+(.*))?");
+    private static final Pattern MULTIPLE_CHALLENGE_PATTERN = Pattern.compile("(.*),\\s*([^=\\s,]+(\\s+[^=\\s].*)?)\\s*");
+    private static final Pattern BASE64_PATTERN = Pattern.compile("([^\\s,=]+=*)\\s*");
+
     private final HttpClient client;
     private final int maxContentLength;
     private final ResponseNotifier notifier;
@@ -81,17 +83,35 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         return new AuthenticationListener();
     }
     
+    protected List<HeaderInfo> getHeaderInfo(String value) throws IllegalArgumentException
+    {
+        Matcher m = MULTIPLE_CHALLENGE_PATTERN.matcher(value);
+        if (m.matches())
+        {
+            List<HeaderInfo> l = new ArrayList<>();
+            l.addAll(getHeaderInfo(m.group(1)));
+            l.addAll(getHeaderInfo(m.group(2)));
+            return l;
+        }
+        else
+        {
+            List<HeaderInfo> l = new ArrayList<>();
+            l.add(newHeaderInfo(value));
+            return l;
+        }
+    }
 
     protected HeaderInfo newHeaderInfo(String value) throws IllegalArgumentException
     {
         String type;
-        Map<String,String> params;
+        Map<String,String> params = new HashMap<>();
         
         Matcher m = TYPE_PATTERN.matcher(value);
         if (m.matches())
         {
             type = m.group(1);
-            params = parseParameters(m.group(2));
+            if (m.group(2) != null)
+                params = parseParameters(m.group(3));
         }
         else
         {
@@ -101,18 +121,30 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         return new HeaderInfo(getAuthorizationHeader(), type, params);
     }
     
-    protected Map<String, String> parseParameters(String wwwAuthenticate)
+    protected Map<String, String> parseParameters(String wwwAuthenticate) throws IllegalArgumentException
     {
         Map<String, String> result = new HashMap<>();
+        
+        Matcher b64 = BASE64_PATTERN.matcher(wwwAuthenticate);
+        if (b64.matches())
+        {
+            result.put("base64", b64.group(1));
+            return result;
+        }
+        
         QuotedCSV parts = new QuotedCSV(false, wwwAuthenticate);
         for (String part : parts)
         {
-            Matcher matcher = PARAM_PATTERN.matcher(part);
-            if (matcher.matches())
+            Matcher params = PARAM_PATTERN.matcher(part);
+            if (params.matches())
             {
-                String name = StringUtil.asciiToLowerCase(matcher.group(1));
-                String value = matcher.group(2);
+                String name = StringUtil.asciiToLowerCase(params.group(1));
+                String value = (params.group(2)==null)?"":params.group(2);
                 result.put(name, value);
+            }
+            else
+            {
+                throw new IllegalArgumentException("Invalid Authentication Format");
             }
         }
         return result;
@@ -282,8 +314,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             {
                 try
                 {
-                    Authentication.HeaderInfo headerInfo = newHeaderInfo(value);
-                    result.add(headerInfo);
+                    result.addAll(getHeaderInfo(value));
                 }
                 catch(IllegalArgumentException e)
                 {
