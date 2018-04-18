@@ -52,7 +52,7 @@
             <configuration>
               <instructions>
                 <Bundle-Description>Jetty Http SPI</Bundle-Description>
-                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
                 <Provide-Capability>osgi.serviceloader; osgi.serviceloader=com.sun.net.httpserver.spi.HttpServerProvider</Provide-Capability>
                 <_nouses>true</_nouses>
               </instructions>
