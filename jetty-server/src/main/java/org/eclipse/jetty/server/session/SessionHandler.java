@@ -1333,6 +1333,7 @@ public class SessionHandler extends ScopedHandler
             if (_sessionIdManager.getSessionHouseKeeper() != null && _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
             {
                 _candidateSessionIdsForExpiry.add(session.getId());
+                session.stopInactivityTimer(true);
                 if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
             }
         }

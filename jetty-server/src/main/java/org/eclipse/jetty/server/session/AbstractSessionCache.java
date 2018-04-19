@@ -167,9 +167,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         /**
          * @param data the session data
          */
-        public PlaceHolderSession(SessionData data)
+        public PlaceHolderSession(SessionHandler handler, SessionData data)
         {
-            super(null, data);
+            super(handler, data);
         }
     }
     
@@ -351,7 +351,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                     LOG.debug("Session {} not found locally, attempting to load", id);
        
                 //didn't get a session, try and create one and put in a placeholder for it
-                PlaceHolderSession phs = new PlaceHolderSession (new SessionData(id, null, null,0,0,0,0));
+                PlaceHolderSession phs = new PlaceHolderSession (_handler, new SessionData(id, null, null,0,0,0,0));
                 Lock phsLock = phs.lock();
                 Session s = doPutIfAbsent(id, phs);
                 if (s == null)
@@ -639,7 +639,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         //delete it from the session object store
         if (session != null)
         {
-            session.stopInactivityTimer();
+            session.stopInactivityTimer(true);
             session.setResident(false);
         }
         
@@ -725,11 +725,12 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                
                     doDelete(session.getId()); //detach from this cache
                     session.setResident(false);
+                    session.stopInactivityTimer(true); //destroy timer once it's evicted
                 }
                 catch (Exception e)
                 {
                     LOG.warn("Passivation of idle session {} failed", session.getId(), e);
-                    session.updateInactivityTimer();
+                    //session.updateInactivityTimer();
                 }
             }
         }

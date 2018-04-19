@@ -110,7 +110,6 @@ public class IdleSessionTest
             //check session reactivated
             assertTrue(contextHandler.getSessionHandler().getSessionCache().contains(id));
 
-            
             //wait again for the session to be passivated
             pause(evictionSec*2);
             

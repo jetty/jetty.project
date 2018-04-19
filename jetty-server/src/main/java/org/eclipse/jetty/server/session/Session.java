@@ -35,6 +35,7 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 
+import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -106,53 +107,39 @@ public class Session implements SessionHandler.SessionIf
      * @see SessionCache
      *
      */
-    public class SessionInactivityTimeout extends IdleTimeout
+    public class SessionInactivityTimeout extends CyclicTimeout
     {
-        /**
-         * 
-         */
+        protected long _timeout = -1;
+        
         public SessionInactivityTimeout()
         {
             super(getSessionHandler().getScheduler());
         }
 
-        /** 
-         * @see org.eclipse.jetty.io.IdleTimeout#onIdleExpired(java.util.concurrent.TimeoutException)
-         */
+
         @Override
-        protected void onIdleExpired(TimeoutException timeout)
+        public void onTimeoutExpired()
         {
             //called when the timer goes off
             if (LOG.isDebugEnabled()) LOG.debug("Timer expired for session {}", getId());
            getSessionHandler().sessionInactivityTimerExpired(Session.this);
         }
+        
 
-        /** 
-         * @see org.eclipse.jetty.io.IdleTimeout#isOpen()
-         */
-        @Override
-        public boolean isOpen()
+        public void setIdleTimeout(long ms)
         {
-            // Called to determine if the timer should be reset
-            // True if:
-            // 1. the session is still valid
-            // BUT if passivated out to disk, do we really want this timer to keep going off?
-            try (Lock lock = _lock.lock())
+            if (LOG.isDebugEnabled()) LOG.debug("setIdleTimeout={}ms",ms);
+            _timeout = ms;
+        }
+
+        public void start ()
+        {
+            if (_timeout > 0)
             {
-                return isValid() && isResident();
+                if (LOG.isDebugEnabled()) LOG.debug("(Re)starting timer for session {} at {}ms",getId(), _timeout);
+                schedule(_timeout, TimeUnit.MILLISECONDS);
             }
         }
-
-        /** 
-         * @see org.eclipse.jetty.io.IdleTimeout#setIdleTimeout(long)
-         */
-        @Override
-        public void setIdleTimeout(long idleTimeout)
-        {
-            if (LOG.isDebugEnabled()) LOG.debug("setIdleTimeout called: old="+getIdleTimeout()+" new="+idleTimeout);
-            super.setIdleTimeout(idleTimeout);
-        }
-
     }
 
 
@@ -171,6 +158,7 @@ public class Session implements SessionHandler.SessionIf
         _newSession = true;
         _sessionData.setDirty(true);
         _requests = 1; //access will not be called on this new session, but we are obviously in a request
+        _sessionInactivityTimer = new SessionInactivityTimeout();
     }
     
     
@@ -186,6 +174,7 @@ public class Session implements SessionHandler.SessionIf
     {
         _handler = handler;
         _sessionData = data;
+        _sessionInactivityTimer = new SessionInactivityTimeout();
     }
     
 
@@ -231,27 +220,35 @@ public class Session implements SessionHandler.SessionIf
                 return false;
             _newSession=false;
             long lastAccessed = _sessionData.getAccessed();
-            if (_sessionInactivityTimer != null)
-                _sessionInactivityTimer.notIdle();
             _sessionData.setAccessed(time);
             _sessionData.setLastAccessed(lastAccessed);
-           _sessionData.calcAndSetExpiry(time);
+            _sessionData.calcAndSetExpiry(time);
             if (isExpiredAt(time))
             {
                 invalidate();
                 return false;
             }
             _requests++;
+
+            //temporarily stop the idle timer
+            if (LOG.isDebugEnabled()) LOG.debug("Session {} accessed, stopping timer, active requests={}",getId(),_requests);
+            _sessionInactivityTimer.cancel(); 
+
             return true;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void complete()
     {
         try (Lock lock = _lock.lock())
         {
             _requests--;
+
+            if (LOG.isDebugEnabled()) LOG.debug("Session {} complete, active requests={}",getId(),_requests);
+            //if last request is exited, (re)start the inactivity timer
+            if (_requests == 0)
+                _sessionInactivityTimer.start();
         }
     }
 
@@ -510,7 +507,7 @@ public class Session implements SessionHandler.SessionIf
                 if (evictionPolicy < SessionCache.EVICT_ON_INACTIVITY)
                 {
                     //we do not want to evict inactive sessions
-                    setInactivityTimer(-1L);
+                    setInactivityTimer(-1);
                     if (LOG.isDebugEnabled()) LOG.debug("Session is immortal && no inactivity eviction: timer cancelled");
                 }
                 else
@@ -540,33 +537,44 @@ public class Session implements SessionHandler.SessionIf
     }
     
     /**
-     * Set the inactivity timer
+     * Set the inactivity timer on the session.
      * 
-     * @param ms value in millisec, -1 disables it
+     * @param ms the interval in millisec 
+     * 
      */
     private void setInactivityTimer (long ms)
     {
-        if (_sessionInactivityTimer == null)
-            _sessionInactivityTimer = new SessionInactivityTimeout();
         _sessionInactivityTimer.setIdleTimeout(ms);
     }
+    
+   
 
-
-    /**
-     * 
-     */
     public void stopInactivityTimer ()
+    {
+        stopInactivityTimer(false);
+    }
+
+    public void stopInactivityTimer (boolean destroy)
     {
         try (Lock lock = _lock.lock())
         {
             if (_sessionInactivityTimer != null)
             {
-                _sessionInactivityTimer.setIdleTimeout(-1);
-                _sessionInactivityTimer = null;
-                if (LOG.isDebugEnabled()) LOG.debug("Session timer stopped");
+                if (LOG.isDebugEnabled()) LOG.debug("Session {} timer stopped", getId());
+                _sessionInactivityTimer.cancel();
+
+                if (destroy)
+                {
+                    _sessionInactivityTimer.destroy();
+                    _sessionInactivityTimer = null;
+                    if (LOG.isDebugEnabled()) LOG.debug("Session {} timer destroyed", getId());
+                }
+
             }
         }
     }
+    
+   
 
     /** 
      * @see javax.servlet.http.HttpSession#getMaxInactiveInterval()
