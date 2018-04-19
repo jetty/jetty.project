@@ -194,9 +194,9 @@ public class DecoderFactory implements Configurable
             Decoder decoder = containerScope.getObjectFactory().createInstance(decoderClass);
             return new Wrapper(decoder,metadata);
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (Exception e)
         {
-            throw new IllegalStateException("Unable to instantiate Decoder: " + decoderClass.getName());
+            throw new IllegalStateException("Unable to instantiate Decoder: " + decoderClass.getName(), e);
         }
     }
 }

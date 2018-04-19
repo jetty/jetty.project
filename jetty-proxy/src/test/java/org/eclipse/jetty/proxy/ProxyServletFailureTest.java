@@ -85,7 +85,7 @@ public class ProxyServletFailureTest
 
     public ProxyServletFailureTest(Class<?> proxyServletClass) throws Exception
     {
-        this.proxyServlet = (ProxyServlet)proxyServletClass.newInstance();
+        this.proxyServlet = (ProxyServlet)proxyServletClass.getDeclaredConstructor().newInstance();
     }
 
     private void prepareProxy() throws Exception

@@ -229,7 +229,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                             }
                             else if (callback instanceof PasswordCallback)
                             {
-                                ((PasswordCallback)callback).setPassword((char[]) credentials.toString().toCharArray());
+                                ((PasswordCallback)callback).setPassword(credentials.toString().toCharArray());
                             }
                             else if (callback instanceof ObjectCallback)
                             {
@@ -254,7 +254,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
             else
             {
                 Class<?> clazz = Loader.loadClass(_callbackHandlerClass);
-                callbackHandler = (CallbackHandler)clazz.newInstance();
+                callbackHandler = (CallbackHandler)clazz.getDeclaredConstructor().newInstance();
                 if (DefaultCallbackHandler.class.isAssignableFrom(clazz))
                 {
                     DefaultCallbackHandler dch = (DefaultCallbackHandler)callbackHandler;

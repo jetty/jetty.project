@@ -247,7 +247,7 @@ public class ContextHandlerCollection extends HandlerCollection
     {
         try
         {
-            ContextHandler context = _contextClass.newInstance();
+            ContextHandler context = _contextClass.getDeclaredConstructor().newInstance();
             context.setContextPath(contextPath);
             context.setResourceBase(resourceBase);
             addHandler(context);
