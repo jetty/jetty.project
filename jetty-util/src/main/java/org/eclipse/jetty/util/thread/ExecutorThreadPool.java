@@ -92,7 +92,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
         }
         _executor = executor;
         _executor.setThreadFactory(this::newThread);
-        _budget = new ThreadPoolBudget(this);
+        _budget = new ThreadPoolBudget(this,minThreads);
         _group = group;
         _minThreads = minThreads;
         _reservedThreads = reservedThreads;
