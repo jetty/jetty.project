@@ -16,7 +16,7 @@ maven://org.slf4j/slf4j-api/${slf4j.version}|lib/slf4j/slf4j-api-${slf4j.version
 lib/slf4j/slf4j-api-${slf4j.version}.jar
 
 [ini]
-slf4j.version?=1.7.21
+slf4j.version?=1.7.25
 jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/slf4j/
 
 [license]
