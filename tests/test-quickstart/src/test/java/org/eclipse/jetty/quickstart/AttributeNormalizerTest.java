@@ -96,9 +96,10 @@ public class AttributeNormalizerTest
         // ------
         title = "Root Path Setup";
         env = new HashMap<>();
-        env.put("jetty.home", "/");
-        env.put("jetty.base", "/");
-        env.put("WAR", asTargetPath(title,"webapps/root"));
+        Path rootPath = MavenTestingUtils.getTargetPath().getRoot();
+        env.put("jetty.home", rootPath.toString());
+        env.put("jetty.base", rootPath.toString());
+        env.put("WAR", rootPath.resolve("webapps/root").toString());
         
         data.add(new Object[]{arch, title, env});
         
@@ -116,8 +117,8 @@ public class AttributeNormalizerTest
     }
     
     private Map<String, String> oldValues = new HashMap<>();
-    private final String jettyHome;
-    private final String jettyBase;
+    private final Path jettyHome;
+    private final Path jettyBase;
     private final String war;
     private final String arch;
     private final String title;
@@ -138,8 +139,8 @@ public class AttributeNormalizerTest
         });
         
         // Grab specific values of interest in general
-        jettyHome = env.get("jetty.home");
-        jettyBase = env.get("jetty.base");
+        jettyHome = new File(env.get("jetty.home")).toPath().toAbsolutePath();
+        jettyBase = new File(env.get("jetty.base")).toPath().toAbsolutePath();
         war = env.get("WAR");
         
         // Set environment (skipping null and WAR)
@@ -196,7 +197,7 @@ public class AttributeNormalizerTest
     public void testNormalizeJettyBaseAsFile()
     {
         // Normalize jetty.base as File path
-        assertNormalize(new File(jettyBase), "${jetty.base}");
+        assertNormalize(jettyBase.toFile(), "${jetty.base}");
     }
     
     @Test
@@ -204,36 +205,70 @@ public class AttributeNormalizerTest
     {
         // Normalize jetty.home as File path
         String expected = jettyBase.equals(jettyHome)?"${jetty.base}":"${jetty.home}";
-        assertNormalize(new File(jettyHome), expected);
+        assertNormalize(jettyHome.toFile(), expected);
+    }
+
+    @Test
+    public void testNormalizeJettyBaseAsPath()
+    {
+        // Normalize jetty.base as File path
+        assertNormalize(jettyBase, "${jetty.base}");
+    }
+
+    @Test
+    public void testNormalizeJettyHomeAsPath()
+    {
+        // Normalize jetty.home as File path
+        String expected = jettyBase.equals(jettyHome)?"${jetty.base}":"${jetty.home}";
+        assertNormalize(jettyHome, expected);
     }
     
     @Test
-    public void testNormalizeJettyBaseAsURI()
+    public void testNormalizeJettyBaseAsURI_WithAuthority()
     {
         // Normalize jetty.base as URI path
-        assertNormalize(new File(jettyBase).toURI(), "${jetty.base.uri}");
+        // Path.toUri() typically includes an URI authority
+        assertNormalize(jettyBase.toUri(), "${jetty.base.uri}");
+    }
+
+    @Test
+    public void testNormalizeJettyBaseAsURI_WithoutAuthority()
+    {
+        // Normalize jetty.base as URI path
+        // File.toURI() typically DOES NOT include an URI authority
+        assertNormalize(jettyBase.toFile().toURI(), "${jetty.base.uri}");
     }
     
     @Test
-    public void testNormalizeJettyHomeAsURI()
+    public void testNormalizeJettyHomeAsURI_WithAuthority()
     {
         // Normalize jetty.home as URI path        
         String expected = jettyBase.equals(jettyHome)?"${jetty.base.uri}":"${jetty.home.uri}";
-        assertNormalize(new File(jettyHome).toURI(), expected);
+        // Path.toUri() typically includes an URI authority
+        assertNormalize(jettyHome.toUri(), expected);
+    }
+
+    @Test
+    public void testNormalizeJettyHomeAsURI_WithoutAuthority()
+    {
+        // Normalize jetty.home as URI path
+        String expected = jettyBase.equals(jettyHome)?"${jetty.base.uri}":"${jetty.home.uri}";
+        // File.toURI() typically DOES NOT include an URI authority
+        assertNormalize(jettyHome.toFile().toURI(), expected);
     }
     
     @Test
     public void testExpandJettyBase()
     {
         // Expand jetty.base
-        assertExpandPath("${jetty.base}", jettyBase);
+        assertExpandPath("${jetty.base}", jettyBase.toString());
     }
     
     @Test
     public void testExpandJettyHome()
     {
         // Expand jetty.home
-        assertExpandPath("${jetty.home}", jettyHome);
+        assertExpandPath("${jetty.home}", jettyHome.toString());
     }
     
     @Test

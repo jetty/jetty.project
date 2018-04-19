@@ -63,7 +63,7 @@ public class AttributeNormalizer
 {
     private static final Logger LOG = Log.getLogger(AttributeNormalizer.class);
     private static final Pattern __propertyPattern = Pattern.compile("(?<=[^$]|^)\\$\\{([^}]*)\\}");
-    
+
     private static class Attribute
     {
         final String key;
@@ -78,7 +78,7 @@ public class AttributeNormalizer
         }
     }
 
-    private static URI toCanonicalURI(URI uri)
+    public static URI toCanonicalURI(URI uri)
     {
         uri = uri.normalize();
         String path = uri.getPath();
@@ -96,8 +96,8 @@ public class AttributeNormalizer
         }
         return uri;
     }
-    
-    private static Path toCanonicalPath(String path)
+
+    public static Path toCanonicalPath(String path)
     {
         if (path == null)
             return null;
@@ -199,17 +199,6 @@ public class AttributeNormalizer
         }
     };
 
-    private static void add(List<PathAttribute>paths,List<URIAttribute> uris,String key,int weight)
-    {
-        String value = System.getProperty(key);
-        if (value!=null)
-        {
-            Path path = toCanonicalPath(value);
-            paths.add(new PathAttribute(key,path,weight));
-            uris.add(new URIAttribute(key+".uri",toCanonicalURI(path.toUri()),weight));
-        }
-    }
-
     private URI warURI;
     private Map<String,Attribute> attributes = new HashMap<>();
     private List<PathAttribute> paths = new ArrayList<>();
@@ -224,10 +213,10 @@ public class AttributeNormalizer
         if (!warURI.isAbsolute())
             throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
         
-        add(paths,uris,"jetty.base",9);
-        add(paths,uris,"jetty.home",8);
-        add(paths,uris,"user.home",7);
-        add(paths,uris,"user.dir",6);
+        addSystemProperty(paths, uris,"jetty.base",9);
+        addSystemProperty(paths, uris,"jetty.home",8);
+        addSystemProperty(paths, uris,"user.home",7);
+        addSystemProperty(paths, uris,"user.dir",6);
 
         if (warURI.getScheme().equalsIgnoreCase("file"))
             paths.add(new PathAttribute("WAR.path",toCanonicalPath(new File(warURI).toString()),10));
@@ -245,6 +234,17 @@ public class AttributeNormalizer
             {
                 LOG.debug(attr.toString());
             }
+        }
+    }
+
+    private void addSystemProperty(List<PathAttribute> paths, List<URIAttribute> uris, String key, int weight)
+    {
+        String value = System.getProperty(key);
+        if (value!=null)
+        {
+            Path path = toCanonicalPath(value);
+            paths.add(new PathAttribute(key,path,weight));
+            uris.add(new URIAttribute(key+".uri",path.toUri(),weight));
         }
     }
 
