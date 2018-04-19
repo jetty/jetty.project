@@ -63,7 +63,7 @@ public class HazelcastTestHelper
     public SessionDataStoreFactory createSessionDataStoreFactory(boolean onlyClient)
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
-        _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
+        //_name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
         factory.setOnlyClient( onlyClient );
         factory.setMapName(_name);
         factory.setHazelcastInstance(_instance);
