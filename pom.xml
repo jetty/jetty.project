@@ -1685,6 +1685,30 @@
       </properties>
     </profile>
     <profile>
+      <id>8u171</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_171</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.12.v20180117</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u172</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_172</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.12.v20180117</alpn.version>
+      </properties>
+    </profile>
+    <profile>
       <id>jdk9</id>
       <activation>
         <jdk>[1.9,)</jdk>
