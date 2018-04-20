@@ -17,6 +17,7 @@ def getFullBuild(jdk, os) {
       // System Dependent Locations
       def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
       def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
+      def localRepo = ".repository" // "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
 
       // Environment
       List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
@@ -42,7 +43,7 @@ def getFullBuild(jdk, os) {
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: 'oss-settings.xml',
-                      mavenLocalRepo: ".repository") {
+                      mavenLocalRepo: localRepo) {
                 sh "mvn -V -B clean install -DskipTests -T6"
               }
 
@@ -64,7 +65,7 @@ def getFullBuild(jdk, os) {
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: 'oss-settings.xml',
-                      mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
+                      mavenLocalRepo: localRepo) {
                 sh "mvn -V -B javadoc:javadoc -T5"
               }
             }
@@ -87,7 +88,7 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       //options: [invokerPublisher(disabled: false)],
                       globalMavenSettingsConfig: 'oss-settings.xml',
-                      mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
+                      mavenLocalRepo: localRepo) {
                 //
                 sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T3 -e -Dmaven.repo.local=${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER} -Pmongodb"
               }
@@ -142,7 +143,7 @@ def getFullBuild(jdk, os) {
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: 'oss-settings.xml',
-                      mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
+                      mavenLocalRepo: localRepo) {
                 sh "mvn -V -B -Pcompact3 clean install -T5"
               }
             }
