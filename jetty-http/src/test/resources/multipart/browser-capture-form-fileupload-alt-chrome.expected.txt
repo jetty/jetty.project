@@ -1,0 +1,21 @@
+Request-Header|Accept|text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+Request-Header|Accept-Encoding|gzip, deflate, br
+Request-Header|Accept-Language|en-US,en;q=0.9
+Request-Header|Cache-Control|max-age=0
+Request-Header|Connection|keep-alive
+Request-Header|Content-Length|22759
+Request-Header|Content-Type|multipart/form-data; boundary=----WebKitFormBoundaryafpkbdzB5Ciqre2z
+Request-Header|Cookie|visited=yes
+Request-Header|DNT|1
+Request-Header|Host|localhost:9090
+Request-Header|Origin|http://localhost:9090
+Request-Header|Referer|http://localhost:9090/form-fileupload-multi.html
+Request-Header|Upgrade-Insecure-Requests|1
+Request-Header|User-Agent|Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36
+Parts-Count|4
+Part-ContainsContents|description|the larger icon
+Part-ContainsContents|alternate|text.raw
+Part-Filename|file|jetty-avatar-256.png
+Part-Sha1sum|file|e75b73644afe9b234d70da9ff225229de68cdff8
+Part-Filename|file-alt|text.raw
+Part-Sha1sum|file-alt|5fb031816a27d80cc88c390819addab0ec3c189b

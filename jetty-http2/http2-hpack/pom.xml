@@ -51,7 +51,7 @@
             <configuration>
               <instructions>
                 <Bundle-Description>Http2 Hpack</Bundle-Description>
-                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
                 <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.http.HttpFieldPreEncoder</Provide-Capability>
                 <_nouses>true</_nouses>
               </instructions>

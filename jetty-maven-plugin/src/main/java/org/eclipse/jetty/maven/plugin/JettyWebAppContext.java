@@ -536,7 +536,7 @@ public class JettyWebAppContext extends WebAppContext
         
         if (path != null)
         {
-            TreeSet<String> allPaths = new TreeSet<String>();
+            TreeSet<String> allPaths = new TreeSet<>();
             allPaths.addAll(paths);
             
             //add in the dependency jars as a virtual WEB-INF/lib entry

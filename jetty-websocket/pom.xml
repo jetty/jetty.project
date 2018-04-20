@@ -25,17 +25,23 @@
     </modules>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>findbugs-maven-plugin</artifactId>
-                    <configuration>
-                        <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <configuration>
+                    <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
-
 </project>

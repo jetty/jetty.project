@@ -15,24 +15,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-            <configuration>
-              <instructions>
-                <Import-Package>javax.servlet.*;version="[2.6.0,4.1)",javax.security.cert,org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
-              </instructions>
-            </configuration>
-
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
         <configuration>

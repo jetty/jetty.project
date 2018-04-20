@@ -20,6 +20,11 @@ package org.eclipse.jetty.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * <p>
@@ -36,25 +41,20 @@ import org.apache.maven.plugin.MojoFailureException;
  * This goal is useful e.g. for launching a web app in Jetty as a target for unit-tested 
  * HTTP client components.
  * </p>
- * 
- * @goal deploy-war
- * @requiresDependencyResolution runtime
- * @execute phase="validate"
- * @description Deploy a pre-assembled war
+ * Deploy a pre-assembled war
  * 
  */
+@Mojo( name = "deploy-war", requiresDependencyResolution = ResolutionScope.RUNTIME)
+@Execute(phase = LifecyclePhase.VALIDATE)
 public class JettyDeployWar extends JettyRunWarMojo
 {
-
-    
     /**
      * If true, the plugin should continue and not block. Otherwise the
      * plugin will block further execution and you will need to use
      * cntrl-c to stop it.
-     * 
-     * 
-     * @parameter property="jetty.daemon" default-value="true"
+     *
      */
+    @Parameter(property = "jetty.daemon", defaultValue = "true")
     protected boolean daemon = true;
     
     

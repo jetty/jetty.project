@@ -29,7 +29,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -219,6 +219,17 @@ public class TestAnnotationParser
         Set<Handler> emptySet = Collections.emptySet();
         parser.parse(emptySet, badClassesJar.toURI());
         // Should throw no exceptions, and skip the META-INF/versions/9/* files
+    }
+
+    @Test
+    public void testJep238MultiReleaseInJar_JDK10() throws Exception
+    {
+        File jdk10Jar = MavenTestingUtils.getTestResourceFile("jdk10/multirelease-10.jar");
+        AnnotationParser parser = new AnnotationParser();
+        DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
+        Set<Handler> handlers = Collections.singleton(handler);
+        parser.parse(handlers, new PathResource(jdk10Jar));
+        // Should throw no exceptions
     }
 
     @Test

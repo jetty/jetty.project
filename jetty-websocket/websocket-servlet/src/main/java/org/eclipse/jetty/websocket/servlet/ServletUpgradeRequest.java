@@ -18,13 +18,10 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -56,7 +53,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
     private final boolean secure;
     private List<HttpCookie> cookies;
     private Map<String, List<String>> parameterMap;
-    private List<String> subprotocols;
 
     public ServletUpgradeRequest(HttpServletRequest httpRequest) throws URISyntaxException
     {
@@ -387,20 +383,21 @@ public class ServletUpgradeRequest implements UpgradeRequest
     @Override
     public List<String> getSubProtocols()
     {
-        if (subprotocols == null)
+        Enumeration<String> requestProtocols = request.getHeaders("Sec-WebSocket-Protocol");
+        if (requestProtocols != null && requestProtocols.hasMoreElements())
         {
-            Enumeration<String> requestProtocols = request.getHeaders("Sec-WebSocket-Protocol");
-            if (requestProtocols != null)
+            ArrayList subprotocols = new ArrayList<>(2);
+            while (requestProtocols.hasMoreElements())
             {
-                subprotocols = new ArrayList<>(2);
-                while (requestProtocols.hasMoreElements())
-                {
-                    String candidate = requestProtocols.nextElement();
-                    Collections.addAll(subprotocols,parseProtocols(candidate));
-                }
+                String candidate = requestProtocols.nextElement();
+                Collections.addAll(subprotocols,parseProtocols(candidate));
             }
+            return subprotocols;
         }
-        return subprotocols;
+        else
+        {
+            return Collections.emptyList();
+        }
     }
 
     /**

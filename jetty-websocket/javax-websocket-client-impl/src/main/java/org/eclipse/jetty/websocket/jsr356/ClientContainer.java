@@ -73,7 +73,7 @@ import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketContainerScope
 {
     private static final Logger LOG = Log.getLogger(ClientContainer.class);
-    
+
     /** The delegated Container Scope */
     private final WebSocketContainerScope scopeDelegate;
     /** The jetty websocket client in use for this container */
@@ -126,7 +126,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         this.client = new WebSocketClient(scopeDelegate);
         this.client.setSessionFactory(new JsrSessionFactory(this));
         this.internalClient = true;
-        
+
         if(jsr356TrustAll != null)
         {
             boolean trustAll = Boolean.parseBoolean(jsr356TrustAll);
@@ -148,7 +148,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         this.client.setSessionFactory(new JsrSessionFactory(this));
         this.internalClient = false;
     }
-    
+
     public EndpointFunctions newJsrEndpointFunction(Object endpoint,
                                                     WebSocketPolicy sessionPolicy,
                                                     AvailableEncoders availableEncoders,
@@ -164,7 +164,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
                 pathParameters,
                 config);
     }
-    
+
     private Session connect(ConfiguredEndpoint instance, URI path) throws IOException
     {
         synchronized (this.client)
@@ -194,17 +194,17 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         {
             req.addExtensions(new JsrExtensionConfig(ext));
         }
-        
+
         if (config.getPreferredSubprotocols().size() > 0)
         {
             req.setSubProtocols(config.getPreferredSubprotocols());
         }
-        
+
         if (config.getConfigurator() != null)
         {
             upgradeListener = new JsrUpgradeListener(config.getConfigurator());
         }
-        
+
         Future<org.eclipse.jetty.websocket.api.Session> futSess = client.connect(instance, path, req, upgradeListener);
         try
         {
@@ -218,7 +218,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         {
             // Unwrap Actual Cause
             Throwable cause = e.getCause();
-            
+
             if (cause instanceof IOException)
             {
                 // Just rethrow
@@ -230,7 +230,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
             }
         }
     }
-    
+
     @Override
     public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path) throws DeploymentException, IOException
     {
@@ -242,14 +242,14 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         ConfiguredEndpoint instance = newConfiguredEndpoint(endpointClass, clientEndpointConfig);
         return connect(instance, path);
     }
-    
+
     @Override
     public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws DeploymentException, IOException
     {
         ConfiguredEndpoint instance = newConfiguredEndpoint(annotatedEndpointClass, new EmptyClientEndpointConfig());
         return connect(instance, path);
     }
-    
+
     @Override
     public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig config, final URI path) throws DeploymentException, IOException
     {
@@ -261,82 +261,82 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, clientEndpointConfig);
         return connect(instance, path);
     }
-    
+
     @Override
     public Session connectToServer(Object endpoint, URI path) throws DeploymentException, IOException
     {
         ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, new EmptyClientEndpointConfig());
         return connect(instance, path);
     }
-    
+
     @Override
     protected void doStop() throws Exception
     {
         ShutdownThread.deregister(this);
         super.doStop();
     }
-    
+
     @Override
     public ByteBufferPool getBufferPool()
     {
         return scopeDelegate.getBufferPool();
     }
-    
+
     public WebSocketClient getClient()
     {
         return client;
     }
-    
+
     @Override
     public long getDefaultAsyncSendTimeout()
     {
         return client.getAsyncWriteTimeout();
     }
-    
+
     @Override
     public int getDefaultMaxBinaryMessageBufferSize()
     {
         return client.getMaxBinaryMessageBufferSize();
     }
-    
+
     @Override
     public long getDefaultMaxSessionIdleTimeout()
     {
         return client.getMaxIdleTimeout();
     }
-    
+
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
         return client.getMaxTextMessageBufferSize();
     }
-    
+
     @Override
     public Executor getExecutor()
     {
         return scopeDelegate.getExecutor();
     }
-    
+
     @Override
     public Set<Extension> getInstalledExtensions()
     {
         Set<Extension> ret = new HashSet<>();
         ExtensionFactory extensions = client.getExtensionFactory();
-        
+
         for (String name : extensions.getExtensionNames())
         {
             ret.add(new JsrExtension(name));
         }
-        
+
         return ret;
     }
-    
+
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
         return scopeDelegate.getObjectFactory();
     }
-    
+
     /**
      * Used in {@link Session#getOpenSessions()}
      *
@@ -346,50 +346,50 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         return new HashSet<>(getBeans(Session.class));
     }
-    
+
     @Override
     public WebSocketPolicy getPolicy()
     {
         return scopeDelegate.getPolicy();
     }
-    
+
     @Override
     public SslContextFactory getSslContextFactory()
     {
         return scopeDelegate.getSslContextFactory();
     }
-    
+
     private ConfiguredEndpoint newConfiguredEndpoint(Class<?> endpointClass, EndpointConfig config)
     {
         try
         {
-            return newConfiguredEndpoint(endpointClass.newInstance(), config);
+            return newConfiguredEndpoint(endpointClass.getDeclaredConstructor().newInstance(), config);
         }
-        catch (DeploymentException | InstantiationException | IllegalAccessException e)
+        catch (Exception e)
         {
-            throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getClass());
+            throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getClass(), e);
         }
     }
-    
+
     public ConfiguredEndpoint newConfiguredEndpoint(Object endpoint, EndpointConfig providedConfig) throws DeploymentException
     {
         EndpointConfig config = providedConfig;
-        
+
         if (config == null)
         {
             config = newEmptyConfig(endpoint);
         }
-        
+
         config = readAnnotatedConfig(endpoint, config);
-        
+
         return new ConfiguredEndpoint(endpoint, config);
     }
-    
+
     protected EndpointConfig newEmptyConfig(Object endpoint)
     {
         return new EmptyClientEndpointConfig();
     }
-    
+
     protected EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException
     {
         ClientEndpoint anno = endpoint.getClass().getAnnotation(ClientEndpoint.class);
@@ -413,7 +413,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         return this.scopeDelegate.removeSessionListener(listener);
     }
-    
+
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
@@ -427,7 +427,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
                     Session.class.getName());
         }
     }
-    
+
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
@@ -441,13 +441,13 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
                     Session.class.getName());
         }
     }
-    
+
     @Override
     public void setAsyncSendTimeout(long ms)
     {
         client.setAsyncWriteTimeout(ms);
     }
-    
+
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
@@ -456,13 +456,13 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         // incoming streaming buffer size
         client.setMaxBinaryMessageBufferSize(max);
     }
-    
+
     @Override
     public void setDefaultMaxSessionIdleTimeout(long ms)
     {
         client.setMaxIdleTimeout(ms);
     }
-    
+
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {

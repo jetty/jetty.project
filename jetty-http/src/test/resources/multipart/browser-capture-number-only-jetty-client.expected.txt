@@ -1,0 +1,12 @@
+Request-Header|Accept-Encoding|gzip
+Request-Header|Connection|close
+Request-Header|Content-Type|multipart/form-data; boundary=JettyHttpClientBoundary1shlqpw2yahae6jf
+Request-Header|Host|localhost:9090
+Request-Header|Transfer-Encoding|chunked
+Request-Header|User-Agent|Jetty/9.4.9.v20180320
+Request-Header|X-BrowserId|jetty-client
+Parts-Count|1
+# Start of sequence
+Part-ContainsContents|pi|3.14159 26535 89793 23846 26433 83279 50288
+# End of sequence
+Part-ContainsContents|pi|81592 05600 10165 52563 7567

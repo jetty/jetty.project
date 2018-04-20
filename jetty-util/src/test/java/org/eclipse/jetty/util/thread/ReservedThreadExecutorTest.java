@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.security.SecureRandom;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Random;
@@ -76,7 +79,7 @@ public class ReservedThreadExecutorTest
     }
 
     @Test
-    public void testStarted() throws Exception
+    public void testStarted()
     {
         // Reserved threads are lazily started.
         assertThat(_executor._queue.size(), is(0));
@@ -172,19 +175,6 @@ public class ReservedThreadExecutorTest
         assertThat(_reservedExecutor.getAvailable(),is(0));
     }
 
-    protected void waitForNoPending() throws InterruptedException
-    {
-        long started = System.nanoTime();
-        while (_reservedExecutor.getPending() > 0)
-        {
-            long elapsed = System.nanoTime() - started;
-            if (elapsed > TimeUnit.SECONDS.toNanos(10))
-                Assert.fail("pending="+_reservedExecutor.getPending());
-            Thread.sleep(10);
-        }
-        assertThat(_reservedExecutor.getPending(), is(0));
-    }
-
     protected void waitForAvailable(int size) throws InterruptedException
     {
         long started = System.nanoTime();
@@ -253,7 +243,6 @@ public class ReservedThreadExecutorTest
         reserved.start();
 
         final int LOOPS = 1000000;
-        final Random random = new Random();
         final AtomicInteger executions = new AtomicInteger(LOOPS);
         final CountDownLatch executed = new CountDownLatch(executions.get());
         final AtomicInteger usedReserved = new AtomicInteger(0);

@@ -90,7 +90,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -140,8 +139,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
-    public static final String __MULTIPART_INPUT_STREAM = "org.eclipse.jetty.multiPartInputStream";
-    public static final String __MULTIPART_CONTEXT = "org.eclipse.jetty.multiPartContext";
+    public static final String __MULTIPARTS = "org.eclipse.jetty.multiParts";
 
     private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
@@ -221,7 +219,7 @@ public class Request implements HttpServletRequest
     private HttpSession _session;
     private SessionHandler _sessionHandler;
     private long _timeStamp;
-    private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
+    private MultiParts _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
 
     /* ------------------------------------------------------------ */
@@ -461,18 +459,26 @@ public class Request implements HttpServletRequest
             _contentParameters=new MultiMap<>();
             contentType = HttpFields.valueParameters(contentType, null);
             int contentLength = getContentLength();
-            if (contentLength != 0)
+            if (contentLength != 0 && _inputState == __NONE)
             {
-                if (MimeTypes.Type.FORM_ENCODED.is(contentType) && _inputState == __NONE &&
+                if (MimeTypes.Type.FORM_ENCODED.is(contentType) &&
                     _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
                     extractFormParameters(_contentParameters);
                 }
-                else if (contentType.startsWith("multipart/form-data") &&
+                else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentType) &&
                         getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
-                        _multiPartInputStream == null)
+                        _multiParts == null)
                 {
-                    extractMultipartParameters(_contentParameters);
+                    try
+                    {
+                        getParts(_contentParameters);
+                    }
+                    catch (IOException | ServletException e)
+                    {
+                        LOG.debug(e);
+                        throw new RuntimeIOException(e);
+                    }
                 }
             }
         }
@@ -537,20 +543,6 @@ public class Request implements HttpServletRequest
             UrlEncoded.decodeTo(in,params,getCharacterEncoding(),contentLength<0?maxFormContentSize:-1,maxFormKeys);
         }
         catch (IOException e)
-        {
-            LOG.debug(e);
-            throw new RuntimeIOException(e);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    private void extractMultipartParameters(MultiMap<String> result)
-    {
-        try
-        {
-            getParts(result);
-        }
-        catch (IOException | ServletException e)
         {
             LOG.debug(e);
             throw new RuntimeIOException(e);
@@ -1859,7 +1851,7 @@ public class Request implements HttpServletRequest
         _pathSpec = null;
         _contentParamsExtracted = false;
         _inputState = __NONE;
-        _multiPartInputStream = null;
+        _multiParts = null;
         _remote=null;
         _input.recycle();
     }
@@ -2301,64 +2293,110 @@ public class Request implements HttpServletRequest
     {
         getParts();
 
-        return _multiPartInputStream.getPart(name);
+        return _multiParts.getPart(name);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
-        if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
+        if (getContentType() == null || 
+                !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(getContentType(),null)))
             throw new ServletException("Content-Type != multipart/form-data");
         return getParts(null);
     }
 
     private Collection<Part> getParts(MultiMap<String> params) throws IOException, ServletException
-    {
-        if (_multiPartInputStream == null)
-            _multiPartInputStream = (MultiPartInputStreamParser)getAttribute(__MULTIPART_INPUT_STREAM);
+    {        
+        if (_multiParts == null)
+            _multiParts = (MultiParts)getAttribute(__MULTIPARTS);
 
-        if (_multiPartInputStream == null)
+        if (_multiParts == null)
         {
             MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
-
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
-            _multiPartInputStream = new MultiPartInputStreamParser(getInputStream(),
-                                                             getContentType(), config,
-                                                             (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            _multiParts = newMultiParts(getInputStream(),
+                                       getContentType(), config,
+                                       (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
 
-            setAttribute(__MULTIPART_INPUT_STREAM, _multiPartInputStream);
-            setAttribute(__MULTIPART_CONTEXT, _context);
-            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing
+            setAttribute(__MULTIPARTS, _multiParts);
+            Collection<Part> parts = _multiParts.getParts(); //causes parsing
+                       
+            String _charset_ = null;
+            Part charsetPart = _multiParts.getPart("_charset_");
+            if(charsetPart != null)
+            {
+                try (InputStream is = charsetPart.getInputStream())
+                {
+                    ByteArrayOutputStream os = new ByteArrayOutputStream();
+                    IO.copy(is, os);
+                    _charset_ = new String(os.toByteArray(),StandardCharsets.UTF_8);
+                }
+            }
+
+            // charset should be:
+            //  1. the charset set in the parts content type; else
+            //  2. the default charset set in the _charset_ part; else
+            //  3. the default charset set in the request.setCharacterEncoding; else
+            //  4. the default charset set to UTF_8
+            Charset defaultCharset;
+            if (_charset_ != null)
+                defaultCharset = Charset.forName(_charset_);
+            else if (getCharacterEncoding() != null)
+                defaultCharset = Charset.forName(getCharacterEncoding());
+            else
+                defaultCharset = StandardCharsets.UTF_8;
+            
             ByteArrayOutputStream os = null;
             for (Part p:parts)
             {
-                MultiPartInputStreamParser.MultiPart mp = (MultiPartInputStreamParser.MultiPart)p;
-                if (mp.getContentDispositionFilename() == null)
+                if (p.getSubmittedFileName() == null)
                 {
                     // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
                     String charset = null;
-                    if (mp.getContentType() != null)
-                        charset = MimeTypes.getCharsetFromContentType(mp.getContentType());
+                    if (p.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(p.getContentType());
 
-                    try (InputStream is = mp.getInputStream())
+                    try (InputStream is = p.getInputStream())
                     {
                         if (os == null)
                             os = new ByteArrayOutputStream();
                         IO.copy(is, os);
-                        String content=new String(os.toByteArray(),charset==null?StandardCharsets.UTF_8:Charset.forName(charset));
+                        
+                        String content=new String(os.toByteArray(),charset==null?defaultCharset:Charset.forName(charset));
                         if (_contentParameters == null)
                             _contentParameters = params == null ? new MultiMap<>() : params;
-                        _contentParameters.add(mp.getName(), content);
+                        _contentParameters.add(p.getName(), content);
                     }
                     os.reset();
                 }
             }
         }
 
-        return _multiPartInputStream.getParts();
+        return _multiParts.getParts();
+    }
+
+    
+    private MultiParts newMultiParts(ServletInputStream inputStream, String contentType, MultipartConfigElement config, Object object) throws IOException
+    {
+        MultiPartFormDataCompliance compliance = getHttpChannel().getHttpConfiguration().getMultipartFormDataCompliance();
+        if(LOG.isDebugEnabled())
+            LOG.debug("newMultiParts {} {}",compliance, this);
+        
+        switch(compliance)
+        {
+            case RFC7578:
+                return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
+                        (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
+                
+            case LEGACY: 
+            default:
+                return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
+                    (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null), this);
+                        
+        }
     }
 
     /* ------------------------------------------------------------ */

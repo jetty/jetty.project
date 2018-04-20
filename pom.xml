@@ -17,7 +17,9 @@
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support-version>1.4</build-support-version>
-    <slf4j-version>1.6.6</slf4j-version>
+    <slf4j.version>1.7.25</slf4j.version>
+    <log4j2.version>2.9.1</log4j2.version>
+    <logback.version>1.2.3</logback.version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
     <servlet.api.version>4.0.0</servlet.api.version>
@@ -26,7 +28,7 @@
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
     <conscrypt.version>1.0.0.RC11</conscrypt.version>
-    <asm.version>6.0</asm.version>
+    <asm.version>6.1.1</asm.version>
     <jmh.version>1.20</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <surefireVersion>2.21.0</surefireVersion>
@@ -230,6 +232,8 @@
           <rulesets>
             <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
           </rulesets>
+          <analysisCache>true</analysisCache>
+          <showPmdLog>false</showPmdLog>
         </configuration>
         <dependencies>
           <dependency>
@@ -412,7 +416,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.6.2</version>
+          <version>3.7.0</version>
           <configuration>
             <source>1.8</source>
             <target>1.8</target>
@@ -421,7 +425,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.0.2</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -453,8 +457,13 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.5.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.0.2</version>
+          <version>3.1.0</version>
           <configuration>
             <archive>
               <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
@@ -556,7 +565,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>3.8</version>
+          <version>3.9.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -658,9 +667,10 @@
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
-              <Export-Package>${bundle-symbolic-name}.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
               <Bundle-Copyright>Copyright (c) 2008-2018 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
               <Import-Package>javax.servlet*;version="[2.6.0,4.1)",javax.transaction*;version="[1.1,1.3)",org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
+              <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
+              <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
             </instructions>
           </configuration>
         </plugin>
@@ -996,17 +1006,17 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jcl104-over-slf4j</artifactId>
-        <version>${slf4j-version}</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>log4j-over-slf4j</artifactId>
-        <version>${slf4j-version}</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>${slf4j-version}</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
@@ -1667,6 +1677,30 @@
         <property>
           <name>java.version</name>
           <value>1.8.0_162</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.12.v20180117</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u171</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_171</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.12.v20180117</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u172</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_172</value>
         </property>
       </activation>
       <properties>

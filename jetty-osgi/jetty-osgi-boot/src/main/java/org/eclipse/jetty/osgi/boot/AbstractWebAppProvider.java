@@ -60,7 +60,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
 public abstract class AbstractWebAppProvider extends AbstractLifeCycle implements AppProvider
 {
     private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
-    
+
     
 
     private boolean _parentLoaderPriority;
@@ -72,7 +72,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     private String _tldBundles;
     
     private DeploymentManager _deploymentManager;
-   
+
     
     private ServerInstanceWrapper _serverWrapper;
     
@@ -249,8 +249,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             // Set up what has been configured on the provider
             _webApp.setParentLoaderPriority(isParentLoaderPriority());
             _webApp.setExtractWAR(isExtract());
-            
-  
+
+
             //Set up configuration from manifest headers
             //extra classpath
             String tmp = (String)_properties.get(OSGiWebappConstants.JETTY_EXTRA_CLASSPATH);
@@ -295,7 +295,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             if (pathsToTldBundles != null)
                 webAppLoader.addClassPath(pathsToTldBundles);
             _webApp.setClassLoader(webAppLoader);
-            
+
 
             // apply any META-INF/context.xml file that is found to configure
             // the webapp first
@@ -312,7 +312,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
 
 
-            
+
             _webApp.setAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, requireTldBundles);
 
             //Set up some attributes
@@ -539,7 +539,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     {
         return _tldBundles;
     }
-    
+
 
     /* ------------------------------------------------------------ */
     public void setServerInstanceWrapper(ServerInstanceWrapper wrapper)

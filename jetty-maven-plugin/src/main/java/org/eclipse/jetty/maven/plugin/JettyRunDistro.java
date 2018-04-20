@@ -48,6 +48,12 @@ import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.shared.artifact.DefaultArtifactCoordinate;
@@ -76,12 +82,11 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  * See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
  *  
- * @goal run-distro
- * @requiresDependencyResolution test
- * @execute phase="test-compile"
- * @description Runs unassembled webapp in a locally installed jetty distro
+ * Runs unassembled webapp in a locally installed jetty distro
  * 
  */
+@Mojo( name = "run-distro", requiresDependencyResolution = ResolutionScope.TEST)
+@Execute(phase = LifecyclePhase.TEST_COMPILE)
 public class JettyRunDistro extends JettyRunMojo
 {
     
@@ -91,112 +96,99 @@ public class JettyRunDistro extends JettyRunMojo
     
     /**
      * This plugin
-     * 
-     * @parameter default-value="${plugin}"
-     * @readonly
-     * @required
      */
+    @Parameter(defaultValue = "${plugin}", required = true, readonly = true)
     protected PluginDescriptor plugin;
     
     /**
      * The target directory
-     * 
-     * @parameter default-value="${project.build.directory}"
-     * @required
-     * @readonly
      */
+    @Parameter(defaultValue = "${project.build.directory}", readonly = true, required = true)
     protected File target;
     
     
     /**
      * Optional jetty.home dir
-     * @parameter
+     *
      */
+    @Parameter
     private File jettyHome;
     
     
     /**
      * Optional jetty.base dir
-     * @parameter
+     *
      */
+    @Parameter
     private File jettyBase;
     
     /**
      * Optional list of other modules to
      * activate.
-     * @parameter
      */
+    @Parameter
     private String[] modules;
     
     /**
      * Arbitrary jvm args to pass to the forked process
-     * @parameter property="jetty.jvmArgs"
+     *
      */
+    @Parameter(property = "jetty.jvmArgs")
     private String jvmArgs;
     
     /**
      * Extra environment variables to be passed to the forked process
-     * 
-     * @parameter
+     *
      */
-    private Map<String,String> env = new HashMap<String,String>();
+    @Parameter
+    private Map<String,String> env = new HashMap<>();
     
     
     /**
      * Optional list of jetty properties to put on the command line
-     * @parameter
+     *
      */
+    @Parameter
     private String[] jettyProperties;
 
-    /**
-     * @parameter default-value="${session}"
-     * @required
-     * @readonly
-     */
+    @Parameter(defaultValue = "${session}", required = true, readonly = true)
     private MavenSession session;
 
     /**
      * The project's remote repositories to use for the resolution.
      *
-     * @parameter default-value="${project.remoteArtifactRepositories}"
-     * @required
-     * @readonly
      */
+    @Parameter(defaultValue="${project.remoteArtifactRepositories}", required = true, readonly = true)
     private List<ArtifactRepository> remoteRepositories;
 
-    /**
-     * @component
-     */
+    @Component
     private ArtifactResolver artifactResolver;
 
-    
-    /**
-     * @parameter default-value="${plugin.version}"
-     * @readonly
-     */
+
+    @Parameter( defaultValue="${plugin.version}", readonly = true)
     private String pluginVersion;
     
     
     /**
      * Whether to wait for the child to finish or not.
-     * @parameter default-value="true"
+     *
      */
+    @Parameter(defaultValue="true")
     private boolean waitForChild;
     
     /**
      * Max number of times to try checking if the
      * child has started successfully.
      * 
-     * @parameter default-value="10"
      */
+    @Parameter(defaultValue="10")
     private int maxChildChecks;
     
     /**
      * Millisecs to wait between each
      * check to see if the child started successfully.
-     * 
-     * @parameter default-value="100"
      */
+    @Parameter(defaultValue="100")
     private long maxChildCheckInterval;
  
     private File targetBase;

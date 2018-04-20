@@ -19,20 +19,10 @@
 package org.eclipse.jetty.util;
 
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -41,6 +31,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class BufferUtilTest
 {
@@ -351,40 +347,5 @@ public class BufferUtilTest
         BufferUtil.append(buffer, bytes, 0, capacity);
         BufferUtil.writeTo(buffer.asReadOnlyBuffer(), out);
         assertThat("Bytes in out equal bytes in buffer", Arrays.equals(bytes, out.toByteArray()), is(true));
-    }
-
-    @Test
-    public void testMappedFile() throws Exception
-    {
-        String data="Now is the time for all good men to come to the aid of the party";
-        File file = File.createTempFile("test",".txt");
-        file.deleteOnExit();
-        try(FileWriter out = new FileWriter(file))
-        {
-            out.write(data);
-        }
-
-        ByteBuffer mapped = BufferUtil.toMappedBuffer(file);
-        assertEquals(data,BufferUtil.toString(mapped));
-        assertTrue(BufferUtil.isMappedBuffer(mapped));
-
-        ByteBuffer direct = BufferUtil.allocateDirect(data.length());
-        BufferUtil.clearToFill(direct);
-        direct.put(data.getBytes(StandardCharsets.ISO_8859_1));
-        BufferUtil.flipToFlush(direct, 0);
-        assertEquals(data,BufferUtil.toString(direct));
-        assertFalse(BufferUtil.isMappedBuffer(direct));
-
-        ByteBuffer slice = direct.slice();
-        assertEquals(data,BufferUtil.toString(slice));
-        assertFalse(BufferUtil.isMappedBuffer(slice));
-
-        ByteBuffer duplicate = direct.duplicate();
-        assertEquals(data,BufferUtil.toString(duplicate));
-        assertFalse(BufferUtil.isMappedBuffer(duplicate));
-
-        ByteBuffer readonly = direct.asReadOnlyBuffer();
-        assertEquals(data,BufferUtil.toString(readonly));
-        assertFalse(BufferUtil.isMappedBuffer(readonly));
     }
 }

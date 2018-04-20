@@ -344,6 +344,8 @@ The ALPN implementation, relying on modifications of OpenJDK classes, updates ev
 |1.8.0u152 |8.1.11.v20170118
 |1.8.0u161 |8.1.12.v20180117
 |1.8.0u162 |8.1.12.v20180117
+|1.8.0u171 |8.1.12.v20180117
+|1.8.0u172 |8.1.12.v20180117
 |=============================
 
 [[alpn-build]]
