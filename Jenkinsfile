@@ -42,7 +42,7 @@ def getFullBuild(jdk, os) {
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: 'oss-settings.xml',
-                      mavenLocalRepo: "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}") {
+                      mavenLocalRepo: ".repository") {
                 sh "mvn -V -B clean install -DskipTests -T6"
               }
 
