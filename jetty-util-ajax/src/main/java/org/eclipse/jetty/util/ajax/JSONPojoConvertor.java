@@ -182,7 +182,7 @@ public class JSONPojoConvertor implements JSON.Convertor
         Object obj = null;
         try
         {
-            obj = _pojoClass.newInstance();
+            obj = _pojoClass.getDeclaredConstructor().newInstance();
         }
         catch(Exception e)
         {

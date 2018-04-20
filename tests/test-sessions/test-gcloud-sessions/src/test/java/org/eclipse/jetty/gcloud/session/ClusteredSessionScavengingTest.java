@@ -48,12 +48,5 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
         return GCloudSessionTestSupport.newSessionDataStoreFactory(GCloudTestSuite.__testSupport.getDatastore());
     }
 
-    @Test
-    @Override
-    public void testLocalSessionsScavenging() throws Exception
-    {
-        super.testLocalSessionsScavenging();
-    }
-
-    
+   
 }

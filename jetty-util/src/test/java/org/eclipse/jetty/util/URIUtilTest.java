@@ -30,13 +30,12 @@ import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
 
-/* ------------------------------------------------------------ */
-/** Util meta Tests.
- *
+/**
+ * URIUtil Tests.
  */
+@SuppressWarnings("SpellCheckingInspection")
 public class URIUtilTest
 {
-    /* ------------------------------------------------------------ */
     @Test
     public void testEncodePath()
     {
@@ -66,7 +65,6 @@ public class URIUtilTest
         assertEquals("test%3F%C3%B6%3F%C3%B6:%C3%9F", buf.toString());
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testDecodePath()
     {
@@ -88,7 +86,6 @@ public class URIUtilTest
         assertEquals(odd,URIUtil.decodePath("/%00/"));
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testAddEncodedPaths()
     {
@@ -177,7 +174,7 @@ public class URIUtilTest
         assertEquals("aaa;JS?A=1+/bbb", URIUtil.addEncodedPaths("aaa/;JS?A=1","/bbb"),"aaa/bbb;JS?A=1");
 
     }
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testAddDecodedPaths()
     {
@@ -249,7 +246,6 @@ public class URIUtilTest
 
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testCompactPath()
     {
@@ -263,7 +259,6 @@ public class URIUtilTest
         assertEquals("/foo/bar?a=b//c", URIUtil.compactPath("/foo///bar?a=b//c"));
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testParentPath()
     {
@@ -275,7 +270,7 @@ public class URIUtilTest
         assertEquals("parent null",null, URIUtil.parentPath(null));
 
     }
-    /* ------------------------------------------------------------ */
+
     @Test
     public void testEqualsIgnoreEncoding()
     {
@@ -297,7 +292,18 @@ public class URIUtilTest
         assertFalse(URIUtil.equalsIgnoreEncodings("/foo2fbar","/foo/bar"));
     }
 
-    /* ------------------------------------------------------------ */
+    @Test
+    public void testEqualsIgnoreEncoding_JarFile()
+    {
+        URI uriA = URI.create("jar:file:/path/to/main.jar!/META-INF/versions/");
+        URI uriB = URI.create("jar:file:/path/to/main.jar!/META-INF/%76ersions/");
+        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
+
+        uriA = URI.create("JAR:FILE:/path/to/main.jar!/META-INF/versions/");
+        uriB = URI.create("jar:file:/path/to/main.jar!/META-INF/versions/");
+        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
+    }
+
     @Test
     public void testJarSource() throws Exception
     {

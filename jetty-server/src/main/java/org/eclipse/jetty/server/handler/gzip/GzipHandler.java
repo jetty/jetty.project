@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -152,11 +151,10 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
     public static final int DEFAULT_MIN_GZIP_SIZE=16;
+    public static final int COMPRESSION_LEVEL = Deflater.DEFAULT_COMPRESSION;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
 
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
-    private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
-    private boolean _checkGzExists = true;
     private boolean _syncFlush = false;
     private int _inflateBufferSize = -1;
     private EnumSet<DispatcherType> _dispatchers = EnumSet.of(DispatcherType.REQUEST);
@@ -399,16 +397,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         super.doStart();
     }
 
-    public boolean getCheckGzExists()
-    {
-        return _checkGzExists;
-    }
-
-    public int getCompressionLevel()
-    {
-        return _compressionLevel;
-    }
-    
     @Override
     public Deflater getDeflater(Request request, long content_length)
     {
@@ -443,7 +431,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         
         Deflater df = _deflater.get();
         if (df==null)
-            df=new Deflater(_compressionLevel,true);        
+            df=new Deflater(COMPRESSION_LEVEL,true);
         else
             _deflater.set(null);
         
@@ -690,22 +678,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             }
         }
         
-        if (_checkGzExists && context!=null)
-        {
-            String realpath=request.getServletContext().getRealPath(path);
-            if (realpath!=null)
-            {
-                File gz=new File(realpath+".gz");
-                if (gz.exists())
-                {
-                    LOG.debug("{} gzip exists {}",this,request);
-                    // allow default servlet to handle
-                    _handler.handle(target,baseRequest, request, response);
-                    return;
-                }
-            }
-        }
-      
         HttpOutput.Interceptor orig_interceptor = out.getInterceptor();
         try
         {
@@ -773,28 +745,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
         else
             deflater.end();
-    }
-
-    /**
-     * Set the Check if {@code *.gz} file for the incoming file exists.
-     *
-     * @param checkGzExists whether to check if a static gz file exists for
-     * the resource that the DefaultServlet may serve as precompressed.
-     */
-    public void setCheckGzExists(boolean checkGzExists)
-    {
-        _checkGzExists = checkGzExists;
-    }
-    
-    /**
-     * Set the Compression level that {@link Deflater} uses.
-     *
-     * @param compressionLevel  The compression level to use to initialize {@link Deflater#setLevel(int)}
-     * @see Deflater#setLevel(int)
-     */
-    public void setCompressionLevel(int compressionLevel)
-    {
-        _compressionLevel = compressionLevel;
     }
 
     /**

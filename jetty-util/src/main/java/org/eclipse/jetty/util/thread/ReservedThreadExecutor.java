@@ -120,7 +120,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     @ManagedAttribute(value = "available reserved threads", readonly = true)
     public int getAvailable()
     {
-        return _size.get();
+        return _stack.size();
     }
 
     @ManagedAttribute(value = "pending reserved threads", readonly = true)

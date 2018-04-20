@@ -10,8 +10,6 @@
   <name>Jetty :: Jetty Maven Plugin</name>
   <description>Jetty maven plugins</description>
   <properties>
-    <mavenVersion>3.5.0</mavenVersion>
-    <pluginToolsVersion>3.5</pluginToolsVersion>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
     <surefireVersion>2.20.1</surefireVersion>
     <it.debug>false</it.debug>
@@ -52,33 +50,22 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
-      <version>${mavenVersion}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-artifact</artifactId>
-      <version>${mavenVersion}</version>
     </dependency>
      <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-core</artifactId>
-      <version>${mavenVersion}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-tools-api</artifactId>
-      <version>${pluginToolsVersion}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>junit</groupId>
-          <artifactId>junit</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-annotations</artifactId>
-      <version>${pluginToolsVersion}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -164,21 +151,10 @@
      </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
+      <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-client</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-http-client-transport</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
+      <type>zip</type>
     </dependency>
   </dependencies>
   <reporting>
@@ -227,6 +203,7 @@
               <debug>${it.debug}</debug>
               <addTestClassPath>true</addTestClassPath>
               <projectsDirectory>src/it</projectsDirectory>
+              <timeoutInSeconds>60</timeoutInSeconds>
               <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
               <pomIncludes>
                 <pomInclude>*/pom.xml</pomInclude>

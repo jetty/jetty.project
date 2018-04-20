@@ -21,8 +21,6 @@ package org.eclipse.jetty.server.session;
 
 import java.util.Set;
 
-import org.eclipse.jetty.util.component.LifeCycle;
-
 /**
  * SessionDataStore
  *
@@ -68,10 +66,10 @@ public interface SessionDataStore extends SessionDataMap
     /**
      * Test if data exists for a given session id.
      * 
-     * @param id Identity of session whose existance should be checked
+     * @param id Identity of session whose existence should be checked
      * 
      * @return true if valid, non-expired session exists
-     * @throws Exception if problem checking existance with persistence layer
+     * @throws Exception if problem checking existence with persistence layer
      */
     public boolean exists (String id) throws Exception;
     

@@ -327,7 +327,7 @@ public class RequestLogTest
                     {
                         try
                         {
-                            throw (Throwable)(Class.forName(value).newInstance());
+                            throw (Throwable)(Class.forName(value).getDeclaredConstructor().newInstance());
                         }
                         catch(ServletException | IOException | Error | RuntimeException e)
                         {

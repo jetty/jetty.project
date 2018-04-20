@@ -253,7 +253,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
                 }
                 try
                 {
-                    ServerApplicationConfig config = clazz.newInstance();
+                    ServerApplicationConfig config = clazz.getDeclaredConstructor( ).newInstance();
 
                     Set<ServerEndpointConfig> seconfigs = config.getEndpointConfigs(discoveredExtendedEndpoints);
                     if (seconfigs != null)
@@ -269,7 +269,7 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
                         deployableAnnotatedEndpoints.addAll(annotatedClasses);
                     }
                 }
-                catch (InstantiationException | IllegalAccessException e)
+                catch (Exception e)
                 {
                     throw new ServletException("Unable to instantiate: " + clazz.getName(),e);
                 }

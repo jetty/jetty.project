@@ -117,7 +117,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         }
         _jobs=queue;
         _threadGroup=threadGroup;
-        setThreadPoolBudget(new ThreadPoolBudget(this));
+        setThreadPoolBudget(new ThreadPoolBudget(this,_minThreads));
     }
 
     @Override

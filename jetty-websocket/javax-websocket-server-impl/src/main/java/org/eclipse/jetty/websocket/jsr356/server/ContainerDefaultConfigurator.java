@@ -69,9 +69,9 @@ public final class ContainerDefaultConfigurator extends Configurator
         {
             // Since this is started via a ServiceLoader, this class has no Scope or context
             // that can be used to obtain a ObjectFactory from.
-            return endpointClass.newInstance();
+            return endpointClass.getDeclaredConstructor().newInstance();
         }
-        catch (IllegalAccessException e)
+        catch (Exception e)
         {
             throw new InstantiationException(String.format("%s: %s",e.getClass().getName(),e.getMessage()));
         }

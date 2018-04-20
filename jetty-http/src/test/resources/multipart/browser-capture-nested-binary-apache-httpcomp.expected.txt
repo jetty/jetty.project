@@ -1,0 +1,12 @@
+Request-Header|Accept-Encoding|gzip,deflate
+Request-Header|Connection|keep-alive
+Request-Header|Content-Length|1577
+Request-Header|Content-Type|multipart/form-data; boundary=xDeLGHDDsXrlJSXfqDmg5IRop7auqTTBXuI
+Request-Header|Host|localhost:9090
+Request-Header|User-Agent|Apache-HttpClient/4.5.5 (Java/1.8.0_162)
+Request-Header|X-BrowserId|apache-httpcomp
+Parts-Count|4
+Part-ContainsContents|reporter|<user@company.com>
+Part-ContainsContents|timestamp|2018-03-21T19:00:18+00:00
+Part-ContainsContents|comments|this also couldn't be parsed
+Part-ContainsContents|attachment|cherry

@@ -127,7 +127,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Connection {}/{} creation succeeded {}", total+1, maxConnections, connection);
-                        connections.update(-1,0);
+                        connections.add(-1,0);
                         onCreated(connection);
                         proceed();
                     }
@@ -137,7 +137,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Connection " + (total+1) + "/" + maxConnections + " creation failed", x);
-                        connections.update(-1,-1);
+                        connections.add(-1,-1);
                         requester.failed(x);
                     }
                 });
@@ -190,7 +190,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
 
     protected void removed(Connection connection)
     {
-        int pooled = connections.updateLo(-1);
+        int pooled = connections.addAndGetLo(-1);
         if (LOG.isDebugEnabled())
             LOG.debug("Connection removed {} - pooled: {}", connection, pooled);
     }

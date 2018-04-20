@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,6 +31,10 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertThat;
 
 public class ModulesTest
 {
@@ -70,8 +69,8 @@ public class ModulesTest
         modules.registerAll();
 
         // Check versions
-        assertThat("java.version.platform", args.getProperties().getString("java.version.platform"), //
-                   anyOf(equalTo("8"),equalTo("9"),equalTo( "10" )));
+        String platformProperty = args.getProperties().getString("java.version.platform");
+        assertThat("java.version.platform", Integer.parseInt(platformProperty), greaterThanOrEqualTo(8));
 
         List<String> moduleNames = new ArrayList<>();
         for (Module mod : modules)

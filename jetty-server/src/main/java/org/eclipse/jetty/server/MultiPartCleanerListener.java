@@ -24,7 +24,7 @@ import javax.servlet.ServletRequestListener;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
+
 
 public class MultiPartCleanerListener implements ServletRequestListener
 {
@@ -38,19 +38,19 @@ public class MultiPartCleanerListener implements ServletRequestListener
     public void requestDestroyed(ServletRequestEvent sre)
     {
         //Clean up any tmp files created by MultiPartInputStream
-        MultiPartInputStreamParser mpis = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
-        if (mpis != null)
+        MultiParts parts = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
+        if (parts != null)
         {
-            ContextHandler.Context context = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);
+            ContextHandler.Context context = parts.getContext();
 
             //Only do the cleanup if we are exiting from the context in which a servlet parsed the multipart files
             if (context == sre.getServletContext())
             {
                 try
                 {
-                    mpis.deleteParts();
+                    parts.close();
                 }
-                catch (MultiException e)
+                catch (Throwable e)
                 {
                     sre.getServletContext().log("Errors deleting multipart tmp files", e);
                 }

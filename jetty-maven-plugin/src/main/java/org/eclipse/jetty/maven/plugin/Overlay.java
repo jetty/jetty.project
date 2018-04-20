@@ -61,7 +61,7 @@ public class Overlay
     @Override
     public String toString()
     {
-        StringBuffer strbuff = new StringBuffer();
+        StringBuilder strbuff = new StringBuilder();
         if (_resource != null)
             strbuff.append(_resource);
         if (_config != null)

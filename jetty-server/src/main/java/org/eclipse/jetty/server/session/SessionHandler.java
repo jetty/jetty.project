@@ -222,9 +222,9 @@ public class SessionHandler extends ScopedHandler
     protected boolean _secureCookies=false;
     protected boolean _secureRequestOnly=true;
 
-    protected final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<HttpSessionAttributeListener>();
-    protected final List<HttpSessionListener> _sessionListeners= new CopyOnWriteArrayList<HttpSessionListener>();
-    protected final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<HttpSessionIdListener>();
+    protected final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<>();
+    protected final List<HttpSessionListener> _sessionListeners= new CopyOnWriteArrayList<>();
+    protected final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
 
     protected ClassLoader _loader;
     protected ContextHandler.Context _context;

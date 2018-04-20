@@ -14,7 +14,6 @@
   </build>
   <modules>
     <module>test-sessions-common</module>
-    <module>test-hash-sessions</module>
     <module>test-file-sessions</module>
     <module>test-jdbc-sessions</module>
     <module>test-mongodb-sessions</module>

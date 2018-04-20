@@ -42,7 +42,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
-    private static final Pattern AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+realm=\"([^\"]*)\"(.*)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+(.*,\\s*)?realm=\"([^\"]*)\"\\s*,?\\s*(.*)", Pattern.CASE_INSENSITIVE);
 
     private final HttpClient client;
     private final int maxContentLength;
@@ -241,8 +241,16 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 if (matcher.matches())
                 {
                     String type = matcher.group(1);
-                    String realm = matcher.group(2);
-                    String params = matcher.group(3);
+                    String realm = matcher.group(3);
+                    String beforeRealm = matcher.group(2);
+                    String afterRealm = matcher.group(4);
+                    
+                    String params;
+                    if (beforeRealm != null)
+                        params = beforeRealm + afterRealm;
+                    else
+                        params = afterRealm;
+                    
                     Authentication.HeaderInfo headerInfo = new Authentication.HeaderInfo(type, realm, params, getAuthorizationHeader());
                     result.add(headerInfo);
                 }

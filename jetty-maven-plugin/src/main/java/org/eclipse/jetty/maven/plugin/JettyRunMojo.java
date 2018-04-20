@@ -24,6 +24,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -33,7 +34,11 @@ import java.util.Set;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.util.PathWatcher;
@@ -60,11 +65,10 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *  <p>
  *  There is a <a href="http://www.eclipse.org/jetty/documentation/current/maven-and-jetty.html">reference guide</a> to the configuration parameters for this plugin.
  * 
- * @goal run
- * @requiresDependencyResolution test
- * @execute phase="test-compile"
- * @description Runs jetty directly from a maven project
+ *  Runs jetty directly from a maven project
  */
+@Mojo( name = "run", requiresDependencyResolution = ResolutionScope.TEST)
+@Execute(phase = LifecyclePhase.TEST_COMPILE)
 public class JettyRunMojo extends AbstractJettyMojo
 {
     public static final String DEFAULT_WEBAPP_SRC = "src"+File.separator+"main"+File.separator+"webapp";
@@ -76,69 +80,61 @@ public class JettyRunMojo extends AbstractJettyMojo
      * If true, the &lt;testOutputDirectory&gt;
      * and the dependencies of &lt;scope&gt;test&lt;scope&gt;
      * will be put first on the runtime classpath.
-     * 
-     * @parameter alias="useTestClasspath" default-value="false"
+     *
      */
+    @Parameter(alias="useTestClasspath", defaultValue="false")
     protected boolean useTestScope;
     
   
     /**
      * The default location of the web.xml file. Will be used
      * if &lt;webApp&gt;&lt;descriptor&gt; is not set.
-     * 
-     * @parameter default-value="${maven.war.webxml}"
-     * @readonly
+     *
      */
+    @Parameter(defaultValue="${maven.war.webxml}", readonly = true)
     protected String webXml;
     
     
     /**
      * The directory containing generated classes.
      *
-     * @parameter default-value="${project.build.outputDirectory}"
-     * @required
-     * 
      */
+    @Parameter(defaultValue="${project.build.outputDirectory}", required = true)
     protected File classesDirectory;
     
     /**
      * An optional pattern for includes/excludes of classes in the classesDirectory
-     * @parameter
+     *
      */
+    @Parameter
     protected ScanPattern scanClassesPattern;
-    
-    
-    
-    
+
     /**
      * The directory containing generated test classes.
-     * 
-     * @parameter default-value="${project.build.testOutputDirectory}"
-     * @required
+     *
      */
+    @Parameter(defaultValue="${project.build.testOutputDirectory}", required = true)
     protected File testClassesDirectory;
     
     /**
      * An optional pattern for includes/excludes of classes in the testClassesDirectory
-     * @parameter
+     *
      */
+    @Parameter
     protected ScanPattern scanTestClassesPattern;
-    
-   
-    
+
     /**
      * Root directory for all html/jsp etc files
      *
-     * @parameter default-value="${maven.war.src}"
-     * 
      */
+    @Parameter(defaultValue="${maven.war.src}")
     protected File webAppSourceDirectory;
     
  
     /**
      * List of files or directories to additionally periodically scan for changes. Optional.
-     * @parameter
      */
+    @Parameter
     protected File[] scanTargets;
     
     
@@ -146,8 +142,9 @@ public class JettyRunMojo extends AbstractJettyMojo
      * List of directories with ant-style &lt;include&gt; and &lt;exclude&gt; patterns
      * for extra targets to periodically scan for changes. Can be used instead of,
      * or in conjunction with &lt;scanTargets&gt;.Optional.
-     * @parameter
+     *
      */
+    @Parameter
     protected ScanTargetPattern[] scanTargetPatterns;
 
     
@@ -164,7 +161,6 @@ public class JettyRunMojo extends AbstractJettyMojo
     
     
     protected Resource originalBaseResource;
-    
 
     @Parameter(defaultValue = "${reactorProjects}", readonly = true, required = true)
     private List<MavenProject> reactorProjects;
@@ -178,21 +174,6 @@ public class JettyRunMojo extends AbstractJettyMojo
         warPluginInfo = new WarPluginInfo(project);
         super.execute();
     }
-    
-    
-
-    
-    /** 
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#checkPackagingConfiguration()
-     */
-    @Override
-    public void checkPackagingConfiguration() throws MojoExecutionException
-    { 
-        if ( !"war".equals( project.getPackaging() ))
-            throw new MojoExecutionException("Not war packaging");
-    }
-
-
 
     /**
      * Verify the configuration given in the pom.
@@ -351,20 +332,7 @@ public class JettyRunMojo extends AbstractJettyMojo
        getLog().info( "web.xml file = "+webApp.getDescriptor());       
        getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
     }
-    
-    private static File toFile(Resource resource)
-    {
-        try
-        {
-            return resource.getFile();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e.getMessage(), e );
-        }
-    }
 
-    
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureScanner()
      */
@@ -381,7 +349,7 @@ public class JettyRunMojo extends AbstractJettyMojo
             throw new MojoExecutionException("Error forming scan list", e);
         }
 
-        scanner.addListener(new PathWatcher.EventListListener()
+        scanner.addListener( new PathWatcher.EventListListener()
         {
 
             @Override
@@ -564,10 +532,8 @@ public class JettyRunMojo extends AbstractJettyMojo
     private List<File> getDependencyFiles()
     {
         List<File> dependencyFiles = new ArrayList<>();
-        for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
+        for ( Artifact artifact : projectArtifacts)
         {
-            Artifact artifact = iter.next();
-            
             // Include runtime and compile time libraries, and possibly test libs too
             if(artifact.getType().equals("war"))
             {
@@ -619,8 +585,8 @@ public class JettyRunMojo extends AbstractJettyMojo
     throws Exception
     {
         //get copy of a list of war artifacts
-        Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
-        List<Overlay> overlays = new ArrayList<Overlay>();
+        Set<Artifact> matchedWarArtifacts = new HashSet<>();
+        List<Overlay> overlays = new ArrayList<>();
         for (OverlayConfig config:warPluginInfo.getMavenWarOverlayConfigs())
         {
             //overlays can be individually skipped
@@ -667,7 +633,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         if (overlays == null || overlays.isEmpty())
             return;
 
-        List<Resource> resourceBaseCollection = new ArrayList<Resource>();
+        List<Resource> resourceBaseCollection = new ArrayList<>();
 
         for (Overlay o:overlays)
         {
@@ -744,9 +710,8 @@ public class JettyRunMojo extends AbstractJettyMojo
             return warArtifacts;       
         
         warArtifacts = new ArrayList<>();
-        for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
+        for ( Artifact artifact : projectArtifacts)
         {
-            Artifact artifact = iter.next();
             if (artifact.getType().equals("war") || artifact.getType().equals("zip"))
             {
                 try
