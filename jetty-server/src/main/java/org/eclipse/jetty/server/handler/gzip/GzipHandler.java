@@ -151,10 +151,10 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
     public static final int DEFAULT_MIN_GZIP_SIZE=16;
+    public static final int COMPRESSION_LEVEL = Deflater.DEFAULT_COMPRESSION;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
 
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
-    private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
     private boolean _syncFlush = false;
     private int _inflateBufferSize = -1;
     private EnumSet<DispatcherType> _dispatchers = EnumSet.of(DispatcherType.REQUEST);
@@ -397,15 +397,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         super.doStart();
     }
 
-    /**
-     * @deprecated feature will be removed in Jetty 10.x, with no replacement.
-     */
-    @Deprecated
-    public int getCompressionLevel()
-    {
-        return _compressionLevel;
-    }
-    
     @Override
     public Deflater getDeflater(Request request, long content_length)
     {
@@ -440,7 +431,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         
         Deflater df = _deflater.get();
         if (df==null)
-            df=new Deflater(_compressionLevel,true);        
+            df=new Deflater(COMPRESSION_LEVEL,true);
         else
             _deflater.set(null);
         
@@ -754,19 +745,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
         else
             deflater.end();
-    }
-
-    /**
-     * @deprecated feature will be removed in Jetty 10.x, with no replacement.
-    @Deprecated
-     * Set the Compression level that {@link Deflater} uses.
-     *
-     * @param compressionLevel  The compression level to use to initialize {@link Deflater#setLevel(int)}
-     * @see Deflater#setLevel(int)
-     */
-    public void setCompressionLevel(int compressionLevel)
-    {
-        _compressionLevel = compressionLevel;
     }
 
     /**

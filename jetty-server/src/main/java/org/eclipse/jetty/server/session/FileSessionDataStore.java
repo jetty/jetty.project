@@ -554,7 +554,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     
     /**
      * Get the session id with its context and its expiry time
-     * @param data
+     * @param data the session data
      * @return the session id plus context and expiry
      */
     protected String getIdWithContextAndExpiry (SessionData data)
