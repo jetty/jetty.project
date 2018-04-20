@@ -17,6 +17,7 @@ def getFullBuild(jdk, os) {
       // System Dependent Locations
       def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
       def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
+      def mvnName = 'maven3.5'
       def localRepo = ".repository" // "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
 
       // Environment
@@ -39,7 +40,7 @@ def getFullBuild(jdk, os) {
           withEnv(mvnEnv) {
             timeout(time: 15, unit: 'MINUTES') {
               withMaven(
-                      maven: 'maven3',
+                      maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: 'oss-settings.xml',
@@ -61,7 +62,7 @@ def getFullBuild(jdk, os) {
           withEnv(mvnEnv) {
             timeout(time: 20, unit: 'MINUTES') {
               withMaven(
-                      maven: 'maven3.5',
+                      maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: 'oss-settings.xml',
@@ -83,7 +84,7 @@ def getFullBuild(jdk, os) {
             timeout(time: 90, unit: 'MINUTES') {
               // Run test phase / ignore test failures
               withMaven(
-                      maven: 'maven3.5',
+                      maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       //options: [invokerPublisher(disabled: false)],
@@ -135,17 +136,14 @@ def getFullBuild(jdk, os) {
       try
       {
         stage ("Compact3 - ${jdk}") {
-
-          dir("aggregates/jetty-all-compact3") {
-            withEnv(mvnEnv) {
-              withMaven(
-                      maven: 'maven3.5',
-                      jdk: "$jdk",
-                      publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: 'oss-settings.xml',
-                      mavenLocalRepo: localRepo) {
-                sh "mvn -V -B -Pcompact3 clean install -T5"
-              }
+          withEnv(mvnEnv) {
+            withMaven(
+                    maven: mvnName,
+                    jdk: "$jdk",
+                    publisherStrategy: 'EXPLICIT',
+                    globalMavenSettingsConfig: 'oss-settings.xml',
+                    mavenLocalRepo: localRepo) {
+              sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
             }
           }
         }
