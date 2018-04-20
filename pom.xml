@@ -231,6 +231,7 @@
           <rulesets>
             <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
           </rulesets>
+          <analysisCache>true</analysisCache>
         </configuration>
         <dependencies>
           <dependency>
