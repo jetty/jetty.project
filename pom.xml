@@ -232,6 +232,7 @@
             <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
           </rulesets>
           <analysisCache>true</analysisCache>
+          <showPmdLog>false</showPmdLog>
         </configuration>
         <dependencies>
           <dependency>
