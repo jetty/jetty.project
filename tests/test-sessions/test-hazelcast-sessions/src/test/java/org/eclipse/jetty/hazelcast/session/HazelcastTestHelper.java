@@ -42,17 +42,10 @@ public class HazelcastTestHelper
     static String _hazelcastInstanceName = "SESSION_TEST_"+Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
     
     static String _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
-    static HazelcastInstance _instance;
-    static {
-        MapConfig mapConfig = new MapConfig();
-        mapConfig.setName(_name);
-        Config config = new Config();
-        config.setInstanceName(_hazelcastInstanceName );
-        config.addMapConfig( mapConfig );
-        _instance = Hazelcast.getOrCreateHazelcastInstance( config );
-    }
+    static HazelcastInstance _instance = Hazelcast.getOrCreateHazelcastInstance( new Config() //
+                                            .setInstanceName(_hazelcastInstanceName ) //
+                                            .addMapConfig( new MapConfig().setName(_name) ) );
 
-    
     public HazelcastTestHelper ()
     {
         // noop
@@ -63,7 +56,7 @@ public class HazelcastTestHelper
     public SessionDataStoreFactory createSessionDataStoreFactory(boolean onlyClient)
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
-        _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
+        //_name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
         factory.setOnlyClient( onlyClient );
         factory.setMapName(_name);
         factory.setHazelcastInstance(_instance);
