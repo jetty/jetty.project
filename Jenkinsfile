@@ -19,6 +19,7 @@ def getFullBuild(jdk, os) {
       def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
       def mvnName = 'maven3.5'
       def localRepo = ".repository" // "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
+      def settingsName = 'oss-settings.xml'
 
       // Environment
       List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
@@ -43,7 +44,7 @@ def getFullBuild(jdk, os) {
                       maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: 'oss-settings.xml',
+                      globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
                 sh "mvn -V -B clean install -DskipTests -T6"
               }
@@ -65,7 +66,7 @@ def getFullBuild(jdk, os) {
                       maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: 'oss-settings.xml',
+                      globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
                 sh "mvn -V -B javadoc:javadoc -T5"
               }
@@ -87,8 +88,7 @@ def getFullBuild(jdk, os) {
                       maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
-                      //options: [invokerPublisher(disabled: false)],
-                      globalMavenSettingsConfig: 'oss-settings.xml',
+                      globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
                 //
                 sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T3 -e -Dmaven.repo.local=${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER} -Pmongodb"
@@ -141,7 +141,7 @@ def getFullBuild(jdk, os) {
                     maven: mvnName,
                     jdk: "$jdk",
                     publisherStrategy: 'EXPLICIT',
-                    globalMavenSettingsConfig: 'oss-settings.xml',
+                    globalMavenSettingsConfig: settingsName,
                     mavenLocalRepo: localRepo) {
               sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
             }
