@@ -1,7 +1,7 @@
 #!groovy
 
 def jdks = ["jdk8","jdk9","jdk10","jdk11"]
-def oss = ["linux"] //windows?  ,"linux-docker"
+def oss = ["linux"] 
 def builds = [:]
 for (def os in oss) {
   for (def jdk in jdks) {
@@ -68,7 +68,7 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B javadoc:javadoc -T5"
+                sh "mvn -V -B javadoc:javadoc -T6"
               }
             }
           }
@@ -91,7 +91,7 @@ def getFullBuild(jdk, os) {
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
                 //
-                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T3 -e -Pmongodb"
+                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T2 -e -Pmongodb"
               }
               // withMaven doesn't label..
               // Report failures in the jenkins UI
