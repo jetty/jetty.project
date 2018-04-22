@@ -90,8 +90,8 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                //
-                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T2 -e -Pmongodb"
+                // -Pmongodb
+                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T2 -e "
               }
               // withMaven doesn't label..
               // Report failures in the jenkins UI
