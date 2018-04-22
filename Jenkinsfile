@@ -18,7 +18,7 @@ def getFullBuild(jdk, os) {
       def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
       def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
       def mvnName = 'maven3'
-      def localRepo = ".repository" // "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
+      def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" // 
       def settingsName = 'oss-settings.xml'
 
       // Environment
