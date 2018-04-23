@@ -175,6 +175,7 @@ public class StartArgs
     private boolean dryRun = false;
     private boolean createStartd = false;
     private boolean updateIni = false;
+    private String mavenBaseUrl;
 
     private boolean exec = false;
     private String exec_properties;
@@ -807,7 +808,12 @@ public class StartArgs
         return updateIni;
     }
 
-    public void parse(ConfigSources sources)
+    public String getMavenBaseUrl()
+    {
+        return mavenBaseUrl;
+    }
+
+    public void parse( ConfigSources sources)
     {
         ListIterator<ConfigSource> iter = sources.reverseListIterator();
         while (iter.hasPrevious())
@@ -1062,6 +1068,14 @@ public class StartArgs
         if (arg.startsWith("--write-module-graph="))
         {
             this.moduleGraphFilename = Props.getValue(arg);
+            run = false;
+            return;
+        }
+
+        // to override default http://central.maven.org/maven2/
+        if (arg.startsWith("--maven-base-url="))
+        {
+            this.mavenBaseUrl = Props.getValue(arg);
             run = false;
             return;
         }
