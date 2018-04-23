@@ -175,7 +175,7 @@ public class Log
                 Class<?> log_class = __logClass==null?null:Loader.loadClass(Log.class,__logClass);
                 if (LOG == null || (log_class!=null && !LOG.getClass().equals(log_class)))
                 {
-                    LOG = (Logger)log_class.newInstance();
+                    LOG = (Logger)log_class.getDeclaredConstructor().newInstance();
                     if(announce)
                     {
                         LOG.debug("Logging to {} via {}", LOG, log_class.getName());

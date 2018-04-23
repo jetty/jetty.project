@@ -28,6 +28,8 @@ import java.net.Socket;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  * This goal stops a running instance of jetty.
@@ -35,32 +37,29 @@ import org.apache.maven.plugin.MojoFailureException;
  * The <b>stopPort</b> and <b>stopKey</b> parameters can be used to
  * configure which jetty to stop.
  * 
- * @goal stop
- * @description Stops jetty that is configured with &lt;stopKey&gt; and &lt;stopPort&gt;.
+ * Stops jetty that is configured with &lt;stopKey&gt; and &lt;stopPort&gt;.
  */
-
+@Mojo( name = "stop")
 public class JettyStopMojo extends AbstractMojo
 {
     
     /**
      * Port to listen to stop jetty on sending stop command
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     protected int stopPort;
     
     /**
      * Key to provide when stopping jetty on executing java -DSTOP.KEY=&lt;stopKey&gt; 
      * -DSTOP.PORT=&lt;stopPort&gt; -jar start.jar --stop
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     protected String stopKey;
     
     /**
      * Max time in seconds that the plugin will wait for confirmation that jetty has stopped.
-     * @parameter
      */
+    @Parameter
     protected int stopWait;
 
     
@@ -78,9 +77,9 @@ public class JettyStopMojo extends AbstractMojo
         //also stops depends whether or not it was started with ShutdownMonitor.exitVm=true
         String command = "forcestop"; 
        
-        try
+        try(Socket s=new Socket(InetAddress.getByName("127.0.0.1"),stopPort);)
         {        
-            Socket s=new Socket(InetAddress.getByName("127.0.0.1"),stopPort);
+
             s.setSoLinger(false, 0);
 
             OutputStream out=s.getOutputStream();
@@ -105,7 +104,6 @@ public class JettyStopMojo extends AbstractMojo
                     }                
                 }
             }
-            s.close();
         }
         catch (ConnectException e)
         {

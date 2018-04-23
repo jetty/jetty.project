@@ -170,7 +170,7 @@ public class JDBCLoginService extends AbstractLoginService
                    + " = u."
                    + _userRoleTableRoleKey;
         
-        Loader.loadClass(_jdbcDriver).newInstance();
+        Loader.loadClass(_jdbcDriver).getDeclaredConstructor().newInstance();
         super.doStart();
     }
 

@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>9.4.9-SNAPSHOT</version>
+    <version>9.4.10-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-home</artifactId>
@@ -301,6 +301,19 @@
                   <destFileName>jetty-schemas-3.1.jar</destFileName>
                 </artifactItem>
               </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-servlet-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>javax.servlet</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/servlet-api</outputDirectory>
             </configuration>
           </execution>
           <execution>

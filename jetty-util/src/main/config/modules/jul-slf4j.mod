@@ -1,5 +1,7 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
-Provides a Java Util Loggin binding to SLF4J logging.
+Provides a Java Util Logging binding to SLF4J logging.
 
 [tags]
 logging

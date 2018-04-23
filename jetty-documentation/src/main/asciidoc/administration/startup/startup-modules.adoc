@@ -148,6 +148,14 @@ This is done by editing the associated ini file for the module.
 If your server setup is using a centralized ini configuration, you will edit the `${jetty.base}/server.ini` file.
 If you have elected to manage each module within it's own ini file, you can find these files in the `${jetty.base}/start.d` directory.
 
+____
+[IMPORTANT]
+It is important that you *do not* modify the module files in the `$JETTY_HOME/modules` directory.
+$JETTY_HOME should always remain a standard of truth.
+If you want to make a change to an actual module file (not the values in its `ini-template`), either edit its associated `ini` file in the `$JETTY_BASE/start.d` directory or make a copy of the desired module file and copy it to the `$JETTY_BASE` directory and edit it there.
+The start.jar reads local `$JETTY_BASE/modules` files (if they exist) before scanning `$JETTY_HOME`.
+____
+
 When a module is activated, a number of properties are set by default.
 To view these defaults, open up the associated ini file.
 Listed in the ini file is the associated module file and any properties that can be set.

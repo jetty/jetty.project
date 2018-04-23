@@ -22,8 +22,10 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.ReadLineInputStream.Termination;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -101,6 +103,7 @@ public class ReadLineInputStreamTest
         Assert.assertEquals("World",_in.readLine());
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());
+        Assert.assertEquals(EnumSet.of(Termination.CR), _in.getLineTerminations());
     }
     
     @Test
@@ -114,6 +117,7 @@ public class ReadLineInputStreamTest
         Assert.assertEquals("World",_in.readLine());
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());
+        Assert.assertEquals(EnumSet.of(Termination.LF), _in.getLineTerminations());
     }
     
     @Test
@@ -127,6 +131,7 @@ public class ReadLineInputStreamTest
         Assert.assertEquals("World",_in.readLine());
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());
+        Assert.assertEquals(EnumSet.of(Termination.CRLF), _in.getLineTerminations());
     }
     
 
@@ -145,6 +150,7 @@ public class ReadLineInputStreamTest
         Assert.assertEquals("World",_in.readLine());
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());
+        Assert.assertEquals(EnumSet.of(Termination.CR), _in.getLineTerminations());
     }
     
     @Test
@@ -162,6 +168,7 @@ public class ReadLineInputStreamTest
         Assert.assertEquals("World",_in.readLine());
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());
+        Assert.assertEquals(EnumSet.of(Termination.LF), _in.getLineTerminations());
     }
     
     @Test
@@ -180,6 +187,7 @@ public class ReadLineInputStreamTest
         Assert.assertEquals("World",_in.readLine());
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());
+        Assert.assertEquals(EnumSet.of(Termination.CRLF), _in.getLineTerminations());
     }
 
 
@@ -201,6 +209,7 @@ public class ReadLineInputStreamTest
         
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());
+        Assert.assertEquals(EnumSet.of(Termination.LF), _in.getLineTerminations());
     }
     
     @Test
@@ -221,6 +230,8 @@ public class ReadLineInputStreamTest
         
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());
+        Assert.assertEquals(EnumSet.of(Termination.CR), _in.getLineTerminations());
+
     }
     
     @Test
@@ -241,6 +252,8 @@ public class ReadLineInputStreamTest
         
         Assert.assertEquals("",_in.readLine());
         Assert.assertEquals(null,_in.readLine());
+        Assert.assertEquals(EnumSet.of(Termination.CRLF), _in.getLineTerminations());
+
     }
 
     

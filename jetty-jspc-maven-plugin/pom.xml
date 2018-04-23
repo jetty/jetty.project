@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.9-SNAPSHOT</version>
+    <version>9.4.10-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jspc-maven-plugin</artifactId>
@@ -10,6 +10,7 @@
   <name>Jetty :: Jetty JSPC Maven Plugin</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jspc.plugin</bundle-symbolic-name>
+    <it.debug>false</it.debug>
   </properties>
   <build>
     <plugins>
@@ -26,7 +27,7 @@
         <executions>
           <execution>
             <id>exec-plugin-doc</id>
-            <phase>generate-sources</phase>
+            <phase>process-classes</phase>
             <goals>
               <goal>descriptor</goal>
               <goal>helpmojo</goal>
@@ -51,29 +52,20 @@
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
-      <artifactId>maven-project</artifactId>
-      <version>2.0.3</version>
-      <exclusions>
-        <exclusion>
-          <groupId>junit</groupId>
-          <artifactId>junit</artifactId>
-        </exclusion>
-      </exclusions>
+      <artifactId>maven-plugin-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven</groupId>
-      <artifactId>maven-plugin-api</artifactId>
-      <version>2.0.3</version>
+      <groupId>org.apache.maven.plugin-tools</groupId>
+      <artifactId>maven-plugin-annotations</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-artifact</artifactId>
-      <version>2.0.3</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-tools-api</artifactId>
-      <version>3.1</version>
       <exclusions>
         <exclusion>
           <groupId>junit</groupId>
@@ -90,11 +82,6 @@
       <groupId>org.apache.ant</groupId>
       <artifactId>ant</artifactId>
       <version>1.8.4</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jstl</artifactId>
-      <version>${project.version}</version>
     </dependency>
   </dependencies>
   <reporting>
@@ -120,4 +107,45 @@
       </plugin>
     </plugins>
   </reporting>
+  <profiles>
+    <profile>
+      <id>run-its</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-invoker-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>integration-test</id>
+                <goals>
+                  <goal>install</goal>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <debug>${it.debug}</debug>
+              <addTestClassPath>true</addTestClassPath>
+              <timeoutInSeconds>60</timeoutInSeconds>
+              <projectsDirectory>src/it</projectsDirectory>
+              <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+              <pomIncludes>
+                <pomInclude>*/pom.xml</pomInclude>
+              </pomIncludes>
+              <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
+              <settingsFile>src/it/settings.xml</settingsFile>
+              <scriptVariables>
+                <surefireVersion>${surefireVersion}</surefireVersion>
+              </scriptVariables>
+              <goals>
+                <goal>clean</goal>
+              </goals>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

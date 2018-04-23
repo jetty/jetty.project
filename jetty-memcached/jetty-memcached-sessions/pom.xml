@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.memcached</groupId>
     <artifactId>memcached-parent</artifactId>
-    <version>9.4.9-SNAPSHOT</version>
+    <version>9.4.10-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -58,23 +58,6 @@
         <configuration>
           <skipTests>true</skipTests>
         </configuration>
-      </plugin>
-      <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <extensions>true</extensions>
-          <executions>
-              <execution>
-                  <goals>
-                      <goal>manifest</goal>
-                  </goals>
-                  <configuration>
-                      <instructions>
-                          <Export-Package>org.eclipse.jetty.memcached.session.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";</Export-Package>
-                      </instructions>
-                    </configuration>
-                 </execution>
-            </executions>
       </plugin>
    </plugins>
   </build>

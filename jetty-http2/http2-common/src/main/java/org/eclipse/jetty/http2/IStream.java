@@ -76,12 +76,10 @@ public interface IStream extends Stream, Closeable
      * <p>Updates the close state of this stream.</p>
      *
      * @param update whether to update the close state
-     * @param local  whether the update comes from a local operation
-     *               (such as sending a frame that ends the stream)
-     *               or a remote operation (such as receiving a frame
+     * @param event  the event that caused the close state update
      * @return whether the stream has been fully closed by this invocation
      */
-    public boolean updateClose(boolean update, boolean local);
+    public boolean updateClose(boolean update, CloseState.Event event);
 
     /**
      * <p>Forcibly closes this stream.</p>

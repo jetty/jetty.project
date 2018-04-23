@@ -52,7 +52,8 @@ public class BundleClassLoaderHelperFactory
         try
         {
             //if a fragment has not provided their own impl
-            helper = (BundleClassLoaderHelper) Class.forName(BundleClassLoaderHelper.CLASS_NAME).newInstance();
+            helper = (BundleClassLoaderHelper) Class.forName(BundleClassLoaderHelper.CLASS_NAME)
+                .getDeclaredConstructor().newInstance();
         }
         catch (Throwable t)
         {

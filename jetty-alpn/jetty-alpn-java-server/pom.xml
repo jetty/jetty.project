@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-parent</artifactId>
-        <version>9.4.9-SNAPSHOT</version>
+        <version>9.4.10-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -33,7 +33,7 @@
                <configuration>
                  <instructions>
                    <Bundle-Description>JDK9 Server ALPN</Bundle-Description>
-                   <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                   <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
                    <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server</Provide-Capability>
                    <_nouses>true</_nouses>
                  </instructions>

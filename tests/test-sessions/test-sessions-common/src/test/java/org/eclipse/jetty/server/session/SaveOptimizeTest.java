@@ -53,11 +53,8 @@ import org.junit.Test;
  */
 public class SaveOptimizeTest
 {
-
     protected TestServlet _servlet;
     protected TestServer _server1 = null;
-    
-  
     
     
     /**
@@ -488,6 +485,7 @@ public class SaveOptimizeTest
 
     public static class TestServlet extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
         public String _id = null;
         public SessionDataStore _store;
         public HttpSession _firstSession = null;

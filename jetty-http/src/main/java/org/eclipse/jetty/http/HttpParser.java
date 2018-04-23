@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
+import static org.eclipse.jetty.http.HttpTokens.COLON;
 import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
 import static org.eclipse.jetty.http.HttpTokens.SPACE;
 import static org.eclipse.jetty.http.HttpTokens.TAB;
@@ -1074,7 +1075,7 @@ public class HttpParser
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Header Folding");
 
                             // header value without name - continuation?
-                            if (_valueString==null)
+                            if (_valueString==null || _valueString.isEmpty())
                             {
                                 _string.setLength(0);
                                 _length=0;
@@ -1166,10 +1167,6 @@ public class HttpParser
 
                         default:
                         {
-                            // now handle the ch
-                            if (b<HttpTokens.SPACE)
-                                throw new BadMessageException();
-
                             // process previous header
                             if (_state==State.HEADER)
                                 parsedHeader();
@@ -1266,114 +1263,124 @@ public class HttpParser
                     break;
 
                 case IN_NAME:
-                    if (b>HttpTokens.SPACE && b!=HttpTokens.COLON)
+                    switch(b)
                     {
-                        if (_header!=null)
-                        {
-                            setString(_header.asString());
-                            _header=null;
-                            _headerString=null;
-                        }
-
-                        _string.append((char)b);
-                        _length=_string.length();
-                        break;
-                    }
-
-                    // Fallthrough
-                    
-                case WS_AFTER_NAME:
-                    if (b==HttpTokens.COLON)
-                    {
-                        if (_headerString==null)
-                        {
+                        case SPACE:
+                        case TAB:
+                            //Ignore trailing whitespaces ?
+                            if (!complianceViolation(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME,null))
+                            {
+                                _headerString=takeString();
+                                _header=HttpHeader.CACHE.get(_headerString);
+                                _length=-1;
+                                setState(FieldState.WS_AFTER_NAME);
+                                break;
+                            }
+                            throw new IllegalCharacterException(_state,b,buffer);
+                            
+                        case COLON:
                             _headerString=takeString();
                             _header=HttpHeader.CACHE.get(_headerString);
-                        }
-                        _length=-1;
-
-                        setState(FieldState.VALUE);
-                        break;
-                    }
-                    
-                    if (b==HttpTokens.LINE_FEED)
-                    {
-                        if (_headerString==null)
-                        {
-                            _headerString=takeString();
-                            _header=HttpHeader.CACHE.get(_headerString);
-                        }
-                        _string.setLength(0);
-                        _valueString="";
-                        _length=-1;
-
-                        if (!complianceViolation(HttpComplianceSection.FIELD_COLON,_headerString))
-                        {                        
-                            setState(FieldState.FIELD);
+                            _length=-1;
+                            setState(FieldState.VALUE);
                             break;
-                        }
-                    }
+                            
+                        case LINE_FEED:
+                            _headerString=takeString();
+                            _header=HttpHeader.CACHE.get(_headerString);
+                            _string.setLength(0);
+                            _valueString="";
+                            _length=-1;
 
-                    //Ignore trailing whitespaces
-                    if (b==HttpTokens.SPACE && !complianceViolation(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME,null))
+                            if (!complianceViolation(HttpComplianceSection.FIELD_COLON,_headerString))
+                            {                        
+                                setState(FieldState.FIELD);
+                                break;
+                            }                            
+                            throw new IllegalCharacterException(_state,b,buffer);
+                            
+                        default:
+                            if (b<0)
+                                throw new IllegalCharacterException(_state,b,buffer);
+
+                            _string.append((char)b);
+                            _length=_string.length();
+                            break;
+                    }
+                    break;
+
+                case WS_AFTER_NAME:
+
+                    switch(b)
                     {
-                        setState(FieldState.WS_AFTER_NAME);
-                        break;
-                    }
+                        case SPACE:
+                        case TAB:
+                            break;
 
-                    throw new IllegalCharacterException(_state,b,buffer);
+                        case COLON:
+                            setState(FieldState.VALUE);
+                            break; 
+                            
+                        case LINE_FEED:
+                            if (!complianceViolation(HttpComplianceSection.FIELD_COLON,_headerString))
+                            {                        
+                                setState(FieldState.FIELD);
+                                break;
+                            }                            
+                            throw new IllegalCharacterException(_state,b,buffer);
+                            
+                        default:
+                            throw new IllegalCharacterException(_state,b,buffer);
+                    }
+                    break;
 
                 case VALUE:
-                    if (b>HttpTokens.SPACE || b<0)
+                    switch(b)
                     {
-                        _string.append((char)(0xff&b));
-                        _length=_string.length();
-                        setState(FieldState.IN_VALUE);
-                        break;
-                    }
-
-                    if (b==HttpTokens.SPACE || b==HttpTokens.TAB)
-                        break;
-
-                    if (b==HttpTokens.LINE_FEED)
-                    {
-                        _string.setLength(0);
-                        _valueString="";
-                        _length=-1;
-
-                        setState(FieldState.FIELD);
-                        break;
-                    }
-                    throw new IllegalCharacterException(_state,b,buffer);
-
-                case IN_VALUE:
-                    if (b>=HttpTokens.SPACE || b<0 || b==HttpTokens.TAB)
-                    {
-                        if (_valueString!=null)
-                        {
-                            setString(_valueString);
-                            _valueString=null;
-                            _field=null;
-                        }
-                        _string.append((char)(0xff&b));
-                        if (b>HttpTokens.SPACE || b<0)
-                            _length=_string.length();
-                        break;
-                    }
-
-                    if (b==HttpTokens.LINE_FEED)
-                    {
-                        if (_length > 0)
-                        {
-                            _valueString=takeString();
+                        case LINE_FEED:
+                            _string.setLength(0);
+                            _valueString="";
                             _length=-1;
-                        }
-                        setState(FieldState.FIELD);
+
+                            setState(FieldState.FIELD);
+                            break;
+
+                        case SPACE:
+                        case TAB:
+                            break;
+
+                        default:
+                            _string.append((char)(0xff&b));
+                            _length=_string.length();
+                            setState(FieldState.IN_VALUE);
                         break;
                     }
-
-                    throw new IllegalCharacterException(_state,b,buffer);
-
+                    break;
+                    
+                case IN_VALUE:
+                    switch(b)
+                    {
+                        case LINE_FEED:
+                            if (_length > 0)
+                            {
+                                _valueString=takeString();
+                                _length=-1;
+                            }
+                            setState(FieldState.FIELD);
+                            break;
+                            
+                        case SPACE:
+                        case TAB:
+                            _string.append((char)(0xff&b));
+                            break;
+                            
+                        default:
+                            _string.append((char)(0xff&b));
+                            _length=_string.length();
+                            break;
+                    }
+                    break;
+                    
                 default:
                     throw new IllegalStateException(_state.toString());
 

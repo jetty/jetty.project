@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-parent</artifactId>
-        <version>9.4.9-SNAPSHOT</version>
+        <version>9.4.10-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -28,8 +28,8 @@
               </goals>
               <configuration>
                 <instructions>
-                  <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
-                  <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.websocket.servlet.WebSocketServletFactory</Provide-Capability>
+                  <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+                  <Provide-Capability>osgi.serviceloader; osgi.serviceloader=javax.servlet.ServletContainerInitializer</Provide-Capability>
                   <_nouses>true</_nouses>
                 </instructions>
               </configuration>

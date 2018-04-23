@@ -492,7 +492,7 @@ public void start(BundleContext context) throws Exception
     Dictionary props = new Hashtable();
     props.put("Jetty-WarResourcePath",".");
     props.put("contextPath","/acme");
-    context.registerService(ContextHandler.class.getName(),webapp,props);
+    context.registerService(WebAppContext.class.getName(),webapp,props);
 }
 ----
 

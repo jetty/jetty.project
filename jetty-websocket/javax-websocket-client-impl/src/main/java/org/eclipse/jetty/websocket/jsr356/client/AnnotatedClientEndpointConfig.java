@@ -60,9 +60,9 @@ public class AnnotatedClientEndpointConfig implements ClientEndpointConfig
         {
             try
             {
-                this.configurator = anno.configurator().newInstance();
+                this.configurator = anno.configurator().getDeclaredConstructor( ).newInstance();
             }
-            catch (InstantiationException | IllegalAccessException e)
+            catch (Exception e)
             {
                 StringBuilder err = new StringBuilder();
                 err.append("Unable to instantiate ClientEndpoint.configurator() of ");

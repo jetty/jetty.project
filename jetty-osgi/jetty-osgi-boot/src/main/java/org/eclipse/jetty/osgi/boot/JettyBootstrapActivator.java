@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.ServiceTracker;
 
@@ -69,6 +70,11 @@ public class JettyBootstrapActivator implements BundleActivator
     @Override
     public void start(final BundleContext context) throws Exception
     {
+        ServiceReference[] references = context.getAllServiceReferences("org.eclipse.jetty.http.HttpFieldPreEncoder", null);
+        
+        if (references == null || references.length==0)
+            LOG.warn("OSGi support for java.util.ServiceLoader may not be present. You may experience runtime errors.");
+        
         INSTANCE = this;
 
         // track other bundles and fragments attached to this bundle that we

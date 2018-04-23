@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Provides SLF4J API.  Requires a slf4j implementation (eg slf4j-simple-impl)
 otherwise a noop implementation is used.
@@ -14,7 +16,7 @@ maven://org.slf4j/slf4j-api/${slf4j.version}|lib/slf4j/slf4j-api-${slf4j.version
 lib/slf4j/slf4j-api-${slf4j.version}.jar
 
 [ini]
-slf4j.version?=1.7.21
+slf4j.version?=1.7.25
 jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/slf4j/
 
 [license]

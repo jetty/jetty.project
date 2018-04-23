@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Enables the jetty-rewrite handler.  Specific rewrite
 rules must be added to either to etc/jetty-rewrite.xml or a custom xml/module

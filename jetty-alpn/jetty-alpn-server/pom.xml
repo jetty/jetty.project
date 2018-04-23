@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-alpn-parent</artifactId>
-    <version>9.4.9-SNAPSHOT</version>
+    <version>9.4.10-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-server</artifactId>
@@ -49,7 +49,7 @@
               <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
               <Export-Package>org.eclipse.jetty.alpn.server,*</Export-Package>
               <Import-Package>org.eclipse.jetty.alpn;version="${alpn.majorVersion}.${alpn.minorVersion}.${alpn.incrementalVersion}",*</Import-Package>
-              <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)", osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server)";resolution:=optional;cardinality:=multiple</Require-Capability>
+              <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional, osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server)";resolution:=optional;cardinality:=multiple</Require-Capability>
             </instructions>
         </configuration>
       </plugin>

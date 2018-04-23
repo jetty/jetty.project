@@ -103,7 +103,6 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
 
         float ratio = bufferRatio;
 
-        WindowUpdateFrame windowFrame = null;
         int level = sessionLevel.addAndGet(length);
         int maxLevel = (int)(maxSessionRecvWindow.get() * ratio);
         if (level > maxLevel)
@@ -113,7 +112,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                 session.updateRecvWindow(level);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Data consumed, {} bytes, updated session recv window by {}/{} for {}", length, level, maxLevel, session);
-                windowFrame = new WindowUpdateFrame(0, level);
+                session.frames(null, Callback.NOOP, new WindowUpdateFrame(0, level), Frame.EMPTY_ARRAY);
             }
             else
             {
@@ -127,7 +126,6 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                 LOG.debug("Data consumed, {} bytes, session recv window level {}/{} for {}", length, level, maxLevel, session);
         }
 
-        Frame[] windowFrames = Frame.EMPTY_ARRAY;
         if (stream != null)
         {
             if (stream.isRemotelyClosed())
@@ -148,11 +146,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                         stream.updateRecvWindow(level);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Data consumed, {} bytes, updated stream recv window by {}/{} for {}", length, level, maxLevel, stream);
-                        WindowUpdateFrame frame = new WindowUpdateFrame(stream.getId(), level);
-                        if (windowFrame == null)
-                            windowFrame = frame;
-                        else
-                            windowFrames = new Frame[]{frame};
+                        session.frames(stream, Callback.NOOP, new WindowUpdateFrame(stream.getId(), level), Frame.EMPTY_ARRAY);
                     }
                     else
                     {
@@ -162,9 +156,6 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                 }
             }
         }
-
-        if (windowFrame != null)
-            session.frames(stream, Callback.NOOP, windowFrame, windowFrames);
     }
 
     @Override

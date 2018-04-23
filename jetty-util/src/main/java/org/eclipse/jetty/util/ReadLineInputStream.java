@@ -22,16 +22,29 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.EnumSet;
+
+import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
 
 /**
  * ReadLineInputStream
  *
  * Read from an input stream, accepting CR/LF, LF or just CR.
  */
+@Deprecated
 public class ReadLineInputStream extends BufferedInputStream
 {
     boolean _seenCRLF;
     boolean _skipLF;
+    private EnumSet<Termination> _lineTerminations = EnumSet.noneOf(Termination.class);
+    public EnumSet<Termination> getLineTerminations() { return _lineTerminations; }
+    public enum Termination
+    {
+        CRLF,
+        LF,
+        CR,
+        EOF
+    }
     
     public ReadLineInputStream(InputStream in)
     {
@@ -54,13 +67,18 @@ public class ReadLineInputStream extends BufferedInputStream
             if (markpos < 0)
                 throw new IOException("Buffer size exceeded: no line terminator");
             
+            if(_skipLF && b!='\n')
+                _lineTerminations.add(Termination.CR);
+
             if (b==-1)
             {
                 int m=markpos;
                 markpos=-1;
                 if (pos>m)
+                {
+                    _lineTerminations.add(Termination.EOF);
                     return new String(buf,m,pos-m, StandardCharsets.UTF_8);
-
+                }
                 return null;
             }
             
@@ -72,10 +90,18 @@ public class ReadLineInputStream extends BufferedInputStream
                 if (_seenCRLF && pos<count)
                 {
                     if (buf[pos]=='\n')
+                    {
+                        _lineTerminations.add(Termination.CRLF);
                         pos+=1;
+                    }
+                    else
+                    {
+                        _lineTerminations.add(Termination.CR);
+                    }
                 }
                 else
                     _skipLF=true;
+
                 int m=markpos;
                 markpos=-1;
                 return new String(buf,m,p-m-1,StandardCharsets.UTF_8);
@@ -88,10 +114,12 @@ public class ReadLineInputStream extends BufferedInputStream
                     _skipLF=false;
                     _seenCRLF=true;
                     markpos++;
+                    _lineTerminations.add(Termination.CRLF);
                     continue;
                 }
                 int m=markpos;
                 markpos=-1;
+                _lineTerminations.add(Termination.LF);
                 return new String(buf,m,pos-m-1,StandardCharsets.UTF_8);
             }
         }

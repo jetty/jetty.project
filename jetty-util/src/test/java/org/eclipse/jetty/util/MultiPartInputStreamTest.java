@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.MultipartConfigElement;
@@ -45,7 +46,7 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart;
-import org.hamcrest.Matchers;
+import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
 import org.junit.Test;
 
 /**
@@ -53,6 +54,7 @@ import org.junit.Test;
  *
  *
  */
+@SuppressWarnings("deprecation")
 public class MultiPartInputStreamTest
 {
     private static final String FILENAME = "stuff.txt";
@@ -119,6 +121,7 @@ public class MultiPartInputStreamTest
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertTrue(mpis.getParts().isEmpty());
+        assertEquals(EnumSet.noneOf(NonCompliance.class), mpis.getNonComplianceWarnings());
     }
 
     
@@ -141,6 +144,7 @@ public class MultiPartInputStreamTest
                                                                           _tmpDir);
          mpis.setDeleteOnExit(true);
          assertTrue(mpis.getParts().isEmpty());
+         assertEquals(EnumSet.noneOf(NonCompliance.class), mpis.getNonComplianceWarnings());
      }
 
     @Test
@@ -201,7 +205,10 @@ public class MultiPartInputStreamTest
         assertThat(title, notNullValue());
         assertThat(title.getSize(), is(3L));
         IO.copy(title.getInputStream(), baos);
-        assertThat(baos.toString("US-ASCII"), is("ttt"));  
+        assertThat(baos.toString("US-ASCII"), is("ttt")); 
+        
+        assertEquals(EnumSet.noneOf(NonCompliance.class), mpis.getNonComplianceWarnings());
+
     }
 
     @Test
@@ -215,6 +222,7 @@ public class MultiPartInputStreamTest
                                                             _tmpDir);
         mpis.setDeleteOnExit(true);
         assertTrue(mpis.getParts().isEmpty());
+        assertEquals(EnumSet.noneOf(NonCompliance.class), mpis.getNonComplianceWarnings());
     }
 
     @Test
@@ -369,9 +377,10 @@ public class MultiPartInputStreamTest
         baos = new ByteArrayOutputStream();
         IO.copy(stuff.getInputStream(), baos);
         assertTrue(baos.toString("US-ASCII").contains("aaaa"));
+        
+        assertEquals(EnumSet.of(NonCompliance.LF_LINE_TERMINATION), mpis.getNonComplianceWarnings());
     }
     
-
 
     @Test
     public void testLeadingWhitespaceBodyWithoutCRLF()
@@ -410,13 +419,12 @@ public class MultiPartInputStreamTest
         baos = new ByteArrayOutputStream();
         IO.copy(stuff.getInputStream(), baos);
         assertTrue(baos.toString("US-ASCII").contains("bbbbb"));
+
+        assertEquals(EnumSet.of(NonCompliance.NO_CRLF_AFTER_PREAMBLE), mpis.getNonComplianceWarnings());
     }
     
     
     
-    
-    
-
     @Test
     public void testNoLimits()
     throws Exception
@@ -431,6 +439,7 @@ public class MultiPartInputStreamTest
         assertFalse(parts.isEmpty());
     }
 
+    
     @Test
     public void testRequestTooBig ()
     throws Exception
@@ -621,6 +630,8 @@ public class MultiPartInputStreamTest
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Other"));
+        
+        assertEquals(EnumSet.of(NonCompliance.LF_LINE_TERMINATION), mpis.getNonComplianceWarnings());
     }
     
     @Test
@@ -659,6 +670,8 @@ public class MultiPartInputStreamTest
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Other"));
+        
+        assertEquals(EnumSet.of(NonCompliance.CR_LINE_TERMINATION), mpis.getNonComplianceWarnings());
     }
 
     @Test
@@ -696,6 +709,8 @@ public class MultiPartInputStreamTest
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Other")); 
+        
+        assertEquals(EnumSet.of(NonCompliance.CR_LINE_TERMINATION), mpis.getNonComplianceWarnings());
     }
     
     @Test
@@ -745,6 +760,7 @@ public class MultiPartInputStreamTest
         mpis.setDeleteOnExit(true);
         Collection<Part> parts = mpis.getParts();
         assertThat(parts.size(), is(1));
+        
     }
     
     
@@ -1002,6 +1018,8 @@ public class MultiPartInputStreamTest
         baos = new ByteArrayOutputStream();
         IO.copy(p3.getInputStream(), baos);
         assertEquals("the end", baos.toString("US-ASCII"));
+        
+        assertEquals(EnumSet.of(NonCompliance.BASE64_TRANSFER_ENCODING), mpis.getNonComplianceWarnings());
     }
     
     @Test
@@ -1040,6 +1058,8 @@ public class MultiPartInputStreamTest
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
         assertEquals("truth=beauty", baos.toString("US-ASCII"));
+        
+        assertEquals(EnumSet.of(NonCompliance.QUOTED_PRINTABLE_TRANSFER_ENCODING), mpis.getNonComplianceWarnings());
     }
 
 

@@ -43,8 +43,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -59,6 +59,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -70,7 +71,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -162,7 +162,7 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
-                Map<String, String[]> map = request.getParameterMap();
+                request.getParameterMap();
                 // should have thrown a BadMessageException
                 return false;
             }
@@ -189,7 +189,7 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
-                Map<String, String[]> map = request.getParameterMap();
+                request.getParameterMap();
                 // should have thrown a BadMessageException
                 return false;
             }
@@ -342,8 +342,7 @@ public class RequestTest
         String response = _connector.getResponse(request);
         assertThat(response, containsString(" 200 OK"));
     }
-
-
+    
     @Test
     public void testMultiPart() throws Exception
     {
@@ -364,12 +363,12 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                MultiPartInputStreamParser m = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
-                ContextHandler.Context c = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);
+                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
                 assertNotNull (m);
+                ContextHandler.Context c = m.getContext();
                 assertNotNull (c);
                 assertTrue(c == sre.getServletContext());
-                assertTrue(!m.getParsedParts().isEmpty());
+                assertTrue(!m.isEmpty());
                 assertTrue(testTmpDir.list().length == 2);
                 super.requestDestroyed(sre);
                 String[] files = testTmpDir.list();
@@ -401,8 +400,116 @@ public class RequestTest
         multipart;
 
         String responses=_connector.getResponse(request);
-        // System.err.println(responses);
+        //System.err.println(responses);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
+    }
+    
+    @Test
+    public void testUtilMultiPart() throws Exception
+    {
+        final File testTmpDir = File.createTempFile("reqtest", null);
+        if (testTmpDir.exists())
+            testTmpDir.delete();
+        testTmpDir.mkdir();
+        testTmpDir.deleteOnExit();
+        assertTrue(testTmpDir.list().length == 0);
+
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/foo");
+        contextHandler.setResourceBase(".");
+        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir));
+        contextHandler.addEventListener(new MultiPartCleanerListener()
+        {
+
+            @Override
+            public void requestDestroyed(ServletRequestEvent sre)
+            {
+                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
+                assertNotNull (m);
+                ContextHandler.Context c = m.getContext();
+                assertNotNull (c);
+                assertTrue(c == sre.getServletContext());
+                assertTrue(!m.isEmpty());
+                assertTrue(testTmpDir.list().length == 2);
+                super.requestDestroyed(sre);
+                String[] files = testTmpDir.list();
+                assertTrue(files.length == 0);
+            }
+
+        });
+        _server.stop();
+        _server.setHandler(contextHandler);
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setMultiPartFormDataCompliance(MultiPartFormDataCompliance.LEGACY);
+        _server.start();
+
+        String multipart =  "      --AaB03x\r"+
+        "content-disposition: form-data; name=\"field1\"\r"+
+        "\r"+
+        "Joe Blow\r"+
+        "--AaB03x\r"+
+        "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r"+
+        "Content-Type: text/plain;charset=ISO-8859-1\r"+
+        "\r"+
+        "000000000000000000000000000000000000000000000000000\r"+
+        "--AaB03x--\r";
+
+        String request="GET /foo/x.html HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
+        "Content-Length: "+multipart.getBytes().length+"\r\n"+
+        "Connection: close\r\n"+
+        "\r\n"+
+        multipart;
+
+        String responses=_connector.getResponse(request);
+        //System.err.println(responses);
+        assertThat(responses, Matchers.startsWith("HTTP/1.1 200"));
+        assertThat(responses, Matchers.containsString("Violation: CR_LINE_TERMINATION"));
+        assertThat(responses, Matchers.containsString("Violation: NO_CRLF_AFTER_PREAMBLE"));
+    }
+
+    @Test
+    public void testHttpMultiPart() throws Exception
+    {
+        final File testTmpDir = File.createTempFile("reqtest", null);
+        if (testTmpDir.exists())
+            testTmpDir.delete();
+        testTmpDir.mkdir();
+        testTmpDir.deleteOnExit();
+        assertTrue(testTmpDir.list().length == 0);
+
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/foo");
+        contextHandler.setResourceBase(".");
+        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir));
+     
+        _server.stop();
+        _server.setHandler(contextHandler);
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setMultiPartFormDataCompliance(MultiPartFormDataCompliance.RFC7578);
+        _server.start();
+
+        String multipart =  "      --AaB03x\r"+
+        "content-disposition: form-data; name=\"field1\"\r"+
+        "\r"+
+        "Joe Blow\r"+
+        "--AaB03x\r"+
+        "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r"+
+        "Content-Type: text/plain;charset=ISO-8859-1\r"+
+        "\r"+
+        "000000000000000000000000000000000000000000000000000\r"+
+        "--AaB03x--\r";
+
+        String request="GET /foo/x.html HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
+        "Content-Length: "+multipart.getBytes().length+"\r\n"+
+        "Connection: close\r\n"+
+        "\r\n"+
+        multipart;
+
+        String responses=_connector.getResponse(request);
+        //System.err.println(responses);
+        assertThat(responses,Matchers.startsWith("HTTP/1.1 500"));
     }
 
     @Test
@@ -426,9 +533,9 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                MultiPartInputStreamParser m = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
-                ContextHandler.Context c = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);
+                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
                 assertNotNull (m);
+                ContextHandler.Context c = m.getContext();
                 assertNotNull (c);
                 assertTrue(c == sre.getServletContext());
                 super.requestDestroyed(sre);
@@ -1712,6 +1819,12 @@ public class RequestTest
                 assertNotNull(foo);
                 assertTrue(foo.getSize() > 0);
                 response.setStatus(200);
+                List<String> violations = (List<String>)request.getAttribute(HttpCompliance.VIOLATIONS_ATTR);
+                if(violations != null)
+                {
+                    for(String v : violations)
+                        response.addHeader("Violation",v);
+                }
             }
             catch (IllegalStateException e)
             {

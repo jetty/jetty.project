@@ -61,7 +61,7 @@ public class WebAppClassLoaderUrlStreamTest extends WebAppClassLoaderTest
                     try
                     {
                         Class<?> clazz = Class.forName(className, false, classLoader);
-                        handler = (URLStreamHandler) clazz.newInstance();
+                        handler = (URLStreamHandler) clazz.getDeclaredConstructor().newInstance();
                         break;
                     }
                     catch (Exception ignore)

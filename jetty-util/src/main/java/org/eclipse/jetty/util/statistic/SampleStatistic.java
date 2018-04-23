@@ -71,6 +71,7 @@ public class SampleStatistic
     }
 
     /**
+     * @param sample the value to record.
      * @deprecated use {@link #record(long)} instead
      */
     @Deprecated

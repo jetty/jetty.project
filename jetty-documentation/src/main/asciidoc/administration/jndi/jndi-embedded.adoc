@@ -31,8 +31,8 @@ jetty-plus.jar
 If you are using transactions, you will also need the `javax.transaction` api.
 You can obtain this jar link:{MVNCENTRAL}/org/eclipse/jetty/orbit/javax.transaction/1.1.1.v201105210645/javax.transaction-1.1.1.v201105210645.jar[here.]
 
-If you wish to use mail, you will also need the `javax.mail` api and implementation which link:{MVNCENTRAL/org/eclipse/jetty/orbit/javax.mail.glassfish/1.4.1.v201005082020/javax.mail.glassfish-1.4.1.v201005082020.jar[you can download here.]
-Note that this jar also requires the `javax.activation` classes, which is available link:{MVCENTRAL}/org/eclipse/jetty/orbit/javax.activation/1.1.0.v201105071233/javax.activation-1.1.0.v201105071233.jar[at this link.]
+If you wish to use mail, you will also need the `javax.mail` api and implementation which link:{MVNCENTRAL}/org/eclipse/jetty/orbit/javax.mail.glassfish/1.4.1.v201005082020/javax.mail.glassfish-1.4.1.v201005082020.jar[you can download here.]
+Note that this jar also requires the `javax.activation` classes, which is available link:{MVNCENTRAL}/org/eclipse/jetty/orbit/javax.activation/1.1.0.v201105071233/javax.activation-1.1.0.v201105071233.jar[at this link.]
 
 ==== Example Code
 

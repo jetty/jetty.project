@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.9-SNAPSHOT</version>
+    <version>9.4.10-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
@@ -21,6 +21,14 @@
           <configuration>
             <!-- No point deploying testing projects -->
             <skip>true</skip>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <configuration>
+            <!-- no need of sources for test jars -->
+            <skipSource>true</skipSource>
           </configuration>
         </plugin>
         <plugin>

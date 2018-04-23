@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Adds a forwarded request customizer to the HTTP configuration used
 by the Unix Domain Socket connector, for use when behind a proxy operating

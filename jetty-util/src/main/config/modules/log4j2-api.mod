@@ -1,3 +1,5 @@
+DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
 [description]
 Provides the Log4j v2 API
 
@@ -21,5 +23,5 @@ Log4j is released under the Apache 2.0 license.
 http://www.apache.org/licenses/LICENSE-2.0.html
 
 [ini]
-log4j2.version?=2.6.1
+log4j2.version?=2.9.1
 jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/log4j2/

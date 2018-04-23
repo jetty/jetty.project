@@ -3,7 +3,7 @@
     <parent>
         <artifactId>jetty-project</artifactId>
         <groupId>org.eclipse.jetty</groupId>
-        <version>9.4.9-SNAPSHOT</version>
+        <version>9.4.10-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -31,25 +31,6 @@
                 <configuration>
                     <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>manifest</goal>
-                        </goals>
-                        <configuration>
-                            <instructions>
-                                <Export-Package>${bundle-symbolic-name}.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-                                <Import-Package>javax.servlet.*;version="[3.1,4.0)",org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
-                                <_nouses>true</_nouses>
-                            </instructions>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.9-SNAPSHOT</version>
+    <version>9.4.10-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -18,9 +18,6 @@
     <osgi-version>3.6.0.v20100517</osgi-version>
     <osgi-services-version>3.2.100.v20100503</osgi-services-version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
-    <!--equinox-servletbridge-version>1.0.0-v20070523</equinox-servletbridge-version-->
-    <logback-version>0.9.29</logback-version>
-    <slf4j-version>1.6.1</slf4j-version>
   </properties>
 
   <modules>
@@ -163,27 +160,27 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>${slf4j-version}</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jcl-over-slf4j</artifactId>
-        <version>${slf4j-version}</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>log4j-over-slf4j</artifactId>
-        <version>${slf4j-version}</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-core</artifactId>
-        <version>${logback-version}</version>
+        <version>${logback.version}</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
-        <version>${logback-version}</version>
+        <version>${logback.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
