@@ -91,9 +91,9 @@ public class WebSocketServletFactory
             {
                 return container.getObjectFactory().createInstance(websocketPojo);
             }
-            catch (InstantiationException | IllegalAccessException e)
+            catch (Throwable t)
             {
-                throw new WebSocketException("Unable to create instance of " + websocketPojo, e);
+                throw new WebSocketException("Unable to create instance of " + websocketPojo, t);
             }
         });
     }

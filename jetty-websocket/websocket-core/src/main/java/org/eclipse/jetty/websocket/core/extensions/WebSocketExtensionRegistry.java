@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -103,9 +104,9 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
             }
             return ext;
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (Throwable t)
         {
-            throw new WebSocketException("Cannot instantiate extension: " + extClass,e);
+            throw new WebSocketException("Cannot instantiate extension: " + extClass,t);
         }
     }
 
