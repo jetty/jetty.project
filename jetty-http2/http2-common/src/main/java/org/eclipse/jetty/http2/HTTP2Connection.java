@@ -21,10 +21,9 @@ package org.eclipse.jetty.http2;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -206,7 +205,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
-        private final List<NetworkBuffer> pendingBuffers = new LinkedList<>();
         private final Callback fillableCallback = new FillableCallback();
         private NetworkBuffer buffer;
         private boolean shutdown;
@@ -237,10 +235,12 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             {
                 if (parse)
                 {
+                    buffer.retain();
+
                     while (buffer.hasRemaining())
                         parser.parse(buffer.buffer);
 
-                    boolean released = buffer.tryReleased();
+                    boolean released = buffer.tryRelease();
 
                     task = pollTask();
                     if (LOG.isDebugEnabled())
@@ -408,8 +408,8 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     private class NetworkBuffer implements Callback, Retainable
     {
+        private final AtomicInteger refCount = new AtomicInteger();
         private final ByteBuffer buffer;
-        private int refCount;
 
         private NetworkBuffer()
         {
@@ -429,10 +429,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         @Override
         public void retain()
         {
-            synchronized (this)
-            {
-                ++refCount;
-            }
+            refCount.incrementAndGet();
         }
 
         @Override
@@ -455,14 +452,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
         private void release()
         {
-            boolean release = false;
-            synchronized (this)
-            {
-                --refCount;
-                if (refCount == 0 && !hasRemaining())
-                    release = producer.pendingBuffers.remove(this);
-            }
-            if (release)
+            if (tryRelease())
             {
                 byteBufferPool.release(buffer);
                 if (LOG.isDebugEnabled())
@@ -470,27 +460,9 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             }
         }
 
-        /**
-         * <p>Similar to {@code isReleased()}, but with side effects.</p>
-         * <p>Atomically checks whether this NetworkBuffer is released,
-         * and if not stores it away for later, asynchronous, release.</p>
-         *
-         * @return whether this NetworkBuffer is released
-         */
-        private boolean tryReleased()
+        private boolean tryRelease()
         {
-            synchronized (this)
-            {
-                if (refCount > 0)
-                {
-                    List<NetworkBuffer> pendingBuffers = producer.pendingBuffers;
-                    pendingBuffers.add(this);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Retained {}, total: {}", this, pendingBuffers.size());
-                    return false;
-                }
-                return true;
-            }
+            return refCount.decrementAndGet() == 0;
         }
 
         @Override
