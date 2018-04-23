@@ -188,7 +188,7 @@ public class ConfiguratorTest
     }
 
     @SuppressWarnings("unused")
-    @ServerEndpoint(value = "/protocols", configurator = ProtocolsConfigurator.class)
+    @ServerEndpoint(value = "/protocols", configurator = ProtocolsConfigurator.class, subprotocols = "status")
     public static class ProtocolsSocket
     {
         @OnMessage
@@ -378,6 +378,8 @@ public class ConfiguratorTest
     {
         server = new LocalServer();
 
+        server.start();
+
         ServerContainer container = server.getServerContainer();
         container.addEndpoint(CaptureHeadersSocket.class);
         container.addEndpoint(EmptySocket.class);
@@ -386,8 +388,6 @@ public class ConfiguratorTest
         container.addEndpoint(UniqueUserPropsSocket.class);
         container.addEndpoint(AddressSocket.class);
         container.addEndpoint(TimeDecoderSocket.class);
-
-        server.start();
     }
 
     public static String toSafeAddr(SocketAddress addr)
@@ -599,10 +599,10 @@ public class ConfiguratorTest
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
-        upgradeRequest.setSubProtocols("echo");
+        upgradeRequest.setSubProtocols("status");
         Future<FrameHandler.Channel> clientConnectFuture = client.connect(upgradeRequest);
 
-        assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [\"echo\"]"));
+        assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [\"status\"]"));
     }
 
     /**

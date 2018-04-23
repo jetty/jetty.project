@@ -62,7 +62,6 @@ public class EndpointViaConfigTest
     @ServerEndpoint("/echo")
     public static class BasicEchoEndpoint extends WSEventTracker implements MessageHandler.Whole<String>
     {
-        @OnMessage
         public void onMessage(String msg)
         {
             super.onWsText(msg);
@@ -123,7 +122,7 @@ public class EndpointViaConfigTest
         try
         {
             wsb.start();
-            URI uri = wsb.getServerUri();
+            URI uri = wsb.getWsUri();
 
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);

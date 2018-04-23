@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.junit.Assert.fail;
+
+import com.sun.javafx.iio.ImageStorageException;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -367,7 +371,8 @@ public class ContinuationTest
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
-            session.sendBulk(send);
+            session.assertThrows(IllegalStateException.class,
+                    ()-> session.sendFrames(send) );
             session.expect(expect);
         }
     }
@@ -393,7 +398,8 @@ public class ContinuationTest
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
-            session.sendFrames(send);
+            session.assertThrows(IllegalStateException.class,
+                    ()-> session.sendFrames(send) );
             session.expect(expect);
         }
     }
@@ -453,7 +459,8 @@ public class ContinuationTest
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
-            session.sendSegmented(send,1);
+            session.assertThrows(IllegalStateException.class,
+                    ()-> session.sendSegmented(send, 1));
             session.expect(expect);
         }
     }

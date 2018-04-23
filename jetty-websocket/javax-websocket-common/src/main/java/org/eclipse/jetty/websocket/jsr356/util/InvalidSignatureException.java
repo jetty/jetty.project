@@ -37,7 +37,7 @@ public class InvalidSignatureException extends InvalidWebSocketException
             err.append(methodAnnotationClass.getSimpleName());
             err.append(' ');
         }
-        if (pojo != null)
+        if (pojo == null)
         {
             ReflectUtils.append(err, method);
         }

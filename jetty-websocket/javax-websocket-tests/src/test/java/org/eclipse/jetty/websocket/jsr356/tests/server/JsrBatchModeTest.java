@@ -64,18 +64,16 @@ public class JsrBatchModeTest
     }
     
     private LocalServer server;
-    private ServerConnector connector;
     private WebSocketContainer client;
 
     @Before
     public void prepare() throws Exception
     {
         server = new LocalServer();
+        server.start();
 
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class, "/").build();
         server.getServerContainer().addEndpoint(config);
-
-        server.start();
 
         client = ContainerProvider.getWebSocketContainer();
     }
@@ -91,7 +89,7 @@ public class JsrBatchModeTest
     {
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create().build();
 
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort());
+        URI uri = server.getWsUri();
 
         final CountDownLatch latch = new CountDownLatch(1);
         EndpointAdapter endpoint = new EndpointAdapter()
@@ -128,7 +126,7 @@ public class JsrBatchModeTest
     {
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create().build();
 
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort());
+        URI uri = server.getWsUri();
 
         final CountDownLatch latch = new CountDownLatch(1);
         EndpointAdapter endpoint = new EndpointAdapter()
@@ -159,7 +157,7 @@ public class JsrBatchModeTest
     {
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create().build();
 
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort());
+        URI uri = server.getWsUri();
 
         final CountDownLatch latch = new CountDownLatch(1);
         EndpointAdapter endpoint = new EndpointAdapter()
@@ -184,7 +182,7 @@ public class JsrBatchModeTest
         }
     }
 
-    private static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
+    public static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
     {
         @Override
         public void onOpen(Session session, EndpointConfig config)

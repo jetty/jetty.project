@@ -20,11 +20,15 @@ package org.eclipse.jetty.websocket.core;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import junit.framework.AssertionFailedError;
+
 import java.io.IOException;
+import java.lang.reflect.Executable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,6 +80,11 @@ import org.hamcrest.Matchers;
  */
 public class CoreFuzzer implements AutoCloseable
 {
+    public interface Exec
+    {
+        void exec() throws IOException;
+    }
+
     private final static Logger LOG = Log.getLogger(CoreFuzzer.class);
     private final FrameCapture frameCapture;
     private final FrameHandler remoteFrameHandler;
@@ -196,6 +205,27 @@ public class CoreFuzzer implements AutoCloseable
         this.clientParser.parse(output);
 
         assertExpected(frameCapture.receivedFrames, expected);
+    }
+
+    // TODO: replace with junit5 version when junit5 is available
+    public <T extends Throwable> T assertThrows(Class<T> expected, Exec exec) throws IOException
+    {
+        try {
+            exec.exec();
+        }
+        catch (IOException e)
+        {
+            throw e;
+        }
+        catch (Throwable actual) {
+            if (expected.isInstance(actual)) {
+                return (T) actual;
+            }
+            throw new AssertionFailedError("Expected exception of type <" +
+                    expected.getName() + "> got <" + actual.getClass().getName() + "> instead");
+        }
+
+        throw new AssertionFailedError("Expected exception of type <" + expected.getName() + ">");
     }
 
     /**
@@ -336,11 +366,11 @@ public class CoreFuzzer implements AutoCloseable
 
     public static class RemoteWholeEchoHandler extends AbstractWholeMessageHandler
     {
-        private final static Logger LOG = Log.getLogger(FrameCapture.class);
+        private final static Logger LOG = Log.getLogger(RemoteWholeEchoHandler.class);
         private final SharedBlockingCallback sendBlocker = new SharedBlockingCallback();
 
         @Override
-        public void onClosed(CloseStatus closeStatus) throws Exception
+        public void onClosed(CloseStatus closeStatus)
         {
             if (LOG.isDebugEnabled())
             {
@@ -349,7 +379,7 @@ public class CoreFuzzer implements AutoCloseable
         }
 
         @Override
-        public void onError(Throwable cause) throws Exception
+        public void onError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
             {

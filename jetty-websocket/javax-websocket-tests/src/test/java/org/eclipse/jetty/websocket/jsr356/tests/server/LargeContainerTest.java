@@ -91,7 +91,7 @@ public class LargeContainerTest
         try
         {
             wsb.start();
-            URI uri = wsb.getServerUri();
+            URI uri = wsb.getWsUri();
 
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);

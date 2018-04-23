@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.junit.Test;
 
 /**
@@ -95,9 +96,10 @@ public class WebSocketClientInitTest
             assertThat("WebSocketClient started",ws.isStarted(),is(true));
             assertThat("HttpClient started",http.isStarted(),is(true));
 
-            HttpClient httpBean = ws.getBean(HttpClient.class); 
+            WebSocketCoreClient coreClient = ws.getBean(WebSocketCoreClient.class);
+            HttpClient httpBean = coreClient.getBean(HttpClient.class);
             assertThat("HttpClient bean found in WebSocketClient",httpBean,is(http));
-            assertThat("HttpClient bean is managed",ws.isManaged(httpBean),is(true));
+            assertThat("HttpClient bean is managed",coreClient.isManaged(httpBean),is(true));
             assertThat("WebSocketClient should not be found in HttpClient",http.getBean(WebSocketClient.class),nullValue());
         }
         finally

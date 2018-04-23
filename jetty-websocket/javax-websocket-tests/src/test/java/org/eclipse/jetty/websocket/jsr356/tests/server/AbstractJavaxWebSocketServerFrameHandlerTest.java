@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
@@ -40,14 +41,17 @@ import org.junit.rules.ExpectedException;
 
 public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
 {
+    private static Server server;
     protected static ServletContextHandler context;
     protected static JavaxWebSocketServerContainer container;
     
     @BeforeClass
     public static void initContainer() throws Exception
     {
+        server = new Server();
         context = new ServletContextHandler();
-        context.start();
+        server.setHandler(context);
+
         WebSocketContainerContext containerContext = ServletContextWebSocketContainer.get(context.getServletContext());
         MappedWebSocketServletNegotiator mappedNegotiator = new NativeWebSocketConfiguration(context.getServletContext());
         HttpClient httpClient = new HttpClient();
@@ -56,14 +60,16 @@ public abstract class AbstractJavaxWebSocketServerFrameHandlerTest
         container.addBean(httpClient, true);
         container.addBean(mappedNegotiator, true);
         container.addBean(containerContext, true);
-        container.start();
+
+        server.addBean(container);
+        server.start();
     }
     
     @AfterClass
     public static void stopContainer() throws Exception
     {
         container.stop();
-        context.stop();
+        server.stop();
     }
     
     @Rule
