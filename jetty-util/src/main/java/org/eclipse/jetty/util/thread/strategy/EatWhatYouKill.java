@@ -292,12 +292,12 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         {
             case PRODUCE_CONSUME:
                 _pcMode.increment();
-                task.run();
+                runTask(task);
                 return true;
 
             case PRODUCE_INVOKE_CONSUME:
                 _picMode.increment();
-                Invocable.invokeNonBlocking(task);
+                invokeTask(task);
                 return true;
 
             case PRODUCE_EXECUTE_CONSUME:
@@ -307,7 +307,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
             case EXECUTE_PRODUCE_CONSUME:
                 _epcMode.increment();
-                task.run();
+                runTask(task);
 
                 // Try to produce again?
                 synchronized(this)
@@ -323,6 +323,30 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
             default:
                 throw new IllegalStateException(toString());
+        }
+    }
+
+    private void runTask(Runnable task)
+    {
+        try
+        {
+            task.run();
+        }
+        catch (Throwable x)
+        {
+            LOG.warn(x);
+        }
+    }
+
+    private void invokeTask(Runnable task)
+    {
+        try
+        {
+            Invocable.invokeNonBlocking(task);
+        }
+        catch (Throwable x)
+        {
+            LOG.warn(x);
         }
     }
 
