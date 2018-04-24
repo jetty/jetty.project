@@ -109,7 +109,7 @@ public class OnCloseTest
         // Build up EventDriver
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         ClientEndpointConfig config = metadata.getConfig();
-        TrackingSocket endpoint = (TrackingSocket)testcase.closeClass.newInstance();
+        TrackingSocket endpoint = (TrackingSocket)testcase.closeClass.getDeclaredConstructor().newInstance();
         EndpointInstance ei = new EndpointInstance(endpoint,config,metadata);
         JsrEvents<ClientEndpoint, ClientEndpointConfig> jsrevents = new JsrEvents<>(metadata);
 

@@ -295,7 +295,8 @@ public class Dump extends HttpServlet
         {
             try
             {
-                throw (Throwable) Thread.currentThread().getContextClassLoader().loadClass(info.substring(1)).newInstance();
+                throw (Throwable) Thread.currentThread().getContextClassLoader()
+                    .loadClass(info.substring(1)).getDeclaredConstructor().newInstance();
             }
             catch (Throwable th)
             {

@@ -33,7 +33,7 @@
                <configuration>
                  <instructions>
                    <Bundle-Description>JDK9 Server ALPN</Bundle-Description>
-                   <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                   <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
                    <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server</Provide-Capability>
                    <_nouses>true</_nouses>
                  </instructions>

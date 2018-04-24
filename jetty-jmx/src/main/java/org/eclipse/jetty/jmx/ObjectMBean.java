@@ -148,7 +148,7 @@ public class ObjectMBean implements DynamicMBean
                         LOG.ignore(e);
                         if (ModelMBean.class.isAssignableFrom(mClass))
                         {
-                            mbean = mClass.newInstance();
+                            mbean = mClass.getDeclaredConstructor().newInstance();
                             ((ModelMBean)mbean).setManagedResource(o, "objectReference");
                         }
                     }

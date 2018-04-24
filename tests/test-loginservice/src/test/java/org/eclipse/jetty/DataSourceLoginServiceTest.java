@@ -170,7 +170,7 @@ public class DataSourceLoginServiceTest
      
      protected void changePassword (String user, String newpwd) throws Exception
      {
-         Loader.loadClass("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
+         Loader.loadClass("org.apache.derby.jdbc.EmbeddedDriver").getDeclaredConstructor().newInstance();
          try (Connection connection = DriverManager.getConnection(DatabaseLoginServiceTestServer.__dbURL, "", "");
               Statement stmt = connection.createStatement())
          {
