@@ -198,6 +198,9 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         if (this.mavenBaseUrl != null)
         {
             coords.mavenBaseUrl = this.mavenBaseUrl;
+        } else
+        {
+            coords.mavenBaseUrl = System.getProperty("maven-base-url",coords.mavenBaseUrl);
         }
 
         if (parts.length >= 4)

@@ -1072,14 +1072,6 @@ public class StartArgs
             return;
         }
 
-        // to override default http://central.maven.org/maven2/
-        if (arg.startsWith("--maven-base-url="))
-        {
-            this.mavenBaseUrl = Props.getValue(arg);
-            run = false;
-            return;
-        }
-
         // Start property (syntax similar to System property)
         if (arg.startsWith("-D"))
         {
@@ -1291,6 +1283,12 @@ public class StartArgs
                 ue.initCause(x);
                 throw ue;
             }
+        }
+
+        // to override default http://central.maven.org/maven2/
+        if (key.equals("maven-base-url"))
+        {
+            this.mavenBaseUrl = value;
         }
     }
 

@@ -91,9 +91,8 @@ public class BaseBuilder
             if (localRepoDir != null)
             {
                 // Use provided local repo directory
-                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome, //
-                                                                       localRepoDir, //
-                                                                       args.getMavenLocalRepoDir()==null, //
+                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome, localRepoDir,
+                                                                       args.getMavenLocalRepoDir()==null,
                                                                        startArgs.getMavenBaseUrl()));
             }
             else
