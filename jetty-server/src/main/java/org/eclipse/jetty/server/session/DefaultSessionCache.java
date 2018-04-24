@@ -156,7 +156,6 @@ public class DefaultSessionCache extends AbstractSessionCache
                 //if we have a backing store so give the session to it to write out if necessary
                 if (_sessionDataStore != null)
                 {
-                    session.stopInactivityTimer(true); //stop the idle timer and get rid of it
                     session.willPassivate();
                     try
                     {
@@ -167,6 +166,7 @@ public class DefaultSessionCache extends AbstractSessionCache
                         LOG.warn(e);
                     }
                     doDelete (session.getId()); //remove from memory
+                    session.setResident(false);
                 }
                 else
                 {

@@ -25,7 +25,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -36,7 +35,6 @@ import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.io.CyclicTimeout;
-import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
@@ -92,53 +90,80 @@ public class Session implements SessionHandler.SessionIf
     protected State _state = State.VALID; //state of the session:valid,invalid or being invalidated
     protected Locker _lock = new Locker(); //sync lock
     protected boolean _resident = false;
-    protected SessionInactivityTimeout _sessionInactivityTimer = null;
+    protected SessionInactivityTimer _sessionInactivityTimer = null;
     
     
 
     /* ------------------------------------------------------------- */
     /**
-     * SessionInactivityTimeout
+     * SessionInactivityTimer
      * 
      * Each Session has a timer associated with it that fires whenever 
-     * it has been idle (ie not referenced by a request) for a 
+     * it has been idle (ie not accessed by a request) for a 
      * configurable amount of time, or the Session expires. 
      * 
      * @see SessionCache
      *
      */
-    public class SessionInactivityTimeout extends CyclicTimeout
+    public class SessionInactivityTimer
     {
-        protected long _timeout = -1;
+        protected CyclicTimeout _timer;
+        protected long _msec = -1;
         
-        public SessionInactivityTimeout()
+        public SessionInactivityTimer()
         {
-            super(getSessionHandler().getScheduler());
+            _timer = new CyclicTimeout((getSessionHandler().getScheduler()))
+                    {
+                        @Override
+                        public void onTimeoutExpired()
+                        {
+                            if (LOG.isDebugEnabled()) LOG.debug("Timer expired for session {}", getId());
+                           getSessionHandler().sessionInactivityTimerExpired(Session.this);
+                        }
+                
+                    };
         }
 
 
-        @Override
-        public void onTimeoutExpired()
+        public void setTimeout(long ms)
         {
-            //called when the timer goes off
-            if (LOG.isDebugEnabled()) LOG.debug("Timer expired for session {}", getId());
-           getSessionHandler().sessionInactivityTimerExpired(Session.this);
-        }
-        
-
-        public void setIdleTimeout(long ms)
-        {
-            if (LOG.isDebugEnabled()) LOG.debug("setIdleTimeout={}ms",ms);
-            _timeout = ms;
+            if (LOG.isDebugEnabled()) LOG.debug("Session {} timer={}ms",getId(), ms);
+            if (_timer == null)
+                throw new IllegalStateException("TTimer null for session "+getId());
+            _msec = ms;
         }
 
-        public void start ()
+
+        public void schedule ()
         {
-            if (_timeout > 0)
+            if (_timer == null)
+                throw new IllegalStateException("Timer null for session "+getId());
+            
+            if (_msec > 0)
             {
-                if (LOG.isDebugEnabled()) LOG.debug("(Re)starting timer for session {} at {}ms",getId(), _timeout);
-                schedule(_timeout, TimeUnit.MILLISECONDS);
+                if (LOG.isDebugEnabled()) LOG.debug("(Re)starting timer for session {} at {}ms",getId(), _msec);
+                _timer.schedule(_msec, TimeUnit.MILLISECONDS);
             }
+        }
+        
+      
+        public void cancel()
+        {
+            if (_timer == null)
+                throw new IllegalStateException("SessionInactivityTimer destroyed for session "+getId());
+            _timer.cancel();
+            if (LOG.isDebugEnabled()) LOG.debug("Cancelled timer for session {}",getId());
+        }
+        
+        
+        public void destroy ()
+        {
+            if (_timer == null)
+                return;
+            
+            _timer.destroy();
+            _timer = null;
+            if (LOG.isDebugEnabled()) LOG.debug("Destroyed timer for session {}",getId());
         }
     }
 
@@ -158,7 +183,7 @@ public class Session implements SessionHandler.SessionIf
         _newSession = true;
         _sessionData.setDirty(true);
         _requests = 1; //access will not be called on this new session, but we are obviously in a request
-        _sessionInactivityTimer = new SessionInactivityTimeout();
+        _sessionInactivityTimer = new SessionInactivityTimer();
     }
     
     
@@ -174,7 +199,7 @@ public class Session implements SessionHandler.SessionIf
     {
         _handler = handler;
         _sessionData = data;
-        _sessionInactivityTimer = new SessionInactivityTimeout();
+        _sessionInactivityTimer = new SessionInactivityTimer();
     }
     
 
@@ -232,7 +257,8 @@ public class Session implements SessionHandler.SessionIf
 
             //temporarily stop the idle timer
             if (LOG.isDebugEnabled()) LOG.debug("Session {} accessed, stopping timer, active requests={}",getId(),_requests);
-            _sessionInactivityTimer.cancel(); 
+            _sessionInactivityTimer.cancel();
+
 
             return true;
         }
@@ -246,9 +272,9 @@ public class Session implements SessionHandler.SessionIf
             _requests--;
 
             if (LOG.isDebugEnabled()) LOG.debug("Session {} complete, active requests={}",getId(),_requests);
-            //if last request is exited, (re)start the inactivity timer
+
             if (_requests == 0)
-                _sessionInactivityTimer.start();
+                _sessionInactivityTimer.schedule();
         }
     }
 
@@ -496,8 +522,6 @@ public class Session implements SessionHandler.SessionIf
     {
         try (Lock lock = _lock.lock())
         {
-            if (LOG.isDebugEnabled())LOG.debug("updateInactivityTimer");
-
             long maxInactive =  _sessionData.getMaxInactiveMs();        
             int evictionPolicy = getSessionHandler().getSessionCache().getEvictionPolicy();
 
@@ -507,14 +531,14 @@ public class Session implements SessionHandler.SessionIf
                 if (evictionPolicy < SessionCache.EVICT_ON_INACTIVITY)
                 {
                     //we do not want to evict inactive sessions
-                    setInactivityTimer(-1);
-                    if (LOG.isDebugEnabled()) LOG.debug("Session is immortal && no inactivity eviction: timer cancelled");
+                    _sessionInactivityTimer.setTimeout(-1);
+                    if (LOG.isDebugEnabled()) LOG.debug("Session {} is immortal && no inactivity eviction", getId());
                 }
                 else
                 {
                     //sessions are immortal but we want to evict after inactivity
-                    setInactivityTimer(TimeUnit.SECONDS.toMillis(evictionPolicy));
-                    if (LOG.isDebugEnabled()) LOG.debug("Session is immortal; evict after {} sec inactivity", evictionPolicy);
+                    _sessionInactivityTimer.setTimeout(TimeUnit.SECONDS.toMillis(evictionPolicy));
+                    if (LOG.isDebugEnabled()) LOG.debug("Session {} is immortal; evict after {} sec inactivity", getId(), evictionPolicy);
                 }                    
             }
             else
@@ -523,58 +547,20 @@ public class Session implements SessionHandler.SessionIf
                 if (evictionPolicy < SessionCache.EVICT_ON_INACTIVITY)
                 {
                     //don't want to evict inactive sessions, set the timer for the session's maxInactive setting
-                    setInactivityTimer(_sessionData.getMaxInactiveMs());
-                    if (LOG.isDebugEnabled()) LOG.debug("No inactive session eviction");
+                    _sessionInactivityTimer.setTimeout(_sessionData.getMaxInactiveMs());
+                    if (LOG.isDebugEnabled()) LOG.debug("Session {} no eviction", getId());
                 }
                 else
                 {
                     //set the time to the lesser of the session's maxInactive and eviction timeout
-                    setInactivityTimer(Math.min(maxInactive, TimeUnit.SECONDS.toMillis(evictionPolicy)));
-                    if (LOG.isDebugEnabled()) LOG.debug("Inactivity timer set to lesser of maxInactive={} and inactivityEvict={}", maxInactive, evictionPolicy);
+                    _sessionInactivityTimer.setTimeout(Math.min(maxInactive, TimeUnit.SECONDS.toMillis(evictionPolicy)));
+                    if (LOG.isDebugEnabled()) LOG.debug("Session {} timer set to lesser of maxInactive={} and inactivityEvict={}", getId(), maxInactive, evictionPolicy);
                 }
             }
         }
     }
     
-    /**
-     * Set the inactivity timer on the session.
-     * 
-     * @param ms the interval in millisec 
-     * 
-     */
-    private void setInactivityTimer (long ms)
-    {
-        _sessionInactivityTimer.setIdleTimeout(ms);
-    }
-    
-   
 
-    public void stopInactivityTimer ()
-    {
-        stopInactivityTimer(false);
-    }
-
-    public void stopInactivityTimer (boolean destroy)
-    {
-        try (Lock lock = _lock.lock())
-        {
-            if (_sessionInactivityTimer != null)
-            {
-                if (LOG.isDebugEnabled()) LOG.debug("Session {} timer stopped", getId());
-                _sessionInactivityTimer.cancel();
-
-                if (destroy)
-                {
-                    _sessionInactivityTimer.destroy();
-                    _sessionInactivityTimer = null;
-                    if (LOG.isDebugEnabled()) LOG.debug("Session {} timer destroyed", getId());
-                }
-
-            }
-        }
-    }
-    
-   
 
     /** 
      * @see javax.servlet.http.HttpSession#getMaxInactiveInterval()
@@ -746,7 +732,7 @@ public class Session implements SessionHandler.SessionIf
             Iterator<String> itor = _sessionData.getKeys().iterator();
             if (!itor.hasNext())
                 return new String[0];
-            ArrayList<String> names = new ArrayList<String>();
+            ArrayList<String> names = new ArrayList<>();
             while (itor.hasNext())
                 names.add(itor.next());
             return names.toArray(new String[names.size()]);
@@ -1027,6 +1013,18 @@ public class Session implements SessionHandler.SessionIf
     public void setResident (boolean resident)
     {
         _resident = resident;
+        
+        if (_resident)
+            updateInactivityTimer();
+        else
+        {
+            if (_sessionInactivityTimer != null)
+            {
+                _sessionInactivityTimer.destroy();
+                _sessionInactivityTimer = null;
+                if (LOG.isDebugEnabled()) LOG.debug("Session {} timer destroyed", getId());
+            }
+        }
     }
     
     /* ------------------------------------------------------------- */

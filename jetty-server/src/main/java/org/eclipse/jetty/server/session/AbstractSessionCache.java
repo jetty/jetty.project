@@ -165,6 +165,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     {
 
         /**
+         * @param handler SessionHandler to which this session belongs
          * @param data the session data
          */
         public PlaceHolderSession(SessionHandler handler, SessionData data)
@@ -385,7 +386,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                             {
                                 //successfully swapped in the session
                                 session.setResident(true);
-                                session.updateInactivityTimer();
                                 phsLock.close();
                                 break;
                             }
@@ -504,16 +504,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 throw new IllegalStateException("Session "+id+" is not managed");
             
             if (!session.isValid())
-                return;
-            
-            if (_sessionDataStore == null)
-            {
-                if (LOG.isDebugEnabled()) LOG.debug("No SessionDataStore, putting into SessionCache only id={}", id);
-                session.setResident(true);
-                if (doPutIfAbsent(id, session) == null) //ensure it is in our map
-                    session.updateInactivityTimer();
-                return;
-            }       
+                return; 
 
             //don't do anything with the session until the last request for it has finished
             if ((session.getRequests() <= 0))
@@ -533,8 +524,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                     else
                     {
                         session.setResident(true);
-                        if (doPutIfAbsent(id,session) == null) //ensure it is in our map 
-                            session.updateInactivityTimer();
+                        doPutIfAbsent(id,session); //ensure it is in our map 
                         if (LOG.isDebugEnabled())LOG.debug("Non passivating SessionDataStore, session in SessionCache only id={}",id);
                     }
                 }
@@ -557,8 +547,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                         //reactivate the session
                         session.didActivate();    
                         session.setResident(true);
-                        if (doPutIfAbsent(id,session) == null) //ensure it is in our map  
-                            session.updateInactivityTimer();
+                        doPutIfAbsent(id,session);//ensure it is in our map  
                         if (LOG.isDebugEnabled())LOG.debug("Session reactivated id={}",id);
                     }
                 }
@@ -567,8 +556,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             {
                 if (LOG.isDebugEnabled()) LOG.debug("Req count={} for id={}",session.getRequests(),id);
                 session.setResident(true);
-                if (doPutIfAbsent(id, session) == null) //ensure it is the map, but don't save it to the backing store until the last request exists
-                    session.updateInactivityTimer();
+                doPutIfAbsent(id, session); //ensure it is the map, but don't save it to the backing store until the last request exists
             }
         }
     }
@@ -639,7 +627,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         //delete it from the session object store
         if (session != null)
         {
-            session.stopInactivityTimer(true);
             session.setResident(false);
         }
         
@@ -725,7 +712,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                
                     doDelete(session.getId()); //detach from this cache
                     session.setResident(false);
-                    session.stopInactivityTimer(true); //destroy timer once it's evicted
                 }
                 catch (Exception e)
                 {
