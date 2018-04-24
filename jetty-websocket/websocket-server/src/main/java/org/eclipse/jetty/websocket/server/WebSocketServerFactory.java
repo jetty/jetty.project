@@ -329,7 +329,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         super.doStart();
     }
 
-    private DecoratedObjectFactory findDecorator()
+    /**
+     * Attempt to find the DecoratedObjectFactory that should be used.
+     * @return the DecoratedObjectFactory that should be used. (never null)
+     */
+    protected DecoratedObjectFactory findDecorator()
     {
         DecoratedObjectFactory objectFactory;
 
@@ -350,9 +354,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
     /**
      * Attempt to find the Executor that should be used.
-     * @return the Executor that should be used.
+     * @return the Executor that should be used. (never null)
      */
-    private Executor findExecutor()
+    protected Executor findExecutor()
     {
         if(context != null)
         {
