@@ -49,8 +49,9 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
     private static final Pattern PARAM_PATTERN = Pattern.compile("([^=]+)=([^=]+)?");
     private static final Pattern TYPE_PATTERN = Pattern.compile("([^\\s]+)(\\s+(.*))?");
-    private static final Pattern MULTIPLE_CHALLENGE_PATTERN = Pattern.compile("(.*),\\s*([^=\\s,]+(\\s+[^=\\s].*)?)\\s*");
-    private static final Pattern BASE64_PATTERN = Pattern.compile("([^\\s,=]+=*)\\s*");
+    private static final Pattern MULTIPLE_CHALLENGE_PATTERN = Pattern.compile("(.*),\\s*([^=\\s,]+(\\s+[^=\\s].*)?)");
+    private static final Pattern BASE64_PATTERN = Pattern.compile("[\\+\\-\\.\\/\\dA-Z_a-z~]+=*");
+    private static final int MAX_DEPTH = 10;
 
     private final HttpClient client;
     private final int maxContentLength;
@@ -85,12 +86,20 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     
     protected List<HeaderInfo> getHeaderInfo(String value) throws IllegalArgumentException
     {
+        return getHeaderInfo(value, 0);
+    }
+    
+    protected List<HeaderInfo> getHeaderInfo(String value, int depth) throws IllegalArgumentException
+    {
+        if(depth > MAX_DEPTH)
+            throw new IllegalStateException("too many challanges");
+        
         Matcher m = MULTIPLE_CHALLENGE_PATTERN.matcher(value);
         if (m.matches())
         {
             List<HeaderInfo> l = new ArrayList<>();
-            l.addAll(getHeaderInfo(m.group(1)));
-            l.addAll(getHeaderInfo(m.group(2)));
+            l.addAll(getHeaderInfo(m.group(1), depth+1));
+            l.addAll(getHeaderInfo(m.group(2), depth+1));
             return l;
         }
         else
@@ -128,7 +137,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         Matcher b64 = BASE64_PATTERN.matcher(wwwAuthenticate);
         if (b64.matches())
         {
-            result.put("base64", b64.group(1));
+            result.put("base64", wwwAuthenticate);
             return result;
         }
         
@@ -139,7 +148,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             if (params.matches())
             {
                 String name = StringUtil.asciiToLowerCase(params.group(1));
-                String value = (params.group(2)==null)?"":params.group(2);
+                String value = (params.group(2)==null) ? "" : params.group(2);
                 result.put(name, value);
             }
             else
