@@ -175,7 +175,7 @@ public class StartArgs
     private boolean dryRun = false;
     private boolean createStartd = false;
     private boolean updateIni = false;
-    private String mavenBaseUrl;
+    private String mavenBaseUri;
 
     private boolean exec = false;
     private String exec_properties;
@@ -808,9 +808,9 @@ public class StartArgs
         return updateIni;
     }
 
-    public String getMavenBaseUrl()
+    public String getMavenBaseUri()
     {
-        return mavenBaseUrl;
+        return mavenBaseUri;
     }
 
     public void parse( ConfigSources sources)
@@ -1286,9 +1286,9 @@ public class StartArgs
         }
 
         // to override default http://central.maven.org/maven2/
-        if (key.equals("maven-base-url"))
+        if (key.equals("maven-base-uri"))
         {
-            this.mavenBaseUrl = value;
+            this.mavenBaseUri = value;
         }
     }
 

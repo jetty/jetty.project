@@ -153,7 +153,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
-    public void testGetCoordinate_TestMavenBaseUrl()
+    public void testGetCoordinate_TestMavenBaseUri()
     {
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome,null,false,
