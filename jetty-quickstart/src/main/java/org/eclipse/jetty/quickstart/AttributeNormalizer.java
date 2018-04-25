@@ -222,10 +222,10 @@ public class AttributeNormalizer
         if (!warURI.isAbsolute())
             throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
         
-        addSystemProperty(paths, uris,"jetty.base",9);
-        addSystemProperty(paths, uris,"jetty.home",8);
-        addSystemProperty(paths, uris,"user.home",7);
-        addSystemProperty(paths, uris,"user.dir",6);
+        addSystemProperty("jetty.base", 9);
+        addSystemProperty("jetty.home", 8);
+        addSystemProperty("user.home", 7);
+        addSystemProperty("user.dir", 6);
 
         if (warURI.getScheme().equalsIgnoreCase("file"))
             paths.add(new PathAttribute("WAR.path",toCanonicalPath(new File(warURI).toString()),10));
@@ -246,7 +246,7 @@ public class AttributeNormalizer
         }        
     }
 
-    private void addSystemProperty(List<PathAttribute> paths, List<URIAttribute> uris, String key, int weight)
+    private void addSystemProperty(String key, int weight)
     {
         String value = System.getProperty(key);
         if (value!=null)
@@ -334,35 +334,33 @@ public class AttributeNormalizer
     {
         for (URIAttribute a : uris)
         {
-            try
-            {
-                if (uri.compareTo(a.uri)==0)
-                    return String.format("${%s}",a.key);
+            if (uri.compareTo(a.uri)==0)
+                return String.format("${%s}",a.key);
 
-                if (!a.uri.getScheme().equalsIgnoreCase(uri.getScheme()))
-                    continue;
-                if (a.uri.getHost()==null && uri.getHost()!=null)
-                    continue;
-                if (a.uri.getHost()!=null && !a.uri.getHost().equals(uri.getHost()))
-                    continue;
+            if (!a.uri.getScheme().equalsIgnoreCase(uri.getScheme()))
+                continue;
+            if (a.uri.getHost()==null && uri.getHost()!=null)
+                continue;
+            if (a.uri.getHost()!=null && !a.uri.getHost().equals(uri.getHost()))
+                continue;
 
-                if (a.uri.getPath().equals(uri.getPath()))
-                    return a.value;
+            String aPath = a.uri.getPath();
+            String uPath = uri.getPath();
+            if (aPath.equals(uPath))
+                return a.value;
 
-                if (!uri.getPath().startsWith(a.uri.getPath()))
-                    continue;
+            if (!uPath.startsWith(aPath))
+                continue;
 
-                String s = uri.getPath().substring(a.uri.getPath().length());
+            if (uPath.length()==aPath.length())
+                return String.format("${%s}",a.key);
+            
+            String s = uPath.substring(aPath.length());
+            if (s.length()>0 && s.charAt(0)!='/')
+                continue;
+            
+            return String.format("${%s}%s",a.key,s);
 
-                if (s.charAt(0)!='/')
-                    continue;
-
-                return String.format("${%s}%s",a.key,new URI(s).toASCIIString());
-            }
-            catch(URISyntaxException e)
-            {
-                LOG.ignore(e);
-            }
         }
         return uri.toASCIIString();
     }
