@@ -49,9 +49,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     
     private static final Pattern PARAM_PATTERN = Pattern.compile("([^=]+)=([^=]+)?");
     private static final Pattern TYPE_PATTERN = Pattern.compile("([^\\s]+)(\\s+(.*))?");
-    private static final Pattern MULTIPLE_CHALLENGE_PATTERN = Pattern.compile("(.*),\\s*([^=\\s,]+(\\s+[^=\\s].*)?)");
+    private static final Pattern MULTIPLE_CHALLENGE_PATTERN = Pattern.compile("(.*?)\\s*,\\s*([^=\\s,]+(\\s+[^=\\s].*)?)");
     private static final Pattern BASE64_PATTERN = Pattern.compile("[\\+\\-\\.\\/\\dA-Z_a-z~]+=*");
-    private static final int MAX_DEPTH = 10;
 
     private final HttpClient client;
     private final int maxContentLength;
@@ -84,30 +83,29 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         return new AuthenticationListener();
     }
     
+
+    
     protected List<HeaderInfo> getHeaderInfo(String value) throws IllegalArgumentException
     {
-        return getHeaderInfo(value, 0);
-    }
-    
-    protected List<HeaderInfo> getHeaderInfo(String value, int depth) throws IllegalArgumentException
-    {
-        if(depth > MAX_DEPTH)
-            throw new IllegalStateException("too many challanges");
+        String header = value;
+        List<HeaderInfo> headerInfos = new ArrayList<>();
         
-        Matcher m = MULTIPLE_CHALLENGE_PATTERN.matcher(value);
-        if (m.matches())
+        while(true)
         {
-            List<HeaderInfo> l = new ArrayList<>();
-            l.addAll(getHeaderInfo(m.group(1), depth+1));
-            l.addAll(getHeaderInfo(m.group(2), depth+1));
-            return l;
+            Matcher m = MULTIPLE_CHALLENGE_PATTERN.matcher(header);
+            if (m.matches())
+            {
+                headerInfos.add(newHeaderInfo(m.group(1)));
+                header = m.group(2);
+            }
+            else
+            {
+                headerInfos.add(newHeaderInfo(header));
+                break;
+            }
         }
-        else
-        {
-            List<HeaderInfo> l = new ArrayList<>();
-            l.add(newHeaderInfo(value));
-            return l;
-        }
+        
+        return headerInfos;
     }
 
     protected HeaderInfo newHeaderInfo(String value) throws IllegalArgumentException

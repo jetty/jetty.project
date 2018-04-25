@@ -689,10 +689,11 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Scheme"));
         Assert.assertTrue(headerInfo.getParameter("realm") == null);
         
-        List<HeaderInfo> headerInfos = aph.getHeaderInfo("Scheme1 ,  Scheme2");
-        Assert.assertEquals(headerInfos.size(), 2);
+        List<HeaderInfo> headerInfos = aph.getHeaderInfo("Scheme1    ,    Scheme2        ,      Scheme3");
+        Assert.assertEquals(3, headerInfos.size());
         Assert.assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Scheme1"));
         Assert.assertTrue(headerInfos.get(1).getType().equalsIgnoreCase("Scheme2"));
+        Assert.assertTrue(headerInfos.get(2).getType().equalsIgnoreCase("Scheme3"));
         
         headerInfo = aph.getHeaderInfo("Scheme name=\"value\", other=\"value2\"").get(0);
         Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Scheme"));
