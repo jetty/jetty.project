@@ -360,8 +360,8 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         {
             NetworkBuffer buffer = producer.buffer;
             buffer.retain();
-            // TODO: remove downcast.
-            ((HTTP2Session)session).onData(frame, buffer);
+            Callback callback = buffer;
+            session.onData(frame, callback);
         }
 
         @Override

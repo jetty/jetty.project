@@ -103,7 +103,7 @@ public class AsyncServletTest extends AbstractTest
             {
                 try
                 {
-                    buffer.write(BufferUtil.toArray(frame.getData()));
+                    BufferUtil.writeTo(frame.getData(), buffer);
                     callback.succeeded();
                     if (frame.isEndStream())
                         latch.countDown();

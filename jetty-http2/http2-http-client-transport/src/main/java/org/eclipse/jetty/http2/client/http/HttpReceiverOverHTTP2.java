@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.List;
@@ -154,7 +153,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         }
         else
         {
-            contentNotifier.offer(new DataInfo(exchange, frame.getData(), callback, frame.isEndStream()));
+            contentNotifier.offer(new DataInfo(exchange, frame, callback));
             contentNotifier.iterate();
         }
     }
@@ -203,13 +202,13 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             if (dataInfo == null)
             {
                 DataInfo prevDataInfo = this.dataInfo;
-                if (prevDataInfo != null && prevDataInfo.last)
+                if (prevDataInfo != null && prevDataInfo.frame.isEndStream())
                     return Action.SUCCEEDED;
                 return Action.IDLE;
             }
 
             this.dataInfo = dataInfo;
-            responseContent(dataInfo.exchange, dataInfo.buffer, this);
+            responseContent(dataInfo.exchange, dataInfo.frame.getData(), this);
             return Action.SCHEDULED;
         }
 
@@ -245,16 +244,14 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     private static class DataInfo
     {
         private final HttpExchange exchange;
-        private final ByteBuffer buffer;
+        private final DataFrame frame;
         private final Callback callback;
-        private final boolean last;
 
-        private DataInfo(HttpExchange exchange, ByteBuffer buffer, Callback callback, boolean last)
+        private DataInfo(HttpExchange exchange, DataFrame frame, Callback callback)
         {
             this.exchange = exchange;
-            this.buffer = buffer;
+            this.frame = frame;
             this.callback = callback;
-            this.last = last;
         }
     }
 }
