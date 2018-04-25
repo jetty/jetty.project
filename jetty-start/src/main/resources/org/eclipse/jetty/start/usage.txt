@@ -217,7 +217,7 @@ Properties:
       Jetty server has stopped. If not specified, the stopper will wait
       indefinitely. Use in conjunction with the --stop option.
 
-    maven-base-uri=[url] default http://central.maven.org/maven2/.
+    maven-repo-uri=[url] default http://central.maven.org/maven2/.
       The url to use to download Maven dependencies.
 
 
