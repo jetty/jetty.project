@@ -522,7 +522,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                             { 
                                 int i=0;
                                 int client = 0xff & value[i++];
-                                int verify = (0xff & value[i++])<<24 + (0xff & value[i++])<<16 + (0xff & value[i++])<<8 + (0xff&value[i++]);
+                                int verify = ((0xff & value[i++])<<24) + ((0xff & value[i++])<<16) + ((0xff & value[i++])<<8) + (0xff&value[i++]);
                                 while(i<value.length)
                                 {
                                     int ssl_type = 0xff & value[i++];
