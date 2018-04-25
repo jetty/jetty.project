@@ -1286,7 +1286,7 @@ public class StartArgs
         }
 
         // to override default http://central.maven.org/maven2/
-        if (key.equals("maven-repo-uri"))
+        if (key.equals("maven.repo.uri"))
         {
             this.mavenBaseUri = value;
         }

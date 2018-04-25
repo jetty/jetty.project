@@ -200,7 +200,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
             coords.mavenRepoUri = this.mavenRepoUri;
         } else
         {
-            coords.mavenRepoUri = System.getProperty( "maven-repo-uri", coords.mavenRepoUri );
+            coords.mavenRepoUri = System.getProperty( "maven.repo.uri", coords.mavenRepoUri );
         }
 
         if (parts.length >= 4)
