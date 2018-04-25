@@ -117,7 +117,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         }
         _jobs=queue;
         _threadGroup=threadGroup;
-        setThreadPoolBudget(new ThreadPoolBudget(this));
+        setThreadPoolBudget(new ThreadPoolBudget(this,_minThreads));
     }
 
     @Override
@@ -629,7 +629,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     public String toString()
     {
-        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,q=%d}",
+        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,q=%d}[%s]",
             getClass().getSimpleName(),
             _name,
             hashCode(),
@@ -638,7 +638,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             getThreads(),
             getMaxThreads(),
             getIdleThreads(),
-            _jobs.size());
+            _jobs.size(),
+            _tryExecutor);
     }
 
     private Runnable idleJobPoll() throws InterruptedException
