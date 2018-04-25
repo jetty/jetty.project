@@ -38,18 +38,14 @@ public class AttributeNormalizer_ToCanonicalUriTest
     {
         List<Object[]> data = new ArrayList<>();
 
+        
         // root without authority
         data.add(new String[]{ "file:/", "file:/" });
-        data.add(new String[]{ "file:/F:/", "file:/F:/" });
+        data.add(new String[]{ "file:/F:/", "file:/F:" });
+        
         // root with empty authority
-        data.add(new String[]{ "file:///", "file://" });
-        data.add(new String[]{ "file:///F:/", "file:///F:/" });
-
-        // system identified root directories
-        FileSystems.getDefault().getRootDirectories().forEach((root) -> {
-            String rootUri = root.toUri().toASCIIString();
-            data.add(new String[]{rootUri, rootUri});
-        });
+        data.add(new String[]{ "file:///", "file:///" });
+        data.add(new String[]{ "file:///F:/", "file:///F:" });
 
         // deep directory - no authority
         data.add(new String[]{ "file:/home/user/code/", "file:/home/user/code" });
