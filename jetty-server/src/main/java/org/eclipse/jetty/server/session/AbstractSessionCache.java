@@ -158,6 +158,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
     
     
+    
     /**
      * PlaceHolder
      */
@@ -547,7 +548,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                         //reactivate the session
                         session.didActivate();    
                         session.setResident(true);
-                        doPutIfAbsent(id,session);//ensure it is in our map  
+                        doPutIfAbsent(id,session);//ensure it is in our map
                         if (LOG.isDebugEnabled())LOG.debug("Session reactivated id={}",id);
                     }
                 }

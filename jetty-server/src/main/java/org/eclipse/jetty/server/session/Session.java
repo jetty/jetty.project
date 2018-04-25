@@ -81,8 +81,8 @@ public class Session implements SessionHandler.SessionIf
     
 
     
-    protected SessionData _sessionData; //the actual data associated with a session
-    protected SessionHandler _handler; //the manager of the session
+    protected final SessionData _sessionData; //the actual data associated with a session
+    protected final SessionHandler _handler; //the manager of the session
     protected String _extendedId; //the _id plus the worker name
     protected long _requests;
     protected boolean _idChanged; 
@@ -90,7 +90,7 @@ public class Session implements SessionHandler.SessionIf
     protected State _state = State.VALID; //state of the session:valid,invalid or being invalidated
     protected Locker _lock = new Locker(); //sync lock
     protected boolean _resident = false;
-    protected SessionInactivityTimer _sessionInactivityTimer = null;
+    protected final SessionInactivityTimer _sessionInactivityTimer;
     
     
 
@@ -100,14 +100,14 @@ public class Session implements SessionHandler.SessionIf
      * 
      * Each Session has a timer associated with it that fires whenever 
      * it has been idle (ie not accessed by a request) for a 
-     * configurable amount of time, or the Session expires. 
+     * configurable amount of time, or the Session expires.
      * 
      * @see SessionCache
      *
      */
     public class SessionInactivityTimer
     {
-        protected CyclicTimeout _timer;
+        protected final CyclicTimeout _timer;
         protected long _msec = -1;
         
         public SessionInactivityTimer()
@@ -125,32 +125,32 @@ public class Session implements SessionHandler.SessionIf
         }
 
 
+        /**
+         * @param ms the timeout to set; -1 means that the timer will not be scheduled
+         */
         public void setTimeout(long ms)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Session {} timer={}ms",getId(), ms);
-            if (_timer == null)
-                throw new IllegalStateException("TTimer null for session "+getId());
             _msec = ms;
+            if (LOG.isDebugEnabled()) LOG.debug("Session {} timer={}ms",getId(), ms);
         }
 
 
         public void schedule ()
         {
-            if (_timer == null)
-                throw new IllegalStateException("Timer null for session "+getId());
-            
             if (_msec > 0)
             {
                 if (LOG.isDebugEnabled()) LOG.debug("(Re)starting timer for session {} at {}ms",getId(), _msec);
                 _timer.schedule(_msec, TimeUnit.MILLISECONDS);
+            }
+            else
+            {
+                if (LOG.isDebugEnabled()) LOG.debug("Not starting timer for session {}",getId());
             }
         }
         
       
         public void cancel()
         {
-            if (_timer == null)
-                throw new IllegalStateException("SessionInactivityTimer destroyed for session "+getId());
             _timer.cancel();
             if (LOG.isDebugEnabled()) LOG.debug("Cancelled timer for session {}",getId());
         }
@@ -158,11 +158,7 @@ public class Session implements SessionHandler.SessionIf
         
         public void destroy ()
         {
-            if (_timer == null)
-                return;
-            
             _timer.destroy();
-            _timer = null;
             if (LOG.isDebugEnabled()) LOG.debug("Destroyed timer for session {}",getId());
         }
     }
@@ -273,12 +269,13 @@ public class Session implements SessionHandler.SessionIf
 
             if (LOG.isDebugEnabled()) LOG.debug("Session {} complete, active requests={}",getId(),_requests);
 
+            //start the inactivity timer
             if (_requests == 0)
                 _sessionInactivityTimer.schedule();
         }
     }
 
-    
+
 
     /* ------------------------------------------------------------- */
     /** Check to see if session has expired as at the time given.
@@ -544,15 +541,21 @@ public class Session implements SessionHandler.SessionIf
             else
             {
                 //sessions are not immortal
-                if (evictionPolicy < SessionCache.EVICT_ON_INACTIVITY)
+                if (evictionPolicy == SessionCache.NEVER_EVICT)
                 {
-                    //don't want to evict inactive sessions, set the timer for the session's maxInactive setting
+                    //timeout is just the maxInactive setting
                     _sessionInactivityTimer.setTimeout(_sessionData.getMaxInactiveMs());
                     if (LOG.isDebugEnabled()) LOG.debug("Session {} no eviction", getId());
                 }
+                else if (evictionPolicy == SessionCache.EVICT_ON_SESSION_EXIT)
+                {
+                    //session will not remain in the cache, so no timeout
+                    _sessionInactivityTimer.setTimeout(-1);
+                    if (LOG.isDebugEnabled()) LOG.debug("Session {} evict on exit", getId());
+                }
                 else
                 {
-                    //set the time to the lesser of the session's maxInactive and eviction timeout
+                    //want to evict on idle: timer is lesser of the session's maxInactive and eviction timeout
                     _sessionInactivityTimer.setTimeout(Math.min(maxInactive, TimeUnit.SECONDS.toMillis(evictionPolicy)));
                     if (LOG.isDebugEnabled()) LOG.debug("Session {} timer set to lesser of maxInactive={} and inactivityEvict={}", getId(), maxInactive, evictionPolicy);
                 }
@@ -1013,20 +1016,13 @@ public class Session implements SessionHandler.SessionIf
     public void setResident (boolean resident)
     {
         _resident = resident;
-        
+
         if (_resident)
             updateInactivityTimer();
         else
-        {
-            if (_sessionInactivityTimer != null)
-            {
-                _sessionInactivityTimer.destroy();
-                _sessionInactivityTimer = null;
-                if (LOG.isDebugEnabled()) LOG.debug("Session {} timer destroyed", getId());
-            }
-        }
+            _sessionInactivityTimer.destroy();
     }
-    
+
     /* ------------------------------------------------------------- */
     public boolean isResident ()
     {
