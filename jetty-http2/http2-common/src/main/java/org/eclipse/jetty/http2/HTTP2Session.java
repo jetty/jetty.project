@@ -975,7 +975,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     {
     }
 
-    void onFlushed(long bytes) throws IOException
+    @Override
+    public void onFlushed(long bytes) throws IOException
     {
         flusher.onFlushed(bytes);
     }

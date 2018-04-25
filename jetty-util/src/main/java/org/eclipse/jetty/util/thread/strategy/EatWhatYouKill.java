@@ -41,24 +41,17 @@ import org.eclipse.jetty.util.thread.TryExecutor;
  *
  * <p>This strategy preemptively dispatches a thread as a pending producer, so that
  * when a thread produces a task it can immediately run the task and let the pending
- * producer thread take over producing.  If necessary another thread will be dispatched
- * to replace the pending producing thread.   When operating in this pattern, the
- * sub-strategy is called Execute Produce Consume (EPC)
- * </p>
+ * producer thread take over production. When operating in this way, the sub-strategy
+ * is called Execute Produce Consume (EPC).</p>
  * <p>However, if the task produced uses the {@link Invocable} API to indicate that
  * it will not block, then the strategy will run it directly, regardless of the
- * presence of a pending producing thread and then resume producing after the
- * task has completed. This sub-strategy is also used if the strategy has been
- * configured with a maximum of 0 pending threads and the thread currently producing
- * does not use the {@link Invocable} API to indicate that it will not block.
- * When operating in this pattern, the sub-strategy is called
- * ProduceConsume (PC).
- * </p>
+ * presence of a pending producer thread and then resume production after the
+ * task has completed. When operating in this pattern, the sub-strategy is called
+ * ProduceConsume (PC).</p>
  * <p>If there is no pending producer thread available and if the task has not
  * indicated it is non-blocking, then this strategy will dispatch the execution of
- * the task and immediately continue producing.  When operating in this pattern, the
- * sub-strategy is called ProduceExecuteConsume (PEC).
- * </p>
+ * the task and immediately continue production. When operating in this pattern, the
+ * sub-strategy is called ProduceExecuteConsume (PEC).</p>
  */
 @ManagedObject("eat what you kill execution strategy")
 public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrategy, Runnable
@@ -66,16 +59,16 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     private static final Logger LOG = Log.getLogger(EatWhatYouKill.class);
 
     private enum State { IDLE, PRODUCING, REPRODUCING }
-    
+
     /* The modes this strategy can work in */
-    private enum Mode 
-    { 
-        PRODUCE_CONSUME, 
+    private enum Mode
+    {
+        PRODUCE_CONSUME,
         PRODUCE_INVOKE_CONSUME, // This is PRODUCE_CONSUME an EITHER task with NON_BLOCKING invocation
-        PRODUCE_EXECUTE_CONSUME, 
+        PRODUCE_EXECUTE_CONSUME,
         EXECUTE_PRODUCE_CONSUME // Eat What You Kill!
     }
-    
+
     private final LongAdder _pcMode = new LongAdder();
     private final LongAdder _picMode = new LongAdder();
     private final LongAdder _pecMode = new LongAdder();
@@ -94,7 +87,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         addBean(_producer);
         addBean(_tryExecutor);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} created", this);        
+            LOG.debug("{} created", this);
     }
 
     @Override
@@ -129,7 +122,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
     @Override
     public void run()
-    { 
+    {
         tryProduce(true);
     }
 
@@ -138,7 +131,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     {
         tryProduce(false);
     }
-    
+
     private void tryProduce(boolean wasPending)
     {
         if (LOG.isDebugEnabled())
@@ -148,7 +141,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         {
             if (wasPending)
                 _pending = false;
-            
+
             switch (_state)
             {
                 case IDLE:
@@ -166,13 +159,13 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             }
         }
 
-        final boolean non_blocking = Invocable.isNonBlockingInvocation();
-        
+        boolean nonBlocking = Invocable.isNonBlockingInvocation();
+
         while(isRunning())
         {
             try
             {
-                if (doProduce(non_blocking))
+                if (doProduce(nonBlocking))
                     continue;
                 return;
             }
@@ -180,12 +173,11 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             {
                 LOG.warn(th);
             }
-        }        
+        }
     }
-    
 
-    public boolean doProduce(boolean non_blocking)
-    {       
+    private boolean doProduce(boolean nonBlocking)
+    {
         Runnable task = produceTask();
 
         if (task==null)
@@ -205,12 +197,12 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
                     default:
                         throw new IllegalStateException(toStringLocked());
-                }                    
+                }
             }
         }
 
         Mode mode;
-        if (non_blocking)
+        if (nonBlocking)
         {
             // The calling thread cannot block, so we only have a choice between PC and PEC modes,
             // based on the invocation type of the task
@@ -226,11 +218,12 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
                 default:
                     mode = Mode.PRODUCE_EXECUTE_CONSUME;
+                    break;
             }
         }
         else
         {
-            // The calling thread can block, so we can choose between PC, PEC and EPC: modes,
+            // The calling thread can block, so we can choose between PC, PEC and EPC modes,
             // based on the invocation type of the task and if a reserved thread is available
             switch(Invocable.getInvocationType(task))
             {
@@ -239,7 +232,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                     break;
 
                 case BLOCKING:
-                    // The task is blocking, so PC is not an option. Thus we choose 
+                    // The task is blocking, so PC is not an option. Thus we choose
                     // between EPC and PEC based on the availability of a reserved thread.
                     synchronized(this)
                     {
@@ -257,13 +250,12 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                         else
                         {
                             mode = Mode.PRODUCE_EXECUTE_CONSUME;
-                        }   
-                        break;
+                        }
                     }
+                    break;
 
                 case EITHER:
-                {
-                    // The task may be non blocking, so PC is an option. Thus we choose 
+                    // The task may be non blocking, so PC is an option. Thus we choose
                     // between EPC and PC based on the availability of a reserved thread.
                     synchronized(this)
                     {
@@ -285,11 +277,10 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                             mode = Mode.PRODUCE_INVOKE_CONSUME;
                         }
                     }
-                }
-                break;
+                    break;
 
                 default:
-                    throw new IllegalStateException();
+                    throw new IllegalStateException(toString());
             }
         }
 
@@ -301,12 +292,12 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         {
             case PRODUCE_CONSUME:
                 _pcMode.increment();
-                task.run();
+                runTask(task);
                 return true;
 
             case PRODUCE_INVOKE_CONSUME:
                 _picMode.increment();
-                Invocable.invokeNonBlocking(task);
+                invokeTask(task);
                 return true;
 
             case PRODUCE_EXECUTE_CONSUME:
@@ -316,7 +307,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
             case EXECUTE_PRODUCE_CONSUME:
                 _epcMode.increment();
-                task.run();
+                runTask(task);
 
                 // Try to produce again?
                 synchronized(this)
@@ -331,10 +322,34 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 return false;
 
             default:
-                throw new IllegalStateException();
+                throw new IllegalStateException(toString());
         }
     }
-    
+
+    private void runTask(Runnable task)
+    {
+        try
+        {
+            task.run();
+        }
+        catch (Throwable x)
+        {
+            LOG.warn(x);
+        }
+    }
+
+    private void invokeTask(Runnable task)
+    {
+        try
+        {
+            Invocable.invokeNonBlocking(task);
+        }
+        catch (Throwable x)
+        {
+            LOG.warn(x);
+        }
+    }
+
     private Runnable produceTask()
     {
         try
@@ -344,10 +359,10 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         catch (Throwable e)
         {
             LOG.warn(e);
+            return null;
         }
-        return null;
     }
-    
+
     private void execute(Runnable task)
     {
         try
@@ -360,7 +375,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 LOG.warn(e);
             else
                 LOG.ignore(e);
-            
+
             if (task instanceof Closeable)
             {
                 try
@@ -380,13 +395,13 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     {
         return _pcMode.longValue();
     }
-    
+
     @ManagedAttribute(value = "number of tasks executed with PIC mode", readonly = true)
     public long getPICTasksExecuted()
     {
         return _picMode.longValue();
     }
-    
+
     @ManagedAttribute(value = "number of tasks executed with PEC mode", readonly = true)
     public long getPECTasksExecuted()
     {

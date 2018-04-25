@@ -199,8 +199,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     @Override
     public void onFlushed(long bytes) throws IOException
     {
-        // TODO: add method to ISession ?
-        ((HTTP2Session)session).onFlushed(bytes);
+        session.onFlushed(bytes);
     }
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer

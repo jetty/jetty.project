@@ -18,7 +18,7 @@ def getFullBuild(jdk, os) {
       def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
       def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
       def mvnName = 'maven3.5'
-      def localRepo = ".repository" // "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
+      def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" // 
       def settingsName = 'oss-settings.xml'
 
       // Environment
@@ -90,8 +90,7 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                //
-                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T2 -e -Pmongodb"
+                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -e -Pmongodb -T3"
               }
               // withMaven doesn't label..
               // Report failures in the jenkins UI

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2;
 
+import java.io.IOException;
+
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -128,6 +130,14 @@ public interface ISession extends Session
      * @param frame the synthetic frame to process
      */
     public void onFrame(Frame frame);
+
+    /**
+     * <p>Callback method invoked when bytes are flushed to the network.</p>
+     *
+     * @param bytes the number of bytes flushed to the network
+     * @throws IOException if the flush should fail
+     */
+    public void onFlushed(long bytes) throws IOException;
 
     /**
      * @return the number of bytes written by this session
