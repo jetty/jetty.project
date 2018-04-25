@@ -161,8 +161,16 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 if (lastContent)
                 {
                     Supplier<HttpFields> trailers = metaData.getTrailerSupplier();
-                    if (transportCallback.start(new SendTrailers(callback, trailers), false))
-                        sendDataFrame(content, true, trailers == null, transportCallback);
+                    SendTrailers sendTrailers = new SendTrailers(callback, trailers);
+                    if (hasContent || trailers == null)
+                    {
+                        if (transportCallback.start(sendTrailers, false))
+                            sendDataFrame(content, true, trailers == null, transportCallback);
+                    }
+                    else
+                    {
+                        sendTrailers.succeeded();
+                    }
                 }
                 else
                 {

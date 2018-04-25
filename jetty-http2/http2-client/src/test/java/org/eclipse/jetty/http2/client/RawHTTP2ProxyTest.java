@@ -263,6 +263,14 @@ public class RawHTTP2ProxyTest
         Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
     }
 
+    private static DataFrame copyDataFrame(DataFrame frame)
+    {
+        ByteBuffer data = frame.getData();
+        ByteBuffer dataCopy = ByteBuffer.allocate(data.remaining());
+        dataCopy.put(data).flip();
+        return new DataFrame(frame.getStreamId(), dataCopy, frame.isEndStream(), frame.padding());
+    }
+
     private static class ClientToProxySessionListener extends ServerSessionListener.Adapter
     {
         private final Map<Integer, ClientToProxyToServer> forwarders = new ConcurrentHashMap<>();
@@ -497,7 +505,8 @@ public class RawHTTP2ProxyTest
         {
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("CPS received {} on {}", frame, stream);
-            offer(stream, frame, callback);
+            // Must copy the bytes because they are not consumed here.
+            offer(stream, copyDataFrame(frame), callback);
         }
 
         @Override
@@ -659,7 +668,8 @@ public class RawHTTP2ProxyTest
         {
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("SPC received {} on {}", frame, stream);
-            offer(stream, frame, callback);
+            // Must copy the bytes because they are not consumed here.
+            offer(stream, copyDataFrame(frame), callback);
         }
 
         @Override

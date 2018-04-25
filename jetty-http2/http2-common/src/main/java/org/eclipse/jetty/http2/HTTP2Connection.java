@@ -114,7 +114,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Open {} ", this);
         super.onOpen();
-        strategy.produce();
     }
 
     @Override
@@ -132,7 +131,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     {
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 onFillable {} ", this);
-        strategy.produce();
+        produce();
     }
 
     private int fill(EndPoint endPoint, ByteBuffer buffer)
@@ -167,9 +166,23 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     {
         offerTask(task);
         if (dispatch)
-            strategy.dispatch();
+            dispatch();
         else
-            strategy.produce();
+            produce();
+    }
+
+    protected void produce()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 produce {} ", this);
+        strategy.produce();
+    }
+
+    protected void dispatch()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 dispatch {} ", this);
+        strategy.dispatch();
     }
 
     @Override
