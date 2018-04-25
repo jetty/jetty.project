@@ -21,8 +21,10 @@ package org.eclipse.jetty.util.thread;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 import org.junit.After;
 import org.junit.Assert;
@@ -54,64 +56,64 @@ public class EatWhatYouKillTest
     @Test
     public void testExceptionThrownByTask() throws Exception
     {
-        AtomicReference<Throwable> detector = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(2);
-        BlockingQueue<Task> tasks = new LinkedBlockingQueue<>();
-        startEWYK(() ->
+        try (StacklessLogging stackLess = new StacklessLogging(EatWhatYouKill.class))
         {
-            boolean proceed = detector.compareAndSet(null, new Throwable());
-            if (proceed)
+            AtomicReference<Throwable> detector = new AtomicReference<>();
+            CountDownLatch latch = new CountDownLatch(2);
+            BlockingQueue<Task> tasks = new LinkedBlockingQueue<>();
+            startEWYK(() ->
+            {
+                boolean proceed = detector.compareAndSet(null, new Throwable());
+                if (proceed)
+                {
+                    try
+                    {
+                        latch.countDown();
+                        return tasks.poll(1, TimeUnit.SECONDS);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        x.printStackTrace();
+                        return null;
+                    }
+                    finally
+                    {
+                        detector.set(null);
+                    }
+                }
+                else
+                {
+                    return null;
+                }
+            });
+
+            // Start production in another thread.
+            ewyk.dispatch();
+
+            tasks.offer(new Task(() ->
             {
                 try
                 {
-                    latch.countDown();
-                    return tasks.take();
+                    // While thread1 runs this task, simulate
+                    // that thread2 starts producing.
+                    ewyk.dispatch();
+                    // Wait for thread2 to block in produce().
+                    latch.await();
+                    // Throw to verify that exceptions are handled correctly.
+                    throw new RuntimeException();
                 }
                 catch (InterruptedException x)
                 {
                     x.printStackTrace();
-                    return null;
                 }
-                finally
-                {
-                    detector.set(null);
-                }
-            }
-            else
-            {
-                return null;
-            }
-        });
+            }, Invocable.InvocationType.BLOCKING));
 
-        // Start production in another thread.
-        ewyk.dispatch();
+            // Wait until EWYK is idle.
+            while (!ewyk.isIdle())
+                Thread.sleep(10);
 
-        tasks.offer(new Task(() ->
-        {
-            try
-            {
-                // While thread1 runs this task, simulate
-                // that thread2 starts producing.
-                ewyk.dispatch();
-                // Wait for thread2 to block in produce().
-                latch.await();
-                // Throw to verify that exceptions are handled correctly.
-                throw new RuntimeException();
-            }
-            catch (InterruptedException x)
-            {
-                x.printStackTrace();
-            }
-        }, Invocable.InvocationType.BLOCKING));
-
-        // Wake up thread2
-        tasks.offer(new Task(() -> {}, Invocable.InvocationType.BLOCKING));
-
-        // Wait until EWYK is idle.
-        while (!ewyk.isIdle())
-            Thread.sleep(10);
-
-        Assert.assertNull(detector.get());
+            Assert.assertNull(detector.get());
+        }
     }
 
     private static class Task implements Runnable, Invocable
