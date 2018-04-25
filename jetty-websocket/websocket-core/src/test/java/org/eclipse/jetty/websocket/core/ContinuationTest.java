@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static org.junit.Assert.fail;
-
-import com.sun.javafx.iio.ImageStorageException;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +40,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.12
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -69,6 +66,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.13
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -94,6 +92,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.14
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -109,7 +108,7 @@ public class ContinuationTest
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
-            session.sendSegmented(send,1 );
+            session.sendSegmented(send, 1);
             session.expect(expect);
         }
     }
@@ -119,6 +118,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.9
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -144,6 +144,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.15
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -172,6 +173,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.10
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -197,6 +199,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.17
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -226,6 +229,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.11
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -241,7 +245,7 @@ public class ContinuationTest
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
-            session.sendSegmented(send,1);
+            session.sendSegmented(send, 1);
             session.expect(expect);
         }
     }
@@ -251,6 +255,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.16
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -280,6 +285,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.18
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -305,6 +311,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.1
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -330,6 +337,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.2
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -355,6 +363,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.3
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -371,8 +380,7 @@ public class ContinuationTest
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
-            session.assertThrows(IllegalStateException.class,
-                    ()-> session.sendFrames(send) );
+            session.sendFrames(send);
             session.expect(expect);
         }
     }
@@ -382,6 +390,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.4
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -398,8 +407,7 @@ public class ContinuationTest
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
-            session.assertThrows(IllegalStateException.class,
-                    ()-> session.sendFrames(send) );
+            session.sendFrames(send);
             session.expect(expect);
         }
     }
@@ -409,6 +417,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.19 & 5.20
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -443,6 +452,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.5
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -459,8 +469,7 @@ public class ContinuationTest
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
-            session.assertThrows(IllegalStateException.class,
-                    ()-> session.sendSegmented(send, 1));
+            session.sendSegmented(send, 1);
             session.expect(expect);
         }
     }
@@ -470,6 +479,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.6
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -498,6 +508,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.7
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -526,6 +537,7 @@ public class ContinuationTest
      * <p>
      * From Autobahn WebSocket Server Testcase 5.8
      * </p>
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -544,7 +556,7 @@ public class ContinuationTest
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
-            session.sendSegmented(send,1);
+            session.sendSegmented(send, 1);
             session.expect(expect);
         }
     }
