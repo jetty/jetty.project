@@ -96,6 +96,15 @@ public class AttributeNormalizer
         }
         return uri;
     }
+    
+    public static String toCanonicalURI(String uri)
+    {
+        if (uri!=null && uri.length()>1 && uri.endsWith("/"))
+        {
+            return uri.substring(0,uri.length()-1);
+        }
+        return uri;
+    }
 
     public static Path toCanonicalPath(String path)
     {
@@ -149,8 +158,8 @@ public class AttributeNormalizer
         
         public URIAttribute(String key, URI uri, int weight)
         {
-            super(key,uri.toASCIIString(),weight);
-            this.uri = uri;
+            super(key,toCanonicalURI(uri.toASCIIString()),weight);
+            this.uri = toCanonicalURI(uri);
         }
         
         @Override
@@ -234,7 +243,7 @@ public class AttributeNormalizer
             {
                 LOG.debug(attr.toString());
             }
-        }
+        }        
     }
 
     private void addSystemProperty(List<PathAttribute> paths, List<URIAttribute> uris, String key, int weight)

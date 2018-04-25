@@ -244,6 +244,7 @@ public class AttributeNormalizerTest
     {
         // Normalize jetty.home as URI path        
         String expected = jettyBase.equals(jettyHome)?"${jetty.base.uri}":"${jetty.home.uri}";
+        
         // Path.toUri() typically includes an URI authority
         assertNormalize(jettyHome.toUri(), expected);
     }
