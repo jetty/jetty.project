@@ -25,6 +25,14 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <configuration>
+            <!-- no need of sources for test jars -->
+            <skipSource>true</skipSource>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
           <configuration>
             <!-- No point building javadoc on testing projects -->
