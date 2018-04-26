@@ -1,4 +1,50 @@
-jetty-9.4.10-SNAPSHOT
+jetty-9.4.10.RC1 - 26 April 2018
+ + 110 Jetty JAASLoginService should not use getContextClassLoader to load role
+   class name under OSGi
+ + 987 Can GzipHandler check if .gz file exists only by some paths?
+ + 1027 MultiPartInputStreamParser is slow for largish files
+ + 1555 AuthenticationProtocolHandler unable to parse Digest WWW Header
+ + 2018 No HttpClient API for receiving Server Sent Events
+ + 2109 Cleanup "Unused" warnings from maven-bundle-plugin
+ + 2145 Enabled h2, http/1.1 + https failed with invalid preface
+ + 2152 Produce jetty-home-source artifacts for Eclipse Jetty source jars
+ + 2164 Ensure all jetty modules that use ServiceLoader have correct OSGi
+   manifest headers
+ + 2205 100% CPU usage in Selector using Jetty on Windows
+ + 2213 Add deploy-war maven jetty plugin integration test
+ + 2311 TimeoutException when server sends unexpected content
+ + 2337 ServletUpgradeRequest getSubProtocols() creates an ArrayList even if
+   sub protocols is absent. 
+ + 2349 Review HTTP/2 max streams enforcement
+ + 2350 Support multiplexing in RoundRobinConnectionPool
+ + 2361 CachingWebAppClassLoader is not using cache properly
+ + 2366 Review HTTP/2 interleaving
+ + 2372 Packaging check in maven jetty plugin breaking execution
+ + 2373 Align Maven version used in plugins
+ + 2376 Relax ContextHandler and ServletContextHandler requirements in
+   WebSocket to allow SpringBoot's MockMVC to function
+ + 2387 NPE in URIUtil.equalsIgnoreEncodings when working with jar:file:// URIs
+ + 2388 AtomicBiInteger.compareAndSet(long,int,int) not using encoded parameter
+ + 2391 Allow for optional "\u####" escaping in
+   org.eclipse.jetty.util.ajax.JSON.toString()
+ + 2398 MultiPartFormInputStream parsing should default to UTF-8, but allowed
+   to be overridden by Request.setCharacterEncoding()
+ + 2403 allow --add-to-start to  specify maven repository location
+ + 2404 use annotations for maven plugins
+ + 2409 Ensure no duplicate config classes are assigned to WebApps in OSGi
+   environments
+ + 2413 Server log timestamp is inconsistent
+ + 2420 Simplify HttpTransportOverHTTP2
+ + 2425 Review BufferUtil.isMappedBuffer()
+ + 2430 CDI version mismatch with jetty-maven-plugin:run-forked and Weld
+ + 2435 Class.newInstance() is deprecated in Java 9+
+ + 2451 ReservedThreadExecutor.getAvailable() is not atomic
+ + 2454 Avoid sending empty DATA frame in case of HTTP/2 trailers
+ + 2464 NPE when constructing subclasses of ExecutorThreadPool
+ + 2468 EWYK concurrent produce can fail SSL connections
+ + 2472 default url to download artifacts must be https per default
+ + 2474 HTTP/2 client not handling invalid servers correctly
+ + 2491 WebSocket FragmentExtension can produce an invalid stream of frames
 
 jetty-9.4.9.v20180320 - 20 March 2018
  + 347 Avoid sending request using a connection that is idle timing out
@@ -20,8 +66,8 @@ jetty-9.4.9.v20180320 - 20 March 2018
  + 1970 ManagedSelector can lose selector thread under high concurrent load
  + 1973 Implement minimum response data rate
  + 1983 Improve warning for incompatible ALPN processor
- + 1986 ServletContextHandler.Context addListener() methods support
-   session listeners
+ + 1986 ServletContextHandler.Context addListener() methods support session
+   listeners
  + 2003 Do not submit blocking tasks as managed selector actions
  + 2006 ServletInputStream.isReady not registering interest when it should
  + 2010 SniX509ExtendedKeyManager causes exception: "FIPS mode: only SunJSSE
