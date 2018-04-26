@@ -60,19 +60,28 @@ public class FragmentExtension extends AbstractExtension
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
-        ByteBuffer payload = frame.getPayload();
-        int length = payload != null ? payload.remaining() : 0;
-        if (OpCode.isControlFrame(frame.getOpCode()) || maxLength <= 0 || length <= maxLength)
+        if (OpCode.isControlFrame(frame.getOpCode()))
         {
+            // Skip fragment of control frames
             nextOutgoingFrame(frame, callback, batchMode);
             return;
         }
 
-        FrameEntry entry = new FrameEntry(frame, callback, batchMode);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Queuing {}", entry);
-        offerEntry(entry);
-        flusher.iterate();
+        // Handle everything else (data frames)
+        if(maxLength >= 1)
+        {
+            FrameEntry entry = new FrameEntry(frame, callback, batchMode);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Queuing {}", entry);
+            offerEntry(entry);
+            flusher.iterate();
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Pass Through {}", frame);
+            nextOutgoingFrame(frame, callback, batchMode);
+        }
     }
 
     @Override
@@ -124,14 +133,17 @@ public class FragmentExtension extends AbstractExtension
         private boolean finished = true;
 
         @Override
-        protected Action process() throws Exception
+        protected Action process()
         {
             if (finished)
             {
                 current = pollEntry();
-                LOG.debug("Processing {}", current);
                 if (current == null)
+                {
+                    LOG.debug("Processing IDLE", current);
                     return Action.IDLE;
+                }
+                LOG.debug("Processing {}", current);
                 fragment(current, true);
             }
             else
@@ -146,8 +158,18 @@ public class FragmentExtension extends AbstractExtension
             Frame frame = entry.frame;
             ByteBuffer payload = frame.getPayload();
             int remaining = payload.remaining();
+
             int length = Math.min(remaining, maxLength);
             finished = length == remaining;
+
+            if (first && finished)
+            {
+                // Simple send, no need to fragment.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Skip Fragmentation {}", frame);
+                nextOutgoingFrame(frame, this, entry.batchMode);
+                return;
+            }
 
             boolean continuation = frame.getType().isContinuation() || !first;
             DataFrame fragment = new DataFrame(frame, continuation);
@@ -186,7 +208,10 @@ public class FragmentExtension extends AbstractExtension
         {
             // Notify first then call succeeded(), otherwise
             // write callbacks may be invoked out of order.
-            notifyCallbackSuccess(current.callback);
+
+            // only notify current (original) frame on completion
+            if (finished)
+                notifyCallbackSuccess(current.callback);
             succeeded();
         }
 
