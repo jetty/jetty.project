@@ -74,7 +74,7 @@ public final class OpCode
 
     public static boolean isDataFrame(byte opcode)
     {
-        return (opcode == TEXT) || (opcode == BINARY);
+        return (opcode == TEXT) || (opcode == BINARY) || (opcode == CONTINUATION);
     }
 
     /**
