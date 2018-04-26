@@ -49,11 +49,13 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
@@ -99,6 +101,14 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private Executor executor;
     private DecoratedObjectFactory objectFactory;
     private WebSocketCreator creator;
+
+    /**
+     * Entry point for Spring Boot's MockMVC framework
+     */
+    public WebSocketServerFactory()
+    {
+        this(WebSocketPolicy.newServerPolicy(), null, new MappedByteBufferPool());
+    }
     
     public WebSocketServerFactory(ServletContext context)
     {
@@ -303,27 +313,80 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     protected void doStart() throws Exception
     {
-        if(this.objectFactory == null && context != null)
+        if(this.objectFactory == null)
         {
-            this.objectFactory = (DecoratedObjectFactory) context.getAttribute(DecoratedObjectFactory.ATTR);
-            if (this.objectFactory == null)
-            {
-                throw new IllegalStateException("Unable to find required ServletContext attribute: " + DecoratedObjectFactory.ATTR);
-            }
+            this.objectFactory = findDecorator();
+        }
+
+        if(this.executor == null)
+        {
+            this.executor = findExecutor();
         }
     
-        if(this.executor == null && context != null)
-        {
-            ContextHandler contextHandler = ContextHandler.getContextHandler(context);
-            this.executor = contextHandler.getServer().getThreadPool();
-        }
-        
         Objects.requireNonNull(this.objectFactory, DecoratedObjectFactory.class.getName());
         Objects.requireNonNull(this.executor, Executor.class.getName());
         
         super.doStart();
     }
-    
+
+    /**
+     * Attempt to find the DecoratedObjectFactory that should be used.
+     * @return the DecoratedObjectFactory that should be used. (never null)
+     */
+    protected DecoratedObjectFactory findDecorator()
+    {
+        DecoratedObjectFactory objectFactory;
+
+        if (context != null)
+        {
+            objectFactory = (DecoratedObjectFactory) context.getAttribute(DecoratedObjectFactory.ATTR);
+            if (objectFactory != null)
+            {
+                return objectFactory;
+            }
+        }
+
+        objectFactory = new DecoratedObjectFactory();
+        objectFactory.addDecorator(new DeprecationWarning());
+        LOG.info("No DecoratedObjectFactory provided, using new {}", objectFactory);
+        return objectFactory;
+    }
+
+    /**
+     * Attempt to find the Executor that should be used.
+     * @return the Executor that should be used. (never null)
+     */
+    protected Executor findExecutor()
+    {
+        if(context != null)
+        {
+            // Attempt to pull Executor from ServletContext attribute
+            Executor contextExecutor = (Executor) context.getAttribute("org.eclipse.jetty.server.Executor");
+            if(contextExecutor != null)
+            {
+                return contextExecutor;
+            }
+
+            // Attempt to pull Executor from Jetty Server, via ContextHandler
+            ContextHandler contextHandler = ContextHandler.getContextHandler(context);
+            if (contextHandler != null)
+            {
+                contextExecutor = contextHandler.getServer().getThreadPool();
+                if(contextExecutor != null)
+                {
+                    return contextExecutor;
+                }
+            }
+        }
+
+        // Create a new one
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setName("WebSocketServerFactory");
+        addManaged(threadPool);
+        LOG.info("No Executor provided, using new {}", threadPool);
+        return threadPool;
+    }
+
     @Override
     public ByteBufferPool getBufferPool()
     {
