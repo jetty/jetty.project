@@ -60,28 +60,19 @@ public class FragmentExtension extends AbstractExtension
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
-        if (OpCode.isControlFrame(frame.getOpCode()))
+        ByteBuffer payload = frame.getPayload();
+        int length = payload != null ? payload.remaining() : 0;
+        if (OpCode.isControlFrame(frame.getOpCode()) || maxLength <= 0 || length <= maxLength)
         {
-            // Skip fragment of control frames
             nextOutgoingFrame(frame, callback, batchMode);
             return;
         }
 
-        // Handle everything else (data frames)
-        if(maxLength >= 1)
-        {
-            FrameEntry entry = new FrameEntry(frame, callback, batchMode);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Queuing {}", entry);
-            offerEntry(entry);
-            flusher.iterate();
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Pass Through {}", frame);
-            nextOutgoingFrame(frame, callback, batchMode);
-        }
+        FrameEntry entry = new FrameEntry(frame, callback, batchMode);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing {}", entry);
+        offerEntry(entry);
+        flusher.iterate();
     }
 
     @Override
@@ -161,15 +152,6 @@ public class FragmentExtension extends AbstractExtension
 
             int length = Math.min(remaining, maxLength);
             finished = length == remaining;
-
-            if (first && finished)
-            {
-                // Simple send, no need to fragment.
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Skip Fragmentation {}", frame);
-                nextOutgoingFrame(frame, this, entry.batchMode);
-                return;
-            }
 
             boolean continuation = frame.getType().isContinuation() || !first;
             DataFrame fragment = new DataFrame(frame, continuation);
