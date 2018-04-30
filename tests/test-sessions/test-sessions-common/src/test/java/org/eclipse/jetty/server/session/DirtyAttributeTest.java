@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -97,6 +99,9 @@ public class DirtyAttributeTest
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestDirtyServlet.class, "/test");
         
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        ctxA.addEventListener(scopeListener);
+        
         server.start();
         int port=server.getPort();
         try
@@ -105,36 +110,50 @@ public class DirtyAttributeTest
             client.start();
             try
             {
-                // Perform a request to create a session              
+                // Perform a request to create a session
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
                 
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
+                
+
 
                 //do another request to change the session attribute
+                CountDownLatch latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=setA");
                 response = request.send();
-
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                
+                //ensure request fully finished processing
+                latch.await(5, TimeUnit.SECONDS);
+                
                 A_VALUE.assertPassivatesEquals(1);
                 A_VALUE.assertActivatesEquals(1);
                 A_VALUE.assertBindsEquals(1);
                 A_VALUE.assertUnbindsEquals(0);
                 
-                //do another request using the cookie to try changing the session attribute to the same value again              
+                //do another request using the cookie to try changing the session attribute to the same value again  
+                latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 request= client.newRequest("http://localhost:" + port + "/mod/test?action=setA");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                //ensure request fully finished processing
+                latch.await(5, TimeUnit.SECONDS);
                 A_VALUE.assertPassivatesEquals(2);
                 A_VALUE.assertActivatesEquals(2);
                 A_VALUE.assertBindsEquals(1);
                 A_VALUE.assertUnbindsEquals(0);
                 
-                //do another request using the cookie and change to a different value             
+                //do another request using the cookie and change to a different value
+                latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 request= client.newRequest("http://localhost:" + port + "/mod/test?action=setB");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                latch.await(5, TimeUnit.SECONDS);
                 B_VALUE.assertPassivatesEquals(1);
                 B_VALUE.assertActivatesEquals(1);
                 B_VALUE.assertBindsEquals(1);
