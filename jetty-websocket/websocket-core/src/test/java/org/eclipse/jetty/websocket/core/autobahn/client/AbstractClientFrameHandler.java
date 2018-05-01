@@ -24,10 +24,10 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.AbstractFrameHandler;
+import org.eclipse.jetty.websocket.core.AbstractTestFrameHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 
-public abstract class AbstractClientFrameHandler extends AbstractFrameHandler
+public abstract class AbstractClientFrameHandler extends AbstractTestFrameHandler
 {
     protected final Logger LOG;
 

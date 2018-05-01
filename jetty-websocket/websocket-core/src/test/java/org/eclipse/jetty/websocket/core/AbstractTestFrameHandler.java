@@ -42,9 +42,9 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
  *    NOTE: The introduction of WebSocket over HTTP/2 might change the behavior and implementation some.
  * </p>
  */
-public class AbstractFrameHandler implements FrameHandler
+public class AbstractTestFrameHandler implements FrameHandler
 {
-    private Logger LOG = Log.getLogger(AbstractFrameHandler.class);
+    private Logger LOG = Log.getLogger(AbstractTestFrameHandler.class);
     private Frame.Type partial;
     private Utf8StringBuilder utf8;
     private ByteBuffer byteBuffer;
