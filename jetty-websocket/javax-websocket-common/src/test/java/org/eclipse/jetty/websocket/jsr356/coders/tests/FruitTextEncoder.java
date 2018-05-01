@@ -16,10 +16,27 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.tests.coders;
+package org.eclipse.jetty.websocket.jsr356.coders.tests;
 
-public class Fruit
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
+
+public class FruitTextEncoder implements Encoder.Text<Fruit>
 {
-    public String name;
-    public String color;
+    @Override
+    public void destroy()
+    {
+    }
+
+    @Override
+    public String encode(Fruit fruit) throws EncodeException
+    {
+        return String.format("%s|%s",fruit.name,fruit.color);
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
+    }
 }

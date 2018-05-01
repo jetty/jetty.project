@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.tests.coders;
+package org.eclipse.jetty.websocket.jsr356.coders.tests;
 
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
