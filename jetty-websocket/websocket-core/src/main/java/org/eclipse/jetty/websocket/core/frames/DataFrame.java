@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.core.frames;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Frame;
 
 /**
@@ -82,5 +83,11 @@ public class DataFrame extends WebSocketFrame
     public void setIsContinuation()
     {
         setOpCode(OpCode.CONTINUATION);
+    }
+    
+    @Override
+    public String toString()
+    {
+        return super.toString()+BufferUtil.toDetailString(payload);
     }
 }

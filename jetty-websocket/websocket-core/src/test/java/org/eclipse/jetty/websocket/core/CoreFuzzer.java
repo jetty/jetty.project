@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -28,7 +27,6 @@ import static org.junit.Assert.fail;
 import junit.framework.AssertionFailedError;
 
 import java.io.IOException;
-import java.lang.reflect.Executable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -218,11 +216,7 @@ public class CoreFuzzer implements AutoCloseable
             throw e;
         }
         catch (Throwable actual) {
-            if (expected.isInstance(actual)) {
-                return (T) actual;
-            }
-            throw new AssertionFailedError("Expected exception of type <" +
-                    expected.getName() + "> got <" + actual.getClass().getName() + "> instead");
+            return expected.cast(actual);
         }
 
         throw new AssertionFailedError("Expected exception of type <" + expected.getName() + ">");

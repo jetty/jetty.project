@@ -104,7 +104,7 @@ public class WebSocketChannelState
             
             if (s.outOpen)
             {
-                State closedIn = new State("OCLOSED",false,true,closeStatus);
+                State closedIn = new State("ICLOSED",false,true,closeStatus);
                 if (state.compareAndSet(s,closedIn))
                     return false;
             }
@@ -128,7 +128,7 @@ public class WebSocketChannelState
             
             if (s.inOpen)
             {
-                State closedOut = new State("ICLOSED",true,false,closeStatus);
+                State closedOut = new State("OCLOSED",true,false,closeStatus);
                 if (state.compareAndSet(s,closedOut))
                     return false;
             }
