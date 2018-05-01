@@ -185,8 +185,18 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
 
     protected void nextOutgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
-        log.debug("nextOutgoingFrame({})",frame);
-        this.nextOutgoing.outgoingFrame(frame,callback, batchMode);
+        try
+        {
+            log.debug("nextOutgoingFrame({})", frame);
+            this.nextOutgoing.outgoingFrame(frame, callback, batchMode);
+        }
+        catch (Throwable t)
+        {
+            if (callback != null)
+                callback.writeFailed(t);
+            else
+                log.warn(t);
+        }
     }
 
     public void setBufferPool(ByteBufferPool bufferPool)

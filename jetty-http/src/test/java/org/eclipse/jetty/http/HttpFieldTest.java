@@ -21,6 +21,7 @@ package org.eclipse.jetty.http;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -180,5 +181,15 @@ public class HttpFieldTest
         String s=BufferUtil.toString(buf);
         
         assertEquals("Accept: something\r\n",s);
+    }
+
+    @Test
+    public void testCachedFieldWithHeaderName()
+    {
+        PreEncodedHttpField field = new PreEncodedHttpField("X-My-Custom-Header", "something");
+
+        assertNull(field.getHeader());
+        assertEquals("X-My-Custom-Header", field.getName());
+        assertEquals("something", field.getValue());
     }
 }
