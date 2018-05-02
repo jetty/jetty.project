@@ -113,7 +113,4 @@ public class NullSessionCache extends AbstractSessionCache
     {
         LOG.warn("Ignoring eviction setting:"+evictionTimeout);
     }
-    
-    
-
 }
