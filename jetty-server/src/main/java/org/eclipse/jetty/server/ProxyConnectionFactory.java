@@ -625,6 +625,12 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         {
             return _endp.getCreatedTimeStamp();
         }
+        
+        @Override
+        public long getActivatedTimeStamp()
+        {
+            return _endp.getActivatedTimeStamp();
+        }
 
         @Override
         public void shutdownOutput()

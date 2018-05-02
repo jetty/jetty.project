@@ -84,6 +84,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     private final Queue<ByteBuffer> _inQ = new ArrayDeque<>();
     private ByteBuffer _out;
     private boolean _growOutput;
+    private long _activatedAt;
 
     /* ------------------------------------------------------------ */
     /**
@@ -177,6 +178,16 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public InetSocketAddress getRemoteAddress()
     {
         return NOIPPORT;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public long getActivatedTimeStamp()
+    {
+        try(Locker.Lock lock = _locker.lock())
+        {
+            return _activatedAt;
+        }
     }
 
     /* ------------------------------------------------------------ */

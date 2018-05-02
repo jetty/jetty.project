@@ -69,6 +69,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private Selector _selector;
     private Deque<SelectorUpdate> _updates = new ArrayDeque<>();
     private Deque<SelectorUpdate> _updateable = new ArrayDeque<>();
+    private long _selectedAt; // nanotime
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
@@ -301,9 +302,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
          * Callback method invoked when a read or write events has been
          * detected by the {@link ManagedSelector} for this endpoint.
          *
+         * @param the nanotime at which the last call to select returned.
          * @return a job that may block or null
          */
-        Runnable onSelected();
+        Runnable onSelected(long selectedAt);
 
         /**
          * Callback method invoked when all the keys selected by the
@@ -407,6 +409,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     synchronized(ManagedSelector.this)
                     {
                         // finished selecting
+                        _selectedAt = System.nanoTime();
                         _selecting = false;
                         updates = _updates.size();
                     }
@@ -433,6 +436,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
         private Runnable processSelected()
         {
+            long selectedAt;
+            synchronized (this)
+            {
+                selectedAt = _selectedAt;
+            }
+            
             while (_cursor.hasNext())
             {
                 SelectionKey key = _cursor.next();
@@ -446,7 +455,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         if (attachment instanceof Selectable)
                         {
                             // Try to produce a task
-                            Runnable task = ((Selectable)attachment).onSelected();
+                            Runnable task = ((Selectable)attachment).onSelected(selectedAt);
                             if (task != null)
                                 return task;
                         }
@@ -587,7 +596,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
 
         @Override
-        public Runnable onSelected()
+        public Runnable onSelected(long selectedAt)
         {
             SelectableChannel server = _key.channel();
             SelectableChannel channel = null;

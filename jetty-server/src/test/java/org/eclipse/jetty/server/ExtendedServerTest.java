@@ -89,10 +89,10 @@ public class ExtendedServerTest extends HttpServerTestBase
         }
 
         @Override
-        public Runnable onSelected()
+        public Runnable onSelected(long selectedAt)
         {
-            _lastSelected=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            return super.onSelected();
+            _lastSelected=selectedAt;
+            return super.onSelected(selectedAt);
         }
 
         long getLastSelected()
@@ -116,7 +116,8 @@ public class ExtendedServerTest extends HttpServerTestBase
                 @Override
                 public boolean startRequest(String method, String uri, HttpVersion version)
                 {
-                    getRequest().setAttribute("DispatchedAt",((ExtendedEndPoint)getEndPoint()).getLastSelected());
+                    getRequest().setAttribute("DispatchedAt",System.nanoTime());
+                    getRequest().setAttribute("SelectedAt",((ExtendedEndPoint)getEndPoint()).getLastSelected());
                     return super.startRequest(method,uri,version);
                 }
             };
@@ -126,7 +127,7 @@ public class ExtendedServerTest extends HttpServerTestBase
     @Test
     public void testExtended() throws Exception
     {
-        configureServer(new DispatchedAtHandler());
+        configureServer(new SelectedAtHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -141,13 +142,14 @@ public class ExtendedServerTest extends HttpServerTestBase
             
             // Read the response.
             String response = readResponse(client);
+            System.err.println(response);
 
             Assert.assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
-            Assert.assertThat(response, Matchers.containsString("DispatchedAt="));
+            Assert.assertThat(response, Matchers.containsString("SelectedAt="));
             
-            String s=response.substring(response.indexOf("DispatchedAt=")+13);
+            String s=response.substring(response.indexOf("SelectedAt=")+11);
             s=s.substring(0,s.indexOf('\n'));
-            long dispatched=Long.valueOf(s);
+            long dispatched=TimeUnit.NANOSECONDS.toMillis(Long.valueOf(s));
             
             Assert.assertThat(dispatched, Matchers.greaterThanOrEqualTo(start));
             Assert.assertThat(dispatched, Matchers.lessThan(end));
@@ -155,7 +157,7 @@ public class ExtendedServerTest extends HttpServerTestBase
     }
     
 
-    protected static class DispatchedAtHandler extends AbstractHandler
+    protected static class SelectedAtHandler extends AbstractHandler
     {
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -163,6 +165,7 @@ public class ExtendedServerTest extends HttpServerTestBase
             baseRequest.setHandled(true);
             response.setStatus(200);
             response.getOutputStream().print("DispatchedAt="+request.getAttribute("DispatchedAt")+"\r\n");
+            response.getOutputStream().print("  SelectedAt="+request.getAttribute("SelectedAt")+"\r\n");
         }
     }
 }

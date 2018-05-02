@@ -105,6 +105,12 @@ public class MockEndPoint implements EndPoint
     }
 
     @Override
+    public long getActivatedTimeStamp()
+    {
+        throw new UnsupportedOperationException(NOT_SUPPORTED);
+    }
+
+    @Override
     public void setIdleTimeout(long idleTimeout)
     {
         throw new UnsupportedOperationException(NOT_SUPPORTED);

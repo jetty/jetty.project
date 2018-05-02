@@ -113,7 +113,16 @@ public interface EndPoint extends Closeable
     boolean isOpen();
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return Time epoch in ms from {@link System#currentTimeMillis()} at which the EndPoint was created.
+     */
     long getCreatedTimeStamp();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Time epoch in ns from {@link System#nanoTime()} at which the EndPoint was last activated (eg selected).
+     */
+    long getActivatedTimeStamp();
 
     /* ------------------------------------------------------------ */
     /** Shutdown the output.

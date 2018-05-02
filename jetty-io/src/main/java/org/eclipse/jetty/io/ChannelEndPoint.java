@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -47,6 +46,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     protected final ManagedSelector _selector;
     protected final SelectionKey _key;
     private boolean _updatePending;
+    private long _selectedAt;
 
     /**
      * The current value for {@link SelectionKey#interestOps()}.
@@ -302,12 +302,20 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     }
 
     @Override
+    public long getActivatedTimeStamp()
+    {
+        synchronized (this)
+        {
+            return _selectedAt;
+        }
+    }
+    
+    @Override
     public Object getTransport()
     {
         return _channel;
     }
-
-
+    
     @Override
     protected void needsFillInterest()
     {
@@ -321,7 +329,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     }
 
     @Override
-    public Runnable onSelected()
+    public Runnable onSelected(long selectedAt)
     {
         /**
          * This method may run concurrently with {@link #changeInterests(int)}.
@@ -332,6 +340,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         int newInterestOps;
         synchronized(this)
         {
+            _selectedAt = selectedAt;
             _updatePending = true;
             // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
             oldInterestOps = _desiredInterestOps;

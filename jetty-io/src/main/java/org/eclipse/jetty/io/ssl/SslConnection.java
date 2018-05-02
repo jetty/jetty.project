@@ -442,6 +442,12 @@ public class SslConnection extends AbstractConnection
         }
 
         @Override
+        public long getActivatedTimeStamp()
+        {
+            return getEndPoint().getActivatedTimeStamp();
+        }
+        
+        @Override
         public long getIdleTimeout()
         {
             return getEndPoint().getIdleTimeout();
