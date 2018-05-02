@@ -151,7 +151,7 @@ public class CoreFuzzer implements AutoCloseable
                     LOG.debug("{} {}", prefix, actual);
             }
 
-            assertThat(prefix + ".opcode", OpCode.name(actual.getOpCode()), Matchers.is(OpCode.name(expected.getOpCode())));
+            assertThat(prefix + ".opcode "+actual, OpCode.name(actual.getOpCode()), Matchers.is(OpCode.name(expected.getOpCode())));
             prefix += "(op=" + actual.getOpCode() + "," + (actual.isFin() ? "" : "!") + "fin)";
             if (expected.getOpCode() == OpCode.CLOSE)
             {
