@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -42,6 +41,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -287,18 +287,27 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     public abstract void restartWebApp(boolean reconfigureScanner) throws Exception;
 
     
-    public abstract void checkPomConfiguration() throws MojoExecutionException;
+    public boolean checkPomConfiguration() throws MojoExecutionException
+    {
+        return true;
+    }
 
     public abstract void configureScanner () throws MojoExecutionException;
 
 
-    public void checkPackagingConfiguration() throws MojoExecutionException
+    public boolean checkPackagingConfiguration() throws MojoExecutionException
     {
         if (!supportedPackagings.contains( project.getPackaging() ))
         {
-            getLog().info( "Your project packaging is not supported by this plugin" );
-            return;
+            String projectName = project.getName();
+            if (StringUtils.isBlank(projectName))
+            {
+                projectName = project.getGroupId() + ":" + project.getArtifactId();
+            }
+            getLog().info("Skipping " + projectName + " : packaging type [" + project.getPackaging() + "] is unsupported");
+            return false;
         }
+        return true;
     }
 
 
@@ -324,14 +333,15 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         
         configurePluginClasspath();
         PluginLog.setLog(getLog());
-        checkConfiguration();
-        startJetty();
+        if (isConfigurationSupported())
+        {
+            startJetty();
+        }
     }
     
-    public void checkConfiguration() throws MojoExecutionException
+    public boolean isConfigurationSupported() throws MojoExecutionException
     {
-        checkPackagingConfiguration();
-        checkPomConfiguration();
+        return (checkPackagingConfiguration() && checkPomConfiguration());
     }
     
     

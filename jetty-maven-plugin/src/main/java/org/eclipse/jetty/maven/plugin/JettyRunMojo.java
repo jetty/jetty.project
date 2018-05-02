@@ -24,10 +24,8 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -181,7 +179,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      * @see AbstractJettyMojo#checkPomConfiguration()
      */
     @Override
-    public void checkPomConfiguration () throws MojoExecutionException
+    public boolean checkPomConfiguration () throws MojoExecutionException
     {
         // check the location of the static content/jsps etc
         try
@@ -238,6 +236,8 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             throw new MojoExecutionException("Location of classesDirectory does not exist");
         }
+
+        return true;
     }
 
    
