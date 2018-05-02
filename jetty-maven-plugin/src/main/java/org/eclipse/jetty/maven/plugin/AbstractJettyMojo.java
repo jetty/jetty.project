@@ -294,17 +294,21 @@ public abstract class AbstractJettyMojo extends AbstractMojo
 
     public abstract void configureScanner () throws MojoExecutionException;
 
+    protected String getSkipMessage(String reason)
+    {
+        String projectName = project.getName();
+        if (StringUtils.isBlank(projectName))
+        {
+            projectName = project.getGroupId() + ":" + project.getArtifactId();
+        }
+        return "Skipping " + projectName + " : " + reason;
+    }
 
-    public boolean checkPackagingConfiguration() throws MojoExecutionException
+    public boolean checkPackagingConfiguration()
     {
         if (!supportedPackagings.contains( project.getPackaging() ))
         {
-            String projectName = project.getName();
-            if (StringUtils.isBlank(projectName))
-            {
-                projectName = project.getGroupId() + ":" + project.getArtifactId();
-            }
-            getLog().info("Skipping " + projectName + " : packaging type [" + project.getPackaging() + "] is unsupported");
+            getLog().info(getSkipMessage("packaging type [" + project.getPackaging() + "] is unsupported"));
             return false;
         }
         return true;
@@ -317,24 +321,25 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        getLog().info("Configuring Jetty for project: " + this.project.getName());
-        if (skip)
-        {
-            getLog().info("Skipping Jetty start: jetty.skip==true");
-            return;
-        }
-
-        if (isExcluded(execution.getMojoDescriptor().getGoal()))
-        {
-            getLog().info("The goal \""+execution.getMojoDescriptor().getFullGoalName()+
-                          "\" has been made unavailable for this web application by an <excludedGoal> configuration.");
-            return;
-        }
-        
-        configurePluginClasspath();
-        PluginLog.setLog(getLog());
         if (isConfigurationSupported())
         {
+            if (skip)
+            {
+                getLog().info(getSkipMessage("jetty.skip==true"));
+                return;
+            }
+
+            getLog().info("Configuring Jetty for project: " + this.project.getName());
+
+            if (isExcluded(execution.getMojoDescriptor().getGoal()))
+            {
+                getLog().info("The goal \""+execution.getMojoDescriptor().getFullGoalName()+
+                              "\" has been made unavailable for this web application by an <excludedGoal> configuration.");
+                return;
+            }
+
+            configurePluginClasspath();
+            PluginLog.setLog(getLog());
             startJetty();
         }
     }
