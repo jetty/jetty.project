@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 public class SaneFrameOrderingAssertion implements OutgoingFrames
 {
     boolean priorDataFrame = false;
+    public int frameCount = 0;
 
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
@@ -63,10 +64,12 @@ public class SaneFrameOrderingAssertion implements OutgoingFrames
                 break;
         }
 
-        if (OpCode.isDataFrame(frame.getOpCode()))
+        if (OpCode.isDataFrame(opcode))
         {
             priorDataFrame = !frame.isFin();
         }
+
+        frameCount++;
 
         if (callback != null)
             callback.writeSuccess();

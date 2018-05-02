@@ -71,13 +71,13 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
         int maxInactivePeriod = 5; //session will timeout after 5 seconds
         int scavengePeriod = 1; //scavenging occurs every 1 seconds
         
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT); //don't evict sessions
-        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
-        ((AbstractSessionDataStoreFactory)storeFactory).setSavePeriodSec(0); //always save when the session exits
+        DefaultSessionCacheFactory cacheFactory1 = new DefaultSessionCacheFactory();
+        cacheFactory1.setEvictionPolicy(SessionCache.NEVER_EVICT); //don't evict sessions
+        SessionDataStoreFactory storeFactory1 = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)storeFactory1).setGracePeriodSec(scavengePeriod);
+        ((AbstractSessionDataStoreFactory)storeFactory1).setSavePeriodSec(0); //always save when the session exits
         
-        TestServer server1 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        TestServer server1 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory1, storeFactory1);
         TestServlet servlet1 = new TestServlet();
         ServletHolder holder1 = new ServletHolder(servlet1);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -92,7 +92,12 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
             server1.start();
             int port1=server1.getPort();
             
-            TestServer server2 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+            DefaultSessionCacheFactory cacheFactory2 = new DefaultSessionCacheFactory();
+            cacheFactory2.setEvictionPolicy(SessionCache.NEVER_EVICT); //don't evict sessions
+            SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();
+            ((AbstractSessionDataStoreFactory)storeFactory2).setGracePeriodSec(scavengePeriod);
+            ((AbstractSessionDataStoreFactory)storeFactory2).setSavePeriodSec(0); //always save when the session exits
+            TestServer server2 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
             ServletContextHandler context2 = server2.addContext(contextPath);
             context2.addServlet(TestServlet.class, servletMapping);
             SessionHandler m2 = context2.getSessionHandler();

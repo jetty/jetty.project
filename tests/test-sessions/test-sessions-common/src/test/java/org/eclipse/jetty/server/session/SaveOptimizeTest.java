@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -436,6 +437,8 @@ public class SaveOptimizeTest
         _servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        contextHandler.addEventListener(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         _server1.start();
@@ -450,11 +453,16 @@ public class SaveOptimizeTest
                 String url = "http://localhost:" + port1 + contextPath + servletMapping+"?action=create&check=true";
 
                 //make a request to set up a session on the server
+                CountDownLatch latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 ContentResponse response = client.GET(url);
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 String sessionId = TestServer.extractSessionId(sessionCookie);
+                
+                //ensure request fully finished processing
+                latch.await(5, TimeUnit.SECONDS);
 
                 SessionData data = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
                 assertNotNull(data);           
@@ -462,8 +470,13 @@ public class SaveOptimizeTest
                 assertTrue(lastSaved > 0); //check session created was saved
 
                 // Perform a request to change maxInactive on session
+                latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping+"?action=max&value=60");
                 response = request.send();
+                
+                //ensure request fully finished processing
+                latch.await(5, TimeUnit.SECONDS);
 
                 //check session is saved, even though the save optimisation interval has not passed
                 SessionData d = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);

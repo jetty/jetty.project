@@ -377,11 +377,15 @@ The `AbstractLoginModule` does not support any caching, so if you want to cache 
 
 ==== Other Goodies
 
+===== ServletRequestCallback
+
+This callback gives you access to the ServletRequest that is involved in the authentication, and thus to other features like the current Session. This callback can be configured in your custom LoginModule implementation. Note that none of the LoginModule implementations provided with Jetty currently use this callback.
+
 ===== RequestParameterCallback
 
 As all servlet containers intercept and process a form submission with action `j_security_check`, it is usually not possible to insert any extra input fields onto a login form with which to perform authentication: you may only pass `j_username` and `j_password`.
 For those rare occasions when this is not good enough, and you require more information from the user in order to authenticate them, you can use the JAAS callback handler `org.eclipse.jetty.jaas.callback.RequestParameterCallback`.
-This callback handler gives you access to all parameters that were passed in the form submission.
+This callback gives you access to all parameters that were passed in the form submission.
 To use it, in the `login()` method of your custom login module, add the `RequestParameterCallback` to the list of callback handlers the login module uses, tell it which params you are interested in, and then get the value of the parameter back.
 Here is an example:
 

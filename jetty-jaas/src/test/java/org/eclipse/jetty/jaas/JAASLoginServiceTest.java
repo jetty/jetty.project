@@ -23,9 +23,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.security.Principal;
+import java.util.Collections;
 
 import javax.security.auth.Subject;
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
+import javax.security.auth.login.Configuration;
 
+import org.eclipse.jetty.security.DefaultIdentityService;
+import org.eclipse.jetty.server.Request;
 import org.junit.Test;
 
 /**
@@ -35,6 +41,19 @@ import org.junit.Test;
  */
 public class JAASLoginServiceTest
 {
+    public static class TestConfiguration extends Configuration
+    {
+        AppConfigurationEntry _entry = new AppConfigurationEntry(TestLoginModule.class.getCanonicalName(), LoginModuleControlFlag.REQUIRED, Collections.emptyMap());
+
+        @Override
+        public AppConfigurationEntry[] getAppConfigurationEntry(String name)
+        {
+            return new AppConfigurationEntry[] {_entry};
+        }
+        
+    }
+    
+    
     interface SomeRole
     {
         
@@ -79,7 +98,24 @@ public class JAASLoginServiceTest
         }
     }
     
-    
+    @Test
+    public void testServletRequestCallback () throws Exception
+    {
+        //Test with the DefaultCallbackHandler
+        JAASLoginService ls = new JAASLoginService("foo");
+        ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
+        ls.setIdentityService(new DefaultIdentityService());
+        ls.setConfiguration(new TestConfiguration());
+        Request request = new Request(null, null);      
+        ls.login("aaardvaark", "aaa", request);
+        
+        //Test with the fallback CallbackHandler
+        ls = new JAASLoginService("foo");
+        ls.setIdentityService(new DefaultIdentityService());
+        ls.setConfiguration(new TestConfiguration());  
+        ls.login("aaardvaark", "aaa", request);
+        
+    }
 
     @Test
     public void testLoginServiceRoles () throws Exception

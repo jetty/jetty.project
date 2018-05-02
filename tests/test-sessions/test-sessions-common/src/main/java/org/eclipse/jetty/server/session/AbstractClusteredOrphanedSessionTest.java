@@ -55,15 +55,15 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
         String contextPath = "/";
         String servletMapping = "/server";
         int inactivePeriod = 5;
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        if (storeFactory instanceof AbstractSessionDataStoreFactory)
+        DefaultSessionCacheFactory cacheFactory1 = new DefaultSessionCacheFactory();
+        cacheFactory1.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionDataStoreFactory storeFactory1 = createSessionDataStoreFactory();
+        if (storeFactory1 instanceof AbstractSessionDataStoreFactory)
         {
-            ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(0);
+            ((AbstractSessionDataStoreFactory)storeFactory1).setGracePeriodSec(0);
         }
         
-        TestServer server1 = new TestServer(0, inactivePeriod, -1, cacheFactory, storeFactory);
+        TestServer server1 = new TestServer(0, inactivePeriod, -1, cacheFactory1, storeFactory1);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         try
         {
@@ -71,10 +71,13 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
             int port1 = server1.getPort();
             int scavengePeriod = 2;
             
-            DefaultSessionCacheFactory evictCacheFactory = new DefaultSessionCacheFactory();
-          //  cacheFactory.setEvictionPolicy(2);//evict after idle for 2 sec
-            
-            TestServer server2 = new TestServer(0, inactivePeriod, scavengePeriod, evictCacheFactory, storeFactory);
+            DefaultSessionCacheFactory cacheFactory2 = new DefaultSessionCacheFactory();
+            SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();
+            if (storeFactory2 instanceof AbstractSessionDataStoreFactory)
+            {
+                ((AbstractSessionDataStoreFactory)storeFactory2).setGracePeriodSec(0);
+            }
+            TestServer server2 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);         
             try
             {
