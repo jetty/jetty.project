@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[t-community-documentation]]
+[[t-documentation-format]]
 === Source Control and Maven Build.
 
 The Jetty documentation is a module within the overall Jetty project and is build as a part of the standard build process.
@@ -52,17 +52,25 @@ The build is finished once you see a message akin to:
 
 At this point you open your web browser and view the produced documentation (under the target/html directory)!
 
-____
 [TIP]
-If the build is broken, feel free to notify us.
-____
+====
+Pay close attention to the build output for lines like:
 
+....
+asciidoctor: WARNING: 9-jsp.adoc: line 0: id assigned to section already in use: ag-http2
+....
+
+This indicates that an ID is being reused and should be resolved or else deep linking will work correctly.
+====
+
+[[t-documentation-render]]
 === The Render Chain Explained
 
 The Jetty documentation is all written in https://asciidoctor.org/docs/user-manual/[asciidoc].
 The maven build uses the asciidoctor-maven-plugin to process specific index.adoc[] files which act as the root structure for various guides (Administrative, Developer, QuickStart, etc).
 The main pom.xml file also provides a maven profile which when activated can produce the guides in both pdf and epub formats.
 
+[[t-documentation-structure]]
 === Project Structure
 
 It may be useful to understand the layout of the documentation before digging into the details.
@@ -80,6 +88,7 @@ The following table lists some helpful directories and their purpose.
 | target/epub | post build (-Palt-formats) epub files
 |===
 
+[[t-documentation-guide]]
 === Guide Structure
 
 Each guide starts with an *index.adoc* file which acts as the point of origin for the document structure.
@@ -89,6 +98,7 @@ The individual chapter *adoc* files contain the narrative structure of each guid
 he topic content is all located within the *src/main/asciidoc/topics* structure and is intended to be context free and unrelated to any specific guide.
 In this way, any narrative requirements that setup or weave together topics are located in their associated guide chapters and any topics can stand on their own.
 
+[[t-documentation-conventions]]
 === Conventions
 
 Below is list of conventions that should be followed when developing documentation within this framework.

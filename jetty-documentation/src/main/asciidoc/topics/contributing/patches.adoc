@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[contributing-patches]]
+[[t-contributing-patches]]
 === Contributing Patches
 
 We love seeing people contribute patches to the Jetty project and the process is relatively simple.
@@ -35,7 +35,7 @@ The following is the general process by which we operate.
 Not everything is specifically relevant since we are at GitHub but the crux of things are detailed there.
 The ECA is *critically* important to the process.
 
-[[contributing-eca]]
+[[t-contributing-eca]]
 ==== Sign an Eclipse Contributor Agreement (ECA)
 
 The Eclipse Foundation has a strong Intellectual Property policy which tracks contributions in detail to ensure that:
@@ -53,13 +53,13 @@ Log into the https://www.eclipse.org[Eclipse home page] (you will need to create
 Be sure to use the _same email address_ when you create any Git commit records.
 ____
 
-[[contributing-git-config]]
+[[t-contributing-git-config]]
 ==== Configuring Git
 
 GitHub has copious amounts of quality documentation on how to interact with the system and you will minimally need to configure the user.email property.
 Check out the following link:https://help.github.com/articles/setting-your-email-in-git[guide on GitHub] for more information.
 
-[[contributing-making-the-commit]]
+[[t-contributing-making-the-commit]]
 ==== Making the Commit
 
 When making the commit for the pull request it is  _vital_ that you "sign-off" on the commit using `git commit -s` option.
@@ -81,12 +81,12 @@ When the Jetty project runs releases we have an automated process that scans for
 > git commit -s -m "Issue #123 resolving the issue by adding widget"
 ----
 
-[[contributing-the-pull-request]]
+[[t-contributing-the-pull-request]]
 ==== The Pull Request
 
 Pull requests are very much a GitHub process so best link:https://help.github.com/articles/creating-a-pull-request[explained by Github].
 
-[[contributing-our-policies]]
+[[t-contributing-our-policies]]
 ==== Our Policies
 
 We wholeheartedly welcome contributions to Jetty and will do our best to process them in a timely fashion.

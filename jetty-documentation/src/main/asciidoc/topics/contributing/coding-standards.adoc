@@ -16,21 +16,21 @@
 //  ========================================================================
 //
 
-[[coding-standards]]
+[[t-contributing-coding-standards]]
 === Coding Standards
 
-Jetty uses number of conventions for its source code.
+Jetty uses number of conventions for its source code. The developers of Jetty use a variety of tooling and editors when developing Jetty so standards and conventions are important!
 
-==== Code Formatting
+==== Intelli-J
 
-Jetty uses the code formatting the following project specifies.
+The suggested configuration for Intelli-J when working with Jetty is available here: http://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git/tree/idea-jetty-codestyle-settings.jar[Intelli-J Codestyle]
 
+==== Eclipse
+
+The Eclipse format configuration can be found here:
 http://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git/tree/jetty-eclipse-java-format.xml[Eclipse Java Formatting]
 
-==== Code Templates
-
-Jetty specifies the following code templates for use by the project developers.
-
+There are also some templates available for Eclipse here:
 http://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git/tree/jetty-eclipse-codetemplates.xml[Eclipse Code Templates]
 
 ==== Code Conventions
@@ -85,5 +85,5 @@ class MyClassName
     }
 }
 
-              
+
 ----

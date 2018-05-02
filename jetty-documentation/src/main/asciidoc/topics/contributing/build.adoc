@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[t-community-build]]
+[[t-contributing-build]]
 === Maven Build
 
 Eclipse Jetty uses http://maven.apache.org/[Apache Maven] for managing the project metadata and controlling the build.

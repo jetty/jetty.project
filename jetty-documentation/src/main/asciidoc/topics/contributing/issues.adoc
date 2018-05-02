@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[t-community-issues]]
+[[t-contributing-issues]]
 === Github: Issues and Features
 
 While not necessarily a support channel for solving a specific user problem, the issue tracker for Eclipse Jetty is a great location for addressing issues or suggesting features you want to see (or ideally contribute) in Jetty.

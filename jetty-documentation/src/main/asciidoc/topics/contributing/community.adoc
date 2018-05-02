@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[t-community-mailing-lists]]
+[[t-contributing-mailing-lists]]
 === Mailing Lists
 
 Mailing lists are a wonderful way to interact with the community at large and for a certain class of issue have the best chances of achieving resolution.  There are a number of mailing lists available within the Jetty project and a good rule of thumb to choose between the developer and user lists is to ask yourself if your question is broadly interesting to the community, use the users list and if narrowly focused on Jetty internals or minutiae, then the dev list might be a better option.
@@ -31,7 +31,7 @@ Mailing lists are a wonderful way to interact with the community at large and fo
 ** Join - https://dev.eclipse.org/mailman/listinfo/jetty-announce
 ** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-announce/
 
-[[t-community-irc]]
+[[t-contributing-irc]]
 === Internet Relay Chat - IRC
 
 IRC has been around for decades and it is hard to beat a communication platform that has such support.  Users are always welcome to come join our IRC channels and talk with us, other users, or just lurk.  Please note that IRC is not necessarily an active support channel, if you have a question by all means ask it but there should be no expectation that you will immediately get a response.  Your best bet is to ask and then lurk.
@@ -39,7 +39,7 @@ IRC has been around for decades and it is hard to beat a communication platform 
 irc.freenode.org - #jetty::
   Our primary location, we recommend that if your looking to find folks on IRC you try here.
 
-[[t-community-stackoverflow]]
+[[t-contributing-stackoverflow]]
 === Stack Overflow
 
 From a simple support perspective it is hard to beat http://stackoverflow.com[StackOverflow] for interacting with a Jetty community.  Numerous users have asked and had answered their questions on the platform by other users and developers alike.
