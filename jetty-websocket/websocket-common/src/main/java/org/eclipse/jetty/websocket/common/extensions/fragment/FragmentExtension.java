@@ -124,14 +124,17 @@ public class FragmentExtension extends AbstractExtension
         private boolean finished = true;
 
         @Override
-        protected Action process() throws Exception
+        protected Action process()
         {
             if (finished)
             {
                 current = pollEntry();
-                LOG.debug("Processing {}", current);
                 if (current == null)
+                {
+                    LOG.debug("Processing IDLE", current);
                     return Action.IDLE;
+                }
+                LOG.debug("Processing {}", current);
                 fragment(current, true);
             }
             else
@@ -146,6 +149,7 @@ public class FragmentExtension extends AbstractExtension
             Frame frame = entry.frame;
             ByteBuffer payload = frame.getPayload();
             int remaining = payload.remaining();
+
             int length = Math.min(remaining, maxLength);
             finished = length == remaining;
 
@@ -186,7 +190,10 @@ public class FragmentExtension extends AbstractExtension
         {
             // Notify first then call succeeded(), otherwise
             // write callbacks may be invoked out of order.
-            notifyCallbackSuccess(current.callback);
+
+            // only notify current (original) frame on completion
+            if (finished)
+                notifyCallbackSuccess(current.callback);
             succeeded();
         }
 

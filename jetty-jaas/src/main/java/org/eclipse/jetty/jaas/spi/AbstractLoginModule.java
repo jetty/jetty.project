@@ -115,6 +115,12 @@ public abstract class AbstractLoginModule implements LoginModule
         }
     }
 
+    
+    
+    public abstract UserInfo getUserInfo (String username) throws Exception;
+    
+    
+    
     public Subject getSubject ()
     {
         return this.subject;
@@ -198,7 +204,6 @@ public abstract class AbstractLoginModule implements LoginModule
 
     public Callback[] configureCallbacks ()
     {
-
         Callback[] callbacks = new Callback[3];
         callbacks[0] = new NameCallback("Enter user name");
         callbacks[1] = new ObjectCallback();
@@ -211,9 +216,7 @@ public abstract class AbstractLoginModule implements LoginModule
     {
         return false;
     }
-    
-    
-    public abstract UserInfo getUserInfo (String username) throws Exception;
+
 
 
 
