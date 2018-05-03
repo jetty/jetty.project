@@ -101,8 +101,8 @@ public interface ByteBufferPool
         public long getTotalLength()
         {
             long length = 0;
-            for (int i = 0; i < buffers.size(); ++i)
-                length += buffers.get(i).remaining();
+            for (ByteBuffer buffer : buffers)
+                length += buffer.remaining();
             return length;
         }
 

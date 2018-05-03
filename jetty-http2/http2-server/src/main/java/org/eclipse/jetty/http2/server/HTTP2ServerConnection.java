@@ -145,6 +145,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         for (Frame frame : upgradeFrames)
             getSession().onFrame(frame);
         super.onOpen();
+        produce();
     }
 
     private void notifyAccept(ISession session)

@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-parent</artifactId>
-        <version>9.4.10-SNAPSHOT</version>
+        <version>9.4.11-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -34,7 +34,6 @@
                         <Bundle-Classpath />
                         <_nouses>true</_nouses>
                         <DynamicImport-Package>org.eclipse.jetty.websocket.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}",org.eclipse.jetty.websocket.server.pathmap.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"</DynamicImport-Package>
-                        <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.websocket.servlet.WebSocketServletFactory)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)"</Require-Capability>
                     </instructions>
                 </configuration>
             </plugin>

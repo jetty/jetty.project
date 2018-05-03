@@ -327,7 +327,7 @@ public class ServletContextHandler extends ContextHandler
     {
         try
         {
-            return (SecurityHandler)_defaultSecurityHandlerClass.newInstance();
+            return _defaultSecurityHandlerClass.getDeclaredConstructor().newInstance();
         }
         catch(Exception e)
         {

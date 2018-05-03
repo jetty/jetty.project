@@ -101,7 +101,7 @@ public class PreEncodedHttpField extends HttpField
     {
         super(header,name, value);
         for (int i=0;i<__encoders.length;i++)
-            _encodedField[i]=__encoders[i].getEncodedField(header,header.asString(),value);
+            _encodedField[i]=__encoders[i].getEncodedField(header,name,value);
     }
     
     public PreEncodedHttpField(HttpHeader header,String value)

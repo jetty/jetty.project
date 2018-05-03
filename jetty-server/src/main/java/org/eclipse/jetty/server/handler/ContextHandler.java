@@ -2544,7 +2544,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         public <T> T createInstance (Class<T> clazz) throws Exception
         {
-            T o = clazz.newInstance();
+            T o = clazz.getDeclaredConstructor().newInstance();
             return o;
         }
 
@@ -2841,13 +2841,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             try
             {
-                return clazz.newInstance();
+                return clazz.getDeclaredConstructor().newInstance();
             }
-            catch (InstantiationException e)
-            {
-                throw new ServletException(e);
-            }
-            catch (IllegalAccessException e)
+            catch (Exception e)
             {
                 throw new ServletException(e);
             }

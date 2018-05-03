@@ -1032,7 +1032,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _configurationClasses.addAll(Configuration.ClassList.serverDefault(getServer()));
         }
         for (String configClass : _configurationClasses)
-            _configurations.add((Configuration)Loader.loadClass(configClass).newInstance());
+            _configurations.add((Configuration)Loader.loadClass(configClass).getDeclaredConstructor().newInstance());
     }
 
     /* ------------------------------------------------------------ */

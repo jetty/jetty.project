@@ -51,6 +51,7 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
@@ -88,6 +89,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private int maxRemoteStreams;
     private long streamIdleTimeout;
     private int initialSessionRecvWindow;
+    private int writeThreshold;
     private boolean pushEnabled;
     private long idleTime;
     private GoAwayFrame closeFrame;
@@ -106,6 +108,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         this.streamIdleTimeout = endPoint.getIdleTimeout();
         this.sendWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        this.writeThreshold = 32 * 1024;
         this.pushEnabled = true; // SPEC: by default, push is enabled.
         this.idleTime = System.nanoTime();
         addBean(flowControl);
@@ -184,6 +187,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void setInitialSessionRecvWindow(int initialSessionRecvWindow)
     {
         this.initialSessionRecvWindow = initialSessionRecvWindow;
+    }
+
+    public int getWriteThreshold()
+    {
+        return writeThreshold;
+    }
+
+    public void setWriteThreshold(int writeThreshold)
+    {
+        this.writeThreshold = writeThreshold;
     }
 
     public EndPoint getEndPoint()
@@ -962,7 +975,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     {
     }
 
-    void onFlushed(long bytes) throws IOException
+    @Override
+    public void onFlushed(long bytes) throws IOException
     {
         flusher.onFlushed(bytes);
     }
@@ -1144,7 +1158,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     private class ControlEntry extends HTTP2Flusher.Entry
     {
-        private int bytes;
         private int frameBytes;
 
         private ControlEntry(Frame frame, IStream stream, Callback callback)
@@ -1153,25 +1166,27 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
 
         @Override
-        public int getFrameBytesRemaining()
+        public int getFrameBytesGenerated()
         {
             return frameBytes;
         }
 
         @Override
-        public void onFrameBytesFlushed(int bytesFlushed)
+        protected boolean generate(ByteBufferPool.Lease lease)
         {
-            frameBytes -= bytesFlushed;
+            frameBytes = generator.control(lease, frame);
+            beforeSend();
+            return true;
         }
 
         @Override
-        protected boolean generate(ByteBufferPool.Lease lease)
+        public long onFlushed(long bytes)
         {
-            bytes = frameBytes = generator.control(lease, frame);
+            long flushed = Math.min(frameBytes, bytes);
             if (LOG.isDebugEnabled())
-                LOG.debug("Generated {}", frame);
-            beforeSend();
-            return true;
+                LOG.debug("Flushed {}/{} frame bytes for {}", flushed, bytes, this);
+            frameBytes -= flushed;
+            return bytes - flushed;
         }
 
         /**
@@ -1215,7 +1230,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void succeeded()
         {
-            bytesWritten.addAndGet(bytes);
+            bytesWritten.addAndGet(frameBytes);
+            frameBytes = 0;
+
             switch (frame.getType())
             {
                 case HEADERS:
@@ -1264,6 +1281,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     break;
                 }
             }
+
             super.succeeded();
         }
 
@@ -1278,10 +1296,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     private class DataEntry extends HTTP2Flusher.Entry
     {
-        private int bytes;
         private int frameBytes;
+        private int frameRemaining;
         private int dataBytes;
-        private int dataWritten;
+        private int dataRemaining;
 
         private DataEntry(DataFrame frame, IStream stream, Callback callback)
         {
@@ -1291,61 +1309,74 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             // of data frames that cannot be completely written due to
             // the flow control window exhausting, since in that case
             // we would have to count the padding only once.
-            dataBytes = frame.remaining();
+            dataRemaining = frame.remaining();
         }
 
         @Override
-        public int getFrameBytesRemaining()
+        public int getFrameBytesGenerated()
         {
             return frameBytes;
         }
 
         @Override
-        public void onFrameBytesFlushed(int bytesFlushed)
-        {
-            frameBytes -= bytesFlushed;
-        }
-
-        @Override
         public int getDataBytesRemaining()
         {
-            return dataBytes;
+            return dataRemaining;
         }
 
         @Override
         protected boolean generate(ByteBufferPool.Lease lease)
         {
-            int dataBytes = getDataBytesRemaining();
+            int dataRemaining = getDataBytesRemaining();
 
             int sessionSendWindow = getSendWindow();
             int streamSendWindow = stream.updateSendWindow(0);
             int window = Math.min(streamSendWindow, sessionSendWindow);
-            if (window <= 0 && dataBytes > 0)
+            if (window <= 0 && dataRemaining > 0)
                 return false;
 
-            int length = Math.min(dataBytes, window);
+            int length = Math.min(dataRemaining, window);
 
             // Only one DATA frame is generated.
-            DataFrame dataFrame = (DataFrame)frame;
-            bytes = frameBytes = generator.data(lease, dataFrame, length);
-            int written = bytes - Frame.HEADER_LENGTH;
+            int frameBytes = generator.data(lease, (DataFrame)frame, length);
+            this.frameBytes += frameBytes;
+            this.frameRemaining += frameBytes;
+
+            int dataBytes = frameBytes - Frame.HEADER_LENGTH;
+            this.dataBytes += dataBytes;
+            this.dataRemaining -= dataBytes;
             if (LOG.isDebugEnabled())
-                LOG.debug("Generated {}, length/window/data={}/{}/{}", dataFrame, written, window, dataBytes);
+                LOG.debug("Generated {}, length/window/data={}/{}/{}", frame, dataBytes, window, dataRemaining);
 
-            this.dataWritten = written;
-            this.dataBytes -= written;
-
-            flowControl.onDataSending(stream, written);
-            stream.updateClose(dataFrame.isEndStream(), CloseState.Event.BEFORE_SEND);
+            flowControl.onDataSending(stream, dataBytes);
 
             return true;
         }
 
         @Override
+        public long onFlushed(long bytes) throws IOException
+        {
+            long flushed = Math.min(frameRemaining, bytes);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Flushed {}/{} frame bytes for {}", flushed, bytes, this);
+            frameRemaining -= flushed;
+            // We should only forward data (not frame) bytes,
+            // but we trade precision for simplicity.
+            Object channel = stream.getAttachment();
+            if (channel instanceof WriteFlusher.Listener)
+                ((WriteFlusher.Listener)channel).onFlushed(flushed);
+            return bytes - flushed;
+        }
+
+        @Override
         public void succeeded()
         {
-            bytesWritten.addAndGet(bytes);
-            flowControl.onDataSent(stream, dataWritten);
+            bytesWritten.addAndGet(frameBytes);
+            frameBytes = 0;
+            frameRemaining = 0;
+
+            flowControl.onDataSent(stream, dataBytes);
+            dataBytes = 0;
 
             // Do we have more to send ?
             DataFrame dataFrame = (DataFrame)frame;

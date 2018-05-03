@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.10-SNAPSHOT</version>
+  <version>9.4.11-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -17,7 +17,9 @@
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support-version>1.4</build-support-version>
-    <slf4j-version>1.6.6</slf4j-version>
+    <slf4j.version>1.7.25</slf4j.version>
+    <log4j2.version>2.9.1</log4j2.version>
+    <logback.version>1.2.3</logback.version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
     <jsp.version>8.5.24.2</jsp.version>
@@ -229,6 +231,8 @@
           <rulesets>
             <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
           </rulesets>
+          <analysisCache>true</analysisCache>
+          <showPmdLog>false</showPmdLog>
         </configuration>
         <dependencies>
           <dependency>
@@ -411,7 +415,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.6.2</version>
+          <version>3.7.0</version>
           <configuration>
             <source>1.8</source>
             <target>1.8</target>
@@ -420,7 +424,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.0.2</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -452,8 +456,13 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.5.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.0.2</version>
+          <version>3.1.0</version>
           <configuration>
             <archive>
               <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
@@ -555,7 +564,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>3.8</version>
+          <version>3.9.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -604,6 +613,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${surefireVersion}</version>
           <configuration>
+            <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>       
             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
             <forkCount>1</forkCount>
@@ -1000,17 +1010,17 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jcl104-over-slf4j</artifactId>
-        <version>${slf4j-version}</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>log4j-over-slf4j</artifactId>
-        <version>${slf4j-version}</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>${slf4j-version}</version>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
@@ -1671,6 +1681,30 @@
         <property>
           <name>java.version</name>
           <value>1.8.0_162</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.12.v20180117</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u171</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_171</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.12.v20180117</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u172</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_172</value>
         </property>
       </activation>
       <properties>
