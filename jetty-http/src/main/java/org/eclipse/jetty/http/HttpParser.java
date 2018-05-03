@@ -447,7 +447,7 @@ public class HttpParser
 
     /* ------------------------------------------------------------------------------- */
     enum CharState { ILLEGAL, CR, LF, LEGAL }
-    private final static CharState[] __charState;
+    public final static CharState[] TOKEN_CHAR;
     static
     {
         // token          = 1*tchar
@@ -462,38 +462,38 @@ public class HttpParser
         // ctext          = HTAB / SP / %x21-27 / %x2A-5B / %x5D-7E / obs-text
         // quoted-pair    = "\" ( HTAB / SP / VCHAR / obs-text )
 
-        __charState=new CharState[256];
-        Arrays.fill(__charState,CharState.ILLEGAL);
-        __charState[LINE_FEED]=CharState.LF;
-        __charState[CARRIAGE_RETURN]=CharState.CR;
-        __charState[TAB]=CharState.LEGAL;
-        __charState[SPACE]=CharState.LEGAL;
+        TOKEN_CHAR =new CharState[256];
+        Arrays.fill(TOKEN_CHAR,CharState.ILLEGAL);
+        TOKEN_CHAR[LINE_FEED]=CharState.LF;
+        TOKEN_CHAR[CARRIAGE_RETURN]=CharState.CR;
+        TOKEN_CHAR[TAB]=CharState.LEGAL;
+        TOKEN_CHAR[SPACE]=CharState.LEGAL;
 
-        __charState['!']=CharState.LEGAL;
-        __charState['#']=CharState.LEGAL;
-        __charState['$']=CharState.LEGAL;
-        __charState['%']=CharState.LEGAL;
-        __charState['&']=CharState.LEGAL;
-        __charState['\'']=CharState.LEGAL;
-        __charState['*']=CharState.LEGAL;
-        __charState['+']=CharState.LEGAL;
-        __charState['-']=CharState.LEGAL;
-        __charState['.']=CharState.LEGAL;
-        __charState['^']=CharState.LEGAL;
-        __charState['_']=CharState.LEGAL;
-        __charState['`']=CharState.LEGAL;
-        __charState['|']=CharState.LEGAL;
-        __charState['~']=CharState.LEGAL;
+        TOKEN_CHAR['!']=CharState.LEGAL;
+        TOKEN_CHAR['#']=CharState.LEGAL;
+        TOKEN_CHAR['$']=CharState.LEGAL;
+        TOKEN_CHAR['%']=CharState.LEGAL;
+        TOKEN_CHAR['&']=CharState.LEGAL;
+        TOKEN_CHAR['\'']=CharState.LEGAL;
+        TOKEN_CHAR['*']=CharState.LEGAL;
+        TOKEN_CHAR['+']=CharState.LEGAL;
+        TOKEN_CHAR['-']=CharState.LEGAL;
+        TOKEN_CHAR['.']=CharState.LEGAL;
+        TOKEN_CHAR['^']=CharState.LEGAL;
+        TOKEN_CHAR['_']=CharState.LEGAL;
+        TOKEN_CHAR['`']=CharState.LEGAL;
+        TOKEN_CHAR['|']=CharState.LEGAL;
+        TOKEN_CHAR['~']=CharState.LEGAL;
 
-        __charState['"']=CharState.LEGAL;
+        TOKEN_CHAR['"']=CharState.LEGAL;
 
-        __charState['\\']=CharState.LEGAL;
-        __charState['(']=CharState.LEGAL;
-        __charState[')']=CharState.LEGAL;
-        Arrays.fill(__charState,0x21,0x27+1,CharState.LEGAL);
-        Arrays.fill(__charState,0x2A,0x5B+1,CharState.LEGAL);
-        Arrays.fill(__charState,0x5D,0x7E+1,CharState.LEGAL);
-        Arrays.fill(__charState,0x80,0xFF+1,CharState.LEGAL);
+        TOKEN_CHAR['\\']=CharState.LEGAL;
+        TOKEN_CHAR['(']=CharState.LEGAL;
+        TOKEN_CHAR[')']=CharState.LEGAL;
+        Arrays.fill(TOKEN_CHAR,0x21,0x27+1,CharState.LEGAL);
+        Arrays.fill(TOKEN_CHAR,0x2A,0x5B+1,CharState.LEGAL);
+        Arrays.fill(TOKEN_CHAR,0x5D,0x7E+1,CharState.LEGAL);
+        Arrays.fill(TOKEN_CHAR,0x80,0xFF+1,CharState.LEGAL);
 
     }
 
@@ -502,7 +502,7 @@ public class HttpParser
     {
         byte ch = buffer.get();
 
-        CharState s = __charState[0xff & ch];
+        CharState s = TOKEN_CHAR[0xff & ch];
         switch(s)
         {
             case ILLEGAL:
