@@ -6,6 +6,7 @@
   <groupId>org.eclipse.jetty.its.jetty-deploy-war-mojo-it</groupId>
   <artifactId>jetty-simple-project</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  <packaging>jar</packaging>
 
   <name>Jetty :: Simple deploy war mojo test</name>
 
@@ -61,7 +62,7 @@
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
           </systemPropertyVariables>
           <includes>
-            <include>**/*TestHelloServlet*</include>
+            <include>**/*TestGetContent*</include>
           </includes>
         </configuration>
         <executions>
@@ -91,6 +92,9 @@
               <goal>deploy-war</goal>
             </goals>
             <configuration>
+              <supportedPackagings>
+                <supportedPackaging>pom</supportedPackaging>
+              </supportedPackagings>
               <war>${project.build.directory}/bean-validation-webapp-2.25.1.war</war>
               <nonBlocking>true</nonBlocking>
               <systemProperties>
