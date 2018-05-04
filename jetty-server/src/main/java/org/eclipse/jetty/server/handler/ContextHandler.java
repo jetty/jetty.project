@@ -76,6 +76,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
@@ -402,30 +403,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void addVirtualHosts(String[] virtualHosts)
     {
-        if (virtualHosts == null) // since this is add, we don't null the old ones
-        {
+        if (virtualHosts == null || virtualHosts.length==0) // since this is add, we don't null the old ones
             return;
+
+        if (_vhosts==null)
+        {
+            setVirtualHosts(virtualHosts);
         }
         else
         {
-            List<String> currentVirtualHosts = null;
-            if (_vhosts != null)
-            {
-                currentVirtualHosts = new ArrayList<String>(Arrays.asList(getVirtualHosts()));
-            }
-            else
-            {
-                currentVirtualHosts = new ArrayList<String>();
-            }
-
-            for (int i = 0; i < virtualHosts.length; i++)
-            {
-                String normVhost = normalizeHostname(virtualHosts[i]);
-                if (!currentVirtualHosts.contains(normVhost))
-                {
-                    currentVirtualHosts.add(normVhost);
-                }
-            }
+            Set<String> currentVirtualHosts = new HashSet<String>(Arrays.asList(getVirtualHosts()));
+            for (String vh : virtualHosts)
+                currentVirtualHosts.add(normalizeHostname(vh));
             setVirtualHosts(currentVirtualHosts.toArray(new String[0]));
         }
     }
@@ -444,36 +433,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void removeVirtualHosts(String[] virtualHosts)
     {
-        if (virtualHosts == null)
-        {
+        if (virtualHosts == null || virtualHosts.length==0 || _vhosts == null || _vhosts.length == 0)
             return; // do nothing
-        }
-        else if (_vhosts == null || _vhosts.length == 0)
-        {
-            return; // do nothing
-        }
+
+        Set<String> existingVirtualHosts = new HashSet<String>(Arrays.asList(getVirtualHosts()));
+        for (String vh : virtualHosts)
+            existingVirtualHosts.remove(normalizeHostname(vh));
+        if (existingVirtualHosts.isEmpty())
+            setVirtualHosts(null); // if we ended up removing them all, just null out _vhosts
         else
-        {
-            List<String> existingVirtualHosts = new ArrayList<String>(Arrays.asList(getVirtualHosts()));
-
-            for (int i = 0; i < virtualHosts.length; i++)
-            {
-                String toRemoveVirtualHost = normalizeHostname(virtualHosts[i]);
-                if (existingVirtualHosts.contains(toRemoveVirtualHost))
-                {
-                    existingVirtualHosts.remove(toRemoveVirtualHost);
-                }
-            }
-
-            if (existingVirtualHosts.isEmpty())
-            {
-                setVirtualHosts(null); // if we ended up removing them all, just null out _vhosts
-            }
-            else
-            {
-                setVirtualHosts(existingVirtualHosts.toArray(new String[0]));
-            }
-        }
+            setVirtualHosts(existingVirtualHosts.toArray(new String[0]));
     }
 
     /* ------------------------------------------------------------ */
@@ -500,14 +469,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             StringBuilder sb = new StringBuilder();
             if (_vhostswildcard[i])
-                sb.append("*.");
+                sb.append("*");
             if (_vhosts[i] != null)
                 sb.append(_vhosts[i]);
             if (_vconnectors[i] != null)
                 sb.append("@").append(_vconnectors[i]);
             vhosts[i] = sb.toString();
         }
-        return _vhosts;
+        return vhosts;
     }
 
     /* ------------------------------------------------------------ */
@@ -1052,46 +1021,46 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     public boolean checkVirtualHost(final Request baseRequest)
     {
-        boolean match = false;
+        if (_vhosts == null || _vhosts.length == 0)
+            return true;
 
-        if (_vhosts != null && _vhosts.length > 0)
+        String vhost = normalizeHostname(baseRequest.getServerName());
+        String connectorName = baseRequest.getHttpChannel().getConnector().getName();
+
+        for (int i = 0; i < _vhosts.length; i++)
         {
-            String vhost = normalizeHostname(baseRequest.getServerName());
-            String connectorName = baseRequest.getHttpChannel().getConnector().getName();
+            String contextVhost = _vhosts[i];
+            String contextVConnector = _vconnectors[i];
 
-            for (int i = 0; i < _vhosts.length; i++)
+            if (contextVConnector!=null)
             {
-                String contextVhost = _vhosts[i];
-                String contextVConnector = _vconnectors[i];
-
-                boolean connectorMatch = contextVConnector == null || contextVConnector.equalsIgnoreCase(connectorName);
-
-                if (contextVhost == null)
-                {
-                    if (connectorMatch && contextVConnector != null)
-                        return true;
-                    else
-                        continue;
-                }
-                else if (!connectorMatch)
+                if (!contextVConnector.equalsIgnoreCase(connectorName))
                     continue;
-
+           
+                if (contextVhost==null) 
+                {
+                    return true;
+                }
+            }   
+                
+            if (contextVhost!=null)
+            {
                 if (_vhostswildcard[i])
                 {
                     // wildcard only at the beginning, and only for one additional subdomain level
                     int index = vhost.indexOf(".");
-                    if (index >= 0)
-                        match = vhost.substring(index).equalsIgnoreCase(contextVhost);
+                    if (index >= 0 && vhost.substring(index).equalsIgnoreCase(contextVhost))
+                    {
+                        return true;
+                    }
                 }
-                else
-                    match = vhost.equalsIgnoreCase(contextVhost);
-
-                if (match)
-                    break;
+                else if (vhost.equalsIgnoreCase(contextVhost))
+                {
+                    return true;
+                }
             }
-            return match;
         }
-        return true;
+        return false;
     }
 
     /* ------------------------------------------------------------ */
@@ -1813,7 +1782,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
         b.append(getClass().getSimpleName()).append('@').append(Integer.toString(hashCode(),16));
-        b.append('{').append(getContextPath()).append(',').append(getBaseResource()).append(',').append(_availability);
+        b.append('{');
+        if (getDisplayName()!=null)
+            b.append(getDisplayName()).append(',');
+        b.append(getContextPath()).append(',').append(getBaseResource()).append(',').append(_availability);
 
         if (vhosts != null && vhosts.length > 0)
             b.append(',').append(vhosts[0]);
