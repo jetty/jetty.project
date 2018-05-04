@@ -318,12 +318,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * matching virtual host name.
      *
      * @param vhosts
-     *            Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
-     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed
-     *            with '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is
-     *            just '@connectorname' it will match if that connector was used but to match legacy behavior it will only check other '@connectorname' only
-     *            entries for matches. A warning will be logged and host entries will be removed if both host and connector entries are used.
-     * 
+      *            Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
+     *            representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
+     *            '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
+     *            '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
+     *            and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
+     *            entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
+     *            can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
      */
     public void setVirtualHosts(String[] vhosts)
     {
@@ -336,19 +337,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
 
             boolean hostMatch = false;
-
+            boolean connectorHostMatch = false;
             _vhosts = new String[vhosts.length];
             _vconnectors = new String[vhosts.length];
             _vhostswildcard = new boolean[vhosts.length];
             ArrayList<Integer> connectorOnlyIndexes = null;
             for (int i = 0; i < vhosts.length; i++)
             {
+                boolean connectorMatch = false;
                 _vhosts[i] = vhosts[i];
                 if (vhosts[i] == null)
                     continue;
                 int connectorIndex = _vhosts[i].indexOf('@');
                 if (connectorIndex >= 0)
                 {
+                    connectorMatch = true;
                     _vconnectors[i] = _vhosts[i].substring(connectorIndex + 1);
                     _vhosts[i] = _vhosts[i].substring(0,connectorIndex);
                     if (connectorIndex == 0)
@@ -367,16 +370,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (_vhosts[i].isEmpty())
                     _vhosts[i] = null;
                 else
+                {
                     hostMatch = true;
-
+                    connectorHostMatch = connectorHostMatch || connectorMatch;
+                }
                 _vhosts[i] = normalizeHostname(_vhosts[i]);
             }
 
-            if (connectorOnlyIndexes != null && hostMatch)
+            if (connectorOnlyIndexes != null && hostMatch && !connectorHostMatch)
             {
                 LOG.warn(
-                        "ContextHandler {} has a connector only entry e.g. \"@connector\" and one or more host entries. \n"
-                                + "The host entries will be ignored.  To clear this warning remove host entries or Use host@connector syntax to match a host for an specific connector",
+                        "ContextHandler {} has a connector only entry e.g. \"@connector\" and one or more host only entries. \n"
+                                + "The host entries will be ignored to match legacy behavior.  To clear this warning remove the host entries or update to us at least one host@connector syntax entry that will match a host for an specific connector",
                         Arrays.asList(vhosts));
                 String[] filteredHosts = new String[connectorOnlyIndexes.size()];
                 for (int i = 0; i < connectorOnlyIndexes.size(); i++)
@@ -394,12 +399,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * Either set virtual hosts or add to an existing set of virtual hosts.
      *
      * @param virtualHosts
-     *            Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
-     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed
-     *            with '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is
-     *            just '@connectorname' it will match if that connector was used but to match legacy behavior it will only check other '@connectorname' only
-     *            entries for matches. A warning will be logged and host entries will be removed if both host and connector entries are used.
-     * 
+     *            Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
+     *            representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
+     *            '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
+     *            '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
+     *            and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
+     *            entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
+     *            can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
      */
     public void addVirtualHosts(String[] virtualHosts)
     {
@@ -424,12 +430,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * Removes an array of virtual host entries, if this removes all entries the _vhosts will be set to null
      *
      * @param virtualHosts
-     *            Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
-     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed
-     *            with '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is
-     *            just '@connectorname' it will match if that connector was used but to match legacy behavior it will only check other '@connectorname' only
-     *            entries for matches. A warning will be logged and host entries will be removed if both host and connector entries are used.
-     * 
+     *            Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
+     *            representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
+     *            '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
+     *            '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
+     *            and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
+     *            entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
+     *            can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
      */
     public void removeVirtualHosts(String[] virtualHosts)
     {
@@ -451,12 +458,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * virtual host name. A context with no virtual host names or a null virtual host name is available to all requests that are not served by a context with a
      * matching virtual host name.
      *
-     * @return Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
-     *         String representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed
-     *         with '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is
-     *         just '@connectorname' it will match if that connector was used but to match legacy behavior it will only check other '@connectorname' only
-     *         entries for matches. A warning will be logged and host entries will be removed if both host and connector entries are used.
-     * 
+     * @return    Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
+     *            representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
+     *            '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
+     *            '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
+     *            and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
+     *            entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
+     *            can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
      */
     @ManagedAttribute(value = "Virtual hosts accepted by the context", readonly = true)
     public String[] getVirtualHosts()
