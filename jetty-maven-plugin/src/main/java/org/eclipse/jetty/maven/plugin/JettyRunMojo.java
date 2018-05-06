@@ -156,14 +156,10 @@ public class JettyRunMojo extends AbstractJettyMojo
      * List of deps that are wars
      */
     protected List<Artifact> warArtifacts;
-    
-    
+
     protected Resource originalBaseResource;
 
-    @Parameter(defaultValue = "${reactorProjects}", readonly = true, required = true)
-    private List<MavenProject> reactorProjects;
-
-    /** 
+     /**
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
      */
     @Override
