@@ -123,31 +123,6 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
             //expected exception
         }
     }
-    
-    
-    /** 
-     * This test currently won't work for Hazelcast - there is currently no
-     * means to query it to find sessions that have expired.
-     * 
-     */
-    @Override
-    public void testGetExpiredPersistedAndExpiredOnly() throws Exception
-    {
-        //ignore
-    }
-
-    
-    
-
-    /** 
-     * This test currently won't work for Hazelcast - there is currently no
-     * means to query it to find sessions that have expired.
-     */
-    @Override
-    public void testGetExpiredDifferentNode() throws Exception
-    {
-        //ignore
-    }
 
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception

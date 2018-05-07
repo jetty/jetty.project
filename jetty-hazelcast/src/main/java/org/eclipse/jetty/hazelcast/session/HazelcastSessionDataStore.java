@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -64,8 +65,9 @@ public class HazelcastSessionDataStore
             try
             {
                 if (LOG.isDebugEnabled())
+                {
                     LOG.debug( "Loading session {} from hazelcast", id );
-
+                }
                 SessionData sd = sessionDataMap.get( getCacheKey( id ) );
                 reference.set(sd);
             }
@@ -122,65 +124,70 @@ public class HazelcastSessionDataStore
     @Override
     public Set<String> doGetExpired( Set<String> candidates )
     {
-        if (candidates == null || candidates.isEmpty())
-        {
-            return Collections.emptySet();
-        }
+        Set<String> expired = new HashSet<>();
         
         long now = System.currentTimeMillis();
-        return candidates.stream().filter( candidate -> {
+        expired.addAll( sessionDataMap.values( mapEntry ->  {
+            SessionData sessionData = (SessionData) mapEntry.getValue();
+            if (_context.getWorkerName().equals(sessionData.getLastNode()))
+            {
+                //we are its manager, add it to the expired set if it is expired now
+                if ((sessionData.getExpiry() > 0 ) && sessionData.getExpiry() <= now)
+                {
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug( "Session {} managed by {} is expired", sessionData.getId(), _context.getWorkerName() );
+                    }
+                    return true;
+                }
+            }
+            else
+            {
+                //if we are not the session's manager, only expire it iff:
+                // this is our first expiryCheck and the session expired a long time ago
+                //or
+                //the session expired at least one graceperiod ago
+                if (_lastExpiryCheckTime <=0)
+                {
+                    if ((sessionData.getExpiry() > 0 ) && sessionData.getExpiry() < (now - (1000L * (3 * _gracePeriodSec))))
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    if ((sessionData.getExpiry() > 0 ) && sessionData.getExpiry() < (now - (1000L * _gracePeriodSec)))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } ).stream().map( sessionData -> sessionData.getId() ).collect( Collectors.toSet()));
+
+        //check candidates that were not found to be expired, definitely they no longer exist and they should be expired
+
+        expired.addAll( candidates.stream().filter( candidate -> {
             
             if (LOG.isDebugEnabled())
+            {
                 LOG.debug( "Checking expiry for candidate {}", candidate );
-            
+            }
+            if(expired.contains( candidate ))
+            {
+                return false;
+            }
             try
             {
-                SessionData sd = load(candidate);
-
+                boolean hasCandidate = sessionDataMap.containsKey( getCacheKey( candidate ) );
                 //if the session no longer exists
-                if (sd == null)
+                if(!hasCandidate)
                 {
                     if (LOG.isDebugEnabled())
                     {
                         LOG.debug( "Session {} does not exist in Hazelcast", candidate );
                     }
                     return true;
-                }
-                else
-                {
-                    if (_context.getWorkerName().equals(sd.getLastNode()))
-                    {
-                        //we are its manager, add it to the expired set if it is expired now
-                        if ((sd.getExpiry() > 0 ) && sd.getExpiry() <= now)
-                        {
-                            if (LOG.isDebugEnabled())
-                            {
-                                LOG.debug( "Session {} managed by {} is expired", candidate, _context.getWorkerName() );
-                            }
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        //if we are not the session's manager, only expire it iff:
-                        // this is our first expiryCheck and the session expired a long time ago
-                        //or
-                        //the session expired at least one graceperiod ago
-                        if (_lastExpiryCheckTime <=0)
-                        {
-                            if ((sd.getExpiry() > 0 ) && sd.getExpiry() < (now - (1000L * (3 * _gracePeriodSec))))
-                            {
-                                return true;
-                            }
-                        }
-                        else
-                        {
-                            if ((sd.getExpiry() > 0 ) && sd.getExpiry() < (now - (1000L * _gracePeriodSec)))
-                            {
-                                return true;
-                            }
-                        }
-                    }
                 }
             }
             catch (Exception e)
@@ -189,7 +196,9 @@ public class HazelcastSessionDataStore
                 return true;
             }
             return false;
-        } ).collect( Collectors.toSet() );
+        } ).collect(Collectors.toSet()));
+
+        return expired;
     }
 
     @Override
