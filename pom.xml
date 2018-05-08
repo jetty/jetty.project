@@ -1461,6 +1461,30 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>8u171</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_121</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.12.v20180117</alpn.version>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <!-- Required for Java 8u121 or later -->
+              <additionalparam>&#45;&#45;allow-script-in-comments</additionalparam>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
   <issueManagement>

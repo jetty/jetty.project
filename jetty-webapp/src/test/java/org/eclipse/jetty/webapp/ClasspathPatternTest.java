@@ -33,10 +33,12 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import sun.security.provider.Sun;
 
+@Ignore
 public class ClasspathPatternTest
 {
     private final ClasspathPattern _pattern = new ClasspathPattern();

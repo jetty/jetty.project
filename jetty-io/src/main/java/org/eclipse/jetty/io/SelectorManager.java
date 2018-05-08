@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
@@ -27,14 +27,21 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
 
+import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 
 /**
  * <p>{@link SelectorManager} manages a number of {@link ManagedSelector}s that
@@ -42,6 +49,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <p>{@link SelectorManager} subclasses implement methods to return protocol-specific
  * {@link EndPoint}s and {@link Connection}s.</p>
  */
+
+@ManagedObject("Manager of the NIO Selectors")
 public abstract class SelectorManager extends ContainerLifeCycle implements Dumpable
 {
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
@@ -50,28 +59,50 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final Executor executor;
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
+    private final AtomicInteger _selectorIndex = new AtomicInteger();
+    private final IntUnaryOperator _selectorIndexUpdate;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-    private long _selectorIndex;
+    private ThreadPoolBudget.Lease _lease;
 
+    private static int defaultSelectors(Executor executor)
+    {
+        if (executor instanceof ThreadPool.SizedThreadPool)
+        {
+            int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
+            int cpus = ProcessorUtils.availableProcessors();
+            return Math.max(1,Math.min(cpus/2,threads/16));
+        }
+        return Math.max(1,ProcessorUtils.availableProcessors()/2);
+    }
+    
     protected SelectorManager(Executor executor, Scheduler scheduler)
     {
-        this(executor, scheduler, (Runtime.getRuntime().availableProcessors() + 1) / 2);
+        this(executor, scheduler, -1);
     }
 
+    /**
+     * @param executor The executor to use for handling selected {@link EndPoint}s
+     * @param scheduler The scheduler to use for timing events
+     * @param selectors The number of selectors to use, or -1 for a default derived
+     * from a heuristic over available CPUs and thread pool size. 
+     */
     protected SelectorManager(Executor executor, Scheduler scheduler, int selectors)
     {
         if (selectors <= 0)
-            throw new IllegalArgumentException("No selectors");
+            selectors = defaultSelectors(executor);
         this.executor = executor;
         this.scheduler = scheduler;
         _selectors = new ManagedSelector[selectors];
+        _selectorIndexUpdate = index -> (index+1)%_selectors.length;
     }
 
+    @ManagedAttribute("The Executor")
     public Executor getExecutor()
     {
         return executor;
     }
 
+    @ManagedAttribute("The Scheduler")
     public Scheduler getScheduler()
     {
         return scheduler;
@@ -82,6 +113,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      *
      * @return the connect timeout (in milliseconds)
      */
+    @ManagedAttribute("The Connection timeout (ms)")
     public long getConnectTimeout()
     {
         return _connectTimeout;
@@ -98,6 +130,26 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     }
 
     /**
+     * @return -1
+     * @deprecated
+     */
+    @Deprecated
+    public int getReservedThreads()
+    {
+        return -1;
+    }
+
+    /**
+     * @param threads ignored
+     * @deprecated
+     */
+    @Deprecated
+    public void setReservedThreads(int threads)
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+    /**
      * Executes the given task in a different thread.
      *
      * @param task the task to execute
@@ -110,53 +162,15 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     /**
      * @return the number of selectors in use
      */
+    @ManagedAttribute("The number of NIO Selectors")
     public int getSelectorCount()
     {
         return _selectors.length;
     }
 
-    private ManagedSelector chooseSelector(SelectableChannel channel)
+    private ManagedSelector chooseSelector()
     {
-        // Ideally we would like to have all connections from the same client end
-        // up on the same selector (to try to avoid smearing the data from a single
-        // client over all cores), but because of proxies, the remote address may not
-        // really be the client - so we have to hedge our bets to ensure that all
-        // channels don't end up on the one selector for a proxy.
-        ManagedSelector candidate1 = null;
-        if (channel != null)
-        {
-            try
-            {
-                if (channel instanceof SocketChannel)
-                {
-                    SocketAddress remote = ((SocketChannel)channel).getRemoteAddress();
-                    if (remote instanceof InetSocketAddress)
-                    {
-                        byte[] addr = ((InetSocketAddress)remote).getAddress().getAddress();
-                        if (addr != null)
-                        {
-                            int s = addr[addr.length - 1] & 0xFF;
-                            candidate1 = _selectors[s % getSelectorCount()];
-                        }
-                    }
-                }
-            }
-            catch (IOException x)
-            {
-                LOG.ignore(x);
-            }
-        }
-
-        // The ++ increment here is not atomic, but it does not matter,
-        // so long as the value changes sometimes, then connections will
-        // be distributed over the available selectors.
-        long s = _selectorIndex++;
-        int index = (int)(s % getSelectorCount());
-        ManagedSelector candidate2 = _selectors[index];
-
-        if (candidate1 == null || candidate1.size() >= candidate2.size() * 2)
-            return candidate2;
-        return candidate1;
+        return _selectors[_selectorIndex.updateAndGet(_selectorIndexUpdate)];
     }
 
     /**
@@ -171,7 +185,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public void connect(SelectableChannel channel, Object attachment)
     {
-        ManagedSelector set = chooseSelector(channel);
+        ManagedSelector set = chooseSelector();
         set.submit(set.new Connect(channel, attachment));
     }
 
@@ -196,7 +210,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public void accept(SelectableChannel channel, Object attachment)
     {
-        final ManagedSelector selector = chooseSelector(channel);
+        final ManagedSelector selector = chooseSelector();
         selector.submit(selector.new Accept(channel, attachment));
     }
 
@@ -207,11 +221,14 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * overridden by a derivation of this class to handle the accepted channel
      *
      * @param server the server channel to register
+     * @return A Closable that allows the acceptor to be cancelled
      */
-    public void acceptor(SelectableChannel server)
+    public Closeable acceptor(SelectableChannel server)
     {
-        final ManagedSelector selector = chooseSelector(null);
-        selector.submit(selector.new Acceptor(server));
+        final ManagedSelector selector = chooseSelector();
+        ManagedSelector.Acceptor acceptor = selector.new Acceptor(server);
+        selector.submit(acceptor);
+        return acceptor;
     }
 
     /**
@@ -231,6 +248,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     protected void doStart() throws Exception
     {
+        _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _selectors.length);
         for (int i = 0; i < _selectors.length; i++)
         {
             ManagedSelector selector = newSelector(i);
@@ -254,9 +272,22 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     protected void doStop() throws Exception
     {
-        super.doStop();
-        for (ManagedSelector selector : _selectors)
-            removeBean(selector);
+        try
+        {
+            super.doStop();
+        }
+        finally
+        {
+            // Cleanup
+            for (ManagedSelector selector : _selectors)
+            {
+                if (selector!=null)
+                    removeBean(selector);
+            }
+            Arrays.fill(_selectors,null);
+            if (_lease != null)
+                _lease.close();
+        }
     }
 
     /**
@@ -373,4 +404,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * @throws IOException if unable to create new connection
      */
     public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException;
+
+
 }
