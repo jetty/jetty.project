@@ -90,6 +90,9 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
+                echo "jdk $jdk"
+                sh "ls -lsR $JAVA_HOME/bin/java"
+                sh "$JAVA_HOME/bin/java -version"
                 sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -e -Pmongodb -T3"
               }
               // withMaven doesn't label..
