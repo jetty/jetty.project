@@ -50,7 +50,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -82,7 +81,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and copy the content back
@@ -116,7 +115,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and copy the content back
@@ -170,7 +169,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.sendError(error);
@@ -209,7 +208,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 if (request.getRequestURI().endsWith("/done"))
@@ -257,7 +256,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 if (request.getRequestURI().endsWith("/done"))
@@ -297,7 +296,6 @@ public class HttpClientContinueTest extends AbstractTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Slow
     @Test
     public void test_Expect100Continue_WithContent_WithResponseFailure_Before100Continue() throws Exception
     {
@@ -305,7 +303,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 baseRequest.setHandled(true);
                 try
@@ -341,7 +339,6 @@ public class HttpClientContinueTest extends AbstractTest
         Assert.assertTrue(latch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
-    @Slow
     @Test
     public void test_Expect100Continue_WithContent_WithResponseFailure_After100Continue() throws Exception
     {
@@ -393,7 +390,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and consume the content
@@ -445,14 +442,13 @@ public class HttpClientContinueTest extends AbstractTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Slow
     @Test
     public void test_Expect100Continue_WithDeferredContent_Respond100Continue() throws Exception
     {
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
@@ -493,14 +489,13 @@ public class HttpClientContinueTest extends AbstractTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Slow
     @Test
     public void test_Expect100Continue_WithInitialAndDeferredContent_Respond100Continue() throws Exception
     {
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
@@ -543,7 +538,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
@@ -582,7 +577,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
@@ -708,7 +703,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 jettyRequest.setHandled(true);
                 // Force a 100 Continue response.

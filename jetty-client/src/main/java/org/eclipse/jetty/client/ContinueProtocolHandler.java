@@ -87,28 +87,22 @@ public class ContinueProtocolHandler implements ProtocolHandler
             conversation.updateResponseListeners(null);
 
             HttpExchange exchange = conversation.getExchanges().peekLast();
-            assert exchange.getResponse() == response;
-            switch (response.getStatus())
+            if (response.getStatus() == HttpStatus.CONTINUE_100)
             {
-                case 100:
-                {
-                    // All good, continue
-                    exchange.resetResponse();
-                    exchange.proceed(null);
-                    onContinue(request);
-                    break;
-                }
-                default:
-                {
-                    // Server either does not support 100 Continue,
-                    // or it does and wants to refuse the request content,
-                    // or we got some other HTTP status code like a redirect.
-                    List<Response.ResponseListener> listeners = exchange.getResponseListeners();
-                    HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
-                    notifier.forwardSuccess(listeners, contentResponse);
-                    exchange.proceed(new HttpRequestException("Expectation failed", request));
-                    break;
-                }
+                // All good, continue.
+                exchange.resetResponse();
+                exchange.proceed(null);
+                onContinue(request);
+            }
+            else
+            {
+                // Server either does not support 100 Continue,
+                // or it does and wants to refuse the request content,
+                // or we got some other HTTP status code like a redirect.
+                List<Response.ResponseListener> listeners = exchange.getResponseListeners();
+                HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
+                notifier.forwardSuccess(listeners, contentResponse);
+                exchange.proceed(new HttpRequestException("Expectation failed", request));
             }
         }
 
