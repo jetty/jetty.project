@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -78,7 +79,9 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
         context1.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionListener listener = new TestHttpSessionListener();
         context1.getSessionHandler().addEventListener(listener);
-
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        context1.addEventListener(scopeListener);
+        
 
         try
         {
@@ -93,13 +96,19 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
 
 
                 // Create the session
+                CountDownLatch latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 ContentResponse response1 = client.GET(url + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
+                
+                //ensure request fully finished processing
+                latch.await(5, TimeUnit.SECONDS);
+                
+                //test session was created
                 SessionHandler m1 = context1.getSessionHandler();
                 assertEquals(1,  m1.getSessionsCreated());
-
 
                 // Wait a while to ensure that the session should have expired, if the
                 //scavenger was running
@@ -146,6 +155,8 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
         TestServer server = new TestServer(0, maxInactivePeriod, scavengePeriod,
                                            cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        context.addEventListener(scopeListener);
         _dataStore = context.getSessionHandler().getSessionCache().getSessionDataStore();
 
         context.addServlet(TestServlet.class, servletMapping);
@@ -159,11 +170,16 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
             client.start();
             try
             {
+                CountDownLatch latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-
+                
+                //ensure request fully finished processing
+                latch.await(5, TimeUnit.SECONDS);
+                
                 // Let's wait for the scavenger to run
                 pause(maxInactivePeriod + scavengePeriod);
                 
@@ -203,6 +219,8 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
         TestServer server = new TestServer(0, maxInactivePeriod, scavengePeriod,
                                                            cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        context.addEventListener(scopeListener);
         _dataStore = context.getSessionHandler().getSessionCache().getSessionDataStore();
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "/";
@@ -216,11 +234,16 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
             try
             {
                 //create an immortal session
+                CountDownLatch latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-
+                
+                //ensure request fully finished processing
+                latch.await(5, TimeUnit.SECONDS);
+                
                 // Let's wait for the scavenger to run
                 pause(2*scavengePeriod);
                 

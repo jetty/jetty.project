@@ -56,6 +56,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         public String version;
         public String type;
         public String classifier;
+        private String mavenRepoUri = "https://central.maven.org/maven2/";
 
         public String toPath()
         {
@@ -75,12 +76,13 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
 
         public URI toCentralURI()
         {
-            return URI.create("http://central.maven.org/maven2/" + toPath());
+            return URI.create( mavenRepoUri + toPath());
         }
     }
 
     private Path localRepositoryDir;
     private final boolean readonly;
+    private String mavenRepoUri;
 
     public MavenLocalRepoFileInitializer(BaseHome baseHome)
     {
@@ -92,6 +94,14 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         super(baseHome,"maven");
         this.localRepositoryDir = localRepoDir;
         this.readonly = readonly;
+    }
+
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly, String mavenRepoUri )
+    {
+        super(baseHome,"maven");
+        this.localRepositoryDir = localRepoDir;
+        this.readonly = readonly;
+        this.mavenRepoUri = mavenRepoUri;
     }
 
     @Override
@@ -185,6 +195,13 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         coords.version = parts[2];
         coords.type = "jar";
         coords.classifier = null;
+        if (this.mavenRepoUri != null)
+        {
+            coords.mavenRepoUri = this.mavenRepoUri;
+        } else
+        {
+            coords.mavenRepoUri = System.getProperty( "maven.repo.uri", coords.mavenRepoUri );
+        }
 
         if (parts.length >= 4)
         {

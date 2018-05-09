@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -107,6 +108,7 @@ public class CloseTest extends AbstractServerTest
                     }
                 }
             }, 4096, 8192);
+            parser.init(UnaryOperator.identity());
 
             parseResponse(client, parser);
 
@@ -163,6 +165,7 @@ public class CloseTest extends AbstractServerTest
                     responseLatch.countDown();
                 }
             }, 4096, 8192);
+            parser.init(UnaryOperator.identity());
 
             parseResponse(client, parser);
 
@@ -231,6 +234,7 @@ public class CloseTest extends AbstractServerTest
                     closeLatch.countDown();
                 }
             }, 4096, 8192);
+            parser.init(UnaryOperator.identity());
 
             parseResponse(client, parser);
 

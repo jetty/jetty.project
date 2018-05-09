@@ -57,6 +57,7 @@ import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -216,7 +217,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     }
 
     @Override
-    public void onData(final DataFrame frame)
+    public void onData(DataFrame frame)
+    {
+        onData(frame, Callback.NOOP);
+    }
+
+    @Override
+    public void onData(final DataFrame frame, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -233,39 +240,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             if (getRecvWindow() < 0)
             {
-                close(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", Callback.NOOP);
+                close(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", callback);
             }
             else
             {
-                stream.process(frame, new Callback()
-                {
-                    @Override
-                    public void succeeded()
-                    {
-                        complete();
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        // Consume also in case of failures, to free the
-                        // session flow control window for other streams.
-                        complete();
-                    }
-
-                    @Override
-                    public InvocationType getInvocationType()
-                    {
-                        return InvocationType.NON_BLOCKING;
-                    }
-
-                    private void complete()
-                    {
-                        notIdle();
-                        stream.notIdle();
-                        flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
-                    }
-                });
+                stream.process(frame, new DataCallback(callback, stream, flowControlLength));
             }
         }
         else
@@ -275,6 +254,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             // We must enlarge the session flow control window,
             // otherwise other requests will be stalled.
             flowControl.onDataConsumed(this, null, flowControlLength);
+            callback.succeeded();
         }
     }
 
@@ -975,7 +955,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     {
     }
 
-    void onFlushed(long bytes) throws IOException
+    @Override
+    public void onFlushed(long bytes) throws IOException
     {
         flusher.onFlushed(bytes);
     }
@@ -1411,6 +1392,50 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         public void failed(Throwable x)
         {
             promise.failed(x);
+        }
+    }
+
+    private class DataCallback extends Callback.Nested implements Retainable
+    {
+        private final IStream stream;
+        private final int flowControlLength;
+
+        public DataCallback(Callback callback, IStream stream, int flowControlLength)
+        {
+            super(callback);
+            this.stream = stream;
+            this.flowControlLength = flowControlLength;
+        }
+
+        @Override
+        public void retain()
+        {
+            Callback callback = getCallback();
+            if (callback instanceof Retainable)
+                ((Retainable)callback).retain();
+        }
+
+        @Override
+        public void succeeded()
+        {
+            complete();
+            super.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            // Consume also in case of failures, to free the
+            // session flow control window for other streams.
+            complete();
+            super.failed(x);
+        }
+
+        private void complete()
+        {
+            notIdle();
+            stream.notIdle();
+            flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
         }
     }
 

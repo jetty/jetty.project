@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.List;
@@ -44,10 +43,9 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Retainable;
 
 public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listener
 {
@@ -152,23 +150,12 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         if (exchange == null)
         {
             callback.failed(new IOException("terminated"));
-            return;
         }
-
-        // We must copy the data since we do not know when the
-        // application will consume the bytes and the parsing
-        // will continue as soon as this method returns, eventually
-        // leading to reusing the underlying buffer for more reads.
-        ByteBufferPool byteBufferPool = getHttpDestination().getHttpClient().getByteBufferPool();
-        ByteBuffer original = frame.getData();
-        int length = original.remaining();
-        final ByteBuffer copy = byteBufferPool.acquire(length, original.isDirect());
-        BufferUtil.clearToFill(copy);
-        copy.put(original);
-        BufferUtil.flipToFlush(copy, 0);
-
-        contentNotifier.offer(new DataInfo(exchange, copy, callback, frame.isEndStream()));
-        contentNotifier.iterate();
+        else
+        {
+            contentNotifier.offer(new DataInfo(exchange, frame, callback));
+            contentNotifier.iterate();
+        }
     }
 
     @Override
@@ -190,7 +177,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         return true;
     }
 
-    private class ContentNotifier extends IteratingCallback
+    private class ContentNotifier extends IteratingCallback implements Retainable
     {
         private final Queue<DataInfo> queue = new ArrayDeque<>();
         private DataInfo dataInfo;
@@ -215,21 +202,27 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             if (dataInfo == null)
             {
                 DataInfo prevDataInfo = this.dataInfo;
-                if (prevDataInfo != null && prevDataInfo.last)
+                if (prevDataInfo != null && prevDataInfo.frame.isEndStream())
                     return Action.SUCCEEDED;
                 return Action.IDLE;
             }
 
             this.dataInfo = dataInfo;
-            responseContent(dataInfo.exchange, dataInfo.buffer, this);
+            responseContent(dataInfo.exchange, dataInfo.frame.getData(), this);
             return Action.SCHEDULED;
+        }
+
+        @Override
+        public void retain()
+        {
+            Callback callback = dataInfo.callback;
+            if (callback instanceof Retainable)
+                ((Retainable)callback).retain();
         }
 
         @Override
         public void succeeded()
         {
-            ByteBufferPool byteBufferPool = getHttpDestination().getHttpClient().getByteBufferPool();
-            byteBufferPool.release(dataInfo.buffer);
             dataInfo.callback.succeeded();
             super.succeeded();
         }
@@ -243,8 +236,6 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         @Override
         protected void onCompleteFailure(Throwable failure)
         {
-            ByteBufferPool byteBufferPool = getHttpDestination().getHttpClient().getByteBufferPool();
-            byteBufferPool.release(dataInfo.buffer);
             dataInfo.callback.failed(failure);
             responseFailure(failure);
         }
@@ -253,16 +244,14 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     private static class DataInfo
     {
         private final HttpExchange exchange;
-        private final ByteBuffer buffer;
+        private final DataFrame frame;
         private final Callback callback;
-        private final boolean last;
 
-        private DataInfo(HttpExchange exchange, ByteBuffer buffer, Callback callback, boolean last)
+        private DataInfo(HttpExchange exchange, DataFrame frame, Callback callback)
         {
             this.exchange = exchange;
-            this.buffer = buffer;
+            this.frame = frame;
             this.callback = callback;
-            this.last = last;
         }
     }
 }

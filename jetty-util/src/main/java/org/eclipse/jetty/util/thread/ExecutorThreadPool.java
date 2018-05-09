@@ -389,7 +389,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     @Override
     public String toString()
     {
-        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,q=%d}",
+        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,q=%d,%s}",
                 getClass().getSimpleName(),
                 getName(),
                 hashCode(),
@@ -398,6 +398,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
                 getThreads(),
                 getMaxThreads(),
                 getIdleThreads(),
-                _executor.getQueue().size());
+                _executor.getQueue().size(),
+                _tryExecutor);
     }
 }

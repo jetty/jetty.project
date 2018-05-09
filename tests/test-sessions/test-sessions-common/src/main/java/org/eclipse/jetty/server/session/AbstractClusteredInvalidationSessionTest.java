@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -33,6 +35,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Test;
 
@@ -56,20 +59,27 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
         String servletMapping = "/server";
         int maxInactiveInterval = 30;
         int scavengeInterval = 1;
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
-        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();   
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengeInterval);
+        DefaultSessionCacheFactory cacheFactory1 = new DefaultSessionCacheFactory();
+        cacheFactory1.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+        SessionDataStoreFactory storeFactory1 = createSessionDataStoreFactory();   
+        ((AbstractSessionDataStoreFactory)storeFactory1).setGracePeriodSec(scavengeInterval);
         
-        TestServer server1 = new TestServer(0, maxInactiveInterval, scavengeInterval, cacheFactory, storeFactory);
-        server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
-
+        TestServer server1 = new TestServer(0, maxInactiveInterval, scavengeInterval, cacheFactory1, storeFactory1);
+        ServletContextHandler context = server1.addContext(contextPath);
+        context.addServlet(TestServlet.class, servletMapping);
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        context.addEventListener(scopeListener);
 
         try
         {
             server1.start();
             int port1 = server1.getPort();
-            TestServer server2 = new TestServer(0, maxInactiveInterval, scavengeInterval, cacheFactory, storeFactory);
+            
+            DefaultSessionCacheFactory cacheFactory2 = new DefaultSessionCacheFactory();
+            cacheFactory2.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+            SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();   
+            ((AbstractSessionDataStoreFactory)storeFactory2).setGracePeriodSec(scavengeInterval);
+            TestServer server2 = new TestServer(0, maxInactiveInterval, scavengeInterval, cacheFactory2, storeFactory2);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
             try
@@ -88,6 +98,8 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
                     urls[1] = "http://localhost:" + port2 + contextPath + servletMapping.substring(1);
 
                     // Create the session on node1
+                    CountDownLatch latch = new CountDownLatch(1);
+                    scopeListener.setExitSynchronizer(latch);
                     ContentResponse response1 = client.GET(urls[0] + "?action=init");
 
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
@@ -96,16 +108,29 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
+                    //ensure request is fully finished processing
+                    latch.await(5, TimeUnit.SECONDS);
+                    
                     // Be sure the session is also present in node2
+                    latch = new CountDownLatch(1);
+                    scopeListener.setExitSynchronizer(latch);
                     Request request2 = client.newRequest(urls[1] + "?action=increment");
                     request2.header("Cookie", sessionCookie);
                     ContentResponse response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
+                    //ensure request is fully finished processing
+                    latch.await(5, TimeUnit.SECONDS);
+                    
                     // Invalidate on node1
+                    latch = new CountDownLatch(1);
+                    scopeListener.setExitSynchronizer(latch);
                     Request request1 = client.newRequest(urls[0] + "?action=invalidate");
                     response1 = request1.send();
-                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());         
+                    assertEquals(HttpServletResponse.SC_OK, response1.getStatus());  
+                    
+                    //ensure request is fully finished processing
+                    latch.await(5, TimeUnit.SECONDS);
 
                     // Be sure on node2 we don't see the session anymore
                     request2 = client.newRequest(urls[1] + "?action=test");

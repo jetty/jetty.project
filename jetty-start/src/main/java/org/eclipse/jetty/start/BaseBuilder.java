@@ -91,7 +91,9 @@ public class BaseBuilder
             if (localRepoDir != null)
             {
                 // Use provided local repo directory
-                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome,localRepoDir,args.getMavenLocalRepoDir()==null));
+                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome, localRepoDir,
+                                                                       args.getMavenLocalRepoDir()==null,
+                                                                       startArgs.getMavenBaseUri()));
             }
             else
             {
@@ -310,7 +312,7 @@ public class BaseBuilder
 
         boolean dirty = false;
 
-        List<String> failures = new ArrayList<String>();
+        List<String> failures = new ArrayList<>();
 
         for (FileArg arg : files)
         {

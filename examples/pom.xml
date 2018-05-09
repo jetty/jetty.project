@@ -4,13 +4,16 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.10-SNAPSHOT</version>
+    <version>9.4.11-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.examples</groupId>
   <artifactId>examples-parent</artifactId>
   <name>Jetty Examples :: Parent</name>
   <packaging>pom</packaging>
+  <properties>
+    <sonar.skip>true</sonar.skip>
+  </properties>
   <build>
     <plugins>
       <plugin>

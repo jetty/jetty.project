@@ -166,6 +166,7 @@ public class DefaultSessionCache extends AbstractSessionCache
                         LOG.warn(e);
                     }
                     doDelete (session.getId()); //remove from memory
+                    session.setResident(false);
                 }
                 else
                 {
@@ -222,6 +223,5 @@ public class DefaultSessionCache extends AbstractSessionCache
             _stats.increment();
         return result;
     }
-
 
 }

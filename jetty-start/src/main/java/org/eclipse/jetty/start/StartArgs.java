@@ -175,6 +175,7 @@ public class StartArgs
     private boolean dryRun = false;
     private boolean createStartd = false;
     private boolean updateIni = false;
+    private String mavenBaseUri;
 
     private boolean exec = false;
     private String exec_properties;
@@ -807,7 +808,12 @@ public class StartArgs
         return updateIni;
     }
 
-    public void parse(ConfigSources sources)
+    public String getMavenBaseUri()
+    {
+        return mavenBaseUri;
+    }
+
+    public void parse( ConfigSources sources)
     {
         ListIterator<ConfigSource> iter = sources.reverseListIterator();
         while (iter.hasPrevious())
@@ -1277,6 +1283,12 @@ public class StartArgs
                 ue.initCause(x);
                 throw ue;
             }
+        }
+
+        // to override default https://central.maven.org/maven2/
+        if (key.equals("maven.repo.uri"))
+        {
+            this.mavenBaseUri = value;
         }
     }
 
