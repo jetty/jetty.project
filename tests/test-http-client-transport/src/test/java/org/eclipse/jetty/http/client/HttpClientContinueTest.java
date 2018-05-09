@@ -657,18 +657,7 @@ public class HttpClientContinueTest extends AbstractTest
             try (Socket socket = server.accept())
             {
                 // Read the request headers.
-                InputStream input = socket.getInputStream();
-                int crlfs = 0;
-                while (true)
-                {
-                    int read = input.read();
-                    if (read == '\r' || read == '\n')
-                        ++crlfs;
-                    else
-                        crlfs = 0;
-                    if (crlfs == 4)
-                        break;
-                }
+                readRequestHeaders(socket.getInputStream());
 
                 OutputStream output = socket.getOutputStream();
                 String responses = "" +
@@ -722,5 +711,75 @@ public class HttpClientContinueTest extends AbstractTest
 
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         Assert.assertArrayEquals(bytes, response.getContent());
+    }
+
+    @Test
+    public void test_NoExpect_100Continue_ThenRedirect_Then100Continue_ThenResponse() throws Exception
+    {
+        Assume.assumeThat(transport, Matchers.is(Transport.HTTP));
+
+        startClient();
+        client.setMaxConnectionsPerDestination(1);
+
+        try (ServerSocket server = new ServerSocket())
+        {
+            server.bind(new InetSocketAddress("localhost", 0));
+
+            // No Expect header, no content.
+            CountDownLatch latch = new CountDownLatch(1);
+            client.newRequest("localhost", server.getLocalPort())
+                    .send(result ->
+                    {
+                        if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                            latch.countDown();
+                    });
+
+            try (Socket socket = server.accept())
+            {
+                InputStream input = socket.getInputStream();
+                OutputStream output = socket.getOutputStream();
+
+                readRequestHeaders(input);
+                String response1 = "" +
+                        "HTTP/1.1 100 Continue\r\n" +
+                        "\r\n" +
+                        "HTTP/1.1 303 See Other\r\n" +
+                        "Location: /redirect\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
+                output.write(response1.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                readRequestHeaders(input);
+                String response2 = "" +
+                        "HTTP/1.1 100 Continue\r\n" +
+                        "\r\n" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "Connection: close\r\n" +
+                        "\r\n";
+                output.write(response2.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+            }
+
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
+    }
+
+    private void readRequestHeaders(InputStream input) throws IOException
+    {
+        int crlfs = 0;
+        while (true)
+        {
+            int read = input.read();
+            if (read < 0)
+                break;
+            if (read == '\r' || read == '\n')
+                ++crlfs;
+            else
+                crlfs = 0;
+            if (crlfs == 4)
+                break;
+        }
     }
 }

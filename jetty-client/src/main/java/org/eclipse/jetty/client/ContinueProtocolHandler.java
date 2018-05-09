@@ -54,8 +54,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
     {
         boolean is100 = response.getStatus() == HttpStatus.CONTINUE_100;
         boolean expect100 = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
-        HttpConversation conversation = ((HttpRequest)request).getConversation();
-        boolean handled100 = conversation.getAttribute(ATTRIBUTE) != null;
+        boolean handled100 = request.getAttributes().containsKey(ATTRIBUTE);
         return (is100 || expect100) && !handled100;
     }
 
@@ -81,7 +80,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
             Request request = response.getRequest();
             HttpConversation conversation = ((HttpRequest)request).getConversation();
             // Mark the 100 Continue response as handled
-            conversation.setAttribute(ATTRIBUTE, Boolean.TRUE);
+            request.attribute(ATTRIBUTE, Boolean.TRUE);
 
             // Reset the conversation listeners, since we are going to receive another response code
             conversation.updateResponseListeners(null);
