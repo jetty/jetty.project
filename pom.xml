@@ -1886,8 +1886,8 @@
       </snapshots>
     </pluginRepository>
     <pluginRepository>
-      <id>oss.snapshots</id>
-      <name>OSS Snapshots</name>
+      <id>jetty.snapshots</id>
+      <name>Jetty Snapshots</name>
       <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
       <releases>
         <enabled>false</enabled>
