@@ -2,7 +2,11 @@
   <groupId>org.eclipse.jetty</groupId>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-bom</artifactId>
+<<<<<<< HEAD
   <version>9.4.12-SNAPSHOT</version>
+=======
+  <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
   <name>Jetty :: Bom</name>
   <description>Jetty BOM artifact</description>
   <url>http://www.eclipse.org/jetty</url>
@@ -94,331 +98,591 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>apache-jsp</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>apache-jstl</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-client</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-java-client</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-java-server</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-openjdk8-client</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-openjdk8-server</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-conscrypt-client</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-conscrypt-server</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-server</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-annotations</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-ant</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.cdi</groupId>
         <artifactId>cdi-core</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.cdi</groupId>
         <artifactId>cdi-servlet</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-client</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-continuation</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-deploy</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-distribution</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
         <type>zip</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-distribution</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
         <type>tar.gz</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
         <artifactId>fcgi-client</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
         <artifactId>fcgi-server</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.gcloud</groupId>
         <artifactId>jetty-gcloud-session-manager</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-home</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
         <type>zip</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-home</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
         <type>tar.gz</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-client</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-common</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-hpack</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-http-client-transport</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-server</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http-spi</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-infinispan</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-hazelcast</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-io</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jaas</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jaspi</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jmx</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jndi</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.memcached</groupId>
         <artifactId>jetty-memcached-sessions</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-nosql</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-osgi-boot</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-osgi-boot-jsp</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-osgi-boot-warurl</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-httpservice</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-plus</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-proxy</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-quickstart</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-rewrite</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-security</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlet</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlets</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-spring</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-unixsocket</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util-ajax</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-webapp</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>javax-websocket-client-impl</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>javax-websocket-server-impl</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-api</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-client</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-common</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-server</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-servlet</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-xml</artifactId>
+<<<<<<< HEAD
         <version>9.4.12-SNAPSHOT</version>
+=======
+        <version>${revision}</version>
+>>>>>>> use Maven revision property dynamic version
       </dependency>
     </dependencies>
   </dependencyManagement>

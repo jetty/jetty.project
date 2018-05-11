@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.12-SNAPSHOT</version>
+  <version>${revision}</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -34,6 +34,8 @@
     <mavenPluginToolsVersion>3.5.2</mavenPluginToolsVersion>
     <mavenVersion>3.5.0</mavenVersion>
     <unix.socket.tmp></unix.socket.tmp>
+    <src.dir>${basedir}/src/main/java</src.dir>
+    <revision>9.4.12-SNAPSHOT</revision>
   </properties>
 
   <licenses>
@@ -109,6 +111,7 @@
   </modules>
 
   <build>
+    <sourceDirectory>${src.dir}</sourceDirectory>
     <plugins>
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
@@ -388,6 +391,30 @@
             <phase>process-resources</phase>
             <goals>
               <goal>attach-version-text</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <version>1.0.0</version>
+        <configuration>
+          <updatePomFile>true</updatePomFile>
+        </configuration>
+        <executions>
+          <execution>
+            <id>flatten</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>flatten</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>flatten.clean</id>
+            <phase>clean</phase>
+            <goals>
+              <goal>clean</goal>
             </goals>
           </execution>
         </executions>
@@ -1045,6 +1072,30 @@
   </dependencyManagement>
 
   <profiles>
+    <profile>
+      <id>no-logger-debug</id>
+      <properties>
+        <src.dir>${project.build.directory}/modified-sources</src.dir>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eclipse.jetty.toolchain</groupId>
+            <artifactId>jetty-modify-sources-maven-plugin</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <executions>
+              <execution>
+                <id>remove-is-debug</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>remove-log-enabled</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <!-- use last snapshot of jacoco for jdk11 -->
     <profile>
       <id>jdk11</id>
@@ -1065,19 +1116,6 @@
           </plugins>
         </pluginManagement>
       </build>
-      <pluginRepositories>
-        <pluginRepository>
-          <id>oss.snapshots</id>
-          <name>OSS Snapshots</name>
-          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </pluginRepository>
-      </pluginRepositories>
     </profile>
     <profile>
       <id>errorprone</id>
@@ -1850,6 +1888,28 @@
     <pluginRepository>
       <id>apache.snapshots</id>
       <url>https://repository.apache.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>oss.snapshots</id>
+      <name>OSS Snapshots</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>jetty.snapshots</id>
+      <name>Jetty Snapshots</name>
+      <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
       <releases>
         <enabled>false</enabled>
       </releases>
