@@ -9,6 +9,7 @@ target/
 *.versionsBackup
 *.releaseBackup
 bin/
+.flattened-pom.xml
 
 # common junk
 *.log
