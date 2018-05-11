@@ -20,6 +20,7 @@ def getFullBuild(jdk, os) {
       def mvnName = 'maven3.5'
       def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" // 
       def settingsName = 'oss-settings.xml'
+      def extraMvnCli = '-Pno-logger-is-debug'
 
       // Environment
       List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
@@ -46,7 +47,7 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B clean install -DskipTests -T6"
+                sh "mvn -V -B clean install -DskipTests -T6 $extraMvnCli"
               }
 
             }
@@ -90,7 +91,7 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -e -Pmongodb -T3"
+                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -e -Pmongodb -T3 $extraMvnCli"
               }
               // withMaven doesn't label..
               // Report failures in the jenkins UI
@@ -142,7 +143,7 @@ def getFullBuild(jdk, os) {
                     publisherStrategy: 'EXPLICIT',
                     globalMavenSettingsConfig: settingsName,
                     mavenLocalRepo: localRepo) {
-              sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
+              sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5 $extraMvnCli"
             }
           }
         }
