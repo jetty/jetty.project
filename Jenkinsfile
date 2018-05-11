@@ -20,7 +20,7 @@ def getFullBuild(jdk, os) {
       def mvnName = 'maven3.5'
       def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" // 
       def settingsName = 'oss-settings.xml'
-      def extraMvnCli = '-Pno-logger-is-debug'
+      def extraMvnCli = '-Pno-logger-is-debug -U'
 
       // Environment
       List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
