@@ -21,6 +21,7 @@ package org.eclipse.jetty.gcloud.session;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -644,7 +645,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 .setLimit(_maxResults)
                 .build();
 
-        QueryResults<Entity> results;
+        QueryResults<Entity> results = null;
         if (LOG.isDebugEnabled())
         {
             long start = System.currentTimeMillis();
@@ -679,7 +680,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 .setLimit(_maxResults)
                 .build();
 
-        QueryResults<ProjectionEntity> presults;
+        QueryResults<ProjectionEntity> presults = null;
         
         if (LOG.isDebugEnabled())
         {
@@ -718,7 +719,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     //.setFilter(PropertyFilter.eq(_model.getId(), id))
                     .build();
 
-            QueryResults<ProjectionEntity> presults;
+            QueryResults<ProjectionEntity> presults = null;
             if (LOG.isDebugEnabled())
             {
                 long start = System.currentTimeMillis();
@@ -746,7 +747,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     //.setFilter(PropertyFilter.eq(_model.getId(), id))
                     .build();
             
-            QueryResults<Entity> results;
+            QueryResults<Entity> results = null;
             if (LOG.isDebugEnabled())
             {
                 long start = System.currentTimeMillis();
