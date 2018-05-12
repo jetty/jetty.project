@@ -53,6 +53,10 @@ public class HazelcastSessionDataStoreFactory
 
     private MapConfig mapConfig;
 
+    /**
+     * when
+     */
+    private boolean findExpiredSession;
 
     @Override
     public SessionDataStore getSessionDataStore( SessionHandler handler )
@@ -113,6 +117,7 @@ public class HazelcastSessionDataStoreFactory
         hazelcastSessionDataStore.setSessionDataMap(hazelcastInstance.getMap( mapName ) );
         hazelcastSessionDataStore.setGracePeriodSec( getGracePeriodSec() );
         hazelcastSessionDataStore.setSavePeriodSec( getSavePeriodSec() );
+        hazelcastSessionDataStore.setFindExpiredSession( findExpiredSession );
         return hazelcastSessionDataStore;
     }
 
@@ -179,5 +184,15 @@ public class HazelcastSessionDataStoreFactory
     public void setHazelcastInstanceName( String hazelcastInstanceName )
     {
         this.hazelcastInstanceName = hazelcastInstanceName;
+    }
+
+    public boolean isFindExpiredSession()
+    {
+        return findExpiredSession;
+    }
+
+    public void setFindExpiredSession( boolean findExpiredSession )
+    {
+        this.findExpiredSession = findExpiredSession;
     }
 }

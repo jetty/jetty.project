@@ -63,6 +63,7 @@ public class HazelcastTestHelper
         factory.setOnlyClient( onlyClient );
         factory.setMapName(_name);
         factory.setHazelcastInstance(_instance);
+        factory.setFindExpiredSession( true );
         
         return factory;
     }
