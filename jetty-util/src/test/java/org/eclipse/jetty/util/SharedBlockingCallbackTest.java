@@ -220,6 +220,7 @@ public class SharedBlockingCallbackTest
     @Test
     public void testBlockerTimeout() throws Exception
     {
+        SharedBlockingCallback.LOG.info("Succeeded after ... warning is expected...");
         Blocker b0=null;
         try
         {
@@ -243,16 +244,7 @@ public class SharedBlockingCallbackTest
         try (Blocker blocker=sbcb.acquire())
         {
             assertThat(blocker,not(equalTo(b0)));
-            try
-            {
-                b0.succeeded();
-                fail();
-            }
-            catch(Exception e)
-            {
-                assertThat(e,instanceOf(IllegalStateException.class));
-                assertThat(e.getCause(),instanceOf(TimeoutException.class));
-            }
+            b0.succeeded();
             blocker.succeeded();
         }
     }

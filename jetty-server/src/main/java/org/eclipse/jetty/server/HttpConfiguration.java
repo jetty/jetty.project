@@ -31,6 +31,8 @@ import org.eclipse.jetty.util.TreeTrie;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * HTTP Configuration.
@@ -46,6 +48,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("HTTP Configuration")
 public class HttpConfiguration
 {
+    private static final Logger LOG = Log.getLogger(HttpConfiguration.class);
+
     public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
     private final List<Customizer> _customizers=new CopyOnWriteArrayList<>();
     private final Trie<Boolean> _formEncodedMethods = new TreeTrie<>();
@@ -239,8 +243,10 @@ public class HttpConfiguration
      *
      * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
+     * @deprecated Replaced by {@link #getMinResponseDataRate()} and {@link #getMinRequestDataRate()}
      */
-    @ManagedAttribute("Total timeout in ms for blocking I/O operations.")
+    @ManagedAttribute("Total timeout in ms for blocking I/O operations. DEPRECATED!")
+    @Deprecated
     public long getBlockingTimeout()
     {
         return _blockingTimeout;
@@ -254,9 +260,13 @@ public class HttpConfiguration
      *
      * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
+     * @deprecated Replaced by {@link #setMinResponseDataRate(long) and {@link #setMinRequestDataRate(long)}
      */
+    @Deprecated
     public void setBlockingTimeout(long blockingTimeout)
     {
+        if (blockingTimeout>0)
+            LOG.warn("HttpConfiguration.setBlockingTimeout is deprecated!");
         _blockingTimeout = blockingTimeout;
     }
 

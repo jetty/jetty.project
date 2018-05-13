@@ -60,6 +60,7 @@ public class SharedBlockingCallback
     private final Condition _complete = _lock.newCondition();
     private Blocker _blocker = new Blocker();
 
+    @Deprecated
     protected long getIdleTimeout()
     {
         return -1;
@@ -135,7 +136,11 @@ public class SharedBlockingCallback
                     _complete.signalAll();
                 }
                 else
-                    throw new IllegalStateException(_state);
+                {
+                    LOG.warn("Succeeded after {}",_state.toString());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug(_state);
+                }
             }
             finally
             {
@@ -167,8 +172,12 @@ public class SharedBlockingCallback
                 }
                 else
                 {
-                    cause.printStackTrace(System.err);
-                    throw new IllegalStateException(_state);
+                    LOG.warn("Failed {} in {}",cause.toString(),_state.toString());
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug(cause);
+                        LOG.debug(_state);
+                    }
                 }
             }
             finally
@@ -227,6 +236,7 @@ public class SharedBlockingCallback
             }
             catch (final InterruptedException e)
             {
+                _state = e;
                 throw new InterruptedIOException();
             }
             finally
@@ -253,9 +263,9 @@ public class SharedBlockingCallback
             {
                 try 
                 {
-                    // If the blocker timed itself out, remember the state
-                    if (_state instanceof BlockerTimeoutException)
-                        // and create a new Blocker
+                    // If we have a failure
+                    if (_state!=null && _state!=SUCCEEDED)
+                        // create a new Blocker
                         _blocker=new Blocker();
                     else
                         // else reuse Blocker
