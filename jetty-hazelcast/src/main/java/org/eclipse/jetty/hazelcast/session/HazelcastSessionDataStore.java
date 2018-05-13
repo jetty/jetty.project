@@ -48,8 +48,10 @@ public class HazelcastSessionDataStore
     private IMap<String, SessionData> sessionDataMap;
 
     /**
+     * <p>
      * if <code>true</code> when calling {@link #getExpired(Set)} the hazelcast session store will fetch the store as well
      * for expired session
+     * </p>
      */
     private boolean findExpiredSession;
 
