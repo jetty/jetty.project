@@ -537,7 +537,7 @@ public class HttpParser
                     return false;
                 }
                 case OTEXT:
-                    throw new BadMessageException();
+                    throw new IllegalCharacterException(_state,t,buffer);
                     
                 default:
                     break;
@@ -752,7 +752,7 @@ public class HttpParser
                         case DIGIT:
                             _responseStatus=_responseStatus*10+(t.getByte()-'0');
                             if (_responseStatus>=1000)
-                                throw new BadMessageException();
+                                throw new BadMessageException("Bad status");
                             break;
                             
                         case LF:
@@ -761,7 +761,7 @@ public class HttpParser
                             break;
                             
                         default:
-                            throw new BadMessageException();
+                            throw new IllegalCharacterException(_state,t,buffer);
                     }
                     break;
 
@@ -1663,6 +1663,7 @@ public class HttpParser
                                 setState(State.CHUNK_SIZE);
                                 break;
                             }
+                            throw new IllegalCharacterException(_state,t,buffer);
                     
                         default:
                             throw new IllegalCharacterException(_state,t,buffer);
@@ -1877,7 +1878,7 @@ public class HttpParser
          * This is the method called by parser when a HTTP Trailer name and value is found
          * @param field The field parsed
          */
-        public default void parsedTrailer(@SuppressWarnings("unused") HttpField field) {}
+        public default void parsedTrailer(HttpField field) {}
 
         /* ------------------------------------------------------------ */
         /** Called to signal that an EOF was received unexpectedly
@@ -1898,7 +1899,7 @@ public class HttpParser
          * @deprecated use {@link #badMessage(BadMessageException)} instead
          */
         @Deprecated
-        public default void badMessage(@SuppressWarnings("unused") int status, @SuppressWarnings("unused") String reason)
+        public default void badMessage(int status, String reason)
         {
         }
 
@@ -1945,11 +1946,7 @@ public class HttpParser
     public interface ComplianceHandler extends HttpHandler
     {
         @Deprecated
-        public default void onComplianceViolation(
-                @SuppressWarnings("unused") HttpCompliance compliance,
-                @SuppressWarnings("unused") HttpCompliance required,
-                @SuppressWarnings("unused") String reason)
-        {}
+        public default void onComplianceViolation(HttpCompliance compliance, HttpCompliance required, String reason) {}
         
         public default void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String details)
         {
@@ -1963,7 +1960,6 @@ public class HttpParser
     {
         private IllegalCharacterException(State state,HttpTokens.Token token,ByteBuffer buffer)
         {
-            // Bug #460642 - don't reveal buffers to end user
             super(400,String.format("Illegal character %s",token));
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("Illegal character %s in state=%s for buffer %s",token,state,BufferUtil.toDetailString(buffer)));

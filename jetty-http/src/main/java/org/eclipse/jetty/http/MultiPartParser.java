@@ -730,7 +730,6 @@ public class MultiPartParser
     {
         private IllegalCharacterException(State state,HttpTokens.Token token,ByteBuffer buffer)
         {
-            // Bug #460642 - don't reveal buffers to end user
             super(400,String.format("Illegal character %s",token));
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("Illegal character %s in state=%s for buffer %s",token,state,BufferUtil.toDetailString(buffer)));

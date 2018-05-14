@@ -31,7 +31,6 @@ public class HttpTokens
     static final byte CARRIAGE_RETURN= 0x0D;
     static final byte SPACE= 0x20;
     static final byte[] CRLF = {CARRIAGE_RETURN,LINE_FEED};
-    static final byte SEMI_COLON= (byte)';';
 
     public enum EndOfContent { UNKNOWN_CONTENT,NO_CONTENT,EOF_CONTENT,CONTENT_LENGTH,CHUNKED_CONTENT }
 
@@ -47,7 +46,7 @@ public class HttpTokens
         DIGIT,   // Digit
         ALPHA,   // Alpha
         TCHAR,   // token characters excluding COLON,DIGIT,ALPHA, which is equivalent to VCHAR excluding delimiters
-        VCHAR,   // Visible characters excluding COLON,DIGIT,ALPHA,DELIM
+        VCHAR,   // Visible characters excluding COLON,DIGIT,ALPHA
         OTEXT    // Obsolete text
     }
     
@@ -186,15 +185,6 @@ public class HttpTokens
                     else
                         TOKENS[b] = new Token((byte)b,Type.CNTL);
             }
-        }
-    }
-    
-    
-    public static void main(String... args)
-    {
-        for (int i=0;i<256;i++)
-        {
-            System.err.printf("%3d: %s%n",i,TOKENS[i]);
         }
     }
 }
