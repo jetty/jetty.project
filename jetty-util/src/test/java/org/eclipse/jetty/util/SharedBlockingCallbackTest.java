@@ -32,7 +32,6 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
@@ -242,7 +241,7 @@ public class SharedBlockingCallbackTest
 
         try (Blocker blocker=sbcb.acquire())
         {
-            assertThat(blocker,not(equalTo(b0)));
+            assertThat(blocker,not(sameInstance(b0)));
             b0.succeeded();
             blocker.succeeded();
         }
