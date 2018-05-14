@@ -245,7 +245,7 @@ public class HttpConfiguration
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
      * @deprecated Replaced by {@link #getMinResponseDataRate()} and {@link #getMinRequestDataRate()}
      */
-    @ManagedAttribute("Total timeout in ms for blocking I/O operations. DEPRECATED!")
+    @ManagedAttribute(value = "Total timeout in ms for blocking I/O operations. DEPRECATED!", readonly = true)
     @Deprecated
     public long getBlockingTimeout()
     {

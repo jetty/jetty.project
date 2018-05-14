@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SharedBlockingCallback
 {
-    static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
+    private static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
 
     private static Throwable IDLE = new ConstantThrowable("IDLE");
     private static Throwable SUCCEEDED = new ConstantThrowable("SUCCEEDED");

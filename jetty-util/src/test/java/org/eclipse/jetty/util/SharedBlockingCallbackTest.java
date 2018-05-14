@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -34,6 +29,13 @@ import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class SharedBlockingCallbackTest
 {
@@ -52,14 +54,8 @@ public class SharedBlockingCallbackTest
             super.notComplete(blocker);
             notComplete.incrementAndGet();
         }
-
     };
-    
-    public SharedBlockingCallbackTest()
-    {
-    }
-    
-    
+
     @Test
     public void testDone() throws Exception
     { 
@@ -211,7 +207,7 @@ public class SharedBlockingCallbackTest
     {
         try (Blocker blocker=sbcb.acquire())
         {
-            SharedBlockingCallback.LOG.info("Blocker not complete "+blocker+" warning is expected...");
+            // Immediately close() without calling succeeded().
         }
         
         Assert.assertEquals(1,notComplete.get());
@@ -220,7 +216,6 @@ public class SharedBlockingCallbackTest
     @Test
     public void testBlockerTimeout() throws Exception
     {
-        SharedBlockingCallback.LOG.info("Succeeded after ... warning is expected...");
         Blocker b0=null;
         try
         {
@@ -239,12 +234,39 @@ public class SharedBlockingCallbackTest
         }
         
         Assert.assertEquals(0,notComplete.get());
-        
 
         try (Blocker blocker=sbcb.acquire())
         {
             assertThat(blocker,not(equalTo(b0)));
             b0.succeeded();
+            blocker.succeeded();
+        }
+    }
+
+    @Test
+    public void testInterruptedException() throws Exception
+    {
+        Blocker blocker0;
+        try (Blocker blocker = sbcb.acquire())
+        {
+            blocker0 = blocker;
+            Thread.currentThread().interrupt();
+            try
+            {
+                blocker.block();
+                fail();
+            }
+            catch (InterruptedIOException ignored)
+            {
+            }
+        }
+        // Blocker.close() has been called by try-with-resources.
+        // Simulate callback completion, must not throw.
+        blocker0.succeeded();
+
+        try (Blocker blocker = sbcb.acquire())
+        {
+            assertThat(blocker, not(sameInstance(blocker0)));
             blocker.succeeded();
         }
     }
