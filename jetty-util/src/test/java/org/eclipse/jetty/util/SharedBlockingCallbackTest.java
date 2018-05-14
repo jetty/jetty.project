@@ -26,6 +26,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,6 +41,8 @@ import static org.junit.Assert.fail;
 
 public class SharedBlockingCallbackTest
 {
+    private static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
+
     final AtomicInteger notComplete = new AtomicInteger();
     final SharedBlockingCallback sbcb= new SharedBlockingCallback()
     {
@@ -207,7 +211,7 @@ public class SharedBlockingCallbackTest
     {
         try (Blocker blocker=sbcb.acquire())
         {
-            // Immediately close() without calling succeeded().
+            LOG.info("Blocker not complete "+blocker+" warning is expected...");
         }
         
         Assert.assertEquals(1,notComplete.get());
@@ -216,6 +220,7 @@ public class SharedBlockingCallbackTest
     @Test
     public void testBlockerTimeout() throws Exception
     {
+        LOG.info("Succeeded after ... warning is expected...");
         Blocker b0=null;
         try
         {
@@ -262,6 +267,7 @@ public class SharedBlockingCallbackTest
         }
         // Blocker.close() has been called by try-with-resources.
         // Simulate callback completion, must not throw.
+        LOG.info("Succeeded after ... warning is expected...");
         blocker0.succeeded();
 
         try (Blocker blocker = sbcb.acquire())
