@@ -260,7 +260,7 @@ public class HttpConfiguration
      *
      * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
-     * @deprecated Replaced by {@link #setMinResponseDataRate(long) and {@link #setMinRequestDataRate(long)}
+     * @deprecated Replaced by {@link #setMinResponseDataRate(long)} and {@link #setMinRequestDataRate(long)}
      */
     @Deprecated
     public void setBlockingTimeout(long blockingTimeout)
