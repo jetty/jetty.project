@@ -172,11 +172,11 @@ public class SharedBlockingCallback
                 }
                 else
                 {
-                    LOG.warn("Failed {} in {}",cause.toString(),_state.toString());
+                    LOG.warn("Failed after {}: {}", _state, cause);
                     if (LOG.isDebugEnabled())
                     {
-                        LOG.debug(cause);
                         LOG.debug(_state);
+                        LOG.debug(cause);
                     }
                 }
             }
