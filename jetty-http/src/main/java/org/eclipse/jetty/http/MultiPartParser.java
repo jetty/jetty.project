@@ -455,9 +455,6 @@ public class MultiPartParser
                         case ALPHA:
                         case DIGIT:
                         case TCHAR:
-                        case VCHAR:
-                        case HTAB:
-                        case OTEXT:
                             _string.append(t.getChar());
                             _length = _string.length();
                             break;

@@ -37,7 +37,7 @@ public class HttpTokens
 
     public enum Type 
     { 
-        CNTL,     // Control characters excluding LF, CR
+        CNTL,    // Control characters excluding LF, CR
         HTAB,    // Horizontal tab 
         LF,      // Line feed
         CR,      // Carriage return
