@@ -68,7 +68,7 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B javadoc:javadoc -T6i -e"
+                sh "mvn -V -B javadoc:javadoc -T6 -e"
               }
             }
           }
