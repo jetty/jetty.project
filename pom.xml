@@ -490,7 +490,10 @@
             <links>
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
               <link>http://docs.oracle.com/javaee/7/api/</link>
+              <!--
+              not sure why we have this link....??
               <link>http://download.eclipse.org/jetty/stable-9/apidocs/</link>
+              -->
             </links>
             <tags>
               <tag>
