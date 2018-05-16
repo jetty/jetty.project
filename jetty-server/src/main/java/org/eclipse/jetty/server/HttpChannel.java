@@ -563,10 +563,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         else if (failure instanceof BadMessageException | failure instanceof IOException | failure instanceof TimeoutException)
         {
+            // No stack trace unless there is debug turned on
+            LOG.warn("{} {}",_request.getRequestURI(), failure.toString()); 
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
-            else
-                LOG.warn(_request.getRequestURI(), failure);
         }
         else
         {
