@@ -22,6 +22,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -476,16 +477,17 @@ public class ClientConnectTest
             Future<Session> future = client.connect(wsocket, wsUri);
 
             // Accept the connection, but do nothing on it (no response, no upgrade, etc)
-            serverSocket.accept();
-
-            // The attempt to get upgrade response future should throw error
-            try
+            try (Socket socket = serverSocket.accept())
             {
-                future.get(1, TimeUnit.SECONDS);
-                Assert.fail("Expected ExecutionException -> TimeoutException");
-            }
-            catch (TimeoutException expected)
-            {
+                // The attempt to get upgrade response future should throw error
+                try
+                {
+                    future.get(1, TimeUnit.SECONDS);
+                    Assert.fail("Expected ExecutionException -> TimeoutException");
+                }
+                catch (TimeoutException expected)
+                {
+                }
             }
         }
     }
