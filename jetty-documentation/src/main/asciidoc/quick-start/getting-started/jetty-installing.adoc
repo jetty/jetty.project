@@ -72,7 +72,7 @@ Jetty-Home can be downloaded from the Maven Central repository:
 
 ____
 *Jetty-Home*
-http://central.maven.org/maven2/org/eclipse/jetty/jetty-home/
+https://repo.maven.apache.org/maven2/org/eclipse/jetty/jetty-home/
 ____
 
 Like the main Jetty distribution, Jetty-Home is available in both zip and gzip formats; download the one most appropriate for your system.

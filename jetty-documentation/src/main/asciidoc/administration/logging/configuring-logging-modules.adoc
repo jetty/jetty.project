@@ -118,7 +118,7 @@ Proceed (y/N)? y
 INFO  : slf4j-api       transitively enabled
 INFO  : logging-slf4j   initialized in ${jetty.base}/start.d/logging-slf4j.ini
 MKDIR : ${jetty.base}/lib/slf4j
-DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
 INFO  : Base directory was modified
 ERROR : Module logging-slf4j requires a module providing slf4j-impl from one of [slf4j-simple-impl, slf4j-logback, slf4j-jul, slf4j-log4j2, slf4j-log4j]
 
@@ -137,7 +137,7 @@ To enable the simple SLF4J implementation, we will also need to activate the `sl
 [my-base]$ java -jar ../start.jar --add-to-start=slf4j-simple-impl
 INFO  : slf4j-simple-impl initialized in ${jetty.base}/start.d/slf4j-simple-impl.ini
 INFO  : resources       transitively enabled
-DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar
 MKDIR : ${jetty.base}/resources
 COPY  : ${jetty.home}/modules/slf4j-simple-impl/resources/simplelogger.properties to ${jetty.base}/resources/simplelogger.properties
 INFO  : Base directory was modified
@@ -207,12 +207,12 @@ INFO  : resources       transitively enabled
 INFO  : slf4j-log4j     transitively enabled
 INFO  : logging-log4j   initialized in ${jetty.base}/start.d/logging-log4j.ini
 MKDIR : ${jetty.base}/lib/slf4j
-DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
 MKDIR : ${jetty.base}/lib/log4j
 COPY  : /Users/admin/.m2/repository/log4j/log4j/1.2.17/log4j-1.2.17.jar to ${jetty.base}/lib/log4j/log4j-1.2.17.jar
 MKDIR : ${jetty.base}/resources
 COPY  : ${jetty.home}/modules/log4j-impl/resources/log4j.xml to ${jetty.base}/resources/log4j.xml
-DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-log4j12/1.7.21/slf4j-log4j12-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-log4j12-1.7.21.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-log4j12/1.7.21/slf4j-log4j12-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-log4j12-1.7.21.jar
 INFO  : Base directory was modified
 
 [my-base]$ tree
@@ -277,12 +277,12 @@ INFO  : resources       transitively enabled
 INFO  : slf4j-log4j2    transitively enabled
 INFO  : log4j2-impl     transitively enabled
 MKDIR : ${jetty.base}/lib/slf4j
-DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
 MKDIR : ${jetty.base}/lib/log4j2
-DOWNLD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.6.1/log4j-api-2.6.1.jar to ${jetty.base}/lib/log4j2/log4j-api-2.6.1.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/apache/logging/log4j/log4j-api/2.6.1/log4j-api-2.6.1.jar to ${jetty.base}/lib/log4j2/log4j-api-2.6.1.jar
 MKDIR : ${jetty.base}/resources
-DOWNLD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl/2.6.1/log4j-slf4j-impl-2.6.1.jar to ${jetty.base}/lib/log4j2/log4j-slf4j-impl-2.6.1.jar
-DOWNLD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-core/2.6.1/log4j-core-2.6.1.jar to ${jetty.base}/lib/log4j2/log4j-core-2.6.1.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl/2.6.1/log4j-slf4j-impl-2.6.1.jar to ${jetty.base}/lib/log4j2/log4j-slf4j-impl-2.6.1.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/apache/logging/log4j/log4j-core/2.6.1/log4j-core-2.6.1.jar to ${jetty.base}/lib/log4j2/log4j-core-2.6.1.jar
 COPY  : ${jetty.home}/modules/log4j2-impl/resources/log4j2.xml to ${jetty.base}/resources/log4j2.xml
 INFO  : Base directory was modified
 
@@ -362,12 +362,12 @@ INFO  : slf4j-logback   transitively enabled
 INFO  : logging-logback initialized in ${jetty.base}/start.d/logging-logback.ini
 INFO  : resources       transitively enabled
 MKDIR : ${jetty.base}/lib/slf4j
-DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
 MKDIR : ${jetty.base}/lib/logback
-DOWNLD: http://central.maven.org/maven2/ch/qos/logback/logback-core/1.1.7/logback-core-1.1.7.jar to ${jetty.base}/lib/logback/logback-core-1.1.7.jar
+DOWNLD: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.1.7/logback-core-1.1.7.jar to ${jetty.base}/lib/logback/logback-core-1.1.7.jar
 MKDIR : ${jetty.base}/resources
 COPY  : ${jetty.home}/modules/logback-impl/resources/logback.xml to ${jetty.base}/resources/logback.xml
-DOWNLD: http://central.maven.org/maven2/ch/qos/logback/logback-classic/1.1.7/logback-classic-1.1.7.jar to ${jetty.base}/lib/logback/logback-classic-1.1.7.jar
+DOWNLD: https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.1.7/logback-classic-1.1.7.jar to ${jetty.base}/lib/logback/logback-classic-1.1.7.jar
 INFO  : Base directory was modified
 
 [my-base]$ tree
@@ -434,8 +434,8 @@ INFO  : resources       transitively enabled
 MKDIR : ${jetty.base}/etc
 COPY  : ${jetty.home}/modules/jul-impl/etc/java-util-logging.properties to ${jetty.base}/etc/java-util-logging.properties
 MKDIR : ${jetty.base}/lib/slf4j
-DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
-DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-jdk14/1.7.21/slf4j-jdk14-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-jdk14-1.7.21.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-jdk14/1.7.21/slf4j-jdk14-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-jdk14-1.7.21.jar
 INFO  : Base directory was modified
 
 [my-base]$ tree

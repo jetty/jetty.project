@@ -48,7 +48,7 @@ INFO  : sessions        transitively enabled, ini template available with --add-
 INFO  : session-store-mongo initialized in ${jetty.base}/start.d/session-store-mongo.ini
 INFO  : sessions/mongo/address dynamic dependency of session-store-mongo
 MKDIR : ${jetty.base}/lib/nosql
-DOWNLD: http://central.maven.org/maven2/org/mongodb/mongo-java-driver/2.13.2/mongo-java-driver-2.13.2.jar to ${jetty.base}/lib/nosql/mongo-java-driver-2.13.2.jar
+DOWNLD: https://repo.maven.apache.org/maven2/org/mongodb/mongo-java-driver/2.13.2/mongo-java-driver-2.13.2.jar to ${jetty.base}/lib/nosql/mongo-java-driver-2.13.2.jar
 INFO  : Base directory was modified
 ----
 

@@ -56,7 +56,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         public String version;
         public String type;
         public String classifier;
-        private String mavenRepoUri = "https://central.maven.org/maven2/";
+        private String mavenRepoUri = "https://repo.maven.apache.org/maven2/";
 
         public String toPath()
         {
