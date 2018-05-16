@@ -23,11 +23,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.lang.annotation.ElementType;
+import java.util.Properties;
 
 import org.eclipse.jetty.util.IO;
+import org.hibernate.search.cfg.Environment;
+import org.hibernate.search.cfg.SearchMapping;
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
+import org.infinispan.configuration.cache.Index;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
@@ -53,6 +58,7 @@ public class InfinispanTestSupport
         try
         {
             _manager = new DefaultCacheManager(new GlobalConfigurationBuilder().globalJmxStatistics().allowDuplicateDomains(true).build());
+            System.err.println(_manager);
         }
         catch (Exception e)
         {
@@ -89,19 +95,39 @@ public class InfinispanTestSupport
     
     public void setup () throws Exception
     {
-       if (_useFileStore)
-       {      
-        _tmpdir = File.createTempFile("infini", "span");
-        _tmpdir.delete();
-        _tmpdir.mkdir();
-        Configuration config = _builder.persistence().addSingleFileStore().location(_tmpdir.getAbsolutePath()).storeAsBinary().build();
-        _manager.defineConfiguration(_name, config);
-       }
-       else
-       {
-           _manager.defineConfiguration(_name, _builder.build());
-       }
-       _cache = _manager.getCache(_name);
+        
+        SearchMapping mapping = new SearchMapping();
+        mapping.entity(SessionData.class).indexed().providedId().property("expiry", ElementType.FIELD).field();
+        Properties properties = new Properties();
+        properties.put(Environment.MODEL_MAPPING, mapping);
+        
+        if (_useFileStore)
+        {      
+            _tmpdir = File.createTempFile("infini", "span");
+            _tmpdir.delete();
+            _tmpdir.mkdir();
+            
+            Configuration config = _builder.indexing()
+                                           .index(Index.ALL)
+                                           .addIndexedEntity(SessionData.class)
+                                           .withProperties(properties)
+                                           .persistence()
+                                           .addSingleFileStore()
+                                           .location(_tmpdir.getAbsolutePath())
+                                           .storeAsBinary()
+                                           .build();
+            
+            _manager.defineConfiguration(_name, config);
+        }
+        else
+        {
+            _manager.defineConfiguration(_name, _builder.indexing()
+                                                        .index(Index.ALL)
+                                                        .addIndexedEntity(SessionData.class)
+                                                        .withProperties(properties)
+                                                        .build());
+        }
+        _cache = _manager.getCache(_name);
     }
 
 

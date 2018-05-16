@@ -21,11 +21,22 @@ package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
+
+import org.infinispan.Cache;
+import org.infinispan.query.Search;
+import org.infinispan.query.dsl.Query;
+import org.infinispan.query.dsl.QueryFactory;
+
 
 /**
  * InfinispanSessionDataStoreTest
@@ -155,4 +166,25 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         return __testSupport.checkSessionPersisted(data);
     }
     
+    
+    @Test
+    public void testQuery() throws Exception
+    {
+        Cache<String, SessionData> cache = __testSupport.getCache();
+        
+        cache.put("session1", new SessionData("sd1", "", "", 0, 0, 0, 0));
+        cache.put("session2", new SessionData("sd2", "", "", 0, 0, 0, 1000));
+        cache.put("session3", new SessionData("sd3", "", "", 0, 0, 0, 0));
+        
+        QueryFactory qf = Search.getQueryFactory(cache);
+        Query q = qf.from(SessionData.class).select("id").having("expiry").lte(System.currentTimeMillis()).toBuilder().build();
+        
+        List<Object[]> list = q.list(); 
+        
+        List<String> ids = new ArrayList<>();
+        for(Object[] sl : list)
+            ids.add((String)sl[0]);
+        
+        System.out.println(ids);
+    }
 }
