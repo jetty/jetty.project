@@ -217,6 +217,31 @@ public class HttpParserTest
     }
 
     @Test
+    public void testAllowedLinePreamble() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("\r\n\r\nGET / HTTP/1.0\r\n");
+
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        Assert.assertEquals("GET", _methodOrVersion);
+        Assert.assertEquals("/", _uriOrStatus);
+        Assert.assertEquals("HTTP/1.0", _versionOrReason);
+        Assert.assertEquals(-1, _headers);
+    }
+    
+    @Test
+    public void testDisallowedLinePreamble() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("\r\n \r\nGET / HTTP/1.0\r\n");
+
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        Assert.assertEquals("Illegal character SPACE=' '", _bad);
+    }
+    
+    @Test
     public void testConnect() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer("CONNECT 192.168.1.2:80 HTTP/1.1\r\n" + "\r\n");
@@ -1775,7 +1800,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testDuplicateContentLengthWithLargerThenCorrectValue()
+    public void testMultipleContentLengthWithLargerThenCorrectValue()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
                 "POST / HTTP/1.1\r\n"
@@ -1790,7 +1815,7 @@ public class HttpParserTest
 
         parser.parseNext(buffer);
         Assert.assertEquals("POST", _methodOrVersion);
-        Assert.assertEquals("Duplicate Content-Length", _bad);
+        Assert.assertEquals("Multiple Content-Lengths", _bad);
         Assert.assertFalse(buffer.hasRemaining());
         Assert.assertEquals(HttpParser.State.CLOSE, parser.getState());
         parser.atEOF();
@@ -1799,7 +1824,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testDuplicateContentLengthWithCorrectThenLargerValue()
+    public void testMultipleContentLengthWithCorrectThenLargerValue()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
                 "POST / HTTP/1.1\r\n"
@@ -1814,7 +1839,7 @@ public class HttpParserTest
 
         parser.parseNext(buffer);
         Assert.assertEquals("POST", _methodOrVersion);
-        Assert.assertEquals("Duplicate Content-Length", _bad);
+        Assert.assertEquals("Multiple Content-Lengths", _bad);
         Assert.assertFalse(buffer.hasRemaining());
         Assert.assertEquals(HttpParser.State.CLOSE, parser.getState());
         parser.atEOF();
@@ -1837,7 +1862,7 @@ public class HttpParserTest
                         + "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertEquals("POST", _methodOrVersion);
@@ -1847,6 +1872,8 @@ public class HttpParserTest
 
         Assert.assertTrue(_headerCompleted);
         Assert.assertTrue(_messageCompleted);
+        
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
     }
 
     @Test
@@ -1864,7 +1891,7 @@ public class HttpParserTest
                         + "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertEquals("POST", _methodOrVersion);
@@ -1874,6 +1901,8 @@ public class HttpParserTest
 
         Assert.assertTrue(_headerCompleted);
         Assert.assertTrue(_messageCompleted);
+        
+        Assert.assertThat(_complianceViolation, contains(HttpComplianceSection.TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
     }
 
     @Test

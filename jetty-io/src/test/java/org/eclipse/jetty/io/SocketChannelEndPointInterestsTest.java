@@ -65,7 +65,7 @@ public class SocketChannelEndPointInterestsTest
         {
 
             @Override
-            protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
+            protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
             {
                 SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler())
                 {
@@ -176,36 +176,37 @@ public class SocketChannelEndPointInterestsTest
             }
         });
 
-        Socket client = new Socket();
-        client.connect(connector.getLocalAddress());
-        client.setSoTimeout(5000);
+        try (Socket client = new Socket())
+        {
+            client.connect(connector.getLocalAddress());
+            client.setSoTimeout(5000);
+            try (SocketChannel server = connector.accept())
+            {
+                server.configureBlocking(false);
+                selectorManager.accept(server);
 
-        SocketChannel server = connector.accept();
-        server.configureBlocking(false);
-        selectorManager.accept(server);
+                OutputStream clientOutput = client.getOutputStream();
+                clientOutput.write(1);
+                clientOutput.flush();
+                Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
 
-        OutputStream clientOutput = client.getOutputStream();
-        clientOutput.write(1);
-        clientOutput.flush();
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+                // We do not read to keep the socket write blocked
 
-        // We do not read to keep the socket write blocked
+                clientOutput.write(2);
+                clientOutput.flush();
+                Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
 
-        clientOutput.write(2);
-        clientOutput.flush();
-        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+                // Sleep before reading to allow waking up the server only for read
+                Thread.sleep(1000);
 
-        // Sleep before reading to allow waking up the server only for read
-        Thread.sleep(1000);
+                // Now read what was written, waking up the server for write
+                InputStream clientInput = client.getInputStream();
+                while (size.getAndDecrement() > 0)
+                    clientInput.read();
 
-        // Now read what was written, waking up the server for write
-        InputStream clientInput = client.getInputStream();
-        while (size.getAndDecrement() > 0)
-            clientInput.read();
-
-        client.close();
-
-        Assert.assertNull(failure.get());
+                Assert.assertNull(failure.get());
+            }
+        }
     }
 
     private interface Interested
@@ -214,5 +215,4 @@ public class SocketChannelEndPointInterestsTest
 
         void onIncompleteFlush();
     }
-
 }

@@ -33,6 +33,8 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import static org.eclipse.jetty.http.HttpComplianceSection.MULTIPLE_CONTENT_LENGTHS;
+import static org.eclipse.jetty.http.HttpComplianceSection.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
 
 
 /* ------------------------------------------------------------ */
@@ -85,6 +87,7 @@ public class HttpParser
     @Deprecated
     public final static String __STRICT="org.eclipse.jetty.http.HttpParser.STRICT";
     public final static int INITIAL_URI_LENGTH=256;
+    private final static int MAX_CHUNK_LENGTH=Integer.MAX_VALUE/16-16;
 
     /**
      * Cache of common {@link HttpField}s including: <UL>
@@ -165,6 +168,7 @@ public class HttpParser
     private HttpVersion _version;
     private Utf8StringBuilder _uri=new Utf8StringBuilder(INITIAL_URI_LENGTH); // Tune?
     private EndOfContent _endOfContent;
+    private boolean _hasContentLength;
     private long _contentLength = -1;
     private long _contentPosition;
     private int _chunkLength;
@@ -316,6 +320,16 @@ public class HttpParser
     {
         return _handler;
     }
+
+    /* ------------------------------------------------------------------------------- */
+    /** Check RFC compliance violation
+     * @param violation The compliance section violation
+     * @return True if the current compliance level is set so as to Not allow this violation
+     */
+    protected boolean complianceViolation(HttpComplianceSection violation)
+    {
+        return complianceViolation(violation,null);
+    }
     
     /* ------------------------------------------------------------------------------- */
     /** Check RFC compliance violation
@@ -327,7 +341,8 @@ public class HttpParser
     {
         if (_compliances.contains(violation))
             return true;
-        
+        if (reason==null)
+            reason=violation.description;
         if (_complianceHandler!=null)
             _complianceHandler.onComplianceViolation(_compliance,violation,reason);
         
@@ -537,6 +552,8 @@ public class HttpParser
                     return false;
                 }
                 case OTEXT:
+                case SPACE:
+                case HTAB:
                     throw new IllegalCharacterException(_state,t,buffer);
                     
                 default:
@@ -672,8 +689,7 @@ public class HttpParser
                             _length=_string.length();
                             String version=takeString();
                             _version=HttpVersion.CACHE.get(version);
-                            if (_version==null)
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Unknown Version");
+                            checkVersion();
                             setState(State.SPACE1);
                             break;
 
@@ -835,12 +851,14 @@ public class HttpParser
                                         {
                                             _cr=true;
                                             _version=version;
+                                            checkVersion();
                                             _string.setLength(0);
                                             buffer.position(pos+1);
                                         }
                                         else if (n==HttpTokens.LINE_FEED)
                                         {
                                             _version=version;
+                                            checkVersion();
                                             _string.setLength(0);
                                             buffer.position(pos);
                                         }
@@ -882,8 +900,7 @@ public class HttpParser
                                 _length=_string.length();
                                 _version=HttpVersion.CACHE.get(takeString());
                             }
-                            if (_version==null)
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Unknown Version");
+                            checkVersion();
 
                             // Should we try to cache header fields?
                             if (_fieldCache==null && _version.getVersion()>=HttpVersion.HTTP_1_1.getVersion() && _handler.getHeaderCacheSize()>0)
@@ -947,6 +964,15 @@ public class HttpParser
         return handle;
     }
 
+    private void checkVersion() 
+    {
+        if (_version==null)
+            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Unknown Version");
+        
+        if (_version.getVersion()<10 || _version.getVersion()>20)
+            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Version");
+    }
+
     private void parsedHeader()
     {
         // handler last header if any.  Delayed to here just in case there was a continuation line (above)
@@ -959,11 +985,19 @@ public class HttpParser
                 switch (_header)
                 {
                     case CONTENT_LENGTH:
-                        if (_endOfContent == EndOfContent.CONTENT_LENGTH)
+                        if (_hasContentLength)
                         {
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Duplicate Content-Length");
+                            if(complianceViolation(MULTIPLE_CONTENT_LENGTHS))
+                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400,MULTIPLE_CONTENT_LENGTHS.description);
+                            if (convertContentLength(_valueString)!=_contentLength)
+                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400,MULTIPLE_CONTENT_LENGTHS.description);
                         }
-                        else if (_endOfContent != EndOfContent.CHUNKED_CONTENT)
+                        _hasContentLength = true;
+
+                        if (_endOfContent == EndOfContent.CHUNKED_CONTENT && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Content-Length");
+
+                        if (_endOfContent != EndOfContent.CHUNKED_CONTENT)
                         {
                             _contentLength=convertContentLength(_valueString);
                             if (_contentLength <= 0)
@@ -974,6 +1008,9 @@ public class HttpParser
                         break;
 
                     case TRANSFER_ENCODING:
+                        if (_hasContentLength && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Transfer-Encoding and Content-Length");
+
                         if (HttpHeaderValue.CHUNKED.is(_valueString))
                         {
                             _endOfContent=EndOfContent.CHUNKED_CONTENT;
@@ -990,6 +1027,8 @@ public class HttpParser
                             else if (values.stream().anyMatch(HttpHeaderValue.CHUNKED::is))
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad chunking");
                         }
+                        
+                        
                         break;
 
                     case HOST:
@@ -1696,9 +1735,15 @@ public class HttpParser
                             
                         default:
                             if (t.isHexDigit())
+                            {
+                                if (_chunkLength>MAX_CHUNK_LENGTH)
+                                    throw new BadMessageException(HttpStatus.PAYLOAD_TOO_LARGE_413);
                                 _chunkLength=_chunkLength * 16 + t.getHexDigit();
+                            }
                             else
+                            {
                                 setState(State.CHUNK_PARAMS);
+                            }
                     }
                     break;
                 }
@@ -1807,6 +1852,7 @@ public class HttpParser
         setState(State.START);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
         _contentLength=-1;
+        _hasContentLength=false;
         _contentPosition=0;
         _responseStatus=0;
         _contentChunk=null;

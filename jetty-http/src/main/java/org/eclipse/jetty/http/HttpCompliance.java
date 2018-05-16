@@ -50,15 +50,17 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so that extra custom modes can be defined dynamically
 {
-    /** A Legacy compliance mode to match jetty's behavior prior to RFC2616 and RFC7230. It only
-     * contains {@link HttpComplianceSection#METHOD_CASE_SENSITIVE}
+    /** A Legacy compliance mode to match jetty's behavior prior to RFC2616 and RFC7230. 
      */
     LEGACY(sectionsBySpec("0,METHOD_CASE_SENSITIVE")), 
     
     /** The legacy RFC2616 support, which incorrectly excludes 
-     * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE}, {@link HttpComplianceSection#FIELD_COLON}
+     * {@link HttpComplianceSection#METHOD_CASE_SENSITIVE}, 
+     * {@link HttpComplianceSection#FIELD_COLON},
+     * {@link HttpComplianceSection#TRANSFER_ENCODING_WITH_CONTENT_LENGTH},
+     * {@link HttpComplianceSection#MULTIPLE_CONTENT_LENGTHS},
      */
-    RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE")), 
+    RFC2616_LEGACY(sectionsBySpec("RFC2616,-FIELD_COLON,-METHOD_CASE_SENSITIVE,-TRANSFER_ENCODING_WITH_CONTENT_LENGTH,-MULTIPLE_CONTENT_LENGTHS")), 
     
     /** The strict RFC2616 support mode */
     RFC2616(sectionsBySpec("RFC2616")), 

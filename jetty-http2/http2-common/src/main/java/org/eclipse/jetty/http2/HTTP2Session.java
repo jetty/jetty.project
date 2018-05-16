@@ -472,31 +472,36 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener)
     {
-        // Synchronization is necessary to atomically create
-        // the stream id and enqueue the frame to be sent.
-        boolean queued;
-        synchronized (this)
+        try
         {
-            int streamId = frame.getStreamId();
-            if (streamId <= 0)
+            // Synchronization is necessary to atomically create
+            // the stream id and enqueue the frame to be sent.
+            boolean queued;
+            synchronized (this)
             {
-                streamId = streamIds.getAndAdd(2);
-                PriorityFrame priority = frame.getPriority();
-                priority = priority == null ? null : new PriorityFrame(streamId, priority.getParentStreamId(),
-                        priority.getWeight(), priority.isExclusive());
-                frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
-            }
-            final IStream stream = createLocalStream(streamId, promise);
-            if (stream == null)
-                return;
-            stream.setListener(listener);
+                int streamId = frame.getStreamId();
+                if (streamId <= 0)
+                {
+                    streamId = streamIds.getAndAdd(2);
+                    PriorityFrame priority = frame.getPriority();
+                    priority = priority == null ? null : new PriorityFrame(streamId, priority.getParentStreamId(),
+                            priority.getWeight(), priority.isExclusive());
+                    frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
+                }
+                IStream stream = createLocalStream(streamId);
+                stream.setListener(listener);
 
-            ControlEntry entry = new ControlEntry(frame, stream, new PromiseCallback<>(promise, stream));
-            queued = flusher.append(entry);
+                ControlEntry entry = new ControlEntry(frame, stream, new PromiseCallback<>(promise, stream));
+                queued = flusher.append(entry);
+            }
+            // Iterate outside the synchronized block.
+            if (queued)
+                flusher.iterate();
         }
-        // Iterate outside the synchronized block.
-        if (queued)
-            flusher.iterate();
+        catch (Throwable x)
+        {
+            promise.failed(x);
+        }
     }
 
     @Override
@@ -517,25 +522,30 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener)
     {
-        // Synchronization is necessary to atomically create
-        // the stream id and enqueue the frame to be sent.
-        boolean queued;
-        synchronized (this)
+        try
         {
-            int streamId = streamIds.getAndAdd(2);
-            frame = new PushPromiseFrame(frame.getStreamId(), streamId, frame.getMetaData());
+            // Synchronization is necessary to atomically create
+            // the stream id and enqueue the frame to be sent.
+            boolean queued;
+            synchronized (this)
+            {
+                int streamId = streamIds.getAndAdd(2);
+                frame = new PushPromiseFrame(frame.getStreamId(), streamId, frame.getMetaData());
 
-            final IStream pushStream = createLocalStream(streamId, promise);
-            if (pushStream == null)
-                return;
-            pushStream.setListener(listener);
+                IStream pushStream = createLocalStream(streamId);
+                pushStream.setListener(listener);
 
-            ControlEntry entry = new ControlEntry(frame, pushStream, new PromiseCallback<>(promise, pushStream));
-            queued = flusher.append(entry);
+                ControlEntry entry = new ControlEntry(frame, pushStream, new PromiseCallback<>(promise, pushStream));
+                queued = flusher.append(entry);
+            }
+            // Iterate outside the synchronized block.
+            if (queued)
+                flusher.iterate();
         }
-        // Iterate outside the synchronized block.
-        if (queued)
-            flusher.iterate();
+        catch (Throwable x)
+        {
+            promise.failed(x);
+        }
     }
 
     @Override
@@ -676,17 +686,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected IStream createLocalStream(int streamId, Promise<Stream> promise)
+    protected IStream createLocalStream(int streamId)
     {
         while (true)
         {
             int localCount = localStreamCount.get();
             int maxCount = getMaxLocalStreams();
             if (maxCount >= 0 && localCount >= maxCount)
-            {
-                promise.failed(new IllegalStateException("Max local stream count " + maxCount + " exceeded"));
-                return null;
-            }
+                throw new IllegalStateException("Max local stream count " + maxCount + " exceeded");
             if (localStreamCount.compareAndSet(localCount, localCount + 1))
                 break;
         }
@@ -702,8 +709,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         else
         {
-            promise.failed(new IllegalStateException("Duplicate stream " + streamId));
-            return null;
+            throw new IllegalStateException("Duplicate stream " + streamId);
         }
     }
 

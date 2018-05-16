@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -31,106 +27,105 @@ import java.nio.channels.SocketChannel;
 
 import org.junit.Test;
 
-/**
- *
- */
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class NIOTest
 {
     @Test
     public void testSelector() throws Exception
     {
-        ServerSocket acceptor = new ServerSocket(0);
+        try (ServerSocket acceptor = new ServerSocket(0);
+             Selector selector = Selector.open();
+             SocketChannel client = SocketChannel.open(acceptor.getLocalSocketAddress());
+             Socket server = acceptor.accept())
+        {
+            server.setTcpNoDelay(true);
 
-        Selector selector = Selector.open();
+            // Make the client non blocking and register it with selector for reads
+            client.configureBlocking(false);
+            SelectionKey key = client.register(selector, SelectionKey.OP_READ);
 
-        // Create client server socket pair
-        SocketChannel client = SocketChannel.open(acceptor.getLocalSocketAddress());
-        Socket server = acceptor.accept();
-        server.setTcpNoDelay(true);
+            // assert it is not selected
+            assertTrue(key.isValid());
+            assertFalse(key.isReadable());
+            assertEquals(0, key.readyOps());
 
-        // Make the client non blocking and register it with selector for reads
-        client.configureBlocking(false);
-        SelectionKey key = client.register(selector,SelectionKey.OP_READ);
+            // try selecting and assert nothing selected
+            int selected = selector.selectNow();
+            assertEquals(0, selected);
+            assertEquals(0, selector.selectedKeys().size());
+            assertTrue(key.isValid());
+            assertFalse(key.isReadable());
+            assertEquals(0, key.readyOps());
 
-        // assert it is not selected
-        assertTrue(key.isValid());
-        assertFalse(key.isReadable());
-        assertEquals(0,key.readyOps());
+            // Write a byte from server to client
+            server.getOutputStream().write(42);
+            server.getOutputStream().flush();
 
-        // try selecting and assert nothing selected
-        int selected = selector.selectNow();
-        assertEquals(0,selected);
-        assertEquals(0,selector.selectedKeys().size());
-        assertTrue(key.isValid());
-        assertFalse(key.isReadable());
-        assertEquals(0,key.readyOps());
+            // select again and assert selection found for read
+            selected = selector.select(1000);
+            assertEquals(1, selected);
+            assertEquals(1, selector.selectedKeys().size());
+            assertTrue(key.isValid());
+            assertTrue(key.isReadable());
+            assertEquals(1, key.readyOps());
 
-        // Write a byte from server to client
-        server.getOutputStream().write(42);
-        server.getOutputStream().flush();
+            // select again and see that it is not reselect, but stays selected
+            selected = selector.select(100);
+            assertEquals(0, selected);
+            assertEquals(1, selector.selectedKeys().size());
+            assertTrue(key.isValid());
+            assertTrue(key.isReadable());
+            assertEquals(1, key.readyOps());
 
-        // select again and assert selection found for read
-        selected = selector.select(1000);
-        assertEquals(1,selected);
-        assertEquals(1,selector.selectedKeys().size());
-        assertTrue(key.isValid());
-        assertTrue(key.isReadable());
-        assertEquals(1,key.readyOps());
+            // read the byte
+            ByteBuffer buf = ByteBuffer.allocate(1024);
+            int len = client.read(buf);
+            assertEquals(1, len);
+            buf.flip();
+            assertEquals(42, buf.get());
+            buf.clear();
 
-        // select again and see that it is not reselect, but stays selected
-        selected = selector.select(100);
-        assertEquals(0,selected);
-        assertEquals(1,selector.selectedKeys().size());
-        assertTrue(key.isValid());
-        assertTrue(key.isReadable());
-        assertEquals(1,key.readyOps());
+            // But this does not change the key
+            assertTrue(key.isValid());
+            assertTrue(key.isReadable());
+            assertEquals(1, key.readyOps());
 
-        // read the byte
-        ByteBuffer buf = ByteBuffer.allocate(1024);
-        int len=client.read(buf);
-        assertEquals(1,len);
-        buf.flip();
-        assertEquals(42,buf.get());
-        buf.clear();
+            // Even if we select again ?
+            selected = selector.select(100);
+            assertEquals(0, selected);
+            assertEquals(1, selector.selectedKeys().size());
+            assertTrue(key.isValid());
+            assertTrue(key.isReadable());
+            assertEquals(1, key.readyOps());
 
-        // But this does not change the key
-        assertTrue(key.isValid());
-        assertTrue(key.isReadable());
-        assertEquals(1,key.readyOps());
+            // Unless we remove the key from the select set
+            // and then it is still flagged as isReadable()
+            selector.selectedKeys().clear();
+            assertEquals(0, selector.selectedKeys().size());
+            assertTrue(key.isValid());
+            assertTrue(key.isReadable());
+            assertEquals(1, key.readyOps());
 
-        // Even if we select again ?
-        selected = selector.select(100);
-        assertEquals(0,selected);
-        assertEquals(1,selector.selectedKeys().size());
-        assertTrue(key.isValid());
-        assertTrue(key.isReadable());
-        assertEquals(1,key.readyOps());
+            // Now if we select again - it is still flagged as readable!!!
+            selected = selector.select(100);
+            assertEquals(0, selected);
+            assertEquals(0, selector.selectedKeys().size());
+            assertTrue(key.isValid());
+            assertTrue(key.isReadable());
+            assertEquals(1, key.readyOps());
 
-        // Unless we remove the key from the select set
-        // and then it is still flagged as isReadable()
-        selector.selectedKeys().clear();
-        assertEquals(0,selector.selectedKeys().size());
-        assertTrue(key.isValid());
-        assertTrue(key.isReadable());
-        assertEquals(1,key.readyOps());
-
-        // Now if we select again - it is still flagged as readable!!!
-        selected = selector.select(100);
-        assertEquals(0,selected);
-        assertEquals(0,selector.selectedKeys().size());
-        assertTrue(key.isValid());
-        assertTrue(key.isReadable());
-        assertEquals(1,key.readyOps());
-
-        // Only when it is selected for something else does that state change.
-        key.interestOps(SelectionKey.OP_READ|SelectionKey.OP_WRITE);
-        selected = selector.select(1000);
-        assertEquals(1,selected);
-        assertEquals(1,selector.selectedKeys().size());
-        assertTrue(key.isValid());
-        assertTrue(key.isWritable());
-        assertFalse(key.isReadable());
-        assertEquals(SelectionKey.OP_WRITE,key.readyOps());
+            // Only when it is selected for something else does that state change.
+            key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+            selected = selector.select(1000);
+            assertEquals(1, selected);
+            assertEquals(1, selector.selectedKeys().size());
+            assertTrue(key.isValid());
+            assertTrue(key.isWritable());
+            assertFalse(key.isReadable());
+            assertEquals(SelectionKey.OP_WRITE, key.readyOps());
+        }
     }
-
 }
