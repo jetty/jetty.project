@@ -238,9 +238,8 @@ public class HttpParserTest
         HttpParser.RequestHandler handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
-        Assert.assertEquals("Bad preamble", _bad);
+        Assert.assertEquals("Illegal character SPACE=' '", _bad);
     }
-    
     
     @Test
     public void testConnect() throws Exception
@@ -472,7 +471,7 @@ public class HttpParserTest
         Assert.assertEquals("HTTP/1.1", _methodOrVersion);
         Assert.assertEquals("204", _uriOrStatus);
         Assert.assertEquals("No Content", _versionOrReason);
-        Assert.assertThat(_bad, Matchers.containsString("Illegal character 0x20"));
+        Assert.assertThat(_bad, Matchers.containsString("Illegal character "));
     }
 
     @Test
@@ -748,6 +747,40 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
         Assert.assertThat(_bad, Matchers.notNullValue());
+    }
+    
+    @Test
+    public void testBadHeaderNames() throws Exception
+    {
+        String[] bad = new String[] 
+        {
+                "Foo\\Bar: value\r\n",
+                "Foo@Bar: value\r\n",
+                "Foo,Bar: value\r\n",
+                "Foo}Bar: value\r\n",
+                "Foo{Bar: value\r\n",
+                "Foo=Bar: value\r\n",
+                "Foo>Bar: value\r\n",
+                "Foo<Bar: value\r\n",
+                "Foo)Bar: value\r\n",
+                "Foo(Bar: value\r\n",
+                "Foo?Bar: value\r\n",
+                "Foo\"Bar: value\r\n",
+                "Foo/Bar: value\r\n",
+                "Foo]Bar: value\r\n",
+                "Foo[Bar: value\r\n",
+        };
+        
+        for (int i=0; i<bad.length; i++)
+        {
+            ByteBuffer buffer= BufferUtil.toBuffer(
+                    "GET / HTTP/1.0\r\n" + bad[i]+ "\r\n");
+
+            HttpParser.RequestHandler handler  = new Handler();
+            HttpParser parser= new HttpParser(handler);
+            parseAll(parser,buffer);
+            Assert.assertThat(bad[i],_bad,Matchers.notNullValue());
+        }
     }
 
     @Test
