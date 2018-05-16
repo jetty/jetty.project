@@ -79,41 +79,40 @@ public class Socks4ProxyTest
                         latch.countDown();
                 });
 
-        SocketChannel channel = server.accept();
+        try (SocketChannel channel = server.accept())
+        {
+            int socks4MessageLength = 9;
+            ByteBuffer buffer = ByteBuffer.allocate(socks4MessageLength);
+            int read = channel.read(buffer);
+            Assert.assertEquals(socks4MessageLength, read);
+            Assert.assertEquals(4, buffer.get(0) & 0xFF);
+            Assert.assertEquals(1, buffer.get(1) & 0xFF);
+            Assert.assertEquals(serverPort, buffer.getShort(2) & 0xFFFF);
+            Assert.assertEquals(ip1, buffer.get(4) & 0xFF);
+            Assert.assertEquals(ip2, buffer.get(5) & 0xFF);
+            Assert.assertEquals(ip3, buffer.get(6) & 0xFF);
+            Assert.assertEquals(ip4, buffer.get(7) & 0xFF);
+            Assert.assertEquals(0, buffer.get(8) & 0xFF);
 
-        int socks4MessageLength = 9;
-        ByteBuffer buffer = ByteBuffer.allocate(socks4MessageLength);
-        int read = channel.read(buffer);
-        Assert.assertEquals(socks4MessageLength, read);
-        Assert.assertEquals(4, buffer.get(0) & 0xFF);
-        Assert.assertEquals(1, buffer.get(1) & 0xFF);
-        Assert.assertEquals(serverPort, buffer.getShort(2) & 0xFFFF);
-        Assert.assertEquals(ip1, buffer.get(4) & 0xFF);
-        Assert.assertEquals(ip2, buffer.get(5) & 0xFF);
-        Assert.assertEquals(ip3, buffer.get(6) & 0xFF);
-        Assert.assertEquals(ip4, buffer.get(7) & 0xFF);
-        Assert.assertEquals(0, buffer.get(8) & 0xFF);
+            // Socks4 response.
+            channel.write(ByteBuffer.wrap(new byte[]{0, 0x5A, 0, 0, 0, 0, 0, 0}));
 
-        // Socks4 response.
-        channel.write(ByteBuffer.wrap(new byte[]{0, 0x5A, 0, 0, 0, 0, 0, 0}));
+            buffer = ByteBuffer.allocate(method.length() + 1 + path.length());
+            read = channel.read(buffer);
+            Assert.assertEquals(buffer.capacity(), read);
+            buffer.flip();
+            Assert.assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
 
-        buffer = ByteBuffer.allocate(method.length() + 1 + path.length());
-        read = channel.read(buffer);
-        Assert.assertEquals(buffer.capacity(), read);
-        buffer.flip();
-        Assert.assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
+            // Response
+            String response = "" +
+                    "HTTP/1.1 200 OK\r\n" +
+                    "Content-Length: 0\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+            channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
 
-        // Response
-        String response = "" +
-                "HTTP/1.1 200 OK\r\n" +
-                "Content-Length: 0\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
-        channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
-
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-        channel.close();
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @Test
@@ -139,39 +138,38 @@ public class Socks4ProxyTest
                         result.getFailure().printStackTrace();
                 });
 
-        SocketChannel channel = server.accept();
+        try (SocketChannel channel = server.accept())
+        {
+            int socks4MessageLength = 9;
+            ByteBuffer buffer = ByteBuffer.allocate(socks4MessageLength);
+            int read = channel.read(buffer);
+            Assert.assertEquals(socks4MessageLength, read);
 
-        int socks4MessageLength = 9;
-        ByteBuffer buffer = ByteBuffer.allocate(socks4MessageLength);
-        int read = channel.read(buffer);
-        Assert.assertEquals(socks4MessageLength, read);
+            // Socks4 response, with split bytes.
+            byte[] chunk1 = new byte[]{0, 0x5A, 0};
+            byte[] chunk2 = new byte[]{0, 0, 0, 0, 0};
+            channel.write(ByteBuffer.wrap(chunk1));
 
-        // Socks4 response, with split bytes.
-        byte[] chunk1 = new byte[]{0, 0x5A, 0};
-        byte[] chunk2 = new byte[]{0, 0, 0, 0, 0};
-        channel.write(ByteBuffer.wrap(chunk1));
+            // Wait before sending the second chunk.
+            Thread.sleep(1000);
 
-        // Wait before sending the second chunk.
-        Thread.sleep(1000);
+            channel.write(ByteBuffer.wrap(chunk2));
 
-        channel.write(ByteBuffer.wrap(chunk2));
+            buffer = ByteBuffer.allocate(method.length());
+            read = channel.read(buffer);
+            Assert.assertEquals(buffer.capacity(), read);
+            buffer.flip();
+            Assert.assertEquals(method, StandardCharsets.UTF_8.decode(buffer).toString());
 
-        buffer = ByteBuffer.allocate(method.length());
-        read = channel.read(buffer);
-        Assert.assertEquals(buffer.capacity(), read);
-        buffer.flip();
-        Assert.assertEquals(method, StandardCharsets.UTF_8.decode(buffer).toString());
+            // Response
+            String response = "" +
+                    "HTTP/1.1 200 OK\r\n" +
+                    "Content-Length: 0\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+            channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
 
-        // Response
-        String response = "" +
-                "HTTP/1.1 200 OK\r\n" +
-                "Content-Length: 0\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
-        channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
-
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-        channel.close();
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
     }
 }
