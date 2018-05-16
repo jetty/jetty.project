@@ -164,6 +164,10 @@ Advanced Commands:
                    Notes: location is always relative to ${jetty.base}.
                           you might need to escape the slash "\|" to use
                           this on some environments.
+  maven.repo.uri=[url]
+                  The url to use to download Maven dependencies.
+                  Default is http://central.maven.org/maven2/.
+
 
 
 Properties:

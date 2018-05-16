@@ -22,6 +22,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -32,6 +34,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
 
@@ -56,7 +59,12 @@ public class ReentrantRequestSessionTest
         TestServer server = new TestServer(0, -1, 60, cacheFactory, storeFactory);
 
         
-        server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+        ServletContextHandler context = server.addContext(contextPath);
+        context.addServlet(TestServlet.class, servletMapping);
+        
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        context.addEventListener(scopeListener);
+        
         try
         {
             server.start();
@@ -67,19 +75,22 @@ public class ReentrantRequestSessionTest
             try
             {
                 //create the session
-                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create&port=" + port + "&path=" + contextPath + servletMapping);
+                CountDownLatch latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
+                   
+                //ensure request fully finished processing
+                latch.await(5, TimeUnit.SECONDS);
                 
                 //make a request that will make a simultaneous request for the same session
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
                 request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-  
-                
             }
             finally
             {

@@ -554,6 +554,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         return new Thread(_threadGroup, runnable);
     }
 
+    protected void removeThread(Thread thread)
+    {
+        _threads.remove(thread);
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -739,7 +744,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                     if (_threadsStarted.decrementAndGet()<getMaxThreads())
                         startThreads(1);
                 }
-                _threads.remove(Thread.currentThread());
+                removeThread(Thread.currentThread());
             }
         }
     };

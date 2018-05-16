@@ -42,6 +42,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.log.Log;
@@ -80,16 +81,13 @@ public class InterleavingTest extends AbstractTest
             }
         });
 
-        BlockingQueue<FrameBytesCallback> dataFrames = new LinkedBlockingDeque<>();
+        BlockingQueue<DataFrameCallback> dataFrames = new LinkedBlockingDeque<>();
         Stream.Listener streamListener = new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
-                ByteBuffer data = frame.getData();
-                byte[] bytes = new byte[data.remaining()];
-                data.get(bytes);
-                dataFrames.offer(new FrameBytesCallback(frame, bytes, callback));
+                dataFrames.offer(new DataFrameCallback(frame, callback));
             }
         };
 
@@ -146,20 +144,20 @@ public class InterleavingTest extends AbstractTest
         int finished = 0;
         while (finished < 2)
         {
-            FrameBytesCallback frameBytesCallback = dataFrames.poll(5, TimeUnit.SECONDS);
-            if (frameBytesCallback == null)
+            DataFrameCallback dataFrameCallback = dataFrames.poll(5, TimeUnit.SECONDS);
+            if (dataFrameCallback == null)
                 Assert.fail();
 
-            DataFrame dataFrame = frameBytesCallback.frame;
+            DataFrame dataFrame = dataFrameCallback.frame;
             int streamId = dataFrame.getStreamId();
             int length = dataFrame.remaining();
             streamLengths.add(new StreamLength(streamId, length));
             if (dataFrame.isEndStream())
                 ++finished;
 
-            contents.get(streamId).write(frameBytesCallback.bytes);
+            BufferUtil.writeTo(dataFrame.getData(), contents.get(streamId));
 
-            frameBytesCallback.callback.succeeded();
+            dataFrameCallback.callback.succeeded();
         }
 
         // Verify that the content has been sent properly.
@@ -197,16 +195,14 @@ public class InterleavingTest extends AbstractTest
         });
     }
 
-    private static class FrameBytesCallback
+    private static class DataFrameCallback
     {
         private final DataFrame frame;
-        private final byte[] bytes;
         private final Callback callback;
 
-        private FrameBytesCallback(DataFrame frame, byte[] bytes, Callback callback)
+        private DataFrameCallback(DataFrame frame, Callback callback)
         {
             this.frame = frame;
-            this.bytes = bytes;
             this.callback = callback;
         }
     }

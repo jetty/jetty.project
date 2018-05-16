@@ -6,12 +6,13 @@
   <groupId>org.eclipse.jetty.its.jetty-deploy-war-mojo-it</groupId>
   <artifactId>jetty-simple-project</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
 
   <name>Jetty :: Simple deploy war mojo test</name>
 
   <properties>
     <jetty.version>@project.version@</jetty.version>
-    <jetty.port.file>${project.build.directory}/jetty-run-war-port.txt</jetty.port.file>
+    <jetty.port.file>${project.build.directory}/jetty-deploy-war-port.txt</jetty.port.file>
   </properties>
 
   <dependencies>
@@ -53,33 +54,6 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>@surefireVersion@</version>
-        <configuration>
-          <systemPropertyVariables>
-            <jetty.port.file>${jetty.port.file}</jetty.port.file>
-          </systemPropertyVariables>
-          <includes>
-            <include>**/*TestHelloServlet*</include>
-          </includes>
-        </configuration>
-        <executions>
-          <execution>
-            <id>integration-test</id>
-            <goals>
-              <goal>integration-test</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>verify</id>
-            <goals>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
         <version>@project.version@</version>
@@ -91,6 +65,10 @@
               <goal>deploy-war</goal>
             </goals>
             <configuration>
+              <jettyRunPort>@jetty.runPort@</jettyRunPort>
+              <supportedPackagings>
+                <supportedPackaging>pom</supportedPackaging>
+              </supportedPackagings>
               <war>${project.build.directory}/bean-validation-webapp-2.25.1.war</war>
               <nonBlocking>true</nonBlocking>
               <systemProperties>

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.its.jetty_run_forked_mojo_it;
+package org.eclipse.jetty.its.jetty_run_mojo_it;
 
 import java.io.File;
 import java.io.FileReader;

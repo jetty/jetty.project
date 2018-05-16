@@ -181,7 +181,7 @@ public class PerMessageDeflateExtension extends CompressExtension
             }
         }
         
-        LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
+        LOG.debug("config: outgoingContextTakeover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
         super.setConfig(configNegotiated);
     }

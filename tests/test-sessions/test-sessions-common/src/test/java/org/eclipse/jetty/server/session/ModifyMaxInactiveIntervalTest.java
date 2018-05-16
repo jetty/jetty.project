@@ -509,7 +509,6 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
             try
             {
                 // Perform a request to create a session
-
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
 
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
