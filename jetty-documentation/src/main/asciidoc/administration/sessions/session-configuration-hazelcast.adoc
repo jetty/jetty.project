@@ -48,7 +48,7 @@ INFO  : server          transitively enabled, ini template available with --add-
 INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
 INFO  : session-store-hazelcast-remote initialized in ${jetty.base}/start.d/session-store-hazelcast-remote.ini
 MKDIR : /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2
-DOWNLD: https://repo.maven.apache.org/maven2/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar
+DOWNLD: https://repo1.maven.org/maven2/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar
 MKDIR : ${jetty.base}/lib/hazelcast
 COPY  : /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-3.8.2.jar
 COPY  : /Users/admin/mvn-repo/com/hazelcast/hazelcast-client/3.8.2/hazelcast-client-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-client-3.8.2.jar
@@ -136,7 +136,7 @@ INFO  : server          transitively enabled, ini template available with --add-
 INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
 INFO  : session-store-hazelcast-embedded initialized in ${jetty.base}/start.d/session-store-hazelcast-embedded.ini
 MKDIR : /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2
-DOWNLD: https://repo.maven.apache.org/maven2/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar
+DOWNLD: https://repo1.maven.org/maven2/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar
 MKDIR : ${jetty.base}/lib/hazelcast
 COPY  : /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-3.8.2.jar
 COPY  : /Users/admin/mvn-repo/com/hazelcast/hazelcast-client/3.8.2/hazelcast-client-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-client-3.8.2.jar

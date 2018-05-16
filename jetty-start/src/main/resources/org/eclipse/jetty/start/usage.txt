@@ -166,7 +166,7 @@ Advanced Commands:
                           this on some environments.
   maven.repo.uri=[url]
                   The url to use to download Maven dependencies.
-                  Default is https://repo.maven.apache.org/maven2/.
+                  Default is https://repo1.maven.org/maven2/.
 
 
 
@@ -221,7 +221,7 @@ Properties:
       Jetty server has stopped. If not specified, the stopper will wait
       indefinitely. Use in conjunction with the --stop option.
 
-    maven.repo.uri=[url] default https://repo.maven.apache.org/maven2/.
+    maven.repo.uri=[url] default https://repo1.maven.org/maven2/.
       The url to use to download Maven dependencies.
 
 

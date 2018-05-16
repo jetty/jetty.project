@@ -52,7 +52,7 @@ INFO  : server          transitively enabled, ini template available with --add-
 INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
 INFO  : session-store-infinispan-remote initialized in ${jetty.base}/start.d/session-store-infinispan-remote.ini
 MKDIR : ${jetty.base}/lib/infinispan
-DOWNLD: https://repo.maven.apache.org/maven2/org/infinispan/infinispan-remote/7.1.1.Final/infinispan-remote-7.1.1.Final.jar to ${jetty.base}/lib/infinispan/infinispan-remote-7.1.1.Final.jar
+DOWNLD: https://repo1.maven.org/maven2/org/infinispan/infinispan-remote/7.1.1.Final/infinispan-remote-7.1.1.Final.jar to ${jetty.base}/lib/infinispan/infinispan-remote-7.1.1.Final.jar
 MKDIR : ${jetty.base}/resources
 COPY  : ${jetty.home}/modules/session-store-infinispan-remote/resources/hotrod-client.properties to ${jetty.base}/resources/hotrod-client.properties
 INFO  : Base directory was modified
@@ -137,7 +137,7 @@ Proceed (y/N)? y
 INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
 INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
 INFO : session-store-infinispan-embedded initialised in ${jetty.base}/start.d/session-store-infinispan-embedded.ini
-DOWNLOAD: https://repo.maven.apache.org/maven2/org/infinispan/infinispan-embedded/7.1.1.Final/infinispan-embedded-7.1.1.Final.jar to ${jetty.base}/lib/infinispan/infinispan-embedded-7.1.1.Final.jar
+DOWNLOAD: https://repo1.maven.org/maven2/org/infinispan/infinispan-embedded/7.1.1.Final/infinispan-embedded-7.1.1.Final.jar to ${jetty.base}/lib/infinispan/infinispan-embedded-7.1.1.Final.jar
 INFO : Base directory was modified
 ----
 

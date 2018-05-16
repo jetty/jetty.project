@@ -113,7 +113,7 @@ Default value: the `org.apache.jasper.JspC` instance being configured.
 +
 The JspC class actually performs the pre-compilation.
 All setters on the JspC class are available.
-You can download the javadoc https://repo.maven.apache.org/maven2/org/glassfish/web/javax.servlet.jsp/2.3.2/javax.servlet.jsp-2.3.2-javadoc.jar[here].
+You can download the javadoc https://repo1.maven.org/maven2/org/glassfish/web/javax.servlet.jsp/2.3.2/javax.servlet.jsp-2.3.2-javadoc.jar[here].
 
 Taking all the default settings, here's how to configure the war plugin to use the generated `web.xml` that includes all of the jsp servlet declarations:
 

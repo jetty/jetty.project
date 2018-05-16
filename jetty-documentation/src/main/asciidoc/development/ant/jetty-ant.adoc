@@ -38,7 +38,7 @@ Its purpose is to provide almost the same functionality as the Jetty plugin for 
 To set up your project for Ant to run Jetty, you need a Jetty distribution and the jetty-ant Jar:
 
 1.  https://www.eclipse.org/jetty/download.html[Download] a Jetty distribution and unpack it in the local filesystem.
-2.  https://repo.maven.apache.org/maven2/org/eclipse/jetty/jetty-ant/[Get] the jetty-ant Jar.
+2.  https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-ant/[Get] the jetty-ant Jar.
 3.  Make a directory in your project called `jetty-lib/`.
 4.  Copy all of the Jars in your Jetty distribution's `lib` directory, and all its subdirectories, into your new `jetty-lib` dir.
 When copying the Jars, _don't_ preserve the Jetty distribution's lib dir hierarchy – all the jars should be directly inside your ` jetty-lib` dir.

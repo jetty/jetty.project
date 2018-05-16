@@ -14,7 +14,7 @@ specific version of Java.
 #            Java versions.
 #
 # All versions of the alpn-boot jar can be found at
-# https://repo.maven.apache.org/maven2/org/mortbay/jetty/alpn/alpn-boot/
+# https://repo1.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/
 
 [depend]
 alpn-impl/alpn-${java.version}

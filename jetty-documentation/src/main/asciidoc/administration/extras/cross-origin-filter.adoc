@@ -44,7 +44,7 @@ This is extremely useful in CometD web applications where it is now possible to 
 You will need to put the `jetty-servlets.jar` file onto your classpath.
 If you are creating a webapp, ensure that this jar is included in your webapp's `WEB-INF/lib`.
 Or, if you are running Jetty embedded you will need to ensure that `jetty-servlets.jar` is on the execution classpath.
-You can download the `jetty-servlets.jar` from the Maven Central Repository at https://repo.maven.apache.org/maven2/org/eclipse/jetty/jetty-servlets/.
+You can download the `jetty-servlets.jar` from the Maven Central Repository at https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-servlets/.
 It is also available as part of the Jetty distribution in the `$JETTY_HOME/lib` directory.
 
 [[cross-origin-config]]
