@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.AsyncContext;
@@ -735,7 +736,7 @@ public class ResourceService
         else
         {
             // Parse the satisfiable ranges
-            List<InclusiveByteRange> ranges =InclusiveByteRange.satisfiableRanges(reqRanges,content_length);
+            Set<InclusiveByteRange> ranges =InclusiveByteRange.satisfiableRanges( reqRanges, content_length);
 
             //  if there are no satisfiable ranges, send 416 response
             if (ranges==null || ranges.size()==0)
@@ -752,7 +753,7 @@ public class ResourceService
             //  since were here now), send that range with a 216 response
             if ( ranges.size()== 1)
             {
-                InclusiveByteRange singleSatisfiableRange = ranges.get(0);
+                InclusiveByteRange singleSatisfiableRange = ranges.iterator().next();
                 long singleLength = singleSatisfiableRange.getSize(content_length);
                 putHeaders(response,content,singleLength);
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
@@ -793,9 +794,9 @@ public class ResourceService
             // calculate the content-length
             int length=0;
             String[] header = new String[ranges.size()];
-            for (int i=0;i<ranges.size();i++)
+            int i = 0;
+            for (InclusiveByteRange ibr:ranges)
             {
-                InclusiveByteRange ibr = ranges.get(i);
                 header[i]=ibr.toHeaderRangeString(content_length);
                 length+=
                     ((i>0)?2:0)+
@@ -804,13 +805,14 @@ public class ResourceService
                     HttpHeader.CONTENT_RANGE.asString().length()+2+header[i].length()+2+
                     2+
                     (ibr.getLast(content_length)-ibr.getFirst(content_length))+1;
+                i++;
             }
             length+=2+2+multi.getBoundary().length()+2+2;
             response.setContentLength(length);
 
-            for (int i=0;i<ranges.size();i++)
+            i=0;
+            for (InclusiveByteRange ibr:ranges)
             {
-                InclusiveByteRange ibr =  ranges.get(i);
                 multi.startPart(mimetype,new String[]{HttpHeader.CONTENT_RANGE+": "+header[i]});
 
                 long start=ibr.getFirst(content_length);
@@ -836,6 +838,8 @@ public class ResourceService
                 else
                     // Handle cached resource
                     content.getResource().writeTo(multi,start,size);
+
+                i++;
             }
             if (in!=null)
                 in.close();

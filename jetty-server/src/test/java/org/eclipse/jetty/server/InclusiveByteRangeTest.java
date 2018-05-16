@@ -22,7 +22,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-import java.util.List;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.Vector;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
@@ -38,7 +39,7 @@ public class InclusiveByteRangeTest
         Vector strings = new Vector();
         strings.add(rangeString);
 
-        List ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),200);
+        Set ranges = InclusiveByteRange.satisfiableRanges( strings.elements(), 200);
         assertNull("Invalid Range [" + rangeString + "] should result in no satisfiable ranges",ranges);
     }
 
@@ -66,20 +67,19 @@ public class InclusiveByteRangeTest
         Vector strings = new Vector();
         strings.add(rangeString);
 
-        List ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),size);
+        Set ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),size);
         assertNotNull("Satisfiable Ranges should not be null",ranges);
         assertEquals("Satisfiable Ranges of [" + rangeString + "] count",1,ranges.size());
-        return (InclusiveByteRange)ranges.get(0);
+        return (InclusiveByteRange)ranges.iterator().next();
     }
 
     @SuppressWarnings("unchecked")
-    private List<InclusiveByteRange> parseRanges(String rangeString, int size)
+    private Set<InclusiveByteRange> parseRanges(String rangeString, int size)
     {
         Vector strings = new Vector();
         strings.add(rangeString);
 
-        List<InclusiveByteRange> ranges;
-        ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),size);
+        Set<InclusiveByteRange> ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),size);
         assertNotNull("Satisfiable Ranges should not be null",ranges);
         return ranges;
     }
@@ -112,10 +112,11 @@ public class InclusiveByteRangeTest
 
         rangeString = "bytes=5-20,35-65";
 
-        List<InclusiveByteRange> ranges = parseRanges(rangeString,size);
+        Set<InclusiveByteRange> ranges = parseRanges(rangeString,size);
         assertEquals("Satisfiable Ranges of [" + rangeString + "] count",2,ranges.size());
-        assertRange("Range [" + rangeString + "]",5,20,size,ranges.get(0));
-        assertRange("Range [" + rangeString + "]",35,49,size,ranges.get(1));
+        Iterator<InclusiveByteRange> inclusiveByteRangeIterator = ranges.iterator();
+        assertRange("Range [" + rangeString + "]",5,20,size,inclusiveByteRangeIterator.next());
+        assertRange("Range [" + rangeString + "]",35,49,size,inclusiveByteRangeIterator.next());
     }
 
     /**
@@ -128,11 +129,12 @@ public class InclusiveByteRangeTest
 
         rangeString = "bytes=5-20,35-65,-5";
 
-        List<InclusiveByteRange> ranges = parseRanges(rangeString,50);
+        Set<InclusiveByteRange> ranges = parseRanges(rangeString,50);
         assertEquals("Satisfiable Ranges of [" + rangeString + "] count",3,ranges.size());
-        assertRange("Range [" + rangeString + "]",5,20,50,ranges.get(0));
-        assertRange("Range [" + rangeString + "]",35,49,50,ranges.get(1));
-        assertRange("Range [" + rangeString + "]",45,49,50,ranges.get(2));
+        Iterator<InclusiveByteRange> inclusiveByteRangeIterator = ranges.iterator();
+        assertRange("Range [" + rangeString + "]",5,20,50,inclusiveByteRangeIterator.next());
+        assertRange("Range [" + rangeString + "]",35,49,50,inclusiveByteRangeIterator.next());
+        assertRange("Range [" + rangeString + "]",45,49,50,inclusiveByteRangeIterator.next());
     }
 
     @Test
@@ -142,10 +144,11 @@ public class InclusiveByteRangeTest
 
         rangeString = "bytes=5-20,15-25";
 
-        List<InclusiveByteRange> ranges = parseRanges(rangeString,200);
+        Set<InclusiveByteRange> ranges = parseRanges(rangeString,200);
         assertEquals("Satisfiable Ranges of [" + rangeString + "] count",2,ranges.size());
-        assertRange("Range [" + rangeString + "]",5,20,200,ranges.get(0));
-        assertRange("Range [" + rangeString + "]",15,25,200,ranges.get(1));
+        Iterator<InclusiveByteRange> inclusiveByteRangeIterator = ranges.iterator();
+        assertRange("Range [" + rangeString + "]",5,20,200,inclusiveByteRangeIterator.next());
+        assertRange("Range [" + rangeString + "]",15,25,200,inclusiveByteRangeIterator.next());
     }
 
     @Test
@@ -154,10 +157,24 @@ public class InclusiveByteRangeTest
         String rangeString;
         rangeString = "bytes=5-10,15-20";
 
-        List<InclusiveByteRange> ranges = parseRanges(rangeString,200);
+        Set<InclusiveByteRange> ranges = parseRanges(rangeString,200);
         assertEquals("Satisfiable Ranges of [" + rangeString + "] count",2,ranges.size());
-        assertRange("Range [" + rangeString + "]",5,10,200,ranges.get(0));
-        assertRange("Range [" + rangeString + "]",15,20,200,ranges.get(1));
+        Iterator<InclusiveByteRange> inclusiveByteRangeIterator = ranges.iterator();
+        assertRange("Range [" + rangeString + "]",5,10,200,inclusiveByteRangeIterator.next());
+        assertRange("Range [" + rangeString + "]",15,20,200,inclusiveByteRangeIterator.next());
+    }
+
+    @Test
+    public void testMultipleSameRangesSplit()
+    {
+        String rangeString;
+        rangeString = "bytes=5-10,15-20,5-10,15-20,5-10,5-10,5-10,5-10,5-10,5-10";
+
+        Set<InclusiveByteRange> ranges = parseRanges(rangeString,200);
+        assertEquals("Satisfiable Ranges of [" + rangeString + "] count",2,ranges.size());
+        Iterator<InclusiveByteRange> inclusiveByteRangeIterator = ranges.iterator();
+        assertRange("Range [" + rangeString + "]",5,10,200,inclusiveByteRangeIterator.next());
+        assertRange("Range [" + rangeString + "]",15,20,200,inclusiveByteRangeIterator.next());
     }
 
     @Test
