@@ -26,7 +26,9 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.config.ConfigSources;
@@ -170,6 +172,35 @@ public class MavenLocalRepoFileInitializerTest
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
                    is("https://repo.maven.apache.org/maven2/org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
+
+
+    }
+
+
+    @Test
+    public void testDownload_default_repo()
+        throws Exception
+    {
+        MavenLocalRepoFileInitializer repo =
+            new MavenLocalRepoFileInitializer(baseHome,null,false);
+        String ref = "maven://org.eclipse.jetty/jetty-http/9.4.10.v20180503/jar/tests";
+        Coordinates coords = repo.getCoordinates(URI.create(ref));
+        assertThat("Coordinates",coords,notNullValue());
+
+        assertThat("coords.groupId",coords.groupId,is("org.eclipse.jetty"));
+        assertThat("coords.artifactId",coords.artifactId,is("jetty-http"));
+        assertThat("coords.version",coords.version,is("9.4.10.v20180503"));
+        assertThat("coords.type",coords.type,is("jar"));
+        assertThat("coords.classifier",coords.classifier,is("tests"));
+
+        assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
+                   is("https://repo.maven.apache.org/maven2/org/eclipse/jetty/jetty-http/9.4.10.v20180503/jetty-http-9.4.10.v20180503-tests.jar"));
+
+        Path destination = Paths.get(System.getProperty( "java.io.tmpdir" ), "jetty-http-9.4.10.v20180503-tests.jar");
+        repo.download( coords.toCentralURI(), destination);
+        assertThat( Files.exists(destination), is( true ));
+        assertThat( destination.toFile().length(), is(962621L));
+
     }
 
 }

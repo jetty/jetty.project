@@ -218,4 +218,17 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
 
         return coords;
     }
+
+    /**
+     * protected only for testing purpose
+     * @param uri the the uri to download
+     * @param destination the destination File
+     * @throws IOException
+     */
+    @Override
+    protected void download( URI uri, Path destination )
+        throws IOException
+    {
+        super.download( uri, destination );
+    }
 }
