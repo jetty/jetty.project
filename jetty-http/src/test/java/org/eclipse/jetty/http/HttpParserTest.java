@@ -180,6 +180,32 @@ public class HttpParserTest
         assertEquals("HTTP/1.0", _versionOrReason);
         assertEquals(-1, _headers);
     }
+
+    @Test
+    public void testAllowedLinePreamble() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("\r\n\r\nGET / HTTP/1.0\r\n");
+
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals(-1, _headers);
+    }
+    
+    @Test
+    public void testDisallowedLinePreamble() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("\r\n \r\nGET / HTTP/1.0\r\n");
+
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        assertEquals("400", _bad);
+    }
+    
     
     @Test
     public void testConnect() throws Exception
@@ -453,7 +479,7 @@ public class HttpParserTest
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
         assertThat(_bad,Matchers.notNullValue());
-    } 
+    }
 
     @Test
     public void testHeaderTab() throws Exception
@@ -1545,13 +1571,7 @@ public class HttpParserTest
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
 
-        assertTrue(_headerCompleted);
-        assertTrue(_messageCompleted);
-        assertEquals("PRI", _methodOrVersion);
-        assertEquals("*", _uriOrStatus);
-        assertEquals("HTTP/2.0", _versionOrReason);
-        assertEquals(-1, _headers);
-        assertEquals(null, _bad);
+        assertEquals("Bad Version", _bad);
     }
 
     @Before

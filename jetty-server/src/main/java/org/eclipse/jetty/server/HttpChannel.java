@@ -729,17 +729,13 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
 
                 sendResponse(new ResponseInfo(HttpVersion.HTTP_1_1,fields,0,status,reason,false),content ,true);
             }
-        }
-        catch (IOException e)
-        {
-            LOG.debug(e);
-        }
-        finally
-        {
             if (_state.unhandle()==Action.COMPLETE)
                 _state.completed();
-            else
-                throw new IllegalStateException();
+        }
+        catch (Throwable e)
+        {
+            LOG.debug(e);
+            _transport.abort();
         }
     }
 

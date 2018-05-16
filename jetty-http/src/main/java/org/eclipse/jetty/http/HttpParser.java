@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.eclipse.jetty.http.HttpTokens.*;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -28,11 +26,15 @@ import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
+import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
+import static org.eclipse.jetty.http.HttpTokens.SPACE;
+import static org.eclipse.jetty.http.HttpTokens.TAB;
 
 
 /* ------------------------------------------------------------ */
@@ -80,6 +82,7 @@ public class HttpParser
     public static final Logger LOG = Log.getLogger(HttpParser.class);
     public final static boolean __STRICT=Boolean.getBoolean("org.eclipse.jetty.http.HttpParser.STRICT"); 
     public final static int INITIAL_URI_LENGTH=256;
+    private final static int MAX_CHUNK_LENGTH=Integer.MAX_VALUE/16-16;
 
     /**
      * Cache of common {@link HttpField}s including: <UL>
@@ -147,6 +150,7 @@ public class HttpParser
     private HttpVersion _version;
     private ByteBuffer _uri=ByteBuffer.allocate(INITIAL_URI_LENGTH); // Tune?
     private EndOfContent _endOfContent;
+    private boolean _hasContentLength;
     private long _contentLength;
     private long _contentPosition;
     private int _chunkLength;
@@ -355,7 +359,12 @@ public class HttpParser
         
         private BadMessageException(int code,String message)
         {
-            super(message);
+            this(code,message,null);
+        }
+        
+        private BadMessageException(int code,String message,Throwable cause)
+        {
+            super(message, cause);
             _code=code;
         }
     }
@@ -406,7 +415,7 @@ public class HttpParser
      * otherwise skip white space until something else to parse.
      */
     private boolean quickStart(ByteBuffer buffer)
-    {    	
+    {
         if (_requestHandler!=null)
         {
             _method = HttpMethod.lookAheadGet(buffer);
@@ -444,7 +453,7 @@ public class HttpParser
             }
             else if (ch==0)
                 break;
-            else if (ch<0)
+            else if (ch!='\n')
                 throw new BadMessageException();
             
             // count this white space as a header byte to avoid DOS
@@ -687,8 +696,11 @@ public class HttpParser
                                     return false;
                                 }
                             }
-                            else
+                            else 
                             {
+                                if (version!=HttpVersion.HTTP_1_0 && version!=HttpVersion.HTTP_1_1)
+                                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Version");
+
                                 int pos = buffer.position()+version.asString().length()-1;
                                 if (pos<buffer.limit())
                                 {
@@ -743,9 +755,11 @@ public class HttpParser
                         }
                         if (_version==null)
                             throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Unknown Version");
+                        if (_version!=HttpVersion.HTTP_1_0 && _version!=HttpVersion.HTTP_1_1)
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Version");
                         
                         // Should we try to cache header fields?
-                        if (_connectionFields==null && _version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
+                        if (_connectionFields==null && _version.getVersion()==HttpVersion.HTTP_1_1.getVersion())
                         {
                             int header_cache = _handler.getHeaderCacheSize();
                             _connectionFields=new ArrayTernaryTrie<>(header_cache);                            
@@ -797,22 +811,27 @@ public class HttpParser
         switch (_header)
         {
             case CONTENT_LENGTH:
-                if (_endOfContent != EndOfContent.CHUNKED_CONTENT)
+                if (_hasContentLength)
+                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Content-Lengths");
+                _hasContentLength = true;
+
+                if (_endOfContent == EndOfContent.CHUNKED_CONTENT)
+                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Content-Length");
+
+                try
                 {
-                    try
-                    {
-                        _contentLength=Long.parseLong(_valueString);
-                    }
-                    catch(NumberFormatException e)
-                    {
-                        LOG.ignore(e);
-                        throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Content-Length");
-                    }
-                    if (_contentLength <= 0)
-                        _endOfContent=EndOfContent.NO_CONTENT;
-                    else
-                        _endOfContent=EndOfContent.CONTENT_LENGTH;
+                    _contentLength=Long.parseLong(_valueString);
                 }
+                catch(NumberFormatException e)
+                {
+                    LOG.ignore(e);
+                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Content-Length");
+                }
+                if (_contentLength <= 0)
+                    _endOfContent=EndOfContent.NO_CONTENT;
+                else
+                    _endOfContent=EndOfContent.CONTENT_LENGTH;
+                
                 break;
 
             case TRANSFER_ENCODING:
@@ -827,6 +846,10 @@ public class HttpParser
                         throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad chunking");
                     }
                 }
+                
+                if (_hasContentLength && _endOfContent==EndOfContent.CHUNKED_CONTENT)
+                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad chunking");
+
                 break;
 
             case HOST:
@@ -846,8 +869,7 @@ public class HttpParser
                 }
                 catch (final Exception e)
                 {
-                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Host header")
-                    {{initCause(e);}};
+                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Host header",e);
                 }
                 
               break;
@@ -1433,9 +1455,15 @@ public class HttpParser
                             setState(State.CHUNK);
                     }
                     else if (ch <= HttpTokens.SPACE || ch == HttpTokens.SEMI_COLON)
+                    {
                         setState(State.CHUNK_PARAMS);
+                    }
                     else
+                    {
+                        if (_chunkLength>MAX_CHUNK_LENGTH)
+                            throw new BadMessageException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413);
                         _chunkLength=_chunkLength * 16 + TypeUtil.convertHexDigit(ch);
+                    }
                     break;
                 }
 
@@ -1547,6 +1575,7 @@ public class HttpParser
         setState(State.START);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
         _contentLength=-1;
+        _hasContentLength=false;
         _contentPosition=0;
         _responseStatus=0;
         _contentChunk=null;

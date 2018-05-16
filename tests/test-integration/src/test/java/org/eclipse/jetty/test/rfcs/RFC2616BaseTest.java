@@ -18,15 +18,11 @@
 
 package org.eclipse.jetty.test.rfcs;
 
-import static org.junit.Assert.*;
-import static org.junit.matchers.JUnitMatchers.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
@@ -42,13 +38,17 @@ import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.StringAssert;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 /**
  * <a href="http://tools.ietf.org/html/rfc2616">RFC 2616</a> (HTTP/1.1) Test Case
@@ -380,7 +380,7 @@ public abstract class RFC2616BaseTest
         // 4.4.3 -
         // Client - do not send 'Content-Length' if entity-length
         // and the transfer-length are different.
-        // Server - ignore 'Content-Length' if 'Transfer-Encoding' is provided.
+        // Server - bad message to avoid smuggling concerns
 
         StringBuffer req2 = new StringBuffer();
         req2.append("GET /echo/R1 HTTP/1.1\n");
@@ -405,14 +405,10 @@ public abstract class RFC2616BaseTest
         req2.append("7890AB");
 
         responses = http.requests(req2);
-        Assert.assertEquals("Response Count",2,responses.size());
+        Assert.assertEquals("Response Count",1,responses.size());
 
         response = responses.get(0); // response 1
-        assertEquals("4.4.3 Ignore Content-Length / Response Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("4.4.3 Ignore Content-Length / Body", response.getContent().contains("123456\n"));
-        response = responses.get(1); // response 2
-        assertEquals("4.4.3 Ignore Content-Length / Response Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("4.4.3 Ignore Content-Length / Body", response.getContent().contains("7890AB\n"));
+        assertEquals("4.4.3 Ignore Content-Length / Response Code", HttpStatus.BAD_REQUEST_400, response.getStatus());
 
         // 4.4 - Server can request valid Content-Length from client if client
         // fails to provide a Content-Length.
