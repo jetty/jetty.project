@@ -44,11 +44,13 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
+@Ignore
 public class ConnectionPoolTest
 {
     private Server server;
