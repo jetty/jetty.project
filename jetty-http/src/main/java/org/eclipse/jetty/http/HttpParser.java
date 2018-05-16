@@ -93,6 +93,7 @@ public class HttpParser
     @Deprecated
     public final static String __STRICT="org.eclipse.jetty.http.HttpParser.STRICT";
     public final static int INITIAL_URI_LENGTH=256;
+    private final static int MAX_CHUNK_LENGTH=Integer.MAX_VALUE/16-16;
 
     /**
      * Cache of common {@link HttpField}s including: <UL>
@@ -166,6 +167,7 @@ public class HttpParser
     private HttpVersion _version;
     private Utf8StringBuilder _uri=new Utf8StringBuilder(INITIAL_URI_LENGTH); // Tune?
     private EndOfContent _endOfContent;
+    private boolean _hasContentLength;
     private long _contentLength;
     private long _contentPosition;
     private int _chunkLength;
@@ -552,8 +554,8 @@ public class HttpParser
             }
             else if (ch==0)
                 break;
-            else if (ch<0)
-                throw new BadMessageException();
+            else if (ch!='\n')
+                throw new BadMessageException("Bad preamble");
 
             // count this white space as a header byte to avoid DOS
             if (_maxHeaderBytes>0 && ++_headerBytes>_maxHeaderBytes)
@@ -662,8 +664,7 @@ public class HttpParser
                         _length=_string.length();
                         String version=takeString();
                         _version=HttpVersion.CACHE.get(version);
-                        if (_version==null)
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Unknown Version");
+                        checkVersion();
                         setState(State.SPACE1);
                     }
                     else if (ch < HttpTokens.SPACE)
@@ -778,7 +779,7 @@ public class HttpParser
                                 version=HttpVersion.CACHE.getBest(buffer,0,buffer.remaining());
 
                             if (version!=null)
-                            {
+                            {                                
                                 int pos = buffer.position()+version.asString().length()-1;
                                 if (pos<buffer.limit())
                                 {
@@ -787,12 +788,14 @@ public class HttpParser
                                     {
                                         _cr=true;
                                         _version=version;
+                                        checkVersion();
                                         _string.setLength(0);
                                         buffer.position(pos+1);
                                     }
                                     else if (n==HttpTokens.LINE_FEED)
                                     {
                                         _version=version;
+                                        checkVersion();
                                         _string.setLength(0);
                                         buffer.position(pos);
                                     }
@@ -831,8 +834,7 @@ public class HttpParser
                             _length=_string.length();
                             _version=HttpVersion.CACHE.get(takeString());
                         }
-                        if (_version==null)
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Unknown Version");
+                        checkVersion();
 
                         // Should we try to cache header fields?
                         if (_connectionFields==null && _version.getVersion()>=HttpVersion.HTTP_1_1.getVersion() && _handler.getHeaderCacheSize()>0)
@@ -880,6 +882,15 @@ public class HttpParser
         return handle;
     }
 
+    private void checkVersion() 
+    {
+        if (_version==null)
+            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Unknown Version");
+        
+        if (_version.getVersion()<10 || _version.getVersion()>20)
+            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Version");
+    }
+
     private void parsedHeader()
     {
         // handler last header if any.  Delayed to here just in case there was a continuation line (above)
@@ -892,11 +903,14 @@ public class HttpParser
                 switch (_header)
                 {
                     case CONTENT_LENGTH:
-                        if (_endOfContent == EndOfContent.CONTENT_LENGTH)
-                        {
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Duplicate Content-Length");
-                        }
-                        else if (_endOfContent != EndOfContent.CHUNKED_CONTENT)
+                        if (_hasContentLength && complianceViolation(RFC7230,"Duplicate Content-Lengths"))
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Duplicate Content-Lengths");
+                        _hasContentLength = true;
+
+                        if (_endOfContent == EndOfContent.CHUNKED_CONTENT && complianceViolation(RFC7230,"Chunked and Content-Length"))
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Content-Length");
+
+                        if (_endOfContent != EndOfContent.CHUNKED_CONTENT)
                         {
                             _contentLength=convertContentLength(_valueString);
                             if (_contentLength <= 0)
@@ -919,6 +933,11 @@ public class HttpParser
                             else if (_valueString.contains(HttpHeaderValue.CHUNKED.toString()))
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad chunking");
                         }
+                        
+                        if (_hasContentLength && _endOfContent==EndOfContent.CHUNKED_CONTENT && complianceViolation(RFC7230,"Chunked and Content-Length"))
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Chunked and Content-Length");
+
+                        
                         break;
 
                     case HOST:
@@ -1559,9 +1578,16 @@ public class HttpParser
                             setState(State.CHUNK);
                     }
                     else if (ch <= HttpTokens.SPACE || ch == HttpTokens.SEMI_COLON)
+                    {
                         setState(State.CHUNK_PARAMS);
+                    }
                     else
+                    {
+                        if (_chunkLength>MAX_CHUNK_LENGTH)
+                            throw new BadMessageException(HttpStatus.PAYLOAD_TOO_LARGE_413);
+
                         _chunkLength=_chunkLength * 16 + TypeUtil.convertHexDigit(ch);
+                    }
                     break;
                 }
 
@@ -1687,6 +1713,7 @@ public class HttpParser
         setState(State.START);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
         _contentLength=-1;
+        _hasContentLength=false;
         _contentPosition=0;
         _responseStatus=0;
         _contentChunk=null;

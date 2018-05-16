@@ -24,7 +24,12 @@
  */
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -45,6 +50,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -133,6 +139,166 @@ public class HttpConnectionTest
             if(response != null)
                 System.err.println(response);
             throw e;
+        }
+    }
+    
+    /**
+     * HTTP/0.9 does not support HttpVersion (this is a bad request)
+     */
+    @Test
+    public void testHttp09_NoVersion() throws Exception
+    {
+        String request = "GET / HTTP/0.9\r\n\r\n";
+        String response = connector.getResponses(request);
+        assertThat(response, containsString("400 Bad Version"));
+    }
+    
+    /**
+     * HTTP/0.9 does not support headers
+     */
+    @Test
+    public void testHttp09_NoHeaders() throws Exception
+    {
+        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        // header looking like another request is ignored 
+        String request = "GET /one\r\nGET :/two\r\n\r\n";
+        String response = connector.getResponses(request);
+        assertThat(response, containsString("pathInfo=/"));
+        assertThat(response, not(containsString("two")));
+    }
+    
+    /**
+     * Http/0.9 does not support pipelining.
+     */
+    @Test
+    public void testHttp09_MultipleRequests() throws Exception
+    {
+        connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
+        // Verify that LocalConnector supports pipelining with HTTP/1.1.
+        String requests = "GET /?id=123 HTTP/1.1\r\nHost: localhost\r\n\r\nGET /?id=456 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+        String responses = connector.getResponses(requests);
+        assertThat(responses, containsString("id=123"));
+        assertThat(responses, containsString("id=456"));
+
+        // Verify that pipelining does not work with HTTP/0.9.
+        requests = "GET /?id=123\r\n\r\nGET /?id=456\r\n\r\nGET /?id=789\r\n\r\n";
+        responses = connector.getResponses(requests);
+        assertThat(responses, containsString("id=123"));
+        assertThat(responses, not(containsString("id=456")));
+        assertThat(responses, not(containsString("id=789")));
+    }
+    
+    /**
+     * Ensure that excessively large hexadecimal chunk body length is parsed properly.
+     */
+    @Test
+    public void testHttp11_ChunkedBodyTruncation() throws Exception
+    {
+        String request = "POST /?id=123 HTTP/1.1\r\n" +
+                "Host: local\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                "1ff00000008\r\n" +
+                "abcdefgh\r\n" +
+                "\r\n" +
+                "0\r\n" +
+                "\r\n" +
+                "POST /?id=bogus HTTP/1.1\r\n" +
+                "Content-Length: 5\r\n" +
+                "Host: dummy-host.example.com\r\n" +
+                "\r\n" +
+                "12345";
+        String responses = connector.getResponses(request);
+        
+        assertThat(responses,anyOf(
+                isEmptyOrNullString(),
+                containsString(" 413 "),
+                containsString(" 500 ")
+                ));        
+    }
+    
+    /**
+     * More then 1 Content-Length is a bad requests per HTTP rfcs.
+     */
+    @Test
+    public void testHttp11_MultipleContentLength() throws Exception
+    {
+        HttpParser.LOG.info("badMessage: 400 Bad messages EXPECTED...");
+        int contentLengths[][]= {
+                {0,8},
+                {8,0},
+                {8,8},
+                {0,8,0},
+                {1,2,3,4,5,6,7,8},
+                {8,2,1},
+                {0,0},
+                {8,0,8},
+                {-1,8},
+                {8,-1},
+                {-1,8,-1},
+                {-1,-1},
+                {8,-1,8},
+        };
+
+        for(int x = 0; x < contentLengths.length; x++)
+        {
+            StringBuilder request = new StringBuilder();
+            request.append("POST /?id=").append(Integer.toString(x)).append(" HTTP/1.1\r\n");
+            request.append("Host: local\r\n");
+            int clen[] = contentLengths[x];
+            for(int n = 0; n<clen.length; n++)
+            {
+                request.append("Content-Length: ").append(Integer.toString(clen[n])).append("\r\n");
+            }
+            request.append("Content-Type: text/plain\r\n");
+            request.append("Connection: close\r\n");
+            request.append("\r\n");
+            request.append("abcdefgh"); // actual content of 8 bytes
+    
+            String rawResponses = connector.getResponses(request.toString());
+            HttpTester.Response response = HttpTester.parseResponse(rawResponses);
+            assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_BAD_REQUEST));
+        }
+    }
+    
+    /**
+     * More then 1 Content-Length is a bad requests per HTTP rfcs.
+     */
+    @Test
+    public void testHttp11_ContentLengthAndChunk() throws Exception
+    {
+        HttpParser.LOG.info("badMessage: 400 Bad messages EXPECTED...");
+        int contentLengths[][]= {
+                {-1,8},
+                {8,-1},
+                {8,-1,8},
+        };
+
+        for(int x = 0; x < contentLengths.length; x++)
+        {
+            StringBuilder request = new StringBuilder();
+            request.append("POST /?id=").append(Integer.toString(x)).append(" HTTP/1.1\r\n");
+            request.append("Host: local\r\n");
+            int clen[] = contentLengths[x];
+            for(int n = 0; n<clen.length; n++)
+            {
+                if (clen[n]==-1)
+                    request.append("Transfer-Encoding: chunked\r\n");
+                else
+                    request.append("Content-Length: ").append(Integer.toString(clen[n])).append("\r\n");
+            }
+            request.append("Content-Type: text/plain\r\n");
+            request.append("Connection: close\r\n");
+            request.append("\r\n");
+            request.append("8;\r\n"); // chunk header
+            request.append("abcdefgh"); // actual content of 8 bytes
+            request.append("\r\n0;\r\n"); // last chunk
+    
+            String rawResponses = connector.getResponses(request.toString());
+            HttpTester.Response response = HttpTester.parseResponse(rawResponses);
+            assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_BAD_REQUEST));
         }
     }
 

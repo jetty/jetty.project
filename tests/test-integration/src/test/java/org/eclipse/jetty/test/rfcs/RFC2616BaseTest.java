@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.test.rfcs;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.File;
 import java.io.IOException;
@@ -384,7 +384,7 @@ public abstract class RFC2616BaseTest
         // 4.4.3 -
         // Client - do not send 'Content-Length' if entity-length
         // and the transfer-length are different.
-        // Server - ignore 'Content-Length' if 'Transfer-Encoding' is provided.
+        // Server - bad message to avoid smuggling concerns
 
         StringBuffer req2 = new StringBuffer();
         req2.append("GET /echo/R1 HTTP/1.1\n");
@@ -409,14 +409,10 @@ public abstract class RFC2616BaseTest
         req2.append("7890AB");
 
         responses = http.requests(req2);
-        Assert.assertEquals("Response Count",2,responses.size());
+        Assert.assertEquals("Response Count",1,responses.size());
 
         response = responses.get(0); // response 1
-        assertEquals("4.4.3 Ignore Content-Length / Response Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("4.4.3 Ignore Content-Length / Body", response.getContent().contains("123456\n"));
-        response = responses.get(1); // response 2
-        assertEquals("4.4.3 Ignore Content-Length / Response Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("4.4.3 Ignore Content-Length / Body", response.getContent().contains("7890AB\n"));
+        assertEquals("4.4.3 Ignore Content-Length / Response Code", HttpStatus.BAD_REQUEST_400, response.getStatus());
 
         // 4.4 - Server can request valid Content-Length from client if client
         // fails to provide a Content-Length.

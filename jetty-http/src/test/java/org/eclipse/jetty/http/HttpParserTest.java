@@ -211,6 +211,32 @@ public class HttpParserTest
     }
 
     @Test
+    public void testAllowedLinePreamble() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("\r\n\r\nGET / HTTP/1.0\r\n");
+
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        Assert.assertEquals("GET", _methodOrVersion);
+        Assert.assertEquals("/", _uriOrStatus);
+        Assert.assertEquals("HTTP/1.0", _versionOrReason);
+        Assert.assertEquals(-1, _headers);
+    }
+    
+    @Test
+    public void testDisallowedLinePreamble() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("\r\n \r\nGET / HTTP/1.0\r\n");
+
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        Assert.assertEquals("Bad preamble", _bad);
+    }
+    
+    
+    @Test
     public void testConnect() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer("CONNECT 192.168.1.2:80 HTTP/1.1\r\n" + "\r\n");
@@ -1546,7 +1572,7 @@ public class HttpParserTest
 
         parser.parseNext(buffer);
         Assert.assertEquals("POST", _methodOrVersion);
-        Assert.assertEquals("Duplicate Content-Length", _bad);
+        Assert.assertEquals("Duplicate Content-Lengths", _bad);
         Assert.assertFalse(buffer.hasRemaining());
         Assert.assertEquals(HttpParser.State.CLOSE, parser.getState());
         parser.atEOF();
@@ -1570,7 +1596,7 @@ public class HttpParserTest
 
         parser.parseNext(buffer);
         Assert.assertEquals("POST", _methodOrVersion);
-        Assert.assertEquals("Duplicate Content-Length", _bad);
+        Assert.assertEquals("Duplicate Content-Lengths", _bad);
         Assert.assertFalse(buffer.hasRemaining());
         Assert.assertEquals(HttpParser.State.CLOSE, parser.getState());
         parser.atEOF();
@@ -1593,7 +1619,7 @@ public class HttpParserTest
                         + "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler,HttpCompliance.RFC2616);
         parseAll(parser, buffer);
 
         Assert.assertEquals("POST", _methodOrVersion);
@@ -1620,7 +1646,7 @@ public class HttpParserTest
                         + "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler,HttpCompliance.RFC2616);
         parseAll(parser, buffer);
 
         Assert.assertEquals("POST", _methodOrVersion);
