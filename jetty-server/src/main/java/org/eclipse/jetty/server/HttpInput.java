@@ -686,6 +686,11 @@ public class HttpInput extends ServletInputStream implements Runnable
                 LOG.debug(e);
                 return false;
             }
+            finally
+            {
+                if (!EOFState.class.isInstance(_state))
+                    _state = EARLY_EOF;
+            }
         }
     }
 
