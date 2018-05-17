@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -190,6 +192,28 @@ public class DefaultServletRangesTest
         Assert.assertEquals( "Content range 0-60/80 in response not only 1:" + response , //
                              2, response.split( "Content-Range: bytes 10-60/80" ).length);
         assertTrue(body.endsWith(boundary + "--\r\n"));
+    }
+
+    @Test
+    public void testMultipleSameRangeRequestsTooLargeHeader() throws Exception
+    {
+        StringBuilder stringBuilder = new StringBuilder( );
+        for(int i = 0; i < 2000; i++)
+        {
+            stringBuilder.append( "10-60," );
+        }
+
+
+        String response;
+        response = connector.getResponse(
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n"+
+                "Range: bytes=" + stringBuilder.toString() +"0-2\r\n" +
+                "\r\n");
+        int start = response.indexOf("--jetty");
+        assertEquals( -1, start );
+        assertResponseContains("HTTP/1.1 431 Request Header Fields Too Large", response);
     }
 
     @Test
