@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.AsyncContext;
@@ -736,7 +735,7 @@ public class ResourceService
         else
         {
             // Parse the satisfiable ranges
-            Set<InclusiveByteRange> ranges =InclusiveByteRange.satisfiableRanges( reqRanges, content_length);
+            List<InclusiveByteRange> ranges =InclusiveByteRange.satisfiableRanges( reqRanges, content_length);
 
             //  if there are no satisfiable ranges, send 416 response
             if (ranges==null || ranges.size()==0)
@@ -754,14 +753,14 @@ public class ResourceService
             if ( ranges.size()== 1)
             {
                 InclusiveByteRange singleSatisfiableRange = ranges.iterator().next();
-                long singleLength = singleSatisfiableRange.getSize(content_length);
+                long singleLength = singleSatisfiableRange.getSize();
                 putHeaders(response,content,singleLength);
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
                 if (!response.containsHeader(HttpHeader.DATE.asString()))
                     response.addDateHeader(HttpHeader.DATE.asString(),System.currentTimeMillis());
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                         singleSatisfiableRange.toHeaderRangeString(content_length));
-                content.getResource().writeTo(out,singleSatisfiableRange.getFirst(content_length),singleLength);
+                content.getResource().writeTo(out,singleSatisfiableRange.getFirst(),singleLength);
                 return true;
             }
 
@@ -804,7 +803,7 @@ public class ResourceService
                     (mimetype==null?0:HttpHeader.CONTENT_TYPE.asString().length()+2+mimetype.length())+2+
                     HttpHeader.CONTENT_RANGE.asString().length()+2+header[i].length()+2+
                     2+
-                    (ibr.getLast(content_length)-ibr.getFirst(content_length))+1;
+                    (ibr.getLast()-ibr.getFirst())+1;
                 i++;
             }
             length+=2+2+multi.getBoundary().length()+2+2;
@@ -815,8 +814,8 @@ public class ResourceService
             {
                 multi.startPart(mimetype,new String[]{HttpHeader.CONTENT_RANGE+": "+header[i]});
 
-                long start=ibr.getFirst(content_length);
-                long size=ibr.getSize(content_length);
+                long start=ibr.getFirst();
+                long size=ibr.getSize();
                 if (in!=null)
                 {
                     // Handle non cached resource
