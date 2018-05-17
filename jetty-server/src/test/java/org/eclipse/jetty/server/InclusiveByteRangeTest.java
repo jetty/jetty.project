@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -26,11 +29,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AdvancedRunner.class)
 public class InclusiveByteRangeTest
 {
     private void assertInvalidRange(String rangeString)
@@ -249,11 +249,90 @@ public class InclusiveByteRangeTest
     }
     
     @Test
+    public void testRange_OpenEnded()
+    {
+        assertSimpleRange(50, 499, "bytes=50-", 500);
+    }
+    
+    @Test
     public void testSimpleRange()
     {
         assertSimpleRange(5,10,"bytes=5-10",200);
         assertSimpleRange(195,199,"bytes=-5",200);
         assertSimpleRange(50,119,"bytes=50-150",120);
         assertSimpleRange(50,119,"bytes=50-",120);
+        
+        assertSimpleRange(1,50,"bytes= 1 - 50",120);
+    }
+
+    // TODO: evaluate this vs assertInvalidRange() above, which behavior is correct? null? or empty list?
+    private void assertBadRangeList(int size, String badRange)
+    {
+        Vector<String> strings = new Vector<>();
+        strings.add(badRange);
+    
+        List<InclusiveByteRange> ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),size);
+        // if one part is bad, the entire set of ranges should be treated as bad, per RFC7233
+        assertThat("Should have no ranges", ranges, is(nullValue()));
+    }
+    
+    @Test
+    public void testBadRange_SetPartiallyBad()
+    {
+        assertBadRangeList(500, "bytes=1-50,1-b,a-50");
+    }
+    
+    @Test
+    public void testBadRange_NoNumbers()
+    {
+        assertBadRangeList(500, "bytes=a-b");
+    }
+    
+    @Test
+    public void testBadRange_Empty()
+    {
+        assertBadRangeList(500, "bytes=");
+    }
+    
+    @Test
+    public void testBadRange_ZeroPrefixed()
+    {
+        assertBadRangeList(500, "bytes=01-050");
+    }
+    
+    @Test
+    public void testBadRange_Hex()
+    {
+        assertBadRangeList(500, "bytes=0F-FF");
+    }
+    
+    @Test
+    public void testBadRange_TabWhitespace()
+    {
+        assertBadRangeList(500, "bytes=\t1\t-\t50");
+    }
+    
+    @Test
+    public void testBadRange_TabDelim()
+    {
+        assertBadRangeList(500, "bytes=1-50\t90-101\t200-250");
+    }
+    
+    @Test
+    public void testBadRange_SemiColonDelim()
+    {
+        assertBadRangeList(500, "bytes=1-50;90-101;200-250");
+    }
+    
+    @Test
+    public void testBadRange_NegativeSize()
+    {
+        assertBadRangeList(500, "bytes=50-1");
+    }
+    
+    @Test
+    public void testBadRange_ZeroedNegativeSize()
+    {
+        assertBadRangeList(500, "bytes=050-001");
     }
 }
