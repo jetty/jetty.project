@@ -126,7 +126,7 @@ All configuration options for BoneCP are described here: http://jolbox.com/bonec
 [[c3p0-datasource]]
 ===== c3p0
 
-Connection pooling, available at http://central.maven.org/maven2/c3p0/c3p0/0.9.1.2/c3p0-0.9.1.2.jar[c3p0 Jar].
+Connection pooling, available at https://repo1.maven.org/maven2/c3p0/c3p0/0.9.1.2/c3p0-0.9.1.2.jar[c3p0 Jar].
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -147,7 +147,7 @@ Connection pooling, available at http://central.maven.org/maven2/c3p0/c3p0/0.9.1
 [[dbcp-datasource]]
 ===== DBCP
 
-Connection pooling, available at http://central.maven.org/maven2/commons-dbcp/commons-dbcp/1.2/commons-dbcp-1.2.jar[dbcp Jar].
+Connection pooling, available at https://repo1.maven.org/maven2/commons-dbcp/commons-dbcp/1.2/commons-dbcp-1.2.jar[dbcp Jar].
 
 [source, xml, subs="{sub-order}"]
 ----

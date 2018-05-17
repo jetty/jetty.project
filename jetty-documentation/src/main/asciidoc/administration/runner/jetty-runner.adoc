@@ -27,7 +27,7 @@ Of course, if your webapp is not as straightforward, the `jetty-runner` has comm
 
 You will need the `jetty-runner` jar:
 
-1.  Download the `jetty-runner` jar available at http://central.maven.org/maven2/org/eclipse/jetty/jetty-runner/[Maven Central].
+1.  Download the `jetty-runner` jar available at https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-runner/[Maven Central].
 
 ==== Deploying a Simple Context
 

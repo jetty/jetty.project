@@ -47,7 +47,7 @@ The top level Project Object Model (POM) for the Jetty project is located under 
 The changes between versions of Jetty are tracked in a file called VERSIONS.txt, which is under source control and is generated on release.
 Those generated files are also uploaded into Maven Central during the release of the top level POM. You can find them as a classifier marked artifact.
 
-http://central.maven.org/maven2/org/eclipse/jetty/jetty-project/
+https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-project/
 
 [source, xml, subs="{sub-order}"]
 ----
