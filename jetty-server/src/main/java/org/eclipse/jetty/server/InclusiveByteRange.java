@@ -19,10 +19,10 @@
 package org.eclipse.jetty.server;
 
 import java.util.Enumeration;
-import java.util.List;
+import java.util.Set;
 import java.util.StringTokenizer;
 
-import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.LazySet;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -79,9 +79,9 @@ public class InclusiveByteRange
     /** 
      * @param headers Enumeration of Range header fields.
      * @param size Size of the resource.
-     * @return LazyList of satisfiable ranges
+     * @return LazySet of satisfiable ranges
      */
-    public static List<InclusiveByteRange> satisfiableRanges(Enumeration<String> headers, long size)
+    public static Set<InclusiveByteRange> satisfiableRanges( Enumeration<String> headers, long size)
     {
         Object satRanges=null;
         
@@ -138,7 +138,7 @@ public class InclusiveByteRange
                         if (first < size)
                         {
                             InclusiveByteRange range = new InclusiveByteRange(first,last);
-                            satRanges = LazyList.add(satRanges,range);
+                            satRanges = LazySet.add( satRanges, range);
                         }
                     }
                     catch (NumberFormatException e)
@@ -155,7 +155,7 @@ public class InclusiveByteRange
                 LOG.ignore(e);
             }    
         }
-        return LazyList.getList(satRanges,true);
+        return LazySet.getSet(satRanges,true);
     }
 
     /* ------------------------------------------------------------ */
@@ -224,6 +224,25 @@ public class InclusiveByteRange
     }
 
 
+    @Override
+    public int hashCode()
+    {
+        return 127 + Long.valueOf( first ).hashCode() + Long.valueOf( last ).hashCode();
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if(obj == null)
+            return false;
+
+        if(!(obj instanceof InclusiveByteRange))
+            return false;
+
+
+        return ((InclusiveByteRange)obj).first == this.first &&
+            ((InclusiveByteRange)obj).last == this.last;
+    }
 }
 
 
