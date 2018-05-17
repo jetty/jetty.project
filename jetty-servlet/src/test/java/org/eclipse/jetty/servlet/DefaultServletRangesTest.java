@@ -168,7 +168,7 @@ public class DefaultServletRangesTest
         StringBuilder stringBuilder = new StringBuilder( );
         for(int i = 0; i < 1500; i++)
         {
-            stringBuilder.append( "0-60," );
+            stringBuilder.append( "10-60," );
         }
 
 
@@ -185,7 +185,7 @@ public class DefaultServletRangesTest
         assertResponseContains("206 Partial", response);
         assertResponseContains("Content-Type: multipart/byteranges; boundary=", response);
         
-        assertResponseContains("Content-Range: bytes 0-60/80", response);
+        assertResponseContains("Content-Range: bytes 10-60/80", response);
         assertResponseContains("Content-Range: bytes 0-2/80", response);
         Assert.assertEquals( "Content range 0-60/80 in response not only 1:" + response , //
                              2, response.split( "Content-Range: bytes 0-60/80" ).length);
