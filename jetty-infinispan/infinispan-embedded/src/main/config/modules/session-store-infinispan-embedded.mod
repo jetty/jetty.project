@@ -10,16 +10,18 @@ session
 session-store
 
 [depend]
-embedded-manager
+infinispan-common
+infinispan-embedded
 
 [files]
-basehome:modules/session-store-infinispan-embedded/infinispan-embedded.xml|etc/infinispan-embedded.xml
+basehome:modules/session-store-infinispan-embedded/infinispan.xml|etc/infinispan.xml
+maven://org.infinispan/infinispan-embedded/${infinispan.version}|lib/infinispan/infinispan-embedded-${infinispan.version}.jar
 
 [license]
 Infinispan is an open source project hosted on Github and released under the Apache 2.0 license.
 http://infinispan.org/
 http://www.apache.org/licenses/LICENSE-2.0.html
 
-[ini-template]
-#jetty.session.gracePeriod.seconds=3600
-#jetty.session.savePeriod.seconds=0
+[ini]
+infinispan.version?=9.1.0.Final
+

@@ -54,17 +54,23 @@ public class EmbeddedQueryManagerTest
         Properties properties = new Properties();
         properties.put(Environment.MODEL_MAPPING, mapping);
         
-        _manager.defineConfiguration(_name, _builder
-                .build());
+        //_manager.defineConfiguration(_name, _builder
+        //        .build());
         
         
         Configuration dcc = _manager.getDefaultCacheConfiguration();
-        Configuration c = new ConfigurationBuilder().read(dcc)
-                                                    .indexing()
-                                                    .index(Index.ALL)
-                                                    .addIndexedEntity(SessionData.class)
-                                                    .withProperties(properties)
-                                                    .build();
+System.err.println("*************");
+System.err.println(dcc);
+System.err.println("*************");
+
+        ConfigurationBuilder b = new ConfigurationBuilder();
+System.err.println(b);
+        if (dcc != null)
+            b = b.read(dcc);
+
+b.indexing().index(Index.ALL).addIndexedEntity(SessionData.class).withProperties(properties);
+        Configuration c = b.build();
+System.err.println(c);
         
         _manager.defineConfiguration(_name, c);
         Cache<String, SessionData> _cache = _manager.getCache(_name);                

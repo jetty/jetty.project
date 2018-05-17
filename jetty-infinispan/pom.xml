@@ -13,10 +13,13 @@
   <name>Jetty :: Infinispan</name>
 
   <properties>
+    <infinispan.version>9.1.0.Final</infinispan.version>
+    <infinispan7.version>7.1.1.Final</infinispan7.version>
   </properties>
 
   <modules>
     <module>infinispan-common</module>
+    <module>infinispan-7</module>
     <module>infinispan-embedded</module>
     <module>infinispan-remote</module>
     <module>infinispan-embedded-query</module>

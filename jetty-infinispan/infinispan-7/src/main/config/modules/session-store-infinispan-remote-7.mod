@@ -10,17 +10,18 @@ session
 session-store
 
 [depend]
-remote-manager
-
-[lib]
-maven://org.infinispan/infinispan-remote/9.1.0.Final|lib/infinispan/infinispan-remote-9.10.jar
+infinispan-common
 
 [files]
-basehome:modules/session-store-infinispan-remote/
+maven://org.infinispan/infinispan-remote/7.1.1.Final|lib/infinispan/infinispan-remote-7.1.1.Final.jar
+basehome:modules/session-store-infinispan-remote-7/
+
+[xml]
+etc/sessions/infinispan/infinispan-remote-7.xml
 
 [lib]
+lib/jetty-infinispan-common-${jetty.version}.jar
 lib/infinispan/*.jar
-
 
 [license]
 Infinispan is an open source project hosted on Github and released under the Apache 2.0 license.

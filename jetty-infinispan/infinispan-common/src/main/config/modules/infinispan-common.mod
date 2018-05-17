@@ -9,15 +9,12 @@ session
 [depend]
 sessions
 
-[files]
-maven://org.infinispan/infinispan-embedded/${infinispan.version}|lib/infinispan/infinispan-embedded-${infinispan.version}.jar
-
 [lib]
-lib/jetty-infinispan-${jetty.version}.jar
+lib/infinispan-common-${jetty.version}.jar
 lib/infinispan/*.jar
 
 [xml]
-etc/sessions/infinispan/common.xml
+etc/sessions/infinispan/infinispan-common.xml
 
 [ini]
 infinispan.version?=9.1.0.Final
