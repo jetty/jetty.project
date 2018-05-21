@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -72,6 +73,7 @@ public abstract class HttpReceiver
 
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
     private final HttpChannel channel;
+    private List<Response.AsyncContentListener> contentListeners;
     private ContentDecoder decoder;
     private Throwable failure;
 
@@ -262,7 +264,12 @@ public abstract class HttpReceiver
         if (LOG.isDebugEnabled())
             LOG.debug("Response headers {}{}{}", response, System.lineSeparator(), response.getHeaders().toString().trim());
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-        notifier.notifyHeaders(exchange.getConversation().getResponseListeners(), response);
+        List<Response.ResponseListener> responseListeners = exchange.getConversation().getResponseListeners();
+        notifier.notifyHeaders(responseListeners, response);
+        contentListeners = responseListeners.stream()
+                .filter(Response.AsyncContentListener.class::isInstance)
+                .map(Response.AsyncContentListener.class::cast)
+                .collect(Collectors.toList());
 
         Enumeration<String> contentEncodings = response.getHeaders().getValues(HttpHeader.CONTENT_ENCODING.asString(), ",");
         if (contentEncodings != null)
@@ -297,7 +304,7 @@ public abstract class HttpReceiver
      * @param callback the callback
      * @return whether the processing should continue
      */
-    protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, final Callback callback)
+    protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, Callback callback)
     {
         out: while (true)
         {
@@ -324,12 +331,11 @@ public abstract class HttpReceiver
             LOG.debug("Response content {}{}{}", response, System.lineSeparator(), BufferUtil.toDetailString(buffer));
 
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
 
         ContentDecoder decoder = this.decoder;
         if (decoder == null)
         {
-            notifier.notifyContent(listeners, response, buffer, callback);
+            notifier.notifyContent(response, buffer, callback, contentListeners);
         }
         else
         {
@@ -354,8 +360,8 @@ public abstract class HttpReceiver
                 {
                     int size = decodeds.size();
                     CountingCallback counter = new CountingCallback(callback, size);
-                    for (int i = 0; i < size; ++i)
-                        notifier.notifyContent(listeners, response, decodeds.get(i), counter);
+                    for (ByteBuffer decoded : decodeds)
+                        notifier.notifyContent(response, decoded, counter, contentListeners);
                 }
             }
             catch (Throwable x)
@@ -476,6 +482,7 @@ public abstract class HttpReceiver
      */
     protected void reset()
     {
+        contentListeners = null;
         destroyDecoder(decoder);
         decoder = null;
     }

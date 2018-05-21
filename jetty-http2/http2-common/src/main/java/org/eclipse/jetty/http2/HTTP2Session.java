@@ -57,6 +57,7 @@ import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -216,7 +217,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     }
 
     @Override
-    public void onData(final DataFrame frame)
+    public void onData(DataFrame frame)
+    {
+        onData(frame, Callback.NOOP);
+    }
+
+    @Override
+    public void onData(final DataFrame frame, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -233,39 +240,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             if (getRecvWindow() < 0)
             {
-                close(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", Callback.NOOP);
+                close(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", callback);
             }
             else
             {
-                stream.process(frame, new Callback()
-                {
-                    @Override
-                    public void succeeded()
-                    {
-                        complete();
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        // Consume also in case of failures, to free the
-                        // session flow control window for other streams.
-                        complete();
-                    }
-
-                    @Override
-                    public InvocationType getInvocationType()
-                    {
-                        return InvocationType.NON_BLOCKING;
-                    }
-
-                    private void complete()
-                    {
-                        notIdle();
-                        stream.notIdle();
-                        flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
-                    }
-                });
+                stream.process(frame, new DataCallback(callback, stream, flowControlLength));
             }
         }
         else
@@ -275,6 +254,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             // We must enlarge the session flow control window,
             // otherwise other requests will be stalled.
             flowControl.onDataConsumed(this, null, flowControlLength);
+            callback.succeeded();
         }
     }
 
@@ -492,31 +472,36 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener)
     {
-        // Synchronization is necessary to atomically create
-        // the stream id and enqueue the frame to be sent.
-        boolean queued;
-        synchronized (this)
+        try
         {
-            int streamId = frame.getStreamId();
-            if (streamId <= 0)
+            // Synchronization is necessary to atomically create
+            // the stream id and enqueue the frame to be sent.
+            boolean queued;
+            synchronized (this)
             {
-                streamId = streamIds.getAndAdd(2);
-                PriorityFrame priority = frame.getPriority();
-                priority = priority == null ? null : new PriorityFrame(streamId, priority.getParentStreamId(),
-                        priority.getWeight(), priority.isExclusive());
-                frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
-            }
-            final IStream stream = createLocalStream(streamId, promise);
-            if (stream == null)
-                return;
-            stream.setListener(listener);
+                int streamId = frame.getStreamId();
+                if (streamId <= 0)
+                {
+                    streamId = streamIds.getAndAdd(2);
+                    PriorityFrame priority = frame.getPriority();
+                    priority = priority == null ? null : new PriorityFrame(streamId, priority.getParentStreamId(),
+                            priority.getWeight(), priority.isExclusive());
+                    frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
+                }
+                IStream stream = createLocalStream(streamId);
+                stream.setListener(listener);
 
-            ControlEntry entry = new ControlEntry(frame, stream, new PromiseCallback<>(promise, stream));
-            queued = flusher.append(entry);
+                ControlEntry entry = new ControlEntry(frame, stream, new PromiseCallback<>(promise, stream));
+                queued = flusher.append(entry);
+            }
+            // Iterate outside the synchronized block.
+            if (queued)
+                flusher.iterate();
         }
-        // Iterate outside the synchronized block.
-        if (queued)
-            flusher.iterate();
+        catch (Throwable x)
+        {
+            promise.failed(x);
+        }
     }
 
     @Override
@@ -537,25 +522,30 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener)
     {
-        // Synchronization is necessary to atomically create
-        // the stream id and enqueue the frame to be sent.
-        boolean queued;
-        synchronized (this)
+        try
         {
-            int streamId = streamIds.getAndAdd(2);
-            frame = new PushPromiseFrame(frame.getStreamId(), streamId, frame.getMetaData());
+            // Synchronization is necessary to atomically create
+            // the stream id and enqueue the frame to be sent.
+            boolean queued;
+            synchronized (this)
+            {
+                int streamId = streamIds.getAndAdd(2);
+                frame = new PushPromiseFrame(frame.getStreamId(), streamId, frame.getMetaData());
 
-            final IStream pushStream = createLocalStream(streamId, promise);
-            if (pushStream == null)
-                return;
-            pushStream.setListener(listener);
+                IStream pushStream = createLocalStream(streamId);
+                pushStream.setListener(listener);
 
-            ControlEntry entry = new ControlEntry(frame, pushStream, new PromiseCallback<>(promise, pushStream));
-            queued = flusher.append(entry);
+                ControlEntry entry = new ControlEntry(frame, pushStream, new PromiseCallback<>(promise, pushStream));
+                queued = flusher.append(entry);
+            }
+            // Iterate outside the synchronized block.
+            if (queued)
+                flusher.iterate();
         }
-        // Iterate outside the synchronized block.
-        if (queued)
-            flusher.iterate();
+        catch (Throwable x)
+        {
+            promise.failed(x);
+        }
     }
 
     @Override
@@ -696,17 +686,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected IStream createLocalStream(int streamId, Promise<Stream> promise)
+    protected IStream createLocalStream(int streamId)
     {
         while (true)
         {
             int localCount = localStreamCount.get();
             int maxCount = getMaxLocalStreams();
             if (maxCount >= 0 && localCount >= maxCount)
-            {
-                promise.failed(new IllegalStateException("Max local stream count " + maxCount + " exceeded"));
-                return null;
-            }
+                throw new IllegalStateException("Max local stream count " + maxCount + " exceeded");
             if (localStreamCount.compareAndSet(localCount, localCount + 1))
                 break;
         }
@@ -722,8 +709,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         else
         {
-            promise.failed(new IllegalStateException("Duplicate stream " + streamId));
-            return null;
+            throw new IllegalStateException("Duplicate stream " + streamId);
         }
     }
 
@@ -1412,6 +1398,50 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         public void failed(Throwable x)
         {
             promise.failed(x);
+        }
+    }
+
+    private class DataCallback extends Callback.Nested implements Retainable
+    {
+        private final IStream stream;
+        private final int flowControlLength;
+
+        public DataCallback(Callback callback, IStream stream, int flowControlLength)
+        {
+            super(callback);
+            this.stream = stream;
+            this.flowControlLength = flowControlLength;
+        }
+
+        @Override
+        public void retain()
+        {
+            Callback callback = getCallback();
+            if (callback instanceof Retainable)
+                ((Retainable)callback).retain();
+        }
+
+        @Override
+        public void succeeded()
+        {
+            complete();
+            super.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            // Consume also in case of failures, to free the
+            // session flow control window for other streams.
+            complete();
+            super.failed(x);
+        }
+
+        private void complete()
+        {
+            notIdle();
+            stream.notIdle();
+            flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
         }
     }
 

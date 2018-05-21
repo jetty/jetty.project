@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
@@ -33,7 +32,6 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Connector;
@@ -93,14 +91,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public Map<Integer, Integer> onPreface(Session session)
         {
-            Map<Integer, Integer> settings = new HashMap<>();
-            settings.put(SettingsFrame.HEADER_TABLE_SIZE, getMaxDynamicTableSize());
-            settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getInitialStreamRecvWindow());
-            int maxConcurrentStreams = getMaxConcurrentStreams();
-            if (maxConcurrentStreams >= 0)
-                settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
-            settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE, getHttpConfiguration().getRequestHeaderSize());
-            return settings;
+            return newSettings();
         }
 
         @Override

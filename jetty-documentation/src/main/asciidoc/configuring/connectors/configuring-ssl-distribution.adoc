@@ -83,7 +83,7 @@ INFO  : server          transitively enabled, ini template available with --add-
 INFO  : conscrypt       initialized in ${jetty.base}/start.d/conscrypt.ini
 INFO  : ssl             initialized in ${jetty.base}/start.d/ssl.ini
 MKDIR : ${jetty.base}/lib/conscrypt
-DOWNLD: http://central.maven.org/maven2/org/conscrypt/conscrypt-openjdk-uber/1.0.0.RC11/conscrypt-openjdk-uber-1.0.0.RC11.jar to ${jetty.base}/lib/conscrypt/conscrypt-uber-1.0.0.RC11.jar
+DOWNLD: https://repo1.maven.org/maven2/org/conscrypt/conscrypt-openjdk-uber/1.0.0.RC11/conscrypt-openjdk-uber-1.0.0.RC11.jar to ${jetty.base}/lib/conscrypt/conscrypt-uber-1.0.0.RC11.jar
 MKDIR : ${jetty.base}/etc
 COPY  : ${jetty.home}/modules/conscrypt/conscrypt.xml to ${jetty.base}/etc/conscrypt.xml
 COPY  : ${jetty.home}/modules/ssl/keystore to ${jetty.base}/etc/keystore

@@ -46,7 +46,7 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B clean install -DskipTests -T6"
+                sh "mvn -V -B clean install -DskipTests -T6 -e"
               }
 
             }
@@ -68,7 +68,7 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B javadoc:javadoc -T6"
+                sh "mvn -V -B javadoc:javadoc -T6 -e"
               }
             }
           }

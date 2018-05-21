@@ -284,11 +284,6 @@ public class ExecuteProduceConsumeTest
         // When we unblock t0, thread1 will see the idle,
         t0.unblock();
 
-        // but because there was a pending execute it will try producing again
-        while(_producer==null)
-            Thread.yield();
-        Assert.assertEquals(thread0,_producer);
-
         // and will see new tasks
         final Task t1 = new Task(true);
         _produce.add(t1);

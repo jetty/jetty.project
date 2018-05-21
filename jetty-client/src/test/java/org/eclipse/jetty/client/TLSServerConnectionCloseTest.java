@@ -104,87 +104,91 @@ public class TLSServerConnectionCloseTest
 
     private void testServerSendsConnectionClose(boolean chunked, String content) throws Exception
     {
-        ServerSocket server = new ServerSocket(0);
-        int port = server.getLocalPort();
-
-        startClient();
-
-        Request request = client.newRequest("localhost", port).scheme("https").path("/ctx/path");
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
-
-        Socket socket = server.accept();
-        SSLContext sslContext = client.getSslContextFactory().getSslContext();
-        SSLSocket sslSocket = (SSLSocket)sslContext.getSocketFactory().createSocket(socket, "localhost", port, false);
-        sslSocket.setUseClientMode(false);
-        sslSocket.startHandshake();
-
-        InputStream input = sslSocket.getInputStream();
-        consumeRequest(input);
-
-        OutputStream output = sslSocket.getOutputStream();
-        String serverResponse = "" +
-                "HTTP/1.1 200 OK\r\n" +
-                "Connection: close\r\n";
-        if (chunked)
+        try (ServerSocket server = new ServerSocket(0))
         {
-            serverResponse += "" +
-                    "Transfer-Encoding: chunked\r\n" +
-                    "\r\n";
+            int port = server.getLocalPort();
+
+            startClient();
+
+            Request request = client.newRequest("localhost", port).scheme("https").path("/ctx/path");
+            FutureResponseListener listener = new FutureResponseListener(request);
+            request.send(listener);
+
+            try (Socket socket = server.accept())
+            {
+                SSLContext sslContext = client.getSslContextFactory().getSslContext();
+                SSLSocket sslSocket = (SSLSocket)sslContext.getSocketFactory().createSocket(socket, "localhost", port, false);
+                sslSocket.setUseClientMode(false);
+                sslSocket.startHandshake();
+
+                InputStream input = sslSocket.getInputStream();
+                consumeRequest(input);
+
+                OutputStream output = sslSocket.getOutputStream();
+                String serverResponse = "" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Connection: close\r\n";
+                if (chunked)
+                {
+                    serverResponse += "" +
+                            "Transfer-Encoding: chunked\r\n" +
+                            "\r\n";
                     for (int i = 0; i < 2; ++i)
                     {
                         serverResponse +=
                                 Integer.toHexString(content.length()) + "\r\n" +
-                                content + "\r\n";
+                                        content + "\r\n";
                     }
-            serverResponse += "" +
-                    "0\r\n" +
-                    "\r\n";
+                    serverResponse += "" +
+                            "0\r\n" +
+                            "\r\n";
+                }
+                else
+                {
+                    serverResponse += "Content-Length: " + content.length() + "\r\n";
+                    serverResponse += "\r\n";
+                    serverResponse += content;
+                }
+
+                output.write(serverResponse.getBytes("UTF-8"));
+                output.flush();
+
+                switch (closeMode)
+                {
+                    case NONE:
+                    {
+                        break;
+                    }
+                    case CLOSE:
+                    {
+                        sslSocket.close();
+                        break;
+                    }
+                    case ABRUPT:
+                    {
+                        socket.shutdownOutput();
+                        break;
+                    }
+                    default:
+                    {
+                        throw new IllegalStateException();
+                    }
+                }
+
+                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+                Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+                // Give some time to process the connection.
+                Thread.sleep(1000);
+
+                // Connection should have been removed from pool.
+                HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
+                DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+                Assert.assertEquals(0, connectionPool.getConnectionCount());
+                Assert.assertEquals(0, connectionPool.getIdleConnectionCount());
+                Assert.assertEquals(0, connectionPool.getActiveConnectionCount());
+            }
         }
-        else
-        {
-            serverResponse += "Content-Length: " + content.length() + "\r\n";
-            serverResponse += "\r\n";
-            serverResponse += content;
-        }
-
-        output.write(serverResponse.getBytes("UTF-8"));
-        output.flush();
-
-        switch (closeMode)
-        {
-            case NONE:
-            {
-                break;
-            }
-            case CLOSE:
-            {
-                sslSocket.close();
-                break;
-            }
-            case ABRUPT:
-            {
-                socket.shutdownOutput();
-                break;
-            }
-            default:
-            {
-                throw new IllegalStateException();
-            }
-        }
-
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
-
-        // Give some time to process the connection.
-        Thread.sleep(1000);
-
-        // Connection should have been removed from pool.
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-        Assert.assertEquals(0, connectionPool.getConnectionCount());
-        Assert.assertEquals(0, connectionPool.getIdleConnectionCount());
-        Assert.assertEquals(0, connectionPool.getActiveConnectionCount());
     }
 
     private boolean consumeRequest(InputStream input) throws IOException

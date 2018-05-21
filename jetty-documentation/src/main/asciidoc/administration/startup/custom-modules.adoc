@@ -207,7 +207,7 @@ MKDIR : ${jetty.base}/lib/alpn
 MKDIR : ${jetty.base}/etc
 COPY  : ${jetty.home}/modules/ssl/keystore to ${jetty.base}/etc/keystore
 MKDIR : ${jetty.base}/webapps
-DOWNLD: http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/8.1.8.v20160420/alpn-boot-8.1.8.v20160420.jar to ${jetty.base}/lib/alpn/alpn-boot-8.1.8.v20160420.jar
+DOWNLD: https://repo1.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/8.1.8.v20160420/alpn-boot-8.1.8.v20160420.jar to ${jetty.base}/lib/alpn/alpn-boot-8.1.8.v20160420.jar
 COPY  : ${jetty.home}/modules/acme/acme.xml to ${jetty.base}/etc/acme.xml
 INFO  : Base directory was modified
 ----

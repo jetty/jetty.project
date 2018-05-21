@@ -39,6 +39,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
@@ -49,6 +50,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -144,8 +146,12 @@ public class ProxyProtocolTest
                 {
                     Assert.assertEquals("10.0.0.4",request.getRemoteAddr());
                     Assert.assertEquals(33824,request.getRemotePort());
-                    Assert.assertEquals("10.0.0.4",request.getLocalAddr());
+                    Assert.assertEquals("10.0.0.5",request.getLocalAddr());
                     Assert.assertEquals(8888,request.getLocalPort());
+                    EndPoint endPoint = baseRequest.getHttpChannel().getEndPoint();
+                    Assert.assertThat(endPoint, Matchers.instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
+                    ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
+                    Assert.assertNotNull(proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
                 }
                 catch(Throwable th)
                 {
@@ -156,7 +162,9 @@ public class ProxyProtocolTest
             }
         });
 
-        String request1 = "0D0A0D0A000D0A515549540A211100140A0000040A000004842022B82000050000000000";
+        // String is: "MAGIC VER|CMD FAM|PROT LEN SRC_ADDR DST_ADDR SRC_PORT DST_PORT PP2_TYPE_SSL LEN CLIENT VERIFY PP2_SUBTYPE_SSL_VERSION LEN 1.2"
+        String request1 = "0D0A0D0A000D0A515549540A 21 11 001A 0A000004 0A000005 8420 22B8 20 000B 01 00000000 21 0003 312E32";
+        request1 = request1.replace(" ", "");
         SocketChannel channel = SocketChannel.open();
         channel.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
         channel.write(ByteBuffer.wrap(TypeUtil.fromHexString(request1)));

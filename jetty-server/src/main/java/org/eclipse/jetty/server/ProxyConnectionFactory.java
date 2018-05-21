@@ -524,45 +524,51 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                         if (LOG.isDebugEnabled())
                             LOG.debug(String.format("T=%x L=%d V=%s for %s", type, length, TypeUtil.toHexString(value), this));
 
-                        // TODO interpret these values
                         switch (type)
                         {
-                            case 0x01: // PP2_TYPE_ALPN
-                                break;
-                            case 0x02: // PP2_TYPE_AUTHORITY
-                                break;
                             case 0x20: // PP2_TYPE_SSL
                             {
-                                int i = 0;
-                                int client = 0xff & value[i++];
-                                while (i < value.length)
+                                int client = value[0] & 0xFF;
+                                switch (client)
                                 {
-                                    int ssl_type = 0xff & value[i++];
-                                    int ssl_length = (0xff & value[i++]) * 0x100 + (0xff & value[i++]);
-                                    byte[] ssl_val = new byte[ssl_length];
-                                    System.arraycopy(value, i, ssl_val, 0, ssl_length);
-                                    i += ssl_length;
-
-                                    switch (ssl_type)
+                                    case 0x01: // PP2_CLIENT_SSL
                                     {
-                                        case 0x21: // PP2_TYPE_SSL_VERSION
-                                            String version = new String(ssl_val, 0, ssl_length, StandardCharsets.ISO_8859_1);
-                                            if (client == 1)
-                                                proxyEndPoint.setAttribute(TLS_VERSION, version);
-                                            break;
-
-                                        default:
-                                            break;
+                                        int i = 5; // Index of the first sub_tlv, after verify.
+                                        while (i < length)
+                                        {
+                                            int subType = value[i++] & 0xFF;
+                                            int subLength = (value[i++] & 0xFF) * 256 + (value[i++] & 0xFF);
+                                            byte[] subValue = new byte[subLength];
+                                            System.arraycopy(value, i, subValue, 0, subLength);
+                                            i += subLength;
+                                            switch (subType)
+                                            {
+                                                case 0x21: // PP2_SUBTYPE_SSL_VERSION
+                                                    String tlsVersion = new String(subValue, StandardCharsets.US_ASCII);
+                                                    proxyEndPoint.setAttribute(TLS_VERSION, tlsVersion);
+                                                    break;
+                                                case 0x22: // PP2_SUBTYPE_SSL_CN
+                                                case 0x23: // PP2_SUBTYPE_SSL_CIPHER
+                                                case 0x24: // PP2_SUBTYPE_SSL_SIG_ALG
+                                                case 0x25: // PP2_SUBTYPE_SSL_KEY_ALG
+                                                default:
+                                                    break;
+                                            }
+                                        }
+                                        break;
                                     }
+                                    case 0x02: // PP2_CLIENT_CERT_CONN
+                                    case 0x04: // PP2_CLIENT_CERT_SESS
+                                    default:
+                                        break;
                                 }
                                 break;
                             }
-                            case 0x21: // PP2_TYPE_SSL_VERSION
-                                break;
-                            case 0x22: // PP2_TYPE_SSL_CN
-                                break;
+                            case 0x01: // PP2_TYPE_ALPN
+                            case 0x02: // PP2_TYPE_AUTHORITY
+                            case 0x03: // PP2_TYPE_CRC32C
+                            case 0x04: // PP2_TYPE_NOOP
                             case 0x30: // PP2_TYPE_NETNS
-                                break;
                             default:
                                 break;
                         }

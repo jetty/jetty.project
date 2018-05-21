@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.frames;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -61,6 +62,7 @@ public class HeadersGenerateParseTest
                 frames.add(frame);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
@@ -113,6 +115,7 @@ public class HeadersGenerateParseTest
                 frames.add(frame);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
