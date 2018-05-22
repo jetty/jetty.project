@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -37,9 +42,11 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceContentFactory;
@@ -365,7 +372,7 @@ public class DefaultServletTest
         response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("403", response);
     }
-    
+
     @Test
     public void testWelcomeRedirect() throws Exception
     {
@@ -437,7 +444,7 @@ public class DefaultServletTest
         response = connector.getResponse("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
         assertResponseContains("Location: http://0.0.0.0/context/dir%3F/index.html", response);
     }
-    
+
 
     @Test
     public void testWelcomeServlet() throws Exception
@@ -730,7 +737,7 @@ public class DefaultServletTest
 
         response = connector.getResponses("GET /context/nofilesuffix HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n"+  
+                "Connection: close\r\n"+
                 "\r\n");
         assertResponseContains("200 OK", response);
         assertResponseContains("Accept-Ranges: bytes", response);
@@ -749,7 +756,7 @@ public class DefaultServletTest
 
         response = connector.getResponses("GET /context/nofilesuffix HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n"+     
+                "Connection: close\r\n"+
                 "Range: bytes=0-9,20-29,40-49\r\n" +
                 "\r\n");
         start = response.indexOf("--jetty");
@@ -766,7 +773,7 @@ public class DefaultServletTest
 
         response = connector.getResponses("GET /context/nofilesuffix HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
-                "Connection: close\r\n"+    
+                "Connection: close\r\n"+
                 "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n" +
                 "\r\n");
         start = response.indexOf("--jetty");
@@ -885,7 +892,7 @@ public class DefaultServletTest
         assertResponseNotContains("Vary: Accept-Encoding",response);
         assertResponseNotContains("Content-Encoding: gzip",response);
         assertResponseNotContains("ETag: "+etag_gzip,response);
-        assertResponseContains("ETag: ",response);   
+        assertResponseContains("ETag: ",response);
         
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
@@ -909,7 +916,7 @@ public class DefaultServletTest
     public void testCachedGzip() throws Exception
     {
         testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();                
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         File file0 = new File(resBase, "data0.txt");
         createFile(file0, "Hello Text 0");
@@ -972,6 +979,22 @@ public class DefaultServletTest
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\","+etag+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
         assertResponseContains("ETag: "+etag,response);
+    }
+
+    @Test
+    public void testControlCharacter() throws Exception
+    {
+        testdir.ensureEmpty();
+        File docRoot = testdir.getPathFile("docroot").toFile();
+        FS.ensureDirExists(docRoot);
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("resourceBase", docRoot.getAbsolutePath());
+
+        String rawResponse = connector.getResponse("GET /context/%0a HTTP/1.1\r\nHost: local\r\nConnection: close\r\n\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        System.out.println(response + "\n" + response.getContent());
+        assertThat("Response.status", response.getStatus(), anyOf(is(HttpServletResponse.SC_NOT_FOUND), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)));
+        assertThat("Response.content", response.getContent(), is(not(containsString(docRoot.toString()))));
     }
 
     @Test

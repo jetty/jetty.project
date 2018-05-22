@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpContent.Factory;
@@ -29,7 +30,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 
 
 /**
- * A HttpContent.Factory for transient content.  The HttpContent's created by 
+ * A HttpContent.Factory for transient content.  The HttpContent's created by
  * this factory are not intended to be cached, so memory limits for individual
  * HttpOutput streams are enforced.
  */
@@ -52,10 +53,18 @@ public class ResourceContentFactory implements Factory
     public HttpContent getContent(String pathInContext,int maxBufferSize)
         throws IOException
     {
-        // try loading the content from our factory.
-        Resource resource=_factory.getResource(pathInContext);
-        HttpContent loaded = load(pathInContext,resource,maxBufferSize);
-        return loaded;
+        try
+        {
+            // try loading the content from our factory.
+            Resource resource = _factory.getResource(pathInContext);
+            HttpContent loaded = load(pathInContext, resource, maxBufferSize);
+            return loaded;
+        }
+        catch (Throwable t)
+        {
+            // Any error has potential to reveal fully qualified path
+            throw (InvalidPathException) new InvalidPathException(pathInContext, "Invalid PathInContext").initCause(t);
+        }
     }
     
     
@@ -68,19 +77,19 @@ public class ResourceContentFactory implements Factory
         
         if (resource.isDirectory())
             return new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),maxBufferSize);
-        
+
         // Look for a gzip resource or content
         String mt = _mimeTypes.getMimeByExtension(pathInContext);
         if (_gzip)
         {
-            // Is there a gzip resource? 
+            // Is there a gzip resource?
             String pathInContextGz=pathInContext+".gz";
             Resource resourceGz=_factory.getResource(pathInContextGz);
             if (resourceGz.exists() && resourceGz.lastModified()>=resource.lastModified() && resourceGz.length()<resource.length())
                 return new ResourceHttpContent(resource,mt,maxBufferSize,
                        new ResourceHttpContent(resourceGz,_mimeTypes.getMimeByExtension(pathInContextGz),maxBufferSize));
         }
-        
+
         return new ResourceHttpContent(resource,mt,maxBufferSize);
     }
     
