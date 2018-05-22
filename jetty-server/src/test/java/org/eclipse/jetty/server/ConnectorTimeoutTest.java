@@ -43,6 +43,8 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -55,6 +57,8 @@ import org.junit.runner.RunWith;
 @RunWith(AdvancedRunner.class)
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
+    protected static final Logger LOG = Log.getLogger(ConnectorTimeoutTest.class);
+
     @Rule
     public TestTracker tracker = new TestTracker();
     
@@ -610,11 +614,17 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
         catch(SSLException e)
         {
-            e.printStackTrace();
+            if(LOG.isDebugEnabled())
+                LOG.debug(e);
+            else
+                LOG.info(e.getMessage());
         }
         catch(Exception e)
         {
-            e.printStackTrace();
+            if(LOG.isDebugEnabled())
+                LOG.debug(e);
+            else
+                LOG.info(e.getMessage());
         }
         Assert.assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start < maximumTestRuntime);
 
@@ -639,11 +649,17 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
         catch(SSLException e)
         {
-            e.printStackTrace();
+            if(LOG.isDebugEnabled())
+                LOG.debug(e);
+            else
+                LOG.info(e.getMessage());
         }
         catch(Exception e)
         {
-            e.printStackTrace();
+            if(LOG.isDebugEnabled())
+                LOG.debug(e);
+            else
+                LOG.info(e.getMessage());
         }
         Assert.assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start < maximumTestRuntime);
 
