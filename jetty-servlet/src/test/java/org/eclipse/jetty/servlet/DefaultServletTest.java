@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -38,9 +43,11 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceContentFactory;
@@ -1246,6 +1253,19 @@ public class DefaultServletTest
         assertResponseContains("Content-Type: text/plain",response);
         assertResponseContains("Vary: Accept-Encoding",response);
         assertResponseContains("Content-Encoding: gzip",response);
+    }
+
+    @Test
+    public void testControlCharacter() throws Exception
+    {
+        FS.ensureDirExists(docRoot);
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("resourceBase", docRoot.getAbsolutePath());
+
+        String rawResponse = connector.getResponse("GET /context/%0a HTTP/1.1\r\nHost: local\r\nConnection: close\r\n\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat("Response.status", response.getStatus(), anyOf(is(HttpServletResponse.SC_NOT_FOUND), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)));
+        assertThat("Response.content", response.getContent(), is(not(containsString(docRoot.toString()))));
     }
 
     @Test

@@ -204,17 +204,24 @@ public class PathResource extends Resource
      * @param parent the parent path resource
      * @param childPath the child sub path
      */
-    private PathResource(PathResource parent, String childPath) throws MalformedURLException
+    private PathResource(PathResource parent, String childPath)
     {
         // Calculate the URI and the path separately, so that any aliasing done by
-        // FileSystem.getPath(path,childPath) is visiable as a difference to the URI
+        // FileSystem.getPath(path,childPath) is visible as a difference to the URI
         // obtained via URIUtil.addDecodedPath(uri,childPath)
 
-        this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
-        if (isDirectory() &&!childPath.endsWith("/"))
-            childPath+="/";
-        this.uri = URIUtil.addPath(parent.uri,childPath);
-        this.alias = checkAliasPath();
+        try
+        {
+            this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
+            if (isDirectory() && !childPath.endsWith("/"))
+                childPath += "/";
+            this.uri = URIUtil.addPath(parent.uri, childPath);
+            this.alias = checkAliasPath();
+        }
+        catch(InvalidPathException e)
+        {
+            throw (InvalidPathException) new InvalidPathException(childPath, e.getReason()).initCause(e);
+        }
     }
 
     /**
@@ -241,10 +248,6 @@ public class PathResource extends Resource
         try
         {
             path = Paths.get(uri);
-        }
-        catch (InvalidPathException e)
-        {
-            throw e;
         }
         catch (IllegalArgumentException e)
         {
@@ -286,7 +289,7 @@ public class PathResource extends Resource
     }
 
     @Override
-    public Resource addPath(final String subpath) throws IOException, MalformedURLException
+    public Resource addPath(final String subpath) throws IOException
     {
         String cpath = URIUtil.canonicalPath(subpath);
 
