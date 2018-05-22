@@ -114,17 +114,17 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
         
         ServerEndpointConfig.Configurator cfgr;
 
-        if (anno.configurator() == ServerEndpointConfig.Configurator.class)
+        // Use ServerEndpointConfig provided configurator if declared
+        if (configr != null)
         {
-            if (configr != null)
-            {
-                cfgr = configr;
-            }
-            else
-            {
-                cfgr = new ContainerDefaultConfigurator();
-            }
+            cfgr = configr;
         }
+        // Use Container Default if annotation based configurator is undeclared
+        else if (anno.configurator() == ServerEndpointConfig.Configurator.class)
+        {
+            cfgr = new ContainerDefaultConfigurator();
+        }
+        // Use annotation declared configurator
         else
         {
             try
