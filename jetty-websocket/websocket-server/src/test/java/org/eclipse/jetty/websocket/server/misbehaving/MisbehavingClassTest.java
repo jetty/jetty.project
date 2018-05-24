@@ -92,8 +92,8 @@ public class MisbehavingClassTest
 
         Future<BlockheadConnection> connFut = request.sendAsync();
 
-        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
-             StacklessLogging ignore = new StacklessLogging(ListenerRuntimeOnConnectSocket.class, WebSocketSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(ListenerRuntimeOnConnectSocket.class, WebSocketSession.class);
+             BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
@@ -126,8 +126,8 @@ public class MisbehavingClassTest
 
         Future<BlockheadConnection> connFut = request.sendAsync();
 
-        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
-             StacklessLogging scope = new StacklessLogging(AnnotatedRuntimeOnConnectSocket.class, WebSocketSession.class))
+        try (StacklessLogging scope = new StacklessLogging(AnnotatedRuntimeOnConnectSocket.class, WebSocketSession.class);
+             BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
