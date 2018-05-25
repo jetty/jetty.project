@@ -19,11 +19,9 @@
 package org.eclipse.jetty.server;
 
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-
+import java.io.InputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -38,6 +36,10 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 
 @RunWith(AdvancedRunner.class)
 public class LowResourcesMonitorTest
@@ -216,32 +218,67 @@ public class LowResourcesMonitorTest
     }
     
     @Test
-    public void testMaxLowResourceTime() throws Exception
+    public void testMaxLowResourcesTime() throws Exception
     {
-        _lowResourcesMonitor.setMaxLowResourcesTime(5000);
+        int monitorPeriod = _lowResourcesMonitor.getPeriod();
+        int lowResourcesIdleTimeout = _lowResourcesMonitor.getLowResourcesIdleTimeout();
+        Assert.assertThat(lowResourcesIdleTimeout, Matchers.lessThan(monitorPeriod));
+
+        int maxLowResourcesTime = 5 * monitorPeriod;
+        _lowResourcesMonitor.setMaxLowResourcesTime(maxLowResourcesTime);
         Assert.assertFalse(_lowResourcesMonitor.isLowOnResources());
 
         try(Socket socket0 = new Socket("localhost",_connector.getLocalPort()))
         {
+            // Put the lowResourceMonitor in low mode.
             _lowResourcesMonitor.setMaxMemory(1);
 
-            Thread.sleep(2400);
+            // Wait a couple of monitor periods so that
+            // lowResourceMonitor detects it is in low mode.
+            Thread.sleep(2 * monitorPeriod);
             Assert.assertTrue(_lowResourcesMonitor.isLowOnResources());
 
+            // We already waited enough for lowResourceMonitor to close socket0.
+            Assert.assertEquals(-1, socket0.getInputStream().read());
+
+            // New connections are not affected by the
+            // low mode until maxLowResourcesTime elapses.
             try(Socket socket1 = new Socket("localhost",_connector.getLocalPort()))
             {
-                Thread.sleep(2400);
-                Assert.assertTrue(_lowResourcesMonitor.isLowOnResources());
-                Assert.assertEquals(-1,socket0.getInputStream().read());
-                socket1.getOutputStream().write("G".getBytes(StandardCharsets.UTF_8));
+                // Set a very short read timeout so we can test if the server closed.
+                socket1.setSoTimeout(1);
+                InputStream input1 = socket1.getInputStream();
 
-                Thread.sleep(2400);
                 Assert.assertTrue(_lowResourcesMonitor.isLowOnResources());
-                socket1.getOutputStream().write("E".getBytes(StandardCharsets.UTF_8));
+                try
+                {
+                    input1.read();
+                    Assert.fail();
+                }
+                catch (SocketTimeoutException expected)
+                {
+                }
 
-                Thread.sleep(2400);
+                // Wait a couple of lowResources idleTimeouts.
+                Thread.sleep(2 * lowResourcesIdleTimeout);
+
+                // Verify the new socket is still open.
                 Assert.assertTrue(_lowResourcesMonitor.isLowOnResources());
-                Assert.assertEquals(-1,socket1.getInputStream().read());
+                try
+                {
+                    input1.read();
+                    Assert.fail();
+                }
+                catch (SocketTimeoutException expected)
+                {
+                }
+
+                // Let the maxLowResourcesTime elapse.
+                Thread.sleep(maxLowResourcesTime);
+
+                Assert.assertTrue(_lowResourcesMonitor.isLowOnResources());
+                // Now also the new socket should be closed.
+                Assert.assertEquals(-1, input1.read());
             }
         }
     }
