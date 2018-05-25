@@ -19,6 +19,7 @@
 package org.eclipse.jetty.hazelcast.session;
 
 import com.hazelcast.core.IMap;
+import com.hazelcast.query.Predicate;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
@@ -30,8 +31,10 @@ import org.eclipse.jetty.util.log.Logger;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -46,6 +49,67 @@ public class HazelcastSessionDataStore
     private  final static Logger LOG = Log.getLogger( "org.eclipse.jetty.server.session");
 
     private IMap<String, SessionData> sessionDataMap;
+
+    /**
+     * {@link ExpiredSessionPredicate} use it to find the expired sessions that expired a long time ago.
+     */
+    private ExpiredSessionPredicate<String, SessionData> predicate;
+
+    public static final ExpiredSessionPredicate<String, SessionData> DEFAULT_EXPIRED_SESSION_PREDICATE =
+        new ExpiredSessionPredicate<String, SessionData>() {
+            private HazelcastSessionDataStoreContext context;
+            @Override
+            public void setHazelcastSessionDataStoreContext( HazelcastSessionDataStoreContext context )
+            {
+                this.context = context;
+            }
+
+            @Override
+            public boolean apply( Map.Entry<String, SessionData> mapEntry )
+            {
+                SessionData sessionData = mapEntry.getValue();
+                long now = System.currentTimeMillis();
+                if ( context.getSessionContext().getWorkerName().equals( sessionData.getLastNode() ) )
+                {
+                    //we are its manager, add it to the expired set if it is expired now
+                    if ( ( sessionData.getExpiry() > 0 ) && sessionData.getExpiry() <= now )
+                    {
+                        if ( LOG.isDebugEnabled() )
+                        {
+                            LOG.debug( "Session {} managed by {} is expired",
+                                       sessionData.getId(),
+                                       context.getSessionContext().getWorkerName() );
+                        }
+                        return true;
+                    }
+                }
+                else
+                {
+                    //if we are not the session's manager, only expire it iff:
+                    // this is our first expiryCheck and the session expired a long time ago
+                    //or
+                    //the session expired at least one graceperiod ago
+                    if ( context.getLastExpiryCheckTime() <= 0 )
+                    {
+                        if ( ( sessionData.getExpiry() > 0 ) //
+                            && sessionData.getExpiry() < ( now - ( 1000L * ( 3 * context.getGracePeriodSec() ) ) ) )
+                        {
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        if ( ( sessionData.getExpiry() > 0 ) //
+                            && sessionData.getExpiry() < ( now - ( 1000L * context.getGracePeriodSec() ) ) )
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        };
+
 
     /**
      * <p>
@@ -144,51 +208,6 @@ public class HazelcastSessionDataStore
     {
         Set<String> expired = new HashSet<>();
 
-        if(findExpiredSession)
-        {
-            long now = System.currentTimeMillis();
-
-            expired.addAll( sessionDataMap.values( mapEntry -> {
-                SessionData sessionData = (SessionData) mapEntry.getValue();
-                if ( _context.getWorkerName().equals( sessionData.getLastNode() ) )
-                {
-                    //we are its manager, add it to the expired set if it is expired now
-                    if ( ( sessionData.getExpiry() > 0 ) && sessionData.getExpiry() <= now )
-                    {
-                        if ( LOG.isDebugEnabled() )
-                        {
-                            LOG.debug( "Session {} managed by {} is expired", sessionData.getId(), _context.getWorkerName() );
-                        }
-                        return true;
-                    }
-                }
-                else
-                {
-                    //if we are not the session's manager, only expire it iff:
-                    // this is our first expiryCheck and the session expired a long time ago
-                    //or
-                    //the session expired at least one graceperiod ago
-                    if ( _lastExpiryCheckTime <= 0 )
-                    {
-                        if ( ( sessionData.getExpiry() > 0 ) && sessionData.getExpiry() < ( now - ( 1000L * ( 3
-                            * _gracePeriodSec ) ) ) )
-                        {
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        if ( ( sessionData.getExpiry() > 0 ) && sessionData.getExpiry() < ( now - ( 1000L
-                            * _gracePeriodSec ) ) )
-                        {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            } ).stream().map( sessionData -> sessionData.getId() ).collect( Collectors.toSet() ) );
-
-        }
         //check candidates that were not found to be expired, definitely they no longer exist and they should be expired
 
         expired.addAll( candidates.stream().filter( candidate -> {
@@ -222,6 +241,19 @@ public class HazelcastSessionDataStore
             return false;
         } ).collect(Collectors.toSet()));
 
+        if(predicate != null)
+        {
+            predicate.setHazelcastSessionDataStoreContext( new HazelcastSessionDataStoreContext( _context,
+                                                                                                 _lastExpiryCheckTime,
+                                                                                                 _gracePeriodSec ) );
+            expired.addAll( sessionDataMap //
+                                .values( predicate ) //
+                                .stream() //
+                                .map( sessionData -> sessionData.getId() ) //
+                                .collect( Collectors.toSet() ) );
+
+        }
+
         return expired;
     }
 
@@ -243,5 +275,45 @@ public class HazelcastSessionDataStore
     public String getCacheKey( String id )
     {
         return _context.getCanonicalContextPath() + "_" + _context.getVhost() + "_" + id;
+    }
+
+    public void setPredicate( ExpiredSessionPredicate<String, SessionData> predicate ) {
+        this.predicate = predicate;
+    }
+
+    public static class HazelcastSessionDataStoreContext {
+        private SessionContext sessionContext;
+        private long _lastExpiryCheckTime;
+        private long _gracePeriodSec;
+
+        private HazelcastSessionDataStoreContext( SessionContext sessionContext, long _lastExpiryCheckTime,
+                                                 long _gracePeriodSec )
+        {
+            this.sessionContext = sessionContext;
+            this._lastExpiryCheckTime = _lastExpiryCheckTime;
+            this._gracePeriodSec = _gracePeriodSec;
+        }
+
+        public SessionContext getSessionContext()
+        {
+            return sessionContext;
+        }
+
+        public long getLastExpiryCheckTime()
+        {
+            return _lastExpiryCheckTime;
+        }
+
+        public long getGracePeriodSec()
+        {
+            return _gracePeriodSec;
+        }
+    }
+
+    interface ExpiredSessionPredicate<String,SessionData> extends Predicate<String,SessionData> {
+        @Override
+        boolean apply( Map.Entry<String, SessionData> mapEntry );
+
+        void setHazelcastSessionDataStoreContext( HazelcastSessionDataStoreContext context);
     }
 }

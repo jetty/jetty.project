@@ -26,7 +26,9 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.query.Predicate;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -54,9 +56,9 @@ public class HazelcastSessionDataStoreFactory
     private MapConfig mapConfig;
 
     /**
-     * when
+     * {@link Predicate} use it to find the expired sessions that expired a long time ago.
      */
-    private boolean findExpiredSession;
+    private HazelcastSessionDataStore.ExpiredSessionPredicate<String, SessionData> predicate;
 
     @Override
     public SessionDataStore getSessionDataStore( SessionHandler handler )
@@ -117,7 +119,7 @@ public class HazelcastSessionDataStoreFactory
         hazelcastSessionDataStore.setSessionDataMap(hazelcastInstance.getMap( mapName ) );
         hazelcastSessionDataStore.setGracePeriodSec( getGracePeriodSec() );
         hazelcastSessionDataStore.setSavePeriodSec( getSavePeriodSec() );
-        hazelcastSessionDataStore.setFindExpiredSession( findExpiredSession );
+        hazelcastSessionDataStore.setPredicate( predicate );
         return hazelcastSessionDataStore;
     }
 
@@ -186,13 +188,14 @@ public class HazelcastSessionDataStoreFactory
         this.hazelcastInstanceName = hazelcastInstanceName;
     }
 
-    public boolean isFindExpiredSession()
+    public Predicate<String, SessionData> getPredicate()
     {
-        return findExpiredSession;
+        return predicate;
     }
 
-    public void setFindExpiredSession( boolean findExpiredSession )
+    public void setPredicate( HazelcastSessionDataStore.ExpiredSessionPredicate<String, SessionData> predicate )
     {
-        this.findExpiredSession = findExpiredSession;
+        this.predicate = predicate;
     }
+
 }

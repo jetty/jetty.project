@@ -22,11 +22,13 @@ package org.eclipse.jetty.hazelcast.session;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MulticastConfig;
 import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.query.Predicate;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 
@@ -34,6 +36,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * HazelcastTestHelper
@@ -43,6 +47,8 @@ import com.hazelcast.core.HazelcastInstance;
 public class HazelcastTestHelper
 {
     static final String _hazelcastInstanceName = "SESSION_TEST_"+Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+
+    private  final static Logger LOG = Log.getLogger( HazelcastTestHelper.class);
     
     static final String _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
     static final HazelcastInstance _instance = Hazelcast.getOrCreateHazelcastInstance( new Config() //
@@ -63,8 +69,7 @@ public class HazelcastTestHelper
         factory.setOnlyClient( onlyClient );
         factory.setMapName(_name);
         factory.setHazelcastInstance(_instance);
-        factory.setFindExpiredSession( true );
-        
+        factory.setPredicate( HazelcastSessionDataStore.DEFAULT_EXPIRED_SESSION_PREDICATE );
         return factory;
     }
     
@@ -116,4 +121,5 @@ public class HazelcastTestHelper
         }
         return true;
     }
+
 }

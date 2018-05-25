@@ -211,6 +211,4 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
        return String.format("%s@%x[passivating=%b,graceSec=%d]",this.getClass().getName(),this.hashCode(),isPassivating(),getGracePeriodSec());
 
     }
-
-    
 }
