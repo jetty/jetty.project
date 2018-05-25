@@ -362,39 +362,57 @@ public class HttpParserTest
     }
 
     @Test
-    public void testWhiteSpaceBeforeQuery()
+    public void testWhiteSpaceBeforeRequest()
     {
-        String whitespaces[][] = new String[][] {
-                { " ", "Illegal character SPACE" },
-                { "\t", "Illegal character HTAB" },
-                { "\n", "Illegal character HTAB" }, // TODO: this is the wrong message!
-                { "\r", "Bad EOL" },
-                { "\r\n", "Bad EOL" },
-                { "\r\t\n", "Bad EOL" },
-                { "\t\r\t\r\n", "Illegal character HTAB" },
-                { " \t \r \t \n\n", "Illegal character SPACE" },
-                { " \r \t \r\n\r\n\r\n",  "Illegal character SPACE" }
+        HttpCompliance[] compliances = new HttpCompliance[]
+        {
+            HttpCompliance.RFC7230, HttpCompliance.RFC2616
+        };
+        
+        String whitespaces[][] = new String[][] 
+        {
+            { " ", "Illegal character SPACE" },
+            { "\t", "Illegal character HTAB" },
+            { "\n", null },
+            { "\r", "Bad EOL" },
+            { "\r\n", null },
+            { "\r\n\r\n", null },
+            { "\r\n \r\n", "Illegal character SPACE" },
+            { "\r\n\t\r\n", "Illegal character HTAB" },
+            { "\r\t\n", "Bad EOL" },
+            { "\r\r\n", "Bad EOL" },
+            { "\t\r\t\r\n", "Illegal character HTAB" },
+            { " \t \r \t \n\n", "Illegal character SPACE" },
+            { " \r \t \r\n\r\n\r\n",  "Illegal character SPACE" }
         };
 
-        Set<HttpCompliance> complianceSet = EnumSet.of(HttpCompliance.RFC2616_LEGACY, HttpCompliance.RFC7230_LEGACY);
 
-        for(HttpCompliance compliance: complianceSet)
+        for (int i = 0; i < compliances.length; i++)
         {
-            for (int i = 0; i < whitespaces.length; i++)
+            HttpCompliance compliance = compliances[i];
+            
+            for (int j = 0; j < whitespaces.length; j++)
             {
-                ByteBuffer buffer = BufferUtil.toBuffer(
-                        whitespaces[i][0] +
+                String request =
+                        whitespaces[j][0] +
                                 "GET / HTTP/1.1\r\n" +
                                 "Host: localhost\r\n" +
-                                "Name: value" + i + "\r\n" +
+                                "Name: value" + j + "\r\n" +
                                 "Connection: close\r\n" +
-                                "\r\n");
+                                "\r\n";
 
+                ByteBuffer buffer = BufferUtil.toBuffer(request);
                 HttpParser.RequestHandler handler = new Handler();
                 HttpParser parser = new HttpParser(handler, 4096, compliance);
+                _bad = null;
                 parseAll(parser, buffer);
 
-                Assert.assertThat("whitespace.[" + compliance + "].[" + i + "]", _bad, Matchers.containsString(whitespaces[i][1]));
+                String test = "whitespace.[" + compliance + "].[" + j + "]";
+                String expected = whitespaces[j][1];
+                if (expected==null)
+                    Assert.assertNull(test, _bad);
+                else
+                    Assert.assertThat(test, _bad, Matchers.containsString(expected));
             }
         }
     }
