@@ -182,6 +182,9 @@
   <profiles>
     <profile>
       <id>run-its</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
       <build>
         <plugins>
           <plugin>
@@ -214,6 +217,7 @@
                 <jettyRunPort>${jetty.runPort}</jettyRunPort>
                 <surefireVersion>${surefireVersion}</surefireVersion>
               </scriptVariables>
+              <skipInvocation>${skipTests}</skipInvocation>
               <goals>
                 <goal>clean</goal>
               </goals>

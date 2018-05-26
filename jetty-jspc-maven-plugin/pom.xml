@@ -110,6 +110,9 @@
   <profiles>
     <profile>
       <id>run-its</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
       <build>
         <plugins>
           <plugin>
@@ -139,6 +142,7 @@
               <scriptVariables>
                 <surefireVersion>${surefireVersion}</surefireVersion>
               </scriptVariables>
+              <skipInvocation>${skipTests}</skipInvocation>
               <goals>
                 <goal>clean</goal>
               </goals>
