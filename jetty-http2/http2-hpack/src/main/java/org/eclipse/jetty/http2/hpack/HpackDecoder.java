@@ -246,9 +246,8 @@ public class HpackDecoder
                 if (indexed)
                 {
                     // add to dynamic table
-                    _context.add(field);
-                    // if (_context.add(field)==null)
-                    //    throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Indexed field value too large");
+                    if (_context.add(field)==null)
+                        throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Indexed field value too large");
                 }
 
             }
