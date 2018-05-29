@@ -101,7 +101,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *
  *  pathInfoOnly      If true, only the path info will be applied to the resourceBase
  *
- *  stylesheet	      Set with the location of an optional stylesheet that will be used
+ *  stylesheet        Set with the location of an optional stylesheet that will be used
  *                    to decorate the directory listing html.
  *
  *  etags             If True, weak etags will be generated and handled.
