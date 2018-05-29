@@ -351,8 +351,7 @@ public class MimeTypes
 
         if (type==null)
         {
-            if (type==null)
-                type=__dftMimeMap.get("*");
+            type=__dftMimeMap.get("*");
         }
 
         return type;
