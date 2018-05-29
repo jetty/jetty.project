@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -430,7 +431,7 @@ public class ServerTimeoutsTest extends AbstractTest
         });
         setServerIdleTimeout(idleTimeout);
 
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class, QueuedThreadPool.class))
         {
             DeferredContentProvider contentProvider = new DeferredContentProvider();
             CountDownLatch resultLatch = new CountDownLatch(1);
