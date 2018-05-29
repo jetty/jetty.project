@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -193,8 +194,9 @@ public class ResourceTest
     public static Collection<Data[]> data() throws Exception
     {
         UseCases cases = new UseCases("src/test/resources/");
-        
-        File testDir = MavenTestingUtils.getTargetTestingDir(ResourceTest.class.getName());
+
+        Path targetPath = MavenTestingUtils.getTargetPath();
+        File testDir = targetPath.resolve("ResourceTest with spaces").toFile();
         FS.ensureEmpty(testDir);
         File tmpFile = new File(testDir, "test.tmp");
         FS.touch(tmpFile);
