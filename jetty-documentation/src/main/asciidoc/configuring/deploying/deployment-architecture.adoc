@@ -32,8 +32,8 @@ image:images/Jetty_DeployManager_DeploymentManager_Roles.png[image,width=195]
 [[udm-application-providers]]
 ==== Application Providers
 
-Before Jetty deploys an application, an link:{JDURL}/org/eclipse/jetty/deploy/AppProvider.html[AppProvider] identifies the App and then provides it to the `DeploymentManager`.
-The main `AppProvider` with the Jetty distribution is the link:{JDURL}/org/eclipse/jetty/deploy/providers/WebAppProvider.html[WebAppProvider.]
+Before Jetty deploys an application, an link:{JDURL}/org/eclipse/jetty/deploy/AppProvider.html[`AppProvider`] identifies the App and then provides it to the `DeploymentManager`.
+The main `AppProvider` with the Jetty distribution is the link:{JDURL}/org/eclipse/jetty/deploy/providers/WebAppProvider.html[`WebAppProvider`.]
 
 [[udm-application-lifecycle-graph]]
 ==== Application LifeCycle Graph
@@ -63,14 +63,34 @@ Examples of new `AppLifeCycle.Binding` implementations that can be developed inc
 
 There are four default bindings:
 
-* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardDeployer.html[StandardDeployer] — Deploys the ContextHandler into Jetty in the appropriate place.
-* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardStarter.html[StandardStarter] — Sets the ContextHandler to started and start accepting incoming requests.
-* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardStopper.html[StandardStopper] — Stops the ContextHandler and stops accepting incoming requests.
-* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardUndeployer.html[StandardUndeployer] — Removes the ContextHandler from Jetty.
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardDeployer.html[`StandardDeployer`] — Deploys the ContextHandler into Jetty in the appropriate place.
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardStarter.html[`StandardStarter`] — Sets the ContextHandler to started and start accepting incoming requests.
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardStopper.html[`StandardStopper`] — Stops the ContextHandler and stops accepting incoming requests.
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardUndeployer.html[`StandardUndeployer`] — Removes the ContextHandler from Jetty.
 
 image:images/Jetty_DeployManager_DefaultAppLifeCycleBindings.png[image,width=851]
 
 A fifth, non-standard binding, called link:{JDURL}/org/eclipse/jetty/deploy/bindings/DebugBinding.html[DebugBinding], is also available for debugging reasons; it logs the various transitions through the Application LifeCycle.
+
+===== Using GlobalWebappConfigBinding
+
+In addition to the LifeCycle bindings discussed above, there is also the link:https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/deploy/bindings/GlobalWebappConfigBinding.html[`GlobalWebappConfigBinding`] which, when added to the `DeploymentManager` will apply an additional configuration XML file to each webapp that it deploys.
+This can useful when setting server or system classes, or when defining link:#override-web-xml[override descriptors.]
+This configuration XML file will be _in addition to_ any context XML file that exists for the webapp; it will be applied _after_ any context XML files but _before_ the webapp is started.
+The format for the  XML file is the same as any context XML file and can be used to same parameters for a webapp.
+
+To use this binding, you can either modify the existing `jetty-deploy.xml` which comes with the Jetty distribution (be sure to link:#startup-base-and-home[copy it to your $JETTY_BASE/etc directory first]), or by link:#custom-modules[creating a new module] file which calls to an additional XML file.
+
+[source, xml, subs="{sub-order}"]
+----
+        <Call name="addLifeCycleBinding">
+          <Arg>
+            <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding" >
+              <Set name="jettyXml"><Property name="jetty.home" default="." />/etc/global-webapp-config.xml</Set>
+            </New>
+          </Arg>
+        </Call>
+----
 
 [[default-web-app-provider]]
 ==== Understanding the Default WebAppProvider
@@ -119,7 +139,7 @@ monitoredDirName::
   The file path or URL to the directory to scan for web applications.
 
   Scanning follows these rules:
-  
+
   1.  A base directory must exist.
   2.  Hidden Files (starting with `"."`) are ignored.
   3.  Directories with names ending in `".d"` are ignored.
