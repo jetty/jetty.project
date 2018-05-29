@@ -56,7 +56,7 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         public String version;
         public String type;
         public String classifier;
-        private String mavenRepoUri = "https://central.maven.org/maven2/";
+        private String mavenRepoUri = "https://repo1.maven.org/maven2/";
 
         public String toPath()
         {
@@ -217,5 +217,18 @@ public class MavenLocalRepoFileInitializer extends FileInitializer
         }
 
         return coords;
+    }
+
+    /**
+     * protected only for testing purpose
+     * @param uri the the uri to download
+     * @param destination the destination File
+     * @throws IOException
+     */
+    @Override
+    protected void download( URI uri, Path destination )
+        throws IOException
+    {
+        super.download( uri, destination );
     }
 }

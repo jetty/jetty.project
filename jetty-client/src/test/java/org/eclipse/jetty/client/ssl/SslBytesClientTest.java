@@ -101,72 +101,72 @@ public class SslBytesClientTest extends SslBytesTest
 
         Assert.assertTrue(proxy.awaitClient(5, TimeUnit.SECONDS));
 
-        final SSLSocket server = (SSLSocket)acceptor.accept();
-        server.setUseClientMode(false);
-
-        Future<Object> handshake = threadPool.submit(() ->
+        try (SSLSocket server = (SSLSocket)acceptor.accept())
         {
-            server.startHandshake();
-            return null;
-        });
+            server.setUseClientMode(false);
 
-        // Client Hello
-        TLSRecord record = proxy.readFromClient();
-        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
-        proxy.flushToServer(record);
+            Future<Object> handshake = threadPool.submit(() ->
+            {
+                server.startHandshake();
+                return null;
+            });
 
-        // Server Hello + Certificate + Server Done
-        record = proxy.readFromServer();
-        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
-        proxy.flushToClient(record);
+            // Client Hello
+            TLSRecord record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+            proxy.flushToServer(record);
 
-        // Client Key Exchange
-        record = proxy.readFromClient();
-        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
-        proxy.flushToServer(record);
+            // Server Hello + Certificate + Server Done
+            record = proxy.readFromServer();
+            Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+            proxy.flushToClient(record);
 
-        // Change Cipher Spec
-        record = proxy.readFromClient();
-        Assert.assertEquals(TLSRecord.Type.CHANGE_CIPHER_SPEC, record.getType());
-        proxy.flushToServer(record);
+            // Client Key Exchange
+            record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+            proxy.flushToServer(record);
 
-        // Client Done
-        record = proxy.readFromClient();
-        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
-        proxy.flushToServer(record);
+            // Change Cipher Spec
+            record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.CHANGE_CIPHER_SPEC, record.getType());
+            proxy.flushToServer(record);
 
-        // Change Cipher Spec
-        record = proxy.readFromServer();
-        Assert.assertEquals(TLSRecord.Type.CHANGE_CIPHER_SPEC, record.getType());
-        proxy.flushToClient(record);
+            // Client Done
+            record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+            proxy.flushToServer(record);
 
-        // Server Done
-        record = proxy.readFromServer();
-        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
-        proxy.flushToClient(record);
+            // Change Cipher Spec
+            record = proxy.readFromServer();
+            Assert.assertEquals(TLSRecord.Type.CHANGE_CIPHER_SPEC, record.getType());
+            proxy.flushToClient(record);
 
-        Assert.assertNull(handshake.get(5, TimeUnit.SECONDS));
+            // Server Done
+            record = proxy.readFromServer();
+            Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+            proxy.flushToClient(record);
 
-        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
-        // Read request
-        BufferedReader reader = new BufferedReader(new InputStreamReader(server.getInputStream(), StandardCharsets.UTF_8));
-        String line = reader.readLine();
-        Assert.assertTrue(line.startsWith("GET"));
-        while (line.length() > 0)
-            line = reader.readLine();
+            Assert.assertNull(handshake.get(5, TimeUnit.SECONDS));
 
-        // Write response
-        OutputStream output = server.getOutputStream();
-        output.write(("HTTP/1.1 200 OK\r\n" +
-                "Content-Length: 0\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
-        output.flush();
-        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+            SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+            // Read request
+            BufferedReader reader = new BufferedReader(new InputStreamReader(server.getInputStream(), StandardCharsets.UTF_8));
+            String line = reader.readLine();
+            Assert.assertTrue(line.startsWith("GET"));
+            while (line.length() > 0)
+                line = reader.readLine();
 
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            // Write response
+            OutputStream output = server.getOutputStream();
+            output.write(("HTTP/1.1 200 OK\r\n" +
+                    "Content-Length: 0\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
-        server.close();
+            ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
     }
 
     @Test
@@ -178,109 +178,109 @@ public class SslBytesClientTest extends SslBytesTest
 
         Assert.assertTrue(proxy.awaitClient(5, TimeUnit.SECONDS));
 
-        final SSLSocket server = (SSLSocket)acceptor.accept();
-        server.setUseClientMode(false);
-
-        Future<Object> handshake = threadPool.submit(() ->
+        try (SSLSocket server = (SSLSocket)acceptor.accept())
         {
-            server.startHandshake();
-            return null;
-        });
+            server.setUseClientMode(false);
 
-        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
-        Assert.assertNull(handshake.get(5, TimeUnit.SECONDS));
+            Future<Object> handshake = threadPool.submit(() ->
+            {
+                server.startHandshake();
+                return null;
+            });
 
-        // Read request
-        InputStream serverInput = server.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(serverInput, StandardCharsets.UTF_8));
-        String line = reader.readLine();
-        Assert.assertTrue(line.startsWith("GET"));
-        while (line.length() > 0)
-            line = reader.readLine();
+            SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+            Assert.assertNull(handshake.get(5, TimeUnit.SECONDS));
 
-        OutputStream serverOutput = server.getOutputStream();
-        byte[] data1 = new byte[1024];
-        Arrays.fill(data1, (byte)'X');
-        String content1 = new String(data1, StandardCharsets.UTF_8);
-        byte[] data2 = new byte[1024];
-        Arrays.fill(data2, (byte)'Y');
-        final String content2 = new String(data2, StandardCharsets.UTF_8);
-        // Write first part of the response
-        serverOutput.write(("HTTP/1.1 200 OK\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
-                "\r\n" +
-                content1).getBytes(StandardCharsets.UTF_8));
-        serverOutput.flush();
-        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+            // Read request
+            InputStream serverInput = server.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(serverInput, StandardCharsets.UTF_8));
+            String line = reader.readLine();
+            Assert.assertTrue(line.startsWith("GET"));
+            while (line.length() > 0)
+                line = reader.readLine();
 
-        // Renegotiate
-        Future<Object> renegotiation = threadPool.submit(() ->
-        {
-            server.startHandshake();
-            return null;
-        });
+            OutputStream serverOutput = server.getOutputStream();
+            byte[] data1 = new byte[1024];
+            Arrays.fill(data1, (byte)'X');
+            String content1 = new String(data1, StandardCharsets.UTF_8);
+            byte[] data2 = new byte[1024];
+            Arrays.fill(data2, (byte)'Y');
+            final String content2 = new String(data2, StandardCharsets.UTF_8);
+            // Write first part of the response
+            serverOutput.write(("HTTP/1.1 200 OK\r\n" +
+                    "Content-Type: text/plain\r\n" +
+                    "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
+                    "\r\n" +
+                    content1).getBytes(StandardCharsets.UTF_8));
+            serverOutput.flush();
+            Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
-        // Renegotiation Handshake
-        TLSRecord record = proxy.readFromServer();
-        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
-        proxy.flushToClient(record);
+            // Renegotiate
+            Future<Object> renegotiation = threadPool.submit(() ->
+            {
+                server.startHandshake();
+                return null;
+            });
 
-        // Renegotiation Handshake
-        record = proxy.readFromClient();
-        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
-        proxy.flushToServer(record);
+            // Renegotiation Handshake
+            TLSRecord record = proxy.readFromServer();
+            Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+            proxy.flushToClient(record);
 
-        // Trigger a read to have the server write the final renegotiation steps
-        server.setSoTimeout(100);
-        try
-        {
-            serverInput.read();
-            Assert.fail();
+            // Renegotiation Handshake
+            record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+            proxy.flushToServer(record);
+
+            // Trigger a read to have the server write the final renegotiation steps
+            server.setSoTimeout(100);
+            try
+            {
+                serverInput.read();
+                Assert.fail();
+            }
+            catch (SocketTimeoutException x)
+            {
+                // Expected
+            }
+
+            // Renegotiation Handshake
+            record = proxy.readFromServer();
+            Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+            proxy.flushToClient(record);
+
+            // Renegotiation Change Cipher
+            record = proxy.readFromServer();
+            Assert.assertEquals(TLSRecord.Type.CHANGE_CIPHER_SPEC, record.getType());
+            proxy.flushToClient(record);
+
+            // Renegotiation Handshake
+            record = proxy.readFromServer();
+            Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+            proxy.flushToClient(record);
+
+            // Renegotiation Change Cipher
+            record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.CHANGE_CIPHER_SPEC, record.getType());
+            proxy.flushToServer(record);
+
+            // Renegotiation Handshake
+            record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+            proxy.flushToServer(record);
+
+            Assert.assertNull(renegotiation.get(5, TimeUnit.SECONDS));
+
+            // Complete the response
+            automaticProxyFlow = proxy.startAutomaticFlow();
+            serverOutput.write(data2);
+            serverOutput.flush();
+            Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+            ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(data1.length + data2.length, response.getContent().length);
         }
-        catch (SocketTimeoutException x)
-        {
-            // Expected
-        }
-
-        // Renegotiation Handshake
-        record = proxy.readFromServer();
-        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
-        proxy.flushToClient(record);
-
-        // Renegotiation Change Cipher
-        record = proxy.readFromServer();
-        Assert.assertEquals(TLSRecord.Type.CHANGE_CIPHER_SPEC, record.getType());
-        proxy.flushToClient(record);
-
-        // Renegotiation Handshake
-        record = proxy.readFromServer();
-        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
-        proxy.flushToClient(record);
-
-        // Renegotiation Change Cipher
-        record = proxy.readFromClient();
-        Assert.assertEquals(TLSRecord.Type.CHANGE_CIPHER_SPEC, record.getType());
-        proxy.flushToServer(record);
-
-        // Renegotiation Handshake
-        record = proxy.readFromClient();
-        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
-        proxy.flushToServer(record);
-
-        Assert.assertNull(renegotiation.get(5, TimeUnit.SECONDS));
-
-        // Complete the response
-        automaticProxyFlow = proxy.startAutomaticFlow();
-        serverOutput.write(data2);
-        serverOutput.flush();
-        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
-
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
-        Assert.assertEquals(data1.length + data2.length, response.getContent().length);
-
-        server.close();
     }
 
     @Test
@@ -294,60 +294,60 @@ public class SslBytesClientTest extends SslBytesTest
 
         Assert.assertTrue(proxy.awaitClient(5, TimeUnit.SECONDS));
 
-        final SSLSocket server = (SSLSocket)acceptor.accept();
-        server.setUseClientMode(false);
-
-        Future<Object> handshake = threadPool.submit(() ->
+        try (SSLSocket server = (SSLSocket)acceptor.accept())
         {
-            server.startHandshake();
-            return null;
-        });
+            server.setUseClientMode(false);
 
-        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
-        Assert.assertNull(handshake.get(5, TimeUnit.SECONDS));
+            Future<Object> handshake = threadPool.submit(() ->
+            {
+                server.startHandshake();
+                return null;
+            });
 
-        // Read request
-        InputStream serverInput = server.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(serverInput, StandardCharsets.UTF_8));
-        String line = reader.readLine();
-        Assert.assertTrue(line.startsWith("GET"));
-        while (line.length() > 0)
-            line = reader.readLine();
+            SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+            Assert.assertNull(handshake.get(5, TimeUnit.SECONDS));
 
-        OutputStream serverOutput = server.getOutputStream();
-        byte[] data1 = new byte[1024];
-        Arrays.fill(data1, (byte)'X');
-        String content1 = new String(data1, StandardCharsets.UTF_8);
-        byte[] data2 = new byte[1024];
-        Arrays.fill(data2, (byte)'Y');
-        final String content2 = new String(data2, StandardCharsets.UTF_8);
-        // Write first part of the response
-        serverOutput.write(("HTTP/1.1 200 OK\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
-                "\r\n" +
-                content1).getBytes(StandardCharsets.UTF_8));
-        serverOutput.flush();
-        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+            // Read request
+            InputStream serverInput = server.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(serverInput, StandardCharsets.UTF_8));
+            String line = reader.readLine();
+            Assert.assertTrue(line.startsWith("GET"));
+            while (line.length() > 0)
+                line = reader.readLine();
 
-        // Renegotiate
-        threadPool.submit(() ->
-        {
-            server.startHandshake();
-            return null;
-        });
+            OutputStream serverOutput = server.getOutputStream();
+            byte[] data1 = new byte[1024];
+            Arrays.fill(data1, (byte)'X');
+            String content1 = new String(data1, StandardCharsets.UTF_8);
+            byte[] data2 = new byte[1024];
+            Arrays.fill(data2, (byte)'Y');
+            final String content2 = new String(data2, StandardCharsets.UTF_8);
+            // Write first part of the response
+            serverOutput.write(("HTTP/1.1 200 OK\r\n" +
+                    "Content-Type: text/plain\r\n" +
+                    "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
+                    "\r\n" +
+                    content1).getBytes(StandardCharsets.UTF_8));
+            serverOutput.flush();
+            Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
-        // Renegotiation Handshake
-        TLSRecord record = proxy.readFromServer();
-        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
-        proxy.flushToClient(record);
+            // Renegotiate
+            threadPool.submit(() ->
+            {
+                server.startHandshake();
+                return null;
+            });
 
-        // Client sends close alert.
-        record = proxy.readFromClient();
-        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
-        record = proxy.readFromClient();
-        Assert.assertNull(record);
+            // Renegotiation Handshake
+            TLSRecord record = proxy.readFromServer();
+            Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+            proxy.flushToClient(record);
 
-        server.close();
+            // Client sends close alert.
+            record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
+            record = proxy.readFromClient();
+            Assert.assertNull(record);
+        }
     }
 }

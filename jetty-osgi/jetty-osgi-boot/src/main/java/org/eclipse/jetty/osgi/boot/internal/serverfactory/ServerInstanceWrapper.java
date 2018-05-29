@@ -142,42 +142,42 @@ public class ServerInstanceWrapper
 
         for (URL jettyConfiguration : jettyConfigurations)
         {
-        	try(Resource r = Resource.newResource(jettyConfiguration))
-        	{
-        		// Execute a Jetty configuration file
-        		if (!r.exists())
-        		{
-        			LOG.warn("File does not exist "+r);
-        			throw new IllegalStateException("No such jetty server config file: "+r);
-        		}
+            try(Resource r = Resource.newResource(jettyConfiguration))
+            {
+                // Execute a Jetty configuration file
+                if (!r.exists())
+                {
+                    LOG.warn("File does not exist "+r);
+                    throw new IllegalStateException("No such jetty server config file: "+r);
+                }
 
-        		XmlConfiguration config = new XmlConfiguration(r.getURI().toURL());
+                XmlConfiguration config = new XmlConfiguration(r.getURI().toURL());
 
-        		config.getIdMap().putAll(id_map);
-        		config.getProperties().putAll(properties);
+                config.getIdMap().putAll(id_map);
+                config.getProperties().putAll(properties);
 
-        		// #334062 compute the URL of the folder that contains the
-        		// conf file and set it as a property so we can compute relative paths
-        		// from it.
-        		String urlPath = jettyConfiguration.toString();
-        		int lastSlash = urlPath.lastIndexOf('/');
-        		if (lastSlash > 4)
-        		{
-        			urlPath = urlPath.substring(0, lastSlash);
-        			config.getProperties().put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
-        		}
+                // #334062 compute the URL of the folder that contains the
+                // conf file and set it as a property so we can compute relative paths
+                // from it.
+                String urlPath = jettyConfiguration.toString();
+                int lastSlash = urlPath.lastIndexOf('/');
+                if (lastSlash > 4)
+                {
+                    urlPath = urlPath.substring(0, lastSlash);
+                    config.getProperties().put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
+                }
 
-        		Object o = config.configure();
-        		if (server == null)
-        			server = (Server)o;
+                Object o = config.configure();
+                if (server == null)
+                    server = (Server)o;
 
-        		id_map = config.getIdMap();
-        	}
-        	catch (Exception e)
-        	{
-        		LOG.warn("Configuration error in " + jettyConfiguration);
-        		throw e;
-        	}
+                id_map = config.getIdMap();
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Configuration error in " + jettyConfiguration);
+                throw e;
+            }
         }
 
         return server;

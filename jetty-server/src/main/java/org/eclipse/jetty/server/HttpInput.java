@@ -679,11 +679,16 @@ public class HttpInput extends ServletInputStream implements Runnable
 
                     skip(item, item.remaining());
                 }
-                return isFinished() && !isError();
+                if (isFinished())
+                    return !isError();
+
+                _state = EARLY_EOF;
+                return false;
             }
-            catch (IOException e)
+            catch (Throwable e)
             {
                 LOG.debug(e);
+                _state = new ErrorState(e);
                 return false;
             }
         }

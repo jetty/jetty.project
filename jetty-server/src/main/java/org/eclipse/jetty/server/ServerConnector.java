@@ -69,15 +69,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * </p>
  * <h2>Selectors</h2>
  * <p>
- * The connector will use the {@link Executor} service to execute a number of Selector Tasks,
- * which are implemented to each use a NIO {@link Selector} instance to asynchronously
- * schedule a set of accepted connections.  It is the selector thread that will call the
- * {@link Callback} instances passed in the {@link EndPoint#fillInterested(Callback)} or
- * {@link EndPoint#write(Callback, java.nio.ByteBuffer...)} methods.  It is expected
- * that these callbacks may do some non-blocking IO work, but will always dispatch to the
- * {@link Executor} service any blocking, long running or application tasks.
- * </p>
- * <p>
  * The default number of selectors is equal to half of the number of processors available to the JVM,
  * which should allow optimal performance even if all the connections used are performing
  * significant non-blocking work in the callback tasks.
