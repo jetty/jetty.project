@@ -31,11 +31,28 @@ import java.util.List;
 public class MultiException extends Exception
 {
     private List<Throwable> nested;
+    boolean superConstructorCalled = false;
 
     /* ------------------------------------------------------------ */
     public MultiException()
     {
         super("Multiple exceptions");
+        this.superConstructorCalled = true;
+    }
+    
+    /**
+     * We only want to fill in the stack trace if we have an exception to throw.
+     * 
+     * This prevents the stack trace from being written when the constructor is
+     * called, yet will let as fill it in later on e.g. when we actually want
+     * to throw the multi exception.
+     */
+    @Override
+    public Throwable fillInStackTrace() {
+        if(superConstructorCalled) {
+            return super.fillInStackTrace();
+        }
+        return this;
     }
 
     /* ------------------------------------------------------------ */
@@ -105,6 +122,7 @@ public class MultiException extends Exception
               if (th instanceof Exception)
                   throw (Exception)th;
           default:
+              this.fillInStackTrace();
               throw this;
         }
     }
@@ -137,6 +155,7 @@ public class MultiException extends Exception
               else
                   throw new RuntimeException(th);
           default:
+              this.fillInStackTrace();
               throw new RuntimeException(this);
         }
     }
@@ -155,7 +174,10 @@ public class MultiException extends Exception
             return;
         
         if (nested.size()>0)
+        {
+            this.fillInStackTrace();
             throw this;
+        }
     }
 
     /* ------------------------------------------------------------ */
