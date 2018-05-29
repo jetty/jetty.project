@@ -440,7 +440,7 @@ public class GracefulStopTest
     }
 
     static class TestHandler extends AbstractHandler 
-    {		
+    {
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicReference<Throwable> thrown = new AtomicReference<Throwable>();
         final AtomicBoolean handling = new AtomicBoolean(false);
