@@ -232,10 +232,7 @@ public class PathResource extends Resource
             throw new IllegalArgumentException("not an absolute uri");
         }
 
-        if (!uri.getScheme().equalsIgnoreCase("file"))
-        {
-            throw new IllegalArgumentException("not file: scheme");
-        }
+        checkFileURIScheme(uri.getScheme());
 
         Path path;
         try
@@ -282,7 +279,35 @@ public class PathResource extends Resource
      */
     public PathResource(URL url) throws IOException, URISyntaxException
     {
-        this(url.toURI());
+        this(toFile(url));
+    }
+
+    /**
+     * Converts a file {@link URL} to a {@link File}.
+     * 
+     * @param url
+     *            the {@link URL} to convert.
+     * @return the converted {@link File}.
+     */
+    private static File toFile(URL url)
+    {
+        checkFileURIScheme(url.getProtocol());
+        return new File(url.getPath());
+    }
+
+    /**
+     * Checks if the given {@link URI} scheme (or {@link URL} protocol) is a
+     * file scheme (or protocol).
+     * 
+     * @param scheme
+     *            the {@link URI} scheme (or {@link URL} protocol) to check.
+     */
+    private static void checkFileURIScheme(String scheme)
+    {
+        if (!"file".equalsIgnoreCase(scheme))
+        {
+            throw new IllegalArgumentException("not file: scheme");
+        }
     }
 
     @Override
