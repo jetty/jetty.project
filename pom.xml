@@ -31,7 +31,7 @@
     <jmhjar.name>benchmarks</jmhjar.name>
     <surefireVersion>2.21.0</surefireVersion>
 
-    <mavenPluginToolsVersion>3.5</mavenPluginToolsVersion>
+    <mavenPluginToolsVersion>3.5.2</mavenPluginToolsVersion>
     <mavenVersion>3.5.0</mavenVersion>
   </properties>
 
@@ -477,7 +477,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.0.1</version>
           <configuration>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
@@ -1293,20 +1293,6 @@
             <configuration>
               <!-- needed for Java 8+ -->
               <additionalparam>&#45;&#45;allow-script-in-comments</additionalparam>
-              <header>
-                <![CDATA[
-                  <script type="text/javascript">
-                    var _gaq = _gaq || [];
-                    _gaq.push(['_setAccount', 'UA-1149868-7']);
-                    _gaq.push(['_trackPageview']);
-                    (function() {
-                      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-                      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-                      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-                    })();
-                 </script>
-              ]]>
-              </header>
             </configuration>
           </plugin>
         </plugins>
