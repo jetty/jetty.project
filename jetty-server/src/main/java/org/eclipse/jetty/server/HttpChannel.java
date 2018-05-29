@@ -563,10 +563,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         else if (failure instanceof BadMessageException | failure instanceof IOException | failure instanceof TimeoutException)
         {
+            // No stack trace unless there is debug turned on
+            LOG.warn("{} {}",_request.getRequestURI(), failure.toString()); 
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
-            else
-                LOG.warn(_request.getRequestURI(), failure);
         }
         else
         {
@@ -721,7 +721,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             action=_state.handling();
         }
-        catch(IllegalStateException e)
+        catch(Throwable e)
         {
             // The bad message cannot be handled in the current state,
             // so rethrow, hopefully somebody will be able to handle.
@@ -749,12 +749,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         finally
         {
-            // TODO: review whether it's the right state to check.
-            if (_state.unhandle()==Action.COMPLETE)
-                _state.onComplete();
-            else
-                throw new IllegalStateException(); // TODO: don't throw from finally blocks !
-            onCompleted();
+            try
+            {
+                onCompleted();
+            }
+            catch(Throwable e)
+            {
+                LOG.debug(e);
+                abort(e);
+            }
         }
     }
 

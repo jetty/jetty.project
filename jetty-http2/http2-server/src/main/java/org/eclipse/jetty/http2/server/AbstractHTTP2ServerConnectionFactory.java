@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
@@ -25,6 +27,7 @@ import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.Connection;
@@ -166,6 +169,18 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     public HttpConfiguration getHttpConfiguration()
     {
         return httpConfiguration;
+    }
+
+    protected Map<Integer, Integer> newSettings()
+    {
+        Map<Integer, Integer> settings = new HashMap<>();
+        settings.put(SettingsFrame.HEADER_TABLE_SIZE, getMaxDynamicTableSize());
+        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getInitialStreamRecvWindow());
+        int maxConcurrentStreams = getMaxConcurrentStreams();
+        if (maxConcurrentStreams >= 0)
+            settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
+        settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE, getHttpConfiguration().getRequestHeaderSize());
+        return settings;
     }
 
     @Override

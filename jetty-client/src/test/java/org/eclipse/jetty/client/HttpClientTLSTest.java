@@ -479,38 +479,40 @@ public class HttpClientTLSTest
                         latch.countDown();
                     });
 
-            Socket socket = server.accept();
-            SSLSocket sslSocket = (SSLSocket)serverTLSFactory.getSslContext().getSocketFactory().createSocket(socket, null, socket.getPort(), true);
-            sslSocket.setUseClientMode(false);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(sslSocket.getInputStream(), StandardCharsets.UTF_8));
-            while (true)
+            try (Socket socket = server.accept())
             {
-                String line = reader.readLine();
-                if (line == null || line.isEmpty())
-                    break;
+                SSLSocket sslSocket = (SSLSocket)serverTLSFactory.getSslContext().getSocketFactory().createSocket(socket, null, socket.getPort(), true);
+                sslSocket.setUseClientMode(false);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(sslSocket.getInputStream(), StandardCharsets.UTF_8));
+                while (true)
+                {
+                    String line = reader.readLine();
+                    if (line == null || line.isEmpty())
+                        break;
+                }
+
+                // If the response is Content-Length delimited, allowing the
+                // missing TLS Close Message is fine because the application
+                // will see a EOFException anyway.
+                // If the response is connection delimited, allowing the
+                // missing TLS Close Message is bad because the application
+                // will see a successful response with truncated content.
+
+                // Verify that by not allowing the missing
+                // TLS Close Message we get a response failure.
+
+                byte[] half = new byte[8];
+                String response = "HTTP/1.1 200 OK\r\n" +
+//                        "Content-Length: " + (half.length * 2) + "\r\n" +
+                        "Connection: close\r\n" +
+                        "\r\n";
+                OutputStream output = sslSocket.getOutputStream();
+                output.write(response.getBytes(StandardCharsets.UTF_8));
+                output.write(half);
+                output.flush();
+                // Simulate a truncation attack by raw closing
+                // the socket in the try-with-resources block end.
             }
-
-            // If the response is Content-Length delimited, allowing the
-            // missing TLS Close Message is fine because the application
-            // will see a EOFException anyway.
-            // If the response is connection delimited, allowing the
-            // missing TLS Close Message is bad because the application
-            // will see a successful response with truncated content.
-
-            // Verify that by not allowing the missing
-            // TLS Close Message we get a response failure.
-
-            byte[] half = new byte[8];
-            String response = "HTTP/1.1 200 OK\r\n" +
-//                    "Content-Length: " + (half.length * 2) + "\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
-            OutputStream output = sslSocket.getOutputStream();
-            output.write(response.getBytes(StandardCharsets.UTF_8));
-            output.write(half);
-            output.flush();
-            // Simulate a truncation attack by raw closing.
-            socket.close();
 
             Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         }

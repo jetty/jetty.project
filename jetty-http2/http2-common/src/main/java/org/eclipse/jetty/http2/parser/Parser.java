@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
@@ -49,6 +50,7 @@ public class Parser
 
     private final Listener listener;
     private final HeaderParser headerParser;
+    private final HeaderBlockParser headerBlockParser;
     private final BodyParser[] bodyParsers;
     private boolean continuation;
     private State state = State.HEADER;
@@ -57,11 +59,14 @@ public class Parser
     {
         this.listener = listener;
         this.headerParser = new HeaderParser();
+        this.headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize));
         this.bodyParsers = new BodyParser[FrameType.values().length];
+    }
 
-        HeaderBlockParser headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize));
+    public void init(UnaryOperator<Listener> wrapper)
+    {
+        Listener listener = wrapper.apply(this.listener);
         HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments();
-
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
         bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);

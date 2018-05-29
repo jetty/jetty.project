@@ -81,7 +81,7 @@
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
           </systemPropertyVariables>
           <includes>
-            <include>**/*TestHelloServlet*</include>
+            <include>**/*TestGetContent*</include>
           </includes>
         </configuration>
         <executions>

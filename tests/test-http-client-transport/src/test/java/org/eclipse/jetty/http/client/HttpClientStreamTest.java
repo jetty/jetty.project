@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.AsyncContext;
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -60,7 +59,6 @@ import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -459,13 +457,12 @@ public class HttpClientStreamTest extends AbstractTest
     public void testInputStreamResponseListenerFailedBeforeResponse() throws Exception
     {
         start(new EmptyServerHandler());
-        //int port = connector.getLocalPort();
+        String uri = newURI();
         server.stop();
-
+                
         InputStreamResponseListener listener = new InputStreamResponseListener();
         // Connect to the wrong port
-        client.newRequest("localhost",
-                          (connector instanceof ServerConnector?ServerConnector.class.cast( connector ).getLocalPort():1))
+        client.newRequest(uri)
                 .scheme(getScheme())
                 .send(listener);
         Result result = listener.await(5, TimeUnit.SECONDS);

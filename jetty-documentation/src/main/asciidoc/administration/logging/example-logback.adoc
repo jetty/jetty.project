@@ -37,9 +37,9 @@ A convenient replacement `logging` module has been created to bootstrap the `${j
 [mybase]$ java -jar /opt/jetty-dist/start.jar --add-to-start=logging
 INFO: logging         initialised in ${jetty.base}/start.ini (appended)
 MKDIR: ${jetty.base}/logs
-DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.6.6/slf4j-api-1.6.6.jar to lib/logging/slf4j-api-1.6.6.jar
-DOWNLOAD: http://central.maven.org/maven2/ch/qos/logback/logback-core/1.0.7/logback-core-1.0.7.jar to lib/logging/logback-core-1.0.7.jar
-DOWNLOAD: http://central.maven.org/maven2/ch/qos/logback/logback-classic/1.0.7/logback-classic-1.0.7.jar to lib/logging/logback-classic-1.0.7.jar
+DOWNLOAD: https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.6.6/slf4j-api-1.6.6.jar to lib/logging/slf4j-api-1.6.6.jar
+DOWNLOAD: https://repo1.maven.org/maven2/ch/qos/logback/logback-core/1.0.7/logback-core-1.0.7.jar to lib/logging/logback-core-1.0.7.jar
+DOWNLOAD: https://repo1.maven.org/maven2/ch/qos/logback/logback-classic/1.0.7/logback-classic-1.0.7.jar to lib/logging/logback-classic-1.0.7.jar
 DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/logback/logback.xml to resources/logback.xml
 DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/logback/jetty-logging.properties to resources/jetty-logging.properties
 

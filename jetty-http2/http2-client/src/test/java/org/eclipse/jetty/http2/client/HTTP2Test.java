@@ -59,6 +59,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
@@ -191,6 +192,49 @@ public class HTTP2Test extends AbstractTest
                 callback.succeeded();
                 latch.countDown();
             }
+        });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testRequestContentResponseContent() throws Exception
+    {
+        start(new EmptyHttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        Session session = newClient(new Session.Listener.Adapter());
+
+        CountDownLatch latch = new CountDownLatch(1);
+        MetaData.Request metaData = newRequest("POST", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(metaData, null, false);
+        Promise.Completable<Stream> streamCompletable = new Promise.Completable<>();
+        session.newStream(frame, streamCompletable, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                if (frame.isEndStream())
+                    latch.countDown();
+            }
+        });
+        streamCompletable.thenCompose(stream ->
+        {
+            DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(1024), false);
+            Callback.Completable dataCompletable = new Callback.Completable();
+            stream.data(dataFrame, dataCompletable);
+            return dataCompletable.thenApply(y -> stream);
+        }).thenAccept(stream ->
+        {
+            DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(1024), true);
+            stream.data(dataFrame, Callback.NOOP);
         });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));

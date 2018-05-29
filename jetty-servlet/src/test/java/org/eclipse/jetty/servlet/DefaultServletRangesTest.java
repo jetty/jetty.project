@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
@@ -32,7 +35,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -161,6 +163,59 @@ public class DefaultServletRangesTest
 
     }
 
+
+    @Test
+    public void testMultipleSameRangeRequests() throws Exception
+    {
+        StringBuilder stringBuilder = new StringBuilder( );
+        for(int i = 0; i < 1000; i++)
+        {
+            stringBuilder.append( "10-60," );
+        }
+
+
+        String response;
+        response = connector.getResponse(
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n"+
+                "Range: bytes=" + stringBuilder.toString() +"0-2\r\n" +
+                "\r\n");
+        int start = response.indexOf("--jetty");
+        String body = response.substring(start);
+        String boundary = body.substring(0, body.indexOf("\r\n"));
+        assertResponseContains("206 Partial", response);
+        assertResponseContains("Content-Type: multipart/byteranges; boundary=", response);
+        
+        assertResponseContains("Content-Range: bytes 10-60/80", response);
+        assertResponseContains("Content-Range: bytes 0-2/80", response);
+        Assert.assertEquals( "Content range 0-60/80 in response not only 1:" + response , //
+                             2, response.split( "Content-Range: bytes 10-60/80" ).length);
+        assertTrue(body.endsWith(boundary + "--\r\n"));
+    }
+
+    @Test
+    public void testMultipleSameRangeRequestsTooLargeHeader() throws Exception
+    {
+        StringBuilder stringBuilder = new StringBuilder( );
+        for(int i = 0; i < 2000; i++)
+        {
+            stringBuilder.append( "10-60," );
+        }
+
+
+        String response;
+        response = connector.getResponse(
+            "GET /context/data.txt HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n"+
+                "Range: bytes=" + stringBuilder.toString() +"0-2\r\n" +
+                "\r\n");
+        int start = response.indexOf("--jetty");
+        assertEquals( -1, start );
+        assertResponseContains("HTTP/1.1 431 Request Header Fields Too Large", response);
+    }
+
     @Test
     public void testOpenEndRange() throws Exception
     {
@@ -211,16 +266,10 @@ public class DefaultServletRangesTest
 
     private void createFile(File file, String str) throws IOException
     {
-        FileOutputStream out = null;
-        try
+        try(OutputStream out = Files.newOutputStream( file.toPath()))
         {
-            out = new FileOutputStream(file);
             out.write(str.getBytes(StandardCharsets.UTF_8));
             out.flush();
-        }
-        finally
-        {
-            IO.close(out);
         }
     }
 

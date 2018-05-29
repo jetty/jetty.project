@@ -28,6 +28,7 @@ import java.nio.channels.WritePendingException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  *
@@ -209,7 +210,8 @@ public interface EndPoint extends Closeable
     /**
      * <p>Requests callback methods to be invoked when a call to {@link #fill(ByteBuffer)} would return data or EOF.</p>
      *
-     * @param callback the callback to call when an error occurs or we are readable.
+     * @param callback the callback to call when an error occurs or we are readable.  The callback may implement the {@link Invocable} interface to
+     * self declare its blocking status. Non-blocking callbacks may be called more efficiently without dispatch delays. 
      * @throws ReadPendingException if another read operation is concurrent.
      */
     void fillInterested(Callback callback) throws ReadPendingException;
@@ -217,7 +219,8 @@ public interface EndPoint extends Closeable
     /**
      * <p>Requests callback methods to be invoked when a call to {@link #fill(ByteBuffer)} would return data or EOF.</p>
      *
-     * @param callback the callback to call when an error occurs or we are readable.
+     * @param callback the callback to call when an error occurs or we are readable.  The callback may implement the {@link Invocable} interface to
+     * self declare its blocking status. Non-blocking callbacks may be called more efficiently without dispatch delays.
      * @return true if set
      */
     boolean tryFillInterested(Callback callback);
@@ -232,7 +235,8 @@ public interface EndPoint extends Closeable
      * <p>Writes the given buffers via {@link #flush(ByteBuffer...)} and invokes callback methods when either
      * all the data has been flushed or an error occurs.</p>
      *
-     * @param callback the callback to call when an error occurs or the write completed.
+     * @param callback the callback to call when an error occurs or the write completed.   The callback may implement the {@link Invocable} interface to
+     * self declare its blocking status. Non-blocking callbacks may be called more efficiently without dispatch delays.
      * @param buffers one or more {@link ByteBuffer}s that will be flushed.
      * @throws WritePendingException if another write operation is concurrent.
      */

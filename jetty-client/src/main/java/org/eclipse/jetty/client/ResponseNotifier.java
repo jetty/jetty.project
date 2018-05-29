@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -28,7 +29,9 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -110,11 +113,31 @@ public class ResponseNotifier
 
     public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
     {
-        // Here we use an IteratingNestedCallback not to avoid the stack overflow, but to
-        // invoke the listeners one after the other. When all of them have invoked the
-        // callback they got passed, the callback passed to this method is finally invoked.
-        ContentCallback contentCallback = new ContentCallback(listeners, response, buffer, callback);
-        contentCallback.iterate();
+        List<Response.AsyncContentListener> contentListeners = listeners.stream()
+                .filter(Response.AsyncContentListener.class::isInstance)
+                .map(Response.AsyncContentListener.class::cast)
+                .collect(Collectors.toList());
+        notifyContent(response, buffer, callback, contentListeners);
+    }
+
+    public void notifyContent(Response response, ByteBuffer buffer, Callback callback, List<Response.AsyncContentListener> contentListeners)
+    {
+        if (contentListeners.isEmpty())
+        {
+            callback.succeeded();
+        }
+        else
+        {
+            CountingCallback counter = new CountingCallback(callback, contentListeners.size());
+            Retainable retainable = callback instanceof Retainable ? (Retainable)callback : null;
+            for (Response.AsyncContentListener listener : contentListeners)
+            {
+                ByteBuffer slice = buffer.slice();
+                if (retainable != null)
+                    retainable.retain();
+                listener.onContent(response, slice, counter);
+            }
+        }
     }
 
     private void notifyContent(Response.AsyncContentListener listener, Response response, ByteBuffer buffer, Callback callback)

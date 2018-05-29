@@ -623,7 +623,7 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        Deque<Object> dataQueue = new ArrayDeque<>();
+        Deque<Callback> dataQueue = new ArrayDeque<>();
         AtomicLong received = new AtomicLong();
         CountDownLatch latch = new CountDownLatch(1);
         Session client = newClient(new Session.Listener.Adapter());
@@ -635,7 +635,6 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
-                dataQueue.offer(frame);
                 dataQueue.offer(callback);
                 // Do not consume the data yet.
                 if (received.addAndGet(frame.getData().remaining()) == windowSize)
@@ -647,10 +646,7 @@ public class StreamResetTest extends AbstractTest
 
         // Reset and consume.
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        dataQueue.stream()
-                .filter(item -> item instanceof Callback)
-                .map(item -> (Callback)item)
-                .forEach(Callback::succeeded);
+        dataQueue.forEach(Callback::succeeded);
 
         Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
     }

@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -42,6 +41,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -287,18 +287,31 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     public abstract void restartWebApp(boolean reconfigureScanner) throws Exception;
 
     
-    public abstract void checkPomConfiguration() throws MojoExecutionException;
+    public boolean checkPomConfiguration() throws MojoExecutionException
+    {
+        return true;
+    }
 
     public abstract void configureScanner () throws MojoExecutionException;
 
+    protected String getSkipMessage(String reason)
+    {
+        String projectName = project.getName();
+        if (StringUtils.isBlank(projectName))
+        {
+            projectName = project.getGroupId() + ":" + project.getArtifactId();
+        }
+        return "Skipping " + projectName + " : " + reason;
+    }
 
-    public void checkPackagingConfiguration() throws MojoExecutionException
+    public boolean checkPackagingConfiguration()
     {
         if (!supportedPackagings.contains( project.getPackaging() ))
         {
-            getLog().info( "Your project packaging is not supported by this plugin" );
-            return;
+            getLog().info(getSkipMessage("packaging type [" + project.getPackaging() + "] is unsupported"));
+            return false;
         }
+        return true;
     }
 
 
@@ -308,30 +321,32 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        getLog().info("Configuring Jetty for project: " + this.project.getName());
-        if (skip)
+        if (isConfigurationSupported())
         {
-            getLog().info("Skipping Jetty start: jetty.skip==true");
-            return;
-        }
+            if (skip)
+            {
+                getLog().info(getSkipMessage("jetty.skip==true"));
+                return;
+            }
 
-        if (isExcluded(execution.getMojoDescriptor().getGoal()))
-        {
-            getLog().info("The goal \""+execution.getMojoDescriptor().getFullGoalName()+
-                          "\" has been made unavailable for this web application by an <excludedGoal> configuration.");
-            return;
+            getLog().info("Configuring Jetty for project: " + this.project.getName());
+
+            if (isExcluded(execution.getMojoDescriptor().getGoal()))
+            {
+                getLog().info("The goal \""+execution.getMojoDescriptor().getFullGoalName()+
+                              "\" has been made unavailable for this web application by an <excludedGoal> configuration.");
+                return;
+            }
+
+            configurePluginClasspath();
+            PluginLog.setLog(getLog());
+            startJetty();
         }
-        
-        configurePluginClasspath();
-        PluginLog.setLog(getLog());
-        checkConfiguration();
-        startJetty();
     }
     
-    public void checkConfiguration() throws MojoExecutionException
+    public boolean isConfigurationSupported() throws MojoExecutionException
     {
-        checkPackagingConfiguration();
-        checkPomConfiguration();
+        return (checkPackagingConfiguration() && checkPomConfiguration());
     }
     
     

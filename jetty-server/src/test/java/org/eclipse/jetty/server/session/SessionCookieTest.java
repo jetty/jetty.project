@@ -136,7 +136,7 @@ public class SessionCookieTest
         
         long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         
-        Session session = new Session(null, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30)); 
+        Session session = new Session(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30)); 
 
         SessionCookieConfig sessionCookieConfig = mgr.getSessionCookieConfig();
         sessionCookieConfig.setSecure(true);
