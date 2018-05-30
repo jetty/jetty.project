@@ -35,7 +35,12 @@
     <mavenVersion>3.5.0</mavenVersion>
     <unix.socket.tmp></unix.socket.tmp>
     <src.dir>${basedir}/src/main/java</src.dir>
-    <revision>9.4.12-SNAPSHOT</revision>
+    <jetty.version>9.4.12-SNAPSHOT</jetty.version>
+    <revision>${jetty.version}</revision>
+
+    <distManagementSnapshotUrl>https://oss.sonatype.org/content/repositories/jetty-snapshots/</distManagementSnapshotUrl>
+    <distManagementReleaseUrl>https://oss.sonatype.org/service/local/staging/deploy/maven2/</distManagementReleaseUrl>
+
   </properties>
 
   <licenses>
@@ -1923,12 +1928,12 @@
     <repository>
       <id>oss.sonatype.org</id>
       <name>Jetty Staging Repository</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      <url>${distManagementReleaseUrl}</url>
     </repository>
     <snapshotRepository>
       <id>oss.sonatype.org</id>
       <name>Jetty Snapshot Repository</name>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
+      <url>${distManagementSnapshotUrl}</url>
     </snapshotRepository>
     <site>
       <id>jetty.eclipse.website</id>
