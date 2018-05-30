@@ -7,7 +7,7 @@ annotations
 webapp
 
 [files]
-maven://com.hazelcast/hazelcast-all/3.8.2|lib/hazelcast/hazelcast-all-3.8.2.jar
+maven://com.hazelcast/hazelcast-all/3.9.4|lib/hazelcast/hazelcast-all-3.9.4.jar
 maven://com.hazelcast/hazelcast-jetty9-sessionmanager/1.0.2|lib/hazelcast/hazelcast-jetty9-sessionmanager-1.0.2.jar
 maven://org.eclipse.jetty/jetty-nosql/${jetty.version}|lib/hazelcast/jetty-nosql-${jetty.version}.jar
 
