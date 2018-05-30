@@ -150,7 +150,7 @@ public abstract class SslBytesTest
             }
             catch (IOException x)
             {
-                logger.warn(x.getClass() + ": " + x.getMessage());
+                logger.info(x.getClass() + ": " + x.getMessage());
 
                 if(logger.isDebugEnabled())
                     logger.debug(x);

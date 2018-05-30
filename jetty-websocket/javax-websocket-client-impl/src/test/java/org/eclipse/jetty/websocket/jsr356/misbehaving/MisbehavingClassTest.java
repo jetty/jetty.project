@@ -105,7 +105,7 @@ public class MisbehavingClassTest
                 assertThat(e.getCause(), instanceOf(RuntimeException.class));
             }
 
-            assertThat("Close should have occurred", socket.closeLatch.await(1,TimeUnit.SECONDS), is(true));
+            assertThat("Close should have occurred", socket.closeLatch.await(10,TimeUnit.SECONDS), is(true));
             assertThat("Error", socket.errors.pop(), instanceOf(RuntimeException.class));
         }
     }
@@ -129,7 +129,7 @@ public class MisbehavingClassTest
                 assertThat(e.getCause(), instanceOf(RuntimeException.class));
             }
 
-            assertThat("Close should have occurred", socket.closeLatch.await(1,TimeUnit.SECONDS), is(true));
+            assertThat("Close should have occurred", socket.closeLatch.await(10,TimeUnit.SECONDS), is(true));
             assertThat("Error",socket.errors.pop(), instanceOf(RuntimeException.class));
         }
     }
