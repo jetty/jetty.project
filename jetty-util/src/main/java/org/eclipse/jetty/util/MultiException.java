@@ -26,49 +26,48 @@ import java.util.List;
  * Wraps multiple exceptions.
  *
  * Allows multiple exceptions to be thrown as a single exception.
+ * 
+ * The MultiException itself should not be thrown instead one of the
+ * ifExceptionThrow* methods should be called instead.
  */
 @SuppressWarnings("serial")
 public class MultiException extends Exception
 {
+    private static final String DEFAULT_MESSAGE = "Multiple exceptions";
+    
     private List<Throwable> nested;
-    boolean superConstructorCalled = false;
 
     /* ------------------------------------------------------------ */
     public MultiException()
     {
-        super("Multiple exceptions");
-        this.superConstructorCalled = true;
+        // Avoid filling in stack trace information.
+        super(DEFAULT_MESSAGE, null, false, false);
+        this.nested = new ArrayList<>();
     }
     
     /**
-     * We only want to fill in the stack trace if we have an exception to throw.
+     * Create a MultiException which may be thrown.
      * 
-     * This prevents the stack trace from being written when the constructor is
-     * called, yet will let as fill it in later on e.g. when we actually want
-     * to throw the multi exception.
+     * @param nested The nested exceptions which will be suppressed by this
+     * exception.
      */
-    @Override
-    public Throwable fillInStackTrace() {
-        if(superConstructorCalled) {
-            return super.fillInStackTrace();
+    private MultiException(List<Throwable> nested) {
+        super(DEFAULT_MESSAGE);
+        this.nested = new ArrayList<>(nested);
+        
+        if(nested.size() > 0) {
+            initCause(nested.get(0));
         }
-        return this;
+        
+        for(Throwable t : nested) {
+            this.addSuppressed(t);
+        }
     }
+    
 
     /* ------------------------------------------------------------ */
     public void add(Throwable e)
     {
-        if (e==null)
-            throw new IllegalArgumentException();
-
-        if(nested == null)
-        {
-            initCause(e);
-            nested = new ArrayList<>();
-        }
-        else
-            addSuppressed(e);
-        
         if (e instanceof MultiException)
         {
             MultiException me = (MultiException)e;
@@ -122,8 +121,7 @@ public class MultiException extends Exception
               if (th instanceof Exception)
                   throw (Exception)th;
           default:
-              this.fillInStackTrace();
-              throw this;
+              throw new MultiException(nested);
         }
     }
     
@@ -155,8 +153,7 @@ public class MultiException extends Exception
               else
                   throw new RuntimeException(th);
           default:
-              this.fillInStackTrace();
-              throw new RuntimeException(this);
+              throw new RuntimeException(new MultiException(nested));
         }
     }
     
@@ -175,8 +172,7 @@ public class MultiException extends Exception
         
         if (nested.size()>0)
         {
-            this.fillInStackTrace();
-            throw this;
+            throw new MultiException(nested);
         }
     }
 

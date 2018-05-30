@@ -21,6 +21,7 @@ package org.eclipse.jetty.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -67,7 +68,7 @@ public class MultiExceptionTest
         }
         catch(MultiException e)
         {
-            assertTrue(e==me);
+            assertTrue(e instanceof MultiException);
         }
 
         try
@@ -120,7 +121,7 @@ public class MultiExceptionTest
         }
         catch(MultiException e)
         {
-            assertTrue(e==me);
+            assertTrue(e instanceof MultiException);
             assertTrue(e.getStackTrace().length > 0);
         }
 
@@ -132,7 +133,7 @@ public class MultiExceptionTest
         }
         catch(MultiException e)
         {
-            assertTrue(e==me);
+            assertTrue(e instanceof MultiException);
             assertTrue(e.getStackTrace().length > 0);
         }
 
@@ -144,7 +145,7 @@ public class MultiExceptionTest
         }
         catch(RuntimeException e)
         {
-            assertTrue(e.getCause()==me);
+            assertTrue(e.getCause() instanceof MultiException);
             assertTrue(e.getStackTrace().length > 0);
         }
 
@@ -160,7 +161,8 @@ public class MultiExceptionTest
         }
         catch(RuntimeException e)
         {
-            assertTrue(e.getCause()==me);
+            assertTrue(e.getCause() instanceof MultiException);
+            Assert.assertEquals(e.getCause().getCause(), run);
             assertTrue(e.getStackTrace().length > 0);
         }
     }
@@ -174,7 +176,13 @@ public class MultiExceptionTest
         me.add(io);
         me.add(run);
 
-        assertEquals(2,me.size());
-        assertEquals(io,me.getCause());        
+        
+        try {
+            me.ifExceptionThrow();
+        } catch (MultiException e) {
+            assertEquals(io,e.getCause());
+            assertEquals(2,e.size());
+        }
+        
     }
 }
