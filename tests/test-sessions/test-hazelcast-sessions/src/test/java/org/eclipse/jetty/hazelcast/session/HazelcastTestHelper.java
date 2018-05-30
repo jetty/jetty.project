@@ -19,25 +19,23 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MulticastConfig;
+import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.MulticastConfig;
-import com.hazelcast.config.NetworkConfig;
-import com.hazelcast.query.Predicate;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-
-import com.hazelcast.config.Config;
-import com.hazelcast.config.MapConfig;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * HazelcastTestHelper
@@ -69,7 +67,7 @@ public class HazelcastTestHelper
         factory.setOnlyClient( onlyClient );
         factory.setMapName(_name);
         factory.setHazelcastInstance(_instance);
-        factory.setPredicate( HazelcastSessionDataStore.DEFAULT_EXPIRED_SESSION_PREDICATE );
+        factory.setPredicate( DEFAULT_EXPIRED_SESSION_PREDICATE );
         return factory;
     }
     
@@ -121,5 +119,63 @@ public class HazelcastTestHelper
         }
         return true;
     }
+
+    public static final HazelcastSessionDataStore.ExpiredSessionPredicate<String, SessionData>
+        DEFAULT_EXPIRED_SESSION_PREDICATE = new HazelcastSessionDataStore.ExpiredSessionPredicate<String, SessionData>()
+    {
+        private HazelcastSessionDataStore.HazelcastSessionDataStoreContext context;
+
+        @Override
+        public void setHazelcastSessionDataStoreContext(
+            HazelcastSessionDataStore.HazelcastSessionDataStoreContext context )
+        {
+            this.context = context;
+        }
+
+        @Override
+        public boolean apply( Map.Entry<String, SessionData> mapEntry )
+        {
+            SessionData sessionData = mapEntry.getValue();
+            long now = System.currentTimeMillis();
+            if ( context.getSessionContext().getWorkerName().equals( sessionData.getLastNode() ) )
+            {
+                //we are its manager, add it to the expired set if it is expired now
+                if ( ( sessionData.getExpiry() > 0 ) && sessionData.getExpiry() <= now )
+                {
+                    if ( LOG.isDebugEnabled() )
+                    {
+                        LOG.debug( "Session {} managed by {} is expired", sessionData.getId(),
+                                   context.getSessionContext().getWorkerName() );
+                    }
+                    return true;
+                }
+            }
+            else
+            {
+                //if we are not the session's manager, only expire it iff:
+                // this is our first expiryCheck and the session expired a long time ago
+                //or
+                //the session expired at least one graceperiod ago
+                if ( context.getLastExpiryCheckTime() <= 0 )
+                {
+                    if ( ( sessionData.getExpiry() > 0 ) //
+                        && sessionData.getExpiry() < ( now - ( 1000L * ( 3 * context.getGracePeriodSec() ) ) ) )
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    if ( ( sessionData.getExpiry() > 0 ) //
+                        && sessionData.getExpiry() < ( now - ( 1000L * context.getGracePeriodSec() ) ) )
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+    };
+
 
 }
