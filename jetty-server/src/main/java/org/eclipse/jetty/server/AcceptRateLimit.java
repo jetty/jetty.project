@@ -38,9 +38,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
 /**
  * <p>A Listener that limits the rate at which new connections are accepted</p>
  * <p>
- * If the limits are exceeded, accepting is suspended for the time period, so 
- * incoming connections are held in the operating system accept queue (no syn ack sent),
- * where they may either timeout or wait for the server to resume accepting.
+ * If the limits are exceeded, accepting is suspended until the rate is again below
+ * the limit, so incoming connections are held in the operating system accept 
+ * queue (no syn ack sent), where they may either timeout or wait for the server 
+ * to resume accepting. 
+ * </p>
+ * <p>
  * It can be applied to an entire server or to a specific connector by adding it 
  * via {@link Container#addBean(Object)}
  * </p>
@@ -65,6 +68,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     private final Rate _rate;
     private final int _acceptRateLimit;
     private boolean _limiting = false;
+    private Scheduler.Task _task;
 
     public AcceptRateLimit(@Name("acceptRateLimit") int acceptRateLimit, @Name("period") long period, @Name("units") TimeUnit units, @Name("server") Server server)
     {
@@ -165,6 +169,8 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     {
         synchronized (_rate)
         {
+            if (_task!=null)
+                _task.cancel();
             for (AbstractConnector c : _connectors)
                 c.removeBean(this);
             if (_server != null)
@@ -176,8 +182,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     {
         for (AbstractConnector c : _connectors)
             c.setAccepting(false);
-        Scheduler scheduler = _connectors.get(0).getScheduler();
-        scheduler.schedule(this,_rate.getPeriod(),_rate.getUnits());
+        schedule();
     }
     
     protected void unlimit()
@@ -209,16 +214,27 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
         }
     }
 
+    private void schedule()
+    {
+        long oldest = _rate.getOldest(TimeUnit.MILLISECONDS);
+        long period = TimeUnit.MILLISECONDS.convert(_rate.getPeriod(),_rate.getUnits());
+        long delay = period-(oldest>=0?oldest:0);
+        if (LOG.isDebugEnabled())
+            LOG.debug("schedule {} {}",delay,TimeUnit.MILLISECONDS);
+        _task = _connectors.get(0).getScheduler().schedule(this,delay,TimeUnit.MILLISECONDS);
+    }
+    
     @Override
     public void run()
     {
         synchronized (_rate)
         {
+            if (!isRunning())
+                return;
             int rate = _rate.getRate();
             if (rate > _acceptRateLimit)
             {
-                Scheduler scheduler = _connectors.get(0).getScheduler();
-                scheduler.schedule(this,_rate.getPeriod(),_rate.getUnits());
+                schedule();
                 return;
             }
             if (_limiting)

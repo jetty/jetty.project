@@ -20,6 +20,7 @@ package org.eclipse.jetty.util.statistic;
 
 import java.util.concurrent.TimeUnit;
 
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -29,7 +30,6 @@ import static org.junit.Assert.assertThat;
 /* ------------------------------------------------------------ */
 public class RateStatisticTest
 {
-
     @Test
     public void testRate()
         throws Exception
@@ -48,6 +48,7 @@ public class RateStatisticTest
         assertThat(rs.getCount(),equalTo(1L));
         assertThat(rs.getRate(),equalTo(1));
         assertThat(rs.getMax(),equalTo(1L));
+        assertThat(rs.getOldest(TimeUnit.MINUTES),Matchers.is(35L));
         
         rs.record();
         assertThat(rs.getCount(),equalTo(2L));

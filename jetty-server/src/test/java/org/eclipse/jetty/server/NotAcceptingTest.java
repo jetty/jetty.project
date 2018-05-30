@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Assert;
@@ -318,7 +319,7 @@ public class NotAcceptingTest
             Socket async1 = new Socket("localhost",asyncConnector.getLocalPort());
             Socket async2 = new Socket("localhost",asyncConnector.getLocalPort());
             )
-        {
+        {            
             String expectedContent = "Hello" + System.lineSeparator();
 
             for (Socket client : new Socket[]{async2})
@@ -366,9 +367,6 @@ public class NotAcceptingTest
         assertThat(localConnector.isAccepting(),is(true));
         assertThat(blockingConnector.isAccepting(),is(true));
         assertThat(asyncConnector.isAccepting(),is(true));
-        
-        
-        
     }
 
 
@@ -379,7 +377,8 @@ public class NotAcceptingTest
         server.setHandler(new HelloHandler());
 
         server.start();
-        
+
+        Log.getLogger(ConnectionLimit.class).debug("CONNECT:");
         try (
             LocalEndPoint local0 = localConnector.connect();
             LocalEndPoint local1 = localConnector.connect();
@@ -394,6 +393,7 @@ public class NotAcceptingTest
         {
             String expectedContent = "Hello" + System.lineSeparator();
 
+            Log.getLogger(ConnectionLimit.class).debug("LOCAL:");
             for (LocalEndPoint client: new LocalEndPoint[] {local0,local1,local2})
             {
                 client.addInputAndExecute(BufferUtil.toBuffer("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n"));
@@ -402,6 +402,7 @@ public class NotAcceptingTest
                 assertThat(response.getContent(),is(expectedContent));
             }
             
+            Log.getLogger(ConnectionLimit.class).debug("NETWORK:");    
             for (Socket client : new Socket[]{blocking0,blocking1,blocking2,async0,async1,async2})
             {
                 HttpTester.Input in = HttpTester.from(client.getInputStream());
@@ -472,8 +473,5 @@ public class NotAcceptingTest
             catch(InterruptedException e)
             {}            
         }
-        
-        
     }
-    
 }

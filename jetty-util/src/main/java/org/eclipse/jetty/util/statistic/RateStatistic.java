@@ -69,22 +69,19 @@ public class RateStatistic
         }
     }
 
-    void update()
+    private void update()
     {
         update(System.nanoTime());
     }
 
     private void update(long now)
     {
-        synchronized(this)
+        long expire = now - _nanoPeriod;
+        Long head = _samples.peekFirst();
+        while (head != null && head < expire)
         {
-            long expire = now - _nanoPeriod;
-            Long head = _samples.peekFirst();
-            while (head != null && head < expire)
-            {
-                _samples.removeFirst();
-                head = _samples.peekFirst();
-            }
+            _samples.removeFirst();
+            head = _samples.peekFirst();
         }
     }
 
@@ -102,6 +99,7 @@ public class RateStatistic
 
     /**
      * Records a sample value.
+     * @return the number of records in the current period.
      */
     public int record()
     {
@@ -118,6 +116,9 @@ public class RateStatistic
         }
     }
 
+    /**
+     * @return the number of records in the current period
+     */
     public int getRate()
     {
         synchronized(this)
@@ -128,13 +129,28 @@ public class RateStatistic
     }
 
     /**
-     * @return the max value of the recorded samples
+     * @return the max number of samples per period.
      */
     public long getMax()
     {
         synchronized(this)
         {
             return _max;
+        }
+    }
+    
+    /**
+     * @param the units of the return
+     * @return the age of the oldest sample in the requested units
+     */
+    public long getOldest(TimeUnit units)
+    {
+        synchronized(this)
+        {        
+            Long head = _samples.peekFirst();
+            if (head==null)
+                return -1;
+            return units.convert(System.nanoTime()-head,TimeUnit.NANOSECONDS);
         }
     }
 
