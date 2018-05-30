@@ -329,11 +329,9 @@ public class HpackEncoder
                 }
             }
 
-            // If we want the field referenced, then we add it to our
-            // table and reference set.
+            // If we want the field referenced, then we add it to our table and reference set.
             if (indexed)
-                if (_context.add(field)==null)
-                    throw new IllegalStateException();
+                _context.add(field);
         }
 
         if (_debug)

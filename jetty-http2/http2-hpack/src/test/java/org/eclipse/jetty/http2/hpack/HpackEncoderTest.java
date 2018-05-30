@@ -27,10 +27,10 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -249,7 +249,4 @@ public class HpackEncoderTest
         context.get(HpackContext.STATIC_SIZE+1).getSize()+context.get(HpackContext.STATIC_SIZE+2).getSize()));
         
     }
-
-    
-
 }
