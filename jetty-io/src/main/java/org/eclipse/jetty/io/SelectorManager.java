@@ -27,7 +27,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EventListener;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
@@ -61,6 +64,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final ManagedSelector[] _selectors;
     private final AtomicInteger _selectorIndex = new AtomicInteger();
     private final IntUnaryOperator _selectorIndexUpdate;
+    private final List<AcceptListener> _acceptListeners = new ArrayList<>();
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private ThreadPoolBudget.Lease _lease;
 
@@ -405,5 +409,97 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException;
 
+    public void addEventListener(EventListener listener)
+    {
+        if (isRunning())
+            throw new IllegalStateException(this.toString());
+        if (listener instanceof AcceptListener && !_acceptListeners.contains(listener))
+            _acceptListeners.add(AcceptListener.class.cast(listener));
+    }   
+    
+    public void removeEventListener(EventListener listener)
+    {
+        if (isRunning())
+            throw new IllegalStateException(this.toString());
+        if (listener instanceof AcceptListener)
+            _acceptListeners.remove(listener);
+    }
+    
+    protected void onAccepting(SelectableChannel channel)
+    {
+        for (AcceptListener l : _acceptListeners)
+        {
+            try
+            {
+                l.onAccepting(channel);
+            }
+            catch (Throwable x)
+            {
+                LOG.warn(x);
+            }
+        }
+    }
+    
+    protected void onAcceptFailed(SelectableChannel channel, Throwable cause)
+    {
+        for (AcceptListener l : _acceptListeners)
+        {
+            try
+            {
+                l.onAcceptFailed(channel,cause);
+            }
+            catch (Throwable x)
+            {
+                LOG.warn(x);
+            }
+        }
+    }
+    
+    protected void onAccepted(SelectableChannel channel, EndPoint endPoint)
+    {
+        for (AcceptListener l : _acceptListeners)
+        {
+            try
+            {
+                l.onAccepted(channel,endPoint);
+            }
+            catch (Throwable x)
+            {
+                LOG.warn(x);
+            }
+        }
+    }
 
+    /**
+     * <p>A listener for accept events.</p>
+     * <p>This listener is called from either the selector or acceptor thread
+     * and implementations must be non blocking and fast.</p>
+     */
+    public interface AcceptListener extends EventListener
+    {
+        /**
+         * Called immediately after a new SelectableChannel is accepted, but
+         * before it has been submitted to the {@link SelectorManager}.
+         * @param channel the accepted channel
+         */
+        default void onAccepting(SelectableChannel channel) {}
+        
+        /**
+         * Called if the processing of the accepted channel fails prior to being
+         * allocated an {@link EndPoint}.
+         * @param channel the accepted channel
+         * @param cause the cause of the failure or null if no known cause.
+         */
+        default void onAcceptFailed(SelectableChannel channel, Throwable cause) {}
+        
+        /**
+         * Called after the accepted channel has been allocated an {@link EndPoint} 
+         * and associated {@link Connection}. Called after the onOpen notifications have
+         * been called on both endPoint and connection.
+         * @param channel the accepted channel
+         * @param endPoint the {@link EndPoint} allocated to the channel
+         */
+        default void onAccepted(SelectableChannel channel, EndPoint endPoint) {}
+    }
+        
 }

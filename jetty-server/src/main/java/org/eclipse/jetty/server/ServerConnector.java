@@ -30,6 +30,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.EventListener;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
@@ -232,6 +233,9 @@ public class ServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStart() throws Exception
     {
+        for (EventListener l: getBeans(EventListener.class))
+            _manager.addEventListener(l);
+        
         super.doStart();
 
         if (getAcceptors()==0)
@@ -239,6 +243,14 @@ public class ServerConnector extends AbstractNetworkConnector
             _acceptChannel.configureBlocking(false);
             _acceptor.set(_manager.acceptor(_acceptChannel));
         }
+    }
+    
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        for (EventListener l: getBeans(EventListener.class))
+            _manager.removeEventListener(l);
     }
 
     @Override

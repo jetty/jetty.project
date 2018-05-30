@@ -53,7 +53,8 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * {@link Runtime} instance has {@link Runtime#totalMemory()} minus {@link Runtime#freeMemory()}
  * greater than {@link #getMaxMemory()}</li>
  * <li>If {@link #setMaxConnections(int)} is non zero then low resources is dected if the total number
- * of connections exceeds {@link #getMaxConnections()}</li>
+ * of connections exceeds {@link #getMaxConnections()}.  This feature is deprecated and replaced by
+ * {@link ConnectionLimit}</li>
  * </ul>
  * <p>
  * Once low resources state is detected, the cause is logged and all existing connections returned
@@ -181,7 +182,12 @@ public class LowResourceMonitor extends AbstractLifeCycle
         _monitorThreads = monitorThreads;
     }
 
+    /**
+     * @return The maximum connections allowed for the monitored connectors before low resource handling is activated
+     * @deprecated Replaced by ConnectionLimit
+     */
     @ManagedAttribute("The maximum connections allowed for the monitored connectors before low resource handling is activated")
+    @Deprecated
     public int getMaxConnections()
     {
         return _maxConnections;
@@ -189,9 +195,13 @@ public class LowResourceMonitor extends AbstractLifeCycle
 
     /**
      * @param maxConnections The maximum connections before low resources state is triggered
+     * @deprecated Replaced by ConnectionLimit
      */
+    @Deprecated
     public void setMaxConnections(int maxConnections)
     {
+        if (maxConnections>0)
+            LOG.warn("LowResourceMonitor.setMaxConnections is deprecated. Use ConnectionLimit.");
         _maxConnections = maxConnections;
     }
 
