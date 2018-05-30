@@ -302,7 +302,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
          * Callback method invoked when a read or write events has been
          * detected by the {@link ManagedSelector} for this endpoint.
          *
-         * @param the nanotime at which the last call to select returned.
+         * @param selectedAt the nanotime at which the last call to select returned.
          * @return a job that may block or null
          */
         Runnable onSelected(long selectedAt);
