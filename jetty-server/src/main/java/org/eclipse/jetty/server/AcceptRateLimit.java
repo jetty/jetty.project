@@ -67,7 +67,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     private final List<AbstractConnector> _connectors = new ArrayList<>();
     private final Rate _rate;
     private final int _acceptRateLimit;
-    private boolean _limiting = false;
+    private boolean _limiting;
     private Scheduler.Task _task;
 
     public AcceptRateLimit(@Name("acceptRateLimit") int acceptRateLimit, @Name("period") long period, @Name("units") TimeUnit units, @Name("server") Server server)
@@ -157,8 +157,6 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
             if (LOG.isDebugEnabled())
                 LOG.debug("AcceptLimit accept<{} rate<{} in {} for {}", _acceptRateLimit, _rate, _connectors);
 
-            _limiting = false;
-
             for (AbstractConnector c : _connectors)
                 c.addBean(this);
         }
@@ -171,11 +169,13 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
         {
             if (_task!=null)
                 _task.cancel();
+            _task = null;
             for (AbstractConnector c : _connectors)
                 c.removeBean(this);
             if (_server != null)
                 _connectors.clear();
-        }   
+            _limiting = false;
+        }
     }
 
     protected void limit()
@@ -218,7 +218,9 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     {
         long oldest = _rate.getOldest(TimeUnit.MILLISECONDS);
         long period = TimeUnit.MILLISECONDS.convert(_rate.getPeriod(),_rate.getUnits());
-        long delay = period-(oldest>=0?oldest:0);
+        long delay = period-(oldest>0?oldest:0);
+        if (delay < 0)
+            delay = 0;
         if (LOG.isDebugEnabled())
             LOG.debug("schedule {} {}",delay,TimeUnit.MILLISECONDS);
         _task = _connectors.get(0).getScheduler().schedule(this,delay,TimeUnit.MILLISECONDS);
@@ -229,6 +231,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     {
         synchronized (_rate)
         {
+            _task = null;
             if (!isRunning())
                 return;
             int rate = _rate.getRate();

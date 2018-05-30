@@ -140,7 +140,7 @@ public class RateStatistic
     }
     
     /**
-     * @param the units of the return
+     * @param units the units of the return
      * @return the age of the oldest sample in the requested units
      */
     public long getOldest(TimeUnit units)
