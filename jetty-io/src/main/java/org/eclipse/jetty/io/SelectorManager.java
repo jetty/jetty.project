@@ -413,18 +413,29 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     {
         if (isRunning())
             throw new IllegalStateException(this.toString());
-        if (listener instanceof AcceptListener && !_acceptListeners.contains(listener))
-            _acceptListeners.add(AcceptListener.class.cast(listener));
-    }   
-    
+        if (listener instanceof AcceptListener)
+            addAcceptListener(AcceptListener.class.cast(listener));
+    }
+
     public void removeEventListener(EventListener listener)
     {
         if (isRunning())
             throw new IllegalStateException(this.toString());
         if (listener instanceof AcceptListener)
-            _acceptListeners.remove(listener);
+            removeAcceptListener(AcceptListener.class.cast(listener));
     }
-    
+
+    public void addAcceptListener(AcceptListener listener)
+    {
+        if (!_acceptListeners.contains(listener))
+            _acceptListeners.add(listener);
+    }
+
+    public void removeAcceptListener(AcceptListener listener)
+    {
+        _acceptListeners.remove(listener);
+    }
+
     protected void onAccepting(SelectableChannel channel)
     {
         for (AcceptListener l : _acceptListeners)
@@ -455,13 +466,13 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         }
     }
     
-    protected void onAccepted(SelectableChannel channel, EndPoint endPoint)
+    protected void onAccepted(SelectableChannel channel)
     {
         for (AcceptListener l : _acceptListeners)
         {
             try
             {
-                l.onAccepted(channel,endPoint);
+                l.onAccepted(channel);
             }
             catch (Throwable x)
             {
@@ -485,21 +496,19 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         default void onAccepting(SelectableChannel channel) {}
         
         /**
-         * Called if the processing of the accepted channel fails prior to being
-         * allocated an {@link EndPoint}.
+         * Called if the processing of the accepted channel fails prior to calling
+         * {@link #onAccepted(SelectableChannel)}.
          * @param channel the accepted channel
-         * @param cause the cause of the failure or null if no known cause.
+         * @param cause the cause of the failure
          */
         default void onAcceptFailed(SelectableChannel channel, Throwable cause) {}
         
         /**
          * Called after the accepted channel has been allocated an {@link EndPoint} 
-         * and associated {@link Connection}. Called after the onOpen notifications have
+         * and associated {@link Connection}, and after the onOpen notifications have
          * been called on both endPoint and connection.
          * @param channel the accepted channel
-         * @param endPoint the {@link EndPoint} allocated to the channel
          */
-        default void onAccepted(SelectableChannel channel, EndPoint endPoint) {}
+        default void onAccepted(SelectableChannel channel) {}
     }
-        
 }

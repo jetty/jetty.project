@@ -667,7 +667,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             try
             {
                 createEndPoint(channel, key);
-                _selectorManager.onAccepted(channel,EndPoint.class.cast(key.attachment()));
+                _selectorManager.onAccepted(channel);
             }
             catch (Throwable x)
             {

@@ -66,7 +66,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     private final Set<SelectableChannel> _accepting = new HashSet<>();
     private int _connections;
     private int _maxConnections;
-    private long _limitIdleTimeout;
+    private long _idleTimeout;
     private boolean _limiting = false;
 
     public ConnectionLimit(@Name("maxConnections") int maxConnections, @Name("server") Server server)
@@ -77,8 +77,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     
     public ConnectionLimit(@Name("maxConnections") int maxConnections, @Name("connectors") Connector...connectors)
     {
-        _maxConnections = maxConnections;
-        _server = null;
+        this(maxConnections, (Server)null);
         for (Connector c: connectors)
         {
             if (c instanceof AbstractConnector)
@@ -92,17 +91,17 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
      * @return If &gt;= 0, the endpoint idle timeout in ms to apply when the connection limit is reached
      */
     @ManagedAttribute("The endpoint idle timeout in ms to apply when the connection limit is reached")
-    public long getLimitIdleTimeout()
+    public long getIdleTimeout()
     {
-        return _limitIdleTimeout;
+        return _idleTimeout;
     }
 
     /**
-     * @param limitIdleTimeout If &gt;= 0 the endpoint idle timeout in ms to apply when the connection limit is reached
+     * @param idleTimeout If &gt;= 0 the endpoint idle timeout in ms to apply when the connection limit is reached
      */
-    public void setLimitIdleTimeout(long limitIdleTimeout)
+    public void setIdleTimeout(long idleTimeout)
     {
-        _limitIdleTimeout = limitIdleTimeout;
+        _idleTimeout = idleTimeout;
     }
 
     @ManagedAttribute("The maximum number of connections allowed")
@@ -143,7 +142,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
                     if (c instanceof AbstractConnector)
                         _connectors.add((AbstractConnector)c);
                     else
-                        LOG.warn("Connector {} is not an AbstractConnection. Connections not limited",c);
+                        LOG.warn("Connector {} is not an AbstractConnector. Connections not limited",c);
                 }
             }
             if (LOG.isDebugEnabled())
@@ -196,10 +195,10 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         {
             c.setAccepting(false);
 
-            if (_limitIdleTimeout>0)
+            if (_idleTimeout>0)
             {
                 for (EndPoint endPoint : c.getConnectedEndPoints())
-                    endPoint.setIdleTimeout(_limitIdleTimeout);
+                    endPoint.setIdleTimeout(_idleTimeout);
             }
         }
     }
@@ -210,7 +209,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         {
             c.setAccepting(true);
 
-            if (_limitIdleTimeout>0)
+            if (_idleTimeout>0)
             {
                 for (EndPoint endPoint : c.getConnectedEndPoints())
                     endPoint.setIdleTimeout(c.getIdleTimeout());
@@ -243,18 +242,8 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     }
 
     @Override
-    public void onAccepted(SelectableChannel channel, EndPoint endPoint)
+    public void onAccepted(SelectableChannel channel)
     {
-        synchronized (this)
-        {
-            // May have already been removed by onOpened
-            _accepting.remove(channel);
-            if (LOG.isDebugEnabled())
-                LOG.debug("onAccepted ({}+{}) < {} {}->{}",_accepting,_connections,_maxConnections,channel,endPoint);
-            check();
-            if (_limiting && _limitIdleTimeout > 0)
-                endPoint.setIdleTimeout(_limitIdleTimeout);
-        }
     }
     
     @Override
@@ -262,11 +251,6 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     {        
         synchronized (this)
         {        
-            // TODO Currently not all connection types will do the accept events (eg LocalEndPoint), so it may be 
-            // that the first we see of a connection is this onOpened call.  Eventually we should do synthentic 
-            // accept events for all connections, but for now we will just remove the accepting count and add
-            // to the connection count here.
-
             _accepting.remove(connection.getEndPoint().getTransport());
             _connections++;
             if (LOG.isDebugEnabled())
@@ -286,5 +270,4 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
             check();
         }
     }
-
 }
