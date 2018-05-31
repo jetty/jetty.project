@@ -20,6 +20,7 @@
 package org.eclipse.jetty.memcached.sessions;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -133,6 +134,19 @@ public class MemcachedTestHelper
             }
             
             return expiredIds;
+        }
+
+        
+        @Override
+        public Set<String> doGetOldExpired(long timeLimit)
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public void cleanOrphans(long timeLimit)
+        {
+            //noop
         }
 
         @Override

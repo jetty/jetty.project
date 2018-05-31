@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty.session.infinispan;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -141,7 +142,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
        
        Set<String> expired = new HashSet<>();
        
-       //TODO if there is NOT an idle timeout set on entries in infinispan, need to check other sessions
        //that are not currently in the SessionDataStore (eg they've been passivated)   
        for (String candidate:candidates)
        {
@@ -170,23 +170,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
                                LOG.debug("Session {} managed by {} is expired", candidate, _context.getWorkerName());
                        }
                    }
-                   else
-                   {
-                       //if we are not the session's manager, only expire it iff:
-                       // this is our first expiryCheck and the session expired a long time ago
-                       //or
-                       //the session expired at least one graceperiod ago
-                       if (_lastExpiryCheckTime <=0)
-                       {
-                           if ((sd.getExpiry() > 0 ) && sd.getExpiry() < (now - (1000L * (3 * _gracePeriodSec))))
-                               expired.add(candidate);
-                       }
-                       else
-                       {
-                           if ((sd.getExpiry() > 0 ) && sd.getExpiry() < (now - (1000L * _gracePeriodSec)))
-                               expired.add(candidate);
-                       }
-                   }
                }
            }
            catch (Exception e)
@@ -197,6 +180,27 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
        
        return expired;
     }
+    
+    
+    
+
+    @Override
+    public Set<String> doGetOldExpired(long timeLimit)
+    {
+        // TODO
+        return Collections.emptySet();
+    }
+
+
+
+    @Override
+    public void cleanOrphans(long timeLimit)
+    {
+        //Implemented by setting a timeout on the items that are put in infinispan. After
+        //the item has been inactive for the timeout, infinispan will delete it.
+    }
+
+
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#doStore(String, SessionData, long)

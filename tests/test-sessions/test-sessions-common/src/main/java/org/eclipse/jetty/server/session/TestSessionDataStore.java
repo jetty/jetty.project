@@ -100,4 +100,26 @@ public class TestSessionDataStore extends AbstractSessionDataStore
         }
         return set;
     }
+
+    @Override
+    public Set<String> doGetOldExpired(long timeLimit)
+    {
+        Set<String> set =  new HashSet<>();
+        
+        for (SessionData d:_map.values())
+        {
+            if (d.getExpiry() > 0 && d.getExpiry() <= timeLimit)
+                set.add(d.getId());
+        }
+        return set;
+    }
+
+    @Override
+    public void cleanOrphans(long timeLimit)
+    {
+        //noop
+    }
+    
+    
+    
 }

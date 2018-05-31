@@ -402,42 +402,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         {
             if (verifiedExpiredSessions != null) verifiedExpiredSessions.close();
         }
-
-        //now ask mongo to find sessions last managed by any nodes that expired a while ago 
-        //if this is our first expiry check, make sure that we only grab really old sessions
-        if (_lastExpiryCheckTime <= 0)
-            upperBound = (now - (3*(1000L * _gracePeriodSec)));
-        else
-            upperBound =  _lastExpiryCheckTime - (1000L * _gracePeriodSec);
         
-        query = new BasicDBObject();
-        BasicDBObject gt = new BasicDBObject(__EXPIRY, new BasicDBObject("$gt", 0));
-        BasicDBObject lt = new BasicDBObject (__EXPIRY, new BasicDBObject("$lt", upperBound));
-        BasicDBList list = new BasicDBList();
-        list.add(gt);
-        list.add(lt);
-        query.append("$and", list);
-
-        DBCursor oldExpiredSessions = null;
-        try
-        {
-            BasicDBObject bo = new BasicDBObject(__ID, 1);
-            bo.append(__EXPIRY, 1);
-            
-            oldExpiredSessions = _dbSessions.find(query, bo);
-            for (DBObject session : oldExpiredSessions)
-            {
-                String id = (String)session.get(__ID);
-                if (LOG.isDebugEnabled()) LOG.debug("{} Mongo found old expired session {}", _context, id+" exp="+session.get(__EXPIRY));
-                expiredSessions.add(id);
-            }
-        }
-        finally
-        {
-            if (oldExpiredSessions != null)
-                oldExpiredSessions.close();
-        }
-
         
         //check through sessions that were candidates, but not found as expired. 
         //they may no longer be persisted, in which case they are treated as expired.
@@ -458,6 +423,53 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         }
         return expiredSessions;
     }
+
+    
+
+    @Override
+    public Set<String> doGetOldExpired(long timeLimit)
+    {
+        //now ask mongo to find sessions last managed by any nodes that expired a while ago 
+        Set<String> expiredSessions = new HashSet<>();
+
+        BasicDBObject query = new BasicDBObject();
+        BasicDBObject gt = new BasicDBObject(__EXPIRY, new BasicDBObject("$gt", 0));
+        BasicDBObject lt = new BasicDBObject (__EXPIRY, new BasicDBObject("$lt", timeLimit));
+        BasicDBList list = new BasicDBList();
+        list.add(gt);
+        list.add(lt);
+        query.append("$and", list);
+
+        DBCursor oldExpiredSessions = null;
+        try
+        {
+            BasicDBObject bo = new BasicDBObject(__ID, 1);
+            bo.append(__EXPIRY, 1);
+
+            oldExpiredSessions = _dbSessions.find(query, bo);
+            for (DBObject session : oldExpiredSessions)
+            {
+                String id = (String)session.get(__ID);
+                if (LOG.isDebugEnabled()) LOG.debug("{} Mongo found old expired session {}", _context, id+" exp="+session.get(__EXPIRY));
+                expiredSessions.add(id);
+            }
+        }
+        finally
+        {
+            if (oldExpiredSessions != null)
+                oldExpiredSessions.close();
+        }
+
+        return expiredSessions;
+    }
+
+    @Override
+    public void cleanOrphans(long timeLimit)
+    {
+        // TODO
+
+    }
+
 
     /**
      * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)

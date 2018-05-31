@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -122,8 +123,21 @@ public class DeleteUnloadableSessionTest
         @Override
         public Set<String> doGetExpired(Set<String> candidates)
         {
-            return null;
+            return Collections.emptySet();
         }
+
+        @Override
+        public Set<String> doGetOldExpired(long timeLimit)
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public void cleanOrphans(long timeLimit)
+        {
+           //noop
+        }
+        
     }
     
     

@@ -165,7 +165,40 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     public Set<String> doGetExpired(final Set<String> candidates)
     {
         final long now = System.currentTimeMillis();
-        HashSet<String> expired = new HashSet<String>();
+        HashSet<String> expired = new HashSet<>();
+        
+        //check the candidates
+        for (String id:candidates)
+        {
+            String filename = _sessionFileMap.get(id);
+            // no such file, therefore no longer any such session, it can be expired
+            if (filename == null)
+                expired.add(id);
+            else
+            {
+                try
+                {
+                    long expiry = getExpiryFromFilename(filename);
+                    if (expiry > 0 && expiry < now)
+                        expired.add(id);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn(e);
+                }
+            }
+        }
+        
+        return expired;
+    }
+
+
+
+    @Override
+    public Set<String> doGetOldExpired(long timeLimit)
+    {
+        final long now = System.currentTimeMillis();
+        HashSet<String> expired = new HashSet<>();
 
         //iterate over the files and work out which have expired
         for (String filename:_sessionFileMap.values())
@@ -173,7 +206,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             try
             {
                 long expiry = getExpiryFromFilename(filename);
-                if (expiry > 0 && expiry < now)
+                if (expiry > 0 && expiry < timeLimit)
                     expired.add(getIdFromFilename(filename));
             }
             catch (Exception e)
@@ -182,30 +215,19 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             }
         }
         
-        //check candidates that were not found to be expired, perhaps 
-        //because they no longer exist and they should be expired
-        for (String c:candidates)
-        {
-            if (!expired.contains(c))
-            {
-                //if it doesn't have a file then the session doesn't exist
-                String filename = _sessionFileMap.get(getIdWithContext(c));
-                if (filename == null)
-                    expired.add(c);
-            }
-        }
-
-        //Infrequently iterate over all files in the store, and delete those
-        //that expired a long time ago, even if they belong to
-        //another context. This ensures that files that
-        //belong to defunct contexts are cleaned up. 
-        //If the graceperiod is disabled, don't do the sweep!
-        if ((_gracePeriodSec > 0) && ((_lastSweepTime == 0) || ((now - _lastSweepTime) >= (5*TimeUnit.SECONDS.toMillis(_gracePeriodSec)))))
-        {
-            _lastSweepTime = now;
-            sweepDisk();
-        }
         return expired;
+    }
+
+    @Override
+    public void cleanOrphans(long timeLimit)
+    {
+        sweepDisk(timeLimit);
+    }
+
+
+    @Deprecated
+    public void sweepDisk()
+    {        
     }
 
 
@@ -213,10 +235,10 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * Check all session files that do not belong to this context and
      * remove any that expired long ago (ie at least 5 gracePeriods ago).
      */
-    public void sweepDisk()
+    public void sweepDisk(long timeLimit)
     {
         //iterate over the files in the store dir and check expiry times
-        long now = System.currentTimeMillis();
+        
         if (LOG.isDebugEnabled()) LOG.debug("Sweeping {} for old session files", _storeDir);
         try
         {
@@ -227,7 +249,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
                 try
                 {
-                    sweepFile(now, p);
+                    sweepFile(timeLimit, p);
                 }
                 catch (Exception e)
                 {
