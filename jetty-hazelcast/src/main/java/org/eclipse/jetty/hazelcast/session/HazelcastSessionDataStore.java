@@ -148,27 +148,6 @@ public class HazelcastSessionDataStore
                             return true;
                         }
                     }
-                    else
-                    {
-                        //if we are not the session's manager, only expire it iff:
-                        // this is our first expiryCheck and the session expired a long time ago
-                        //or
-                        //the session expired at least one graceperiod ago
-                        if (_lastExpiryCheckTime <=0)
-                        {
-                            if ((sd.getExpiry() > 0 ) && sd.getExpiry() < (now - (1000L * (3 * _gracePeriodSec))))
-                            {
-                                return true;
-                            }
-                        }
-                        else
-                        {
-                            if ((sd.getExpiry() > 0 ) && sd.getExpiry() < (now - (1000L * _gracePeriodSec)))
-                            {
-                                return true;
-                            }
-                        }
-                    }
                 }
             }
             catch (Exception e)
@@ -178,6 +157,22 @@ public class HazelcastSessionDataStore
             }
             return false;
         } ).collect( Collectors.toSet() );
+    }
+
+    
+    
+    
+    @Override
+    public Set<String> doGetOldExpired(long timeLimit)
+    {
+        // TODO
+        return Collections.emptySet();
+    }
+
+    @Override
+    public void cleanOrphans(long timeLimit)
+    {
+        // TODO - maybe handle by setting an inactivity timeout on items in hazelcast?     
     }
 
     @Override

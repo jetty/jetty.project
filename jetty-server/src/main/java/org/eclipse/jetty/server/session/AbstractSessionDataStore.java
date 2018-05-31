@@ -43,6 +43,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     protected SessionContext _context; //context associated with this session data store
     protected int _gracePeriodSec = 60 * 60; //default of 1hr 
     protected long _lastExpiryCheckTime = 0; //last time in ms that getExpired was called
+    protected long _lastOrphanSweepTime = 0; //last time in ms that we deleted orphaned sessions
     protected int _savePeriodSec = 0; //time in sec between saves
 
     /**
@@ -67,13 +68,43 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
 
    
     /**
-     * Implemented by subclasses to resolve which sessions this node
-     * should attempt to expire.
+     * Implemented by subclasses to resolve which sessions in this context 
+     * that are being managed by this node that should be expired.
      * 
-     * @param candidates the ids of sessions the SessionDataStore thinks has expired
-     * @return the reconciled set of session ids that this node should attempt to expire
+     * @param candidates the ids of sessions the SessionCache thinks has expired
+     * @return the reconciled set of session ids that have been checked in the store
      */
     public abstract Set<String> doGetExpired (Set<String> candidates);
+    
+    
+    /**
+     * Implemented by subclasses to find sessions for this context in the store that
+     * expired at or before the timeLimit and thus not being actively managed by
+     * any node. This method is only called periodically (the period
+     * is configurable) to avoid putting too much load on the store.
+     * 
+     * @param timeLimit the upper limit of expiry times to check. Sessions
+     * expired at or before this time will match.
+     * 
+     * @return the empty set if there are no sessions expired as at the timeLimit, or
+     * otherwise a set of session ids.
+     */
+    public abstract Set<String> doGetOldExpired (long timeLimit);
+    
+    
+    /**
+     * Implemented by subclasses to delete sessions for other contexts that
+     * expired at or before the timeLimit. These are 'orphaned' sessions
+     * that are no longer being actively managed by any node. These are 
+     * explicitly sessions that do NOT belong to this context (other mechanisms
+     * such as doGetOrphanedExpired take care of those). As they don't belong
+     * to this context, they could not be loaded by us.
+     * 
+     * This is called only periodically to avoid placing excessive load on the store.
+     * 
+     * @param timeLimit
+     */
+    public abstract void cleanOrphans (long timeLimit);
 
     @Override
     public void initialize (SessionContext context) throws Exception
@@ -164,14 +195,55 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public Set<String> getExpired(Set<String> candidates)
     {
-        try
+        //always verify the set of candidates we've been given
+        //by the sessioncache
+        Set<String> expired = doGetExpired (candidates);
+
+        long now = System.currentTimeMillis();
+
+        //only periodically check the backing store to find other sessions
+        //in this context that expired long ago (ie not being actively managed
+        //by any node)
+        long expiryTimeLimit = 0;
+        //if first check then find sessions that expired 3 grace periods ago.
+        //this ensures that on startup we don't find sessions that are expired
+        //but being managed by another node.
+        if (_lastExpiryCheckTime <= 0)
+            expiryTimeLimit = now - TimeUnit.SECONDS.toMillis(_gracePeriodSec*3);
+        else
         {
-            return doGetExpired (candidates);
+            //only do the check once every gracePeriod to avoid expensive searches
+            if (now > (_lastExpiryCheckTime+TimeUnit.SECONDS.toMillis(_gracePeriodSec)))
+                expiryTimeLimit = now - TimeUnit.SECONDS.toMillis(_gracePeriodSec);
         }
-        finally
-        {
-            _lastExpiryCheckTime = System.currentTimeMillis();
+        if (expiryTimeLimit > 0)
+        {   
+            if (LOG.isDebugEnabled()) LOG.debug("Searching for old expired sessions for context {}", _context.getCanonicalContextPath());
+            try
+            {
+                expired.addAll(doGetOldExpired(expiryTimeLimit));
+            }
+            finally
+            {
+                _lastExpiryCheckTime = now;
+            }
         }
+        //periodically comb the backing store to delete sessions for other
+        //other contexts that expired a long time ago (ie not being actively
+        //managed by any node).
+        if (_lastOrphanSweepTime > 0 && (now > (_lastOrphanSweepTime+TimeUnit.SECONDS.toMillis(10*_gracePeriodSec))))
+        {   
+            try
+            {
+                if (LOG.isDebugEnabled()) LOG.debug("Cleaning orphans");
+                cleanOrphans(now - TimeUnit.SECONDS.toMillis(10*_gracePeriodSec));
+            }
+            finally
+            {
+                _lastOrphanSweepTime = now;            
+            }
+        }
+        return expired;
     }
 
 

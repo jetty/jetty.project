@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -108,6 +109,20 @@ public class SessionEvictionFailureTest
         {
             return candidates;
         }
+
+        @Override
+        public Set<String> doGetOldExpired(long timeLimit)
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public void cleanOrphans(long timeLimit)
+        {
+            //noop
+        }
+        
+        
     }
     
     

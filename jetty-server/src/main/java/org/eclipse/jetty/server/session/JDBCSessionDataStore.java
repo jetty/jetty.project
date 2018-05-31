@@ -348,19 +348,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             return statement;
         }
     
-        
-        public PreparedStatement getAllAncientExpiredSessionsStatement (Connection connection)
-        throws SQLException
-        {
-            if (_dbAdaptor == null)
-                throw new IllegalStateException("No DB adaptor");
-
-            PreparedStatement statement = connection.prepareStatement("select "+getIdColumn()+", "+getContextPathColumn()+", "+getVirtualHostColumn()+
-                                                                      " from "+getSchemaTableName()+
-                                                                      " where "+getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?");
-            return statement;
-        }
-     
+    
      
         public PreparedStatement getCheckSessionExistsStatement (Connection connection, SessionContext context)
         throws SQLException
@@ -453,6 +441,21 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             statement.setString(2, cp);
             statement.setString(3, contextId.getVhost());
 
+            return statement;
+
+        }
+        
+        
+        public PreparedStatement getCleanOrphansStatement (Connection connection, long timeLimit)
+        throws Exception
+        { 
+            if (_dbAdaptor == null)
+                throw new IllegalStateException("No DB adaptor");
+
+            PreparedStatement statement = connection.prepareStatement("delete from "+getSchemaTableName()+
+                                                                      " where "+
+                                                                      getExpiryTimeColumn()+" >0 and "+getExpiryTimeColumn()+" <= ?");
+            statement.setLong(1, timeLimit);
             return statement;
 
         }
@@ -788,14 +791,12 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         {
             connection.setAutoCommit(true);
             
-            /*
-             * 1. Select sessions managed by this node for our context that have expired
-             */
+            //Select sessions managed by this node for our context that have expired
             long upperBound = now;
             if (LOG.isDebugEnabled())
-                LOG.debug ("{}- Pass 1: Searching for sessions for context {} managed by me and expired before {}",  _context.getWorkerName(), _context.getCanonicalContextPath(),upperBound);
+                LOG.debug ("{} - Searching for sessions for context {} managed by me and expired before {}",  _context.getWorkerName(), _context.getCanonicalContextPath(),upperBound);
 
-            try (PreparedStatement statement = _sessionTableSchema.getExpiredSessionsStatement(connection, _context.getCanonicalContextPath(), _context.getVhost(), upperBound))
+            try (PreparedStatement statement = _sessionTableSchema.getMyExpiredSessionsStatement(connection, _context, upperBound))
             {
                 try (ResultSet result = statement.executeQuery())
                 {
@@ -804,35 +805,9 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         String sessionId = result.getString(_sessionTableSchema.getIdColumn());
                         long exp = result.getLong(_sessionTableSchema.getExpiryTimeColumn());
                         expiredSessionKeys.add(sessionId);
-                        if (LOG.isDebugEnabled()) LOG.debug (_context.getCanonicalContextPath()+"- Found expired sessionId="+sessionId);
-                    }
-                }
-            }
-
-            /*
-             *  2. Select sessions for any node or context that have expired 
-             *  at least 1 graceperiod since the last expiry check. If we haven't done previous expiry checks, then check
-             *  those that have expired at least 3 graceperiod ago.
-             */
-            try (PreparedStatement selectExpiredSessions = _sessionTableSchema.getAllAncientExpiredSessionsStatement(connection))
-            {
-                if (_lastExpiryCheckTime <= 0)
-                    upperBound = (now - (3*(1000L * _gracePeriodSec)));
-                else
-                    upperBound =  _lastExpiryCheckTime - (1000L * _gracePeriodSec);
-
-                if (LOG.isDebugEnabled()) LOG.debug("{}- Pass 2: Searching for sessions expired before {}",_context.getWorkerName(), upperBound);
-
-                selectExpiredSessions.setLong(1, upperBound);
-                try (ResultSet result = selectExpiredSessions.executeQuery())
-                {
-                    while (result.next())
-                    {
-                        String sessionId = result.getString(_sessionTableSchema.getIdColumn());
-                        String ctxtpth = result.getString(_sessionTableSchema.getContextPathColumn());
-                        String vh = result.getString(_sessionTableSchema.getVirtualHostColumn());
-                        expiredSessionKeys.add(sessionId);
-                        if (LOG.isDebugEnabled()) LOG.debug ("{}- Found expired sessionId=",_context.getWorkerName(), sessionId);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug ("{} - Found expired sessionId={}, in context={}, expiry={}",
+                                       _context.getWorkerName(),sessionId, _context.getCanonicalContextPath(),exp);
                     }
                 }
             }
@@ -841,8 +816,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             Set<String> notExpiredInDB = new HashSet<>();
             for (String k: candidates)
             {
-                //there are some keys that the session store thought had expired, but were not
-                //found in our sweep either because it is no longer in the db, or its
+                //there are some keys that the sessioncache thought had expired, but were not
+                //found in our query either because it is no longer in the db, or its
                 //expiry time was updated
                 if (!expiredSessionKeys.contains(k))
                     notExpiredInDB.add(k);
@@ -864,14 +839,13 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                                 //session doesn't exist any more, can be expired
                                 expiredSessionKeys.add(k);
                             }
-                            //else its expiry time has not been reached
+                            //else its expiry time is fresher in the db than the sessioncache
                         }
                         catch (Exception e)
                         {
                             LOG.warn("{} Problem checking if potentially expired session {} exists in db", _context.getWorkerName(), k,e);
                         }
                     }
-
                 }
             }
 
@@ -885,6 +859,64 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
     
     
+    @Override
+    public Set<String> doGetOldExpired(long timeLimit)
+    {
+        Set<String> expired = new HashSet<>();
+        //Get sessions for my context but managed by any node that expired at or before the timeLimit   
+        try (Connection connection = _dbAdaptor.getConnection())
+        {
+            connection.setAutoCommit(true);
+            try (PreparedStatement selectExpiredSessions = _sessionTableSchema.getExpiredSessionsStatement(connection, _context.getCanonicalContextPath(), _context.getVhost(), timeLimit ))
+            {
+                if (LOG.isDebugEnabled()) 
+                    LOG.debug("{}- Searching for sessions for context {} expired before {}",_context.getWorkerName(),_context.getCanonicalContextPath(), timeLimit);
+
+                try (ResultSet result = selectExpiredSessions.executeQuery())
+                {
+                    while (result.next())
+                    {
+                        String sessionId = result.getString(_sessionTableSchema.getIdColumn());
+                        long exp = result.getLong(_sessionTableSchema.getExpiryTimeColumn());
+                        expired.add(sessionId);
+                        if (LOG.isDebugEnabled()) LOG.debug ("{}- Found expired sessionId={} for context={} expiry={}",
+                                                             _context.getWorkerName(),sessionId,_context.getCanonicalContextPath(), exp);
+                    }
+                }
+            }
+            return expired;
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+            return expired; //return whatever we got
+        } 
+    }
+
+
+
+
+
+    @Override
+    public void cleanOrphans(long timeLimit)
+    {
+        //Harshly delete sessions for any node and context that expired at or before the timeLimit
+        try (Connection connection = _dbAdaptor.getConnection();
+             PreparedStatement statement = _sessionTableSchema.getCleanOrphansStatement(connection, timeLimit))
+        {
+            connection.setAutoCommit(true);
+            int rows = statement.executeUpdate();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Deleted {} orphaned sessions",rows);
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+        } 
+    }
+
+
+
     public void setDatabaseAdaptor (DatabaseAdaptor dbAdaptor)
     {
         checkStarted();
