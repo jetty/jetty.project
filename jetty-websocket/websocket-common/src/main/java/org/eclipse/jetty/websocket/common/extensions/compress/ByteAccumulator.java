@@ -40,7 +40,8 @@ public class ByteAccumulator
     {
         if (this.length + length > maxSize)
         {
-            throw new MessageTooLargeException("Frame is too large");
+            String err = String.format("Resulting message size [%,d] is too large for configured max of [%,d]", this.length + length, maxSize);
+            throw new MessageTooLargeException(err);
         }
 
         byte copy[] = new byte[length - offset];
