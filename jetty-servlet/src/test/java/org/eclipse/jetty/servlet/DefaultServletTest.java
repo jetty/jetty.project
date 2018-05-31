@@ -1264,6 +1264,7 @@ public class DefaultServletTest
 
         String rawResponse = connector.getResponse("GET /context/%0a HTTP/1.1\r\nHost: local\r\nConnection: close\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        System.out.println(response + "\n" + response.getContent());
         assertThat("Response.status", response.getStatus(), anyOf(is(HttpServletResponse.SC_NOT_FOUND), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)));
         assertThat("Response.content", response.getContent(), is(not(containsString(docRoot.toString()))));
     }
