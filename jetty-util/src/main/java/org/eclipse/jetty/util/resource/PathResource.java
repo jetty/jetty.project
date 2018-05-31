@@ -210,18 +210,11 @@ public class PathResource extends Resource
         // FileSystem.getPath(path,childPath) is visible as a difference to the URI
         // obtained via URIUtil.addDecodedPath(uri,childPath)
 
-        try
-        {
-            this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
-            if (isDirectory() && !childPath.endsWith("/"))
-                childPath += "/";
-            this.uri = URIUtil.addPath(parent.uri, childPath);
-            this.alias = checkAliasPath();
-        }
-        catch(InvalidPathException e)
-        {
-            throw (InvalidPathException) new InvalidPathException(childPath, e.getReason()).initCause(e);
-        }
+        this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
+        if (isDirectory() && !childPath.endsWith("/"))
+            childPath += "/";
+        this.uri = URIUtil.addPath(parent.uri, childPath);
+        this.alias = checkAliasPath();
     }
 
     /**
