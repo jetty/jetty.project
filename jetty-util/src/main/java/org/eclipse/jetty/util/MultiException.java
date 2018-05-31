@@ -26,32 +26,48 @@ import java.util.List;
  * Wraps multiple exceptions.
  *
  * Allows multiple exceptions to be thrown as a single exception.
+ * 
+ * The MultiException itself should not be thrown instead one of the
+ * ifExceptionThrow* methods should be called instead.
  */
 @SuppressWarnings("serial")
 public class MultiException extends Exception
 {
+    private static final String DEFAULT_MESSAGE = "Multiple exceptions";
+    
     private List<Throwable> nested;
 
     /* ------------------------------------------------------------ */
     public MultiException()
     {
-        super("Multiple exceptions");
+        // Avoid filling in stack trace information.
+        super(DEFAULT_MESSAGE, null, false, false);
+        this.nested = new ArrayList<>();
     }
+    
+    /**
+     * Create a MultiException which may be thrown.
+     * 
+     * @param nested The nested exceptions which will be suppressed by this
+     * exception.
+     */
+    private MultiException(List<Throwable> nested) {
+        super(DEFAULT_MESSAGE);
+        this.nested = new ArrayList<>(nested);
+        
+        if(nested.size() > 0) {
+            initCause(nested.get(0));
+        }
+        
+        for(Throwable t : nested) {
+            this.addSuppressed(t);
+        }
+    }
+    
 
     /* ------------------------------------------------------------ */
     public void add(Throwable e)
     {
-        if (e==null)
-            throw new IllegalArgumentException();
-
-        if(nested == null)
-        {
-            initCause(e);
-            nested = new ArrayList<>();
-        }
-        else
-            addSuppressed(e);
-        
         if (e instanceof MultiException)
         {
             MultiException me = (MultiException)e;
@@ -105,7 +121,7 @@ public class MultiException extends Exception
               if (th instanceof Exception)
                   throw (Exception)th;
           default:
-              throw this;
+              throw new MultiException(nested);
         }
     }
     
@@ -137,7 +153,7 @@ public class MultiException extends Exception
               else
                   throw new RuntimeException(th);
           default:
-              throw new RuntimeException(this);
+              throw new RuntimeException(new MultiException(nested));
         }
     }
     
@@ -155,7 +171,9 @@ public class MultiException extends Exception
             return;
         
         if (nested.size()>0)
-            throw this;
+        {
+            throw new MultiException(nested);
+        }
     }
 
     /* ------------------------------------------------------------ */

@@ -190,7 +190,19 @@ public class HpackDecoderTest
         assertTrue(response.getFields().contains(new HttpField(HttpHeader.SERVER,"nghttpx nghttp2/1.12.0")));
         assertTrue(response.getFields().contains(new HttpField(HttpHeader.VIA,"1.1 nghttpx")));
     }
-
+    
+    @Test
+    public void testResize() throws Exception
+    {
+        String encoded = "3f6166871e33A13a47497f205f8841E92b043d492d49";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+        MetaData metaData = decoder.decode(buffer);
+        assertThat(metaData.getFields().get(HttpHeader.HOST),is("aHostName"));
+        assertThat(metaData.getFields().get(HttpHeader.CONTENT_TYPE),is("some/content"));
+        assertThat(decoder.getHpackContext().getDynamicTableSize(),is(0));
+    }
+    
     @Test
     public void testTooBigToIndex()
     {
@@ -198,16 +210,10 @@ public class HpackDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
         HpackDecoder decoder = new HpackDecoder(128,8192);
-        try
-        {
-            decoder.decode(buffer);
-            Assert.fail();
-        }
-        catch (BadMessageException e)
-        {
-            assertThat(e.getCode(),equalTo(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431));
-            assertThat(e.getReason(),Matchers.startsWith("Indexed field value too large"));
-        }
+        MetaData metaData = decoder.decode(buffer);
+        
+        assertThat(decoder.getHpackContext().getDynamicTableSize(),is(0));
+        assertThat(metaData.getFields().get(HttpHeader.C_PATH),Matchers.startsWith("This is a very large field"));
     }
 
     @Test

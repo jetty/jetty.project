@@ -19,11 +19,15 @@
 package org.eclipse.jetty.http;
 
 import static org.eclipse.jetty.http.HttpComplianceSection.NO_FIELD_FOLDING;
+import static org.hamcrest.Matchers.contains;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.util.BufferUtil;
@@ -32,8 +36,6 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.contains;
 
 public class HttpParserTest
 {
@@ -358,7 +360,63 @@ public class HttpParserTest
         Assert.assertThat(_bad, Matchers.notNullValue());
         Assert.assertThat(_bad, Matchers.containsString("Illegal character"));
     }
-    
+
+    @Test
+    public void testWhiteSpaceBeforeRequest()
+    {
+        HttpCompliance[] compliances = new HttpCompliance[]
+        {
+            HttpCompliance.RFC7230, HttpCompliance.RFC2616
+        };
+        
+        String whitespaces[][] = new String[][] 
+        {
+            { " ", "Illegal character SPACE" },
+            { "\t", "Illegal character HTAB" },
+            { "\n", null },
+            { "\r", "Bad EOL" },
+            { "\r\n", null },
+            { "\r\n\r\n", null },
+            { "\r\n \r\n", "Illegal character SPACE" },
+            { "\r\n\t\r\n", "Illegal character HTAB" },
+            { "\r\t\n", "Bad EOL" },
+            { "\r\r\n", "Bad EOL" },
+            { "\t\r\t\r\n", "Illegal character HTAB" },
+            { " \t \r \t \n\n", "Illegal character SPACE" },
+            { " \r \t \r\n\r\n\r\n",  "Illegal character SPACE" }
+        };
+
+
+        for (int i = 0; i < compliances.length; i++)
+        {
+            HttpCompliance compliance = compliances[i];
+            
+            for (int j = 0; j < whitespaces.length; j++)
+            {
+                String request =
+                        whitespaces[j][0] +
+                                "GET / HTTP/1.1\r\n" +
+                                "Host: localhost\r\n" +
+                                "Name: value" + j + "\r\n" +
+                                "Connection: close\r\n" +
+                                "\r\n";
+
+                ByteBuffer buffer = BufferUtil.toBuffer(request);
+                HttpParser.RequestHandler handler = new Handler();
+                HttpParser parser = new HttpParser(handler, 4096, compliance);
+                _bad = null;
+                parseAll(parser, buffer);
+
+                String test = "whitespace.[" + compliance + "].[" + j + "]";
+                String expected = whitespaces[j][1];
+                if (expected==null)
+                    Assert.assertNull(test, _bad);
+                else
+                    Assert.assertThat(test, _bad, Matchers.containsString(expected));
+            }
+        }
+    }
+
     @Test
     public void testNoValue() throws Exception
     {

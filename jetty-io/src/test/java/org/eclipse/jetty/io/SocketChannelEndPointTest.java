@@ -835,7 +835,10 @@ public class SocketChannelEndPointTest
             }
             catch (InterruptedException | EofException e)
             {
-                LOG.info(e);
+                if(LOG.isDebugEnabled())
+                    LOG.debug(e);
+                else
+                    LOG.info(e.getClass().getName());
             }
             catch (Exception e)
             {
