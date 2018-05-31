@@ -18,11 +18,12 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
+      <artifactId>jetty-maven-plugin</artifactId>
       <version>@project.version@</version>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -44,14 +45,34 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
+        <artifactId>maven-failsafe-plugin</artifactId>
         <version>@surefireVersion@</version>
         <configuration>
-          <skip>true</skip>
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
+            <contentCheck>Bean Validation Webapp example</contentCheck>
           </systemPropertyVariables>
+          <dependenciesToScan>
+            <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
+          </dependenciesToScan>
+          <includes>
+            <include>**/*TestGetContent*</include>
+          </includes>
         </configuration>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <goals>
+              <goal>integration-test</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>verify</id>
+            <goals>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
@@ -65,7 +86,6 @@
               <goal>deploy-war</goal>
             </goals>
             <configuration>
-              <jettyRunPort>@jetty.runPort@</jettyRunPort>
               <supportedPackagings>
                 <supportedPackaging>pom</supportedPackaging>
               </supportedPackagings>

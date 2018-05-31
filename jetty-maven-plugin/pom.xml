@@ -38,6 +38,17 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
         <executions>
           <execution>
@@ -63,7 +74,6 @@
           <scriptVariables>
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
-            <jettyRunPort>${jetty.runPort}</jettyRunPort>
             <surefireVersion>${surefireVersion}</surefireVersion>
           </scriptVariables>
           <skipInvocation>${skipTests}</skipInvocation>
@@ -85,7 +95,6 @@
             <configuration>
               <portNames>
                 <portName>jetty.stopPort</portName>
-                <portName>jetty.runPort</portName>
               </portNames>
             </configuration>
           </execution>
