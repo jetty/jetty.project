@@ -16,5 +16,8 @@ etc/jetty-acceptratelimit.xml
 ## The limit of accepted connections
 #jetty.acceptratelimit.acceptRateLimit=1000
 
-## The period (in milliseconds) over which the rate applies
+## The period over which the rate applies
 #jetty.acceptratelimit.period=1000
+
+# The unit of time for the period
+#jetty.acceptratelimit.units=MILLISECONDS

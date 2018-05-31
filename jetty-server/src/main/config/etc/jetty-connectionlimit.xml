@@ -10,7 +10,7 @@
         <Arg name="server">
           <Ref refid="Server" />
         </Arg>
-        <Set name="idleTimeout"><Property name="jetty.connectionlimit.idleTimeout" deprecated="jetty.connection.limitIdleTimeout" default="1000" /></Set>
+        <Set name="idleTimeout"><Property name="jetty.connectionlimit.idleTimeout" default="1000" /></Set>
       </New>
     </Arg>
   </Call>
