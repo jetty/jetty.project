@@ -1044,7 +1044,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             if (LOG.isDebugEnabled())
                                 LOG.debug("onError", th);
                             _writeListener.onError(th);
-                            close();
+                            abort(th);
                             return;
                         }
                     }
