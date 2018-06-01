@@ -247,4 +247,11 @@ public interface EndPoint extends Closeable
      * @param newConnection The connection to upgrade to
      */
     public void upgrade(Connection newConnection);
+
+    /** Is the endpoint optimized for DirectBuffer usage
+     * @return True if direct buffers can be used optimally.
+     */
+    boolean isOptimizedForDirectBuffers();
+
+    
 }

@@ -23,6 +23,10 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.util.Callback;
 
+
+/* ------------------------------------------------------------ */
+/** Abstraction of the outbound HTTP transport.
+ */
 public interface HttpTransport
 {    
     void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback);
@@ -37,4 +41,10 @@ public interface HttpTransport
      * Abort to should terminate the transport in a way that can indicate abnormal response to the client. 
      */
     void abort();
+
+    /* ------------------------------------------------------------ */
+    /** Is the underlying transport optimized for DirectBuffer usage
+     * @return True if direct buffers can be used optimally.
+     */
+    boolean isOptimizedForDirectBuffers();
 }

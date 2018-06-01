@@ -47,6 +47,11 @@ public class HttpTransportOverFCGI implements HttpTransport
         this.request = request;
     }
 
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return false;
+    }
+
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
