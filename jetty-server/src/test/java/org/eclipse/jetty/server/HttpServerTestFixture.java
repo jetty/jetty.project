@@ -27,14 +27,11 @@ import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLSession;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
@@ -269,12 +266,4 @@ public class HttpServerTestFixture
     }
 
 
-    public final static HostnameVerifier __hostnameverifier = new HostnameVerifier()
-    {
-        @Override
-        public boolean verify(String hostname, SSLSession session)
-        {
-            return true;
-        }
-    };
 }
