@@ -220,7 +220,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             ((AbstractLogger)Log.getLogger(HttpConnection.class)).info("expect URI is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
-            byte[] buffer = new byte[64 * 1024];
+            byte[] buffer = new byte[10 * 1024];
             buffer[0]='G';
             buffer[1]='E';
             buffer[2]='T';
