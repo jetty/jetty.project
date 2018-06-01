@@ -496,7 +496,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @ManagedAttribute("number of busy threads in the pool")
     public int getBusyThreads()
     {
-        return getThreads() - getIdleThreads();
+        int reserved = _tryExecutor instanceof ReservedThreadExecutor ? ((ReservedThreadExecutor)_tryExecutor).getAvailable() : 0;
+        return getThreads() - getIdleThreads() - reserved;
     }
     
     /**
