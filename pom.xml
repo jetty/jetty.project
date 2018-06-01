@@ -482,6 +482,7 @@
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
+            <additionalparam>-html5</additionalparam>
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>false</detectLinks>
             <detectJavaApiLink>false</detectJavaApiLink>
