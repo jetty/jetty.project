@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.List;
@@ -105,7 +106,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         {
             HttpFields trailers = metaData.getFields();
             trailers.forEach(httpResponse::trailer);
-            responseSuccess(exchange);
+
+            DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(0), true);
+            contentNotifier.offer(new DataInfo(exchange, dataFrame, Callback.NOOP));
+            contentNotifier.iterate();
+            // responseSuccess(exchange);
         }
     }
 
