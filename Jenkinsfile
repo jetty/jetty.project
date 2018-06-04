@@ -90,13 +90,13 @@ def getFullBuild(jdk, os) {
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
-                      options: [invokerPublisher(disabled: false)],
+                      //options: [invokerPublisher(disabled: false)],
                       mavenLocalRepo: localRepo) {
                 sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -DmavenHome=${mvntoolInvoker}"
               }
               // withMaven doesn't label..
               // Report failures in the jenkins UI
-              junit testResults:'**/target/surefire-reports/TEST-*.xml'
+              junit testResults:'**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
               // Collect up the jacoco execution results
               def jacocoExcludes =
                       // build tools

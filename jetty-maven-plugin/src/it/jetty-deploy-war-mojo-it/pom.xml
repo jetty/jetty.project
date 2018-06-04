@@ -135,4 +135,15 @@
     </plugins>
   </build>
 
+  <profiles>
+    <profile>
+      <id>jdk9+</id>
+      <activation>
+        <jdk>[1.9,)</jdk>
+      </activation>
+
+
+    </profile>
+  </profiles>
+
 </project>
