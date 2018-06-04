@@ -536,7 +536,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 thread.setPriority(getThreadsPriority());
                 thread.setName(_name + "-" + thread.getId());
                 _threads.add(thread);
-
+                _lastShrink.set(System.nanoTime());
                 thread.start();
                 started = true;
                 --threadsToStart;
@@ -669,19 +669,20 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                     startThreads(1);
                 }
 
-                loop: while (isRunning())
+                loop:
+                while (isRunning())
                 {
                     // Job loop
                     while (job != null && isRunning())
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("run {}",job);
+                            LOG.debug("run {}", job);
                         runJob(job);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("ran {}",job);
+                            LOG.debug("ran {}", job);
                         if (Thread.interrupted())
                         {
-                            ignore=true;
+                            ignore = true;
                             break loop;
                         }
                         job = _jobs.poll();
@@ -708,7 +709,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                                     {
                                         if (_lastShrink.compareAndSet(last, now) && _threadsStarted.compareAndSet(size, size - 1))
                                         {
-                                            shrink=true;
+                                            shrink = true;
                                             break loop;
                                         }
                                     }
@@ -728,7 +729,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             }
             catch (InterruptedException e)
             {
-                ignore=true;
+                ignore = true;
                 LOG.ignore(e);
             }
             catch (Throwable e)
@@ -740,9 +741,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 if (!shrink && isRunning())
                 {
                     if (!ignore)
-                        LOG.warn("Unexpected thread death: {} in {}",this,QueuedThreadPool.this);
+                        LOG.warn("Unexpected thread death: {} in {}", this, QueuedThreadPool.this);
                     // This is an unexpected thread death!
-                    if (_threadsStarted.decrementAndGet()<getMaxThreads())
+                    if (_threadsStarted.decrementAndGet() < getMaxThreads())
                         startThreads(1);
                 }
                 removeThread(Thread.currentThread());
