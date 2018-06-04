@@ -62,6 +62,9 @@
         </executions>
         <configuration>
           <javaHome>${java.home}</javaHome>
+          <environmentVariables>
+            <JAVA_HOME>${java.home}</JAVA_HOME>
+          </environmentVariables>
           <debug>${it.debug}</debug>
           <addTestClassPath>true</addTestClassPath>
           <projectsDirectory>src/it</projectsDirectory>
