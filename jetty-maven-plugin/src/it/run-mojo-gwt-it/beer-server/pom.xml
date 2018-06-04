@@ -105,10 +105,6 @@
                 </systemProperty>
               </systemProperties>
               <nonBlocking>true</nonBlocking>
-              <scanIntervalSeconds>1</scanIntervalSeconds>
-              <webApp>
-                <extraClasspath>${basedir}/../beer-shared/target/classes/</extraClasspath>
-              </webApp>
               <contextXml>${basedir}/src/main/jettyconf/context.xml</contextXml>
               <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
             </configuration>
