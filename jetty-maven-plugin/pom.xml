@@ -53,6 +53,7 @@
         <executions>
           <execution>
             <id>integration-test</id>
+            <phase>package</phase>
             <goals>
               <goal>install</goal>
               <goal>integration-test</goal>

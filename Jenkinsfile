@@ -89,6 +89,7 @@ def getFullBuild(jdk, os) {
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
+                      options: [invokerPublisher(disabled: false)],
                       mavenLocalRepo: localRepo) {
                 sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3"
               }
