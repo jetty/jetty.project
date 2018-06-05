@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.SocketTimeoutException;
@@ -81,6 +72,15 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 public class ClientCloseTest
 {
@@ -536,6 +536,7 @@ public class ClientCloseTest
         }
     }
 
+    @Ignore("Issue #2625")
     @Test(timeout = 5000L)
     public void testStopLifecycle() throws Exception
     {
