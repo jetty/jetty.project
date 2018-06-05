@@ -83,10 +83,8 @@ public class SslConnection extends AbstractConnection
     private enum FlushState 
     { 
         IDLE, // Not flushing any data
-        WRITING, // We have a pending write of encrypted data
         NEED_WRITE, // We need to write encrypted data
-        NEED_READ, // We need to read encrypted data and unwrap it before we can wrap and flush
-        NEED_READ_AND_WRITE, // We need to both read and then write
+        WRITING, // We have a pending write of encrypted data
         CLOSED // We are closed
     };
     
@@ -424,6 +422,8 @@ public class SslConnection extends AbstractConnection
         }
 
         private FlushState _flushState = FlushState.IDLE;
+        private boolean _filling;
+        private boolean _flushing;
         private boolean _fillNeedsWrap;
         private boolean _flushNeedsUnwrap;
         private AtomicReference<Handshake> _handshake = new AtomicReference<>(Handshake.INITIAL);
@@ -495,19 +495,16 @@ public class SslConnection extends AbstractConnection
                     case NEED_WRITE:
                         _flushState = FlushState.WRITING;
                         write = true;
+                        need_fill_interest = _flushNeedsUnwrap;
                         break;
                         
-                    case NEED_READ:
-                        _flushState = FlushState.IDLE;
-                        need_fill_interest = true;
+                    case IDLE:
+                        need_fill_interest = _flushNeedsUnwrap;
                         break;
                         
-                    case NEED_READ_AND_WRITE:
-                        _flushState = FlushState.WRITING;
-                        write = true;
-                        need_fill_interest = true;
+                    case WRITING:
                         break;
-                        
+                                                
                     default:
                         throw new IllegalStateException("flushState="+_flushState);
                 }
@@ -597,6 +594,8 @@ public class SslConnection extends AbstractConnection
                     Throwable failure = null;
                     try
                     {
+                        _filling = true;
+                        
                         // Do we already have some decrypted data?
                         if (BufferUtil.hasContent(_decryptedInput))
                             return BufferUtil.append(buffer,_decryptedInput);
@@ -673,32 +672,26 @@ public class SslConnection extends AbstractConnection
                                         switch (handshakeStatus)
                                         {
                                             case NOT_HANDSHAKING:
-                                            {
                                                 // We were not handshaking, so just tell the app we are closed
                                                 return -1;
-                                            }
+                                            
                                             case NEED_TASK:
-                                            {
                                                 _sslEngine.getDelegatedTask().run();
                                                 continue;
-                                            }
+
                                             case NEED_WRAP:
-                                            {
                                                 // We need to send some handshake data (probably the close handshake).
                                                 // We return -1 so that the application can drive the close by flushing
                                                 // or shutting down the output.
                                                 return -1;
-                                            }
+
                                             case NEED_UNWRAP:
-                                            {
                                                 // We expected to read more, but we got closed.
                                                 // Return -1 to indicate to the application to drive the close.
                                                 return -1;
-                                            }
+
                                             default:
-                                            {
                                                 throw new IllegalStateException();
-                                            }
                                         }
                                     }
                                     case BUFFER_UNDERFLOW:
@@ -724,50 +717,39 @@ public class SslConnection extends AbstractConnection
                                         switch (handshakeStatus)
                                         {
                                             case NOT_HANDSHAKING:
-                                            {
                                                 if (_underFlown)
                                                     break decryption;
                                                 continue;
-                                            }
+                                                
                                             case NEED_TASK:
-                                            {
                                                 _sslEngine.getDelegatedTask().run();
                                                 continue;
-                                            }
+                                                
                                             case NEED_WRAP:
-                                            {
-                                                // If we are called from flush()
-                                                // return to let it do the wrapping.
-                                                if (_flushNeedsUnwrap)
-                                                    return 0;
-
+                                                if (!_flushing)
+                                                {
+                                                    flush(BufferUtil.EMPTY_BUFFER);
+                                                    if (BufferUtil.isEmpty(_encryptedOutput))
+                                                    {
+                                                        // The flush wrote all the encrypted bytes so continue to fill.
+                                                        if (_underFlown)
+                                                            break decryption;
+                                                        continue;
+                                                    }
+                                                }
+                                                
+                                                // The flush did not complete, return from fill()
+                                                // and let the write completion mechanism to kick in.
                                                 _fillNeedsWrap = true;
-                                                flush(BufferUtil.EMPTY_BUFFER);
-                                                if (BufferUtil.isEmpty(_encryptedOutput))
-                                                {
-                                                    // The flush wrote all the encrypted bytes so continue to fill.
-                                                    _fillNeedsWrap = false;
-                                                    if (_underFlown)
-                                                        break decryption;
-                                                    continue;
-                                                }
-                                                else
-                                                {
-                                                    // The flush did not complete, return from fill()
-                                                    // and let the write completion mechanism to kick in.
-                                                    return 0;
-                                                }
-                                            }
+                                                return 0;
+                                            
                                             case NEED_UNWRAP:
-                                            {
                                                 if (_underFlown)
                                                     break decryption;
                                                 continue;
-                                            }
+                                            
                                             default:
-                                            {
                                                 throw new IllegalStateException();
-                                            }
                                         }
                                     }
                                     default:
@@ -786,6 +768,8 @@ public class SslConnection extends AbstractConnection
                     }
                     finally
                     {
+                        _filling = false;
+                        
                         // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
                         if (_flushNeedsUnwrap)
                         {
@@ -919,6 +903,8 @@ public class SslConnection extends AbstractConnection
                 {
                     try
                     {
+                        _flushing = true;
+                        
                         switch(_flushState)
                         {
                             case IDLE:
@@ -1035,25 +1021,23 @@ public class SslConnection extends AbstractConnection
                                             continue;
 
                                         case NEED_WRAP:
-                                            // Hey we just wrapped! Oh well who knows what the sslEngine is thinking, so continue and we will wrap again
+                                            // Hey we just wrapped! Who knows what the sslEngine is thinking, so continue and we will wrap again
                                             continue;
 
                                         case NEED_UNWRAP:
                                             // We need to fill and unwrap some data so we can write.
                                             // So if we were not called from fill and the app is not reading anyway
-                                            if (!_fillNeedsWrap && !getFillInterest().isInterested())
+                                            if (!_filling && !getFillInterest().isInterested())
                                             {
-                                                // Tell the onFillable method that there might be a write to complete
-                                                _flushNeedsUnwrap = true;
                                                 fill(BufferUtil.EMPTY_BUFFER);
                                                 // Check if after the fill() we need to wrap again
-                                                if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NEED_WRAP)
+                                                if (_sslEngine.getHandshakeStatus() != HandshakeStatus.NEED_UNWRAP)
                                                     continue;
                                             }
 
                                             if (BufferUtil.hasContent(_encryptedOutput))
                                             {                                                
-                                                _flushState = FlushState.NEED_READ_AND_WRITE;
+                                                _flushState = FlushState.NEED_WRITE;
                                                 _flushNeedsUnwrap = true;
                                                 return false;
                                             }
@@ -1064,7 +1048,6 @@ public class SslConnection extends AbstractConnection
                                                 return true;
                                             }
 
-                                            _flushState = FlushState.NEED_READ;
                                             _flushNeedsUnwrap = true;
                                             return false;
 
@@ -1082,6 +1065,7 @@ public class SslConnection extends AbstractConnection
                     }
                     finally
                     {
+                        _flushing = false;
                         releaseEncryptedOutputBuffer();
                     }
                 }
