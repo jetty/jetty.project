@@ -103,7 +103,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
                 }
             }
         }
-        else
+        else // Response trailers.
         {
             HttpFields trailers = metaData.getFields();
             trailers.forEach(httpResponse::trailer);
