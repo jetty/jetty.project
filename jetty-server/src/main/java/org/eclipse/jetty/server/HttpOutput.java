@@ -26,7 +26,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -283,7 +282,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     IOException ex = new IOException("Closed while Pending/Unready");
                     LOG.warn(ex.toString());
                     LOG.debug(ex);
-                    _channel.abort(ex);
+                    abort(ex);
                     return;
                 }
                 default:
@@ -1044,7 +1043,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             if (LOG.isDebugEnabled())
                                 LOG.debug("onError", th);
                             _writeListener.onError(th);
-                            abort(th);
+                            close();
                             return;
                         }
                     }
