@@ -243,18 +243,18 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     protected void loadUsers() throws IOException
     {
         if (_configPath == null)
-            return;
+            throw new IllegalStateException ("No config path set");
 
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Loading " + this + " from " + _configPath);
-        }
+        if (LOG.isDebugEnabled()) LOG.debug("Loading {} from {}",this, _configPath);
+        
+        Resource config = getConfigResource();
+        
+        if (!config.exists())
+            throw new IllegalStateException ("Config does not exist: "+ config);
         
         Properties properties = new Properties();
-        Resource config = getConfigResource();
-        if (config!=null && config.exists())
-            properties.load(config.getInputStream());
-        
+        properties.load(config.getInputStream());
+
         Set<String> known = new HashSet<>();
 
         for (Map.Entry<Object, Object> entry : properties.entrySet())
