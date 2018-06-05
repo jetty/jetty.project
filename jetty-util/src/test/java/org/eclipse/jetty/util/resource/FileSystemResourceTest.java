@@ -91,6 +91,29 @@ public class FileSystemResourceTest
     {
         _class=test;
     }
+
+    public Resource newResource(URL url) throws Exception
+    {
+        try
+        {
+            return _class.getConstructor(URL.class).newInstance(url);
+        }
+        catch(InvocationTargetException e)
+        {
+            try
+            {
+                throw e.getTargetException();
+            }
+            catch(Exception|Error ex)
+            {
+                throw ex;
+            }
+            catch(Throwable th)
+            {
+                throw new Error(th);
+            }
+        }
+    }
     
     public Resource newResource(URI uri) throws Exception
     {
@@ -224,6 +247,31 @@ public class FileSystemResourceTest
         else
         {
             assumeFalse("Unknown OS type",false);
+        }
+    }
+
+    @Test
+    public void testNewResource_WithSpace() throws Exception
+    {
+        Path dir = testdir.getPath().normalize().toRealPath();
+
+        Path baseDir = dir.resolve("base with spaces");
+        FS.ensureDirExists(baseDir.toFile());
+
+        Path subdir = baseDir.resolve("sub");
+        FS.ensureDirExists(subdir.toFile());
+
+        URL baseUrl = baseDir.toUri().toURL();
+
+        assertThat("url.protocol", baseUrl.getProtocol(), is("file"));
+
+        try (Resource base = newResource(baseUrl))
+        {
+            Resource sub = base.addPath("sub");
+            assertThat("sub/.isDirectory",sub.isDirectory(),is(true));
+
+            Resource tmp = sub.addPath("/tmp");
+            assertThat("No root",tmp.exists(),is(false));
         }
     }
     
