@@ -61,6 +61,14 @@
       <version>4.12</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-maven-plugin</artifactId>
+      <version>@project.version@</version>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -72,7 +80,11 @@
         <configuration>
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
+            <contentCheck>Please enter your name</contentCheck>
           </systemPropertyVariables>
+          <dependenciesToScan>
+            <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
+          </dependenciesToScan>
         </configuration>
       </plugin>
       <plugin>
@@ -93,10 +105,6 @@
                 </systemProperty>
               </systemProperties>
               <nonBlocking>true</nonBlocking>
-              <scanIntervalSeconds>1</scanIntervalSeconds>
-              <webApp>
-                <extraClasspath>${basedir}/../beer-shared/target/classes/</extraClasspath>
-              </webApp>
               <contextXml>${basedir}/src/main/jettyconf/context.xml</contextXml>
               <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
             </configuration>
@@ -106,56 +114,4 @@
     </plugins>
   </build>
 
-  <profiles>
-    <profile>
-      <!-- XXX: We want to exclude beer-client from 'env-dev' profile, Maven forces us to make a 'env-prod' profile -->
-      <id>env-prod</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>${project.groupId}</groupId>
-          <artifactId>beer-client</artifactId>
-          <version>${project.version}</version>
-          <type>war</type>
-          <scope>runtime</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>env-dev</id>
-      <activation>
-        <property>
-          <name>env</name>
-          <value>dev</value>
-        </property>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.eclipse.jetty</groupId>
-              <artifactId>jetty-maven-plugin</artifactId>
-              <configuration>
-                <webApp>
-                  <resourceBases>
-                    <resourceBase>${basedir}/src/main/webapp</resourceBase>
-                    <resourceBase>${basedir}/../target/gwt/launcherDir/</resourceBase>
-                  </resourceBases>
-                </webApp>
-              </configuration>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.tomcat.maven</groupId>
-              <artifactId>tomcat7-maven-plugin</artifactId>
-              <configuration>
-                <contextFile>${basedir}/src/main/tomcatconf/context.xml</contextFile>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-  </profiles>
 </project>

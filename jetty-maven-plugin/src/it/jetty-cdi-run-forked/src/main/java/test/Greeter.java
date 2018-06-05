@@ -34,6 +34,8 @@ public class Greeter
     protected void doGet( final HttpServletRequest req, final HttpServletResponse resp )
         throws ServletException, IOException
     {
-        resp.getWriter().print( "Hello" );
+        String who = req.getParameter( "name" );
+
+        resp.getWriter().write( "Hello " + (who == null ? "unknown" : who) );
     }
 }
