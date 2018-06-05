@@ -1,3 +1,5 @@
+jetty-9.4.12-SNAPSHOT
+
 jetty-9.4.11.v20180605 - 05 June 2018
  + 1785 Support for vhost@connectorname syntax of virtual hosts
  + 2346 Revert stack trace logging for HTTPChannel.onException
