@@ -1,4 +1,39 @@
-jetty-9.4.11-SNAPSHOT
+jetty-9.4.11.v20180605 - 05 June 2018
+ + 1785 Support for vhost@connectorname syntax of virtual hosts
+ + 2346 Revert stack trace logging for HTTPChannel.onException
+ + 2439 Remove HTTP/2 data copy
+ + 2472 central.maven.org doesn't work with https
+ + 2484 Repeated null check in MimeTypes.getDefaultMimeByExtension
+ + 2496 Jetty Maven Plugin should skip execution on projects it cannot support
+ + 2516 NPE at SslClientConnectionFactory.newConnection()
+ + 2518 HttpClient cannot handle bad servers that report multiple 100-continue
+   responses in the same conversation
+ + 2525 Deprecate BlockingTimeout mechanism for removal in future release
+ + 2529 HttpParser cleanup
+ + 2532 Improve parser handing of tokens
+ + 2545 Slow HTTP2 per-stream download performance
+ + 2546 Incorrect parsing of PROXY protocol v2
+ + 2548 Possible deadlock failing HTTP/2 stream creation
+ + 2549 ConsumeAll and requestRecycle
+ + 2550 Coalesce overlapping HTTP requested byte ranges
+ + 2556 "file:" prefix in jetty.base variable
+ + 2559 Use Configurator declared in ServerEndpointConfig over one declared in
+   the @ServerEndpoint annotation
+ + 2560 PathResource exception handling
+ + 2568 QueuedThreadPool.getBusyThreads() should take into account
+   ReservedThreadExecutor.getAvailable()
+ + 2571 Jetty Client 9.4.x incorrectly handles too large fields from nginx 1.14
+   server
+ + 2574 Clarify max request queued exception message
+ + 2575 Work around broken OSGi implementations Bundle.getEntry() behavior returning
+   with unescaped URLs
+ + 2580 Stop creating unnecessary exceptions with MultiException
+ + 2586 Update to asm 6.2
+ + 2603 WebSocket ByteAccumulator initialized with wrong maximum
+ + 2604 WebSocket ByteAccumulator should report sizes in
+   MessageTooLargeException
+ + 2616 Trailers preventing client from processing all the data
+ + 2619 QueuedThreadPool race can shrink newly created idle threads before use
 
 jetty-9.4.10.v20180503 - 03 May 2018
  + 110 Jetty JAASLoginService should not use getContextClassLoader to load role
