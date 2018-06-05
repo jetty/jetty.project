@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.test.rfcs;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.File;
 import java.io.IOException;
@@ -384,7 +384,7 @@ public abstract class RFC2616BaseTest
         // 4.4.3 -
         // Client - do not send 'Content-Length' if entity-length
         // and the transfer-length are different.
-        // Server - ignore 'Content-Length' if 'Transfer-Encoding' is provided.
+        // Server - bad message to avoid smuggling concerns
 
         StringBuffer req2 = new StringBuffer();
         req2.append("GET /echo/R1 HTTP/1.1\n");
@@ -409,14 +409,10 @@ public abstract class RFC2616BaseTest
         req2.append("7890AB");
 
         responses = http.requests(req2);
-        Assert.assertEquals("Response Count",2,responses.size());
+        Assert.assertEquals("Response Count",1,responses.size());
 
         response = responses.get(0); // response 1
-        assertEquals("4.4.3 Ignore Content-Length / Response Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("4.4.3 Ignore Content-Length / Body", response.getContent().contains("123456\n"));
-        response = responses.get(1); // response 2
-        assertEquals("4.4.3 Ignore Content-Length / Response Code", HttpStatus.OK_200, response.getStatus());
-        assertTrue("4.4.3 Ignore Content-Length / Body", response.getContent().contains("7890AB\n"));
+        assertEquals("4.4.3 Ignore Content-Length / Response Code", HttpStatus.BAD_REQUEST_400, response.getStatus());
 
         // 4.4 - Server can request valid Content-Length from client if client
         // fails to provide a Content-Length.
@@ -535,7 +531,6 @@ public abstract class RFC2616BaseTest
         req4.append("\n"); // no virtual host
 
         HttpTester.Response response = http.request(req4);
-        System.err.println(response);
 
         assertEquals("5.2 No Host",HttpStatus.BAD_REQUEST_400,response.getStatus());
     }
@@ -623,7 +618,6 @@ public abstract class RFC2616BaseTest
         HttpTester.Response response = http.request(req7);
 
         assertEquals("5.2 Virtual Host as AbsoluteURI (and Host header)", HttpStatus.OK_200, response.getStatus());
-        // System.err.println(response.getContent());
         assertThat("5.2 Virtual Host as AbsoluteURI (and Host header)",response.getContent(),Matchers.containsString("VirtualHost DOCRoot"));
     }
 
@@ -757,11 +751,8 @@ public abstract class RFC2616BaseTest
         req3.append("87654321"); // Body
 
         List<HttpTester.Response> responses = http.requests(req3);
-        
-        // System.err.println(responses);
-        
+                
         HttpTester.Response response=responses.get(0);
-        // System.err.println(response);
         
         assertEquals("8.2.3 ignored no 100",302, response.getStatus());
         assertEquals("close",response.get("Connection"));
@@ -1017,8 +1008,6 @@ public abstract class RFC2616BaseTest
 
         response = http.request(req2);
         
-        // System.err.println(response);
-
         assertEquals("10.2.7 Partial Content",HttpStatus.PARTIAL_CONTENT_206, response.getStatus());
 
         // (point 1) A 206 response MUST contain either a Content-Range header
@@ -1576,76 +1565,6 @@ public abstract class RFC2616BaseTest
         assertEquals("Z",lines.get(i++));
         assertEquals("",lines.get(i++));
         assertEquals("--"+boundary+"--",lines.get(i++));
-    }
-
-    /**
-     * Test Range (Header Field)
-     * 
-     * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.35">RFC 2616 (section 14.35)</a>
-     */
-    @Test
-    public void test14_35_Range_Multipart2() throws Exception
-    {
-        // Request the last 1 byte, last 2 bytes, and last 3 bytes.
-        // This is an example of overlapping ranges
-
-        String rangedef = "-1,-2,-3";
-
-        StringBuffer req1 = new StringBuffer();
-        req1.append("GET /rfc2616-webapp/alpha.txt HTTP/1.1\n");
-        req1.append("Host: localhost\n");
-        req1.append("Range: ").append(rangedef).append("\n");
-        req1.append("Connection: close\n");
-        req1.append("\n");
-
-        HttpTester.Response response = http.request(req1);
-        // System.err.println(response+response.getContent());
-
-        String msg = "Partial (Byte) Range: '" + rangedef + "'";
-        assertEquals(msg,HttpStatus.PARTIAL_CONTENT_206,response.getStatus());
-
-        String contentType = response.get("Content-Type");
-        // RFC states that multiple parts should result in multipart/byteranges Content type.
-        StringAssert.assertContains(msg + " Content-Type",contentType,"multipart/byteranges");
-
-        // Collect 'boundary' string
-        String boundary = null;
-        String parts[] = StringUtil.split(contentType,';');
-        for (int i = 0; i < parts.length; i++)
-        {
-            if (parts[i].trim().startsWith("boundary="))
-            {
-                String boundparts[] = StringUtil.split(parts[i],'=');
-                Assert.assertEquals(msg + " Boundary parts.length",2,boundparts.length);
-                boundary = boundparts[1];
-            }
-        }
-
-        Assert.assertNotNull(msg + " Should have found boundary in Content-Type header",boundary);
-
-
-        List<String> lines = StringUtil.asLines(response.getContent().trim());
-        int i=0;
-        assertEquals("--"+boundary,lines.get(i++));
-        assertEquals("Content-Type: text/plain",lines.get(i++));
-        assertEquals("Content-Range: bytes 26-26/27",lines.get(i++));
-        assertEquals("",lines.get(i++));
-        assertEquals("",lines.get(i++));
-        assertEquals("",lines.get(i++));
-        assertEquals("--"+boundary,lines.get(i++));
-        assertEquals("Content-Type: text/plain",lines.get(i++));
-        assertEquals("Content-Range: bytes 25-26/27",lines.get(i++));
-        assertEquals("",lines.get(i++));
-        assertEquals("Z",lines.get(i++));
-        assertEquals("",lines.get(i++));
-        assertEquals("--"+boundary,lines.get(i++));
-        assertEquals("Content-Type: text/plain",lines.get(i++));
-        assertEquals("Content-Range: bytes 24-26/27",lines.get(i++));
-        assertEquals("",lines.get(i++));
-        assertEquals("YZ",lines.get(i++));
-        assertEquals("",lines.get(i++));
-        assertEquals("--"+boundary+"--",lines.get(i++));
-        
     }
 
     /**

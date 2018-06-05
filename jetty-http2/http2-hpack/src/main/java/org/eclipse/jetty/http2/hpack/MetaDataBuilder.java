@@ -166,6 +166,11 @@ public class MetaDataBuilder
                 return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields,_contentLength);
             if (_status!=0)
                 return new MetaData.Response(HttpVersion.HTTP_2,_status,fields,_contentLength);
+            if (_path!=null)
+                fields.put(HttpHeader.C_PATH,_path);
+            if (_authority!=null)
+                fields.put(HttpHeader.HOST,_authority.getValue());
+                
             return new MetaData(HttpVersion.HTTP_2,fields,_contentLength);
         }
         finally

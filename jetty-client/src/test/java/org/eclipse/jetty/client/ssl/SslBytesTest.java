@@ -150,7 +150,10 @@ public abstract class SslBytesTest
             }
             catch (IOException x)
             {
-                x.printStackTrace();
+                logger.info(x.getClass() + ": " + x.getMessage());
+
+                if(logger.isDebugEnabled())
+                    logger.debug(x);
             }
         }
 

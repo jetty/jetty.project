@@ -18,18 +18,11 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
-import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -60,6 +53,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
+
 /**
  * Various connect condition testing
  */
@@ -72,15 +72,15 @@ public class ClientConnectTest
     private WebSocketClient client;
 
     @SuppressWarnings("unchecked")
-    private <E extends Throwable> E assertExpectedError(ExecutionException e, JettyTrackingSocket wsocket, Matcher<Throwable> errorMatcher) throws IOException
+    private <E extends Throwable> E assertExpectedError(ExecutionException e, JettyTrackingSocket wsocket, Matcher<Throwable> errorMatcher)
     {
         // Validate thrown cause
         Throwable cause = e.getCause();
     
-        Assert.assertThat("ExecutionException.cause",cause,errorMatcher);
+        Assert.assertThat("ExecutionException.cause "+cause,cause,errorMatcher);
 
         // Validate websocket captured cause
-        Assert.assertThat("Error Queue Length",wsocket.errorQueue.size(),greaterThanOrEqualTo(1));
+        Assert.assertThat("Error Queue Length "+wsocket.errorQueue,wsocket.errorQueue.size(),greaterThanOrEqualTo(1));
         Throwable capcause = wsocket.errorQueue.poll();
         Assert.assertThat("Error Queue[0]",capcause,notNullValue());
         Assert.assertThat("Error Queue[0]",capcause,errorMatcher);
@@ -462,7 +462,7 @@ public class ClientConnectTest
         }
     }
 
-    @Test(expected = TimeoutException.class)
+    @Test
     public void testConnectionTimeout_Concurrent() throws Exception
     {
         JettyTrackingSocket wsocket = new JettyTrackingSocket();
@@ -477,18 +477,17 @@ public class ClientConnectTest
             Future<Session> future = client.connect(wsocket, wsUri);
 
             // Accept the connection, but do nothing on it (no response, no upgrade, etc)
-            serverSocket.accept();
-
-            // The attempt to get upgrade response future should throw error
-            try
+            try (Socket socket = serverSocket.accept())
             {
-                future.get(3, TimeUnit.SECONDS);
-                Assert.fail("Expected ExecutionException -> TimeoutException");
-            }
-            catch (ExecutionException e)
-            {
-                // Expected path - java.net.ConnectException ?
-                assertExpectedError(e, wsocket, instanceOf(ConnectException.class));
+                // The attempt to get upgrade response future should throw error
+                try
+                {
+                    future.get(1, TimeUnit.SECONDS);
+                    Assert.fail("Expected ExecutionException -> TimeoutException");
+                }
+                catch (TimeoutException expected)
+                {
+                }
             }
         }
     }

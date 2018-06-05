@@ -49,7 +49,11 @@ public abstract class TrackingSocket
     
     protected void addError(Throwable t)
     {
-        LOG.warn(t);
+        LOG.warn(t.getClass() + ": " + t.getMessage());
+
+        if(LOG.isDebugEnabled())
+            LOG.debug(t);
+
         errorQueue.offer(t);
     }
 

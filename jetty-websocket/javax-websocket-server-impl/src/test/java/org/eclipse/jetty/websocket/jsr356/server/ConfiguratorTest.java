@@ -362,6 +362,35 @@ public class ConfiguratorTest
         }
     }
 
+    public static class ConfigNormalConfigurator extends ServerEndpointConfig.Configurator
+    {
+        @Override
+        public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
+        {
+            sec.getUserProperties().put("self.configurator", this.getClass().getName());
+        }
+    }
+
+    public static class ConfigOverrideConfigurator extends ServerEndpointConfig.Configurator
+    {
+        @Override
+        public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
+        {
+            sec.getUserProperties().put("self.configurator", this.getClass().getName());
+        }
+    }
+
+    @ServerEndpoint(value = "/config-normal",
+            configurator = ConfigNormalConfigurator.class)
+    public static class ConfigNormalSocket
+    {
+        @OnMessage
+        public String onMessage(Session session, String msg)
+        {
+            return String.format("UserProperties[self.configurator] = %s", session.getUserProperties().get("self.configurator"));
+        }
+    }
+
     private static BlockheadClient client;
     private static Server server;
     private static URI baseServerUri;
@@ -386,6 +415,13 @@ public class ConfiguratorTest
         container.addEndpoint(UniqueUserPropsSocket.class);
         container.addEndpoint(AddressSocket.class);
         container.addEndpoint(TimeDecoderSocket.class);
+
+        container.addEndpoint(ConfigNormalSocket.class);
+        ServerEndpointConfig overrideEndpointConfig = ServerEndpointConfig.Builder
+                .create(ConfigNormalSocket.class, "/config-override")
+                .configurator(new ConfigOverrideConfigurator())
+                .build();
+        container.addEndpoint(overrideEndpointConfig);
 
         server.start();
         String host = connector.getHost();
@@ -665,6 +701,46 @@ public class ConfiguratorTest
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("cal=2016.06.20 AD at 14:27:44 +0000"));
+        }
+    }
+
+    /**
+     * Test that a Configurator declared in the annotation is used
+     * @throws Exception
+     */
+    @Test
+    public void testAnnotationConfigurator() throws Exception
+    {
+        URI uri = baseServerUri.resolve("/config-normal");
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("tellme"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("UserProperties[self.configurator] = " + ConfigNormalConfigurator.class.getName()));
+        }
+    }
+
+    /**
+     * Test that a provided ServerEndpointConfig can override the annotation Configurator
+     * @throws Exception
+     */
+    @Test
+    public void testOverrideConfigurator() throws Exception
+    {
+        URI uri = baseServerUri.resolve("/config-override");
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("tellme"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("UserProperties[self.configurator] = " + ConfigOverrideConfigurator.class.getName()));
         }
     }
 }

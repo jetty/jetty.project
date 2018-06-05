@@ -483,6 +483,49 @@ public class MultiPartParserTest
     
     
     @Test
+    public void testBadHeaderNames() throws Exception
+    {
+        String[] bad = new String[]
+        {
+                "Foo\\Bar: value\r\n",
+                "Foo@Bar: value\r\n",
+                "Foo,Bar: value\r\n",
+                "Foo}Bar: value\r\n",
+                "Foo{Bar: value\r\n",
+                "Foo=Bar: value\r\n",
+                "Foo>Bar: value\r\n",
+                "Foo<Bar: value\r\n",
+                "Foo)Bar: value\r\n",
+                "Foo(Bar: value\r\n",
+                "Foo?Bar: value\r\n",
+                "Foo\"Bar: value\r\n",
+                "Foo/Bar: value\r\n",
+                "Foo]Bar: value\r\n",
+                "Foo[Bar: value\r\n",
+                "\u0192\u00f8\u00f8\u00df\u00e5\u00ae: value\r\n"
+        };
+
+        for (int i=0; i<bad.length; i++)
+        {
+            ByteBuffer buffer= BufferUtil.toBuffer(
+                    "--AaB03x\r\n" + bad[i] + "\r\n--AaB03x--\r\n");
+
+            MultiPartParser.Handler handler  = new TestHandler();
+            MultiPartParser parser= new MultiPartParser(handler, "AaB03x");
+
+            try
+            {
+                parser.parse(buffer, true);
+            }
+            catch(BadMessageException e)
+            {
+                assertTrue(e.getMessage().contains("Illegal character"));
+            }
+        }
+    }
+
+
+    @Test
     public void splitTest()
     {
         TestHandler handler = new TestHandler()

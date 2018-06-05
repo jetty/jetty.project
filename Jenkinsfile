@@ -16,6 +16,7 @@ def getFullBuild(jdk, os) {
     node(os) {
       // System Dependent Locations
       def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
+      def mvntoolInvoker = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
       def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
       def mvnName = 'maven3.5'
       def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" // 
@@ -46,7 +47,7 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B clean install -DskipTests -T6"
+                sh "mvn -V -B clean install -DskipTests -T6 -e"
               }
 
             }
@@ -68,7 +69,7 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B javadoc:javadoc -T6"
+                sh "mvn -V -B javadoc:javadoc -T6 -e"
               }
             }
           }
@@ -89,12 +90,13 @@ def getFullBuild(jdk, os) {
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
+                      //options: [invokerPublisher(disabled: false)],
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -e -Pmongodb -T3"
+                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -DmavenHome=${mvntoolInvoker}"
               }
               // withMaven doesn't label..
               // Report failures in the jenkins UI
-              junit testResults:'**/target/surefire-reports/TEST-*.xml'
+              junit testResults:'**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
               // Collect up the jacoco execution results
               def jacocoExcludes =
                       // build tools

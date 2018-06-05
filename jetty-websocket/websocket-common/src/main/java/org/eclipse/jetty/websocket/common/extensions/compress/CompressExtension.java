@@ -149,7 +149,7 @@ public abstract class CompressExtension extends AbstractExtension
 
     protected ByteAccumulator newByteAccumulator()
     {
-        int maxSize = Math.max(getPolicy().getMaxTextMessageSize(),getPolicy().getMaxBinaryMessageBufferSize());
+        int maxSize = Math.max(getPolicy().getMaxTextMessageSize(),getPolicy().getMaxBinaryMessageSize());
         return new ByteAccumulator(maxSize);
     }
 

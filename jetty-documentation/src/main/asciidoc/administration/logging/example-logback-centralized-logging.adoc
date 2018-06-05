@@ -56,19 +56,19 @@ A convenient replacement `logging` module has been created to bootstrap your `${
 [mybase]$ java -jar /opt/jetty-dist/start.jar --add-to-start=logging,webapp-logging
 INFO: logging         initialised in ${jetty.base}/start.ini (appended)
 MKDIR: ${jetty.base}/logs
-DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.6.6/slf4j-api-1.6.6.jar to lib/logging/slf4j-api-1.6.6.jar
-DOWNLOAD: http://central.maven.org/maven2/org/slf4j/log4j-over-slf4j/1.6.6/log4j-over-slf4j-1.6.6.jar to lib/logging/log4j-over-slf4j-1.6.6.jar
-DOWNLOAD: http://central.maven.org/maven2/org/slf4j/jul-to-slf4j/1.6.6/jul-to-slf4j-1.6.6.jar to lib/logging/jul-to-slf4j-1.6.6.jar
-DOWNLOAD: http://central.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.6.6/jcl-over-slf4j-1.6.6.jar to lib/logging/jcl-over-slf4j-1.6.6.jar
-DOWNLOAD: http://central.maven.org/maven2/ch/qos/logback/logback-core/1.0.7/logback-core-1.0.7.jar to lib/logging/logback-core-1.0.7.jar
-DOWNLOAD: http://central.maven.org/maven2/ch/qos/logback/logback-classic/1.0.7/logback-classic-1.0.7.jar to lib/logging/logback-classic-1.0.7.jar
+DOWNLOAD: https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.6.6/slf4j-api-1.6.6.jar to lib/logging/slf4j-api-1.6.6.jar
+DOWNLOAD: https://repo1.maven.org/maven2/org/slf4j/log4j-over-slf4j/1.6.6/log4j-over-slf4j-1.6.6.jar to lib/logging/log4j-over-slf4j-1.6.6.jar
+DOWNLOAD: https://repo1.maven.org/maven2/org/slf4j/jul-to-slf4j/1.6.6/jul-to-slf4j-1.6.6.jar to lib/logging/jul-to-slf4j-1.6.6.jar
+DOWNLOAD: https://repo1.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.6.6/jcl-over-slf4j-1.6.6.jar to lib/logging/jcl-over-slf4j-1.6.6.jar
+DOWNLOAD: https://repo1.maven.org/maven2/ch/qos/logback/logback-core/1.0.7/logback-core-1.0.7.jar to lib/logging/logback-core-1.0.7.jar
+DOWNLOAD: https://repo1.maven.org/maven2/ch/qos/logback/logback-classic/1.0.7/logback-classic-1.0.7.jar to lib/logging/logback-classic-1.0.7.jar
 DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/capture-all/logback.xml to resources/logback.xml
 DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/capture-all/jetty-logging.properties to resources/jetty-logging.properties
 DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/capture-all/jetty-logging.xml to etc/jetty-logging.xml
 INFO: resources       initialised transitively
 INFO: resources       enabled in     ${jetty.base}/start.ini
 INFO: webapp-logging  initialised in ${jetty.base}/start.ini (appended)
-DOWNLOAD: http://central.maven.org/maven2/org/eclipse/jetty/jetty-webapp-logging/9.0.0/jetty-webapp-logging-9.0.0.jar to lib/webapp-logging/jetty-webapp-logging-9.0.0.jar
+DOWNLOAD: https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-webapp-logging/9.0.0/jetty-webapp-logging-9.0.0.jar to lib/webapp-logging/jetty-webapp-logging-9.0.0.jar
 DOWNLOAD: https://raw.githubusercontent.com/jetty-project/jetty-webapp-logging/master/src/main/config/etc/jetty-webapp-logging.xml to etc/jetty-webapp-logging.xml
 DOWNLOAD: https://raw.githubusercontent.com/jetty-project/jetty-webapp-logging/master/src/main/config/etc/jetty-mdc-handler.xml to etc/jetty-mdc-handler.xml
 INFO: deploy          initialised transitively

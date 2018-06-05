@@ -115,7 +115,7 @@ Use an editor to create the file `pom.xml` in the `JettyMavenHelloWorld` directo
 
   <properties>
       <!-- Adapt this to a version found on
-           http://central.maven.org/maven2/org/eclipse/jetty/jetty-maven-plugin/
+           https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-maven-plugin/
         -->
       <jettyVersion>9.3.9.v20160517</jettyVersion>
   </properties>

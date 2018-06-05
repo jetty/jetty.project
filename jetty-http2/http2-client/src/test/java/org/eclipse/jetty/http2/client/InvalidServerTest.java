@@ -54,22 +54,24 @@ public class InvalidServerTest extends AbstractTest
                 }
             }, promise);
 
-            Socket socket = server.accept();
-            OutputStream output = socket.getOutputStream();
-            output.write("enough_junk_bytes".getBytes(StandardCharsets.UTF_8));
-
-            Session session = promise.get(5, TimeUnit.SECONDS);
-            Assert.assertNotNull(session);
-
-            Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
-
-            // Verify that the client closed the socket.
-            InputStream input = socket.getInputStream();
-            while (true)
+            try (Socket socket = server.accept())
             {
-                int read = input.read();
-                if (read < 0)
-                    break;
+                OutputStream output = socket.getOutputStream();
+                output.write("enough_junk_bytes".getBytes(StandardCharsets.UTF_8));
+
+                Session session = promise.get(5, TimeUnit.SECONDS);
+                Assert.assertNotNull(session);
+
+                Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+
+                // Verify that the client closed the socket.
+                InputStream input = socket.getInputStream();
+                while (true)
+                {
+                    int read = input.read();
+                    if (read < 0)
+                        break;
+                }
             }
         }
     }

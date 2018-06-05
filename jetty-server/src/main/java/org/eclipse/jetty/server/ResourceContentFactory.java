@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,13 +56,20 @@ public class ResourceContentFactory implements ContentFactory
     public HttpContent getContent(String pathInContext,int maxBufferSize)
         throws IOException
     {
-        // try loading the content from our factory.
-        Resource resource=_factory.getResource(pathInContext);
-        HttpContent loaded = load(pathInContext,resource,maxBufferSize);
-        return loaded;
+        try
+        {
+            // try loading the content from our factory.
+            Resource resource = _factory.getResource(pathInContext);
+            HttpContent loaded = load(pathInContext, resource, maxBufferSize);
+            return loaded;
+        }
+        catch (Throwable t)
+        {
+            // Any error has potential to reveal fully qualified path
+            throw (InvalidPathException) new InvalidPathException(pathInContext, "Invalid PathInContext").initCause(t);
+        }
     }
-    
-    
+
     /* ------------------------------------------------------------ */
     private HttpContent load(String pathInContext, Resource resource, int maxBufferSize)
         throws IOException

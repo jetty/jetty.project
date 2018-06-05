@@ -40,13 +40,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class MultiPartParser
 {
     public static final Logger LOG = Log.getLogger(MultiPartParser.class);
-    
-    private static final byte COLON = (byte)':';
-    private static final byte TAB = 0x09;
-    private static final byte LINE_FEED = 0x0A;
-    private static final byte CARRIAGE_RETURN = 0x0D;
-    private static final byte SPACE = 0x20;
-    
+        
     // States
     public enum FieldState
     {
@@ -134,41 +128,49 @@ public class MultiPartParser
     }
     
     /* ------------------------------------------------------------------------------- */
-    private byte getNextByte(ByteBuffer buffer)
+    private HttpTokens.Token next(ByteBuffer buffer)
     {
-        
         byte ch = buffer.get();
+
+        HttpTokens.Token t = HttpTokens.TOKENS[0xff & ch];
         
-        HttpParser.CharState s = HttpParser.TOKEN_CHAR[0xff & ch];
-        switch (s)
+        if (DEBUG)
+            LOG.debug("token={}",t);
+        
+        switch(t.getType())
         {
+            case CNTL:
+                throw new IllegalCharacterException(_state,t,buffer);
+
             case LF:
-                _cr = false;
-                return ch;
-            
+                _cr=false;
+                break;
+
             case CR:
                 if (_cr)
                     throw new BadMessageException("Bad EOL");
-                
-                _cr = true;
-                if (buffer.hasRemaining())
-                    return getNextByte(buffer);
-                
-                // Can return 0 here to indicate the need for more characters,
-                // because a real 0 in the buffer would cause a BadMessage below
-                return 0;
-            
-            case LEGAL:
+
+                _cr=true;
+                return null;
+
+            case ALPHA:
+            case DIGIT:
+            case TCHAR:
+            case VCHAR:
+            case HTAB:
+            case SPACE:
+            case OTEXT:
+            case COLON:
                 if (_cr)
                     throw new BadMessageException("Bad EOL");
+                break;
                 
-                return ch;
-            
-            case ILLEGAL:
             default:
-                throw new IllegalCharacterException(_state, ch, buffer);
+                break;
         }
-    }
+
+        return t;
+    }    
     
     /* ------------------------------------------------------------------------------- */
     private void setString(String s)
@@ -307,11 +309,11 @@ public class MultiPartParser
     {
         while (__delimiterStates.contains(_state) && hasNextByte(buffer))
         {
-            byte b = getNextByte(buffer);
-            if (b == 0)
+            HttpTokens.Token t = next(buffer);
+            if (t == null)
                 return;
             
-            if (b == '\n')
+            if (t.getType()==HttpTokens.Type.LF)
             {
                 setState(State.BODY_PART);
                 
@@ -325,14 +327,14 @@ public class MultiPartParser
             switch (_state)
             {
                 case DELIMITER:
-                    if (b == '-')
+                    if (t.getChar() == '-')
                         setState(State.DELIMITER_CLOSE);
                     else
                         setState(State.DELIMITER_PADDING);
                     continue;
                 
                 case DELIMITER_CLOSE:
-                    if (b == '-')
+                    if (t.getChar() == '-')
                     {
                         setState(State.EPILOGUE);
                         return;
@@ -356,11 +358,11 @@ public class MultiPartParser
         while (_state == State.BODY_PART && hasNextByte(buffer))
         {
             // process each character
-            byte b = getNextByte(buffer);
-            if (b == 0)
+            HttpTokens.Token t = next(buffer);
+            if (t == null)
                 break;
-            
-            if (b != LINE_FEED)
+                        
+            if (t.getType() != HttpTokens.Type.LF)
                 _totalHeaderLineLength++;
             
             if (_totalHeaderLineLength > MAX_HEADER_LINE_LENGTH)
@@ -369,10 +371,10 @@ public class MultiPartParser
             switch (_fieldState)
             {
                 case FIELD:
-                    switch (b)
+                    switch (t.getType())
                     {
                         case SPACE:
-                        case TAB:
+                        case HTAB:
                         {
                             // Folded field value!
                             
@@ -395,8 +397,7 @@ public class MultiPartParser
                             break;
                         }
                         
-                        case LINE_FEED:
-                        {
+                        case LF:
                             handleField();
                             setState(State.FIRST_OCTETS);
                             _partialBoundary = 2; // CRLF is option for empty parts
@@ -407,24 +408,28 @@ public class MultiPartParser
                             if (_handler.headerComplete())
                                 return true;
                             break;
-                        }
-                        
-                        default:
-                        {
+
+                        case ALPHA:
+                        case DIGIT:
+                        case TCHAR:
                             // process previous header
                             handleField();
                             
                             // New header
                             setState(FieldState.IN_NAME);
                             _string.reset();
-                            _string.append(b);
+                            _string.append(t.getChar());
                             _length = 1;
-                        }
+                        
+                            break;
+
+                        default:
+                            throw new IllegalCharacterException(_state,t,buffer);
                     }
                     break;
                 
                 case IN_NAME:
-                    switch (b)
+                    switch(t.getType())
                     {
                         case COLON:
                             _fieldName = takeString();
@@ -437,7 +442,7 @@ public class MultiPartParser
                             setState(FieldState.AFTER_NAME);
                             break;
                         
-                        case LINE_FEED:
+                        case LF:
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Line Feed in Name {}", this);
@@ -446,16 +451,21 @@ public class MultiPartParser
                             setState(FieldState.FIELD);
                             break;
                         }
-                        
-                        default:
-                            _string.append(b);
+
+                        case ALPHA:
+                        case DIGIT:
+                        case TCHAR:
+                            _string.append(t.getChar());
                             _length = _string.length();
                             break;
+                            
+                        default:
+                            throw new IllegalCharacterException(_state,t,buffer);
                     }
                     break;
                 
                 case AFTER_NAME:
-                    switch (b)
+                    switch(t.getType())
                     {
                         case COLON:
                             _fieldName = takeString();
@@ -463,7 +473,7 @@ public class MultiPartParser
                             setState(FieldState.VALUE);
                             break;
                         
-                        case LINE_FEED:
+                        case LF:
                             _fieldName = takeString();
                             _string.reset();
                             _fieldValue = "";
@@ -474,14 +484,14 @@ public class MultiPartParser
                             break;
                         
                         default:
-                            throw new IllegalCharacterException(_state, b, buffer);
+                            throw new IllegalCharacterException(_state, t, buffer);
                     }
                     break;
                 
                 case VALUE:
-                    switch (b)
+                    switch(t.getType())
                     {
-                        case LINE_FEED:
+                        case LF:
                             _string.reset();
                             _fieldValue = "";
                             _length = -1;
@@ -490,25 +500,34 @@ public class MultiPartParser
                             break;
                         
                         case SPACE:
-                        case TAB:
+                        case HTAB:
                             break;
-                        
-                        default:
-                            _string.append(b);
+
+                        case ALPHA:
+                        case DIGIT:
+                        case TCHAR:
+                        case VCHAR:
+                        case COLON:
+                        case OTEXT:
+                            _string.append(t.getByte());
                             _length = _string.length();
                             setState(FieldState.IN_VALUE);
                             break;
+
+                        default:
+                            throw new IllegalCharacterException(_state,t,buffer);
                     }
                     break;
                 
                 case IN_VALUE:
-                    switch (b)
+                    switch(t.getType())
                     {
                         case SPACE:
-                            _string.append(b);
+                        case HTAB:
+                            _string.append(' ');
                             break;
                         
-                        case LINE_FEED:
+                        case LF:
                             if (_length > 0)
                             {
                                 _fieldValue = takeString();
@@ -517,12 +536,19 @@ public class MultiPartParser
                             }
                             setState(FieldState.FIELD);
                             break;
-                        
-                        default:
-                            _string.append(b);
-                            if (b > SPACE || b < 0)
-                                _length = _string.length();
+                            
+                        case ALPHA:
+                        case DIGIT:
+                        case TCHAR:
+                        case VCHAR:
+                        case COLON:
+                        case OTEXT:
+                            _string.append(t.getByte());
+                            _length=_string.length();
                             break;
+
+                        default:
+                            throw new IllegalCharacterException(_state,t,buffer);
                     }
                     break;
                 
@@ -694,16 +720,16 @@ public class MultiPartParser
         {
         }
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     @SuppressWarnings("serial")
-    private static class IllegalCharacterException extends IllegalArgumentException
+    private static class IllegalCharacterException extends BadMessageException
     {
-        private IllegalCharacterException(State state, byte ch, ByteBuffer buffer)
+        private IllegalCharacterException(State state,HttpTokens.Token token,ByteBuffer buffer)
         {
-            super(String.format("Illegal character 0x%X", ch));
-            // Bug #460642 - don't reveal buffers to end user
-            LOG.warn(String.format("Illegal character 0x%X in state=%s for buffer %s", ch, state, BufferUtil.toDetailString(buffer)));
+            super(400,String.format("Illegal character %s",token));
+            if (LOG.isDebugEnabled())
+                LOG.debug(String.format("Illegal character %s in state=%s for buffer %s",token,state,BufferUtil.toDetailString(buffer)));
         }
     }
 }

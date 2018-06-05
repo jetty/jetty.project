@@ -52,11 +52,12 @@ public class PongContextListener implements ServletContextListener
         try
         {
             Configurator config = new Config();
-            
+
+            // Use manually declared Configurator
             container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class,"/ping").configurator(config).build());
             container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class,"/pong").configurator(config).build());
+            // Use annotation declared Configurator
             container.addEndpoint(ServerEndpointConfig.Builder.create(PongSocket.class,"/ping-socket").build());
-            container.addEndpoint(ServerEndpointConfig.Builder.create(PongSocket.class,"/pong-socket").build());
         }
         catch (DeploymentException e)
         {

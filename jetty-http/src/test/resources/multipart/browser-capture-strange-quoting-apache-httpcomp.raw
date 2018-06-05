@@ -17,8 +17,7 @@ Content-Transfer-Encoding: 8bit
 
 Value 3
 --z5xWs05oeiE0TAdFlrrlAX5RSgHrHzVcgskrru
-Content-Disposition: form-data; name="other\";	
-what=\"Something\""
+Content-Disposition: form-data; name="other\";	what=\"Something\""
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
