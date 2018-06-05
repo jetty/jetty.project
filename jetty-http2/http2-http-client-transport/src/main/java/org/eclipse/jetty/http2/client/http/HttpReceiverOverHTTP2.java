@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Retainable;
@@ -101,11 +103,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
                 }
             }
         }
-        else
+        else // Response trailers.
         {
             HttpFields trailers = metaData.getFields();
             trailers.forEach(httpResponse::trailer);
-            responseSuccess(exchange);
+            notifyContent(exchange, new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
         }
     }
 
@@ -153,8 +155,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         }
         else
         {
-            contentNotifier.offer(new DataInfo(exchange, frame, callback));
-            contentNotifier.iterate();
+            notifyContent(exchange, frame, callback);
         }
     }
 
@@ -175,6 +176,12 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     {
         responseFailure(x);
         return true;
+    }
+
+    private void notifyContent(HttpExchange exchange, DataFrame frame, Callback callback)
+    {
+        contentNotifier.offer(new DataInfo(exchange, frame, callback));
+        contentNotifier.iterate();
     }
 
     private class ContentNotifier extends IteratingCallback implements Retainable
@@ -208,7 +215,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             }
 
             this.dataInfo = dataInfo;
-            responseContent(dataInfo.exchange, dataInfo.frame.getData(), this);
+            ByteBuffer buffer = dataInfo.frame.getData();
+            if (buffer.hasRemaining())
+                responseContent(dataInfo.exchange, buffer, this);
+            else
+                succeeded();
             return Action.SCHEDULED;
         }
 
