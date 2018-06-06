@@ -143,6 +143,7 @@ public class ServerTimeoutsTest extends AbstractTest
                     {
                         if (t instanceof TimeoutException)
                             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+
                         asyncContext.complete();
                     }
                 });
@@ -494,9 +495,10 @@ public class ServerTimeoutsTest extends AbstractTest
                         if (failure instanceof TimeoutException)
                         {
                             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                            asyncContext.complete();
                             handlerLatch.countDown();
                         }
+
+                        asyncContext.complete();
                     }
                 });
             }
@@ -542,17 +544,17 @@ public class ServerTimeoutsTest extends AbstractTest
                     @Override
                     public void onWritePossible() throws IOException
                     {
-                        output.write(new byte[64 * 1024 * 1024]);
+                        if (output.isReady())
+                            output.write(new byte[64 * 1024 * 1024]);
                     }
 
                     @Override
                     public void onError(Throwable failure)
                     {
                         if (failure instanceof TimeoutException)
-                        {
-                            asyncContext.complete();
                             handlerLatch.countDown();
-                        }
+
+                        asyncContext.complete();
                     }
                 });
             }
@@ -749,9 +751,10 @@ public class ServerTimeoutsTest extends AbstractTest
                         if (failure instanceof TimeoutException)
                         {
                             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                            asyncContext.complete();
                             handlerLatch.countDown();
                         }
+
+                        asyncContext.complete();
                     }
                 });
             }

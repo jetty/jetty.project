@@ -252,7 +252,7 @@ public class WriteFlusherTest
             Assert.assertEquals(reason, cause.getMessage());
         }
         Assert.assertEquals("", endPoint.takeOutputString());
-        Assert.assertTrue(flusher.isIdle());
+        Assert.assertTrue(flusher.isFailed());
     }
 
     @Test

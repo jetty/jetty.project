@@ -19,14 +19,16 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
 import org.eclipse.jetty.util.component.LifeCycle;
+
+import java.io.Writer;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 /**
  * ServerConnectorListener
@@ -50,20 +52,24 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     {
         if (getFileName() != null)
         {
-            File file = new File(getFileName());
             try
             {
-                Files.deleteIfExists(file.toPath());
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException (e);
-            }
+                Path tmp = Files.createTempFile( "jettyport", "tmp  " );
+                try (Writer writer = Files.newBufferedWriter( tmp ))
+                {
+                    writer.write( String.valueOf( ( (ServerConnector) event ).getLocalPort() ) );
+                }
 
-            try (FileWriter writer = new FileWriter(file))
-            {
-                writer.write(String.valueOf(((ServerConnector)event).getLocalPort()));
-                writer.close();
+                Path path = Paths.get(getFileName());
+                Files.deleteIfExists(path);
+                try
+                {
+                    Files.move( tmp, path, StandardCopyOption.ATOMIC_MOVE );
+                }
+                catch ( AtomicMoveNotSupportedException e ) // can append on some os (windows).. so try again without the option
+                {
+                    Files.move( tmp, path);
+                }
             }
             catch (Exception e)
             {
