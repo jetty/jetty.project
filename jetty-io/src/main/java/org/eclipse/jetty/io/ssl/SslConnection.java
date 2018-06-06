@@ -83,7 +83,6 @@ public class SslConnection extends AbstractConnection
     private enum FillState 
     { 
         IDLE, // Not Filling any data
-        NEEDS_INTEREST, // We need to fill encrypted data
         INTERESTED, // We have a pending read interest
         NEEDS_FLUSH,
         WAITING,
@@ -553,6 +552,7 @@ public class SslConnection extends AbstractConnection
             // might be more encrypted data available to attempt another call to fill
             boolean fillable;
             boolean write = false;
+            boolean interest = true;
             synchronized (DecryptedEndPoint.this)
             {
                 // Do we already have some app data, then app can fill now so return true
@@ -562,7 +562,7 @@ public class SslConnection extends AbstractConnection
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("needFillInterest {} fillable={}",this,fillable);
-                
+                                
                 // If we have no encrypted data to decrypt OR we have some, but it is not enough
                 if (!fillable)
                 {
@@ -570,25 +570,23 @@ public class SslConnection extends AbstractConnection
                     // Are we actually write blocked?
                     switch(_fillState)
                     {
-                        case NEEDS_INTEREST:
-                            _fillState = FillState.INTERESTED;
-                            break;
-                            
                         case NEEDS_FLUSH:
                             switch (_flushState)
                             {
                                 case IDLE:
                                     if (BufferUtil.hasContent(_encryptedOutput))
                                     {
-                                        // then write it
+                                        // then write it and then fill
+                                        write = true;
+                                        interest = false;
                                         _flushState = FlushState.WRITING;
                                         _fillState = FillState.WAITING;
-                                        write = true;
                                     }
                                     else
                                     {
                                         // No data to write, so try filling again
                                         fillable = true;
+                                        interest = false;
                                         _fillState = FillState.IDLE;
                                     }
                                     break;
@@ -599,7 +597,7 @@ public class SslConnection extends AbstractConnection
                                     break;
                                     
                                 default:
-                                    _fillState = FillState.WAITING;
+                                    _fillState = FillState.INTERESTED;
                                     break;   
                             }
                             break;
@@ -615,7 +613,7 @@ public class SslConnection extends AbstractConnection
             
             if (fillable)
                 getExecutor().execute(_runFillable);
-            else
+            else if (interest)
                 ensureFillInterested();
         }
 
@@ -647,6 +645,7 @@ public class SslConnection extends AbstractConnection
                     try
                     {
                         _filling = true;
+                        _fillState = FillState.IDLE;
                         
                         // Do we already have some decrypted data?
                         if (BufferUtil.hasContent(_decryptedInput))
