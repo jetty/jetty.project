@@ -54,7 +54,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
         {
             try
             {
-                Path tmp = Files.createTempFile( "jettyport", "tmp  " );
+                Path tmp = Files.createTempFile( "jettyport", ".tmp" );
                 try (Writer writer = Files.newBufferedWriter( tmp ))
                 {
                     writer.write( String.valueOf( ( (ServerConnector) event ).getLocalPort() ) );
