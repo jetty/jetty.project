@@ -532,6 +532,11 @@ abstract public class WriteFlusher
         onFail(new ClosedChannelException());
     }
 
+    boolean isFailed()
+    {
+        return _state.get().getType() == StateType.FAILED;
+    }
+
     boolean isIdle()
     {
         return _state.get().getType() == StateType.IDLE;

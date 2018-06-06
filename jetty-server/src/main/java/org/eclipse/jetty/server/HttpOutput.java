@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
@@ -1042,8 +1042,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             _onError = null;
                             if (LOG.isDebugEnabled())
                                 LOG.debug("onError", th);
-                            _writeListener.onError(th);
-                            close();
+
+                            try
+                            {
+                                _writeListener.onError(th);
+                            }
+                            finally
+                            {
+                                IO.close(this);
+                            }
+
                             return;
                         }
                     }
@@ -1075,18 +1083,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 _onError = e;
             }            
-        }
-    }
-
-    private void close(Closeable resource)
-    {
-        try
-        {
-            resource.close();
-        }
-        catch (Throwable x)
-        {
-            LOG.ignore(x);
         }
     }
 
@@ -1331,7 +1327,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             abort(x);
             _channel.getByteBufferPool().release(_buffer);
-            HttpOutput.this.close(_in);
+            IO.close(_in);
             super.onCompleteFailure(x);
         }
     }
@@ -1391,7 +1387,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             abort(x);
             _channel.getByteBufferPool().release(_buffer);
-            HttpOutput.this.close(_in);
+            IO.close(_in);
             super.onCompleteFailure(x);
         }
     }
