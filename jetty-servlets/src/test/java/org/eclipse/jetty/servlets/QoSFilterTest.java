@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -50,7 +47,11 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 public class QoSFilterTest
 {
@@ -104,6 +105,7 @@ public class QoSFilterTest
             assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(NUM_CONNECTIONS));
     }
 
+    @Ignore("Issue #2627")
     @Test
     public void testBlockingQosFilter() throws Exception
     {
