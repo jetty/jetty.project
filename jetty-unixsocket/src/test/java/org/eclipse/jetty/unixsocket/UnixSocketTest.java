@@ -37,8 +37,10 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,23 +48,28 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class UnixSocketTest
 {
-    private Logger log = Log.getLogger( getClass() );
+    private static final Logger log = Log.getLogger(UnixSocketTest.class);
 
-    Server server;
-    HttpClient httpClient;
-    Path sockFile;
+    @Rule
+    public TestingDir testingDir = new TestingDir();
+
+    private Server server;
+    private HttpClient httpClient;
+    private Path sockFile;
 
     @Before
     public void before() throws Exception
     {
         server = null;
         httpClient = null;
-        Path targetDir = MavenTestingUtils.getTargetPath();
-        sockFile = Files.createTempFile(targetDir, "unix", ".sock" );
+        testingDir.ensureEmpty();
+        // Create a unique unix.sock, in target/tests directory, that's based on TestClass + testMethod + testScope
+        sockFile = testingDir.getPathFile("unix.sock");
     }
     
     @After
@@ -72,7 +79,8 @@ public class UnixSocketTest
             httpClient.stop();
         if (server!=null)
             server.stop();
-        Files.deleteIfExists(sockFile);
+        // Force delete, this will fail if UnixSocket was not closed properly in the implementation
+        FS.delete(sockFile);
     }
     
     @Test
