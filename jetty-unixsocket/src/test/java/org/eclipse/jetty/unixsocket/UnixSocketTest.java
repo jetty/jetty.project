@@ -61,7 +61,7 @@ public class UnixSocketTest
     {
         server = null;
         httpClient = null;
-        sockFile = Files.createTempFile(new File("/tmp").toPath(), "unix", ".sock" );
+        sockFile = Files.createTempFile("unix", ".sock" );
         Files.deleteIfExists(sockFile);
     }
     
