@@ -88,8 +88,8 @@ public class SslConnection extends AbstractConnection
     private ByteBuffer _decryptedInput;
     private ByteBuffer _encryptedInput;
     private ByteBuffer _encryptedOutput;
-    private final boolean _encryptedDirectBuffers = false;
-    private final boolean _decryptedDirectBuffers = false;
+    private final boolean _encryptedDirectBuffers;
+    private final boolean _decryptedDirectBuffers;
     private final Runnable _runCompletWrite = new Runnable()
     {
         @Override
@@ -102,12 +102,20 @@ public class SslConnection extends AbstractConnection
 
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
+        this(byteBufferPool, executor, endPoint, sslEngine, false, false);
+    }
+
+    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,
+                         boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
+    {
         // This connection does not execute calls to onfillable, so they will be called by the selector thread.
         // onfillable does not block and will only wakeup another thread to do the actual reading and handling.
         super(endPoint, executor, !EXECUTE_ONFILLABLE);
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();
+        this._encryptedDirectBuffers = useDirectBuffersForEncryption;
+        this._decryptedDirectBuffers = useDirectBuffersForDecryption;
     }
 
     protected DecryptedEndPoint newDecryptedEndPoint()
