@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -137,6 +138,12 @@ public class SslConnectionTest
         __sslCtxFactory.setKeyStorePassword("storepwd");
         __sslCtxFactory.setKeyManagerPassword("keypwd");
         __sslCtxFactory.start();
+    }
+
+    @AfterClass
+    public static void stopSsl() throws Exception
+    {
+        __sslCtxFactory.stop();
     }
 
     @Before
@@ -259,27 +266,27 @@ public class SslConnectionTest
     @Test
     public void testHelloWorld() throws Exception
     {
-        Socket client = newClient();
-        client.setSoTimeout(60000);
+        try (Socket client = newClient())
+        {
+            client.setSoTimeout(60000);
+            try (SocketChannel server = _connector.accept())
+            {
+                server.configureBlocking(false);
+                _manager.accept(server);
 
-        SocketChannel server = _connector.accept();
-        server.configureBlocking(false);
-        _manager.accept(server);
+                client.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
+                byte[] buffer = new byte[1024];
+                int len = client.getInputStream().read(buffer);
+                Assert.assertEquals(5, len);
+                Assert.assertEquals("Hello", new String(buffer, 0, len, StandardCharsets.UTF_8));
 
-        client.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
-        byte[] buffer = new byte[1024];
-        int len=client.getInputStream().read(buffer);
-        Assert.assertEquals(5, len);
-        Assert.assertEquals("Hello",new String(buffer,0,len,StandardCharsets.UTF_8));
-
-        _dispatches.set(0);
-        client.getOutputStream().write("World".getBytes(StandardCharsets.UTF_8));
-        len=5;
-        while(len>0)
-            len-=client.getInputStream().read(buffer);
-        Assert.assertEquals(1, _dispatches.get());
-
-        client.close();
+                _dispatches.set(0);
+                client.getOutputStream().write("World".getBytes(StandardCharsets.UTF_8));
+                len = 5;
+                while (len > 0)
+                    len -= client.getInputStream().read(buffer);
+            }
+        }
     }
 
 
