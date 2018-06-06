@@ -55,6 +55,7 @@ import org.junit.Test;
 
 public class SslConnectionTest
 {
+    private final static int TIMEOUT = 1000000;
     private static SslContextFactory __sslCtxFactory=new SslContextFactory();
     private static ByteBufferPool __byteBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
@@ -94,7 +95,7 @@ public class SslConnectionTest
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
             SocketChannelEndPoint endp = new TestEP(channel, selector, selectionKey, getScheduler());
-            endp.setIdleTimeout(60000);
+            endp.setIdleTimeout(TIMEOUT);
             _lastEndp=endp;
             return endp;
         }
@@ -257,12 +258,12 @@ public class SslConnectionTest
     {
         try (Socket client = newClient())
         {
-            client.setSoTimeout(60000);
+            client.setSoTimeout(TIMEOUT);
             try (SocketChannel server = _connector.accept())
             {
                 server.configureBlocking(false);
                 _manager.accept(server);
-
+                                
                 client.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
@@ -283,7 +284,7 @@ public class SslConnectionTest
     {
         try (SSLSocket client = newClient())
         {
-            client.setSoTimeout(60000);
+            client.setSoTimeout(TIMEOUT);
             try (SocketChannel server = _connector.accept())
             {
                 server.configureBlocking(false);
@@ -312,7 +313,7 @@ public class SslConnectionTest
         
         try (SSLSocket client = newClient())
         {
-            client.setSoTimeout(60000);
+            client.setSoTimeout(TIMEOUT);
             try (SocketChannel server = _connector.accept())
             {
                 server.configureBlocking(false);
@@ -348,7 +349,7 @@ public class SslConnectionTest
         
         try (SSLSocket client = newClient())
         {
-            client.setSoTimeout(60000);
+            client.setSoTimeout(TIMEOUT);
             try (SocketChannel server = _connector.accept())
             {
                 server.configureBlocking(false);
@@ -397,7 +398,7 @@ public class SslConnectionTest
 
         try (Socket client = newClient())
         {
-            client.setSoTimeout(10000);
+            client.setSoTimeout(TIMEOUT);
             try (SocketChannel server = _connector.accept())
             {
                 server.configureBlocking(false);
