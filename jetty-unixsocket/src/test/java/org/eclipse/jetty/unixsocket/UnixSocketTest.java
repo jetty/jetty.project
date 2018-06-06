@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.unixsocket;
 
-import java.io.File;
+import static org.junit.Assume.assumeFalse;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.log.Log;
@@ -43,13 +45,11 @@ import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
 public class UnixSocketTest
 {
-
     private Logger log = Log.getLogger( getClass() );
 
     Server server;
@@ -61,8 +61,8 @@ public class UnixSocketTest
     {
         server = null;
         httpClient = null;
-        sockFile = Files.createTempFile(new File("/tmp").toPath(), "unix", ".sock" );
-        Files.deleteIfExists(sockFile);
+        Path targetDir = MavenTestingUtils.getTargetPath();
+        sockFile = Files.createTempFile(targetDir, "unix", ".sock" );
     }
     
     @After
@@ -78,7 +78,7 @@ public class UnixSocketTest
     @Test
     public void testUnixSocket() throws Exception
     {
-        Assume.assumeTrue(OS.IS_UNIX);
+        assumeFalse(OS.IS_WINDOWS);
 
         server = new Server();
 
@@ -136,7 +136,9 @@ public class UnixSocketTest
     
     @Test
     public void testNotLocal() throws Exception
-    {        
+    {
+        assumeFalse(OS.IS_WINDOWS);
+
         httpClient = new HttpClient( new HttpClientTransportOverUnixSockets( sockFile.toString() ), null );
         httpClient.start();
         
