@@ -33,6 +33,7 @@
 
     <mavenPluginToolsVersion>3.5.2</mavenPluginToolsVersion>
     <mavenVersion>3.5.0</mavenVersion>
+    <unix.socket.tmp></unix.socket.tmp>
   </properties>
 
   <licenses>
@@ -617,12 +618,10 @@
             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
             <forkCount>1</forkCount>
-            <systemProperties>
-              <property>
-                <name>java.io.tmpdir</name>
-                <value>${project.build.directory}</value>
-              </property>
-            </systemProperties>
+            <systemPropertyVariables>
+              <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+              <unix.socket.tmp>${unix.socket.tmp}</unix.socket.tmp>
+            </systemPropertyVariables>
           </configuration>
         </plugin>
         <plugin>

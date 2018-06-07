@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
 
@@ -61,7 +63,13 @@ public class UnixSocketTest
     {
         server = null;
         httpClient = null;
-        sockFile = Files.createTempFile("unix", ".sock" );
+        String unixSocketTmp = System.getProperty( "unix.socket.tmp" );
+        if(StringUtil.isNotBlank( unixSocketTmp ) )
+        {
+            sockFile = Files.createTempFile( Paths.get(unixSocketTmp), "unix", ".sock" );
+        } else {
+            sockFile = Files.createTempFile("unix", ".sock" );
+        }
         Assert.assertTrue("temp sock file cannot be deleted", Files.deleteIfExists(sockFile));
 
     }
