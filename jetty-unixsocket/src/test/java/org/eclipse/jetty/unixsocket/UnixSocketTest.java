@@ -70,6 +70,8 @@ public class UnixSocketTest
         testingDir.ensureEmpty();
         // Create a unique unix.sock, in target/tests directory, that's based on TestClass + testMethod + testScope
         sockFile = testingDir.getPathFile("unix.sock");
+        Files.createFile( sockFile );
+        Files.deleteIfExists( sockFile );
     }
     
     @After
