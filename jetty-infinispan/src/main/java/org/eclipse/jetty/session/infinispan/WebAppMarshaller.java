@@ -76,7 +76,7 @@ public class WebAppMarshaller extends AbstractJBossMarshaller
 
     public WebAppMarshaller ()
     {
-        super();		
+        super();
         baseCfg.setClassResolver(new WebAppContextClassResolver());                         
     }
 

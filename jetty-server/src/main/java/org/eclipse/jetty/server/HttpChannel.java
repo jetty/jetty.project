@@ -749,13 +749,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         finally
         {
-        	try
-        	{
-        		onCompleted();
+            try
+            {
+                onCompleted();
             }
             catch(Throwable e)
             {
-            	LOG.debug(e);
+                LOG.debug(e);
                 abort(e);
             }
         }

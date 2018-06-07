@@ -39,6 +39,14 @@
       <version>@project.version@</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-maven-plugin</artifactId>
+      <version>@project.version@</version>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -59,7 +67,11 @@
         <configuration>
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
+            <helloServlet>true</helloServlet>
           </systemPropertyVariables>
+          <dependenciesToScan>
+            <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
+          </dependenciesToScan>
         </configuration>
       </plugin>
       <plugin>

@@ -59,7 +59,7 @@ abstract public class WriteFlusher
         // fill the state machine
         __stateTransitions.put(StateType.IDLE, EnumSet.of(StateType.WRITING));
         __stateTransitions.put(StateType.WRITING, EnumSet.of(StateType.IDLE, StateType.PENDING, StateType.FAILED));
-        __stateTransitions.put(StateType.PENDING, EnumSet.of(StateType.COMPLETING, StateType.IDLE));
+        __stateTransitions.put(StateType.PENDING, EnumSet.of(StateType.COMPLETING, StateType.IDLE, StateType.FAILED));
         __stateTransitions.put(StateType.COMPLETING, EnumSet.of(StateType.IDLE, StateType.PENDING, StateType.FAILED));
         __stateTransitions.put(StateType.FAILED, EnumSet.of(StateType.IDLE));
     }
@@ -512,7 +512,7 @@ abstract public class WriteFlusher
                         LOG.debug("failed: " + this, cause);
 
                     PendingState pending = (PendingState)current;
-                    if (updateState(pending, __IDLE))
+                    if (updateState(pending, new FailedState(cause)))
                         return pending.fail(cause);
                     break;
 
@@ -530,6 +530,11 @@ abstract public class WriteFlusher
     public void onClose()
     {
         onFail(new ClosedChannelException());
+    }
+
+    boolean isFailed()
+    {
+        return _state.get().getType() == StateType.FAILED;
     }
 
     boolean isIdle()

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
@@ -49,9 +45,14 @@ import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
 public class WebSocketUpgradeFilterTest
@@ -343,7 +344,8 @@ public class WebSocketUpgradeFilterTest
             assertThat("payload", payload, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
         }
     }
-    
+
+    @Ignore("Issue #2605")
     @Test
     public void testStopStartOfHandler() throws Exception
     {
