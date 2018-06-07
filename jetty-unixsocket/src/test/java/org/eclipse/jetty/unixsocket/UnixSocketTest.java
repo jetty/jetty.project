@@ -71,7 +71,8 @@ public class UnixSocketTest
         // Create a unique unix.sock, in target/tests directory, that's based on TestClass + testMethod + testScope
         sockFile = testingDir.getPathFile("unix.sock");
         Files.createFile( sockFile );
-        Files.deleteIfExists( sockFile );
+        Assert.assertTrue("temp sock file cannot be deleted", Files.deleteIfExists( sockFile ) );
+
     }
     
     @After
