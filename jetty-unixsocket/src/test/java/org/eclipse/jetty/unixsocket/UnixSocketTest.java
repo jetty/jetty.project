@@ -18,19 +18,6 @@
 
 package org.eclipse.jetty.unixsocket;
 
-import static org.junit.Assume.assumeFalse;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Date;
-import java.util.concurrent.ExecutionException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -38,9 +25,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
-import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -51,12 +36,21 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Date;
+import java.util.concurrent.ExecutionException;
+
+import static org.junit.Assume.assumeFalse;
+
 public class UnixSocketTest
 {
     private static final Logger log = Log.getLogger(UnixSocketTest.class);
-
-    @Rule
-    public TestingDir testingDir = new TestingDir();
 
     private Server server;
     private HttpClient httpClient;
@@ -67,11 +61,8 @@ public class UnixSocketTest
     {
         server = null;
         httpClient = null;
-        testingDir.ensureEmpty();
-        // Create a unique unix.sock, in target/tests directory, that's based on TestClass + testMethod + testScope
-        sockFile = testingDir.getPathFile("unix.sock");
-        Files.createFile( sockFile );
-        Assert.assertTrue("temp sock file cannot be deleted", Files.deleteIfExists( sockFile ) );
+        sockFile = Files.createTempFile("unix", ".sock" );
+        Assert.assertTrue("temp sock file cannot be deleted", Files.deleteIfExists(sockFile));
 
     }
     
