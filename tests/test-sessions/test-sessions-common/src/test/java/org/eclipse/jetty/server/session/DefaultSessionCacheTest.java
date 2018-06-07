@@ -178,7 +178,7 @@ public class DefaultSessionCacheTest
        cache.put("1234", session);
        assertTrue(cache.contains("1234"));
 
-       cache.renewSessionId("1234", "5678");
+       cache.renewSessionId("1234", "5678", "1234.foo", "5678.foo");
        
        assertTrue(cache.contains("5678"));
        assertFalse(cache.contains("1234"));
