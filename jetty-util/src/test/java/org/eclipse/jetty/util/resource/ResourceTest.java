@@ -38,7 +38,6 @@ import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -46,7 +45,6 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-@Ignore
 public class ResourceTest
 {
     private static final boolean DIR=true;
@@ -197,7 +195,7 @@ public class ResourceTest
     {
         UseCases cases = new UseCases("src/test/resources/");
 
-        Path targetPath = MavenTestingUtils.getTargetPath();
+        Path targetPath = MavenTestingUtils.getTargetTestingPath();
         File testDir = targetPath.resolve("ResourceTest with spaces").toFile();
         FS.ensureEmpty(testDir);
         File tmpFile = new File(testDir, "test.tmp");
