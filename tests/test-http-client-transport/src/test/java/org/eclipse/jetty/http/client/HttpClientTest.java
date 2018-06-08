@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
-import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
@@ -71,7 +70,7 @@ public class HttpClientTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 response.setStatus(status);
@@ -105,7 +104,7 @@ public class HttpClientTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.setContentLength(length);
@@ -147,7 +146,7 @@ public class HttpClientTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 ServletOutputStream output = response.getOutputStream();
@@ -191,12 +190,12 @@ public class HttpClientTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 ServletInputStream input = request.getInputStream();
-                for (int i = 0; i < bytes.length; ++i)
-                    Assert.assertEquals(bytes[i] & 0xFF, input.read());
+                for (byte b : bytes)
+                    Assert.assertEquals(b & 0xFF, input.read());
                 Assert.assertEquals(-1, input.read());
             }
         });
@@ -217,7 +216,7 @@ public class HttpClientTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
 
@@ -263,15 +262,16 @@ public class HttpClientTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 try
                 {
                     baseRequest.setHandled(true);
                     response.getOutputStream().write(new byte[length]);
                 }
-                catch(IOException e)
-                {}
+                catch(IOException ignored)
+                {
+                }
             }
         });
 
@@ -293,7 +293,7 @@ public class HttpClientTest extends AbstractTest
         }
         catch (ExecutionException x)
         {
-            Assert.assertThat(x.getMessage(),Matchers.containsString("Buffering capacity exceeded"));
+            Assert.assertThat(x.getMessage(), Matchers.containsString("exceeded"));
         }
 
         // Verify that we can make another request.
@@ -330,7 +330,7 @@ public class HttpClientTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 Assert.assertTrue(HttpMethod.OPTIONS.is(request.getMethod()));
@@ -355,7 +355,7 @@ public class HttpClientTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 if ("*".equals(target))
@@ -385,7 +385,7 @@ public class HttpClientTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.getOutputStream().print(content);
@@ -453,7 +453,7 @@ public class HttpClientTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Large write to generate multiple DATA frames.
@@ -496,7 +496,7 @@ public class HttpClientTest extends AbstractTest
         start(new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.getWriter().write("Jetty");
             }
@@ -530,7 +530,7 @@ public class HttpClientTest extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.getOutputStream().write(data);
             }
@@ -552,7 +552,7 @@ public class HttpClientTest extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 resp.sendError(status);
             }
@@ -565,6 +565,31 @@ public class HttpClientTest extends AbstractTest
                 .send();
 
         Assert.assertEquals(status, response.getStatus());
+        Assert.assertEquals(0, response.getContent().length);
+    }
+
+    @Test
+    public void testHEADWithContentLengthGreaterThanMaxBufferingCapacity() throws Exception
+    {
+        int length = 1024;
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setContentLength(length);
+                response.getOutputStream().write(new byte[length]);
+            }
+        });
+
+        org.eclipse.jetty.client.api.Request request = client.newRequest(newURI())
+                .method(HttpMethod.HEAD)
+                .path(servletPath);
+        FutureResponseListener listener = new FutureResponseListener(request, length / 2);
+        request.send(listener);
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         Assert.assertEquals(0, response.getContent().length);
     }
 
