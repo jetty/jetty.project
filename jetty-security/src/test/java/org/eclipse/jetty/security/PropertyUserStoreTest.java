@@ -49,6 +49,7 @@ import java.util.jar.JarOutputStream;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
 public class PropertyUserStoreTest
@@ -188,6 +189,23 @@ public class PropertyUserStoreTest
         assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("harry"), notNullValue());
         userCount.assertThatCount(is(3));
         userCount.awaitCount(3);
+    }
+    
+    @Test
+    public void testPropertyUserStoreFails() throws Exception
+    {
+        PropertyUserStore store = new PropertyUserStore();
+        store.setConfig("file:/this/file/does/not/exist.txt");
+
+        try
+        {
+            store.start();
+            fail("file should not exist");
+        }
+        catch (IllegalStateException e)
+        {
+            //expected
+        }
     }
 
     @Test
