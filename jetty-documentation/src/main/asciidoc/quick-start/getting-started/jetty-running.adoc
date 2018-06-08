@@ -114,7 +114,7 @@ You can see the configuration of the `demo-base` by using the following commands
 > java -jar $JETTY_HOME/start.jar --list-modules
 ...
 
-> java -jar %JETTY_HOME/start.jar --list-config
+> java -jar $JETTY_HOME/start.jar --list-config
 ...
 ----
 
