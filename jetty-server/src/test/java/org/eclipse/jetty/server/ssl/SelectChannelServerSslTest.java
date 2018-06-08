@@ -129,7 +129,6 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         Socket socket = _sslContext.getSocketFactory().createSocket(host,port);
         socket.setSoTimeout(10000);
         socket.setTcpNoDelay(true);
-        socket.setSoLinger(false,0);
         return socket;
     }
 
