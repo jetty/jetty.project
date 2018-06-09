@@ -746,10 +746,11 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /**
      * Swap the id on a session.
      * 
-     * @param session
-     * @param newId
-     * @param newExtendedId
-     * @throws Exception
+     * @param session the session for which to do the swap
+     * @param newId the new id
+     * @param newExtendedId the full id plus node id
+     * 
+     * @throws Exception if there was a failure saving the change
      */
     protected void renewSessionId (Session session, String newId, String newExtendedId)
     throws Exception
