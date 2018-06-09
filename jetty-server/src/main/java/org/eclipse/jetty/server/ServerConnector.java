@@ -420,7 +420,7 @@ public class ServerConnector extends AbstractNetworkConnector
      * @see java.net.StandardSocketOptions#SO_LINGER
      * @deprecated don't use as socket close linger time has undefined behavior for non-blocking sockets
      */
-    @ManagedAttribute(value = "TCP/IP socket close linger time or -1 if disabled", readonly = true)
+    @ManagedAttribute(value = "Socket close linger time. Deprecated, always returns -1", readonly = true)
     @Deprecated
     public int getSoLingerTime()
     {
@@ -435,7 +435,7 @@ public class ServerConnector extends AbstractNetworkConnector
     @Deprecated
     public void setSoLingerTime(int lingerTime)
     {
-        LOG.warn("Ignoring socket close linger time, it has undefined behavior for non-blocking socket");
+        LOG.warn("Ignoring deprecated socket close linger time");
     }
 
     /**
