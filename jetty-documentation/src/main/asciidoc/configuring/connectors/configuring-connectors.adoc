@@ -236,9 +236,6 @@ For example, if we examine the `http.ini` file in our `start.d` directory create
 ## Connector idle timeout in milliseconds
 # jetty.http.idleTimeout=30000
 
-## Connector socket linger time in seconds (-1 to disable)
-# jetty.http.soLingerTime=-1
-
 ## Number of acceptors (-1 picks default based on number of cores)
 # jetty.http.acceptors=-1
 
@@ -385,9 +382,6 @@ Because the exact interpretation is deployment dependent, it is best to keep thi
 
 |reuseAddress |Allow the server socket to be rebound even if in http://www.ssfnet.org/Exchange/tcp/tcpTutorialNotes.html[TIME_WAIT].
 For servers it is typically OK to leave this as the default true.
-
-|soLingerTime |A value greater than zero sets the socket http://stackoverflow.com/questions/3757289/tcp-option-so-linger-zero-when-its-required[SO_LINGER] value in milliseconds.
-Jetty attempts to gently close all TCP/IP connections with proper half close semantics, so a linger timeout should not be required and thus the default is -1.
 |=======================================================================
 
 [[jetty-connectors-http-configuration]]

@@ -114,8 +114,6 @@ name;;
 The name of the connector, which is useful for link:#serving-webapp-from-particular-port[configuring contexts to respond only on particular connectors].
 idleTimeout;;
 Maximum idle time for a connection.
-soLinger;;
-The socket linger time.
 +
 You could instead configure the connectors in a standard link:#jetty-xml-config[jetty xml config file] and put its location into the `jettyXml` parameter.
 Note that since Jetty 9.0 it is no longer possible to configure a link:#maven-config-https[https connector] directly in the pom.xml: you need to link:#maven-config-https[use jetty xml config files to do it].
