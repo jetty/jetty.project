@@ -25,6 +25,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -75,8 +76,10 @@ public class Session implements SessionHandler.SessionIf
      *
      * Validity states of a session
      */
-    public enum State {VALID, INVALID, INVALIDATING};
+    public enum State {VALID, INVALID, INVALIDATING, CHANGING};
     
+    
+    public enum IdState {SET, CHANGING};
     
     
 
@@ -89,6 +92,7 @@ public class Session implements SessionHandler.SessionIf
     protected boolean _newSession;
     protected State _state = State.VALID; //state of the session:valid,invalid or being invalidated
     protected Locker _lock = new Locker(); //sync lock
+    protected Condition _stateChangeCompleted = _lock.newCondition();
     protected boolean _resident = false;
     protected final SessionInactivityTimer _sessionInactivityTimer;
     
@@ -411,6 +415,12 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
+    /* ------------------------------------------------------------ */
+    public boolean isChanging ()
+    {
+        checkLocked();
+        return _state==State.CHANGING;
+    }
 
     /* ------------------------------------------------------------- */
     public long getCookieSetTime()
@@ -813,19 +823,66 @@ public class Session implements SessionHandler.SessionIf
         String extendedId = null;
         try (Lock lock = _lock.lock())
         {
-            checkValidForWrite(); //don't renew id on a session that is not valid
+            while (true)
+            {
+                switch(_state)
+                {
+                    case INVALID:
+                    case INVALIDATING:
+                        throw new IllegalStateException();
+
+                    case CHANGING:
+                        try
+                        {
+                            _stateChangeCompleted.await();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        continue;
+                        
+                    case VALID:
+                        _state = State.CHANGING;
+                        break;
+                }
+                break;
+            }
+           
             id = _sessionData.getId(); //grab the values as they are now
             extendedId = getExtendedId();
         }
         
-        String newId = _handler._sessionIdManager.renewSessionId(id, extendedId, request); 
+
+        String newId = _handler._sessionIdManager.renewSessionId(id, extendedId, request);        
+        
         try (Lock lock = _lock.lock())
         {
-            checkValidForWrite(); 
-            _sessionData.setId(newId);
-            setExtendedId(_handler._sessionIdManager.getExtendedId(newId, request));
+            switch(_state)
+            {
+                case CHANGING:
+                    if (newId != id)
+                    {                  
+                        //this shouldn't be necessary to do here EXCEPT that when a null session cache is
+                        //used, a new Session object will be created during the call to renew, so this
+                        //Session object will not have been modified.
+                        _sessionData.setId(newId);
+                        setExtendedId(_handler._sessionIdManager.getExtendedId(newId, request));
+                        setIdChanged(true);
+                    }
+                    
+                    _state = State.VALID;
+                    _stateChangeCompleted.signalAll();
+                    break;
+                    
+                case INVALID:
+                case INVALIDATING:
+                    throw new IllegalStateException("Session invalid");
+                    
+                default:
+                    throw new IllegalStateException();
+            }
         }
-        setIdChanged(true);
     }
        
    
@@ -851,8 +908,20 @@ public class Session implements SessionHandler.SessionIf
             if (result)
             {
                 //tell id mgr to remove session from all contexts
+                try
+                {
+                    //do the invalidation
+                    _handler.callSessionDestroyedListeners(this);
+                }
+                finally
+                {
+                    //call the attribute removed listeners and finally mark it as invalid
+                    finishInvalidate();
+                }
+                //tell id mgr to remove sessions with same id from all contexts
                 _handler.getSessionIdManager().invalidateAll(_sessionData.getId());
             }
+
         }
         catch (Exception e)
         {
@@ -889,29 +958,49 @@ public class Session implements SessionHandler.SessionIf
         
         try (Lock lock = _lock.lock())
         {
-            switch (_state)
+            
+            while (true)
             {
-                case INVALID:
+                switch(_state)
                 {
-                    throw new IllegalStateException(); //spec does not allow invalidate of already invalid session
+                    case INVALID:
+                    {
+                        throw new IllegalStateException(); //spec does not allow invalidate of already invalid session
+                    }
+                    case INVALIDATING:
+                    {
+                        if (LOG.isDebugEnabled()) LOG.debug("Session {} already being invalidated", _sessionData.getId());
+                        break;
+                    }
+                    case CHANGING:
+                    {
+                        try
+                        {
+                            _stateChangeCompleted.await();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        continue;
+                    }
+                    case VALID:
+                    {
+                        //only first change from valid to invalidating should be actionable
+                        result = true;
+                        _state = State.INVALIDATING;
+                        break;
+                    }
                 }
-                case VALID:
-                {
-                    //only first change from valid to invalidating should be actionable
-                    result = true;
-                    _state = State.INVALIDATING;
-                    break;
-                }
-                default:
-                {
-                    if (LOG.isDebugEnabled()) LOG.debug("Session {} already being invalidated", _sessionData.getId());
-                }
+                break;
             }
         }
         
         return result;
     }
-
+    
+    
+  
     /* ------------------------------------------------------------- */
     /**
      * Call HttpSessionAttributeListeners as part of invalidating a Session.
@@ -961,6 +1050,8 @@ public class Session implements SessionHandler.SessionIf
             {
                 // mark as invalid
                 _state = State.INVALID;
+                _handler.recordSessionTime(this);
+                _stateChangeCompleted.signalAll();
             }
         }
     }

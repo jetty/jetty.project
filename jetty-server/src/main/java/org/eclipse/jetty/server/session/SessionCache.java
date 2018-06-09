@@ -92,15 +92,19 @@ public interface SessionCache extends LifeCycle
     Session newSession (SessionData data);
     
     
+
     /**
      * Change the id of a Session.
      * 
      * @param oldId the current session id
      * @param newId the new session id
+     * @param the current extended session id
+     * @param the new extended session id
      * @return the Session after changing its id
      * @throws Exception if any error occurred
      */
-    Session renewSessionId (String oldId, String newId) throws Exception;
+    Session renewSessionId (String oldId, String newId, String oldExtendedId, String newExtendedId) throws Exception;
+
     
     
     /**

@@ -350,6 +350,60 @@ public class SessionHandler extends ScopedHandler
         _sessionListeners.clear();
         _sessionIdListeners.clear();
     }
+    
+    
+    /**
+     * Call the session lifecycle listeners
+     * @param session the session on which to call the lifecycle listeners
+     */
+    protected void callSessionDestroyedListeners (Session session)
+    {
+        if (session == null)
+            return;
+        
+        if (_sessionListeners!=null)
+        {
+            HttpSessionEvent event=new HttpSessionEvent(session);      
+            for (int i = _sessionListeners.size()-1; i>=0; i--)
+            {
+                _sessionListeners.get(i).sessionDestroyed(event);
+            }
+        }
+    }
+    
+    /**
+     * Call the session lifecycle listeners
+     * @param session the session on which to call the lifecycle listeners
+     */
+    protected void callSessionCreatedListeners (Session session)
+    {
+        if (session == null)
+            return;
+        
+        if (_sessionListeners!=null)
+        {
+            HttpSessionEvent event=new HttpSessionEvent(session);      
+            for (int i = _sessionListeners.size()-1; i>=0; i--)
+            {
+                _sessionListeners.get(i).sessionCreated(event);
+            }
+        }
+    }
+    
+    
+    protected void callSessionIdListeners (Session session, String oldId)
+    {
+        //inform the listeners
+        if (!_sessionIdListeners.isEmpty())
+        {
+            HttpSessionEvent event = new HttpSessionEvent(session);
+            for (HttpSessionIdListener l:_sessionIdListeners)
+            {
+                l.sessionIdChanged(event, oldId);
+            }
+        }
+    }
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -800,15 +854,10 @@ public class SessionHandler extends ScopedHandler
             _sessionCache.put(id, session);
             _sessionsCreatedStats.increment();  
             
-            if (request.isSecure())
+            if (request!=null && request.isSecure())
                 session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
             
-            if (_sessionListeners!=null)
-            {
-                HttpSessionEvent event=new HttpSessionEvent(session);
-                for (HttpSessionListener listener : _sessionListeners)
-                    listener.sessionCreated(event);
-            }
+            callSessionCreatedListeners(session);
 
             return session;
         }
@@ -1190,7 +1239,7 @@ public class SessionHandler extends ScopedHandler
     {
         try
         {
-            Session session = _sessionCache.renewSessionId (oldId, newId); //swap the id over
+            Session session = _sessionCache.renewSessionId (oldId, newId, oldExtendedId, newExtendedId); //swap the id over
             if (session == null)
             {
                 //session doesn't exist on this context
@@ -1200,14 +1249,7 @@ public class SessionHandler extends ScopedHandler
             session.setExtendedId(newExtendedId); //remember the extended id
 
             //inform the listeners
-            if (!_sessionIdListeners.isEmpty())
-            {
-                HttpSessionEvent event = new HttpSessionEvent(session);
-                for (HttpSessionIdListener l:_sessionIdListeners)
-                {
-                    l.sessionIdChanged(event, oldId);
-                }
-            }
+           callSessionIdListeners(session, oldId);
         }
         catch (Exception e)
         {
@@ -1215,7 +1257,17 @@ public class SessionHandler extends ScopedHandler
         }
     }
     
-   
+    /**
+     * Record length of time session has been active. Called when the
+     * session is about to be invalidated.
+     * 
+     * @param session the session whose time to record
+     */
+    protected void recordSessionTime (Session session)
+    {
+        _sessionTimeStats.record(round((System.currentTimeMillis() - session.getSessionData().getCreated())/1000.0));
+    }
+    
     
     /* ------------------------------------------------------------ */
     /**
@@ -1225,18 +1277,38 @@ public class SessionHandler extends ScopedHandler
      */
     public void invalidate (String id)
     {
+        
         if (StringUtil.isBlank(id))
             return;
 
         try
-        {
-            //remove the session and call the destroy listeners
-            Session session = removeSession(id, true);
-
+        {            
+            //Remove the Session object from the session store and any backing data store
+            Session session = _sessionCache.delete(id);
             if (session != null)
             {
-                _sessionTimeStats.record(round((System.currentTimeMillis() - session.getSessionData().getCreated())/1000.0));
-                session.finishInvalidate();   
+                //start invalidating if it is not already begun, and call the listeners
+                try
+                {
+                    if (session.beginInvalidate())
+                    {
+                        try
+                        {
+                            callSessionDestroyedListeners(session);
+                        }
+                        catch (Exception e)
+                        {
+                            LOG.warn("Session listener threw exception", e);
+                        }
+                        //call the attribute removed listeners and finally mark it as invalid
+                        session.finishInvalidate();
+                    }
+                }
+                catch (IllegalStateException e)
+                {
+                    if (LOG.isDebugEnabled()) LOG.debug("Session {} already invalid", session);
+                    LOG.ignore(e);
+                }
             }
         }
         catch (Exception e)
