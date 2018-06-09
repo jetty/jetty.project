@@ -114,7 +114,7 @@ public class WriteFlusherTest
             Assert.assertThat(cause.getMessage(), Matchers.containsString("CLOSED"));
         }
         Assert.assertEquals("", endPoint.takeOutputString());
-        Assert.assertTrue(flusher.isIdle());
+        Assert.assertTrue(flusher.isFailed());
     }
 
     @Test
@@ -204,7 +204,7 @@ public class WriteFlusherTest
             Assert.assertThat(cause.getMessage(), Matchers.containsString("CLOSED"));
         }
         Assert.assertEquals("", endPoint.takeOutputString());
-        Assert.assertTrue(flusher.isIdle());
+        Assert.assertTrue(flusher.isFailed());
     }
 
     @Test
@@ -380,7 +380,7 @@ public class WriteFlusherTest
         flusher.write(Callback.NOOP, BufferUtil.toBuffer("bar"));
     }
 
-    @Test
+    @Test(expected = ExecutionException.class)
     public void testConcurrentWriteAndOnFail() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16);
@@ -392,7 +392,7 @@ public class WriteFlusherTest
             {
                 ByteBuffer[] result = super.flush(buffers);
                 boolean notified = onFail(new Throwable());
-                Assert.assertFalse(notified);
+                Assert.assertTrue(notified);
                 return result;
             }
 
@@ -405,10 +405,9 @@ public class WriteFlusherTest
         FutureCallback callback = new FutureCallback();
         flusher.write(callback, BufferUtil.toBuffer("foo"));
 
-        // Callback must be successfully completed.
+        Assert.assertTrue(flusher.isFailed());
+
         callback.get(1, TimeUnit.SECONDS);
-        // Flusher must be idle - not failed - since the write succeeded.
-        Assert.assertTrue(flusher.isIdle());
     }
 
     @Test
