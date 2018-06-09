@@ -97,8 +97,8 @@ public interface SessionCache extends LifeCycle
      * 
      * @param oldId the current session id
      * @param newId the new session id
-     * @param the current extended session id
-     * @param the new extended session id
+     * @param oldExtendedId the current extended session id
+     * @param newExtendedId the new extended session id
      * @return the Session after changing its id
      * @throws Exception if any error occurred
      */
