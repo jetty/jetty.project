@@ -260,6 +260,12 @@ abstract public class WriteFlusher
     {
         callback = Objects.requireNonNull(callback);
 
+        if(isFailed())
+        {
+            fail(callback);
+            return;
+        }
+
         if (DEBUG)
             LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
 
