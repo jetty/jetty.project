@@ -2,11 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-<<<<<<< HEAD
-    <version>9.4.12-SNAPSHOT</version>
-=======
     <version>${revision}</version>
->>>>>>> use Maven revision property dynamic version
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>

@@ -6,11 +6,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-alpn-parent</artifactId>
-<<<<<<< HEAD
-    <version>9.4.12-SNAPSHOT</version>
-=======
     <version>${revision}</version>
->>>>>>> use Maven revision property dynamic version
   </parent>
 
   <modelVersion>4.0.0</modelVersion>

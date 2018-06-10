@@ -4,11 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-<<<<<<< HEAD
-    <version>9.4.12-SNAPSHOT</version>
-=======
     <version>${revision}</version>
->>>>>>> use Maven revision property dynamic version
   </parent>
   <artifactId>test-memcached-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Memcached</name>
