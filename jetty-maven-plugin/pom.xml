@@ -224,7 +224,34 @@
       <scope>test</scope>
       <type>zip</type>
     </dependency>
+    <!-- pre download for it tests -->
+    <dependency>
+      <groupId>net.ltgt.gwt.maven</groupId>
+      <artifactId>gwt-maven-plugin</artifactId>
+      <version>1.0-rc-9</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-user</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-dev</artifactId>
+    </dependency>
+
   </dependencies>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.google.gwt</groupId>
+        <artifactId>gwt</artifactId>
+        <version>2.8.2</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <reporting>
     <plugins>
       <plugin>
