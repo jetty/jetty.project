@@ -104,7 +104,7 @@ public class TestGetContent
                 }
                 else
                 {
-                    Thread.currentThread().sleep( 100 );
+                    Thread.currentThread().sleep( 1000 );
                 }
             }
         }
