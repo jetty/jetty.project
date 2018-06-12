@@ -197,6 +197,7 @@ public class MavenLocalRepoFileInitializerTest
                    is("https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-http/9.4.10.v20180503/jetty-http-9.4.10.v20180503-tests.jar"));
 
         Path destination = Paths.get(System.getProperty( "java.io.tmpdir" ), "jetty-http-9.4.10.v20180503-tests.jar");
+        Files.deleteIfExists( destination );
         repo.download( coords.toCentralURI(), destination);
         assertThat( Files.exists(destination), is( true ));
         assertThat( destination.toFile().length(), is(962621L));
