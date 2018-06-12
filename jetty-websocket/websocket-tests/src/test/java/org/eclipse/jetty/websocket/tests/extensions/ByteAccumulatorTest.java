@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.extensions.compress;
+package org.eclipse.jetty.websocket.tests.extensions;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
+import org.eclipse.jetty.websocket.common.extensions.compress.ByteAccumulator;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

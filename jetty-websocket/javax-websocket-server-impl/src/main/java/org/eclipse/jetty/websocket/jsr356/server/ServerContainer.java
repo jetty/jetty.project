@@ -117,8 +117,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         if (anno != null)
         {
             // Overwrite Config from Annotation
-            // TODO: should we merge with provided config?
-            return new AnnotatedServerEndpointConfig(this, endpoint.getClass(), anno, config);
+            return new AnnotatedServerEndpointConfig(this, endpoint.getClass(), anno, (ServerEndpointConfig) config);
         }
         return config;
     }

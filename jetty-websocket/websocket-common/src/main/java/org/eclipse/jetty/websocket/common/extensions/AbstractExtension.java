@@ -182,7 +182,7 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
         catch (Throwable t)
         {
             if (callback != null)
-                callback.writeFailed(t);
+                callback.fail(t);
             else
                 log.warn(t);
         }

@@ -36,6 +36,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -62,6 +63,8 @@ import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.jsr356.server.JsrCreator;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
@@ -69,6 +72,7 @@ import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -719,17 +723,19 @@ public class ConfiguratorTest
     @Test
     public void testAnnotationConfigurator() throws Exception
     {
-        URI uri = baseServerUri.resolve("/config-normal");
-        BlockheadClientRequest request = client.newWsRequest(uri);
-        Future<BlockheadConnection> connFut = request.sendAsync();
+        URI wsUri = baseServerUri.resolve("/config-normal");
 
-        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
-        {
-            clientConn.write(new TextFrame().setPayload("tellme"));
-            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
-            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("UserProperties[self.configurator] = " + ConfigNormalConfigurator.class.getName()));
-        }
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+
+        Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
+
+        org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+        clientSession.getRemote().sendString("tellme");
+
+        String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+        assertThat("Incoming message", incomingMessage, is("UserProperties[self.configurator] = " + ConfigNormalConfigurator.class.getName()));
     }
 
     /**
@@ -739,16 +745,17 @@ public class ConfiguratorTest
     @Test
     public void testOverrideConfigurator() throws Exception
     {
-        URI uri = baseServerUri.resolve("/config-override");
-        BlockheadClientRequest request = client.newWsRequest(uri);
-        Future<BlockheadConnection> connFut = request.sendAsync();
+        URI wsUri = baseServerUri.resolve("/config-override");
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
 
-        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
-        {
-            clientConn.write(new TextFrame().setPayload("tellme"));
-            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
-            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("UserProperties[self.configurator] = " + ConfigOverrideConfigurator.class.getName()));
-        }
+        Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
+
+        org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+        clientSession.getRemote().sendString("tellme");
+
+        String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+        assertThat("Incoming message", incomingMessage, is("UserProperties[self.configurator] = " + ConfigOverrideConfigurator.class.getName()));
     }
 }
