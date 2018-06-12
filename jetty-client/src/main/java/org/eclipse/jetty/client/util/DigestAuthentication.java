@@ -22,15 +22,11 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.AuthenticationStore;
@@ -40,6 +36,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
 
 /**
  * Implementation of the HTTP "Digest" authentication defined in RFC 2617.
@@ -50,8 +47,6 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class DigestAuthentication extends AbstractAuthentication
 {
-    private static final Pattern PARAM_PATTERN = Pattern.compile("([^=]+)=(.*)");
-
     private final String user;
     private final String password;
 
@@ -74,10 +69,21 @@ public class DigestAuthentication extends AbstractAuthentication
         return "Digest";
     }
 
+    
+    @Override
+    public boolean matches(String type, URI uri, String realm)
+    {
+        // digest authenication requires a realm
+        if (realm == null)
+            return false;
+        
+        return super.matches(type,uri,realm);
+    }
+
     @Override
     public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
     {
-        Map<String, String> params = parseParameters(headerInfo.getParameters());
+        Map<String, String> params = headerInfo.getParameters();
         String nonce = params.get("nonce");
         if (nonce == null || nonce.length() == 0)
             return null;
@@ -103,58 +109,6 @@ public class DigestAuthentication extends AbstractAuthentication
         if (ANY_REALM.equals(realm))
             realm = headerInfo.getRealm();
         return new DigestResult(headerInfo.getHeader(), response.getContent(), realm, user, password, algorithm, nonce, clientQOP, opaque);
-    }
-
-    private Map<String, String> parseParameters(String wwwAuthenticate)
-    {
-        Map<String, String> result = new HashMap<>();
-        List<String> parts = splitParams(wwwAuthenticate);
-        for (String part : parts)
-        {
-            Matcher matcher = PARAM_PATTERN.matcher(part);
-            if (matcher.matches())
-            {
-                String name = matcher.group(1).trim().toLowerCase(Locale.ENGLISH);
-                String value = matcher.group(2).trim();
-                if (value.startsWith("\"") && value.endsWith("\""))
-                    value = value.substring(1, value.length() - 1);
-                result.put(name, value);
-            }
-        }
-        return result;
-    }
-
-    private List<String> splitParams(String paramString)
-    {
-        List<String> result = new ArrayList<>();
-        int start = 0;
-        for (int i = 0; i < paramString.length(); ++i)
-        {
-            int quotes = 0;
-            char ch = paramString.charAt(i);
-            switch (ch)
-            {
-                case '\\':
-                    ++i;
-                    break;
-                case '"':
-                    ++quotes;
-                    break;
-                case ',':
-                    if (quotes % 2 == 0)
-                    {
-                        String element = paramString.substring(start, i).trim();
-                        if (element.length() > 0)
-                            result.add(element);
-                        start = i + 1;
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-        result.add(paramString.substring(start, paramString.length()).trim());
-        return result;
     }
 
     private MessageDigest getMessageDigest(String algorithm)

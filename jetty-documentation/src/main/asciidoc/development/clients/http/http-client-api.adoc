@@ -150,7 +150,7 @@ You can impose a total timeout for the request/response conversation in the same
 
 [source, java, subs="{sub-order}"]
 ----
-Request request = httpClient.newRequest("http://domain.com/path")
+httpClient.newRequest("http://domain.com/path")
         .timeout(3, TimeUnit.SECONDS)
         .send(result -> { /* Your logic here */ });
 ----
@@ -346,8 +346,7 @@ Jetty's HTTP client will invoke the `onContent()` method zero or more times (unt
 
 [source, java, subs="{sub-order}"]
 ----
-ContentResponse response = httpClient
-        .newRequest("http://domain.com/path")
+httpClient .newRequest("http://domain.com/path")
         .send(new Response.Listener.Adapter()
         {
             @Override

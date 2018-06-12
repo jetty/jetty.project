@@ -36,7 +36,6 @@ import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.server.Connector;
@@ -44,7 +43,6 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -228,39 +226,26 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             return null;
         }
 
-        // We must copy the data since we do not know when the
-        // application will consume the bytes (we queue them by
-        // calling onContent()), and the parsing will continue
-        // as soon as this method returns, eventually leading
-        // to reusing the underlying buffer for more reads.
-        final ByteBufferPool byteBufferPool = getByteBufferPool();
-        ByteBuffer original = frame.getData();
-        int length = original.remaining();
-        final ByteBuffer copy = byteBufferPool.acquire(length, original.isDirect());
-        BufferUtil.clearToFill(copy);
-        copy.put(original);
-        BufferUtil.flipToFlush(copy, 0);
-
-        boolean handle = onContent(new HttpInput.Content(copy)
+        ByteBuffer buffer = frame.getData();
+        int length = buffer.remaining();
+        boolean handle = onContent(new HttpInput.Content(buffer)
         {
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return callback.getInvocationType();
-            }
-
             @Override
             public void succeeded()
             {
-                byteBufferPool.release(copy);
                 callback.succeeded();
             }
 
             @Override
             public void failed(Throwable x)
             {
-                byteBufferPool.release(copy);
                 callback.failed(x);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return callback.getInvocationType();
             }
         });
 

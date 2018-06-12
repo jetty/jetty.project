@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2;
 
+import java.io.IOException;
+
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -117,7 +119,7 @@ public interface ISession extends Session
      *
      * @see #onShutdown()
      * @see #close(int, String, Callback)
-     * @return <code>true</code> if the session has expired
+     * @return {@code true} if the session has expired
      */
     public boolean onIdleTimeout();
 
@@ -130,7 +132,23 @@ public interface ISession extends Session
     public void onFrame(Frame frame);
 
     /**
+     * <p>Callback method invoked when bytes are flushed to the network.</p>
+     *
+     * @param bytes the number of bytes flushed to the network
+     * @throws IOException if the flush should fail
+     */
+    public void onFlushed(long bytes) throws IOException;
+
+    /**
      * @return the number of bytes written by this session
      */
     public long getBytesWritten();
+
+    /**
+     * <p>Callback method invoked when a DATA frame is received.</p>
+     *
+     * @param frame the DATA frame received
+     * @param callback the callback to notify when the frame has been processed
+     */
+    public void onData(DataFrame frame, Callback callback);
 }

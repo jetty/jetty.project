@@ -131,7 +131,7 @@ public class SessionHandler extends ScopedHandler
             
     public Set<SessionTrackingMode> __defaultSessionTrackingModes =
         Collections.unmodifiableSet(
-            new HashSet<SessionTrackingMode>(
+            new HashSet<>(
                     Arrays.asList(new SessionTrackingMode[]{SessionTrackingMode.COOKIE,SessionTrackingMode.URL})));
 
     
@@ -1103,7 +1103,7 @@ public class SessionHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
     {
-        _sessionTrackingModes=new HashSet<SessionTrackingMode>(sessionTrackingModes);
+        _sessionTrackingModes=new HashSet<>(sessionTrackingModes);
         _usingCookies=_sessionTrackingModes.contains(SessionTrackingMode.COOKIE);
         _usingURLs=_sessionTrackingModes.contains(SessionTrackingMode.URL);
     }
@@ -1262,7 +1262,7 @@ public class SessionHandler extends ScopedHandler
         //arrive during this processing will be dealt with on 
         //subsequent call to scavenge
         String[] ss = _candidateSessionIdsForExpiry.toArray(new String[0]);
-        Set<String> candidates = new HashSet<String>(Arrays.asList(ss));
+        Set<String> candidates = new HashSet<>(Arrays.asList(ss));
         _candidateSessionIdsForExpiry.removeAll(candidates);
         if (LOG.isDebugEnabled())
             LOG.debug("{} scavenging session ids {}", this, candidates);

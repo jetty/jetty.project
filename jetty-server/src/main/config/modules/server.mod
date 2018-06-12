@@ -59,9 +59,6 @@ etc/jetty.xml
 ## Maximum number of error dispatches to prevent looping
 # jetty.httpConfig.maxErrorDispatches=10
 
-## Maximum time to block in total for a blocking IO operation (default -1 is to use idleTimeout on progress)
-# jetty.httpConfig.blockingTimeout=-1
-
 ## Cookie compliance mode of: RFC2965, RFC6265
 # jetty.httpConfig.cookieCompliance=RFC6265
 

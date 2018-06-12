@@ -28,9 +28,6 @@ etc/jetty-ssl-context.xml
 ## Connector idle timeout in milliseconds
 # jetty.ssl.idleTimeout=30000
 
-## Connector socket linger time in seconds (-1 to disable)
-# jetty.ssl.soLingerTime=-1
-
 ## Number of acceptors (-1 picks default based on number of cores)
 # jetty.ssl.acceptors=-1
 

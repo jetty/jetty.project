@@ -159,7 +159,6 @@ public class RequestURITest
         Socket socket = new Socket(host,port);
         socket.setSoTimeout(10000);
         socket.setTcpNoDelay(true);
-        socket.setSoLinger(false,0);
         return socket;
     }
 

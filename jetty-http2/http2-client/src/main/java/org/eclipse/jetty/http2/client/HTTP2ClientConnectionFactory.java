@@ -19,7 +19,7 @@
 package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -107,7 +107,8 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         {
             Map<Integer, Integer> settings = listener.onPreface(getSession());
             if (settings == null)
-                settings = Collections.emptyMap();
+                settings = new HashMap<>();
+            settings.computeIfAbsent(SettingsFrame.INITIAL_WINDOW_SIZE, k -> client.getInitialStreamRecvWindow());
 
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);
@@ -129,11 +130,12 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @Override
         public void succeeded()
         {
+            super.onOpen();
+            promise.succeeded(getSession());
             // Only start reading from server after we have sent the client preface,
             // otherwise we risk to read the server preface (a SETTINGS frame) and
             // reply to that before we have the chance to send the client preface.
-            super.onOpen();
-            promise.succeeded(getSession());
+            produce();
         }
 
         @Override

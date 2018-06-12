@@ -19,7 +19,6 @@
 package org.eclipse.jetty.util;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,121 +26,103 @@ import java.util.List;
  * Wraps multiple exceptions.
  *
  * Allows multiple exceptions to be thrown as a single exception.
+ * 
+ * The MultiException itself should not be thrown instead one of the
+ * ifExceptionThrow* methods should be called instead.
  */
 @SuppressWarnings("serial")
 public class MultiException extends Exception
 {
+    private static final String DEFAULT_MESSAGE = "Multiple exceptions";
+    
+    private List<Throwable> nested;
+
     /* ------------------------------------------------------------ */
     public MultiException()
     {
-        super("Multiple exceptions");
+        // Avoid filling in stack trace information.
+        super(DEFAULT_MESSAGE, null, false, false);
+        this.nested = new ArrayList<>();
     }
+    
+    /**
+     * Create a MultiException which may be thrown.
+     * 
+     * @param nested The nested exceptions which will be suppressed by this
+     * exception.
+     */
+    private MultiException(List<Throwable> nested) {
+        super(DEFAULT_MESSAGE);
+        this.nested = new ArrayList<>(nested);
+        
+        if(nested.size() > 0) {
+            initCause(nested.get(0));
+        }
+        
+        for(Throwable t : nested) {
+            this.addSuppressed(t);
+        }
+    }
+    
 
     /* ------------------------------------------------------------ */
     public void add(Throwable e)
     {
-        if (e==null)
-            throw new IllegalArgumentException();
-
         if (e instanceof MultiException)
-            Arrays.stream(MultiException.class.cast(e).getSuppressed()).forEach(this::add);
-        else
         {
-            if (getCause()==null)
-                initCause(e);
-            else
-                addSuppressed(e);
+            MultiException me = (MultiException)e;
+            nested.addAll(me.nested);
         }
+        else
+            nested.add(e);
     }
 
     /* ------------------------------------------------------------ */
     public int size()
     {
-        if (getCause()==null)
-            return 0;
-        return 1+getSuppressed().length;
+        return (nested ==null)?0:nested.size();
     }
     
     /* ------------------------------------------------------------ */
     public List<Throwable> getThrowables()
     {
-        if (getCause()==null)
+        if(nested == null)
             return Collections.emptyList();
-        
-        Throwable[] suppressed = getSuppressed();
-        List<Throwable> list = new ArrayList<>(suppressed.length+1);
-        list.add(getCause());
-        Arrays.stream(suppressed).forEach(list::add);
-        return list;
+        return nested;
     }
     
     /* ------------------------------------------------------------ */
     public Throwable getThrowable(int i)
     {
-        if (getCause()==null)
-            throw new ArrayIndexOutOfBoundsException();
-        if (i==0)
-            return getCause();
-        return getSuppressed()[i-1];
+        return nested.get(i);
     }
 
     /* ------------------------------------------------------------ */
     /** Throw a multiexception.
      * If this multi exception is empty then no action is taken. If it
-     * contains a single exception then that is thrown, otherwise the this
+     * contains a single exception that is thrown, otherwise the this
      * multi exception is thrown. 
-     * @exception Exception the Error or Exception if nested is 1, or 
-     *            the MultiException itself if nested is more than 1.
+     * @exception Exception the Error or Exception if nested is 1, or the MultiException itself if nested is more than 1.
      */
     public void ifExceptionThrow()
         throws Exception
     {
-        Throwable cause=getCause();
-        if (cause==null)
+        if(nested == null)
             return;
         
-        Throwable[] suppressed = getSuppressed();
-        
-        if (suppressed.length==0)
+        switch (nested.size())
         {
-            if (cause instanceof Error)
-                throw (Error)cause;
-            if (cause instanceof Exception)
-                throw (Exception)cause;
+          case 0:
+              break;
+          case 1:
+              Throwable th=nested.get(0);
+              if (th instanceof Error)
+                  throw (Error)th;
+              if (th instanceof Exception)
+                  throw (Exception)th;
+          default:
+              throw new MultiException(nested);
         }
-        
-        throw this;
-    }
-    
-
-    /* ------------------------------------------------------------ */
-    /** Throw an Exception, potentially with suppress.
-     * If this multi exception is empty then no action is taken. If the first
-     * exception added is an Error or Exception, then that is throw with 
-     * any additional exceptions added as suppressed. Otherwise this exception
-     * is thrown.
-     * @exception Exception the Error or Exception if at least one is added.
-     */
-    public void ifExceptionThrowSuppressed()
-        throws Exception
-    {
-        Throwable cause=getCause();
-        if (cause==null)
-            return;
-
-        if (cause instanceof Error)
-        {
-            Arrays.stream(getSuppressed()).forEach(cause::addSuppressed);
-            throw (Error)cause;
-        }
-        
-        if (cause instanceof Exception)
-        {
-            Arrays.stream(getSuppressed()).forEach(cause::addSuppressed);
-            throw (Exception)cause;
-        }
-  
-        throw this;
     }
     
     /* ------------------------------------------------------------ */
@@ -155,47 +136,85 @@ public class MultiException extends Exception
      */
     public void ifExceptionThrowRuntime()
         throws Error
-    {        
-        Throwable cause = getCause();
-        if (cause==null)
+    {
+        if(nested == null)
             return;
-
-        Throwable[] nested = getSuppressed();
-
-        if (nested.length==0)
-        {
-            if (cause instanceof Error)
-                throw (Error)cause;
-            if (cause instanceof RuntimeException)
-                throw (RuntimeException)cause;
-            throw new RuntimeException(cause);
-        }
         
-        throw new RuntimeException(this);
+        switch (nested.size())
+        {
+          case 0:
+              break;
+          case 1:
+              Throwable th=nested.get(0);
+              if (th instanceof Error)
+                  throw (Error)th;
+              else if (th instanceof RuntimeException)
+                  throw (RuntimeException)th;
+              else
+                  throw new RuntimeException(th);
+          default:
+              throw new RuntimeException(new MultiException(nested));
+        }
     }
     
     /* ------------------------------------------------------------ */
-    /** Throw a MultiException.
+    /** Throw a multiexception.
      * If this multi exception is empty then no action is taken. If it
-     * contains a any exceptions then this multi exception is thrown. 
+     * contains a any exceptions then this
+     * multi exception is thrown. 
      * @throws MultiException the multiexception if there are nested exception
      */
     public void ifExceptionThrowMulti()
         throws MultiException
     {
-        if (getCause()==null)
+        if(nested == null)
             return;
-
-        throw this;
+        
+        if (nested.size()>0)
+        {
+            throw new MultiException(nested);
+        }
     }
 
+
+    /* ------------------------------------------------------------ */
+    /** Throw an Exception, potentially with suppress.
+     * If this multi exception is empty then no action is taken. If the first
+     * exception added is an Error or Exception, then it is throw with 
+     * any additional exceptions added as suppressed. Otherwise a MultiException
+     * is thrown, with all exceptions added as suppressed.
+     * @exception Exception the Error or Exception if at least one is added.
+     */
+    public void ifExceptionThrowSuppressed()
+        throws Exception
+    {
+        if(nested == null || nested.size()==0)
+            return;
+        
+        Throwable th=nested.get(0);
+        if (!Error.class.isInstance(th) && !Exception.class.isInstance(th))
+            th = new MultiException(Collections.emptyList());
+
+        for (Throwable s : nested)
+            if (s!=th)
+                th.addSuppressed(s);
+        if (Error.class.isInstance(th))
+            throw (Error)th;
+        throw (Exception)th;
+    }
+    
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();
         str.append(MultiException.class.getSimpleName());
-        str.append(Arrays.asList(getSuppressed()));
+        if((nested == null) || (nested.size()<=0)) {
+            str.append("[]");
+        } else {
+            str.append(nested);
+        }
         return str.toString();
     }
 

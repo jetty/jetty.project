@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
@@ -134,7 +135,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     @Test
     public void testHttpWriteIdleTimeout() throws Exception
     {
-        _httpConfiguration.setBlockingTimeout(500);
+        _httpConfiguration.setIdleTimeout(500);
         configureServer(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override

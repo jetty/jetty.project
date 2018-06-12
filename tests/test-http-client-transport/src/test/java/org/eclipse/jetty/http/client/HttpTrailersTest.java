@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.http.client;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -32,6 +35,7 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -223,5 +227,59 @@ public class HttpTrailersTest extends AbstractTest
                 .send();
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         Assert.assertNull(failure.get());
+    }
+
+    @Test
+    public void testResponseTrailersWithLargeContent() throws Exception
+    {
+        byte[] content = new byte[1024 * 1024];
+        new Random().nextBytes(content);
+        String trailerName = "Trailer";
+        String trailerValue = "value";
+        start(new AbstractHandler.ErrorDispatchHandler()
+        {
+            @Override
+            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                jettyRequest.setHandled(true);
+
+                HttpFields trailers = new HttpFields();
+                trailers.put(trailerName, trailerValue);
+
+                Response jettyResponse = (Response)response;
+                jettyResponse.setTrailers(() -> trailers);
+
+                // Write a large content
+                response.getOutputStream().write(content);
+            }
+        });
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest(newURI())
+                .timeout(15, TimeUnit.SECONDS)
+                .send(listener);
+        org.eclipse.jetty.client.api.Response response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        InputStream input = listener.getInputStream();
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        // Read slowly.
+        while (true)
+        {
+            int read = input.read();
+            if (read < 0)
+                break;
+            output.write(read);
+        }
+
+        Assert.assertArrayEquals(content, output.toByteArray());
+
+        // Wait for the request/response cycle to complete.
+        listener.await(5, TimeUnit.SECONDS);
+
+        HttpResponse httpResponse = (HttpResponse)response;
+        HttpFields trailers = httpResponse.getTrailers();
+        Assert.assertNotNull(trailers);
+        Assert.assertEquals(trailerValue, trailers.get(trailerName));
     }
 }

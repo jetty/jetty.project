@@ -27,9 +27,6 @@ etc/jetty-http.xml
 ## Connector idle timeout in milliseconds
 # jetty.http.idleTimeout=30000
 
-## Connector socket linger time in seconds (-1 to disable)
-# jetty.http.soLingerTime=-1
-
 ## Number of acceptors (-1 picks default based on number of cores)
 # jetty.http.acceptors=-1
 

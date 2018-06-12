@@ -20,6 +20,7 @@ package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 
 import javax.net.ssl.SSLEngine;
@@ -46,7 +47,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
 
     public SslClientConnectionFactory(SslContextFactory sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
     {
-        this.sslContextFactory = sslContextFactory;
+        this.sslContextFactory = Objects.requireNonNull(sslContextFactory, "Missing SslContextFactory");
         this.byteBufferPool = byteBufferPool;
         this.executor = executor;
         this.connectionFactory = connectionFactory;

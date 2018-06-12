@@ -1,7 +1,7 @@
 #!groovy
 
 def jdks = ["jdk8","jdk9","jdk10","jdk11"]
-def oss = ["linux"] //windows?  ,"linux-docker"
+def oss = ["linux"] 
 def builds = [:]
 for (def os in oss) {
   for (def jdk in jdks) {
@@ -16,9 +16,11 @@ def getFullBuild(jdk, os) {
     node(os) {
       // System Dependent Locations
       def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
+      def mvntoolInvoker = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
       def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
       def mvnName = 'maven3.5'
-      def localRepo = ".repository" // "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
+      def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" // 
+      def settingsName = 'oss-settings.xml'
 
       // Environment
       List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
@@ -43,9 +45,9 @@ def getFullBuild(jdk, os) {
                       maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: 'oss-settings.xml',
+                      globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B clean install -DskipTests -T6"
+                sh "mvn -V -B clean install -DskipTests -T6 -e"
               }
 
             }
@@ -65,9 +67,9 @@ def getFullBuild(jdk, os) {
                       maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: 'oss-settings.xml',
+                      globalMavenSettingsConfig: settingsName,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B javadoc:javadoc -T5"
+                sh "mvn -V -B javadoc:javadoc -T6 -e"
               }
             }
           }
@@ -87,15 +89,14 @@ def getFullBuild(jdk, os) {
                       maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
+                      globalMavenSettingsConfig: settingsName,
                       //options: [invokerPublisher(disabled: false)],
-                      globalMavenSettingsConfig: 'oss-settings.xml',
                       mavenLocalRepo: localRepo) {
-                //
-                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T3 -e -Dmaven.repo.local=${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER} -Pmongodb"
+                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -DmavenHome=${mvntoolInvoker} -Dunix.socket.tmp="+env.JENKINS_HOME
               }
               // withMaven doesn't label..
               // Report failures in the jenkins UI
-              junit testResults:'**/target/surefire-reports/TEST-*.xml'
+              junit testResults:'**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
               // Collect up the jacoco execution results
               def jacocoExcludes =
                       // build tools
@@ -141,7 +142,7 @@ def getFullBuild(jdk, os) {
                     maven: mvnName,
                     jdk: "$jdk",
                     publisherStrategy: 'EXPLICIT',
-                    globalMavenSettingsConfig: 'oss-settings.xml',
+                    globalMavenSettingsConfig: settingsName,
                     mavenLocalRepo: localRepo) {
               sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
             }

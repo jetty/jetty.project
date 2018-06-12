@@ -38,16 +38,17 @@ public class ByteAccumulator
     private final int maxSize;
     private int length = 0;
 
-    public ByteAccumulator(int maxOverallMessageSize)
+    public ByteAccumulator(int maxOverallBufferSize)
     {
-        this.maxSize = maxOverallMessageSize;
+        this.maxSize = maxOverallBufferSize;
     }
 
     public void copyChunk(byte buf[], int offset, int length)
     {
         if (this.length + length > maxSize)
         {
-            throw new MessageTooLargeException(String.format("Decompressed Message [%,d b] is too large [max %,d b]",this.length + length, maxSize));
+            String err = String.format("Decompressed message size [%,d] is too large for configured max of [%,d]", this.length + length, maxSize);
+            throw new MessageTooLargeException(err);
         }
 
         byte copy[] = new byte[length - offset];

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Queue;
@@ -47,6 +43,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(AdvancedRunner.class)
 public class StressTest
@@ -348,7 +348,6 @@ public class StressTest
             long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             Socket socket= new Socket("localhost", _connector.getLocalPort());
             socket.setSoTimeout(30000);
-            socket.setSoLinger(false,0);
 
             long connected=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
@@ -417,7 +416,6 @@ public class StressTest
 
                 Socket socket = new Socket("localhost", _connector.getLocalPort());
                 socket.setSoTimeout(10000);
-                socket.setSoLinger(false,0);
 
                 _latencies[0].add(new Long(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start));
 

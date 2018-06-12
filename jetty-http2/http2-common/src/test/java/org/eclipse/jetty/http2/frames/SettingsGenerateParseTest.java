@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
@@ -81,6 +82,7 @@ public class SettingsGenerateParseTest
                 frames.add(frame);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
@@ -115,6 +117,7 @@ public class SettingsGenerateParseTest
                 errorRef.set(error);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         settings1.put(13, 17);
@@ -149,6 +152,7 @@ public class SettingsGenerateParseTest
                 frames.add(frame);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         int key = 13;

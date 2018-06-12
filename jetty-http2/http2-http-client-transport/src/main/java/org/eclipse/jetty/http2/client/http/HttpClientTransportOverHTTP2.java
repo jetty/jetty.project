@@ -20,7 +20,6 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
@@ -195,14 +194,6 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         private Promise<Connection> promise()
         {
             return (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        }
-
-        @Override
-        public Map<Integer, Integer> onPreface(Session session)
-        {
-            Map<Integer, Integer> settings = new HashMap<>();
-            settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, client.getInitialStreamRecvWindow());
-            return settings;
         }
 
         @Override

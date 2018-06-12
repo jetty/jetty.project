@@ -78,11 +78,11 @@ import org.junit.rules.TestName;
 public class ConfiguratorTest
 {
     private static final Logger LOG = Log.getLogger(ConfiguratorTest.class);
-    
+
     public static class EmptyConfigurator extends ServerEndpointConfig.Configurator
     {
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint(value = "/empty", configurator = EmptyConfigurator.class)
     public static class EmptySocket
@@ -93,7 +93,7 @@ public class ConfiguratorTest
             return message;
         }
     }
-    
+
     public static class NoExtensionsConfigurator extends ServerEndpointConfig.Configurator
     {
         @Override
@@ -102,7 +102,7 @@ public class ConfiguratorTest
             return Collections.emptyList();
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint(value = "/no-extensions", configurator = NoExtensionsConfigurator.class)
     public static class NoExtensionsSocket
@@ -123,7 +123,7 @@ public class ConfiguratorTest
             }
         }
     }
-    
+
     public static class CaptureHeadersConfigurator extends ServerEndpointConfig.Configurator
     {
         @Override
@@ -133,7 +133,7 @@ public class ConfiguratorTest
             sec.getUserProperties().put("request-headers", request.getHeaders());
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint(value = "/capture-request-headers", configurator = CaptureHeadersConfigurator.class)
     public static class CaptureHeadersSocket
@@ -142,7 +142,7 @@ public class ConfiguratorTest
         public String getHeaders(Session session, String headerKey)
         {
             StringBuilder response = new StringBuilder();
-            
+
             response.append("Request Header [").append(headerKey).append("]: ");
             @SuppressWarnings("unchecked")
             Map<String, List<String>> headers = (Map<String, List<String>>) session.getUserProperties().get("request-headers");
@@ -162,11 +162,11 @@ public class ConfiguratorTest
                     response.append(QuoteUtil.join(values, ","));
                 }
             }
-            
+
             return response.toString();
         }
     }
-    
+
     public static class ProtocolsConfigurator extends ServerEndpointConfig.Configurator
     {
         public static AtomicReference<String> seenProtocols = new AtomicReference<>();
@@ -185,7 +185,7 @@ public class ConfiguratorTest
             return super.getNegotiatedSubprotocol(supported, requested);
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint(value = "/protocols", configurator = ProtocolsConfigurator.class)
     public static class ProtocolsSocket
@@ -280,17 +280,17 @@ public class ConfiguratorTest
             appendPropValue(session, response, "found.remote");
             return response.toString();
         }
-        
+
         private void appendPropValue(Session session, StringBuilder response, String key)
         {
             InetSocketAddress value = (InetSocketAddress) session.getUserProperties().get(key);
-            
+
             response.append("[").append(key).append("] = ");
             response.append(toSafeAddr(value));
             response.append(System.lineSeparator());
         }
     }
-    
+
     public static class SelectedProtocolConfigurator extends ServerEndpointConfig.Configurator
     {
         @Override
@@ -303,11 +303,11 @@ public class ConfiguratorTest
             config.getUserProperties().put("selected-subprotocol", protocol);
         }
     }
-    
+
     public static class GmtTimeDecoder implements Decoder.Text<Calendar>
     {
         private TimeZone TZ;
-        
+
         @Override
         public Calendar decode(String s) throws DecodeException
         {
@@ -328,25 +328,25 @@ public class ConfiguratorTest
                 throw new DecodeException(s, "Unable to decode Time", e);
             }
         }
-        
+
         @Override
         public void init(EndpointConfig config)
         {
             TZ = TimeZone.getTimeZone("GMT+0");
         }
-        
+
         @Override
         public void destroy()
         {
         }
-        
+
         @Override
         public boolean willDecode(String s)
         {
             return true;
         }
     }
-    
+
     @SuppressWarnings("unused")
     @ServerEndpoint(value = "/timedecoder",
             subprotocols = {"time", "gmt"},
@@ -355,13 +355,13 @@ public class ConfiguratorTest
     public static class TimeDecoderSocket
     {
         private TimeZone TZ = TimeZone.getTimeZone("GMT+0");
-        
+
         @OnMessage
         public String onMessage(Calendar cal)
         {
             return String.format("cal=%s", newDateFormat().format(cal.getTime()));
         }
-        
+
         private SimpleDateFormat newDateFormat()
         {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss Z", Locale.ENGLISH);
@@ -369,10 +369,39 @@ public class ConfiguratorTest
             return dateFormat;
         }
     }
-    
+
+    public static class ConfigNormalConfigurator extends ServerEndpointConfig.Configurator
+    {
+        @Override
+        public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
+        {
+            sec.getUserProperties().put("self.configurator", this.getClass().getName());
+        }
+    }
+
+    public static class ConfigOverrideConfigurator extends ServerEndpointConfig.Configurator
+    {
+        @Override
+        public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
+        {
+            sec.getUserProperties().put("self.configurator", this.getClass().getName());
+        }
+    }
+
+    @ServerEndpoint(value = "/config-normal",
+            configurator = ConfigNormalConfigurator.class)
+    public static class ConfigNormalSocket
+    {
+        @OnMessage
+        public String onMessage(Session session, String msg)
+        {
+            return String.format("UserProperties[self.configurator] = %s", session.getUserProperties().get("self.configurator"));
+        }
+    }
+
     private static Server server;
     private static URI baseServerUri;
-    
+
     @BeforeClass
     public static void startServer() throws Exception
     {
@@ -380,11 +409,11 @@ public class ConfiguratorTest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
-        
+
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
-        
+
         ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
         container.addEndpoint(CaptureHeadersSocket.class);
         container.addEndpoint(EmptySocket.class);
@@ -393,11 +422,18 @@ public class ConfiguratorTest
         container.addEndpoint(UniqueUserPropsSocket.class);
         container.addEndpoint(AddressSocket.class);
         container.addEndpoint(TimeDecoderSocket.class);
-        
+
+        container.addEndpoint(ConfigNormalSocket.class);
+        ServerEndpointConfig overrideEndpointConfig = ServerEndpointConfig.Builder
+                .create(ConfigNormalSocket.class, "/config-override")
+                .configurator(new ConfigOverrideConfigurator())
+                .build();
+        container.addEndpoint(overrideEndpointConfig);
+
         server.start();
         baseServerUri = WSURI.toWebsocket(server.getURI()).resolve("/");
     }
-    
+
     public static String toSafeAddr(InetSocketAddress addr)
     {
         if (addr == null)
@@ -406,85 +442,85 @@ public class ConfiguratorTest
         }
         return String.format("%s:%d", addr.getAddress().getHostAddress(), addr.getPort());
     }
-    
+
     @AfterClass
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Rule
     public TestName testname = new TestName();
-    
+
     private WebSocketClient client;
-    
+
     @Before
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
-    
+
     @After
     public void stopClient() throws Exception
     {
         client.stop();
     }
-    
+
     @Test
     public void testEmptyConfigurator() throws Exception
     {
         URI wsUri = baseServerUri.resolve("/empty");
-        
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("identity");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         List<ExtensionConfig> negotiatedExtensions = clientSession.getUpgradeResponse().getExtensions();
         assertThat("UpgradeResponse.extensions", negotiatedExtensions, notNullValue());
         assertThat("UpgradeResponse.extensions.size", negotiatedExtensions.size(), is(1));
         assertThat("UpgradeResponse.extensions[0]", negotiatedExtensions.get(0).toString(), is("identity"));
-        
+
         clientSession.close();
     }
-    
+
     @Test
     public void testNoExtensionsConfigurator() throws Exception
     {
         URI wsUri = baseServerUri.resolve("/no-extensions");
-        
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("identity");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         clientSession.getRemote().sendString("NegoExts");
-        
+
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming Message", incomingMessage, is("negotiatedExtensions=[]"));
-        
+
         clientSession.close();
     }
-    
+
     @Test
     public void testCaptureRequestHeadersConfigurator() throws Exception
     {
         URI wsUri = baseServerUri.resolve("/capture-request-headers");
-        
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setHeader("X-Dummy", "Bogus");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         clientSession.getRemote().sendString("X-Dummy");
-        
+
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming Message", incomingMessage, is("Request Header [X-Dummy]: \"Bogus\""));
-        
+
         clientSession.close();
     }
     
@@ -492,34 +528,34 @@ public class ConfiguratorTest
     public void testUniqueUserPropsConfigurator() throws Exception
     {
         URI wsUri = baseServerUri.resolve("/unique-user-props");
-        
+
         // First Request
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         clientSession.getRemote().sendString("apple"); // first request has this UserProperty
         
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = \"fruit from tree\""));
-        
+
         clientSession.close();
-        
+
         // Second request
         clientSocket = new TrackingEndpoint(testname.getMethodName());
         upgradeRequest = new ClientUpgradeRequest();
         clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         clientSession.getRemote().sendString("apple"); // as this is second request, this should be null
         clientSession.getRemote().sendString("blueberry"); // second request has this UserProperty
-        
+
         incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = <null>"));
         incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming Message", incomingMessage, is("Requested User Property: [blueberry] = \"fruit from bush\""));
-        
+
         clientSession.close();
     }
     
@@ -527,19 +563,19 @@ public class ConfiguratorTest
     public void testUserPropsAddress() throws Exception
     {
         URI wsUri = baseServerUri.resolve("/addr");
-        
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         InetSocketAddress expectedLocal = clientSession.getLocalAddress();
         InetSocketAddress expectedRemote = clientSession.getRemoteAddress();
-        
+
         clientSession.getRemote().sendString("addr");
-        
+
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        
+
         StringWriter expected = new StringWriter();
         PrintWriter out = new PrintWriter(expected);
         // local <-> remote are opposite on server (duh)
@@ -547,9 +583,9 @@ public class ConfiguratorTest
         out.printf("[javax.websocket.endpoint.remoteAddress] = %s%n", toSafeAddr(expectedLocal));
         out.printf("[found.local] = %s%n", toSafeAddr(expectedRemote));
         out.printf("[found.remote] = %s%n", toSafeAddr(expectedLocal));
-        
+
         assertThat("Frame Response", incomingMessage, is(expected.toString()));
-        
+
         clientSession.close();
     }
     
@@ -563,18 +599,18 @@ public class ConfiguratorTest
     {
         URI wsUri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
-        
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         clientSession.getRemote().sendString("getProtocols");
-        
+
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming message", incomingMessage, is("Requested Protocols: [\"echo\"]"));
-        
+
         clientSession.close();
     }
     
@@ -588,18 +624,18 @@ public class ConfiguratorTest
     {
         URI wsUri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
-        
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo", "chat", "status");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         clientSession.getRemote().sendString("getProtocols");
-        
+
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming message", incomingMessage, is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
-        
+
         clientSession.close();
     }
     
@@ -613,18 +649,18 @@ public class ConfiguratorTest
     {
         URI wsUri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
-        
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setHeader("sec-websocket-protocol", "echo, chat, status");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         clientSession.getRemote().sendString("getProtocols");
-        
+
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming message", incomingMessage, is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
-        
+
         clientSession.close();
     }
     
@@ -638,22 +674,22 @@ public class ConfiguratorTest
     {
         URI wsUri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
-        
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         // header name is not to spec (case wise)
         upgradeRequest.setHeader("Sec-Websocket-Protocol", "echo, chat, status");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         clientSession.getRemote().sendString("getProtocols");
-        
+
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming message", incomingMessage, is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
-        
+
         clientSession.close();
     }
-    
+
     /**
      * Test of Sec-WebSocket-Protocol, using non-spec case header
      */
@@ -661,18 +697,58 @@ public class ConfiguratorTest
     public void testDecoderWithProtocol() throws Exception
     {
         URI wsUri = baseServerUri.resolve("/timedecoder");
-        
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("gmt");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         clientSession.getRemote().sendString("2016-06-20T14:27:44");
-        
+
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming message", incomingMessage, is("cal=2016.06.20 AD at 14:27:44 +0000"));
-        
+
         clientSession.close();
+    }
+
+    /**
+     * Test that a Configurator declared in the annotation is used
+     * @throws Exception
+     */
+    @Test
+    public void testAnnotationConfigurator() throws Exception
+    {
+        URI uri = baseServerUri.resolve("/config-normal");
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("tellme"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("UserProperties[self.configurator] = " + ConfigNormalConfigurator.class.getName()));
+        }
+    }
+
+    /**
+     * Test that a provided ServerEndpointConfig can override the annotation Configurator
+     * @throws Exception
+     */
+    @Test
+    public void testOverrideConfigurator() throws Exception
+    {
+        URI uri = baseServerUri.resolve("/config-override");
+        BlockheadClientRequest request = client.newWsRequest(uri);
+        Future<BlockheadConnection> connFut = request.sendAsync();
+
+        try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
+        {
+            clientConn.write(new TextFrame().setPayload("tellme"));
+            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+            WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("UserProperties[self.configurator] = " + ConfigOverrideConfigurator.class.getName()));
+        }
     }
 }

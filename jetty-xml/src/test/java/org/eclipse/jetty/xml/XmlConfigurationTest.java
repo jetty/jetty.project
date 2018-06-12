@@ -18,27 +18,26 @@
 
 package org.eclipse.jetty.xml;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.util.log.Log;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class XmlConfigurationTest
 {
@@ -936,5 +935,61 @@ public class XmlConfigurationTest
                 "</Configure>");
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
+    }
+
+    @Test
+    public void testJettyStandardIdsAndProperties_JettyHome_JettyBase() throws Exception
+    {
+        String propNames[] = new String[] {
+                "jetty.base",
+                "jetty.home"
+        };
+
+        for(String propName: propNames)
+        {
+            XmlConfiguration configuration =
+                    new XmlConfiguration("" +
+                            "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+                            "  <Set name=\"TestString\">" +
+                            "    <Property name=\"" + propName + "\"/>" +
+                            "  </Set>" +
+                            "</Configure>");
+
+            configuration.setJettyStandardIdsAndProperties(null, null);
+
+            TestConfiguration tc = new TestConfiguration();
+            configuration.configure(tc);
+
+            assertThat(propName, tc.getTestString(), is(notNullValue()));
+            assertThat(propName, tc.getTestString(), not(startsWith("file:")));
+        }
+    }
+
+    @Test
+    public void testJettyStandardIdsAndProperties_JettyHomeUri_JettyBaseUri() throws Exception
+    {
+        String propNames[] = new String[] {
+                "jetty.base.uri",
+                "jetty.home.uri"
+        };
+
+        for(String propName: propNames)
+        {
+            XmlConfiguration configuration =
+                    new XmlConfiguration("" +
+                            "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+                            "  <Set name=\"TestString\">" +
+                            "    <Property name=\"" + propName + "\"/>" +
+                            "  </Set>" +
+                            "</Configure>");
+
+            configuration.setJettyStandardIdsAndProperties(null, null);
+
+            TestConfiguration tc = new TestConfiguration();
+            configuration.configure(tc);
+
+            assertThat(propName, tc.getTestString(), is(notNullValue()));
+            assertThat(propName, tc.getTestString(), startsWith("file:"));
+        }
     }
 }

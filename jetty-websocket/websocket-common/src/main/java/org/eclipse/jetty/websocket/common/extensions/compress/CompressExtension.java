@@ -562,7 +562,7 @@ public abstract class CompressExtension extends AbstractExtension
             while ((entry = pollEntry()) != null)
                 notifyCallbackFailure(entry.callback,x);
         }
-    
+
         @Override
         public void succeed()
         {
@@ -570,7 +570,7 @@ public abstract class CompressExtension extends AbstractExtension
                 notifyCallbackSuccess(current.callback);
             succeeded();
         }
-    
+
         @Override
         public void fail(Throwable cause)
         {

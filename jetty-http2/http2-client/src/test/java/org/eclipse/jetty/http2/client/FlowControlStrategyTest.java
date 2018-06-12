@@ -679,13 +679,7 @@ public abstract class FlowControlStrategyTest
                     @Override
                     public void onData(Stream stream, DataFrame frame, Callback callback)
                     {
-                        // Since we echo back the data
-                        // asynchronously we must copy it.
-                        ByteBuffer data = frame.getData();
-                        ByteBuffer copy = ByteBuffer.allocateDirect(data.remaining());
-                        copy.put(data).flip();
-                        completable.thenRun(() ->
-                                stream.data(new DataFrame(stream.getId(), copy, frame.isEndStream()), callback));
+                        completable.thenRun(() -> stream.data(frame, callback));
                     }
                 };
             }

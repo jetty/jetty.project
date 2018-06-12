@@ -11,6 +11,9 @@
   <artifactId>examples-parent</artifactId>
   <name>Jetty Examples :: Parent</name>
   <packaging>pom</packaging>
+  <properties>
+    <sonar.skip>true</sonar.skip>
+  </properties>
   <build>
     <plugins>
       <plugin>

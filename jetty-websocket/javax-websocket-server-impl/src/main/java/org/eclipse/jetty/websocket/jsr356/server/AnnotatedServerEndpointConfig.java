@@ -28,7 +28,6 @@ import java.util.Map;
 import javax.websocket.Decoder;
 import javax.websocket.DeploymentException;
 import javax.websocket.Encoder;
-import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
@@ -49,16 +48,18 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 
     public AnnotatedServerEndpointConfig(WebSocketContainerScope containerScope, Class<?> endpointClass, ServerEndpoint anno) throws DeploymentException
     {
-        this(containerScope, endpointClass, anno, null);
+        this(containerScope,endpointClass,anno,null);
     }
 
-    public AnnotatedServerEndpointConfig(WebSocketContainerScope containerScope, Class<?> endpointClass, ServerEndpoint anno, EndpointConfig baseConfig) throws DeploymentException
+    public AnnotatedServerEndpointConfig(WebSocketContainerScope containerScope, Class<?> endpointClass, ServerEndpoint anno, ServerEndpointConfig baseConfig) throws DeploymentException
     {
-        ServerEndpointConfig baseServerConfig = null;
+        // A manually declared Configurator (not the one from the annotation)
+        ServerEndpointConfig.Configurator manualConfigurator = null;
 
-        if (baseConfig instanceof ServerEndpointConfig)
+        // Copy from base config
+        if (baseConfig != null)
         {
-            baseServerConfig = (ServerEndpointConfig) baseConfig;
+            manualConfigurator = baseConfig.getConfigurator();
         }
 
         // Decoders (favor provided config over annotation)
@@ -71,7 +72,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
             this.decoders = Collections.unmodifiableList(Arrays.asList(anno.decoders()));
         }
 
-        // AvailableEncoders (favor provided config over annotation)
+        // Encoders (favor provided config over annotation)
         if (baseConfig != null && baseConfig.getEncoders() != null && baseConfig.getEncoders().size() > 0)
         {
             this.encoders = Collections.unmodifiableList(baseConfig.getEncoders());
@@ -82,9 +83,9 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
         }
 
         // Sub Protocols (favor provided config over annotation)
-        if (baseServerConfig != null && baseServerConfig.getSubprotocols() != null && baseServerConfig.getSubprotocols().size() > 0)
+        if (baseConfig != null && baseConfig.getSubprotocols() != null && baseConfig.getSubprotocols().size() > 0)
         {
-            this.subprotocols = Collections.unmodifiableList(baseServerConfig.getSubprotocols());
+            this.subprotocols = Collections.unmodifiableList(baseConfig.getSubprotocols());
         }
         else
         {
@@ -92,9 +93,9 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
         }
 
         // Path (favor provided config over annotation)
-        if (baseServerConfig != null && baseServerConfig.getPath() != null && baseServerConfig.getPath().length() > 0)
+        if (baseConfig != null && baseConfig.getPath() != null && baseConfig.getPath().length() > 0)
         {
-            this.path = baseServerConfig.getPath();
+            this.path = baseConfig.getPath();
         }
         else
         {
@@ -112,38 +113,24 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
             userProperties.putAll(baseConfig.getUserProperties());
         }
         
-        ServerEndpointConfig.Configurator rawConfigurator = getConfigurator(baseServerConfig, anno);
+        ServerEndpointConfig.Configurator resolvedConfigurator;
 
-        // Make sure all Configurators obtained are decorated
-        this.configurator = containerScope.getObjectFactory().decorate(rawConfigurator);
-    }
-
-    private Configurator getConfigurator(ServerEndpointConfig baseServerConfig, ServerEndpoint anno) throws DeploymentException
-    {
-        Configurator ret = null;
-
-        // Copy from base config
-        if (baseServerConfig != null)
+        // Use ServerEndpointConfig provided configurator if declared
+        if ( (manualConfigurator != null) && !(manualConfigurator instanceof ContainerDefaultConfigurator) )
         {
-            ret = baseServerConfig.getConfigurator();
+            resolvedConfigurator = manualConfigurator;
         }
-
-        if (anno != null)
+        // Use Container Default if annotation based configurator is undeclared
+        else if (anno.configurator() == ServerEndpointConfig.Configurator.class)
         {
-            // Is this using the JSR356 spec/api default?
-            if (anno.configurator() == ServerEndpointConfig.Configurator.class)
-            {
-                // Return the spec default impl if one wasn't provided as part of the base config
-                if (ret == null)
-                    return new ContainerDefaultConfigurator();
-                else
-                    return ret;
-            }
-
-            // Instantiate the provided configurator
+            resolvedConfigurator = new ContainerDefaultConfigurator();
+        }
+        // Use annotation declared configurator
+        else
+        {
             try
             {
-                return anno.configurator().newInstance();
+                resolvedConfigurator = anno.configurator().getDeclaredConstructor( ).newInstance();
             }
             catch (Exception e)
             {
@@ -156,7 +143,8 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
             }
         }
         
-        return ret;
+        // Make sure all Configurators obtained are decorated
+        this.configurator = containerScope.getObjectFactory().decorate(resolvedConfigurator);
     }
 
     @Override

@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -50,16 +51,6 @@ import org.junit.Test;
  */
 public class SameContextForwardedSessionTest
 {
-    protected CountDownLatch _synchronizer;
-    protected Servlet1 _one;
-    
-    @Before
-    public void setUp ()
-    {
-        _synchronizer = new CountDownLatch(1);
-        _one = new Servlet1();
-        _one.setSynchronizer(_synchronizer);
-    }
     
     
     @Test
@@ -71,7 +62,9 @@ public class SameContextForwardedSessionTest
         TestServer testServer = new TestServer(0, -1,  -1, cacheFactory, storeFactory);
 
         ServletContextHandler testServletContextHandler = testServer.addContext("/context");
-        ServletHolder holder = new ServletHolder(_one);
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        testServletContextHandler.addEventListener(scopeListener);
+        ServletHolder holder = new ServletHolder(new Servlet1());
         testServletContextHandler.addServlet(holder, "/one");
         testServletContextHandler.addServlet(Servlet2.class, "/two");
         testServletContextHandler.addServlet(Servlet3.class, "/three");
@@ -86,13 +79,15 @@ public class SameContextForwardedSessionTest
             try
             {
                 //make a request to the first servlet, which will forward it to other servlets
+                CountDownLatch latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 ContentResponse response = client.GET("http://localhost:" + serverPort + "/context/one");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
                 //wait until all of the request handling has finished 
-                _synchronizer.await();
+                latch.await(5, TimeUnit.SECONDS);
                 
                 //test that the session was created, and that it contains the attributes from servlet3 and servlet1
                 testServletContextHandler.getSessionHandler().getSessionCache().contains(TestServer.extractSessionId(sessionCookie));
@@ -120,12 +115,7 @@ public class SameContextForwardedSessionTest
     public static class Servlet1 extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
-        CountDownLatch _synchronizer;
-        
-        public void setSynchronizer(CountDownLatch sync)
-        {
-            _synchronizer = sync;
-        }
+
         
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -141,9 +131,6 @@ public class SameContextForwardedSessionTest
             assertNotNull(sess);
             assertNotNull(sess.getAttribute("servlet3"));
             sess.setAttribute("servlet1", "servlet1");
-            
-            if (_synchronizer != null)
-                _synchronizer.countDown();
         }
     }
 

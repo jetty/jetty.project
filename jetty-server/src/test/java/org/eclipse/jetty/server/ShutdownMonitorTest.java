@@ -30,6 +30,7 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -75,12 +76,14 @@ public class ShutdownMonitorTest
         }
     }
 
+    @Ignore("Issue #2626")
     @Test
     public void testStartStopDifferentPortDifferentKey() throws Exception
     {
         testStartStop(false);
     }
 
+    @Ignore("Issue #2626")
     @Test
     public void testStartStopSamePortDifferentKey() throws Exception
     {

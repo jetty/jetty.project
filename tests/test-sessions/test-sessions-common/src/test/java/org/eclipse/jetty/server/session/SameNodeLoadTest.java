@@ -61,7 +61,7 @@ public class SameNodeLoadTest
         
         String contextPath = "";
         String servletMapping = "/server";
-        TestServer server1 = new TestServer(0, -1, 4, cacheFactory, storeFactory);
+        TestServer server1 = new TestServer(0, 60, 5, cacheFactory, storeFactory);
 
 
         server1.addContext( contextPath ).addServlet( TestServlet.class, servletMapping );

@@ -89,6 +89,8 @@ import org.junit.Test;
 public class AsyncMiddleManServletTest
 {
     private static final Logger LOG = Log.getLogger(AsyncMiddleManServletTest.class);
+    private static final String PROXIED_HEADER = "X-Proxied";
+
     @Rule
     public final TestTracker tracker = new TestTracker();
     private HttpClient client;
@@ -1481,6 +1483,41 @@ public class AsyncMiddleManServletTest
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         Assert.assertEquals(chunk1.capacity() + chunk2.capacity(), response.getContent().length);
+    }
+
+    @Test
+    public void testTransparentProxyWithIdentityContentTransformer() throws Exception
+    {
+        final String target = "/test";
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                if (req.getHeader("Via") != null)
+                    resp.addHeader(PROXIED_HEADER, "true");
+                resp.setStatus(target.equals(req.getRequestURI()) ? 200 : 404);
+            }
+        });
+        final String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
+        AsyncMiddleManServlet proxyServlet = new AsyncMiddleManServlet.Transparent() {
+            @Override
+            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse) {
+                return ContentTransformer.IDENTITY;
+            }
+        };
+        Map<String, String> initParams = new HashMap<>();
+        initParams.put("proxyTo", proxyTo);
+        startProxy(proxyServlet, initParams);
+        startClient();
+
+        // Make the request to the proxy, it should transparently forward to the server
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+                .path(target)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
     }
 
     private Path prepareTargetTestsDir() throws IOException

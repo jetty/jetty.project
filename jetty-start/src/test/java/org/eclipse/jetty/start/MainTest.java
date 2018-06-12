@@ -19,6 +19,8 @@
 package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
@@ -68,11 +70,20 @@ public class MainTest
         // args.getProperties().forEach(p->System.err.println(p));
         // System.err.println("BaseHome.props:");
         // baseHome.getConfigSources().getProps().forEach(p->System.err.println(p));
-        
-        assertThat(args.getProperties().getString("jetty.home"),is(baseHome.getHome()));
-        assertThat(args.getProperties().getString("jetty.home.uri")+"/",is(baseHome.getHomePath().toUri().toString()));
-        assertThat(args.getProperties().getString("jetty.base"),is(baseHome.getBase()));
-        assertThat(args.getProperties().getString("jetty.base.uri")+"/",is(baseHome.getBasePath().toUri().toString()));
+
+        Props props = args.getProperties();
+
+        assertThat("Props(jetty.home)", props.getString("jetty.home"),is(baseHome.getHome()));
+        assertThat("Props(jetty.home)", props.getString("jetty.home"),is(not(startsWith("file:"))));
+        assertThat("Props(jetty.home.uri)", props.getString("jetty.home.uri")+"/",is(baseHome.getHomePath().toUri().toString()));
+        assertThat("Props(jetty.base)", props.getString("jetty.base"),is(baseHome.getBase()));
+        assertThat("Props(jetty.base)", props.getString("jetty.base"),is(not(startsWith("file:"))));
+        assertThat("Props(jetty.base.uri)", props.getString("jetty.base.uri")+"/",is(baseHome.getBasePath().toUri().toString()));
+
+        assertThat("System.getProperty(jetty.home)", System.getProperty("jetty.home"), is(baseHome.getHome()));
+        assertThat("System.getProperty(jetty.home)", System.getProperty("jetty.home"), is(not(startsWith("file:"))));
+        assertThat("System.getProperty(jetty.base)", System.getProperty("jetty.base"), is(baseHome.getBase()));
+        assertThat("System.getProperty(jetty.base)", System.getProperty("jetty.base"), is(not(startsWith("file:"))));
     }
 
     @Test

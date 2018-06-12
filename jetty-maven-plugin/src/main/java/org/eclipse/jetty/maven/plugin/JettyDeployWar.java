@@ -66,6 +66,7 @@ public class JettyDeployWar extends JettyRunWarMojo
     }
 
 
+
     @Override
     public void finishConfigurationBeforeStart() throws Exception
     {
