@@ -439,10 +439,10 @@ public class SslConnection extends AbstractConnection
                 }
             }
 
-            if (fill_interest)
-                ensureFillInterested();
             if (write)
                 getEndPoint().write(_writeCallback, _encryptedOutput);
+            if (fill_interest)
+                ensureFillInterested();
         }
 
         protected void onFillable(Throwable failure)
@@ -1025,7 +1025,7 @@ public class SslConnection extends AbstractConnection
                                                 return false;
                                             
                                             // If somebody else is filling anyway
-                                            if (_filling || _fillState!=FillState.IDLE)
+                                            if (_fillState!=FillState.IDLE) // TODO Interested only?
                                             {
                                                 // let's wait for them
                                                 _flushState = FlushState.WAITING;
