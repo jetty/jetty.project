@@ -255,7 +255,7 @@ public class DelayedStartClientOnServerTest
         }
     }
     
-    @Test
+    @Test(timeout = 5000)
     public void testHttpClientThreads_AfterServerConnectTo() throws Exception
     {
         Server server = new Server(0);

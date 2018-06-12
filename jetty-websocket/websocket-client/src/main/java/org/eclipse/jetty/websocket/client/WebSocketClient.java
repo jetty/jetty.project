@@ -30,11 +30,13 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -56,8 +58,6 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
-import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
-import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 /**
@@ -70,12 +70,16 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     // From HttpClient
     private final HttpClient httpClient;
 
-    //
-    private final WebSocketContainerScope containerScope;
+    // CDI layer
+    private final Supplier<DecoratedObjectFactory> objectFactorySupplier;
+
+    // WebSocket Specifics
+    private final WebSocketPolicy policy;
     private final WebSocketExtensionFactory extensionRegistry;
     private final EventDriverFactory eventDriverFactory;
     private final SessionFactory sessionFactory;
 
+    // ID Generator
     private final int id = ThreadLocalRandom.current().nextInt();
 
     // defaults to true for backwards compatibility
@@ -112,11 +116,13 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory objectFactory)
     {
-        this.containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy(),new MappedByteBufferPool(),objectFactory);
-        this.httpClient = httpClient;
-        this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
-        this.eventDriverFactory = new EventDriverFactory(containerScope);
-        this.sessionFactory = new WebSocketSessionFactory(containerScope);
+        this.httpClient = Objects.requireNonNull(httpClient, "HttpClient");
+        this.policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        final DecoratedObjectFactory decoratedObjectFactory = objectFactory != null ? objectFactory : newDecoratedObjectFactory();
+        this.objectFactorySupplier = () -> decoratedObjectFactory;
+        this.extensionRegistry = new WebSocketExtensionFactory(this);
+        this.eventDriverFactory = new EventDriverFactory(this);
+        this.sessionFactory = new WebSocketSessionFactory(this);
     }
 
     /**
@@ -231,13 +237,15 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         this.httpClient.setExecutor(executor);
         this.httpClient.setByteBufferPool(bufferPool);
         addBean(this.httpClient);
+
+        this.policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        final DecoratedObjectFactory decoratedObjectFactory = objectFactory != null ? objectFactory : newDecoratedObjectFactory();
+        this.objectFactorySupplier = ()-> decoratedObjectFactory;
         
-        this.containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy(), bufferPool, objectFactory);
+        this.extensionRegistry = new WebSocketExtensionFactory(this);
 
-        this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
-
-        this.eventDriverFactory = new EventDriverFactory(containerScope);
-        this.sessionFactory = new WebSocketSessionFactory(containerScope);
+        this.eventDriverFactory = new EventDriverFactory(this);
+        this.sessionFactory = new WebSocketSessionFactory(this);
     }
 
     /**
@@ -271,19 +279,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory, HttpClient httpClient)
     {
-        WebSocketContainerScope clientScope;
-        if (scope.getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
-        {
-            clientScope = scope;
-        }
-        else
-        {
-            // We need to wrap the scope
-            clientScope = new DelegatedContainerScope(WebSocketPolicy.newClientPolicy(), scope);
-        }
-        
-        this.containerScope = clientScope;
-        
         if(httpClient == null)
         {
             this.httpClient = HttpClientProvider.get(scope);
@@ -293,11 +288,21 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         {
             this.httpClient = httpClient;
         }
-        
-        this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
+
+        this.policy = scope.getPolicy().clonePolicy(WebSocketBehavior.CLIENT);
+        // Support Late Binding of Object Factory (for CDI)
+        this.objectFactorySupplier = () -> scope.getObjectFactory();
+        this.extensionRegistry = new WebSocketExtensionFactory(this);
         
         this.eventDriverFactory = eventDriverFactory;
         this.sessionFactory = sessionFactory;
+    }
+
+    private DecoratedObjectFactory newDecoratedObjectFactory()
+    {
+        DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
+        objectFactory.addDecorator(new DeprecationWarning());
+        return objectFactory;
     }
 
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
@@ -439,7 +444,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public long getAsyncWriteTimeout()
     {
-        return this.containerScope.getPolicy().getAsyncWriteTimeout();
+        return getPolicy().getAsyncWriteTimeout();
     }
 
     public SocketAddress getBindAddress()
@@ -548,7 +553,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
-        return this.containerScope.getObjectFactory();
+        return this.objectFactorySupplier.get();
     }
 
     public Set<WebSocketSession> getOpenSessions()
@@ -559,7 +564,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return this.containerScope.getPolicy();
+        return this.policy;
     }
 
     public Scheduler getScheduler()

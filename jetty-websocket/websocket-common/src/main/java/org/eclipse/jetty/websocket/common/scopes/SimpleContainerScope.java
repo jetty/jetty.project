@@ -83,18 +83,6 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-    }
-
-    @Override
     public ByteBufferPool getBufferPool()
     {
         return this.bufferPool;
