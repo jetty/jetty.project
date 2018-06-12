@@ -247,7 +247,7 @@ public class HttpTrailersTest extends AbstractTest
                 trailers.put(trailerName, trailerValue);
 
                 Response jettyResponse = (Response)response;
-                jettyResponse.setTrailers(() -> trailers);
+                jettyResponse.setTrailerHttpFields(() -> trailers);
 
                 // Write a large content
                 response.getOutputStream().write(content);
