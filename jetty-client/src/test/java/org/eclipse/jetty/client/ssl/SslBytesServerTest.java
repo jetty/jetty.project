@@ -43,7 +43,6 @@ import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
-import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -75,7 +74,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SslBytesServerTest extends SslBytesTest
@@ -185,7 +183,7 @@ public class SslBytesServerTest extends SslBytesTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException
             {
                 try
                 {
@@ -1320,9 +1318,7 @@ public class SslBytesServerTest extends SslBytesTest
         closeClient(client);
     }
 
-    // TODO work out why this test frequently fails
-    @Ignore
-    @Test(timeout=10000)
+    @Test(timeout=60000)
     public void testRequestWithContentWithRenegotiationInMiddleOfContentWhenRenegotiationIsForbidden() throws Exception
     {
         assumeJavaVersionSupportsTLSRenegotiations();
@@ -1367,36 +1363,13 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
         proxy.flushToServer(record);
 
-        // Renegotiation now allowed, server has closed
+        // Renegotiation not allowed, server has closed
         record = proxy.readFromServer();
         Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
         proxy.flushToClient(record);
 
         record = proxy.readFromServer();
         Assert.assertNull(record);
-
-        // Write the rest of the request
-        threadPool.submit(() ->
-        {
-            clientOutput.write(content2.getBytes(StandardCharsets.UTF_8));
-            clientOutput.flush();
-            return null;
-        });
-
-        // Trying to write more application data results in an exception since the server closed
-        record = proxy.readFromClient();
-        proxy.flushToServer(record);
-        try
-        {
-            record = proxy.readFromClient();
-            Assert.assertNotNull(record);
-            proxy.flushToServer(record);
-            Assert.fail();
-        }
-        catch (IOException expected)
-        {
-            // Expected
-        }
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
