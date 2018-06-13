@@ -395,8 +395,9 @@ public class SslConnectionTest
     public void testWriteOnConnect() throws Exception
     {
         _testFill=false;
+        _writeCallback = new FutureCallback();
 
-        try (Socket client = newClient())
+        try (SSLSocket client = newClient())
         {
             client.setSoTimeout(TIMEOUT);
             try (SocketChannel server = _connector.accept())
@@ -404,9 +405,15 @@ public class SslConnectionTest
                 server.configureBlocking(false);
                 _manager.accept(server);
 
+                // The server side will write something, and in order
+                // to proceed with the initial TLS handshake we need
+                // to start reading before waiting for the callback.
+
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
                 Assert.assertEquals("Hello Client", new String(buffer, 0, len, StandardCharsets.UTF_8));
+
+                Assert.assertNull(_writeCallback.get(1, TimeUnit.SECONDS));
             }
         }
     }
