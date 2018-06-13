@@ -593,10 +593,11 @@ public class HttpChannelState
                         {
                             LOG.warn(x+" while invoking onTimeout listener " + listener);
                             LOG.debug(x);
-                            if (error.get()==null)
+                            Throwable failure = error.get();
+                            if (failure == null)
                                 error.set(x);
-                            else
-                                error.get().addSuppressed(x);
+                            else if (x != failure)
+                                failure.addSuppressed(x);
                         }
                     }
                 }

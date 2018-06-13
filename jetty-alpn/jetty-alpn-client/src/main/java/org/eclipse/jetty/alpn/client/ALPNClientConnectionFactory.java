@@ -68,7 +68,8 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug(x);
-                failure.addSuppressed(x);
+                if (x != failure)
+                    failure.addSuppressed(x);
                 continue;
             }
 
@@ -81,7 +82,8 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Could not initialize " + processor, x);
-                failure.addSuppressed(x);
+                if (x != failure)
+                    failure.addSuppressed(x);
             }
         }
 
