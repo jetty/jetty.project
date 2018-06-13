@@ -737,7 +737,7 @@ public class DoSFilter implements Filter
                 byte[] result = new byte[16];
                 for (int i = 0; i < result.length; i += 2)
                 {
-                    int word = Integer.valueOf(ipv6Matcher.group(i / 2 + 1), 16);
+                    int word = Integer.parseInt(ipv6Matcher.group(i / 2 + 1), 16);
                     result[i] = (byte)((word & 0xFF00) >>> 8);
                     result[i + 1] = (byte)(word & 0xFF);
                 }

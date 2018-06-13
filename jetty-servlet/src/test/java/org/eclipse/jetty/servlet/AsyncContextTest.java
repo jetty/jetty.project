@@ -651,15 +651,15 @@ public class AsyncContextTest
             {
                 request.startAsync(request, response);
 
-                if (Boolean.valueOf(request.getParameter("dispatch")))
+                if (Boolean.parseBoolean(request.getParameter("dispatch")))
                 {
                     request.getAsyncContext().dispatch();
                 }
 
-                if (Boolean.valueOf(request.getParameter("complete")))
+                if (Boolean.parseBoolean(request.getParameter("complete")))
                 {
                     response.getOutputStream().write("completeBeforeThrow".getBytes());
-                    if (Boolean.valueOf(request.getParameter("flush")))
+                    if (Boolean.parseBoolean(request.getParameter("flush")))
                         response.flushBuffer();
                     request.getAsyncContext().complete();
                 }

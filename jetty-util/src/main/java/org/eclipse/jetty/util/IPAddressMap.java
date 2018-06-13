@@ -281,7 +281,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
                             {
                                 if (part.indexOf('-') < 0)
                                 {
-                                    Integer value = Integer.valueOf(part);
+                                    int value = Integer.parseInt(part);
                                     _mask.set(value);
                                 }
                                 else
