@@ -462,6 +462,9 @@ public class SslConnection extends AbstractConnection
                 }                
             }
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("onFillable {}", SslConnection.this);
+
             // wake up whoever is doing the fill
             if (failure==null)  
                 getFillInterest().fillable();
@@ -572,6 +575,9 @@ public class SslConnection extends AbstractConnection
         @Override
         public int fill(ByteBuffer buffer) throws IOException
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("fill enter {}", SslConnection.this);
+
             try
             {
                 synchronized(_decryptedEndPoint)
@@ -717,13 +723,16 @@ public class SslConnection extends AbstractConnection
                                                     return 0;
                                                 
                                                 // if somebody else is flushing, let them do it
-                                                if (_flushState!=FlushState.IDLE)
-                                                {
-                                                    _fillState = FillState.WAITING;
-                                                    return 0;
-                                                }
+                                                // TODO: what about _flushState==PENDING?
+//                                                if (_flushState!=FlushState.IDLE)
+//                                                {
+//                                                    _fillState = FillState.WAITING;
+//                                                    return 0;
+//                                                }
+
+                                                if (LOG.isDebugEnabled())
+                                                    LOG.debug("flush from fill {}", SslConnection.this);
                                                 
-                                                // Can we try the flush ourselves?
                                                 if (flush(BufferUtil.EMPTY_BUFFER))
                                                 {
                                                     // The flush wrapped to the encrypted bytes so continue to fill.
@@ -762,7 +771,9 @@ public class SslConnection extends AbstractConnection
                     finally
                     {
                         _filling = false;
-                        
+
+                        // TODO: why do we need to do this here?
+                        // TODO: should not be done from flush() or from needsFillInterest()?
                         // If flush is waiting, then this fill call was not from a onFillable
                         switch(_flushState)
                         {
@@ -792,6 +803,11 @@ public class SslConnection extends AbstractConnection
             {
                 close(x);
                 throw x;
+            }
+            finally
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("fill exit {}", SslConnection.this);
             }
         }
 
@@ -867,8 +883,9 @@ public class SslConnection extends AbstractConnection
 
             if (LOG.isDebugEnabled())
             {
+                LOG.debug("flush enter {}", SslConnection.this);
                 for (ByteBuffer b : appOuts)
-                    LOG.debug("flush {} {}", BufferUtil.toHexSummary(b), SslConnection.this);
+                    LOG.debug("flushing {}", BufferUtil.toHexSummary(b));
             }
 
             try
@@ -1022,12 +1039,16 @@ public class SslConnection extends AbstractConnection
                                                 return false;
                                             
                                             // If somebody else is filling anyway
-                                            if (_fillState!=FillState.IDLE) // TODO Interested only?
-                                            {
-                                                // let's wait for them
-                                                _flushState = FlushState.WAITING;
-                                                return false;
-                                            }
+                                            // TODO: don't think we need this.
+                                            // TODO: only check if _fillState==INTERESTED?
+//                                            if (_fillState!=FillState.IDLE)
+//                                            {
+//                                                _flushState = FlushState.WAITING;
+//                                                return false;
+//                                            }
+
+                                            if (LOG.isDebugEnabled())
+                                                LOG.debug("fill from flush {}", SslConnection.this);
                                             
                                             // Try to fill ourselves
                                             fill(BufferUtil.EMPTY_BUFFER);
@@ -1063,6 +1084,11 @@ public class SslConnection extends AbstractConnection
             {
                 close(x);
                 throw x;
+            }
+            finally
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("flush exit {}", SslConnection.this);
             }
         }
         
