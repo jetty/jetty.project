@@ -183,11 +183,9 @@ public class IOTest
             try (Socket client = SocketChannel.open(connector.socket().getLocalSocketAddress()).socket())
             {
                 client.setSoTimeout(1000);
-                client.setSoLinger(false, -1);
                 try (Socket server = connector.accept().socket())
                 {
                     server.setSoTimeout(1000);
-                    server.setSoLinger(false, -1);
 
                     // Write from client to server
                     client.getOutputStream().write(1);
@@ -245,11 +243,9 @@ public class IOTest
             try (Socket client = SocketChannel.open(connector.socket().getLocalSocketAddress()).socket())
             {
                 client.setSoTimeout(1000);
-                client.setSoLinger(false, -1);
                 try (Socket server = connector.accept().socket())
                 {
                     server.setSoTimeout(1000);
-                    server.setSoLinger(false, -1);
 
                     // Write from client to server
                     client.getOutputStream().write(1);
@@ -316,11 +312,9 @@ public class IOTest
             try (Socket client = SocketChannel.open(connector.socket().getLocalSocketAddress()).socket())
             {
                 client.setSoTimeout(2000);
-                client.setSoLinger(false, -1);
                 try (Socket server = connector.accept().socket())
                 {
                     server.setSoTimeout(2000);
-                    server.setSoLinger(false, -1);
 
                     // Write from client to server
                     client.getOutputStream().write(1);

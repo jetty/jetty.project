@@ -130,7 +130,7 @@ import org.eclipse.jetty.util.thread.ThreadPoolBudget;
  * <ol>
  * <li>block waiting for new connections</li>
  * <li>accept the connection (eg socket accept)</li>
- * <li>perform any configuration of the connection (eg. socket linger times)</li>
+ * <li>perform any configuration of the connection (eg. socket configuration)</li>
  * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, org.eclipse.jetty.io.EndPoint)}
  * method to create a new Connection instance.</li>
  * </ol>

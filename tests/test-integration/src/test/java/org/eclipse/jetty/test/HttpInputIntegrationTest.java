@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.test;
 
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Inet4Address;
@@ -70,6 +67,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
 public class HttpInputIntegrationTest
@@ -616,7 +616,6 @@ public class HttpInputIntegrationTest
             {
                 client.setSoTimeout(5000);
                 client.setTcpNoDelay(true);
-                client.setSoLinger(true,1);
                 OutputStream out = client.getOutputStream();
 
                 StringBuilder buffer = new StringBuilder();

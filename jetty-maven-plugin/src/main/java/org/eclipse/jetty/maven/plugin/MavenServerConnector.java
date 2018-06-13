@@ -59,9 +59,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     private String name;
     private int port;
     private long idleTimeout;
-    private int lingerTime;
-    
-    
+
     public MavenServerConnector()
     {
     }
@@ -100,10 +98,14 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     {
         this.idleTimeout = idleTimeout;
     }
-    
+
+    /**
+     * @param lingerTime the socket close linger time
+     * @deprecated don't use as socket close linger time has undefined behavior for non-blocking sockets
+     */
+    @Deprecated
     public void setSoLingerTime(int lingerTime)
     {
-        this.lingerTime = lingerTime;
     }
     
     @Override
@@ -118,7 +120,6 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         this.delegate.setPort(this.port);
         this.delegate.setHost(this.host);
         this.delegate.setIdleTimeout(idleTimeout);
-        this.delegate.setSoLingerTime(lingerTime);
         this.delegate.start();
 
         super.doStart();

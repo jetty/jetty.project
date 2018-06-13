@@ -27,11 +27,9 @@ import java.net.SocketException;
 import java.nio.channels.Channel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -41,7 +39,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -84,7 +81,6 @@ public class ServerConnector extends AbstractNetworkConnector
     private volatile int _localPort = -1;
     private volatile int _acceptQueueSize = 0;
     private volatile boolean _reuseAddress = true;
-    private volatile int _lingerTime = -1;
 
     /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
@@ -384,10 +380,6 @@ public class ServerConnector extends AbstractNetworkConnector
         try
         {
             socket.setTcpNoDelay(true);
-            if (_lingerTime >= 0)
-                socket.setSoLinger(true, _lingerTime / 1000);
-            else
-                socket.setSoLinger(false, 0);
         }
         catch (SocketException e)
         {
@@ -422,22 +414,28 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
-     * @return the linger time
-     * @see Socket#getSoLinger()
+     * Returns the socket close linger time.
+     *
+     * @return -1 as the socket close linger time is always disabled.
+     * @see java.net.StandardSocketOptions#SO_LINGER
+     * @deprecated don't use as socket close linger time has undefined behavior for non-blocking sockets
      */
-    @ManagedAttribute("TCP/IP solinger time or -1 to disable")
+    @ManagedAttribute(value = "Socket close linger time. Deprecated, always returns -1", readonly = true)
+    @Deprecated
     public int getSoLingerTime()
     {
-        return _lingerTime;
+        return -1;
     }
 
     /**
-     * @param lingerTime the linger time. Use -1 to disable.
-     * @see Socket#setSoLinger(boolean, int)
+     * @param lingerTime the socket close linger time; use -1 to disable.
+     * @see java.net.StandardSocketOptions#SO_LINGER
+     * @deprecated don't use as socket close linger time has undefined behavior for non-blocking sockets
      */
+    @Deprecated
     public void setSoLingerTime(int lingerTime)
     {
-        _lingerTime = lingerTime;
+        LOG.warn("Ignoring deprecated socket close linger time");
     }
 
     /**
