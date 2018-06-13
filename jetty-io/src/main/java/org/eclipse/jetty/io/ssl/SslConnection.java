@@ -94,7 +94,7 @@ public class SslConnection extends AbstractConnection
         NEEDS_FLUSH,
         WAITING,
         PENDING
-    };
+    }
     
     private enum FlushState 
     { 
@@ -104,7 +104,7 @@ public class SslConnection extends AbstractConnection
         NEEDS_FILL, // We need to do our own fill
         WAITING, // Waiting for a fill to happen
         PENDING // After the wait, but before the completeWrite has been called
-    };
+    }
     
     private final List<SslHandshakeListener> handshakeListeners = new ArrayList<>();
     private final ByteBufferPool _bufferPool;
@@ -119,14 +119,12 @@ public class SslConnection extends AbstractConnection
     private int _renegotiationLimit = -1;
     private boolean _closedOutbound;
     private boolean _allowMissingCloseMessage = true;
-
     private FlushState _flushState = FlushState.IDLE;
     private FillState _fillState = FillState.IDLE;
     private boolean _filling;
     private boolean _flushing;
     private AtomicReference<Handshake> _handshake = new AtomicReference<>(Handshake.INITIAL);
     private boolean _underFlown;
-
     private Callback _writeCallback;
     
     private abstract class RunnableTask  implements Runnable, Invocable
@@ -341,7 +339,7 @@ public class SslConnection extends AbstractConnection
         int di=b==null?-1:b.remaining();
 
         Connection connection = _decryptedEndPoint.getConnection();
-        return String.format("%s@%x{%s,eio=%d/%d,di=%d,f/f=%s/%s}=>%s",
+        return String.format("%s@%x{%s,eio=%d/%d,di=%d,fill=%s,flush=%s}=>%s",
                 getClass().getSimpleName(),
                 hashCode(),
                 _sslEngine.getHandshakeStatus(),
@@ -480,9 +478,8 @@ public class SslConnection extends AbstractConnection
             }
         }
         
-        
         @Override
-        protected void needsFillInterest() throws IOException
+        protected void needsFillInterest()
         {
             // This means that the decrypted data consumer has called the fillInterested
             // method on the DecryptedEndPoint, so we have to work out if there is
@@ -1219,7 +1216,7 @@ public class SslConnection extends AbstractConnection
         public void succeeded()
         {
             // This means that a write of encrypted data has completed.  Writes are done
-            // only if there is a pending writeflusher or a read needed to write
+            // only if there is a pending WriteFlusher or a read needed to write
             // data.  In either case the appropriate callback is passed on.
             boolean fillable;
             synchronized(_decryptedEndPoint)
