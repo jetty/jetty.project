@@ -476,7 +476,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String async=node.getString("async-supported",false,true);
         if (async!=null)
         {
-            boolean val = async.length()==0||Boolean.valueOf(async);
+            boolean val = async.length()==0||Boolean.parseBoolean(async);
             switch (context.getMetaData().getOrigin(name+".servlet.async-supported"))
             {
                 case NotSet:
@@ -513,7 +513,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String enabled = node.getString("enabled", false, true);
         if (enabled!=null)
         {
-            boolean is_enabled = enabled.length()==0||Boolean.valueOf(enabled);
+            boolean is_enabled = enabled.length()==0||Boolean.parseBoolean(enabled);
             switch (context.getMetaData().getOrigin(name+".servlet.enabled"))
             {
                 case NotSet:
@@ -1119,7 +1119,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 error = ErrorPageErrorHandler.GLOBAL_ERROR_PAGE;
         }
         else
-            code=Integer.valueOf(error);
+            code=Integer.parseInt(error);
 
         String location = node.getString("location", false, true);
         if (!location.startsWith("/"))
@@ -1814,10 +1814,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
         String async=node.getString("async-supported",false,true);
         if (async!=null)
-            holder.setAsyncSupported(async.length()==0||Boolean.valueOf(async));
+            holder.setAsyncSupported(async.length()==0||Boolean.parseBoolean(async));
         if (async!=null)
         {
-            boolean val = async.length()==0||Boolean.valueOf(async);
+            boolean val = async.length()==0||Boolean.parseBoolean(async);
             switch (context.getMetaData().getOrigin(name+".filter.async-supported"))
             {
                 case NotSet:

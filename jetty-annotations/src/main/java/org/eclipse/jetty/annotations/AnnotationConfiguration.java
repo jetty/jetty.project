@@ -426,7 +426,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         int javaPlatform = 0;
         Object target = context.getAttribute(JavaVersion.JAVA_TARGET_PLATFORM);
         if (target!=null)
-            javaPlatform = Integer.valueOf(target.toString());
+            javaPlatform = Integer.parseInt(target.toString());
         AnnotationParser parser = createAnnotationParser(javaPlatform);
         _parserTasks = new ArrayList<ParserTask>();
 
@@ -539,7 +539,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             return ((Boolean)o).booleanValue();
         }
         //try system property to see if we should use multithreading
-        return Boolean.valueOf(System.getProperty(MULTI_THREADED, Boolean.toString(DEFAULT_MULTI_THREADED)));
+        return Boolean.parseBoolean(System.getProperty(MULTI_THREADED, Boolean.toString(DEFAULT_MULTI_THREADED)));
     }
 
    

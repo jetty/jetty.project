@@ -515,7 +515,7 @@ public class Request implements HttpServletRequest
                 }
                 else if (obj instanceof String)
                 {
-                    maxFormContentSize = Integer.valueOf((String)obj);
+                    maxFormContentSize = Integer.parseInt((String)obj);
                 }
             }
 
@@ -531,7 +531,7 @@ public class Request implements HttpServletRequest
                 }
                 else if (obj instanceof String)
                 {
-                    maxFormKeys = Integer.valueOf((String)obj);
+                    maxFormKeys = Integer.parseInt((String)obj);
                 }
             }
 

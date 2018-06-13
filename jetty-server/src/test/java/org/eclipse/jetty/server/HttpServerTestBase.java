@@ -910,7 +910,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // read and check the times are < 999ms
             String[] times = in.readLine().split(",");
             for (String t : times)
-                Assert.assertTrue(Integer.valueOf(t) < 999);
+                Assert.assertTrue(Integer.parseInt(t) < 999);
 
 
             // read the EOF chunk
@@ -940,7 +940,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // read and check the times are < 999ms
             times = in.readLine().split(",");
             for (String t : times)
-                Assert.assertTrue(t, Integer.valueOf(t) < 999);
+                Assert.assertTrue(t, Integer.parseInt(t) < 999);
 
             // check close
             Assert.assertTrue(in.readLine() == null);

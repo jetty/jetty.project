@@ -76,7 +76,7 @@ public class TestConnection implements Producer
         {
             _request = request;
             _futureResult = futureResult;
-            _blocking = Boolean.valueOf(request.get("blocking"));
+            _blocking = Boolean.parseBoolean(request.get("blocking"));
         }
 
         @Override

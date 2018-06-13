@@ -147,7 +147,7 @@ public class ExtendedServerTest extends HttpServerTestBase
             
             String s=response.substring(response.indexOf("DispatchedAt=")+13);
             s=s.substring(0,s.indexOf('\n'));
-            long dispatched=Long.valueOf(s);
+            long dispatched=Long.parseLong(s);
             
             Assert.assertThat(dispatched, Matchers.greaterThanOrEqualTo(start));
             Assert.assertThat(dispatched, Matchers.lessThan(end));

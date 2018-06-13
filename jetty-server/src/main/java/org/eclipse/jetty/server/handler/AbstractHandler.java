@@ -93,7 +93,7 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
     protected void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         Object o = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-        int code = (o instanceof Integer)?((Integer)o).intValue():(o!=null?Integer.valueOf(o.toString()):500);
+        int code = (o instanceof Integer)?((Integer)o).intValue():(o!=null?Integer.parseInt(o.toString()):500);
         o = request.getAttribute(RequestDispatcher.ERROR_MESSAGE);
         String reason = o!=null?o.toString():null;
         

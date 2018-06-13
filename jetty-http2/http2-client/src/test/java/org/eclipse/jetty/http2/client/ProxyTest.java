@@ -93,7 +93,7 @@ public class ProxyTest
         configuration.setSendServerVersion(false);
         String value = initParams.get("outputBufferSize");
         if (value != null)
-            configuration.setOutputBufferSize(Integer.valueOf(value));
+            configuration.setOutputBufferSize(Integer.parseInt(value));
         proxyConnector = new ServerConnector(proxy, new HTTP2ServerConnectionFactory(configuration));
         proxy.addConnector(proxyConnector);
 

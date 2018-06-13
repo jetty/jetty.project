@@ -481,7 +481,7 @@ public class AsyncServletIOTest
 
                     while (writes!=null && _w< writes.length)
                     {
-                        int write=Integer.valueOf(writes[_w++]);
+                        int write=Integer.parseInt(writes[_w++]);
                         
                         if (write==0)
                             out.flush();
