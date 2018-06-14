@@ -1550,7 +1550,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void failed(Throwable x)
         {
-            failure.addSuppressed(x);
+            if (x != failure)
+                failure.addSuppressed(x);
             complete();
         }
 
