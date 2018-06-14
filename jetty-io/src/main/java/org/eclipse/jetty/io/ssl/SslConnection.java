@@ -92,7 +92,7 @@ public class SslConnection extends AbstractConnection
         IDLE, // Not Filling any data
         INTERESTED, // We have a pending read interest
         NEEDS_FLUSH,
-        WAITING,
+        WAIT_FOR_FLUSH,
         PENDING
     }
     
@@ -102,7 +102,7 @@ public class SslConnection extends AbstractConnection
         NEEDS_WRITE, // We need to write encrypted data
         WRITING, // We have a pending write of encrypted data
         NEEDS_FILL, // We need to do our own fill
-        WAITING, // Waiting for a fill to happen
+        WAIT_FOR_FILL, // Waiting for a fill to happen
         PENDING // After the wait, but before the completeWrite has been called
     }
     
@@ -428,7 +428,7 @@ public class SslConnection extends AbstractConnection
                         break;
 
                     case NEEDS_FILL:
-                        _flushState = FlushState.WAITING;
+                        _flushState = FlushState.WAIT_FOR_FILL;
                         fill_interest = true;
                         break;
                  
@@ -452,7 +452,7 @@ public class SslConnection extends AbstractConnection
                 _fillState = FillState.IDLE;
                 switch(_flushState)
                 {
-                    case WAITING:
+                    case WAIT_FOR_FILL:
                     case NEEDS_FILL:
                         _flushState = FlushState.PENDING;
                         complete_flush = true;
@@ -518,7 +518,7 @@ public class SslConnection extends AbstractConnection
                                         write = true;
                                         interest = false;
                                         _flushState = FlushState.WRITING;
-                                        _fillState = FillState.WAITING;
+                                        _fillState = FillState.WAIT_FOR_FLUSH;
                                     }
                                     else
                                     {
@@ -530,7 +530,7 @@ public class SslConnection extends AbstractConnection
                                     break;
                                     
                                 case NEEDS_FILL:
-                                    _flushState = FlushState.WAITING;
+                                    _flushState = FlushState.WAIT_FOR_FILL;
                                     _fillState = FillState.INTERESTED;
                                     break;
                                     
@@ -586,8 +586,20 @@ public class SslConnection extends AbstractConnection
                     try
                     {
                         _filling = true;
-                        _fillState = FillState.IDLE;
-                        
+
+                        switch (_fillState)
+                        {
+                            case IDLE:
+                                break;
+
+                            case PENDING:
+                                _fillState = FillState.IDLE;
+                                break;
+
+                            default:
+                                return 0;
+                        }
+
                         // Do we already have some decrypted data?
                         if (BufferUtil.hasContent(_decryptedInput))
                             return BufferUtil.append(buffer,_decryptedInput);
@@ -722,13 +734,17 @@ public class SslConnection extends AbstractConnection
                                                 if (_flushing)
                                                     return 0;
                                                 
-                                                // if somebody else is flushing, let them do it
-                                                // TODO: what about _flushState==PENDING?
-//                                                if (_flushState!=FlushState.IDLE)
-//                                                {
-//                                                    _fillState = FillState.WAITING;
-//                                                    return 0;
-//                                                }
+                                                // If somebody else is flushing, let them do it.
+                                                switch (_flushState)
+                                                {
+                                                    case IDLE:
+                                                    case PENDING:
+                                                        break;
+
+                                                    default:
+                                                        _fillState = FillState.WAIT_FOR_FLUSH;
+                                                        return 0;
+                                                }
 
                                                 if (LOG.isDebugEnabled())
                                                     LOG.debug("flush from fill {}", SslConnection.this);
@@ -772,19 +788,16 @@ public class SslConnection extends AbstractConnection
                     {
                         _filling = false;
 
-                        // TODO: why do we need to do this here?
-                        // TODO: should not be done from flush() or from needsFillInterest()?
-                        // If flush is waiting, then this fill call was not from a onFillable
-                        switch(_flushState)
+                        switch (_flushState)
                         {
                             case NEEDS_FILL:
-                            case WAITING:
+                            case WAIT_FOR_FILL:
                                 _flushState = FlushState.PENDING;
                                 getExecutor().execute(failure == null ? _runCompleteWrite : new FailEncryptedWrite(failure));
                                 break;
                             default:
                                 break;
-                        }                        
+                        }
 
                         if (_encryptedInput != null && !_encryptedInput.hasRemaining())
                         {
@@ -898,11 +911,11 @@ public class SslConnection extends AbstractConnection
                         
                         switch(_flushState)
                         {
+                            case IDLE:
+                                break;
+
                             case PENDING:
                                 _flushState = FlushState.IDLE;
-                                break;
-                                
-                            case IDLE:
                                 break;
                                 
                             default:
@@ -1038,14 +1051,17 @@ public class SslConnection extends AbstractConnection
                                             if (_filling)
                                                 return false;
                                             
-                                            // If somebody else is filling anyway
-                                            // TODO: don't think we need this.
-                                            // TODO: only check if _fillState==INTERESTED?
-//                                            if (_fillState!=FillState.IDLE)
-//                                            {
-//                                                _flushState = FlushState.WAITING;
-//                                                return false;
-//                                            }
+                                            // If somebody else is filling, let them do it.
+                                            switch (_fillState)
+                                            {
+                                                case IDLE:
+                                                case PENDING:
+                                                    break;
+
+                                                default:
+                                                    _flushState = FlushState.WAIT_FOR_FILL;
+                                                    return false;
+                                            }
 
                                             if (LOG.isDebugEnabled())
                                                 LOG.debug("fill from flush {}", SslConnection.this);
@@ -1255,7 +1271,7 @@ public class SslConnection extends AbstractConnection
                 switch(_fillState)
                 {
                     case NEEDS_FLUSH:
-                    case WAITING:
+                    case WAIT_FOR_FLUSH:
                         fillable = true;
                         _fillState = FillState.PENDING;
                         break;
@@ -1286,7 +1302,7 @@ public class SslConnection extends AbstractConnection
                 switch(_fillState)
                 {
                     case NEEDS_FLUSH:
-                    case WAITING:
+                    case WAIT_FOR_FLUSH:
                         fail_fill_interest = true;
                         _fillState = FillState.IDLE;
                         break;
