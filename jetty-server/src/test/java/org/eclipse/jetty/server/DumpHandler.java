@@ -63,10 +63,10 @@ public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
         if (!isStarted())
             return;
 
-        if (Boolean.valueOf(request.getParameter("flush")))
+        if (Boolean.parseBoolean(request.getParameter("flush")))
             response.flushBuffer();
         
-        if (Boolean.valueOf(request.getParameter("empty")))
+        if (Boolean.parseBoolean(request.getParameter("empty")))
         {
             baseRequest.setHandled(true);
             response.setStatus(200);
@@ -230,7 +230,7 @@ public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
         writer.flush();
 
         // commit now
-        if (!Boolean.valueOf(request.getParameter("no-content-length")))
+        if (!Boolean.parseBoolean(request.getParameter("no-content-length")))
             response.setContentLength(buf.size()+1000);
         response.addHeader("Before-Flush",response.isCommitted()?"Committed???":"Not Committed");
         buf.writeTo(out);

@@ -310,8 +310,11 @@ abstract public class WriteFlusher
         FailedState failed = (FailedState)_state.get();
 
         Throwable cause = failed.getCause();
-        for(Throwable t : suppressed)
-            cause.addSuppressed(t);
+        for (Throwable t : suppressed)
+        {
+            if (t != cause)
+                cause.addSuppressed(t);
+        }
 
         callback.failed(cause);
     }

@@ -534,7 +534,7 @@ public class WebAppClassLoader extends URLClassLoader
                 {
                     if (ex==null)
                         ex = e;
-                    else
+                    else if (e != ex)
                         ex.addSuppressed(e);
                 }
                 

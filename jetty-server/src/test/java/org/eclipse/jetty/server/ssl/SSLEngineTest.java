@@ -369,7 +369,7 @@ public class SSLEngineTest
             if (request.getParameter("dump")!=null)
             {
                 ServletOutputStream out=response.getOutputStream();
-                byte[] buf = new byte[Integer.valueOf(request.getParameter("dump"))];
+                byte[] buf = new byte[Integer.parseInt(request.getParameter("dump"))];
                 // System.err.println("DUMP "+buf.length);
                 for (int i=0;i<buf.length;i++)
                     buf[i]=(byte)('0'+(i%10));

@@ -59,6 +59,6 @@ public class TestFileInitializer extends FileInitializer
         }
         
         StartLog.log("TESTING MODE","Skipping download of " + uri);
-        return Boolean.TRUE;
+        return true;
     }
 }

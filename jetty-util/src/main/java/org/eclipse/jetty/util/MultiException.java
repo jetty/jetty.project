@@ -55,15 +55,15 @@ public class MultiException extends Exception
         super(DEFAULT_MESSAGE);
         this.nested = new ArrayList<>(nested);
         
-        if(nested.size() > 0) {
+        if (nested.size() > 0)
             initCause(nested.get(0));
-        }
-        
-        for(Throwable t : nested) {
-            this.addSuppressed(t);
+
+        for (Throwable t : nested)
+        {
+            if (t != this)
+                addSuppressed(t);
         }
     }
-    
 
     /* ------------------------------------------------------------ */
     public void add(Throwable e)
@@ -196,8 +196,10 @@ public class MultiException extends Exception
             th = new MultiException(Collections.emptyList());
 
         for (Throwable s : nested)
+        {
             if (s!=th)
                 th.addSuppressed(s);
+        }
         if (Error.class.isInstance(th))
             throw (Error)th;
         throw (Exception)th;

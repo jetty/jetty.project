@@ -428,7 +428,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             }
                             else
                             {
-                                if (failure != x)
+                                if (x != failure)
                                     failure.addSuppressed(x);
                                 minimalErrorResponse(failure);
                             }
@@ -579,7 +579,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch (Throwable e)
         {
-            failure.addSuppressed(e);
+            if (e != failure)
+                failure.addSuppressed(e);
             LOG.warn("ERROR dispatch failed", failure);
             // Try to send a minimal response.
             minimalErrorResponse(failure);
@@ -597,7 +598,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch (Throwable x)
         {
-            failure.addSuppressed(x);
+            if (x != failure)
+                failure.addSuppressed(x);
             abort(failure);
         }
     }

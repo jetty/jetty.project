@@ -72,10 +72,10 @@ public class DigestAuthenticator extends LoginAuthenticator
 
         String mna = configuration.getInitParameter("maxNonceAge");
         if (mna != null)
-            setMaxNonceAge(Long.valueOf(mna));
+            setMaxNonceAge(Long.parseLong(mna));
         String mnc = configuration.getInitParameter("maxNonceCount");
         if (mnc != null)
-            setMaxNonceCount(Integer.valueOf(mnc));
+            setMaxNonceCount(Integer.parseInt(mnc));
     }
 
     public int getMaxNonceCount()
