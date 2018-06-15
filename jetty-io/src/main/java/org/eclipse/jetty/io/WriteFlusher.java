@@ -326,8 +326,10 @@ abstract public class WriteFlusher
      * It tries to switch from PENDING to COMPLETING. If state transition fails, then it does nothing as the callback
      * should have been already failed. That's because the only way to switch from PENDING outside this method is
      * {@link #onFail(Throwable)} or {@link #onClose()}
+     * 
+     * @return true if the flusher was in a state ready to handle completeWrite
      */
-    public void completeWrite()
+    public boolean completeWrite()
     {
         if (DEBUG)
             LOG.debug("completeWrite: {}", this);
@@ -335,11 +337,11 @@ abstract public class WriteFlusher
         State previous = _state.get();
 
         if (previous.getType() != StateType.PENDING)
-            return; // failure already handled.
+            return false; // failure already handled.
 
         PendingState pending = (PendingState)previous;
         if (!updateState(pending, __COMPLETING))
-            return; // failure already handled.
+            return false; // failure already handled.
 
         Callback callback = pending._callback;
         try
@@ -358,7 +360,7 @@ abstract public class WriteFlusher
                     onIncompleteFlush();
                 else
                     fail(callback);
-                return;
+                return true;
             }
 
             if (updateState(__COMPLETING, __IDLE))
@@ -375,6 +377,7 @@ abstract public class WriteFlusher
             else
                 fail(callback, e);
         }
+        return true;
     }
 
     /**

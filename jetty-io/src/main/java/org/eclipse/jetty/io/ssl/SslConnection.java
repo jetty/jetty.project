@@ -93,7 +93,7 @@ public class SslConnection extends AbstractConnection
         INTERESTED, // We have a pending read interest
         NEEDS_FLUSH,
         WAIT_FOR_FLUSH,
-        PENDING
+        PENDING_FILLABLE
     }
     
     private enum FlushState 
@@ -103,7 +103,7 @@ public class SslConnection extends AbstractConnection
         WRITING, // We have a pending write of encrypted data
         NEEDS_FILL, // We need to do our own fill
         WAIT_FOR_FILL, // Waiting for a fill to happen
-        PENDING // After the wait, but before the completeWrite has been called
+        PENDING_COMPLETE_WRITE // After the wait, but before the completeWrite has been called
     }
     
     private final List<SslHandshakeListener> handshakeListeners = new ArrayList<>();
@@ -310,22 +310,22 @@ public class SslConnection extends AbstractConnection
         // filling.
 
         if (LOG.isDebugEnabled())
-            LOG.debug("onFillable enter {}", _decryptedEndPoint);
+            LOG.debug("onFillable enter {}", SslConnection.this);
 
         // We have received a close handshake, close the end point to send FIN.
         if (_decryptedEndPoint.isInputShutdown())
             _decryptedEndPoint.close();
 
-        _decryptedEndPoint.onFillable(null);
+        _decryptedEndPoint.onFillable();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("onFillable exit {}", _decryptedEndPoint);
+            LOG.debug("onFillable exit {}", SslConnection.this);
     }
 
     @Override
     public void onFillInterestedFailed(Throwable cause)
     {
-        _decryptedEndPoint.onFillable(cause==null?new IOException():cause);
+        _decryptedEndPoint.onFillableFail(cause==null?new IOException():cause);
     }
 
     @Override
@@ -418,7 +418,7 @@ public class SslConnection extends AbstractConnection
             synchronized(_decryptedEndPoint)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("onIncompleteFlush {} {}", this, BufferUtil.toDetailString(_encryptedOutput));
+                    LOG.debug("onIncompleteFlush {} {}", SslConnection.this, BufferUtil.toDetailString(_encryptedOutput));
                 
                 switch(_flushState)
                 {
@@ -443,7 +443,43 @@ public class SslConnection extends AbstractConnection
                 ensureFillInterested();
         }
 
-        protected void onFillable(Throwable failure)
+
+        protected void onFillable()
+        {
+            try
+            {
+                // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
+                boolean complete_flush = false;
+                synchronized(_decryptedEndPoint)
+                {
+                    _fillState = FillState.IDLE;
+                    switch(_flushState)
+                    {
+                        case NEEDS_FILL:
+                        case WAIT_FOR_FILL:
+                            complete_flush = true;
+                            break;
+                        default:
+                            break;
+                    }      
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("onFillable {}", SslConnection.this);
+                }
+
+                // wake up whoever is doing the fill
+                if (complete_flush)
+                    fill(BufferUtil.EMPTY_BUFFER);
+                getFillInterest().fillable();
+            }
+            catch (Throwable e)
+            {
+                close(e);
+            }         
+        }
+        
+
+        protected void onFillableFail(Throwable failure)
         {
             // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
             boolean complete_flush = false;
@@ -454,32 +490,31 @@ public class SslConnection extends AbstractConnection
                 {
                     case WAIT_FOR_FILL:
                     case NEEDS_FILL:
-                        _flushState = FlushState.PENDING;
+                        _flushState = FlushState.PENDING_COMPLETE_WRITE;
                         complete_flush = true;
                         break;
                     default:
                         break;
-                }                
+                } 
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onFillableFail {} {}", SslConnection.this, failure);
             }
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("onFillable {}", SslConnection.this);
 
             // wake up whoever is doing the fill
-            if (failure==null)  
-                getFillInterest().fillable();
-            else
-                getFillInterest().onFail(failure);
+            getFillInterest().onFail(failure);
             
             // Try to complete the write
             if (complete_flush)
             {
-                if (failure==null)
-                    getWriteFlusher().completeWrite();
-                else
-                    getWriteFlusher().onFail(failure);
+                if (!getWriteFlusher().onFail(failure))
+                {
+                    // TODO What do we do here?
+                }
             }
         }
+        
         
         @Override
         protected void needsFillInterest()
@@ -499,7 +534,7 @@ public class SslConnection extends AbstractConnection
                         || BufferUtil.hasContent(_encryptedInput) && !_underFlown;
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("needFillInterest {} fillable={}",this,fillable);
+                    LOG.debug("needFillInterest {} fillable={}",SslConnection.this,fillable);
                                 
                 // If we have no encrypted data to decrypt OR we have some, but it is not enough
                 if (!fillable)
@@ -575,13 +610,13 @@ public class SslConnection extends AbstractConnection
         @Override
         public int fill(ByteBuffer buffer) throws IOException
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("fill enter {}", SslConnection.this);
-
             try
             {
                 synchronized(_decryptedEndPoint)
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("fill enter {}", SslConnection.this);
+                    
                     Throwable failure = null;
                     try
                     {
@@ -592,7 +627,7 @@ public class SslConnection extends AbstractConnection
                             case IDLE:
                                 break;
 
-                            case PENDING:
+                            case PENDING_FILLABLE:
                                 _fillState = FillState.IDLE;
                                 break;
 
@@ -649,7 +684,7 @@ public class SslConnection extends AbstractConnection
                                 if (LOG.isDebugEnabled())
                                 {
                                     LOG.debug("net={} unwrap {} {}", net_filled, unwrapResult.toString().replace('\n',' '), SslConnection.this);
-                                    LOG.debug("filled {} {}",BufferUtil.toHexSummary(buffer), SslConnection.this);
+                                    LOG.debug("filled {} {}", SslConnection.this,BufferUtil.toHexSummary(buffer));
                                 }
 
                                 HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
@@ -738,7 +773,7 @@ public class SslConnection extends AbstractConnection
                                                 switch (_flushState)
                                                 {
                                                     case IDLE:
-                                                    case PENDING:
+                                                    case PENDING_COMPLETE_WRITE:
                                                         break;
 
                                                     default:
@@ -792,7 +827,9 @@ public class SslConnection extends AbstractConnection
                         {
                             case NEEDS_FILL:
                             case WAIT_FOR_FILL:
-                                _flushState = FlushState.PENDING;
+                            case PENDING_COMPLETE_WRITE:
+                                _flushState = FlushState.PENDING_COMPLETE_WRITE;
+                                // TODO this is not correct
                                 getExecutor().execute(failure == null ? _runCompleteWrite : new FailEncryptedWrite(failure));
                                 break;
                             default:
@@ -809,6 +846,9 @@ public class SslConnection extends AbstractConnection
                             _bufferPool.release(_decryptedInput);
                             _decryptedInput = null;
                         }
+
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("fill exit {}", SslConnection.this);
                     }
                 }
             }
@@ -817,11 +857,6 @@ public class SslConnection extends AbstractConnection
                 close(x);
                 throw x;
             }
-            finally
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("fill exit {}", SslConnection.this);
-            }
         }
 
         private void handshakeSucceeded()
@@ -829,10 +864,9 @@ public class SslConnection extends AbstractConnection
             if (_handshake.compareAndSet(Handshake.INITIAL, Handshake.SUCCEEDED))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} handshake succeeded {}/{} {}",
+                    LOG.debug("{} handshake succeeded {} {}/{}",SslConnection.this,
                         _sslEngine.getUseClientMode() ? "client" : "resumed server",
-                            _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite(),
-                            SslConnection.this);
+                            _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
                 notifyHandshakeSucceeded(_sslEngine);
             }
             else if (_handshake.get() == Handshake.SUCCEEDED)
@@ -894,17 +928,18 @@ public class SslConnection extends AbstractConnection
             // it is the applications responsibility to call flush again - either in a busy loop
             // or better yet by using EndPoint#write to do the flushing.
 
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("flush enter {}", SslConnection.this);
-                for (ByteBuffer b : appOuts)
-                    LOG.debug("flushing {}", BufferUtil.toHexSummary(b));
-            }
 
             try
             {
                 synchronized(_decryptedEndPoint)
                 {
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("flush enter {}", SslConnection.this);
+                        for (ByteBuffer b : appOuts)
+                            LOG.debug("flushing {}", BufferUtil.toHexSummary(b));
+                    }
+                    
                     try
                     {
                         _flushing = true;
@@ -914,7 +949,7 @@ public class SslConnection extends AbstractConnection
                             case IDLE:
                                 break;
 
-                            case PENDING:
+                            case PENDING_COMPLETE_WRITE:
                                 _flushState = FlushState.IDLE;
                                 break;
                                 
@@ -941,7 +976,7 @@ public class SslConnection extends AbstractConnection
                                 BufferUtil.flipToFlush(_encryptedOutput, pos);
                             }
                             if (LOG.isDebugEnabled())
-                                LOG.debug("wrap {} {}", wrapResult.toString().replace('\n',' '), SslConnection.this);
+                                LOG.debug("wrap {} {}", SslConnection.this, wrapResult.toString().replace('\n',' '));
 
                             Status wrapResultStatus = wrapResult.getStatus();
 
@@ -982,7 +1017,7 @@ public class SslConnection extends AbstractConnection
                                 default:
                                 {
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("wrap {} {} {}", wrapResultStatus, BufferUtil.toHexSummary(_encryptedOutput), SslConnection.this);
+                                        LOG.debug("wrap {} {} {}", SslConnection.this, wrapResultStatus, BufferUtil.toHexSummary(_encryptedOutput));
 
                                     if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
                                         handshakeSucceeded();
@@ -1055,7 +1090,7 @@ public class SslConnection extends AbstractConnection
                                             switch (_fillState)
                                             {
                                                 case IDLE:
-                                                case PENDING:
+                                                case PENDING_FILLABLE:
                                                     break;
 
                                                 default:
@@ -1093,6 +1128,8 @@ public class SslConnection extends AbstractConnection
                     {
                         _flushing = false;
                         releaseEncryptedOutputBuffer();
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("flush exit {}", SslConnection.this);
                     }
                 }
             }
@@ -1100,11 +1137,6 @@ public class SslConnection extends AbstractConnection
             {
                 close(x);
                 throw x;
-            }
-            finally
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("flush exit {}", SslConnection.this);
             }
         }
         
@@ -1120,7 +1152,7 @@ public class SslConnection extends AbstractConnection
                     boolean ishut = isInputShutdown();
                     boolean oshut = isOutputShutdown();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("shutdownOutput: oshut={}, ishut={} {}", oshut, ishut, SslConnection.this);
+                        LOG.debug("shutdownOutput: {} oshut={}, ishut={} {}", SslConnection.this, oshut, ishut);
 
                     if (oshut)
                         return;
@@ -1264,7 +1296,7 @@ public class SslConnection extends AbstractConnection
             synchronized(_decryptedEndPoint)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("write.complete {}", SslConnection.this.getEndPoint());
+                    LOG.debug("write.complete {}", SslConnection.this);
     
                 releaseEncryptedOutputBuffer();
                 _flushState = FlushState.IDLE;
@@ -1273,7 +1305,7 @@ public class SslConnection extends AbstractConnection
                     case NEEDS_FLUSH:
                     case WAIT_FOR_FLUSH:
                         fillable = true;
-                        _fillState = FillState.PENDING;
+                        _fillState = FillState.PENDING_FILLABLE;
                         break;
     
                     default:
