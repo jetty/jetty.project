@@ -21,10 +21,11 @@ def getFullBuild(jdk, os) {
       def mvnName = 'maven3.5'
       def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" // 
       def settingsName = 'oss-settings.xml'
+      def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
       // Environment
       List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
-      mvnEnv.add("MAVEN_OPTS=-Xms256m -Xmx2g -Djava.awt.headless=true")
+      mvnEnv.add("MAVEN_OPTS=$mavenOpts")
 
       try
       {
@@ -46,6 +47,7 @@ def getFullBuild(jdk, os) {
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
+                      mavenOpts: mavenOpts,
                       mavenLocalRepo: localRepo) {
                 sh "mvn -V -B clean install -DskipTests -T6 -e"
               }
@@ -68,6 +70,7 @@ def getFullBuild(jdk, os) {
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
+                      mavenOpts: mavenOpts,
                       mavenLocalRepo: localRepo) {
                 sh "mvn -V -B javadoc:javadoc -T6 -e"
               }
@@ -91,6 +94,7 @@ def getFullBuild(jdk, os) {
                       publisherStrategy: 'EXPLICIT',
                       globalMavenSettingsConfig: settingsName,
                       //options: [invokerPublisher(disabled: false)],
+                      mavenOpts: mavenOpts,
                       mavenLocalRepo: localRepo) {
                 sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -DmavenHome=${mvntoolInvoker} -Dunix.socket.tmp="+env.JENKINS_HOME
               }
@@ -143,6 +147,7 @@ def getFullBuild(jdk, os) {
                     jdk: "$jdk",
                     publisherStrategy: 'EXPLICIT',
                     globalMavenSettingsConfig: settingsName,
+                    mavenOpts: mavenOpts,
                     mavenLocalRepo: localRepo) {
               sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
             }
