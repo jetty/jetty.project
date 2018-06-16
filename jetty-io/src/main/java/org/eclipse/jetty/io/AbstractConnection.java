@@ -263,7 +263,7 @@ public abstract class AbstractConnection implements Connection
     @Override
     public final String toString()
     {
-        return String.format("%s<-%s",toConnectionString(),getEndPoint());
+        return String.format("%s@%h::%s",getClass().getSimpleName(),this,getEndPoint());
     }
 
     public String toConnectionString()
