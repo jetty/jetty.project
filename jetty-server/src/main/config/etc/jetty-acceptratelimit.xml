@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.server.AcceptRateLimit">
+        <Arg name="maxRate" type="int"><Property name="jetty.acceptratelimit.acceptRateLimit" default="1000" /></Arg>
+        <Arg name="period" type="long"><Property name="jetty.acceptratelimit.period" default="1000" /></Arg>
+        <Arg name="units"><Call class="java.util.concurrent.TimeUnit" name="valueOf"><Arg>
+          <Property name="jetty.acceptratelimit.units" default="MILLISECONDS" />
+        </Arg></Call></Arg>
+        <Arg name="server"><Ref refid="Server" /></Arg>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

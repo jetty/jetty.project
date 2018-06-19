@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Assert;
@@ -305,13 +306,79 @@ public class NotAcceptingTest
     }
     
     @Test
+    public void testAcceptRateLimit() throws Exception
+    {
+        AcceptRateLimit limit = new AcceptRateLimit(4,1,TimeUnit.HOURS, server);
+        server.addBean(limit);
+        server.setHandler(new HelloHandler());
+
+        server.start();
+        
+        try (
+            Socket async0 = new Socket("localhost",asyncConnector.getLocalPort());
+            Socket async1 = new Socket("localhost",asyncConnector.getLocalPort());
+            Socket async2 = new Socket("localhost",asyncConnector.getLocalPort());
+            )
+        {            
+            String expectedContent = "Hello" + System.lineSeparator();
+
+            for (Socket client : new Socket[]{async2})
+            {
+                HttpTester.Input in = HttpTester.from(client.getInputStream());
+                client.getOutputStream().write("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n".getBytes());
+                HttpTester.Response response = HttpTester.parseResponse(in);
+                assertThat(response.getStatus(),is(200));
+                assertThat(response.getContent(),is(expectedContent));
+            }
+            
+            assertThat(localConnector.isAccepting(),is(true));
+            assertThat(blockingConnector.isAccepting(),is(true));
+            assertThat(asyncConnector.isAccepting(),is(true));
+        }
+        
+        limit.age(45,TimeUnit.MINUTES);
+        
+        try (
+            Socket async0 = new Socket("localhost",asyncConnector.getLocalPort());
+            Socket async1 = new Socket("localhost",asyncConnector.getLocalPort());
+            )
+        {
+            String expectedContent = "Hello" + System.lineSeparator();
+
+            for (Socket client : new Socket[]{async1})
+            {
+                HttpTester.Input in = HttpTester.from(client.getInputStream());
+                client.getOutputStream().write("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n".getBytes());
+                HttpTester.Response response = HttpTester.parseResponse(in);
+                assertThat(response.getStatus(),is(200));
+                assertThat(response.getContent(),is(expectedContent));
+            }
+            
+            assertThat(localConnector.isAccepting(),is(false));
+            assertThat(blockingConnector.isAccepting(),is(false));
+            assertThat(asyncConnector.isAccepting(),is(false));
+        }
+
+        limit.age(45,TimeUnit.MINUTES);
+        assertThat(localConnector.isAccepting(),is(false));
+        assertThat(blockingConnector.isAccepting(),is(false));
+        assertThat(asyncConnector.isAccepting(),is(false));
+        limit.run();
+        assertThat(localConnector.isAccepting(),is(true));
+        assertThat(blockingConnector.isAccepting(),is(true));
+        assertThat(asyncConnector.isAccepting(),is(true));
+    }
+
+
+    @Test
     public void testConnectionLimit() throws Exception
     {
         server.addBean(new ConnectionLimit(9,server));
         server.setHandler(new HelloHandler());
 
         server.start();
-        
+
+        Log.getLogger(ConnectionLimit.class).debug("CONNECT:");
         try (
             LocalEndPoint local0 = localConnector.connect();
             LocalEndPoint local1 = localConnector.connect();
@@ -326,6 +393,7 @@ public class NotAcceptingTest
         {
             String expectedContent = "Hello" + System.lineSeparator();
 
+            Log.getLogger(ConnectionLimit.class).debug("LOCAL:");
             for (LocalEndPoint client: new LocalEndPoint[] {local0,local1,local2})
             {
                 client.addInputAndExecute(BufferUtil.toBuffer("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n"));
@@ -334,6 +402,7 @@ public class NotAcceptingTest
                 assertThat(response.getContent(),is(expectedContent));
             }
             
+            Log.getLogger(ConnectionLimit.class).debug("NETWORK:");    
             for (Socket client : new Socket[]{blocking0,blocking1,blocking2,async0,async1,async2})
             {
                 HttpTester.Input in = HttpTester.from(client.getInputStream());
@@ -361,7 +430,7 @@ public class NotAcceptingTest
         waitFor(blockingConnector::isAccepting,is(true),2*IDLE_TIMEOUT,TimeUnit.MILLISECONDS);
         waitFor(asyncConnector::isAccepting,is(true),2*IDLE_TIMEOUT,TimeUnit.MILLISECONDS);
     }
-
+    
     public static class HelloHandler extends AbstractHandler
     {
         public HelloHandler()
@@ -404,8 +473,5 @@ public class NotAcceptingTest
             catch(InterruptedException e)
             {}            
         }
-        
-        
     }
-    
 }
