@@ -85,7 +85,8 @@ public class ContextHandlerCollection extends HandlerCollection
     {
         _contextBranches.clear();
         
-        if (getHandlers()==null)
+        Handler[] handlers = getHandlers();
+        if (handlers==null)
         {
             _pathBranches=new ArrayTernaryTrie<>(false,16);
             return;
@@ -93,7 +94,7 @@ public class ContextHandlerCollection extends HandlerCollection
         
         // Create map of contextPath to handler Branch
         Map<String,Branch[]> map = new HashMap<>();
-        for (Handler handler:getHandlers())
+        for (Handler handler:handlers)
         {
             Branch branch=new Branch(handler);
             for (String contextPath : branch.getContextPaths())
