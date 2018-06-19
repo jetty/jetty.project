@@ -1,5 +1,6 @@
 #!groovy
 
+// in case of change update method isMainBuild
 def jdks = ["jdk8","jdk9","jdk10","jdk11"]
 def oss = ["linux"] 
 def builds = [:]
@@ -101,31 +102,37 @@ def getFullBuild(jdk, os) {
               // withMaven doesn't label..
               // Report failures in the jenkins UI
               junit testResults:'**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
-              // Collect up the jacoco execution results
-              def jacocoExcludes =
-                      // build tools
-                      "**/org/eclipse/jetty/ant/**" + ",**/org/eclipse/jetty/maven/**" +
-                              ",**/org/eclipse/jetty/jspc/**" +
-                              // example code / documentation
-                              ",**/org/eclipse/jetty/embedded/**" + ",**/org/eclipse/jetty/asyncrest/**" +
-                              ",**/org/eclipse/jetty/demo/**" +
-                              // special environments / late integrations
-                              ",**/org/eclipse/jetty/gcloud/**" + ",**/org/eclipse/jetty/infinispan/**" +
-                              ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +
-                              ",**/org/eclipse/jetty/http/spi/**" +
-                              // test classes
-                              ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
-              step( [$class          : 'JacocoPublisher',
-                     inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                     exclusionPattern: jacocoExcludes,
-                     execPattern     : '**/target/jacoco.exec',
-                     classPattern    : '**/target/classes',
-                     sourcePattern   : '**/src/main/java'] )
+              consoleParsers = [[parserName: 'JavaDoc'],
+                                [parserName: 'JavaC']];
+              if (isMainBuild( jdk )) {
+                // Collect up the jacoco execution results
+                def jacocoExcludes =
+                        // build tools
+                        "**/org/eclipse/jetty/ant/**" + ",**/org/eclipse/jetty/maven/**" +
+                                ",**/org/eclipse/jetty/jspc/**" +
+                                // example code / documentation
+                                ",**/org/eclipse/jetty/embedded/**" + ",**/org/eclipse/jetty/asyncrest/**" +
+                                ",**/org/eclipse/jetty/demo/**" +
+                                // special environments / late integrations
+                                ",**/org/eclipse/jetty/gcloud/**" + ",**/org/eclipse/jetty/infinispan/**" +
+                                ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +
+                                ",**/org/eclipse/jetty/http/spi/**" +
+                                // test classes
+                                ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
+                step( [$class          : 'JacocoPublisher',
+                       inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+                       exclusionPattern: jacocoExcludes,
+                       execPattern     : '**/target/jacoco.exec',
+                       classPattern    : '**/target/classes',
+                       sourcePattern   : '**/src/main/java'] )
+                consoleParsers = [[parserName: 'Maven'],
+                                  [parserName: 'JavaDoc'],
+                                  [parserName: 'JavaC']];
+              }
+
               // Report on Maven and Javadoc warnings
               step( [$class        : 'WarningsPublisher',
-                     consoleParsers: [[parserName: 'Maven'],
-                                      [parserName: 'JavaDoc'],
-                                      [parserName: 'JavaC']]] )
+                     consoleParsers: consoleParsers] )
             }
             if(isUnstable())
             {
@@ -159,6 +166,10 @@ def getFullBuild(jdk, os) {
       }
     }
   }
+}
+
+def isMainBuild(jdk) {
+  return jdk == "jdk8"
 }
 
 
