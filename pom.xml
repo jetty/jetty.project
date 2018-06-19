@@ -308,6 +308,7 @@
             <exclude>jetty-ant/**</exclude>
             <exclude>jetty-infinispan/**</exclude>
             <exclude>tests/test-sessions/test-infinispan-sessions/**</exclude>
+            <exclude>**/*.debug/**</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -445,7 +446,6 @@
             <detectJavaApiLink>false</detectJavaApiLink>
             <show>protected</show>
             <!-- needed for Java 8+ -->
-            <additionalparam>&#45;&#45;allow-script-in-comments</additionalparam>
             <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
             <links>
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
