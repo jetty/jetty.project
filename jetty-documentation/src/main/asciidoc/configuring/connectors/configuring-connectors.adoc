@@ -45,6 +45,18 @@ tags: [connector]
 Modules for tag 'connector':
 ----------------------------
 
+     Module: acceptratelimit
+           : Enable a server wide accept rate limit
+       Tags: connector
+     Depend: server
+        XML: etc/jetty-acceptratelimit.xml
+
+     Module: connectionlimit
+           : Enable a server wide connection limit
+       Tags: connector
+     Depend: server
+        XML: etc/jetty-connectionlimit.xml
+
      Module: http
            : Enables a HTTP connector on the server.
            : By default HTTP/1 is support, but HTTP2C can
@@ -52,7 +64,6 @@ Modules for tag 'connector':
        Tags: connector, http
      Depend: server
         XML: etc/jetty-http.xml
-    Enabled: ${jetty.base}/start.ini
 
      Module: http-forwarded
            : Adds a forwarded request customizer to the HTTP Connector
@@ -285,6 +296,20 @@ Making changes to the associated Jetty XML file for connectors is *not* recommen
 If you do wish to edit Jetty XML, please see our section on managing link:#[Jetty Home and Jetty Base] to ensure your Jetty Home remains a standard of truth for your implementation.
 ____
 
+==== Limiting Connections
+
+Jetty also provides the means by which to limit connections to the server and/or contexts.
+This is provided by two different modules in the distribution.
+
+`connectionlimit`::
+Applies a limit to the number of connections.
+If this limit is exceeded, new connections are suspended for the time specified (in milliseconds).
+`acceptratelimit`::
+Limits the rate at which new connections are accepted.
+If this limit is exceeded, new connections are suspended for the time specified (in milliseconds).
+
+As with the modules listed above, these can be enabled by adding `--add-to-start=<module-name>` to the command line.
+
 ==== Advanced Configuration
 
 Jetty primarily uses a single connector type called link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[ServerConnector].
@@ -430,7 +455,7 @@ This example HttpConfiguration may be used by reference to the ID "`httpConfig`"
 This same `httpConfig` is referenced by the link:{JDURL}/org/eclipse/jetty/server/handler/SecuredRedirectHandler.html[`SecuredRedirectHandler`] when redirecting secure requests.
 Please note that if your `httpConfig` does not include a `secureScheme` or `securePort` or there is no `HttpConfiguration` present these types of secured requests will be returned a `403` error.
 
-For SSL based connectors (in `jetty-https.xml` and `jetty-http2.xml`), the common "`httpConfig`" instance is used as the basis to create an SSL specific configuration with ID "`sslHttpConfig`":
+For SSL-based connectors (in `jetty-https.xml` and `jetty-http2.xml`), the common "`httpConfig`" instance is used as the basis to create an SSL specific configuration with ID "`sslHttpConfig`":
 
 [source, xml, subs="{sub-order}"]
 ----

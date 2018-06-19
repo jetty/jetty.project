@@ -13,4 +13,9 @@ server
 etc/jetty-connectionlimit.xml
 
 [ini-template]
-jetty.connection.limit=1000
+
+## The limit of connections to apply
+#jetty.connectionlimit.maxConnections=1000
+
+## The idle timeout to apply (in milliseconds) when connections are limited
+#jetty.connectionlimit.idleTimeout=1000

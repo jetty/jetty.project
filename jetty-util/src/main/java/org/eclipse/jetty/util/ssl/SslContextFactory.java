@@ -1082,10 +1082,14 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         String type = Objects.toString(getTrustStoreType(), getKeyStoreType());
         String provider = Objects.toString(getTrustStoreProvider(), getKeyStoreProvider());
-        String passwd = Objects.toString(_trustStorePassword, Objects.toString(_keyStorePassword, null));
-        if (resource == null)
+        Password passwd = _trustStorePassword;
+        if (resource == null || resource.equals(_keyStoreResource))
+        {
             resource = _keyStoreResource;
-        return CertificateUtils.getKeyStore(resource, type, provider, passwd);
+            if (passwd == null)
+                passwd = _keyStorePassword;
+        }
+        return CertificateUtils.getKeyStore(resource, type, provider, Objects.toString(passwd, null));
     }
 
     /**
