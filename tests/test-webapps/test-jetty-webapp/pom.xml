@@ -153,6 +153,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-servlet</artifactId>
       <version>${project.version}</version>
