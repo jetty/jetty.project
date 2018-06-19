@@ -119,10 +119,6 @@ public class FileSessionManagerTest
         Assert.assertTrue(new File(testDir, expectedFilename).createNewFile());
 
         Assert.assertTrue("File should exist!", new File(testDir, expectedFilename).exists());
-
-        Session session = handler.getSession("validFile123");
-
-        Assert.assertTrue("File shouldn't exist!", !new File(testDir,expectedFilename).exists());
     }
 
     @Test
