@@ -97,6 +97,11 @@ public class SslBytesServerTest extends SslBytesTest
         threadPool = Executors.newCachedThreadPool();
         server = new Server();
 
+        sslFills.set(0);
+        sslFlushes.set(0);
+        httpParses.set(0);
+        serverEndPoint.set(null);
+        
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
         sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
@@ -1317,7 +1322,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         closeClient(client);
     }
-
+    
     @Test(timeout=60000)
     public void testRequestWithContentWithRenegotiationInMiddleOfContentWhenRenegotiationIsForbidden() throws Exception
     {
@@ -1364,7 +1369,21 @@ public class SslBytesServerTest extends SslBytesTest
         proxy.flushToServer(record);
 
         // Renegotiation not allowed, server has closed
-        record = proxy.readFromServer();
+        loop: while(true)
+        {
+            record = proxy.readFromServer();
+            if (record==null)
+                break;
+            switch(record.getType())
+            {
+                case APPLICATION:
+                    Assert.fail("application data not allows after renegotiate");
+                case ALERT:
+                    break loop;
+                default:
+                    continue;
+            }
+        }
         Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
         proxy.flushToClient(record);
 

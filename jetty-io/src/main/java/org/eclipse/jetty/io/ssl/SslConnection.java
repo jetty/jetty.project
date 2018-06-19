@@ -88,7 +88,7 @@ public class SslConnection extends AbstractConnection
     }
     
     private enum FillState 
-    { 
+    {
         IDLE, // Not Filling any data
         INTERESTED, // We have a pending read interest
         NEEDS_WRAP,
