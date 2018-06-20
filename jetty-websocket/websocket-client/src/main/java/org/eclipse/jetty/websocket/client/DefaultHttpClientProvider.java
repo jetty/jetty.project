@@ -21,6 +21,8 @@ package org.eclipse.jetty.websocket.client;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
@@ -31,11 +33,13 @@ class DefaultHttpClientProvider
     {
         SslContextFactory sslContextFactory = null;
         Executor executor = null;
+        ByteBufferPool bufferPool = null;
         
         if (scope != null)
         {
             sslContextFactory = scope.getSslContextFactory();
             executor = scope.getExecutor();
+            bufferPool = scope.getBufferPool();
         }
         
         if (sslContextFactory == null)
@@ -53,6 +57,13 @@ class DefaultHttpClientProvider
             executor = threadPool;
         }
         client.setExecutor(executor);
+
+        if (bufferPool == null)
+        {
+            bufferPool = new MappedByteBufferPool();
+        }
+        client.setByteBufferPool(bufferPool);
+
         return client;
     }
 }

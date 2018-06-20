@@ -43,7 +43,7 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
             {
                 ContextHandler handler = ((ContextHandler.Context)context).getContextHandler();
                 // Let ContextHandler handle configuration lifecycle
-                handler.addBean(configuration);
+                handler.addManaged(configuration);
             }
         }
         return configuration;

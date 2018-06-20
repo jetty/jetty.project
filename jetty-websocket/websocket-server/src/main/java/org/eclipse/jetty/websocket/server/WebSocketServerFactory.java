@@ -355,20 +355,26 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      */
     private Executor findExecutor()
     {
-        if(context != null)
+        // Try as bean
+        Executor executor = getBean(Executor.class);
+        if (executor != null)
         {
-            // Attempt to pull Executor from ServletContext attribute
+            return executor;
+        }
 
+        // Attempt to pull Executor from ServletContext attribute
+        if (context != null)
+        {
             // Try websocket specific one first
             Executor contextExecutor = (Executor) context.getAttribute("org.eclipse.jetty.websocket.Executor");
-            if(contextExecutor != null)
+            if (contextExecutor != null)
             {
                 return contextExecutor;
             }
 
             // Try ContextHandler version
             contextExecutor = (Executor) context.getAttribute("org.eclipse.jetty.server.Executor");
-            if(contextExecutor != null)
+            if (contextExecutor != null)
             {
                 return contextExecutor;
             }
@@ -378,7 +384,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             if (contextHandler != null)
             {
                 contextExecutor = contextHandler.getServer().getThreadPool();
-                if(contextExecutor != null)
+                if (contextExecutor != null) // This should always be true!
                 {
                     return contextExecutor;
                 }
@@ -414,8 +420,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
-        if(!isStarted())
-            throw new IllegalStateException("WebSocketServerFactory not started yet");
         return objectFactory;
     }
     
