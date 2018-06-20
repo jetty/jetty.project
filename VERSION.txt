@@ -1,3 +1,6 @@
+jetty-9.4.7.v20180619 - 19 June 2018
+ + 2102 Backport FileSessionDataStore
+
 jetty-9.4.7.v20170914 - 14 September 2017
  + 215 Consider native ALPN/SSL provider
  + 487 JDK 9 build compatibility
@@ -91,8 +94,8 @@ jetty-9.4.7.v20170914 - 14 September 2017
  + 1814 Move JavaVersion to jetty-util for future Java 9 support requirements
  + 1816 HttpClientTest.testClientCannotValidateServerCertificate() hangs with
    JDK 9
- + 475546 ClosedChannelException when connection to HTTPS over HTTP proxy
-   with CONNECT
+ + 475546 ClosedChannelException when connection to HTTPS over HTTP proxy with
+   CONNECT
 
 jetty-9.4.6.v20170531 - 31 May 2017
  + 523 TLS close behaviour breaking session resumption
