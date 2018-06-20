@@ -1,8 +1,11 @@
+jetty-9.4.2.v20180619 - 19 June 2018
+ + 2101 Backport FileSessionDataStore
+
 jetty-9.4.2.v20170220 - 20 February 2017
  + 612 Support HTTP Trailer
  + 1047 ReadPendingException and then thread death
  + 1150 Rationalize the session tests
- + 1226 Undefined JETTY_LOGS breaks jetty.sh 
+ + 1226 Undefined JETTY_LOGS breaks jetty.sh
  + 1282 ByteArrayEndPointTest.testIdle() failure
  + 1284 IllegalStateException updating session inactive interval
  + 1290 http2-hpack not visible in OSGi
