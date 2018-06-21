@@ -54,24 +54,29 @@ public class DefaultHandler extends AbstractHandler
     private static final Logger LOG = Log.getLogger(DefaultHandler.class);
 
     final long _faviconModified=(System.currentTimeMillis()/1000)*1000L;
-    byte[] _favicon;
+    final byte[] _favicon;
     boolean _serveIcon=true;
     boolean _showContexts=true;
 
     public DefaultHandler()
     {
+        byte[] favbytes=null;
         try
         {
             URL fav = this.getClass().getClassLoader().getResource("org/eclipse/jetty/favicon.ico");
             if (fav!=null)
             {
                 Resource r = Resource.newResource(fav);
-                _favicon=IO.readBytes(r.getInputStream());
+                favbytes=IO.readBytes(r.getInputStream());
             }
         }
         catch(Exception e)
         {
             LOG.warn(e);
+        }
+        finally
+        {
+            _favicon = favbytes;
         }
     }
 
@@ -90,7 +95,7 @@ public class DefaultHandler extends AbstractHandler
         String method=request.getMethod();
 
         // little cheat for common request
-        if (_serveIcon && _favicon!=null && HttpMethod.GET.is(method) && request.getRequestURI().equals("/favicon.ico"))
+        if (_serveIcon && _favicon!=null && HttpMethod.GET.is(method) && target.equals("/favicon.ico"))
         {
             if (request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.toString())==_faviconModified)
                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
@@ -106,7 +111,6 @@ public class DefaultHandler extends AbstractHandler
             return;
         }
 
-
         if (!_showContexts || !HttpMethod.GET.is(method) || !request.getRequestURI().equals("/"))
         {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -114,7 +118,7 @@ public class DefaultHandler extends AbstractHandler
         }
 
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-        response.setContentType(MimeTypes.Type.TEXT_HTML.toString());
+        response.setContentType(MimeTypes.Type.TEXT_HTML_8859_1.asString());
 
         try (ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(1500);)
         {
