@@ -57,7 +57,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();
-            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, httpClient.getMaxRequestsQueuedPerDestination());
+            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, 2);
         });
     }
 

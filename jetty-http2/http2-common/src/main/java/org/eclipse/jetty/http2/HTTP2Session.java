@@ -692,10 +692,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             int localCount = localStreamCount.get();
             int maxCount = getMaxLocalStreams();
-            if (maxCount >= 0 && localCount >= maxCount)
-                throw new IllegalStateException("Max local stream count " + maxCount + " exceeded");
             if (localStreamCount.compareAndSet(localCount, localCount + 1))
+            {
+                if (maxCount >= 0 && localCount >= maxCount)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("createLocalStream count({}) >= max({}) {}", localCount, maxCount, this);
+                    localStreamCount.decrementAndGet();
+                    throw new IllegalStateException("Max local stream count " + maxCount + " exceeded");
+                }
                 break;
+            }
         }
 
         IStream stream = newStream(streamId, true);
@@ -722,13 +729,21 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int remoteCount = AtomicBiInteger.getHi(encoded);
             int remoteClosing = AtomicBiInteger.getLo(encoded);
             int maxCount = getMaxRemoteStreams();
-            if (maxCount >= 0 && remoteCount - remoteClosing >= maxCount)
-            {
-                reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
-                return null;
-            }
+           
             if (remoteStreamCount.compareAndSet(encoded, remoteCount + 1, remoteClosing))
+            {
+                if (maxCount >= 0 && (remoteCount-remoteClosing) >= maxCount)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("createRemoteStream (remote(%d)-closing(%d)) >= max(%d) {}%n",
+                            remoteCount,remoteClosing,maxCount,this);
+                    remoteStreamCount.add(-1,0);
+                                        
+                    reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
+                    return null;
+                }
                 break;
+            }
         }
 
         IStream stream = newStream(streamId, false);

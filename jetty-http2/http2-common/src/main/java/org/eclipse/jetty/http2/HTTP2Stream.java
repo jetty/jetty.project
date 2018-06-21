@@ -353,16 +353,16 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 case NOT_CLOSED:
                 {
                     if (closeState.compareAndSet(current, CloseState.REMOTELY_CLOSED))
+                    {
+                        updateStreamCount(0, 1);
                         return false;
+                    }
                     break;
                 }
                 case LOCALLY_CLOSING:
                 {
                     if (closeState.compareAndSet(current, CloseState.CLOSING))
-                    {
-                        updateStreamCount(0, 1);
                         return false;
-                    }
                     break;
                 }
                 case LOCALLY_CLOSED:
@@ -388,16 +388,16 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 case NOT_CLOSED:
                 {
                     if (closeState.compareAndSet(current, CloseState.LOCALLY_CLOSING))
+                    {
+                        updateStreamCount(0, 1);
                         return false;
+                    }
                     break;
                 }
                 case REMOTELY_CLOSED:
                 {
                     if (closeState.compareAndSet(current, CloseState.CLOSING))
-                    {
-                        updateStreamCount(0, 1);
                         return false;
-                    }
                     break;
                 }
                 default:
@@ -464,7 +464,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         CloseState oldState = closeState.getAndSet(CloseState.CLOSED);
         if (oldState != CloseState.CLOSED)
         {
-            int deltaClosing = oldState == CloseState.CLOSING ? -1 : 0;
+            int deltaClosing = oldState == CloseState.NOT_CLOSED ? 0 : -1;
             updateStreamCount(-1, deltaClosing);
             onClose();
         }
