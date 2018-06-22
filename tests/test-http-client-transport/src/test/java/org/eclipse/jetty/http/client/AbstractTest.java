@@ -206,7 +206,6 @@ public abstract class AbstractTest
         clientThreads.setName("client");
         clientThreads.setDetailedDump(true);
         client = newHttpClient(provideClientTransport(transport), sslContextFactory);
-        client.setMaxConnectionsPerDestination(Integer.MAX_VALUE);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         client.start();
@@ -237,7 +236,6 @@ public abstract class AbstractTest
             case H2C:
             {
                 HTTP2CServerConnectionFactory factory = new HTTP2CServerConnectionFactory(httpConfig);
-                factory.setMaxConcurrentStreams(2);
                 result.add(factory);
                 break;
             }
