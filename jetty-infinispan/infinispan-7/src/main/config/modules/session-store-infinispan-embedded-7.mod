@@ -14,9 +14,8 @@ session-store
 infinispan-common
 
 [files]
+basehome:modules/session-store-infinispan-embedded-7/infinispan.xml|etc/infinispan.xml
 maven://org.infinispan/infinispan-embedded/7.1.1.Final|lib/infinispan/infinispan-embedded-7.1.1.Final.jar
-basehome:modules/session-store-infinispan-embedded/infinispan.xml|etc/infinispan.xml
-
 
 [xml]
 etc/sessions/infinispan/infinispan-embedded-7.xml
