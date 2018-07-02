@@ -19,7 +19,7 @@
 [[cg-security]]
 == Security
 
-[[t-security-reporting]]
+[[cg-security-reporting]]
 === Reporting Security Issues
 
 There are a number of avenues for reporting security issues to the Jetty project available.

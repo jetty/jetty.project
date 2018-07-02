@@ -23,7 +23,7 @@ If you are more interested in digging into what makes Jetty tick then this some 
 First we start with how to checkout and build Jetty, then on to our general coding standards followed by the actual patch contribution process.
 
 
-[[t-community-source]]
+[[cg-community-source]]
 === Source Control
 
 The https://github.com/eclipse/jetty.project[Eclipse Jetty project] is located at https://github.com[Github] under the Eclipse Foundation https://github.com/eclipse[parent project]. There are a number of branches that are generally of interest.
@@ -87,7 +87,7 @@ ____
 
 
 
-[[t-contributing-coding-standards]]
+[[cg-coding-standards]]
 === Coding Standards
 
 Jetty uses number of conventions for its source code. The developers of Jetty use a variety of tooling and editors when developing Jetty so standards and conventions are important!
@@ -164,7 +164,7 @@ As much as we would like to accept a tremendous pull request, without the proper
 That being said, the steps are not particularly onerous and we are happy to work with you to get them accomplished.
 
 
-[[t-contributing-patches]]
+[[cg-patches]]
 === Contributing Patches
 
 We love seeing people contribute patches to the Jetty project and the process is relatively simple.
@@ -183,7 +183,7 @@ The following is the general process by which we operate.
 Not everything is specifically relevant since we are at GitHub but the crux of things are detailed there.
 The ECA is *critically* important to the process.
 
-[[t-contributing-eca]]
+[[cg-contributing-eca]]
 ==== Sign an Eclipse Contributor Agreement (ECA)
 
 The Eclipse Foundation has a strong Intellectual Property policy which tracks contributions in detail to ensure that:
@@ -229,12 +229,12 @@ When the Jetty project runs releases we have an automated process that scans for
 > git commit -s -m "Issue #123 resolving the issue by adding widget"
 ----
 
-[[t-contributing-the-pull-request]]
+[[cg-the-pull-request]]
 ==== The Pull Request
 
 Pull requests are very much a GitHub process so best link:https://help.github.com/articles/creating-a-pull-request[explained by Github].
 
-[[t-contributing-our-policies]]
+[[cg-our-policies]]
 ==== Our Policies
 
 We wholeheartedly welcome contributions to Jetty and will do our best to process them in a timely fashion.
