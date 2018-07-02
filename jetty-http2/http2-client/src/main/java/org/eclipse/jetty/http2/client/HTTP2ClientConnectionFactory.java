@@ -66,6 +66,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Generator generator = new Generator(byteBufferPool);
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
+
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
 
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
