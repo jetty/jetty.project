@@ -55,8 +55,13 @@ endif::[]
 
 
 include::1-introduction.adoc[]
+
 include::2-community.adoc[]
+
 include::3-source.adoc[]
+
 include::4-documentation.adoc[]
+
 include::5-security.adoc[]
+
 include::6-conclusion.adoc[]
