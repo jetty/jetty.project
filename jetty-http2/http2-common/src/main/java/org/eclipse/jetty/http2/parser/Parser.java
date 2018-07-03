@@ -52,6 +52,7 @@ public class Parser
     private final HeaderParser headerParser;
     private final HeaderBlockParser headerBlockParser;
     private final BodyParser[] bodyParsers;
+    private final UnknownBodyParser unknownBodyParser;
     private boolean continuation;
     private State state = State.HEADER;
 
@@ -60,6 +61,7 @@ public class Parser
         this.listener = listener;
         this.headerParser = new HeaderParser();
         this.headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize));
+        this.unknownBodyParser = new UnknownBodyParser(headerParser, listener);
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 
@@ -172,9 +174,13 @@ public class Parser
         int type = getFrameType();
         if (type < 0 || type >= bodyParsers.length)
         {
-            BufferUtil.clear(buffer);
-            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unknown_frame_type_" + type);
-            return false;
+            // Unknown frame types must be ignored.
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring unknown frame type {}", Integer.toHexString(type));
+            if (!unknownBodyParser.parse(buffer))
+                return false;
+            reset();
+            return true;
         }
 
         BodyParser bodyParser = bodyParsers[type];
