@@ -92,17 +92,11 @@ public class HeadersBodyParser extends BodyParser
                     length = getBodyLength();
 
                     if (isPadding())
-                    {
                         state = State.PADDING_LENGTH;
-                    }
                     else if (hasFlag(Flags.PRIORITY))
-                    {
                         state = State.EXCLUSIVE;
-                    }
                     else
-                    {
                         state = State.HEADERS;
-                    }
                     break;
                 }
                 case PADDING_LENGTH:
@@ -162,6 +156,9 @@ public class HeadersBodyParser extends BodyParser
                 }
                 case WEIGHT:
                 {
+                    // SPEC: stream cannot depend on itself.
+                    if (getStreamId() == parentStreamId)
+                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_priority_frame");
                     weight = (buffer.get() & 0xFF) + 1;
                     --length;
                     state = State.HEADERS;
