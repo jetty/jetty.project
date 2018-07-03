@@ -27,10 +27,6 @@ If you would like to report a security issue please follow these link:#security-
 [width="99%",cols="11%,19%,14%,9%,14%,14%,19%",options="header",]
 |=======================================================================
 |yyyy/mm/dd |ID |Exploitable |Severity |Affects |Fixed Version |Comment
-<<<<<<< HEAD
-|2016/05/31 |http://www.ocert.org/advisories/ocert-2016-001.html[CVE-2016-4800] |high |high |>= 9.3.0, < = 9.3.8 |9.3.9
-|Alias vulnerability allowing access to protected resources within a webapp on Windows.
-=======
 
 |2018/06/25 |CVE-2018-12538 |High |High |>= 9.4.0, < = 9.4.8 |9.4.9
 |https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-12538[`HttpSessions` present specifically in the FileSystem’s storage could be hijacked/accessed by an unauthorized user.]
@@ -49,7 +45,6 @@ If you would like to report a security issue please follow these link:#security-
 
 |2016/05/31 |CVE-2016-4800 |high |high |>= 9.3.0, < = 9.3.8 |9.3.9
 |http://www.ocert.org/advisories/ocert-2016-001.html[Alias vulnerability allowing access to protected resources within a webapp on Windows.]
->>>>>>> jetty-9.3.x
 
 |2015/02/24 |http://blog.gdssecurity.com/labs/2015/2/25/jetleak-vulnerability-remote-leakage-of-shared-buffers-in-je.html[CVE-2015-2080] |high |high |>=9.2.3 <9.2.9 |9.2.9
 |JetLeak exposure of past buffers during HttpParser error
