@@ -235,7 +235,8 @@ public abstract class AbstractTest
             }
             case H2C:
             {
-                result.add(new HTTP2CServerConnectionFactory(httpConfig));
+                HTTP2CServerConnectionFactory factory = new HTTP2CServerConnectionFactory(httpConfig);
+                result.add(factory);
                 break;
             }
             case H2:
