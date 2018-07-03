@@ -23,7 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
@@ -172,9 +172,8 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
 
     private class SessionListenerPromise extends Session.Listener.Adapter implements Promise<Session>
     {
-        private final AtomicBoolean preface = new AtomicBoolean();
+        private final AtomicMarkableReference<HttpConnectionOverHTTP2> connection = new AtomicMarkableReference<>(null, false);
         private final Map<String, Object> context;
-        private HttpConnectionOverHTTP2 connection;
 
         private SessionListenerPromise(Map<String, Object> context)
         {
@@ -192,8 +191,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         @Override
         public void failed(Throwable failure)
         {
-            if (preface.compareAndSet(false, true))
-                promise().failed(failure);
+            failConnectionPromise(failure);
         }
 
         private HttpDestinationOverHTTP2 destination()
@@ -202,7 +200,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         }
 
         @SuppressWarnings("unchecked")
-        private Promise<Connection> promise()
+        private Promise<Connection> connectionPromise()
         {
             return (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
         }
@@ -213,45 +211,55 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
             Map<Integer, Integer> settings = frame.getSettings();
             if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
                 destination().setMaxRequestsPerConnection(settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS));
-            if (preface.compareAndSet(false, true))
+            if (!connection.isMarked())
                 onServerPreface(session);
         }
 
         private void onServerPreface(Session session)
         {
-            connection = newHttpConnection(destination(), session);
-            promise().succeeded(connection);
+            HttpConnectionOverHTTP2 connection = newHttpConnection(destination(), session);
+            if (this.connection.compareAndSet(null, connection, false, true))
+                connectionPromise().succeeded(connection);
         }
 
         @Override
         public void onClose(Session session, GoAwayFrame frame)
         {
-            HttpConnectionOverHTTP2 connection = this.connection;
+            if (failConnectionPromise(new ClosedChannelException()))
+                return;
+            HttpConnectionOverHTTP2 connection = this.connection.getReference();
             if (connection != null)
                 HttpClientTransportOverHTTP2.this.onClose(connection, frame);
-            else
-                failed(new ClosedChannelException());
         }
 
         @Override
         public boolean onIdleTimeout(Session session)
         {
             long idleTimeout = ((HTTP2Session)session).getEndPoint().getIdleTimeout();
-            HttpConnectionOverHTTP2 connection = this.connection;
+            if (failConnectionPromise(new TimeoutException("Idle timeout expired: " + idleTimeout + " ms")))
+                return true;
+            HttpConnectionOverHTTP2 connection = this.connection.getReference();
             if (connection != null)
                 return connection.onIdleTimeout(idleTimeout);
-            failed(new TimeoutException("Idle timeout expired: " + idleTimeout + " ms"));
             return true;
         }
 
         @Override
         public void onFailure(Session session, Throwable failure)
         {
-            HttpConnectionOverHTTP2 connection = this.connection;
+            if (failConnectionPromise(failure))
+                return;
+            HttpConnectionOverHTTP2 connection = this.connection.getReference();
             if (connection != null)
                 connection.close(failure);
-            else
-                failed(failure);
+        }
+
+        private boolean failConnectionPromise(Throwable failure)
+        {
+            boolean result = connection.compareAndSet(null, null, false, true);
+            if (result)
+                connectionPromise().failed(failure);
+            return result;
         }
     }
 }
