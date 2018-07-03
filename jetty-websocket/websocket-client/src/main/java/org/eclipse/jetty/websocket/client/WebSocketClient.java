@@ -110,7 +110,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory objectFactory)
     {
-        this(new SimpleContainerScope(new WebSocketPolicy(WebSocketBehavior.CLIENT), null, null, null, objectFactory), null, null, httpClient);
+        this(new SimpleContainerScope(new WebSocketPolicy(WebSocketBehavior.CLIENT), null, objectFactory), null, httpClient);
     }
 
     /**
@@ -175,7 +175,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(WebSocketContainerScope scope)
     {
-        this(scope, null, null, null);
+        this(scope, null, null);
     }
 
     /**
@@ -225,7 +225,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     private WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
         this(new SimpleContainerScope(new WebSocketPolicy(WebSocketBehavior.CLIENT), bufferPool, executor, sslContextFactory, objectFactory));
-        addBean(this.httpClient);
     }
 
     /**
