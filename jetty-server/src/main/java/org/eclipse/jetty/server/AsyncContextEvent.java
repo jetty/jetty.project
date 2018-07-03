@@ -168,7 +168,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     {
         if (_throwable==null)
             _throwable=e;
-        else if (_throwable != e)
+        else if (e != _throwable)
             _throwable.addSuppressed(e);
     }
 }

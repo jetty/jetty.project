@@ -184,8 +184,9 @@ public class HandlerCollection extends AbstractHandlerContainer
     @Override
     protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
-        if (getHandlers()!=null)
-            for (Handler h:getHandlers())
+        Handler[] handlers = getHandlers();
+        if (handlers!=null)
+            for (Handler h:handlers)
                 expandHandler(h, list, byClass);
     }
 
@@ -207,6 +208,6 @@ public class HandlerCollection extends AbstractHandlerContainer
     public String toString()
     {
         Handler[] handlers=getHandlers();
-        return super.toString()+(handlers==null?"[]":Arrays.asList(getHandlers()).toString());
+        return super.toString()+(handlers==null?"[]":Arrays.asList(handlers).toString());
     }
 }

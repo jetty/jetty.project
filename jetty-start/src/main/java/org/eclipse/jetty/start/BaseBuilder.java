@@ -246,7 +246,7 @@ public class BaseBuilder
 
         files.addAll(startArgs.getFiles());
         if (!files.isEmpty() && processFileResources(files))
-            modified.set(Boolean.TRUE);
+            modified.set(true);
         
         return modified.get();
     }

@@ -22,6 +22,7 @@ package org.eclipse.jetty.session.infinispan;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
@@ -258,7 +259,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     {
         // TODO find a better way to do this that does not pull into memory the
         // whole session object
-        final AtomicReference<Boolean> reference = new AtomicReference<>();
+        final AtomicBoolean reference = new AtomicBoolean();
         final AtomicReference<Exception> exception = new AtomicReference<>();
 
         Runnable load = new Runnable()
@@ -271,14 +272,14 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
                     SessionData sd = load(id);
                     if (sd == null)
                     {
-                        reference.set(Boolean.FALSE);
+                        reference.set(false);
                         return;
                     }
 
                     if (sd.getExpiry() <= 0)
-                        reference.set(Boolean.TRUE); //never expires
+                        reference.set(true); //never expires
                     else
-                        reference.set(Boolean.valueOf(sd.getExpiry() > System.currentTimeMillis())); //not expired yet
+                        reference.set(sd.getExpiry() > System.currentTimeMillis()); //not expired yet
                 }
                 catch (Exception e)
                 {

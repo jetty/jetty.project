@@ -69,7 +69,7 @@
           <debug>${it.debug}</debug>
           <addTestClassPath>true</addTestClassPath>
           <projectsDirectory>src/it</projectsDirectory>
-          <timeoutInSeconds>60</timeoutInSeconds>
+          <timeoutInSeconds>600</timeoutInSeconds>
           <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
           <pomIncludes>
             <pomInclude>*/pom.xml</pomInclude>

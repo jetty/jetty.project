@@ -54,7 +54,7 @@ public class PushSessionCacheFilter implements Filter
     public void init(FilterConfig config) throws ServletException
     {
         if (config.getInitParameter("associateDelay") != null)
-            _associateDelay = Long.valueOf(config.getInitParameter("associateDelay"));
+            _associateDelay = Long.parseLong(config.getInitParameter("associateDelay"));
 
         // Add a listener that is used to collect information about associated resource,
         // etags and modified dates

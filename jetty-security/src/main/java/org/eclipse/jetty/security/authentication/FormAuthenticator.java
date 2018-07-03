@@ -136,7 +136,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (error!=null)
             setErrorPage(error);
         String dispatch=configuration.getInitParameter(FormAuthenticator.__FORM_DISPATCH);
-        _dispatch = dispatch==null?_dispatch:Boolean.valueOf(dispatch);
+        _dispatch = dispatch==null?_dispatch:Boolean.parseBoolean(dispatch);
     }
 
     /* ------------------------------------------------------------ */

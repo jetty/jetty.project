@@ -22,7 +22,8 @@ import java.util.Set;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
+
+import org.eclipse.jetty.server.handler.ContextHandler;
 
 public class NativeWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
@@ -33,14 +34,23 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
         NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getAttribute(KEY);
         if (configuration == null)
         {
+            // Not provided to us, create a new default one.
             configuration = new NativeWebSocketConfiguration(context);
             context.setAttribute(KEY, configuration);
+
+            // Attach default configuration to context lifecycle
+            if (context instanceof ContextHandler.Context)
+            {
+                ContextHandler handler = ((ContextHandler.Context)context).getContextHandler();
+                // Let ContextHandler handle configuration lifecycle
+                handler.addManaged(configuration);
+            }
         }
         return configuration;
     }
     
     @Override
-    public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+    public void onStartup(Set<Class<?>> c, ServletContext ctx)
     {
         // initialize
         getDefaultFrom(ctx);

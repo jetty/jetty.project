@@ -74,7 +74,7 @@
  org.xml.sax.helpers,
  *
             </Import-Package>
-            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[9.1,10.0)"</DynamicImport-Package>
           </instructions>
         </configuration>
       </plugin>

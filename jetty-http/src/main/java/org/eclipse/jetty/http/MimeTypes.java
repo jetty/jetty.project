@@ -516,7 +516,7 @@ public class MimeTypes
      */
     public static Map<String,String> getAssumedEncodings()
     {
-        return __inferredEncodings;
+        return __assumedEncodings;
     }
 
     @Deprecated

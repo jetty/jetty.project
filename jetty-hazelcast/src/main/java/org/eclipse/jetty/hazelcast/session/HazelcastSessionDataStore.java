@@ -204,7 +204,7 @@ public class HazelcastSessionDataStore
         if (sd.getExpiry() <= 0)
             return true; //never expires
         else
-            return (Boolean.valueOf(sd.getExpiry() > System.currentTimeMillis())); //not expired yet
+            return sd.getExpiry() > System.currentTimeMillis(); //not expired yet
     }
 
     public String getCacheKey( String id )

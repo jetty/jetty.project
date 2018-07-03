@@ -170,7 +170,7 @@ public class ExtensionConfig
         {
             return defValue;
         }
-        return Integer.valueOf(val);
+        return Integer.parseInt(val);
     }
 
     public final String getParameter(String key, String defValue)

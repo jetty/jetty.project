@@ -250,7 +250,7 @@ public class DelayedStartClientOnServerTest
             
             List<String> threadNames = getThreadNames(server, (ContainerLifeCycle)container);
             assertNoHttpClientPoolThreads(threadNames);
-            assertThat("Threads", threadNames, hasItem(containsString("WebSocketContainer@")));
+            assertThat("Threads", threadNames, hasItem(containsString("WebSocketClient@")));
         }
         finally
         {
@@ -258,7 +258,7 @@ public class DelayedStartClientOnServerTest
         }
     }
     
-    @Test
+    @Test(timeout = 5000)
     public void testHttpClientThreads_AfterServerConnectTo() throws Exception
     {
         Server server = new Server(0);

@@ -112,7 +112,7 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
     {
         String mandatory = (String) messageInfo.getMap().get(JaspiMessageInfo.MANDATORY_KEY);
         if (mandatory == null) return false;
-        return Boolean.valueOf(mandatory);
+        return Boolean.parseBoolean(mandatory);
     }
 
     protected boolean login(Subject clientSubject, String credentials, 
