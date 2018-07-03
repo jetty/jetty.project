@@ -315,17 +315,14 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         if(this.objectFactory == null)
         {
-            this.objectFactory = findDecorator();
+            this.objectFactory = findDecoratedObjectFactory();
         }
 
         if(this.executor == null)
         {
             this.executor = findExecutor();
         }
-    
-        Objects.requireNonNull(this.objectFactory, DecoratedObjectFactory.class.getName());
-        Objects.requireNonNull(this.executor, Executor.class.getName());
-        
+
         super.doStart();
     }
 
@@ -333,7 +330,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * Attempt to find the DecoratedObjectFactory that should be used.
      * @return the DecoratedObjectFactory that should be used. (never null)
      */
-    protected DecoratedObjectFactory findDecorator()
+    private DecoratedObjectFactory findDecoratedObjectFactory()
     {
         DecoratedObjectFactory objectFactory;
 
@@ -356,30 +353,45 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * Attempt to find the Executor that should be used.
      * @return the Executor that should be used. (never null)
      */
-    protected Executor findExecutor()
+    private Executor findExecutor()
     {
-        if(context != null)
+        // Try as bean
+        Executor executor = getBean(Executor.class);
+        if (executor != null)
         {
-            // Attempt to pull Executor from ServletContext attribute
-            Executor contextExecutor = (Executor) context.getAttribute("org.eclipse.jetty.server.Executor");
-            if(contextExecutor != null)
+            return executor;
+        }
+
+        // Attempt to pull Executor from ServletContext attribute
+        if (context != null)
+        {
+            // Try websocket specific one first
+            Executor contextExecutor = (Executor) context.getAttribute("org.eclipse.jetty.websocket.Executor");
+            if (contextExecutor != null)
             {
                 return contextExecutor;
             }
 
-            // Attempt to pull Executor from Jetty Server, via ContextHandler
+            // Try ContextHandler version
+            contextExecutor = (Executor) context.getAttribute("org.eclipse.jetty.server.Executor");
+            if (contextExecutor != null)
+            {
+                return contextExecutor;
+            }
+
+            // Try Executor from Jetty Server
             ContextHandler contextHandler = ContextHandler.getContextHandler(context);
             if (contextHandler != null)
             {
                 contextExecutor = contextHandler.getServer().getThreadPool();
-                if(contextExecutor != null)
+                if (contextExecutor != null) // This should always be true!
                 {
                     return contextExecutor;
                 }
             }
         }
 
-        // Create a new one
+        // All else fails, Create a new one
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setName("WebSocketServerFactory");
         addManaged(threadPool);
