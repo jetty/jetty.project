@@ -67,6 +67,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
+        parser.setMaxFrameLength(client.getMaxFrameLength());
 
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
                 parser, session, client.getInputBufferSize(), promise, listener);
@@ -109,6 +110,10 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             if (settings == null)
                 settings = new HashMap<>();
             settings.computeIfAbsent(SettingsFrame.INITIAL_WINDOW_SIZE, k -> client.getInitialStreamRecvWindow());
+
+            Integer maxFrameLength = settings.get(SettingsFrame.MAX_FRAME_SIZE);
+            if (maxFrameLength != null)
+                getParser().setMaxFrameLength(maxFrameLength);
 
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);

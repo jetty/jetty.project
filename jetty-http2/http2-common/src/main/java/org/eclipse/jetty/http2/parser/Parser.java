@@ -24,6 +24,7 @@ import java.util.function.UnaryOperator;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -53,6 +54,7 @@ public class Parser
     private final HeaderBlockParser headerBlockParser;
     private final BodyParser[] bodyParsers;
     private final UnknownBodyParser unknownBodyParser;
+    private int maxFrameLength;
     private boolean continuation;
     private State state = State.HEADER;
 
@@ -62,6 +64,7 @@ public class Parser
         this.headerParser = new HeaderParser();
         this.headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize));
         this.unknownBodyParser = new UnknownBodyParser(headerParser, listener);
+        this.maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 
@@ -139,10 +142,13 @@ public class Parser
         if (!headerParser.parse(buffer))
             return false;
 
-        FrameType frameType = FrameType.from(getFrameType());
         if (LOG.isDebugEnabled())
-            LOG.debug("Parsed {} frame header from {}", frameType, buffer);
+            LOG.debug("Parsed {} frame header from {}", headerParser, buffer);
 
+        if (headerParser.getLength() > getMaxFrameLength())
+            return handleFrameTooLarge(buffer);
+
+        FrameType frameType = FrameType.from(getFrameType());
         if (continuation)
         {
             if (frameType != FrameType.CONTINUATION)
@@ -167,6 +173,13 @@ public class Parser
         }
         state = State.BODY;
         return true;
+    }
+
+    private boolean handleFrameTooLarge(ByteBuffer buffer)
+    {
+        BufferUtil.clear(buffer);
+        notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR.code, "invalid_frame_length");
+        return false;
     }
 
     protected boolean parseBody(ByteBuffer buffer)
@@ -207,6 +220,16 @@ public class Parser
     protected boolean hasFlag(int bit)
     {
         return headerParser.hasFlag(bit);
+    }
+
+    public int getMaxFrameLength()
+    {
+        return maxFrameLength;
+    }
+
+    public void setMaxFrameLength(int maxFrameLength)
+    {
+        this.maxFrameLength = maxFrameLength;
     }
 
     protected void notifyConnectionFailure(int error, String reason)
