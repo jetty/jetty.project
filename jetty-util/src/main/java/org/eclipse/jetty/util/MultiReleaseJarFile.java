@@ -75,7 +75,7 @@ public class MultiReleaseJarFile implements Closeable
         if (manifest==null)
             multiRelease = false;
         else
-            multiRelease = Boolean.valueOf(String.valueOf(manifest.getMainAttributes().getValue("Multi-Release")));
+            multiRelease = Boolean.parseBoolean(String.valueOf(manifest.getMainAttributes().getValue("Multi-Release")));
 
         Map<String,VersionedJarEntry> map = new TreeMap<>();
         jarFile.stream()

@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -64,9 +54,16 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- *
- */
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 @RunWith(AdvancedRunner.class)
 public abstract class HttpServerTestBase extends HttpServerTestFixture
 {
@@ -214,19 +211,23 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new HelloWorldHandler());
 
+        int maxHeaderSize = 1000;
+        _httpConfiguration.setRequestHeaderSize(maxHeaderSize);
+
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
              StacklessLogging stackless = new StacklessLogging(HttpConnection.class))
         {
-            ((AbstractLogger)Log.getLogger(HttpConnection.class)).info("expect URI is too large, then ISE extra data ...");
+            Log.getLogger(HttpConnection.class).info("expect URI is too large");
             OutputStream os = client.getOutputStream();
 
-            byte[] buffer = new byte[64 * 1024];
+            // Take into account the initial bytes for the HTTP method.
+            byte[] buffer = new byte[5 + maxHeaderSize];
             buffer[0]='G';
             buffer[1]='E';
             buffer[2]='T';
             buffer[3]=' ';
             buffer[4]='/';
-            Arrays.fill(buffer, 5,buffer.length-1,(byte)'A');
+            Arrays.fill(buffer, 5, buffer.length, (byte)'A');
 
             os.write(buffer);
             os.flush();
@@ -910,7 +911,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // read and check the times are < 999ms
             String[] times = in.readLine().split(",");
             for (String t : times)
-                Assert.assertTrue(Integer.valueOf(t) < 999);
+                Assert.assertTrue(Integer.parseInt(t) < 999);
 
 
             // read the EOF chunk
@@ -940,7 +941,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // read and check the times are < 999ms
             times = in.readLine().split(",");
             for (String t : times)
-                Assert.assertTrue(t, Integer.valueOf(t) < 999);
+                Assert.assertTrue(t, Integer.parseInt(t) < 999);
 
             // check close
             Assert.assertTrue(in.readLine() == null);

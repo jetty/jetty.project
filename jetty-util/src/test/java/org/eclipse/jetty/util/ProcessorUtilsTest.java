@@ -19,23 +19,48 @@
 package org.eclipse.jetty.util;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * we cannot really add env var in a unit test... so only test we get default value
- */
 public class ProcessorUtilsTest
 {
-    @BeforeClass
-    public static void beforeClass()
-    {
-        System.setProperty("JETTY_AVAILABLE_PROCESSORS","42");
-    }
-    
     @Test
-    public void getPropertyValue()
+    public void testSystemProperty()
     {
-        Assert.assertEquals(42, ProcessorUtils.availableProcessors());
+        // Classloading will trigger the static initializer.
+        int original = ProcessorUtils.availableProcessors();
+
+        // Verify that the static initializer logic is correct.
+        System.setProperty(ProcessorUtils.AVAILABLE_PROCESSORS, "42");
+        int processors = ProcessorUtils.init();
+        Assert.assertEquals(42, processors);
+
+        // Make sure the original value is preserved.
+        Assert.assertEquals(original, ProcessorUtils.availableProcessors());
+    }
+
+    @Test
+    public void testSetter()
+    {
+        // Classloading will trigger the static initializer.
+        int original = ProcessorUtils.availableProcessors();
+        try
+        {
+            try
+            {
+                ProcessorUtils.setAvailableProcessors(0);
+                Assert.fail();
+            }
+            catch (IllegalArgumentException expected)
+            {
+            }
+
+            int processors = 42;
+            ProcessorUtils.setAvailableProcessors(processors);
+            Assert.assertEquals(processors, ProcessorUtils.availableProcessors());
+        }
+        finally
+        {
+            ProcessorUtils.setAvailableProcessors(original);
+        }
     }
 }

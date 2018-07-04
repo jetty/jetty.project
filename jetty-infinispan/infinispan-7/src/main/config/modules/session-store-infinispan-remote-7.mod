@@ -9,9 +9,6 @@ session
 [provides]
 session-store
 
-[depend]
-infinispan-common
-
 [files]
 maven://org.infinispan/infinispan-remote/7.1.1.Final|lib/infinispan/infinispan-remote-7.1.1.Final.jar
 basehome:modules/session-store-infinispan-remote-7/

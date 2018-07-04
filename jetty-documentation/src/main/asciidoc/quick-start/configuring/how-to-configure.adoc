@@ -127,9 +127,6 @@ $ cat start.d/http.ini
 ## Connector idle timeout in milliseconds
 # jetty.http.idleTimeout=30000
 
-## Connector socket linger time in seconds (-1 to disable)
-# jetty.http.soLingerTime=-1
-
 ## Number of acceptors (-1 picks default based on number of cores)
 # jetty.http.acceptors=-1
 
@@ -213,9 +210,6 @@ etc/jetty-http.xml
 
 ## Connector idle timeout in milliseconds
 # jetty.http.idleTimeout=30000
-
-## Connector socket linger time in seconds (-1 to disable)
-# jetty.http.soLingerTime=-1
 ...
 ----
 At first blush, it looks remarkable similar to the `ini` file we just looked at.
@@ -269,7 +263,6 @@ $ cat $JETTY_HOME/etc/jetty-http.xml
         <Set name="host"><Property name="jetty.http.host" deprecated="jetty.host" /></Set>
         <Set name="port"><Property name="jetty.http.port" deprecated="jetty.port" default="8080" /></Set>
         <Set name="idleTimeout"><Property name="jetty.http.idleTimeout" deprecated="http.timeout" default="30000"/></Set>
-        <Set name="soLingerTime"><Property name="jetty.http.soLingerTime" deprecated="http.soLingerTime" default="-1"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="jetty.http.acceptorPriorityDelta" deprecated="http.acceptorPriorityDelta" default="0"/></Set>
         <Set name="acceptQueueSize"><Property name="jetty.http.acceptQueueSize" deprecated="http.acceptQueueSize" default="0"/></Set>
         <Get name="SelectorManager">

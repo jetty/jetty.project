@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
-import java.io.File;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,9 +51,9 @@ import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
@@ -142,16 +142,10 @@ public class ServerInstanceWrapper
 
         for (URL jettyConfiguration : jettyConfigurations)
         {
-            try(Resource r = Resource.newResource(jettyConfiguration))
+            try(InputStream in = jettyConfiguration.openStream())
             {
                 // Execute a Jetty configuration file
-                if (!r.exists())
-                {
-                    LOG.warn("File does not exist "+r);
-                    throw new IllegalStateException("No such jetty server config file: "+r);
-                }
-
-                XmlConfiguration config = new XmlConfiguration(r.getURI().toURL());
+                XmlConfiguration config = new XmlConfiguration(in);
 
                 config.getIdMap().putAll(id_map);
                 config.getProperties().putAll(properties);
@@ -247,13 +241,11 @@ public class ServerInstanceWrapper
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
         {
+            List<URL> sharedURLs = getManagedJettySharedLibFolderUrls(props);
+
             // passing this bundle's classloader as the context classloader
             // makes sure there is access to all the jetty's bundles
-            ClassLoader libExtClassLoader = null;
-            String sharedURLs = (String) props.get(OSGiServerConstants.MANAGED_JETTY_SHARED_LIB_FOLDER_URLS);
-
-            List<File> shared = sharedURLs != null ? extractFiles(sharedURLs) : null;
-            libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(shared, null,JettyBootstrapActivator.class.getClassLoader());
+            ClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(null, sharedURLs, JettyBootstrapActivator.class.getClassLoader());
 
             if (LOG.isDebugEnabled()) LOG.debug("LibExtClassLoader = "+libExtClassLoader);
             
@@ -313,7 +305,7 @@ public class ServerInstanceWrapper
             Thread.currentThread().setContextClassLoader(contextCl);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public void stop()
     {
@@ -431,20 +423,26 @@ public class ServerInstanceWrapper
             }
         }
     }
-    
 
-  
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
-     * Get the folders that might contain jars for the legacy J2EE shared
-     * libraries
+     * Get the Jetty Shared Lib Folder URLs in a form that is suitable for
+     * {@link LibExtClassLoaderHelper} to use.
+     *
+     * @param props the properties to look for the configuration in
+     * @return the list of URLs found, or null if none found
      */
-    private List<File> extractFiles(String propertyValue)
+    private List<URL> getManagedJettySharedLibFolderUrls(Dictionary<String,Object> props)
     {
-        StringTokenizer tokenizer = new StringTokenizer(propertyValue, ",;", false);
-        List<File> files = new ArrayList<>();
+        String sharedURLs = (String) props.get(OSGiServerConstants.MANAGED_JETTY_SHARED_LIB_FOLDER_URLS);
+        if (StringUtil.isBlank(sharedURLs))
+        {
+            return null;
+        }
+
+        List<URL> libURLs = new ArrayList<>();
+
+        StringTokenizer tokenizer = new StringTokenizer(sharedURLs, ",;", false);
         while (tokenizer.hasMoreTokens())
         {
             String tok = tokenizer.nextToken();
@@ -454,12 +452,12 @@ public class ServerInstanceWrapper
                 url = BundleFileLocatorHelperFactory.getFactory().getHelper().getFileURL(url);
                 if (url.getProtocol().equals("file"))
                 {
-                    Resource res = Resource.newResource(url);
-                    File folder = res.getFile();
-                    if (folder != null)
-                    {
-                        files.add(folder);
-                    }
+                    libURLs.add(new URL("jar:" + url.toExternalForm() + "!/"));
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unrecognized Jetty Shared Lib URL: " + url);
                 }
             }
             catch (Throwable mfe)
@@ -467,7 +465,6 @@ public class ServerInstanceWrapper
                 LOG.warn(mfe);
             }
         }
-        return files;
+        return libURLs;
     }
-
 }

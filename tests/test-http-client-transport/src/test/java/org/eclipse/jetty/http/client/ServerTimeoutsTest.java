@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -142,6 +143,7 @@ public class ServerTimeoutsTest extends AbstractTest
                     {
                         if (t instanceof TimeoutException)
                             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+
                         asyncContext.complete();
                     }
                 });
@@ -430,7 +432,7 @@ public class ServerTimeoutsTest extends AbstractTest
         });
         setServerIdleTimeout(idleTimeout);
 
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class, QueuedThreadPool.class))
         {
             DeferredContentProvider contentProvider = new DeferredContentProvider();
             CountDownLatch resultLatch = new CountDownLatch(1);
@@ -493,9 +495,10 @@ public class ServerTimeoutsTest extends AbstractTest
                         if (failure instanceof TimeoutException)
                         {
                             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                            asyncContext.complete();
                             handlerLatch.countDown();
                         }
+
+                        asyncContext.complete();
                     }
                 });
             }
@@ -541,17 +544,17 @@ public class ServerTimeoutsTest extends AbstractTest
                     @Override
                     public void onWritePossible() throws IOException
                     {
-                        output.write(new byte[64 * 1024 * 1024]);
+                        if (output.isReady())
+                            output.write(new byte[64 * 1024 * 1024]);
                     }
 
                     @Override
                     public void onError(Throwable failure)
                     {
                         if (failure instanceof TimeoutException)
-                        {
-                            asyncContext.complete();
                             handlerLatch.countDown();
-                        }
+
+                        asyncContext.complete();
                     }
                 });
             }
@@ -748,9 +751,10 @@ public class ServerTimeoutsTest extends AbstractTest
                         if (failure instanceof TimeoutException)
                         {
                             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                            asyncContext.complete();
                             handlerLatch.countDown();
                         }
+
+                        asyncContext.complete();
                     }
                 });
             }

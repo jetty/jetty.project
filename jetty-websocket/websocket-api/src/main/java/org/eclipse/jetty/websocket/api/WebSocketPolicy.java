@@ -144,7 +144,12 @@ public class WebSocketPolicy
 
     public WebSocketPolicy clonePolicy()
     {
-        WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
+        return clonePolicy(this.behavior);
+    }
+
+    public WebSocketPolicy clonePolicy(WebSocketBehavior behavior)
+    {
+        WebSocketPolicy clone = new WebSocketPolicy(behavior);
         clone.idleTimeout = this.idleTimeout;
         clone.maxTextMessageSize = this.maxTextMessageSize;
         clone.maxTextMessageBufferSize = this.maxTextMessageBufferSize;

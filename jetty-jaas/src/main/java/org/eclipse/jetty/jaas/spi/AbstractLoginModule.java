@@ -86,14 +86,18 @@ public abstract class AbstractLoginModule implements LoginModule
         public void setJAASInfo (Subject subject)
         {
             subject.getPrincipals().add(this.principal);
-            subject.getPrivateCredentials().add(this.user.getCredential());
+            if (this.user.getCredential() != null) {
+                subject.getPrivateCredentials().add(this.user.getCredential());
+            }
             subject.getPrincipals().addAll(roles);
         }
 
         public void unsetJAASInfo (Subject subject)
         {
             subject.getPrincipals().remove(this.principal);
-            subject.getPrivateCredentials().remove(this.user.getCredential());
+            if (this.user.getCredential() != null) {
+                subject.getPrivateCredentials().remove(this.user.getCredential());
+            }
             subject.getPrincipals().removeAll(this.roles);
         }
 

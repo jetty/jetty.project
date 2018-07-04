@@ -10,8 +10,6 @@ session
 [provides]
 session-store
 
-[depend]
-infinispan-common
 
 [files]
 basehome:modules/session-store-infinispan-embedded-7/infinispan.xml|etc/infinispan.xml

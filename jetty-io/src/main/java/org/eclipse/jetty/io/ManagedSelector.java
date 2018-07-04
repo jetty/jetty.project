@@ -635,6 +635,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             this.channel = channel;
             this.attachment = attachment;
+            _selectorManager.onAccepting(channel);
         }
 
         @Override
@@ -655,6 +656,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             catch (Throwable x)
             {
                 closeNoExceptions(channel);
+                _selectorManager.onAcceptFailed(channel,x);
                 LOG.debug(x);
             }
         }
@@ -665,6 +667,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             try
             {
                 createEndPoint(channel, key);
+                _selectorManager.onAccepted(channel);
             }
             catch (Throwable x)
             {
@@ -678,6 +681,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             closeNoExceptions(channel);
             LOG.warn(String.valueOf(failure));
             LOG.debug(failure);
+            _selectorManager.onAcceptFailed(channel,failure);
         }
     }
 

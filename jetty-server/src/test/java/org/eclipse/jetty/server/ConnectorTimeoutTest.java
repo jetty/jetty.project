@@ -24,8 +24,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Exchanger;
@@ -189,114 +189,24 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         // Get the server side endpoint
         EndPoint endPoint = exchanger.exchange(null,10,TimeUnit.SECONDS);
         if (endPoint instanceof SslConnection.DecryptedEndPoint)
-            endPoint=endPoint.getConnection().getEndPoint();
+            endPoint = ((SslConnection.DecryptedEndPoint)endPoint).getSslConnection().getEndPoint();
 
         // read the response
         String result=IO.toString(is);
-        Assert.assertThat("OK",result, Matchers.containsString("200 OK"));
-
-        // check client reads EOF
-        Assert.assertEquals(-1, is.read());
-
-        // wait for idle timeout
-        TimeUnit.MILLISECONDS.sleep(3 * MAX_IDLE_TIME);
-
-        // further writes will get broken pipe or similar
-        try
-        {
-            for (int i=0;i<1000;i++)
-            {
-                os.write((
-                        "GET / HTTP/1.0\r\n"+
-                        "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                        "connection: keep-alive\r\n"+
-                "\r\n").getBytes("utf-8"));
-                os.flush();
-            }
-            Assert.fail("half close should have timed out");
-        }
-        catch(SocketException e)
-        {
-            // expected
-        }
-        // check the server side is closed
-        Assert.assertFalse(endPoint.isOpen());
-    }
-
-    @Test(timeout=60000)
-    public void testMaxIdleWithRequest10ClientIgnoresClose() throws Exception
-    {
-        final Exchanger<EndPoint> exchanger = new Exchanger<>();
-        configureServer(new HelloWorldHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                    ServletException
-            {
-                try
-                {
-                    exchanger.exchange(baseRequest.getHttpChannel().getEndPoint());
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                super.handle(target, baseRequest, request, response);
-            }
-
-        });
-        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
-        client.setSoTimeout(10000);
-
-        Assert.assertFalse(client.isClosed());
-
-        OutputStream os=client.getOutputStream();
-        InputStream is=client.getInputStream();
-
-        os.write((
-                "GET / HTTP/1.0\r\n"+
-                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                "connection: close\r\n"+
-        "\r\n").getBytes("utf-8"));
-        os.flush();
-
-        // Get the server side endpoint
-        EndPoint endPoint = exchanger.exchange(null,10,TimeUnit.SECONDS);
-        if (endPoint instanceof SslConnection.DecryptedEndPoint)
-            endPoint=endPoint.getConnection().getEndPoint();
-
-        // read the response
-        String result=IO.toString(is);
-        Assert.assertThat("OK",result, Matchers.containsString("200 OK"));
+        Assert.assertThat(result, Matchers.containsString("200 OK"));
 
         // check client reads EOF
         Assert.assertEquals(-1, is.read());
         Assert.assertTrue(endPoint.isOutputShutdown());
 
-        Thread.sleep(2 * MAX_IDLE_TIME);
-
-        // further writes will get broken pipe or similar
-        try
-        {
-            long end=TimeUnit.NANOSECONDS.toMillis(System.nanoTime())+MAX_IDLE_TIME+3000;
-            while (TimeUnit.NANOSECONDS.toMillis(System.nanoTime())<end)
-            {
-                os.write("THIS DATA SHOULD NOT BE PARSED!\n\n".getBytes("utf-8"));
-                os.flush();
-                Thread.sleep(100);
-            }
-            Assert.fail("half close should have timed out");
-        }
-        catch(SocketException e)
-        {
-            // expected
-
-            // Give the SSL onClose time to act
-            Thread.sleep(100);
-        }
+        // wait for idle timeout
+        TimeUnit.MILLISECONDS.sleep(2 * MAX_IDLE_TIME);
 
         // check the server side is closed
         Assert.assertFalse(endPoint.isOpen());
+        Object transport = endPoint.getTransport();
+        if (transport instanceof Channel)
+            Assert.assertFalse(((Channel)transport).isOpen());
     }
 
     @Test(timeout=60000)
@@ -343,37 +253,24 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         // Get the server side endpoint
         EndPoint endPoint = exchanger.exchange(null,10,TimeUnit.SECONDS);
+        if (endPoint instanceof SslConnection.DecryptedEndPoint)
+            endPoint = ((SslConnection.DecryptedEndPoint)endPoint).getSslConnection().getEndPoint();
 
         // read the response
         IO.toString(is);
 
         // check client reads EOF
         Assert.assertEquals(-1, is.read());
+        Assert.assertTrue(endPoint.isOutputShutdown());
 
-        TimeUnit.MILLISECONDS.sleep(3*MAX_IDLE_TIME);
+        // The server has shutdown the output, the client does not close,
+        // the server should idle timeout and close the connection.
+        TimeUnit.MILLISECONDS.sleep(2 * MAX_IDLE_TIME);
 
-
-        // further writes will get broken pipe or similar
-        try
-        {
-            for (int i=0;i<1000;i++)
-            {
-                os.write((
-                        "GET / HTTP/1.0\r\n"+
-                        "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                        "connection: keep-alive\r\n"+
-                "\r\n").getBytes("utf-8"));
-                os.flush();
-            }
-            Assert.fail("half close should have timed out");
-        }
-        catch(SocketException e)
-        {
-            // expected
-        }
-
-        // check the server side is closed
         Assert.assertFalse(endPoint.isOpen());
+        Object transport = endPoint.getTransport();
+        if (transport instanceof Channel)
+            Assert.assertFalse(((Channel)transport).isOpen());
     }
 
     @Test(timeout=60000)

@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.client;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -351,6 +352,8 @@ public class ClientCloseTest
             // client close event on ws-endpoint
             clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.NORMAL), containsString("From Server"));
         }
+
+        assertThat("Client Open Sessions", client.getOpenSessions(), empty());
     }
 
     @Ignore("Need sbordet's help here")
@@ -452,6 +455,7 @@ public class ClientCloseTest
 
         // client triggers close event on client ws-endpoint
         clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.PROTOCOL),allOf(containsString("Invalid control frame"),containsString("length")));
+        assertThat("Client Open Sessions", client.getOpenSessions(), empty());
     }
 
     @Test
@@ -495,6 +499,7 @@ public class ClientCloseTest
                             containsString("Disconnected")
                     ));
         }
+        assertThat("Client Open Sessions", client.getOpenSessions(), empty());
     }
 
     @Test
@@ -533,7 +538,15 @@ public class ClientCloseTest
             // client idle timeout triggers close event on client ws-endpoint
             assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
             assertThat("OnError", clientSocket.error.get(), instanceOf(TimeoutException.class));
+
+            // client close should occur
+            clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL),
+                    anyOf(
+                            containsString("Timeout"),
+                            containsString("Disconnected")
+                    ));
         }
+        assertThat("Client Open Sessions", client.getOpenSessions(), empty());
     }
 
     @Test(timeout = 5000L)
@@ -584,6 +597,7 @@ public class ClientCloseTest
             {
                 clientSockets.get(i).assertReceivedCloseEvent(timeout, is(StatusCode.SHUTDOWN), containsString("Shutdown"));
             }
+            assertThat("Client Open Sessions", client.getOpenSessions(), empty());
         }
         finally
         {
@@ -637,5 +651,6 @@ public class ClientCloseTest
             // assert - close reason message contains (write failure)
             clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), containsString("EOF"));
         }
+        assertThat("Client Open Sessions", client.getOpenSessions(), empty());
     }
 }

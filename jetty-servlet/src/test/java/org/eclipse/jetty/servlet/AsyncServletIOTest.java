@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlet;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -481,7 +482,7 @@ public class AsyncServletIOTest
 
                     while (writes!=null && _w< writes.length)
                     {
-                        int write=Integer.valueOf(writes[_w++]);
+                        int write=Integer.parseInt(writes[_w++]);
                         
                         if (write==0)
                             out.flush();
@@ -695,7 +696,8 @@ public class AsyncServletIOTest
             LOG.debug("last: "+last);
             
             // last non empty line should not contain end chunk
-            assertThat(last,not(containsString("0")));
+            assertThat(last, notNullValue());
+            assertThat(last.trim(),not(startsWith("0")));
         }
 
         assertTrue(_servlet4.completed.await(5, TimeUnit.SECONDS));
