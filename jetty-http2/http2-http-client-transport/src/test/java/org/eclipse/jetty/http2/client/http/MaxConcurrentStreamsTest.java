@@ -18,11 +18,15 @@
 
 package org.eclipse.jetty.http2.client.http;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -36,6 +40,7 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -317,6 +322,49 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         // The requests should be processed in parallel, not sequentially.
         Assert.assertTrue(latch.await(maxConcurrent * sleep / 2, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testManyConcurrentRequestsWithSmallConcurrentStreams() throws Exception
+    {
+        byte[] data = new byte[64 * 1024];
+        start(1, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.getOutputStream().write(data);
+            }
+        });
+
+        client.setMaxConnectionsPerDestination(32768);
+        client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+
+        int parallelism = 16;
+        int runs = 1;
+        int iterations = 256;
+        int total = parallelism * runs * iterations;
+        CountDownLatch latch = new CountDownLatch(total);
+        Queue<Result> failures = new ConcurrentLinkedQueue<>();
+        ForkJoinPool pool = new ForkJoinPool(parallelism);
+        pool.submit(() -> IntStream.range(0, parallelism).parallel().forEach(i ->
+                IntStream.range(0, runs).forEach(j ->
+                {
+                    for (int k = 0; k < iterations; ++k)
+                    {
+                        client.newRequest("localhost", connector.getLocalPort())
+                                .path("/" + i + "_" + j + "_" + k)
+                                .send(result ->
+                                {
+                                    if (result.isFailed())
+                                        failures.offer(result);
+                                    latch.countDown();
+                                });
+                    }
+                })));
+
+        Assert.assertTrue(latch.await(total * 10, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(failures.toString(), failures.isEmpty());
     }
 
     private void primeConnection() throws Exception
