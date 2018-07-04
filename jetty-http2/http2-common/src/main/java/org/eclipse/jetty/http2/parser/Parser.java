@@ -36,7 +36,6 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -132,8 +131,7 @@ public class Parser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
-            BufferUtil.clear(buffer);
-            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "parser_error");
+            connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR, "parser_error");
         }
     }
 
@@ -146,40 +144,26 @@ public class Parser
             LOG.debug("Parsed {} frame header from {}", headerParser, buffer);
 
         if (headerParser.getLength() > getMaxFrameLength())
-            return handleFrameTooLarge(buffer);
+            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR, "invalid_frame_length");
 
         FrameType frameType = FrameType.from(getFrameType());
         if (continuation)
         {
+            // SPEC: CONTINUATION frames must be consecutive.
             if (frameType != FrameType.CONTINUATION)
-            {
-                // SPEC: CONTINUATION frames must be consecutive.
-                BufferUtil.clear(buffer);
-                notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "continuation_frame_expected");
-                return false;
-            }
+                return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR, "expected_continuation_frame");
             if (headerParser.hasFlag(Flags.END_HEADERS))
-            {
                 continuation = false;
-            }
         }
         else
         {
-            if (frameType == FrameType.HEADERS &&
-                    !headerParser.hasFlag(Flags.END_HEADERS))
-            {
-                continuation = true;
-            }
+            if (frameType == FrameType.HEADERS)
+                continuation = !headerParser.hasFlag(Flags.END_HEADERS);
+            else if (frameType == FrameType.CONTINUATION)
+                return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR, "unexpected_continuation_frame");
         }
         state = State.BODY;
         return true;
-    }
-
-    private boolean handleFrameTooLarge(ByteBuffer buffer)
-    {
-        BufferUtil.clear(buffer);
-        notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR.code, "invalid_frame_length");
-        return false;
     }
 
     protected boolean parseBody(ByteBuffer buffer)
@@ -210,6 +194,11 @@ public class Parser
             LOG.debug("Parsed {} frame body from {}", FrameType.from(type), buffer);
         reset();
         return true;
+    }
+
+    private boolean connectionFailure(ByteBuffer buffer, ErrorCode error, String reason)
+    {
+        return unknownBodyParser.connectionFailure(buffer, error.code, reason);
     }
 
     protected int getFrameType()
