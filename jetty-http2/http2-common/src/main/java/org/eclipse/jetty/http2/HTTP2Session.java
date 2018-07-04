@@ -306,54 +306,42 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.HEADER_TABLE_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Update HPACK header table size to {} for {}", value, this);
+                        LOG.debug("Updating HPACK header table size to {} for {}", value, this);
                     generator.setHeaderTableSize(value);
                     break;
                 }
                 case SettingsFrame.ENABLE_PUSH:
                 {
-                    // SPEC: check the value is sane.
-                    if (value != 0 && value != 1)
-                    {
-                        onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_enable_push");
-                        return;
-                    }
-                    pushEnabled = value == 1;
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} push for {}", pushEnabled ? "Enable" : "Disable", this);
+                        LOG.debug("{} push for {}", pushEnabled ? "Enabling" : "Disabling", this);
+                    pushEnabled = value == 1;
                     break;
                 }
                 case SettingsFrame.MAX_CONCURRENT_STREAMS:
                 {
-                    maxLocalStreams = value;
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Update max local concurrent streams to {} for {}", maxLocalStreams, this);
+                        LOG.debug("Updating max local concurrent streams to {} for {}", maxLocalStreams, this);
+                    maxLocalStreams = value;
                     break;
                 }
                 case SettingsFrame.INITIAL_WINDOW_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Update initial window size to {} for {}", value, this);
+                        LOG.debug("Updating initial window size to {} for {}", value, this);
                     flowControl.updateInitialStreamWindow(this, value, false);
                     break;
                 }
                 case SettingsFrame.MAX_FRAME_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Update max frame size to {} for {}", value, this);
-                    // SPEC: check the max frame size is sane.
-                    if (value < Frame.DEFAULT_MAX_LENGTH || value > Frame.MAX_MAX_LENGTH)
-                    {
-                        onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_max_frame_size");
-                        return;
-                    }
+                        LOG.debug("Updating max frame size to {} for {}", value, this);
                     generator.setMaxFrameSize(value);
                     break;
                 }
                 case SettingsFrame.MAX_HEADER_LIST_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Update max header list size to {} for {}", value, this);
+                        LOG.debug("Updating max header list size to {} for {}", value, this);
                     generator.setMaxHeaderListSize(value);
                     break;
                 }
