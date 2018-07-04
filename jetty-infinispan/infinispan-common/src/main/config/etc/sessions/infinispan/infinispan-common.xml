@@ -16,7 +16,7 @@
   
   <!-- get QueryManager using the QueryManagerFactory -->
   <Ref refid="queryMgrFactory">
-    <Call id="queryManager" name="getQuery">
+    <Call id="queryManager" name="getQueryManager">
       <Arg>
         <Ref refid="cache"/>
       </Arg>

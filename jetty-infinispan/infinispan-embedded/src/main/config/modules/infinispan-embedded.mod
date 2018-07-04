@@ -1,7 +1,5 @@
-DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
-
 [description]
-Default cache setup
+Setup infinispan embedded without querying
 
 [tags]
 session
@@ -9,7 +7,6 @@ session
 [provides]
 infinispan-embedded
 
-
 [xml]
 etc/sessions/infinispan/infinispan-embedded.xml
-
+etc/sessions/infinispan/infinispan-common.xml
