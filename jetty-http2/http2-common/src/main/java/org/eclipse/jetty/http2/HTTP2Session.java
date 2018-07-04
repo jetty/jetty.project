@@ -1324,7 +1324,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int length = Math.min(dataRemaining, window);
 
             // Only one DATA frame is generated.
-            int frameBytes = generator.data(lease, (DataFrame)frame, length);
+            DataFrame dataFrame = (DataFrame)frame;
+            int frameBytes = generator.data(lease, dataFrame, length);
             this.frameBytes += frameBytes;
             this.frameRemaining += frameBytes;
 
@@ -1332,9 +1333,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             this.dataBytes += dataBytes;
             this.dataRemaining -= dataBytes;
             if (LOG.isDebugEnabled())
-                LOG.debug("Generated {}, length/window/data={}/{}/{}", frame, dataBytes, window, dataRemaining);
+                LOG.debug("Generated {}, length/window/data={}/{}/{}", dataFrame, dataBytes, window, dataRemaining);
 
             flowControl.onDataSending(stream, dataBytes);
+
+            stream.updateClose(dataFrame.isEndStream(), CloseState.Event.BEFORE_SEND);
 
             return true;
         }
