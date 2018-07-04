@@ -436,18 +436,58 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             LOG.debug("Received {}", frame);
 
         int streamId = frame.getStreamId();
+        int windowDelta = frame.getWindowDelta();
         if (streamId > 0)
         {
-            IStream stream = getStream(streamId);
-            if (stream != null)
+            if (windowDelta == 0)
             {
-                stream.process(frame, Callback.NOOP);
-                onWindowUpdate(stream, frame);
+                reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
+            }
+            else
+            {
+                IStream stream = getStream(streamId);
+                if (stream != null)
+                {
+                    int streamSendWindow = stream.updateSendWindow(0);
+                    if (overflows(streamSendWindow, windowDelta))
+                    {
+                        reset(new ResetFrame(streamId, ErrorCode.FLOW_CONTROL_ERROR.code), Callback.NOOP);
+                    }
+                    else
+                    {
+                        stream.process(frame, Callback.NOOP);
+                        onWindowUpdate(stream, frame);
+                    }
+                }
             }
         }
         else
         {
-            onWindowUpdate(null, frame);
+            if (windowDelta == 0)
+            {
+                onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_window_update_frame");
+            }
+            else
+            {
+                int sessionSendWindow = updateSendWindow(0);
+                if (overflows(sessionSendWindow, windowDelta))
+                    onConnectionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "invalid_flow_control_window");
+                else
+                    onWindowUpdate(null, frame);
+            }
+        }
+    }
+
+    private boolean overflows(int a, int b)
+    {
+        try
+        {
+            Math.addExact(a, b);
+            return false;
+        }
+        catch (ArithmeticException x)
+        {
+            return true;
         }
     }
 
