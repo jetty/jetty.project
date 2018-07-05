@@ -10,7 +10,7 @@ public class EmbeddedQueryManagerFactory implements QueryManagerFactory
     @Override
     public QueryManager getQueryManager(BasicCache<String, SessionData> cache)
     {
-        if (!Cache.class.equals(cache.getClass()))
+        if (!(cache instanceof Cache))
             throw new IllegalArgumentException("Argument was not of type Cache");
         
         return new EmbeddedQueryManager((Cache<String, SessionData>)cache);
