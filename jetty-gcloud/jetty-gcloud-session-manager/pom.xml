@@ -99,6 +99,7 @@
               <outputFile>${project.build.directory}/deps.txt</outputFile>
               <sort>true</sort>
               <excludeGroupIds>org.eclipse.jetty</excludeGroupIds>
+              <excludeGroupIds>javax.servlet</excludeGroupIds>
               <prependGroupId>true</prependGroupId>
               <includeScope>runtime</includeScope>
             </configuration>
@@ -118,7 +119,7 @@
             <configuration>
               <tasks>
                 <replaceregexp file="${project.build.directory}/deps.txt"
-                               match=" *(.*):(.*):jar:(.*):[a-z]*"
+                               match=" *(.*):(.*):jar:(.*):.*$"
                                replace="maven://\1/\2/\3|lib/gcloud/\2-\3.jar"
                                byline="true"
                 />
