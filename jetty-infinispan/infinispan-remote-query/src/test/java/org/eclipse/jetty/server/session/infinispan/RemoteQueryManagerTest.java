@@ -1,6 +1,25 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.server.session.infinispan;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -73,44 +92,40 @@ public class RemoteQueryManagerTest
         String content = baos.toString("UTF-8");
         remoteCacheManager.getCache("___protobuf_metadata").put("session.proto", content);
         
-        
-        
+        //put some sessions into the remote cache
         int numSessions = 10;
         long currentTime = 500;
         int maxExpiryTime = 1000;
-        
         Set<String> expiredSessions = new HashSet<>();
         Random r = new Random();
         
         for(int i=0; i<numSessions; i++)
         {
+            String id = "sd"+i;
             //create new sessiondata with random expiry time
             long expiryTime = r.nextInt(maxExpiryTime);
-            SessionData sd = new SessionData("sd"+i, "", "", 0, 0, 0, 0);
+            SessionData sd = new SessionData(id, "", "", 0, 0, 0, 0);
             sd.setLastNode("lastNode");
             sd.setExpiry(expiryTime);
             
             //if this entry has expired add it to expiry list
             if (expiryTime <= currentTime)
-            {
-                expiredSessions.add("sd"+i);
-            }
+                expiredSessions.add(id);
             
             //add to cache
-            _cache.put("sd"+i,sd);
+            _cache.put(id, sd);
+            assertNotNull(_cache.get(id));
         }
        
         //run the query
         QueryManager qm = new RemoteQueryManager(_cache);
-        Set<String> queryResult = qm.queryExpiredSessions(currentTime);
-        
+        Set<String> queryResult = qm.queryExpiredSessions(currentTime);       
         
         // Check that the result is correct
         assertEquals(expiredSessions.size(), queryResult.size());
         for(String s : expiredSessions)
         {
             assertTrue(queryResult.contains(s));
-        }
-        
+        }  
     }
 }

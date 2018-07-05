@@ -1,4 +1,4 @@
-package sessiondata_sample;
+package org_eclipse_jetty_session_infinispan;
 
 message SessionData
 {
