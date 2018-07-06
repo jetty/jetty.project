@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertThat;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.assertThat;
 
 public class QuotedQualityCSVTest
 {
@@ -308,6 +311,45 @@ public class QuotedQualityCSVTest
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("one,two;,three;x=y");
         Assert.assertThat(values.getValues(),Matchers.contains("one","two","three;x=y"));
+    }
+
+
+    @Test
+    public void testQuality()
+    {
+        List<String> results = new ArrayList<>();
+
+        QuotedQualityCSV values = new QuotedQualityCSV()
+        {
+            @Override
+            protected void parsedValue(StringBuffer buffer)
+            {
+                super.parsedValue(buffer);
+                results.add("parsedValue: " + buffer.toString());
+            }
+
+            @Override
+            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+            {
+                String param = buffer.substring(paramName, buffer.length());
+                results.add("parsedParam: " + param);
+                super.parsedParam(buffer, valueLength, paramName, paramValue);
+            }
+        };
+
+
+        /*
+        The quality value q=0.5 parameter is treated specially, it is consumed and used as the weight for an empty string value
+        however the parameter p=0.4 is not consumed and is instead added to values
+
+        Note: allowing the q parameter by itself is not specified behaviour in the RFC, but the implementation here is lenient
+        */
+        values.addValue(" en-US;es-ES,q=0.5,p=0.4");
+        assertThat(values,contains("en-US;es-ES", "p=0.4", ""));
+
+        assertThat(results,contains("parsedValue: en-US", "parsedParam: es-ES",
+                                    "parsedValue: ", "parsedParam: q=0.5",
+                                    "parsedValue: ", "parsedParam: p=0.4"));
     }
     
 }
