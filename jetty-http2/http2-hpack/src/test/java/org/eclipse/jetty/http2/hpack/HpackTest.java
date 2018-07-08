@@ -46,7 +46,7 @@ public class HpackTest
     final static HttpField Date = new PreEncodedHttpField(HttpHeader.DATE,DateGenerator.formatDate(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())));
     
     @Test
-    public void encodeDecodeResponseTest()
+    public void encodeDecodeResponseTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(4096,8192);
@@ -99,7 +99,7 @@ public class HpackTest
     }
     
     @Test
-    public void encodeDecodeTooLargeTest()
+    public void encodeDecodeTooLargeTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(4096,164);
@@ -138,7 +138,7 @@ public class HpackTest
     }
 
     @Test
-    public void evictReferencedFieldTest()
+    public void evictReferencedFieldTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder(200,200);
         HpackDecoder decoder = new HpackDecoder(200,1024);

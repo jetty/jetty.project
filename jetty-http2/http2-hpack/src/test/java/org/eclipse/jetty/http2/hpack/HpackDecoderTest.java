@@ -19,24 +19,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import java.nio.ByteBuffer;
-import java.util.Iterator;
-
-import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -44,10 +26,24 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.util.TypeUtil;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
+
 public class HpackDecoderTest
 {
     @Test
-    public void testDecodeD_3()
+    public void testDecodeD_3() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096,8192);
 
@@ -95,7 +91,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void testDecodeD_4()
+    public void testDecodeD_4() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096,8192);
 
@@ -128,7 +124,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void testDecodeWithArrayOffset()
+    public void testDecodeWithArrayOffset() throws Exception
     {
         String value = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==";
 
@@ -152,7 +148,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void testDecodeHuffmanWithArrayOffset()
+    public void testDecodeHuffmanWithArrayOffset() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096,8192);
 
@@ -172,7 +168,7 @@ public class HpackDecoderTest
     }
     
     @Test
-    public void testNghttpx()
+    public void testNghttpx() throws Exception
     {        
         // Response encoded by nghttpx
         String encoded="886196C361Be940b6a65B6850400B8A00571972e080a62D1Bf5f87497cA589D34d1f9a0f0d0234327690Aa69D29aFcA954D3A5358980Ae112e0f7c880aE152A9A74a6bF3";
@@ -204,7 +200,7 @@ public class HpackDecoderTest
     }
     
     @Test
-    public void testTooBigToIndex()
+    public void testTooBigToIndex() throws Exception
     {
         String encoded = "44FfEc02Df3990A190A0D4Ee5b3d2940Ec98Aa4a62D127D29e273a0aA20dEcAa190a503b262d8a2671D4A2672a927aA874988a2471D05510750c951139EdA2452a3a548cAa1aA90bE4B228342864A9E0D450A5474a92992a1aA513395448E3A0Aa17B96cFe3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f14E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F353F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F54f";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
@@ -217,7 +213,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void testUnknownIndex()
+    public void testUnknownIndex() throws Exception
     {
         String encoded = "BE";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
