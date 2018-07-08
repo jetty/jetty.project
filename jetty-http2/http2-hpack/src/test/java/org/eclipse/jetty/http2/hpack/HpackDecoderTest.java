@@ -224,10 +224,9 @@ public class HpackDecoderTest
             decoder.decode(buffer);
             Assert.fail();
         }
-        catch (BadMessageException e)
+        catch (HpackException.Session e)
         {
-            assertThat(e.getCode(),equalTo(HttpStatus.BAD_REQUEST_400));
-            assertThat(e.getReason(),Matchers.startsWith("Unknown index"));
+            assertThat(e.getMessage(),Matchers.startsWith("Unknown index"));
         }
     
     }

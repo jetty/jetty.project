@@ -190,7 +190,7 @@ public class MetaDataBuilder
         }
     }
 
-    private void streamException(String messageFormat, Object... args)
+    void streamException(String messageFormat, Object... args)
     {
         HpackException.Stream stream = new HpackException.Stream(messageFormat, args);
         if (_streamException==null)

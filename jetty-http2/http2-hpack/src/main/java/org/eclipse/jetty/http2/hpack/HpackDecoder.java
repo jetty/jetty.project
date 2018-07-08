@@ -21,7 +21,6 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -75,7 +74,6 @@ public class HpackDecoder
         // If the buffer is big, don't even think about decoding it
         if (buffer.remaining()>_builder.getMaxSize())
             throw new HpackException.Session("431 Request Header Fields too large",6);
-            //throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Header frame size "+buffer.remaining()+">"+_builder.getMaxSize());
 
         while(buffer.hasRemaining())
         {
@@ -94,10 +92,9 @@ public class HpackDecoder
                 int index = NBitInteger.decode(buffer,7);
                 Entry entry=_context.get(index);
                 if (entry==null)
-                {
-                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Unknown index "+index);
-                }
-                else if (entry.isStatic())
+                    throw new HpackException.Session("Unknown index %d",index);
+                
+                if (entry.isStatic())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("decode IdxStatic {}",entry);
@@ -180,7 +177,8 @@ public class HpackDecoder
                         char c=name.charAt(i);
                         if (c>='A'&&c<='Z')
                         {
-                            throw new BadMessageException(400,"Uppercase header name");
+                            _builder.streamException("Uppercase header name %s",name);
+                            break;
                         }
                     }
                     header=HttpHeader.CACHE.get(name);

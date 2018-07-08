@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.io.IOException;
 
-public abstract class HpackException extends IOException
+public abstract class HpackException extends RuntimeException
 {
     HpackException(String messageFormat, Object... args)
     {
