@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
+
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -66,14 +67,15 @@ public class HpackDecoder
         _localMaxDynamicTableSize=localMaxdynamciTableSize;
     }
 
-    public MetaData decode(ByteBuffer buffer)
+    public MetaData decode(ByteBuffer buffer) throws HpackException
     {
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets",_context.hashCode(),buffer.remaining()));
 
         // If the buffer is big, don't even think about decoding it
         if (buffer.remaining()>_builder.getMaxSize())
-            throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Header frame size "+buffer.remaining()+">"+_builder.getMaxSize());
+            throw new HpackException.Session("431 Request Header Fields too large",6);
+            //throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Header frame size "+buffer.remaining()+">"+_builder.getMaxSize());
 
         while(buffer.hasRemaining())
         {
