@@ -60,6 +60,7 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
+    private static final SelectorUpdate WAKEUP = new SelectorWakeup();
 
     private final AtomicBoolean _started = new AtomicBoolean(false);
     private boolean _selecting = false;
@@ -101,7 +102,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _selectorManager.execute(_strategy::produce);
 
         // Set started only if we really are started
-        submit(s->_started.set(true));        
+        submit(s->_started.set(true));
     }
 
     public int size()
@@ -130,7 +131,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             stop_selector._stopped.await();
         }
 
-        super.doStop();        
+        super.doStop();
     }
 
     /**
@@ -236,6 +237,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     public void destroyEndPoint(final EndPoint endPoint)
     {
+        submit(WAKEUP);
         execute(new DestroyEndPoint(endPoint));
     }
 
@@ -883,6 +885,20 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         public void close()
         {
             run();
+        }
+    }
+
+    private static class SelectorWakeup implements SelectorUpdate
+    {
+        @Override
+        public void update(Selector selector)
+        {
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s", getClass().getSimpleName());
         }
     }
 }
