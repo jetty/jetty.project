@@ -237,6 +237,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     public void destroyEndPoint(final EndPoint endPoint)
     {
+        // Waking up the selector is necessary to clean the
+        // cancelled-key set and tell the TCP stack that the
+        // socket is closed (so that senders receive RST).
         submit(WAKEUP);
         execute(new DestroyEndPoint(endPoint));
     }
