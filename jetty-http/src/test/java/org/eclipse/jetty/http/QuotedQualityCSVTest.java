@@ -324,8 +324,9 @@ public class QuotedQualityCSVTest
             @Override
             protected void parsedValue(StringBuffer buffer)
             {
-                super.parsedValue(buffer);
                 results.add("parsedValue: " + buffer.toString());
+
+                super.parsedValue(buffer);
             }
 
             @Override
@@ -333,23 +334,24 @@ public class QuotedQualityCSVTest
             {
                 String param = buffer.substring(paramName, buffer.length());
                 results.add("parsedParam: " + param);
+
                 super.parsedParam(buffer, valueLength, paramName, paramValue);
             }
         };
 
 
-        /*
-        The quality value q=0.5 parameter is treated specially, it is consumed and used as the weight for an empty string value
-        however the parameter p=0.4 is not consumed and is instead added to values
+        // The provided string is not legal according to some RFCs ( not a token because of = and not a parameter because not preceded by ; )
+        // The string is legal according to RFC7239 which allows for just parameters (called forwarded-pairs)
+        values.addValue("p=0.5,q=0.5");
 
-        Note: allowing the q parameter by itself is not specified behaviour in the RFC, but the implementation here is lenient
-        */
-        values.addValue(" en-US;es-ES,q=0.5,p=0.4");
-        assertThat(values,contains("en-US;es-ES", "p=0.4", ""));
 
-        assertThat(results,contains("parsedValue: en-US", "parsedParam: es-ES",
-                                    "parsedValue: ", "parsedParam: q=0.5",
-                                    "parsedValue: ", "parsedParam: p=0.4"));
+        // The QuotedCSV implementation is lenient and adopts the later interpretation and thus sees q=0.5 and p=0.5 both as parameters
+        assertThat(results,contains("parsedValue: ", "parsedParam: p=0.5",
+                                    "parsedValue: ", "parsedParam: q=0.5"));
+
+
+        // However the QuotedQualityCSV only handles the q parameter and that is consumed from the parameter string.
+        assertThat(values,contains("p=0.5", ""));
+
     }
-    
 }
