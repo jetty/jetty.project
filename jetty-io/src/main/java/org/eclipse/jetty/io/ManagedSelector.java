@@ -60,7 +60,6 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
-    private static final SelectorUpdate WAKEUP = new SelectorWakeup();
 
     private final AtomicBoolean _started = new AtomicBoolean(false);
     private boolean _selecting = false;
@@ -159,9 +158,28 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         if (selector != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("wakeup on submit {}", this);
+                LOG.debug("Wakeup on submit {}", this);
             selector.wakeup();
         }
+    }
+
+    private void wakeup()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Wakeup {}", this);
+
+        Selector selector = null;
+        synchronized (ManagedSelector.this)
+        {
+            if (_selecting)
+            {
+                selector = _selector;
+                _selecting = false;
+            }
+        }
+
+        if (selector != null)
+            selector.wakeup();
     }
 
     private void execute(Runnable task)
@@ -240,7 +258,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         // Waking up the selector is necessary to clean the
         // cancelled-key set and tell the TCP stack that the
         // socket is closed (so that senders receive RST).
-        submit(WAKEUP);
+        wakeup();
         execute(new DestroyEndPoint(endPoint));
     }
 
@@ -888,20 +906,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         public void close()
         {
             run();
-        }
-    }
-
-    private static class SelectorWakeup implements SelectorUpdate
-    {
-        @Override
-        public void update(Selector selector)
-        {
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s", getClass().getSimpleName());
         }
     }
 }
