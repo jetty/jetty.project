@@ -20,12 +20,1874 @@
 
 == Starting Jetty
 
-include::../topics/startup/startup-overview.adoc[]
-include::../topics/startup/start-jar.adoc[]
-include::../topics/startup/startup-base-vs-home.adoc[]
-include::../topics/startup/startup-classpath.adoc[]
-include::../topics/startup/startup-modules.adoc[]
-include::../topics/startup/custom-modules.adoc[]
-include::../topics/startup/startup-xml-config.adoc[]
-include::../topics/startup/startup-unix-service.adoc[]
-include::../topics/startup/startup-windows-service.adoc[]
+[[startup-overview]]
+=== Startup Overview
+
+The `start.jar` bootstrap manages the startup of standalone Jetty.
+It is responsible for:
+
+Building the classpath::
+  The `start.jar` bootstrap builds a classpath for all the required Jetty features and their dependencies.
+  It builds the classpath using  either the `--lib` option to `start.jar` to add an individual  classpath entry, or with the `--module` option that includes all the  libs and their dependencies for a module (a named Jetty feature).
+Instantiating the Server Components::
+  The server and its components are instantiated using either Jetty IoC XML or Spring.
+  The Jetty server is a collection of POJOs for the server, connectors, session managers and others.
+  These are instantiated, injected, and wired up together in XML files, commonly one per module/feature, that are passed as arguments to `start.jar`.
+Resolving Server Filesystem Locations::
+  The `start.jar` mechanism resolves canonical locations for the `${jetty.home}` and the `${jetty.base}` directories.
+  The `${jetty.home}` directory is the location of the standard distribution of Jetty.
+  The `${jetty.base}` directory is the location of the local server customization and configurations.
+  +
+  If you want to modify the Jetty distribution, base and home can be the same directory.
+  Separating the base and home directories allows the distribution to remain unmodified, with all customizations in the base directory, and thus simplifies subsequent server version upgrades.
+Parameterizing the Server Configuration::
+  XML files primarily determine the server configuration.
+  Many of these files are parameterized to allow simple injection of host names, ports, passwords and more.
+  The `start.jar` mechanism allows you to set parameters on the command line or in properties files.
+
+To achieve these start up mechanisms, the `start.jar` uses:
+
+Command line arguments::
+  You can configure the entire server with command line arguments that specify libraries, properties and XML files.
+  However in practice the   INI and modules mechanisms (below) reduce the verbosity of the command line.
+INI files::
+  The `start.jar` mechanism uses the contents of the `${jetty.base}/start.ini` and `${jetty.base}/start.d/*.ini` files with each line equivalent to a `start.jar` command line argument.
+  This means that either a global `start.ini` file or multiple `start.d/feature.ini` files control the configuration of the server.
+[NOTE]
+--
+It is important to chose *either* `${jetty.base}/start.ini` or `${jetty.base}/start.d/*.ini` to manage configuration.
+Using both is not recommended and can lead to issues with your server.
+--
+Modules::
+  Instead of explicitly listing all the libraries, properties and XML files for a feature, the `start.jar` mechanism allows you to create  modules.
+  A module is defined in a `modules/*.mod` file, including the libraries, dependencies, XML, and template INI files for a Jetty feature.
+  Thus you can use a single `--module=name` command line option as the equivalent of specifying  `--lib=location`, `feature.xml` or `name=value` arguments for a feature and all its dependencies.
+  Modules also use their dependencies to control the ordering of libraries and XML files.
+  There are several module files included with the Jetty distribution that cover the most common server features, such as HTTP, HTTPS, SSL, Logging, Annotations...etc.
+  These module files should *only* be edited if you are making structural changes to the way the feature will perform.
+  For more information, refer to the section on link:#startup-modules[managing startup modules] later in this chapter.
+XML Files::
+  XML files in either Jetty IoC or Spring format instantiate the actual POJO components of the server.
+  This includes all major components such as connectors, keystores, session managers, and data sources.
+  Typically there are one or more XML files per module, and these are  defined and activated in the corresponding module.
+
+==== Startup Example
+
+The simplest way to start Jetty is via the `start.jar` mechanism using the following Java command line:
+
+[source, screen, subs="{sub-order}"]
+....
+[user]$ cd jetty-distribution-{VERSION}
+[jetty-distribution-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=8080
+....
+
+This command uses the `start.jar` mechanism to bootstrap the classpath, properties, and XML files with the metadata obtained from the `http` module.
+Specifically the `http` module is defined in the `${jetty.home}/modules/http.mod` file, and includes the following:
+
+[source, screen, subs="{sub-order}"]
+....
+[jetty-distribution-{VERSION}]$ cat modules/http.mod
+[depend]
+server
+
+[xml]
+etc/jetty-http.xml
+
+[ini-template]
+jetty.http.port=8080
+http.timeout=30000
+....
+
+The `http` module declares that `http` depends on the server module, uses the `jetty-http.xml` file, and can be parameterized with `jetty.http.port` and `http.timeout` parameters.
+The INI-template section is not actually used by the command above, so the `jetty.http.port` must still be defined on the command line.
+
+Following the server dependency, the `${jetty.home}/modules/server.mod` file includes:
+
+[source, screen, subs="{sub-order}"]
+....
+[jetty-distribution-{VERSION}]$ cat modules/server.mod
+[lib]
+lib/servlet-api-3.1.jar
+lib/jetty-http-${jetty.version}.jar
+lib/jetty-server-${jetty.version}.jar
+lib/jetty-xml-${jetty.version}.jar
+lib/jetty-util-${jetty.version}.jar
+lib/jetty-io-${jetty.version}.jar
+
+[xml]
+etc/jetty.xml
+
+[ini-template]
+threads.min=10
+threads.max=200
+....
+
+The `server` module declares the libraries the server needs and to use `jetty.xml` file.
+The combined metadata of the `http` and `server` modules results in `start.jar` generating the effective Java command line required to start Jetty.
+
+Another way to see this is by asking Jetty what its configuration looks like by appending --list-config to the command line:
+
+[source, screen, subs="{sub-order}"]
+....
+[jetty-distribution-{VERSION}]$ java -jar start.jar --module=http jetty.http.port=9099 --list-config
+
+Java Environment:
+-----------------
+ java.home=/user/lib/jvm/jdk-7u21-x64/jre
+ java.vm.vendor=Oracle Corporation
+ java.vm.version=23.25-b01
+ java.vm.name=Java HotSpot(TM) 64-Bit Server VM
+ java.vm.info=mixed mode
+ java.runtime.name=Java(TM) SE Runtime Environment
+ java.runtime.version=1.7.0_25-b15
+ java.io.tmpdir=/tmp
+
+Jetty Environment:
+-----------------
+ jetty.home=/opt/jetty/jetty-distribution-{VERSION}
+ jetty.base=/opt/jetty/jetty-distribution-{VERSION}
+ jetty.version={VERSION}
+
+JVM Arguments:
+--------------
+ (no jvm args specified)
+
+System Properties:
+------------------
+ jetty.home = /opt/jetty/jetty-distribution-{VERSION}
+ jetty.base = /opt/jetty/jetty-distribution-{VERSION}
+
+Properties:
+-----------
+ jetty.http.port = 9099
+
+Jetty Server Classpath:
+-----------------------
+Version Information on 7 entries in the classpath.
+Note: order presented here is how they would appear on the classpath.
+      changes to the --module=name command line options will be reflected here.
+ 0:                    3.1.0 | ${jetty.home}/lib/servlet-api-3.1.jar
+ 1:                  3.1.RC0 | ${jetty.home}/lib/jetty-schemas-3.1.jar
+ 2:               {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
+ 3:               {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
+ 4:               {VERSION} | ${jetty.home}/lib/jetty-xml-{VERSION}.jar
+ 5:               {VERSION} | ${jetty.home}/lib/jetty-util-{VERSION}.jar
+ 6:               {VERSION} | ${jetty.home}/lib/jetty-io-{VERSION}.jar
+
+Jetty Active XMLs:
+------------------
+ ${jetty.home}/etc/jetty.xml
+ ${jetty.home}/etc/jetty-http.xml
+....
+
+This represents the entirety of the configuration that is applied to start Jetty.
+
+If you don't want to use the `start.jar` bootstrap, you can start Jetty using a traditional Java command line.
+
+The following is the equivalent Java command line for what the `start.jar` bootstrap above performs.
+
+[source, screen, subs="{sub-order}"]
+....
+[user]$ cd jetty-distribution-{VERSION}
+[jetty-distribution-{VERSION}]$ echo jetty.http.port=8080 > /tmp/jetty.properties
+[jetty-distribution-{VERSION}]$ export JETTY_HOME=`pwd`
+[jetty-distribution-{VERSION}]$ export JETTY_BASE=`pwd`
+[jetty-distribution-{VERSION}]$ export JETTY_VERSION="${project.version}"
+[jetty-distribution-{VERSION}]$ java -Djetty.home=$JETTY_HOME \
+-Djetty.base=$JETTY_BASE \
+-cp \
+ $JETTY_HOME/lib/servlet-api-3.1.jar\
+:$JETTY_HOME/lib/jetty-schemas-3.1.jar\
+:$JETTY_HOME/lib/jetty-http-$JETTY_VERSION.jar\
+:$JETTY_HOME/lib/jetty-server-$JETTY_VERSION.jar \
+:$JETTY_HOME/lib/jetty-xml-$JETTY_VERSION.jar\
+:$JETTY_HOME/lib/jetty-util-$JETTY_VERSION.jar\
+:$JETTY_HOME/lib/jetty-io-$JETTY_VERSION.jar\
+org.eclipse.jetty.xml.XmlConfiguration \
+/tmp/jetty.properties \
+$JETTY_HOME/etc/jetty.xml \
+$JETTY_HOME/etc/jetty-http.xml
+....
+
+The Java command line sets up the classpath with the core Jetty jars and the servlet API, executes the XmlConfiguration class and passes it some XML files that define the server and an HTTP connector running on the port defined in the `jetty.properties` file.
+
+You can further simplify the startup of this server by using the INI template defined by the modules to create a `start.ini` file with the command:
+
+[source, screen, subs="{sub-order}"]
+....
+[user]$ cd jetty-distribution-{VERSION}
+[jetty-distribution-{VERSION}]$ mkdir example-base
+[example-base]$ cd example-base
+[example-base]$ ls -la
+total 8
+drwxrwxr-x  2 user webgroup 4096 Oct  4 11:49 ./
+drwxrwxr-x 12 user webgroup 4096 Oct  4 11:49 ../
+
+[example-base]$ java -jar $JETTY_HOME/start.jar --add-to-start=http
+
+WARNING: http            initialised in ${jetty.base}/start.ini (appended)
+WARNING: http            enabled in     ${jetty.base}/start.ini
+WARNING: server          initialised in ${jetty.base}/start.ini (appended)
+WARNING: server          enabled in     ${jetty.base}/start.ini
+
+[example-base]$ ls -la
+total 12
+drwxrwxr-x  2 user webgroup 4096 Oct  4 11:55 ./
+drwxrwxr-x 12 user webgroup 4096 Oct  4 11:49 ../
+-rw-rw-r--  1 user webgroup  250 Oct  4 11:55 start.ini
+....
+
+Once complete, you can edit the `start.ini` file to modify any parameters and you can run the server with the simple command:
+
+[source, screen, subs="{sub-order}"]
+....
+[example-base]$ java -jar $JETTY_HOME/start.jar
+....
+
+[[start-jar]]
+=== Using start.jar
+
+The most basic way of starting the Jetty standalone server is to execute the `start.jar`, which is a bootstrap for starting Jetty with the configuration you want.
+
+[source, screen, subs="{sub-order}"]
+....
+[jetty-distribution-{VERSION}]$ java -jar start.jar
+2013-09-23 11:27:06.654:INFO:oejs.Server:main: jetty-{VERSION}
+...
+....
+
+Jetty is a highly modularized web server container.
+Very little is mandatory and required, and most components are optional; you enable or disable them according to the needs of your environment.
+
+At its most basic, you configure Jetty from two elements:
+
+1.  A set of libraries and directories that make up the server classpath.
+2.  A set of Jetty XML configuration files (IoC style) that establish how to build the Jetty server and its components.
+
+Instead of editing these directly, Jetty 9.1 introduced more options on how to configure Jetty (these are merely syntactic sugar that eventually resolve into the two basic configuration components).
+
+Jetty Startup Features include:
+
+* A separation of the Jetty distribution binaries in `${jetty.home}` and the environment specific configurations (and binaries) found in `${jetty.base}` (detailed in link:#startup-jetty-base-and-jetty-home[Managing Jetty Base and Jetty Home.])
+* You can enable a set of libraries and XML configuration files via the newly introduced link:#startup-modules[module system.]
+* All of the pre-built XML configuration files shipped in Jetty are now parameterized with properties that you can specify in your `${jetty.base}/start.ini` (demonstrated in link:#quick-start-configure[Quick Start Configuration]).
+
+These are powerful new features, made to support a variety of styles of configuring Jetty, from a simple property based configuration, to handling multiple installations on a server, to customized stacks of technology on top of Jetty, and even the classic, custom XML configurations of old.
+
+For example, if you use the `${jetty.base}` concepts properly, you can upgrade the Jetty distribution without having to remake your entire tree of modifications to Jetty.
+Simply separate out your specific modifications to the `${jetty.base}`, and in the future, just upgrade your `${jetty.home}` directory with a new Jetty distribution.
+
+[[executing-startjar]]
+
+==== Executing start.jar
+
+When executed `start.jar` performs the following actions:
+
+* Loads and parses all INIs found in `${jetty.base}/start.d/*.ini` as command line arguments.
+* Loads and parses `${jetty.base}/start.ini` as command line arguments.
+** Please see link:#start-vs-startd[Start.ini vs. Start.d] for more information on the difference between these.
+* Parses actual command line arguments used to execute `start.jar` itself.
+* Resolves any XML configuration files, modules, and libraries using base vs. home resolution steps:
+1.  Checks whether file exists as relative reference to `${jetty.base}.`
+2.  Checks whether file exists as relative reference to `${jetty.home}.`
+3.  Uses default behavior of `java.io.File` (Relative to `System.getProperty` ("user.dir") and then as absolute file system path).
+* Loads any dependent modules (merges XXNK, library, and properties results with active command line).
+* Builds out server classpath.
+* Determines run mode:
+** Shows informational command line options and exit.
+** Executes Jetty normally, waits for Jetty to stop.
+** Executes a forked JVM to run Jetty in, waits for forked JVM to exit.
+
+[[startjar-cmd-options]]
+==== start.jar Command Line Options
+
+===== Command Line Options
+
+--help::
+Obtains the current list of command line options and some basic usage help.
+--version::
+Shows the list of server classpath entries, and prints version information found for each entry.
+--list-classpath::
+Similar to --version, shows the server classpath.
+--list-config::
+Lists the resolved configuration that will start Jetty.
+* Java environment
+* Jetty environment
+* JVM arguments
+* Properties
+* Server classpath
+* Server XML configuration files
+--dry-run::
+Prints the resolved command line that `start.jar` should use to start a forked instance of Jetty.
+--exec::
+Starts a forked instance of Jetty.
+--exec-properties=<filename>::
+Assign a fixed name to the file used to transfer properties to the sub process.
+This allows the generated properties file to be saved and reused.
+Without this option, a temporary file is used.
+--commands=<filename>::
+Instructs `start.jar` to use each line of the specified file as arguments on the command line.
+
+===== Debugg and Start Logging
+
+--debug::
+Enables debugging output of the startup procedure.
++
+*Note*: This does not set up debug logging for Jetty itself.
+For information on logging, please see the section on link:#configuring-jetty-logging[Configuring Jetty Logging.]]
+--start-log-file=<filename>::
+Sends all startup output to the filename specified.
+Filename is relative to `${jetty.base}`.
+This is useful for capturing startup issues where the Jetty-specific logger has not yet kicked in due to a possible startup configuration error.
+
+===== Module Management
+
+--list-modules::
+Lists all the modules defined by the system.
+Looks for module files using the link:#startup-base-and-home[normal `${jetty.base}` and `${jetty.home}` resolution logic].
+Also lists enabled state based on information present on the command line, and all active startup INI files.
+--list-modules=<tag>(,<tag>)*::
+List modules by link:#startup-modules[tag.]
+Use '*' for all tags.
+Prefix a tag with '-' to exclude the tag.
+The special tag "internal" is always excluded unless it is explicitly included.
+--list-all-modules::
+List all modules.
+--module=<name>,(<name>)*::
+Enables one or more modules by name (use `--list-modules` to see the list of available modules).
+This enables all transitive (dependent) modules from the module system as well.
+If you use this from the shell command line, it is considered a temporary effect, useful for testing out a scenario.
+If you want this module to always be enabled, add this command to your `${jetty.base}/start.ini.`
+--add-to-start=<name>,(<name>)*::
+Enables a module by appending lines to the `${jetty.base}/start.ini` file.
+The lines that are added are provided by the module-defined INI templates.
+Note: Transitive modules are also appended.
+If a module contains an .ini template with properties, you can also edit these properties when activating the module.
+To do this, simply list the property and its value after the `-add-to-start` command, such as in the following example:
++
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar start.jar --add-to-start=http jetty.http.port=8379 jetty.http.host=1.2.3.4
+....
++
+Doing this will uncomment the property in the associated .ini file and set it to the value specified.
+--update-ini::
+Used to update a specified property or properties that exist in an existing .ini file.
+Jetty scans the command line, `${jetty.base}` and `${jetty.home}` for .ini files that have the specified property and update it accordingly.
++
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar ../start.jar --update-ini jetty.http.port=8417
+ConfigSource <command-line>
+ConfigSource ${jetty.base}
+INFO  : http            property updated jetty.http.port=8417
+INFO  : http            updated ${jetty.base}/start.d/http.ini
+ConfigSource ${jetty.home}
+....
++
+--create-startd::
+Creates a `${jetty.base}/start.d/` directory.
+If a `${jetty.base}/start.ini` file already exists, it is copied to the `${jetty.base}/start.d` directory.
+
+[NOTE]
+--
+With respect to `start.ini` and `start.d/*.ini` files, only *one* of these methods should be implemented.
+Mixing a `start.ini` with module specific ini files in the `{$jetty.base}/start.d` directory can lead to server issues unless great care is taken.
+Please see link:#start-vs-startd[Start.ini vs. Start.d] for more information.
+--
+
+--write-module-graph=<filename>::
+Advanced feature: Creates a graphviz http://graphviz.org/content/dot-language[dot file] of the module graph as it exists for the active `${jetty.base}`.
++
+[source, screen, subs="{sub-order}"]
+....
+# generate module.dot
+$ java -jar start.jar --module=websocket --write-module-graph=modules.dot
+
+# post process to a PNG file
+$ dot -Tpng -o modules.png modules.dot
+....
++
+See http://graphviz.org/[graphviz.org] for details on http://graphviz.org/content/command-line-invocation[how to post-process this dotty file] into the output best suited for your needs.
+
+--create-files::
+Create any missing files that are required by initialized modules.
+This may download a file from the network if the module provides a URL.
+
+--skip-file-validation=<modulename>(,<modulename)*::
+Disable the [files] section validation of content in the `${jetty.base}` directory for a specific module.
+Useful for modules that have downloadable content that is being overridden with alternatives in the `${jetty.base}`` directory.
+
+____
+[CAUTION]
+This advanced option is for administrators that fully understand the configuration of their `${jetty.base}` and are willing to forego some of the safety checks built into the jetty-start mechanism.
+____
+
+--approve-all-licenses::
+Approve all license questions.
+Useful for enabling modules from a script that does not require user interaction.
+
+===== Startup / Shutdown Command Line
+
+--stop::
+Sends a stop signal to the running Jetty instance.
++
+Note: The server must have been started with various stop properties for this to work.
+
+STOP.PORT=<number>;;
+The port to use to stop the running Jetty server.
+This is an internal port, opened on localhost, used solely for stopping the running Jetty server.
+Choose a port that you do not use to serve web traffic.
++
+Required for `--stop` to function.
+STOP.KEY=<alphanumeric>;;
+The passphrase defined to stop the server.
++
+Required for `--stop` to function.
+STOP.WAIT=<number>;;
+The time (in seconds) to wait for confirmation that the running Jetty server has stopped.
+If not specified, the stopper waits indefinitely for the server to stop.
++
+If the time specified elapses, without a confirmation of server stop, then the `--stop` command exits with a non-zero return code.
+
+You can configure a port number for Jetty to listen on for a stop command, so you are able to stop it from a different terminal.
+This requires the use of a "secret" key, to prevent malicious or accidental termination.
+Use the `STOP.PORT` and `STOP.KEY` (or `-DSTOP.PORT=` and `-DSTOP.KEY=`, respectively, which will set these as system parameters) parameters as arguments to the `start.jar`:
+
+[source, screen, subs="{sub-order}"]
+....
+> java -jar ${JETTY_HOME}/start.jar STOP.PORT=1234 STOP.KEY=secretpassword
+....
+
+Then, to stop Jetty from a different terminal, you need to supply this port and key information.
+You can either use a copy of the Jetty distribution, the link:#jetty-maven-plugin[jetty-maven-plugin], the link:#jetty-ant[jetty-ant plugin], or a custom class to accomplish this.
+Here's how to use the Jetty distribution, leveraging `start.jar`, to perform a stop:
+
+[source, screen, subs="{sub-order}"]
+....
+> java -jar start.jar STOP.PORT=8181 STOP.KEY=abc123 --stop
+....
+
+____
+[NOTE]
+To perform a graceful shutdown of Jetty, the `stats` link:#startup-modules[module] *must* be enabled.
+____
+
+===== Advanced Commands
+
+--lib=<classpath>::
+Add arbitrary classpath entries to the the server classpath.
+
+--include-jetty-dir=<path>::
+Include an extra Jetty directory to use as a source for configuration details.
+This directory behaves similarly to `${jetty.base}` but sits at a layer between `${jetty.base}` and `${jetty.home}`.
+This allows for some complex hierarchies of configuration details.
+
+--download=<http-uri>|<location>::
+If the file does not exist at the given location, download it from the given http URI.
+Note: location is always relative to `${jetty.base}`.
+You might need to escape the slash "\|" to use this on some environments.
+
+[[startup-base-and-home]]
+=== Managing Jetty Base and Jetty Home
+
+Instead of managing multiple Jetty implementations out of several different distribution locations, it is possible to maintain a separation between the binary installation of the standalone Jetty (known as `${jetty.home}`), and the customizations for your specific environment(s) (known as `${jetty.base}`).
+There should always only be *one* Jetty Home (per version of Jetty), but there can be multiple Jetty Base directories that reference it.
+
+Jetty Base::
+  * Also known as the `${jetty.base}` property.
+  * This is the location for your configurations and customizations to the Jetty distribution.
+Jetty Home::
+  * Also known as the `${jetty.home}` property.
+  * This is the location for the Jetty distribution binaries, default XML IoC configurations, and default module definitions.
+
+____
+[IMPORTANT]
+Jetty Home should always be treated as a standard of truth.
+All configuration modifications, changes and additions should be made in the appropriate Jetty Base directory.
+____
+
+[[base-vs-home-resolution]]
+
+Potential configuration is resolved from these 2 directory locations.
+When Jetty starts up in processes configuration from them as follows:
+
+Check Jetty Base First::
+  If the referenced configuration exists, relative to the defined Jetty base, it is used.
+Check Jetty Home Second::
+  If the referenced configuration exists, relative to the defined Jetty home, it is used.
+Use java.io.File(String pathname) Logic::
+  Lastly, use the reference as a `java.io.File(String pathname)` reference, following the default resolution rules outlined by that constructor. In brief, the reference will be used as-is, be it relative (to current working directory, aka $\{user.dir}) or absolute path, or even network reference (such as on Windows and use of UNC paths).
+
+For more details on how startup with start.jar works, see link:#executing-startjar[Using start.jar: Executing]
+
+[[demo-base]]
+==== Demo-Base in the Jetty Distribution
+
+The Jetty Distribution comes with an example `${jetty.base}` which enables the various demonstration webapps and server configurations.
+
+[source, screen, subs="{sub-order}"]
+....
+[jetty-distribution-{VERSION}]$ ls -la
+
+total 496
+drwxrwxr-x 11 user group   4096 Oct  8 15:23 ./
+drwxr-xr-x 14 user group   4096 Oct  8 13:04 ../
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 bin/
+drwxrwxr-x  6 user group   4096 Oct  8 06:54 demo-base/
+drwxrwxr-x  2 user group   4096 Oct 11 15:14 etc/
+drwxrwxr-x 11 user group   4096 Oct  8 06:54 lib/
+-rw-rw-r--  1 user group  30012 Sep 30 19:55 license-eplv10-aslv20.html
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 logs/
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 modules/
+-rw-rw-r--  1 user group   6262 Sep 30 19:55 notice.html
+-rw-rw-r--  1 user group   1249 Sep 30 19:55 README.TXT
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 resources/
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 start.d/
+-rw-rw-r--  1 user group   1780 Sep 30 19:55 start.ini
+-rw-rw-r--  1 user group  71921 Sep 30 19:55 start.jar
+-rw-rw-r--  1 user group 336468 Sep 30 19:55 VERSION.txt
+drwxrwxr-x  2 user group   4096 Oct  8 06:54 webapps/
+
+[jetty-distribution-{VERSION}]$ cd demo-base
+[demo-base]$ java -jar $JETTY_HOME/start.jar
+
+2013-10-16 09:08:47.800:WARN::main: demo test-realm is deployed. DO NOT USE IN PRODUCTION!
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
+2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/jetty-distribution-{VERSION}/demo-base/webapps/] at interval 1
+2013-10-16 09:08:48.072:WARN::main: async-rest webapp is deployed. DO NOT USE IN PRODUCTION!
+...
+....
+
+If you want to see what the Jetty base looks like without executing Jetty, you can simply list the configuration by using the `--list-config` command.
+
+[source, screen, subs="{sub-order}"]
+....
+[demo-base]$ java -jar $JETTY_HOME/start.jar --list-config
+
+Java Environment:
+-----------------
+ java.home=/usr/lib/jvm/jdk-7u21-x64/jre
+ java.vm.vendor = Oracle Corporation
+ java.vm.version = 25.92-b14
+ java.vm.name = Java HotSpot(TM) 64-Bit Server VM
+ java.vm.info = mixed mode
+ java.runtime.name = Java(TM) SE Runtime Environment
+ java.runtime.version = 1.8.0_92-b14
+ java.io.tmpdir = /var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/
+ user.dir = /home/user/jetty-distribution-{VERSION}
+ user.language = en
+ user.country = US
+
+Jetty Environment:
+-----------------
+ jetty.home=/home/user/jetty-distribution-{VERSION}
+ jetty.tag.version = master
+ jetty.base=/home/user/jetty-distribution-{VERSION}/demo-base
+ jetty.version={VERSION}
+
+ Config Search Order:
+ --------------------
+  <command-line>
+  ${jetty.base} -> /home/user/jetty-distribution-{VERSION}/demo-base
+  ${jetty.home} -> /home/user/Desktop/jetty-distribution-{VERSION}
+
+JVM Arguments:
+--------------
+ (no jvm args specified)
+
+System Properties:
+------------------
+ jetty.base = /home/user/jetty-distribution-{VERSION}/demo-base
+ jetty.home = /home/user/jetty-distribution-{VERSION}
+
+Properties:
+-----------
+ demo.realm = etc/realm.properties
+ https.port = 8443
+ https.timeout = 30000
+ jaas.login.conf = etc/login.conf
+ jetty.dump.start = false
+ jetty.dump.stop = false
+ jetty.keymanager.password = OBF:1u2u1wml1z7s1z7a1wnl1u2g
+ jetty.keystore = etc/keystore
+ jetty.keystore.password = OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
+ jetty.http.port = 8080
+ jetty.secure.port = 8443
+ jetty.truststore = etc/keystore
+ jetty.truststore.password = OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
+ org.eclipse.jetty.websocket.jsr356 = false
+ threads.max = 200
+ threads.min = 10
+ threads.timeout = 60000
+
+Jetty Server Classpath:
+-----------------------
+Version Information on 42 entries in the classpath.
+Note: order presented here is how they would appear on the classpath.
+      changes to the --module=name command line options will be reflected here.
+ 0:          {VERSION} | ${jetty.home}/lib/jetty-client-{VERSION}.jar
+ 1:      1.4.1.v201005082020 | ${jetty.base}/lib/ext/javax.mail.glassfish-1.4.1.v201005082020.jar
+ 2:          {VERSION} | ${jetty.base}/lib/ext/test-mock-resources-{VERSION}.jar
+ 3:                    (dir) | ${jetty.home}/resources
+ 4:                    3.1.0 | ${jetty.home}/lib/servlet-api-3.1.jar
+ 5:                  3.1.RC0 | ${jetty.home}/lib/jetty-schemas-3.1.jar
+ 6:          {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
+ 7:          {VERSION} | ${jetty.home}/lib/jetty-continuation-{VERSION}.jar
+ 8:          {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
+ 9:          {VERSION} | ${jetty.home}/lib/jetty-xml-{VERSION}.jar
+10:          {VERSION} | ${jetty.home}/lib/jetty-util-{VERSION}.jar
+11:          {VERSION} | ${jetty.home}/lib/jetty-io-{VERSION}.jar
+12:          {VERSION} | ${jetty.home}/lib/jetty-jaas-{VERSION}.jar
+13:          {VERSION} | ${jetty.home}/lib/jetty-jndi-{VERSION}.jar
+14:      1.1.0.v201105071233 | ${jetty.home}/lib/jndi/javax.activation-1.1.0.v201105071233.jar
+15:      1.4.1.v201005082020 | ${jetty.home}/lib/jndi/javax.mail.glassfish-1.4.1.v201005082020.jar
+16:                      1.2 | ${jetty.home}/lib/jndi/javax.transaction-api-1.2.jar
+17:          {VERSION} | ${jetty.home}/lib/jetty-rewrite-{VERSION}.jar
+18:          {VERSION} | ${jetty.home}/lib/jetty-security-{VERSION}.jar
+19:          {VERSION} | ${jetty.home}/lib/jetty-servlet-{VERSION}.jar
+20:                    3.0.0 | ${jetty.home}/lib/jsp/javax.el-3.0.0.jar
+21:      1.2.0.v201105211821 | ${jetty.home}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+22:                    2.3.2 | ${jetty.home}/lib/jsp/javax.servlet.jsp-2.3.2.jar
+23:                    2.3.1 | ${jetty.home}/lib/jsp/javax.servlet.jsp-api-2.3.1.jar
+24:                    2.3.3 | ${jetty.home}/lib/jsp/jetty-jsp-jdt-2.3.3.jar
+25:      1.2.0.v201112081803 | ${jetty.home}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+26:   3.8.2.v20130121-145325 | ${jetty.home}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+27:          {VERSION} | ${jetty.home}/lib/jetty-plus-{VERSION}.jar
+28:          {VERSION} | ${jetty.home}/lib/jetty-webapp-{VERSION}.jar
+29:          {VERSION} | ${jetty.home}/lib/jetty-annotations-{VERSION}.jar
+30:                      4.1 | ${jetty.home}/lib/annotations/asm-4.1.jar
+31:                      4.1 | ${jetty.home}/lib/annotations/asm-commons-4.1.jar
+32:                      1.2 | ${jetty.home}/lib/annotations/javax.annotation-api-1.2.jar
+33:          {VERSION} | ${jetty.home}/lib/jetty-deploy-{VERSION}.jar
+34:                      1.0 | ${jetty.home}/lib/websocket/javax.websocket-api-1.0.jar
+35:          {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-client-impl-{VERSION}.jar
+36:          {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-server-impl-{VERSION}.jar
+37:          {VERSION} | ${jetty.home}/lib/websocket/websocket-api-{VERSION}.jar
+38:          {VERSION} | ${jetty.home}/lib/websocket/websocket-client-{VERSION}.jar
+39:          {VERSION} | ${jetty.home}/lib/websocket/websocket-common-{VERSION}.jar
+40:          {VERSION} | ${jetty.home}/lib/websocket/websocket-server-{VERSION}.jar
+41:          {VERSION} | ${jetty.home}/lib/websocket/websocket-servlet-{VERSION}.jar
+
+Jetty Active XMLs:
+------------------
+ ${jetty.home}/etc/jetty.xml
+ ${jetty.home}/etc/jetty-webapp.xml
+ ${jetty.home}/etc/jetty-plus.xml
+ ${jetty.home}/etc/jetty-annotations.xml
+ ${jetty.home}/etc/jetty-deploy.xml
+ ${jetty.home}/etc/jetty-http.xml
+ ${jetty.home}/etc/jetty-ssl.xml
+ ${jetty.home}/etc/jetty-ssl-context.xml
+ ${jetty.home}/etc/jetty-https.xml
+ ${jetty.home}/etc/jetty-jaas.xml
+ ${jetty.home}/etc/jetty-rewrite.xml
+ ${jetty.base}/etc/demo-rewrite-rules.xml
+ ${jetty.base}/etc/test-realm.xml
+....
+
+The `--list-config` command line option displays what the configuration will look like when starting Jetty.
+This includes information on the Java environment to the system properties, the classpath and the Active Jetty IoC XML used to build up the Jetty server configuration.
+
+Of note, is that the output will make it known where the configuration elements came from, be it in either in `${jetty.home}` or `${jetty.base}`.
+
+If you look at the `${jetty.base}/start.ini` you will see a layout similar to below.
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ cat start.ini
+
+# Enable security via jaas, and configure it
+--module=jaas
+jaas.login.conf=etc/login.conf
+
+# Enable rewrite examples
+--module=rewrite
+etc/demo-rewrite-rules.xml
+
+# Websocket chat examples needs websocket enabled
+# Don't start for all contexts (set to true in test.xml context)
+org.eclipse.jetty.websocket.jsr356=false
+--module=websocket
+
+# Create and configure the test realm
+etc/test-realm.xml
+demo.realm=etc/realm.properties
+
+# Initialize module server
+--module=server
+threads.min=10
+threads.max=200
+threads.timeout=60000
+jetty.dump.start=false
+jetty.dump.stop=false
+
+--module=deploy
+--module=jsp
+--module=ext
+--module=resources
+--module=client
+--module=annotations
+....
+
+In this example, `${jetty.base}/start.ini` is the main startup configuration entry point for Jetty.
+You will see that we are enabling a few modules for Jetty, specifying some properties, and also referencing some Jetty IoC XML files (namely the `etc/demo-rewrite-rules.xml` and `etc/test-realm.xml` files)
+
+When Jetty's `start.jar` resolves the entries in the `start.ini`, it will follow the link:#base-vs-home-resolution[resolution rules above].
+
+For example, the reference to `etc/demo-rewrite-rules.xml` was found in `${jetty.base}/etc/demo-rewrite-rules.xml`.
+
+==== Declaring Jetty Base
+
+The Jetty distribution's `start.jar` is the component that manages the behavior of this separation.
+
+The Jetty `start.jar` and XML files always assume that both `${jetty.home}` and `${jetty.base}` are defined when starting Jetty.
+
+You can opt to manually define the `${jetty.home}` and `${jetty.base}` directories, such as this:
+
+[source, screen, subs="{sub-order}"]
+....
+[jetty-distribution-{VERSION}]$ pwd
+/home/user/jetty-distribution-{VERSION}
+
+[jetty-distribution-{VERSION}]$ java -jar start.jar \
+    jetty.home=/home/user/jetty-distribution-{VERSION} \
+    jetty.base=/home/user/my-base
+
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
+2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
+...
+....
+
+Alternately, you can declare one directory and let the other one be discovered.
+
+The following example uses default discovery of `${jetty.home}` by using the parent directory of wherever `start.jar` itself is, and a manual declaration of `${jetty.base}`.
+
+[source, screen, subs="{sub-order}"]
+....
+[jetty-distribution-{VERSION}]$ pwd
+/home/user/jetty-distribution-{VERSION}
+
+[jetty-distribution-{VERSION}]$ java -jar start.jar jetty.base=/home/user/my-base
+
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
+2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
+...
+....
+
+But Jetty recommends that you always start Jetty from the directory that is your `${jetty.base}` and starting Jetty by referencing
+the `start.jar` in your `{$jetty.home}` remotely.
+
+The following demonstrates this by allowing default discovery of `${jetty.home}` via locating the `start.jar`, and using the `user.dir` System Property for `${jetty.base}`.
+
+[source, screen, subs="{sub-order}"]
+....
+[jetty-distribution-{VERSION}]$ pwd
+/home/user/jetty-distribution-{VERSION}
+
+[jetty-distribution-{VERSION}]$ cd /home/user/my-base
+[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar
+
+2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
+2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
+...
+....
+
+____
+[IMPORTANT]
+Be aware of the `user.dir` system property, as it can only be safely set when the JVM starts and many 3rd party libraries (especially logging) use this system property.
+It is strongly recommended that you sit in the directory that is your desired `${jetty.base}` when starting Jetty to have consistent behavior and use of the `user.dir` system property.
+____
+
+[[startup-classpath]]
+=== Managing Server Classpath
+
+Jetty Server Classpath is determined by a combination of factors.
+
+The java.class.path System Property::
+  If you start Jetty with a JVM specified classpath, then Jetty will use the java.class.path System Property to populate the initial classpath.
+Module specified Libraries::
+  The module system declares various libraries that are required for that module to operate.
+  These module defined libraries are added to the Jetty Server classpath when any module is activated with library declarations.
+Command Line Libraries::
+  The command line option `--lib=<path>` can be used as a final means to add arbitrary entries to the Jetty Server classpath.
+
+Of special note, there are 2 structural modules defined to ease some of this for you.
+
+--module=ext::
+  The `ext` module will enable the `lib/ext/*.jar` logic.
+  +
+  If this module is activated, then all jar files found in the lib/ext/ paths will be automatically added to the Jetty Server Classpath.
+--module=resources::
+  The `resources` module will add the `resources/` directory the classpath.
+  +
+  If you have 3rd party libraries that lookup resources from the classpath, put your files in here.
+  +
+  Logging libraries often have classpath lookup of their configuration files (eg: `log4j.properties`, `log4j.xml`, `logging.properties`, and `logback.xml`), so this would be the ideal setup for this sort of configuration demand.
+
+____
+[NOTE]
+Both the `ext` and `resources` modules declare relative paths that follow link:#base-vs-home-resolution[Jetty Base and Jetty Home path resolution rules].
+____
+
+==== Interrogating the Server Classpath
+
+The Jetty `start.jar` has the ability to resolve the classpath from the command line, modules and configuration, and to list the classpath entries it will use to start jetty.
+
+The `--list-classpath` command line option is used as such.
+
+(Demonstrated with the link:#demo-base[demo-base from the Jetty Distribution])
+
+[source, screen, subs="{sub-order}"]
+....
+[demo-base]$ java -jar $JETTY_HOME/start.jar --list-classpath
+
+Jetty Server Classpath:
+-----------------------
+Version Information on 42 entries in the classpath.
+Note: order presented here is how they would appear on the classpath.
+      changes to the --module=name command line options will be reflected here.
+ 0:               {VERSION} | ${jetty.home}/lib/jetty-client-{VERSION}.jar
+ 1:      1.4.1.v201005082020 | ${jetty.base}/lib/ext/javax.mail.glassfish-1.4.1.v201005082020.jar
+ 2:               {VERSION} | ${jetty.base}/lib/ext/test-mock-resources-{VERSION}.jar
+ 3:                    (dir) | ${jetty.home}/resources
+ 4:                    3.1.0 | ${jetty.home}/lib/servlet-api-3.1.jar
+ 5:                  3.1.RC0 | ${jetty.home}/lib/jetty-schemas-3.1.jar
+ 6:               {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
+ 7:               {VERSION} | ${jetty.home}/lib/jetty-continuation-{VERSION}.jar
+ 8:               {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
+ 9:               {VERSION} | ${jetty.home}/lib/jetty-xml-{VERSION}.jar
+10:               {VERSION} | ${jetty.home}/lib/jetty-util-{VERSION}.jar
+11:               {VERSION} | ${jetty.home}/lib/jetty-io-{VERSION}.jar
+12:               {VERSION} | ${jetty.home}/lib/jetty-jaas-{VERSION}.jar
+13:               {VERSION} | ${jetty.home}/lib/jetty-jndi-{VERSION}.jar
+14:      1.1.0.v201105071233 | ${jetty.home}/lib/jndi/javax.activation-1.1.0.v201105071233.jar
+15:      1.4.1.v201005082020 | ${jetty.home}/lib/jndi/javax.mail.glassfish-1.4.1.v201005082020.jar
+16:                      1.2 | ${jetty.home}/lib/jndi/javax.transaction-api-1.2.jar
+17:               {VERSION} | ${jetty.home}/lib/jetty-rewrite-{VERSION}.jar
+18:               {VERSION} | ${jetty.home}/lib/jetty-security-{VERSION}.jar
+19:               {VERSION} | ${jetty.home}/lib/jetty-servlet-{VERSION}.jar
+20:                    3.0.0 | ${jetty.home}/lib/jsp/javax.el-3.0.0.jar
+21:      1.2.0.v201105211821 | ${jetty.home}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+22:                    2.3.2 | ${jetty.home}/lib/jsp/javax.servlet.jsp-2.3.2.jar
+23:                    2.3.1 | ${jetty.home}/lib/jsp/javax.servlet.jsp-api-2.3.1.jar
+24:                    2.3.3 | ${jetty.home}/lib/jsp/jetty-jsp-jdt-2.3.3.jar
+25:      1.2.0.v201112081803 | ${jetty.home}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+26:   3.8.2.v20130121-145325 | ${jetty.home}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+27:               {VERSION} | ${jetty.home}/lib/jetty-plus-{VERSION}.jar
+28:               {VERSION} | ${jetty.home}/lib/jetty-webapp-{VERSION}.jar
+29:               {VERSION} | ${jetty.home}/lib/jetty-annotations-{VERSION}.jar
+30:                      4.1 | ${jetty.home}/lib/annotations/asm-4.1.jar
+31:                      4.1 | ${jetty.home}/lib/annotations/asm-commons-4.1.jar
+32:                      1.2 | ${jetty.home}/lib/annotations/javax.annotation-api-1.2.jar
+33:               {VERSION} | ${jetty.home}/lib/jetty-deploy-{VERSION}.jar
+34:                      1.0 | ${jetty.home}/lib/websocket/javax.websocket-api-1.0.jar
+35:               {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-client-impl-{VERSION}.jar
+36:               {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-server-impl-{VERSION}.jar
+37:               {VERSION} | ${jetty.home}/lib/websocket/websocket-api-{VERSION}.jar
+38:               {VERSION} | ${jetty.home}/lib/websocket/websocket-client-{VERSION}.jar
+39:               {VERSION} | ${jetty.home}/lib/websocket/websocket-common-{VERSION}.jar
+40:               {VERSION} | ${jetty.home}/lib/websocket/websocket-server-{VERSION}.jar
+41:               {VERSION} | ${jetty.home}/lib/websocket/websocket-servlet-{VERSION}.jar
+....
+
+Of note is that an attempt is made to list the internally declared version of each artifact on the Server Classpath, which can potentially help when diagnosing classpath issues.
+
+[[startup-modules]]
+=== Managing Startup Modules
+
+The standard Jetty Distribution ships with several modules defined in `${jetty.home}/modules/`.
+Modules interact with Jetty XML files to configure options and parameters for the server and are the primary configuration method for Jetty distributions.
+Modules allow flexibility for implementations and their plug-and-play nature makes adding or removing server functionality virtually painless.
+
+[[enabling-modules]]
+==== Enabling Modules
+____
+[TIP]
+The default distribution has a co-mingled `${jetty.home}` and `${jetty.base}` where the directories for `${jetty.home}` and `${jetty.base}` point to the same location.
+It is highly encouraged that you learn about the differences in link:#startup-base-and-home[Jetty Base vs Jetty Home] and take full advantage of this setup.
+____
+
+Enabling a module is a simple process: simply add the `--add-to-start=<module-name1>,<module-name2>,...etc.` syntax on the command line.
+Doing this will enable the specified module and any dependent modules.
+
+An example of this with a new, empty, base directory:
+
+If we try to start the Jetty server with no configuration or modules enabled, it will promptly exit:
+
+include::screen-empty-base.adoc[]
+
+By using the `--list-config` parameter to our startup command, we can see that there are no modules enabled and no Jetty XML files are active:
+
+include::screen-empty-base-listconfig.adoc[]
+
+Let's try adding some basic support for webapps, with automatic deploy (hot deploy), and a single basic HTTP/1.1 connector.
+
+include::screen-http-webapp-deploy.adoc[]
+
+This creates the webapps directory in our `mybase` directory and appended the `start.ini` file with the ini template arguments from the associated module files.
+Additionally, where needed, Jetty enabled any module dependencies.
+
+Now that we have added some modules to our server, let's run `--list-config` again to review our new configuration.
+
+include::screen-http-webapp-deploy-listconfig.adoc[]
+
+You now have a configured and functional server, albeit with no webapps deployed.
+At this point you can place a webapp (war file) in the `mybase/webapps/` directory and and start Jetty.
+
+[[start-vs-startd]]
+
+==== Start.ini vs. Start.d
+
+In the above example, when a module is activated the contents of that module file are added in `${jetty.base}/start.ini`.
+As additional modules are added, their contents are appended to this file.
+This can be beneficial if you want all of your module configurations in a single file, but for large server instances with lots of modules it can pose a challenge to quickly find and make changes or to remove a module.
+
+As an alternative to a single `start.ini` file you can opt to house modules in a `${jetty.base}/start.d` directory.
+Modules activated when a `start.d` directory exists will be stored as a single file per module.
+Below is an example of a fresh `${jetty.base}` that will create a `start.d` directory and activate several modules.
+
+[source, screen, subs="{sub-order}"]
+....
+[jetty.home]$ mkdir mybase
+[jetty.home]$ cd mybase/
+[mybase]$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+[mybase]$ ls -all
+total 0
+drwxr-xr-x   3 staff  staff  102 Aug 29 15:16 .
+drwxr-xr-x@ 26 staff  staff  884 Aug 29 15:16 ..
+drwxr-xr-x   6 staff  staff  204 Aug 29 15:19 start.d
+
+[mybase]$ java -jar ../start.jar --add-to-start=server,client,webapp,websocket
+INFO : webapp          initialised in ${jetty.base}/start.d/webapp.ini
+INFO : server          initialised in ${jetty.base}/start.d/server.ini
+INFO : websocket       initialised in ${jetty.base}/start.d/websocket.ini
+INFO : client          initialised in ${jetty.base}/start.d/client.ini
+INFO : Base directory was modified
+[mybase]$ cd start.d/
+[mybase]$ ls -all
+total 32
+drwxr-xr-x  6 staff  staff   204 Aug 29 15:19 .
+drwxr-xr-x  3 staff  staff   102 Aug 29 15:16 ..
+-rw-r--r--  1 staff  staff   175 Aug 29 15:19 client.ini
+-rw-r--r--  1 staff  staff  2250 Aug 29 15:19 server.ini
+-rw-r--r--  1 staff  staff   265 Aug 29 15:19 webapp.ini
+-rw-r--r--  1 staff  staff   177 Aug 29 15:19 websocket.ini
+....
+
+In the example, we first create a new `${jetty.base}` and then create the `start.d` directory with the `--create-startd` command.
+Next, we use the `--add-to-start` command which activates the modules and creates their respective ini files in the `start.d` directory.
+
+If you have an existing `start.ini` file but would like to use the `start.d` structure for additional modules, you can use the `--create-startd` command as well.
+Doing this will create the `start.d` directory and copy your existing `start.ini` file in to it.
+Any new modules added to the server will have their own `<module name>.ini` file created in the `start.d` directory.
+
+[source, screen, subs="{sub-order}"]
+....
+[mybase]$ java -jar ../start.jar --add-to-start=server,client,webapp,websocket
+INFO : webapp          initialised in ${jetty.base}/start.ini
+INFO : server          initialised in ${jetty.base}/start.ini
+INFO : websocket       initialised in ${jetty.base}/start.ini
+INFO : client          initialised in ${jetty.base}/start.ini
+INFO : Base directory was modified
+
+[mybase]$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+[mybase]$ tree
+.
+└── start.d
+    └── start.ini
+
+[mybase]$ java -jar ../start.jar --add-to-start=ssl
+INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
+INFO : Base directory was modified
+[mybase]$ tree
+.
+├── etc
+│   └── keystore
+└── start.d
+    ├── ssl.ini
+    └── start.ini
+....
+
+[NOTE]
+--
+It is *not* recommended to use both a `${jetty.base}/start.ini` file and a `${jetty.base}/start.d` directory at the same time and doing so can cause issues.
+--
+
+[[startup-configuring-modules]]
+
+==== Configuring Modules
+
+Once a module has been enabled for the server, it can be further configured to meet your needs.
+This is done by editing the associated ini file for the module.
+If your server setup is using a centralized ini configuration, you will edit the `${jetty.base}/server.ini` file.
+If you have elected to manage each module within it's own ini file, you can find these files in the `${jetty.base}/start.d` directory.
+
+____
+[IMPORTANT]
+It is important that you *do not* modify the module files in the `$JETTY_HOME/modules` directory.
+$JETTY_HOME should always remain a standard of truth.
+If you want to make a change to an actual module file (not the values in its `ini-template`), either edit its associated `ini` file in the `$JETTY_BASE/start.d` directory or make a copy of the desired module file and copy it to the `$JETTY_BASE` directory and edit it there.
+The start.jar reads local `$JETTY_BASE/modules` files (if they exist) before scanning `$JETTY_HOME`.
+____
+
+When a module is activated, a number of properties are set by default.
+To view these defaults, open up the associated ini file.
+Listed in the ini file is the associated module file and any properties that can be set.
+
+Below is an example of the `requestlog.ini` file:
+
+[source, screen, subs="{sub-order}"]
+....
+# ---------------------------------------
+# Module: requestlog
+--module=requestlog
+
+## Logging directory (relative to $jetty.base)
+# jetty.requestlog.dir=logs
+
+## File path
+# jetty.requestlog.filePath=${jetty.requestlog.dir}/yyyy_mm_dd.request.log
+
+## Date format for rollovered files (uses SimpleDateFormat syntax)
+# jetty.requestlog.filenameDateFormat=yyyy_MM_dd
+
+## How many days to retain old log files
+# jetty.requestlog.retainDays=90
+
+## Whether to append to existing file
+# jetty.requestlog.append=true
+
+## Whether to use the extended log output
+# jetty.requestlog.extended=true
+
+## Whether to log http cookie information
+# jetty.requestlog.cookies=true
+
+## Timezone of the log entries
+# jetty.requestlog.timezone=GMT
+
+## Whether to log LogLatency
+# jetty.requestlog.loglatency=false
+....
+
+The first lines name the module file being called (located in `{$jetty.home/modules}`).
+Subsequent lines list properties that can be changed as well as a description for each property.
+To edit a property, first un-comment the line by deleting the `#` at the start of the line, then make the change after `=` sign (such as changing a `true` value to `false`).
+
+[[startup-disable-module]]
+==== Disabling Modules
+
+Disabling a module is an easy process.
+To disable a module, comment out the `--module=` line in the associated ini file.
+Deleting the ini file associated with module is another option, but may not be practical in all situations.
+
+[[startup-listing-modules]]
+==== Listing Available and Active Modules
+
+To see which modules are __available__, use the `--list-modules` command line argument.
+This command will also show you which modules are __enabled__.
+Modules are sorted by the value in the `[tags]` section of the associated `.mod` file.
+If there are multiple entries in the `[tags]` section, it sorts by the first tag in the list.
+
+____
+[NOTE]
+By default, the `--list-modules` command line argument shows all modules that do not include `internal` in the `[tags]` section of the associated `.mod` file.
+If you would like to see *all* modules, use `--list-all-modules`
+____
+
+Here's an example of the `--list-modules` command:
+
+include::screen-list-modules.adoc[]
+
+===== Searching Modules
+
+Since the introduction of the module system, many new modules have been added.
+As a result, looking at the module list as a whole can be somewhat overwhelming.
+To narrow down which modules you would like to choose from, you can search by values listed under the `[tags]` section.
+Note that when you search this way, all modules that include your criteria in it's `[tags]` section, including internal modules, will be shown.
+To filter out internal modules when searching a specific module tag, simply add `-internal` to the command line.
+For example, if you wanted to look at only the logging modules (excluding the internal implementation modules), you would use `--list-modules=logging,-internal`.
+
+include::screen-list-logging-modules.adoc[]
+
+[[custom-modules]]
+=== Custom Modules
+
+In addition to the modules that come packaged with the Jetty distribution, users are able to create and define their own custom modules for use with their Jetty implementation.
+Custom modules can be used for a number of reasons - they can extend features in Jetty, add new features, manage additional libraries available to the server...etc.
+
+At the heart of a Jetty module is the `{name}.mod` file itself.
+A jetty `.mod` file defines the following:
+
+[NOTE]
+--
+It is important to note that when creating your own module, none of these sections are required - simply use those which are applicable to your implementation.
+--
+
+Module Description - `[description]`::
+The description of the module.
+This will be showing when viewing the `.mod` file itself or using the `--list-modules` command.
+List of Dependent Modules - `[depend]`::
+All modules can declare that they depend on other modules with the `[depend]` section.
+The list of dependencies is used to transitively resolve other modules that are deemed to be required based on the modules that you activate.
+The order of modules defined in the graph of active modules is used to determine various execution order for configuration, such as Jetty IoC XML configurations, and to resolve conflicting property declarations.
+Optional Modules - `[optional]`;;
+Of note: there is a special section `[optional]` used to describe structurally dependent modules that are not technically required, but might be of use to your specific configuration.
+List of Libraries - `[lib]`::
+Modules can optionally declare that they have libraries that they need to function properly.
+The `[lib]` section declares a set of pathnames that follow the link:#base-vs-home-resolution[Jetty Base and Jetty Home path resolution rules].
+List of Jetty IoC XML Configurations - `[xml]`::
+A Module can optionally declare a list of Jetty IoC XML configurations used to wire up the functionality that this module defines.
+The `[xml]` section declares a set of pathnames that follow the link:#base-vs-home-resolution[Jetty Base and Jetty Home path resolution rules].
+Ideally, all XML files are parameterized to accept properties to configure the various elements of the standard configuration.
+Allowing for a simplified configuration of Jetty for the vast majority of deployments.
+The execution order of the Jetty IoC XML configurations is determined by the graph of active module dependencies resolved via the `[depend]` sections.
+If the default XML is not sufficient to satisfy your needs, you can override this XML by making your own in the `${jetty.base}/etc/` directory, with the same name.
+The resolution steps for Jetty Base and Jetty Home will ensure that your copy from `${jetty.base}` will be picked up over the default one in `${jetty.home}`.
+List of Module Tags - `[tags]`::
+For ease of sorting, modules can be assigned tags.
+When using the `--list-modules` command, modules will be groups by the first tag that exists in this section.
+Modules can also be listed specifically by these tags using `--list-modules=<tag name>` on the command line.
+Ini Variables - `[ini]`::
+The `[ini]` section is used to add or change server parameters at startup.
+The `[ini]` section can also include a the path of a file or several files which should be made available to the server only.
+This is helpful when you want to control what jars are available to deployed webapps.
+Jetty INI Template - `[ini-template]`::
+Each module can optionally declare a startup ini template that is used to insert/append/inject sample configuration elements into the `start.ini` or `start.d/*.ini` files when using the `--add-to-start=<name>` command line argument in `start.jar`.
+Commonly used to present some of the parameterized property options from the Jetty IoC XML configuration files also referenced in the same module.
+Required Files and Directories - `[files]`::
+If the activation of a module requires some paths to exist, the `[files]` section defines them.
+There are 2 modes of operation of the entries in this section.
+Ensure Directory Exists;;
+If you add a pathname that ends in `"/"` (slash), such as `"webapps/"`, then that directory will be created if it does not yet exist in `${jetty.base}/<pathname>` (eg: `"webapps/"` will result in `${jetty.base}/webapps/` being created).
+Download File;;
+There is a special syntax to allow you to download a file into a specific location if it doesn't exist yet: `<url>:<pathname>`.
+Currently, the `<url>` must be a `http://` scheme URL (please link:#bugs[let us know] if you need more schemes supported).
+The `<pathname>` portion follows the link:#base-vs-home-resolution[Jetty Base and Jetty Home path resolution rules].
+Example: `http://repo.corp.com/maven/corp-security-policy-1.0.jar:lib/corp-security-policy.jar`
+This will check for the existence of `lib/corp-security-policy.jar`, and if it doesn't exist, it will download the jar file from `http://repo.corp.com/maven/corp-security-policy-1.0.jar`
+Licenses - `[license]`::
+If you are implementing a software/technology that has a license, it's text can be placed here.
+When a user attempts to activate the module they will be asked if they accept the license agreement.
+If a user does not accept the license agreement, the module will not be activated.
+Additional Startup Commands - `[exec]`::
+The `[exec]` section is used to define additional parameters specific to the module.
+These commands are added to the server startup.
+
+[[custom-module-properties]]
+==== Module Properties
+
+Properties are used to parameterize:
+
+* XML files using the `<Property name="pname"/>` element
+* Module files using the `${pname}` syntax
+
+Properties and System Properties may be set on the command line, in a ini file or in a `[ini]` section of a module using the following syntax.
+
+`name=value`;;
+Set a property that can be expanded in XML files with the <Property> element.
+
+`name+=value`;;
+Append value to an existing property value.
+
+`name+=,value`;;
+Append value to an existing property value, using a comma separator if needed.
+
+`name?=value`;;
+Set a property only if it is not already set.
+
+If any of the previous formats is preceded by `-D`, then a system property is set as well as a start property.
+
+[[custom-module-location]]
+==== Location of Modules
+Jetty comes with dozens of modules as part of the distribution package.
+By default these are located in the `${JETTY_HOME}/modules` directory.
+These modules should not be modified.
+In the unlikely circumstance you need to make changes to a stock module, copy it to your `${JETTY_BASE}` in a `modules` directory.
+
+Custom modules should also be maintained separately as part of the `${JETTY_BASE}/modules` directory, though you can optionally place them in `${JETTY_HOME}/modules` for convenience if you have several `{$JETTY_BASE}` locations in your implementation.
+
+[[custom-module-examples]]
+==== Creating Custom Modules
+As shown above, there are several options that can be utilized when creating custom module files.
+This may seem daunting, but the good news is that creating custom modules is actually quite easy.
+
+For example, here is a look at the `http.mod` file which defines parameters for enabling HTTP features for the server:
+
+[source, screen]
+----
+include::{SRCDIR}/jetty-server/src/main/config/modules/http.mod[]
+----
+
+You'll notice that the `http.mod` file only includes a handful of the possible sections available - `[description]`, `[tags]`, `[depend]`, `[xml]`, and `[ini-template]`.
+When configuring your own modules, you are free to pick and choose what you include.
+
+As an example, below is a module file that defines a custom XML and lib, and activates a number of additional modules.
+A module like this could be used to enable a set of standard modules and resources for a new JETTY_BASE without having to define them all manually.
+
+[source, screen]
+----
+[description]
+Enables the standard set of modules and resources for ACME Corp servers.
+
+[tags]
+core
+
+[depend]
+server
+client
+http
+http2
+jsp
+console-capture
+requestlog
+stats
+gzip
+deploy
+jmx
+
+[files]
+basehome:modules/acme/acme.xml|etc/acme.xml
+
+[lib]
+lib/acme/ACMECustom.jar
+----
+
+Activating this module will activate all the dependent modules, create any required directories and copy in any required files:
+
+[source, screen]
+----
+java -jar ../start.jar --add-to-start=acme
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: alpn-impl/alpn-8
+  + ALPN is a hosted at github under the GPL v2 with ClassPath Exception.
+  + ALPN replaces/modifies OpenJDK classes in the sun.security.ssl package.
+  + http://github.com/jetty-project/jetty-alpn
+  + http://openjdk.java.net/legal/gplv2+ce.html
+
+Proceed (y/N)? y
+INFO  : webapp          transitively enabled, ini template available with --add-to-start=webapp
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : requestlog      transitively enabled, ini template available with --add-to-start=requestlog
+INFO  : alpn            transitively enabled, ini template available with --add-to-start=alpn
+INFO  : jsp             transitively enabled
+INFO  : servlet         transitively enabled
+INFO  : alpn-impl/alpn-8 dynamic dependency of alpn
+INFO  : annotations     transitively enabled
+INFO  : gzip            transitively enabled, ini template available with --add-to-start=gzip
+INFO  : ssl             transitively enabled, ini template available with --add-to-start=ssl
+INFO  : plus            transitively enabled
+INFO  : deploy          transitively enabled, ini template available with --add-to-start=deploy
+INFO  : alpn-impl/alpn-1.8.0_92 dynamic dependency of alpn-impl/alpn-8
+INFO  : security        transitively enabled
+INFO  : jmx             transitively enabled
+INFO  : apache-jsp      transitively enabled
+INFO  : stats           transitively enabled, ini template available with --add-to-start=stats
+INFO  : acme            initialized in ${jetty.base}/start.d/acme.ini
+INFO  : jndi            transitively enabled
+INFO  : console-capture transitively enabled, ini template available with --add-to-start=console-capture
+INFO  : client          transitively enabled
+INFO  : http            transitively enabled, ini template available with --add-to-start=http
+INFO  : http2           transitively enabled, ini template available with --add-to-start=http2
+MKDIR : ${jetty.base}/logs
+MKDIR : ${jetty.base}/lib
+MKDIR : ${jetty.base}/lib/alpn
+MKDIR : ${jetty.base}/etc
+COPY  : ${jetty.home}/modules/ssl/keystore to ${jetty.base}/etc/keystore
+MKDIR : ${jetty.base}/webapps
+DOWNLD: http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/8.1.8.v20160420/alpn-boot-8.1.8.v20160420.jar to ${jetty.base}/lib/alpn/alpn-boot-8.1.8.v20160420.jar
+COPY  : ${jetty.home}/modules/acme/acme.xml to ${jetty.base}/etc/acme.xml
+INFO  : Base directory was modified
+----
+
+==== Dependencies
+When dependent modules are enabled, they are done so transitively by default.
+This means that any `ini` files for dependent modules are not created in the `${JETTY_BASE}/start.d` directory (or added to `${JETTY_BASE}/start.ini`) and are as such not configurable.
+
+For Jetty to create/add the `ini-template` parameters to `start.d` or `start.ini` the associated module must be enabled explicitly.
+
+For example, if I activate the `http` module, it will be enabled, and the `server` module will be enabled transitively:
+
+[source, screen]
+----
+$ java -jar ../start.jar --add-to-start=http
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : http            initialized in ${jetty.base}/start.d/http.ini
+INFO  : Base directory was modified
+----
+
+You'll notice that Jetty informs you of what modules were enabled, and where there associated ini files are located (when applicable).
+It also tells the user what command they would need to run to enable any missing or desired ini files for the selected modules, in this case `--add-to-start=server`.
+
+[source, screen]
+----
+$ java -jar ../start.jar --add-to-start=server
+INFO  : server          initialized in ${jetty.base}/start.d/server.ini
+INFO  : Base directory was modified
+----
+
+____
+[NOTE]
+It is important to keep in mind that when activating a dependency, Jetty does not just go one layer down.
+If a dependent module also has dependencies they too will be enabled.
+____
+
+[[startup-xml-config]]
+=== Managing XML Based Startup Configuration
+
+When you see XML files on the command line for startup of Jetty, they are always part of the Jetty IoC Configuration mechanism.
+
+Internally, Jetty uses these XML files to build up Jetty with the features that you wan to use.
+
+The module mechanism present in Jetty determines the load order of the XML files.
+The Jetty Base and Jetty Home resolution logic also applies, which allows you to override a XML file declared by a module with your XML by simply having the same named XML in your `${jetty.base}/etc` directory location.
+
+[[startup-unix-service]]
+=== Startup a Unix Service using jetty.sh
+
+The standalone Jetty distribution ships with a `bin/jetty.sh` script that can be used by various Unix distros (including OSX) to manage Jetty as a startup service.
+
+This script is suitable for setting up Jetty as a service in Unix.
+
+==== Quick-Start a Jetty Service
+
+The minimum steps to get Jetty to run as a Service include:
+
+[source, screen, subs="{sub-order}"]
+....
+[/opt/jetty]# tar -zxf /home/user/downloads/jetty-distribution-{VERSION}.tar.gz
+[/opt/jetty]# cd jetty-distribution-{VERSION}/
+[/opt/jetty/jetty-distribution-{VERSION}]# ls
+bin        lib                         modules      resources  start.jar
+demo-base  license-eplv10-aslv20.html  notice.html  start.d    VERSION.txt
+etc        logs                        README.TXT   start.ini  webapps
+
+[/opt/jetty/jetty-distribution-{VERSION}]# cp bin/jetty.sh /etc/init.d/jetty
+[/opt/jetty/jetty-distribution-{VERSION}]# echo JETTY_HOME=`pwd` > /etc/default/jetty
+[/opt/jetty/jetty-distribution-{VERSION}]# cat /etc/default/jetty
+JETTY_HOME=/opt/jetty/jetty-distribution-{VERSION}
+
+[/opt/jetty/jetty-distribution-{VERSION}]# service jetty start
+Starting Jetty: OK Wed Nov 20 10:26:53 MST 2013
+....
+
+From this demonstration we can see that Jetty started successfully as a Unix Service from the `/opt/jetty/jetty-distribution-{VERSION}` directory.
+
+This configuration works well but it is running Jetty as the root user.
+
+==== Practical Setup of a Jetty Service
+
+There are various ways this can be accomplished, mostly depending on your Unix environment (and possibly corporate policies).
+
+The techniques outlined here assume an installation on Linux (demonstrated on Ubuntu 12.04.3 LTS).
+
+Prepare some empty directories to work with.
+
+[source, screen, subs="{sub-order}"]
+....
+# mkdir -p /opt/jetty
+# mkdir -p /opt/web/mybase
+# mkdir -p /opt/jetty/temp
+....
+
+The directory purposes are as follows:
+
+/opt/jetty::
+Where the Jetty Distribution will be unpacked into
+/opt/web/mybase::
+Where your specific set of webapps will be located, including all of the configuration required of the server to make them operational.
+/opt/jetty/temp::
+This is the temporary directory assigned to Java by the Service Layer (this is what Java sees as the `java.io.tmpdir` System Property).
++
+This is intentionally kept separate from the standard temp directory of `/tmp`, as this location doubles as the Servlet Spec work directory.
+It is our experience that the standard temp directory is often managed by various cleanup scripts that wreak havoc on a long running Jetty server.
+
+Jetty 9.3 requires Java 8 (or greater) to run.
+Make sure you have it installed.
+
+[source, screen, subs="{sub-order}"]
+....
+# apt-get install openjdk-7-jdk
+....
+
+Or download Java 7 from: http://www.oracle.com/technetwork/java/javase/downloads/index.html
+
+[source, screen, subs="{sub-order}"]
+....
+# java -version
+java version "1.6.0_27"
+OpenJDK Runtime Environment (IcedTea6 1.12.6) (6b27-1.12.6-1ubuntu0.12.04.2)
+OpenJDK 64-Bit Server VM (build 20.0-b12, mixed mode)
+
+# update-alternatives --list java
+/usr/lib/jvm/java-6-openjdk-amd64/jre/bin/java
+/usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java
+
+# update-alternatives --config java
+There are 2 choices for the alternative java (providing /usr/bin/java).
+
+  Selection    Path                                            Priority   Status
+------------------------------------------------------------
+* 0            /usr/lib/jvm/java-6-openjdk-amd64/jre/bin/java   1061      auto mode
+  1            /usr/lib/jvm/java-6-openjdk-amd64/jre/bin/java   1061      manual mode
+  2            /usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java   1051      manual mode
+
+Press enter to keep the current choice[*], or type selection number: 2
+update-alternatives: using /usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java to provide /usr/bin/java (java) in manual mode.
+
+# java -version
+java version "1.7.0_25"
+OpenJDK Runtime Environment (IcedTea 2.3.10) (7u25-2.3.10-1ubuntu0.12.04.2)
+OpenJDK 64-Bit Server VM (build 23.7-b01, mixed mode)
+....
+
+It is recommended that you create a user to specifically run Jetty.
+This user should have the minimum set of privileges needed to run Jetty.
+
+[source, screen, subs="{sub-order}"]
+....
+# useradd --user-group --shell /bin/false --home-dir /opt/jetty/temp jetty
+....
+
+This will create a user called `jetty`, belonging to the group called `jetty`, with no shell access (aka `/bin/false`), and home directory at `/opt/jetty/temp`.
+
+Download a copy of the Jetty distribution from the link:#jetty-downloading[Official Eclipse Download Site]
+
+Unpack it into place.
+
+[source, screen, subs="{sub-order}"]
+....
+[/opt/jetty]# tar -zxf /home/user/Downloads/jetty-distribution-{VERSION}.tar.gz
+[/opt/jetty]# ls -F
+jetty-distribution-{VERSION}/
+[/opt/jetty]# mkdir /opt/jetty/temp
+....
+
+It might seem strange or undesirable to unpack the first portion of the jetty-distribution directory name too.
+But starting with Jetty 9 the split between `${jetty.home}` and `${jetty.base}` allows for easier upgrades of Jetty itself while isolating your webapp specific configuration.
+For more information on the Jetty home and base concepts see the section on managing a Jetty installation link:#startup-base-and-home[earlier in this Chapter.]
+
+The `/opt/jetty/temp` directory is created as a durable place for Jetty to use for temp and working directories.
+Many Unix systems will periodically clean out the /tmp directory, this behavior is undesired in a Servlet container and has been known to cause problems.
+This durable directory at `/opt/jetty/temp` solves for that behavior.
+
+The directory at `/opt/web/mybase` is going to be a `${jetty.base}`, so lets configure it to hold your webapp and its configuration.
+
+[TIP]
+--
+In past versions of Jetty, you would configure / modify / add to the `jetty-distribution` directory directly.
+While this is still supported, we encourage you to setup a proper `${jetty.base}` directory, as it will benefit you with easier `jetty-distribution` upgrades in the future.
+--
+
+[source, screen, subs="{sub-order}"]
+....
+# cd /opt/web/mybase/
+[/opt/web/mybase]# ls
+[/opt/web/mybase]# java -jar /opt/jetty/jetty-distribution-{VERSION}/start.jar \
+   --add-to-start=deploy,http,console-capture
+   INFO  : webapp          transitively enabled, ini template available with --add-to-start=webapp
+   INFO  : server          transitively enabled, ini template available with --add-to-start=server
+   INFO  : security        transitively enabled
+   INFO  : servlet         transitively enabled
+   INFO  : console-capture initialized in ${jetty.base}/start.ini
+   INFO  : http            initialized in ${jetty.base}/start.ini
+   INFO  : deploy          initialized in ${jetty.base}/start.ini
+   MKDIR : ${jetty.base}/logs
+   MKDIR : ${jetty.base}/webapps
+   INFO  : Base directory was modified
+[/opt/web/mybase]# ls -F
+start.ini  webapps/
+....
+
+At this point you have configured your `/opt/web/mybase` to enable the following modules:
+
+deploy::
+This is the module that will perform deployment of web applications (WAR files or exploded directories), or Jetty IoC XML context deployables, from the `/opt/web/mybase/webapps` directory.
+http::
+This sets up a single Connector that listens for basic HTTP requests.
++
+See the created `start.ini` for configuring this connector.
+console-capture::
+When running Jetty as a service it is very important to have logging enabled.
+This module will enable the basic STDOUT and STDERR capture logging to the `/opt/web/mybase/logs/` directory.
+
+Additionally, the `webapp`, `server`, `security` and `servlet` modules were enabled as they are dependencies for other modules.
+
+See xref:start-jar[] for more details and options on setting up and configuring a `${jetty.base}` directory.
+
+Copy your war file into place.
+
+[source, screen, subs="{sub-order}"]
+....
+# cp /home/user/projects/mywebsite.war /opt/web/mybase/webapps/
+....
+
+Most service installations will want Jetty to run on port 80, now is the opportunity to change this from the default value of `8080` to `80`.
+
+Edit the `/opt/web/mybase/start.ini` and change the `jetty.http.port` value.
+
+[source, screen, subs="{sub-order}"]
+....
+# grep jetty.http.port /opt/web/mybase/start.ini
+jetty.port=80
+....
+
+Change the permissions on the Jetty distribution and webapp directories so that the user you created can access it.
+
+[source, screen, subs="{sub-order}"]
+....
+# chown --recursive jetty /opt/jetty
+# chown --recursive jetty /opt/web/mybase
+....
+
+Next we need to make the Unix System aware that we have a new Jetty Service that can be managed by the standard `service` calls.
+
+[source, screen, subs="{sub-order}"]
+....
+# cp /opt/jetty/jetty-distribution-{VERSION}/bin/jetty.sh /etc/init.d/jetty
+# echo "JETTY_HOME=/opt/jetty/jetty-distribution-{VERSION}" > /etc/default/jetty
+# echo "JETTY_BASE=/opt/web/mybase" >> /etc/default/jetty
+# echo "TMPDIR=/opt/jetty/temp" >> /etc/default/jetty
+....
+
+Test out the configuration:
+
+[source, screen, subs="{sub-order}"]
+....
+# service jetty status
+Checking arguments to Jetty:
+START_INI      =  /opt/web/mybase/start.ini
+JETTY_HOME     =  /opt/jetty/jetty-distribution-{VERSION}
+JETTY_BASE     =  /opt/web/mybase
+JETTY_CONF     =  /opt/jetty/jetty-distribution-{VERSION}/etc/jetty.conf
+JETTY_PID      =  /var/run/jetty.pid
+JETTY_START    =  /opt/jetty/jetty-distribution-{VERSION}/start.jar
+CLASSPATH      =
+JAVA           =  /usr/bin/java
+JAVA_OPTIONS   =  -Djetty.state=/opt/web/mybase/jetty.state
+       -Djetty.logs=/opt/web/mybase/logs
+       -Djetty.home=/opt/jetty/jetty-distribution-{VERSION}
+       -Djetty.base=/opt/web/mybase
+       -Djava.io.tmpdir=/opt/jetty/temp
+JETTY_ARGS     =  console-capture.xml jetty-started.xml
+RUN_CMD        =  /usr/bin/java
+       -Djetty.state=/opt/web/mybase/jetty.state
+       -Djetty.logs=/opt/web/mybase/logs
+       -Djetty.home=/opt/jetty/jetty-distribution-{VERSION}
+       -Djetty.base=/opt/web/mybase
+       -Djava.io.tmpdir=/opt/jetty/temp
+       -jar /opt/jetty/jetty-distribution-{VERSION}/start.jar
+       console-capture.xml
+       jetty-started.xml
+....
+
+You now have a configured `${jetty.base}` in `/opt/web/mybase` and a `${jetty.home}` in `/opt/jetty/jetty-distribution-{VERSION}`, along with the service level files necessary to start the service.
+
+Test the service to make sure it starts up and runs successfully.
+
+[source, screen, subs="{sub-order}"]
+....
+# service jetty start
+Starting Jetty: OK Wed Nov 20 12:35:28 MST 2013
+
+# service jetty check
+..(snip)..
+Jetty running pid=2958
+
+[/opt/web/mybase]# ps u 2958
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+jetty     2958  5.3  0.1 11179176 53984 ?      Sl   12:46   0:00 /usr/bin/java -Djetty...
+....
+
+You should now have your server running.
+
+[[startup-windows-service]]
+=== Startup via Windows Service
+
+There are no components that ship with the Jetty Distribution to make it a formal Windows Service.
+
+However, we recommend the use of https://commons.apache.org/proper/commons-daemon/procrun.html[Apache ProcRun's Daemon].
+
+The techniques outlined here are based on Windows 7 (64-bit), using JDK 8 (64-bit), running on an Intel i7 architecture machine.
+
+Prepare some empty directories to work with.
+
+[source, screen, subs="{sub-order}"]
+....
+C:\> mkdir opt
+C:\> cd opt
+C:\opt> mkdir jetty
+C:\opt> mkdir logs
+C:\opt> mkdir myappbase
+C:\opt> mkdir temp
+C:\opt> dir
+ Volume in drive C has no label.
+ Volume Serial Number is DEAD-BEEF
+
+ Directory of C:\opt
+
+11/21/2013  04:06 PM    <DIR>          .
+11/21/2013  04:06 PM    <DIR>          ..
+11/21/2013  04:06 PM    <DIR>          jetty
+11/21/2013  04:06 PM    <DIR>          logs
+11/21/2013  04:06 PM    <DIR>          myappbase
+11/21/2013  04:06 PM    <DIR>          temp
+               0 File(s)              0 bytes
+....
+
+The directory purposes are as follows:
+
+C:\opt::
+Where the service layer utilities, scripts, and binaries will eventually be.
+C:\opt\logs::
+Where the logs for the service layer will put its own logs.
++
+Typically you will see the audit logs (install/update/delete), StdOutput, and StdError logs here.
+C:\opt\jetty::
+Where the Jetty Distribution will be unpacked into.
+C:\opt\myappbase::
+Where your specific set of webapps will be located, including all of the configuration required of the server to make them operational.
+C:\opt\temp::
+This is the temporary directory assigned to Java by the Service Layer (this is what Java sees as the `java.io.tmpdir` System Property).
++
+This is intentionally kept separate from the standard temp directories of Windows, as this location doubles as the Servlet Spec work directory.
+
+Or download Java 8 from: http://www.oracle.com/technetwork/java/javase/downloads/index.html
+
+[source, screen, subs="{sub-order}"]
+....
+C:\opt>java -version
+java version "1.7.0_45"
+Java(TM) SE Runtime Environment (build 1.7.0_45-b18)
+Java HotSpot(TM) 64-Bit Server VM (build 24.45-b08, mixed mode)
+....
+
+Download a copy of the ZIP distribution from the link:#jetty-downloading[Official Eclipse Download Site]
+
+Extract the contents of the `jetty-distribution-{VERSION}` directory to `C:\opt\jetty`
+
+Once complete, the contents of the `C:\opt\jetty` directory should look like this:
+
+[source, screen, subs="{sub-order}"]
+....
+C:\opt\jetty>dir
+ Volume in drive C has no label.
+ Volume Serial Number is C8CF-820B
+
+ Directory of C:\opt\jetty
+
+11/21/2013  12:13 PM    <DIR>          .
+11/21/2013  12:13 PM    <DIR>          ..
+11/21/2013  12:13 PM    <DIR>          bin
+11/21/2013  12:13 PM    <DIR>          demo-base
+11/21/2013  12:13 PM    <DIR>          etc
+11/21/2013  12:13 PM    <DIR>          lib
+11/21/2013  12:13 PM            30,012 license-eplv10-aslv20.html
+11/21/2013  12:13 PM    <DIR>          logs
+11/21/2013  12:13 PM    <DIR>          modules
+11/21/2013  12:13 PM             6,262 notice.html
+11/21/2013  12:13 PM             1,249 README.TXT
+11/21/2013  12:13 PM    <DIR>          resources
+11/21/2013  12:13 PM    <DIR>          start.d
+11/21/2013  12:13 PM             2,126 start.ini
+11/21/2013  12:13 PM            72,226 start.jar
+11/21/2013  12:13 PM           341,784 VERSION.txt
+11/21/2013  12:13 PM    <DIR>          webapps
+               6 File(s)        453,659 bytes
+              11 Dir(s)  306,711,420,928 bytes free
+....
+
+Download a copy of the https://commons.apache.org/proper/commons-daemon/binaries.html[Apache ProcRun] native binaries.
+
+You should have downloaded a file named `commons-daemon-1.0.15-bin-windows.zip` (the version might be different).
+Open the ZIP file and extract the `prunmgr.exe` and `prunsrv.exe` files into the `C:\opt` directory.
+
+Make sure to get the right version of `prunsrv.exe` for your environment.
+The ZIP file has both 32 bit and 64 bit versions of this file.
+
+Once you are complete, the contents of `C:\opt` directory should look like this:
+
+[source, screen, subs="{sub-order}"]
+....
+C:\opt> dir
+ Volume in drive C has no label.
+ Volume Serial Number is DEAD-BEEF
+
+ Directory of C:\opt
+
+11/21/2013  04:06 PM    <DIR>          .
+11/21/2013  04:06 PM    <DIR>          ..
+11/21/2013  04:06 PM    <DIR>          jetty
+11/21/2013  04:06 PM    <DIR>          logs
+11/21/2013  04:06 PM    <DIR>          myappbase
+11/21/2013  04:06 PM    <DIR>          temp
+11/21/2013  04:11 PM           104,448 prunmgr.exe
+11/21/2013  04:11 PM            80,896 prunsrv.exe
+               2 File(s)        185,344 bytes
+....
+
+Now it's time to setup your new `${jetty.base}` directory to have all of your WebApps and the configurations that they need.
+
+We'll start by specifying which modules we want to use (this will create a start.ini file and also create a few empty directories for you)
+
+[source, screen, subs="{sub-order}"]
+....
+C:\opt\myappbase>java -jar ..\jetty\start.jar --add-to-start=deploy,http,logging
+
+WARNING: deploy          initialised in ${jetty.base}\start.ini (appended)
+WARNING: deploy          enabled in     ${jetty.base}\start.ini
+MKDIR: ${jetty.base}\webapps
+WARNING: server          initialised in ${jetty.base}\start.ini (appended)
+WARNING: server          enabled in     ${jetty.base}\start.ini
+WARNING: http            initialised in ${jetty.base}\start.ini (appended)
+WARNING: http            enabled in     ${jetty.base}\start.ini
+WARNING: server          enabled in     ${jetty.base}\start.ini
+WARNING: logging         initialised in ${jetty.base}\start.ini (appended)
+WARNING: logging         enabled in     ${jetty.base}\start.ini
+MKDIR: ${jetty.base}\logs
+
+C:\opt\myappbase>dir
+ Volume in drive C has no label.
+ Volume Serial Number is C8CF-820B
+
+ Directory of C:\opt\myappbase
+
+11/21/2013  12:49 PM    <DIR>          .
+11/21/2013  12:49 PM    <DIR>          ..
+11/21/2013  12:49 PM    <DIR>          logs
+11/21/2013  12:49 PM             1,355 start.ini
+11/21/2013  12:49 PM    <DIR>          webapps
+               1 File(s)          1,355 bytes
+               4 Dir(s)  306,711,064,576 bytes free
+....
+
+At this point you have configured your `C:\opt\myappbase` to enable the following modules:
+
+deploy::
+This is the module that will perform deployment of web applications (WAR files or exploded directories), or Jetty IoC XML context deployables, from the `C:\opt\myappbase\webapps` directory.
+http::
+This sets up a single Connector that listens for basic HTTP requests.
++
+See the created `start.ini` for configuring this connector.
+logging::
+When running Jetty as a service it is very important to have logging enabled.
+This module will enable the basic STDOUT and STDERR capture logging to the `C:\opt\myappbase\logs` directory.
+
+See the section on xref:start-jar[] for more details and options on setting up and configuring a `${jetty.base}` directory.
+
+At this point you merely have to copy your WAR files into the `{$jetty.base}/webapps` directory.
+
+[source, screen, subs="{sub-order}"]
+....
+C:\opt\myappbase> copy C:\projects\mywebsite.war webapps\
+....
+
+At this point you should have your directories, Java, the Jetty distribution, and your webapp specifics setup and ready for operation.
+
+We will use the https://commons.apache.org/proper/commons-daemon/binaries.html[Apache ProcRun's prunsrv.exe] to install a Jetty Service.
+
+The basic command line syntax is outlined in the link above.
+
+A example `install-jetty-service.bat` is provided here as an example, based on the above directories.
+
+[source,bat]
+----
+@echo off
+set SERVICE_NAME=JettyService
+set JETTY_HOME=C:\opt\jetty
+set JETTY_BASE=C:\opt\myappbase
+set STOPKEY=secret
+set STOPPORT=50001
+
+set PR_INSTALL=C:\opt\prunsrv.exe
+
+@REM Service Log Configuration
+set PR_LOGPREFIX=%SERVICE_NAME%
+set PR_LOGPATH=C:\opt\logs
+set PR_STDOUTPUT=auto
+set PR_STDERROR=auto
+set PR_LOGLEVEL=Debug
+
+@REM Path to Java Installation
+set JAVA_HOME=C:\Program Files\Java\jdk1.7.0_45
+set PR_JVM=%JAVA_HOME%\jre\bin\server\jvm.dll
+set PR_CLASSPATH=%JETTY_HOME%\start.jar;%JAVA_HOME%\lib\tools.jar
+
+@REM JVM Configuration
+set PR_JVMMS=128
+set PR_JVMMX=512
+set PR_JVMSS=4000
+set PR_JVMOPTIONS=-Duser.dir="%JETTY_BASE%";-Djava.io.tmpdir="C:\opt\temp";-Djetty.home="%JETTY_HOME%";-Djetty.base="%JETTY_BASE%"
+@REM Startup Configuration
+set JETTY_START_CLASS=org.eclipse.jetty.start.Main
+
+set PR_STARTUP=auto
+set PR_STARTMODE=java
+set PR_STARTCLASS=%JETTY_START_CLASS%
+set PR_STARTPARAMS=STOP.KEY="%STOPKEY%";STOP.PORT=%STOPPORT%
+
+@REM Shutdown Configuration
+set PR_STOPMODE=java
+set PR_STOPCLASS=%JETTY_START_CLASS%
+set PR_STOPPARAMS=--stop;STOP.KEY="%STOPKEY%";STOP.PORT=%STOPPORT%;STOP.WAIT=10
+
+"%PR_INSTALL%" //IS/%SERVICE_NAME% ^
+  --DisplayName="%SERVICE_NAME%" ^
+  --Install="%PR_INSTALL%" ^
+  --Startup="%PR_STARTUP%" ^
+  --LogPath="%PR_LOGPATH%" ^
+  --LogPrefix="%PR_LOGPREFIX%" ^
+  --LogLevel="%PR_LOGLEVEL%" ^
+  --StdOutput="%PR_STDOUTPUT%" ^
+  --StdError="%PR_STDERROR%" ^
+  --JavaHome="%JAVA_HOME%" ^
+  --Jvm="%PR_JVM%" ^
+  --JvmMs="%PR_JVMMS%" ^
+  --JvmMx="%PR_JVMMX%" ^
+  --JvmSs="%PR_JVMSS%" ^
+  --JvmOptions="%PR_JVMOPTIONS%" ^
+  --Classpath="%PR_CLASSPATH%" ^
+  --StartMode="%PR_STARTMODE%" ^
+  --StartClass="%JETTY_START_CLASS%" ^
+  --StartParams="%PR_STARTPARAMS%" ^
+  --StopMode="%PR_STOPMODE%" ^
+  --StopClass="%PR_STOPCLASS%" ^
+  --StopParams="%PR_STOPPARAMS%"
+
+if not errorlevel 1 goto installed
+echo Failed to install "%SERVICE_NAME%" service.  Refer to log in %PR_LOGPATH%
+goto end
+
+:installed
+echo The Service "%SERVICE_NAME%" has been installed
+
+:end
+----
+
+Configuration's of note in this batch file:
+
+SERVICE_NAME::
+This is the name of the service that Windows sees.
+The name in the Services window will show this name.
+STOPKEY::
+This is the secret key (password) for the ShutdownMonitor, used to issue a formal command to stop the server.
+STOPPORT::
+The port that the Shutdown Monitor listens on for the stop command.
++
+If you have multiple Jetty servers on the same machine, this port will need to be different for each Service.
+
+Once you have run `prunsrv.exe //IS/<service-name>` (done for you in the above batch file) to install the service, you can use the standard Windows utilities to manage (start/stop/restart) the Jetty service.
+
+Open the Service View and start your service.
+
+image:images/windows-service-jetty.png[image,width=576]
+
