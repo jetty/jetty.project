@@ -23,8 +23,240 @@
 Welcome to the Eclipse Jetty Distribution Quickstart Guide.
 This guide is set up to introduce new users to the Jetty distribution, including downloading and running their first Jetty server.
 
-include::../topics/introduction/what-is-jetty.adoc[]
-include::../topics/documentation/jetty-documentation.adoc[]
-include::../topics/introduction/what-version.adoc[]
-include::../topics/introduction/jetty-javaee.adoc[]
-include::../topics/downloading/downloading-jetty.adoc[]
+[[qsgd-what-is-jetty]]
+=== What is Jetty?
+
+At the most basic level, Jetty is an Open-Source HTTP web server and Java servlet container.
+Development of Jetty began in 1995 with the original foundations laid by Greg Wilkins, who still actively contributes to the project.
+Today, Jetty is one of the most widely distributed web servers around.
+It has been use to power projects from small websites to massive applications with tens of millions of users.
+Companies like Yahoo, Google, Salesforce.com and many more count Jetty as an integral part of their own product offerings.
+
+From the start, Jetty was built to be as flexible as possible while at the same time providing support for the most popular and robust technologies available.
+Since it's inception Jetty has been on the forefront of technological innovation and was among the first to offer support for HTTP/1.1, asynchronous servlets, Comet, WebSocket and HTTP/2.
+
+[[qsgd-jetty-documentation]]
+=== Jetty Documentation
+
+The Jetty Documentation is broken up in to several guides:
+
+* The link:#qsg-introduction[Quickstart Guide] is designed for users who are new to Jetty.
+It provides information about what Jetty is and where you can download it, and where to find Jetty in repositories like Maven Central.
+It also provides instructions on how to get Jetty up and running as well as an overview of how and what to configure in Jetty.
+
+* The link:#ag-introduction[Administration Guide] deals with configuring Jetty as a distribution.
+From server startup to session management, logging, HTTP/2 support and Jetty optimization, this guide helps administrators get the most out of their Jetty server instances.
+It explains how to use Jetty to deploy web applications, configure contexts and connects, and how to implement SSL and other security measures.
+This guide also covers configuring many of the most common servlet container features such as JNDI and JMX.
+
+* Aimed at advanced users of Jetty, the link:#dg-introduction[Developer Guide] focuses on implementing Jetty as an embedded technology to complement existing applications.
+It contains several examples and how-to guides for making the most out of the Jetty framework.
+This guide also includes instructions on using the Jetty Maven plugin and information on debugging Jetty.
+
+* The link:#cg-introduction[Contribution Guide] provides an overview of the resources available to users of Jetty.
+It provides on getting involved in the Jetty community, such as mailing lists and GitHub, and includes resources on where to find help.
+Additionally, it contains information on how to contribute to the Jetty Project.
+
+[[qsgd-what-jetty-version]]
+=== What Version Do I Use?
+
+Jetty 9 is the most recent version of Jetty and has a great many improvements over previous versions.
+This documentation focuses on Jetty 9.
+While there are many versions of Jetty being used in the wild, we always recommend using the most up-to-date version of Jetty to ensure support for the latest Jetty features, web specifications, and bug fixes.
+
+_____
+[IMPORTANT]
+It is *crucially* important that only stable releases are used in production environments.
+Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
+_____
+
+.Jetty Versions
+[width="100%",cols="12%,9%,15%,6%,21%,10%,6%,21%",options="header",]
+|=======================================================================
+|Version |Year |Home |JVM |Protocols |Servlet |JSP |Status
+|9.4 |2016- |Eclipse |1.8 |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |3.1 |2.3 |Stable
+|9.3 |2015- |Eclipse |1.8 |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |3.1 |2.3 |Stable
+|9.2 |2014-2018 |Eclipse |1.7 |HTTP/1.1 RFC2616, javax.websocket, SPDY v3 |3.1 |2.3 |Deprecated / *End of Life January 2018*
+|8 |2009-2014 |Eclipse/Codehaus |1.6 |HTTP/1.1 RFC2616, WebSocket RFC 6455, SPDY v3 |3.0 |2.2 |Deprecated / *End of Life November 2014*
+|7 |2008-2014 |Eclipse/Codehaus |1.5 |HTTP/1.1 RFC2616, WebSocket RFC 6455, SPDY v3 |2.5 |2.1 |Deprecated / *End of Life November 2014*
+|6 |2006-2010 |Codehaus |1.4-1.5 |HTTP/1.1 RFC2616 |2.5 |2.0 |Deprecated / *End of Life November 2010*
+|5 |2003-2009 |Sourceforge |1.2-1.5 |HTTP/1.1 RFC2616 |2.4 |2.0 |Antique
+|4 |2001-2006 |Sourceforge |1.2, J2ME |HTTP/1.1 RFC2616 |2.3 |1.2 |Ancient
+|3 |1999-2002 |Sourceforge |1.2 |HTTP/1.1 RFC2068 |2.2 |1.1 |Fossilized
+|2 |1998-2000 |Mortbay |1.1 |HTTP/1.0 RFC1945 |2.1 |1.0 |Legendary
+|1 |1995-1998 |Mortbay |1.0 |HTTP/1.0 RFC1945 |- |- |Mythical
+|=======================================================================
+
+[[qsgd-jetty-javaee]]
+=== Jetty and Java EE Web Profile
+
+Jetty implements aspects of the Java EE specification, primarily the Servlet Specification. 
+Recent releases of the Java EE platform have introduced a Web Profile, recognizing that many developers need only a subset of the many technologies under the Java EE umbrella.
+
+While Jetty itself does not ship all of the Web Profile technologies, Jetty architecture is such that you can plug in third party implementations to produce a container customized to your exact needs.
+
+[[qsgd-jetty-javaee-7]]
+==== Java EE 7 Web Profile
+
+In the forthcoming Java EE-7 specification, the Web Profile reflects updates in its component specifications and adds some new ones:
+
+.JavaEE7 Web Profile
+[cols=",,,",options="header",]
+|=======================================================================
+|JSR |Name |Included with jetty-9.1.x |Pluggable
+
+|http://jcp.org/en/jsr/detail?id=340[JSR 340] |Servlet Specification API 3.1 |Yes |
+
+|http://jcp.org/en/jsr/detail?id=344[JSR 344] |Java Server Faces 2.2 (JSF) |No |Yes, https://javaserverfaces.java.net/[Mojarra] or http://myfaces.apache.org/[MyFaces]
+
+|http://jcp.org/en/jsr/detail?id=245[JSR 245] / http://jcp.org/en/jsr/detail?id=341[JSR 341] |Java Server Pages 2.3/Java Expression Language 3.0 (JSP/EL) |Yes |Yes
+
+|http://jcp.org/en/jsr/detail?id=52[JSR 52] |Java Standard Tag Library 1.2 (JSTL) |Yes |Yes
+
+|http://jcp.org/en/jsr/detail?id=45[JSR 45] |Debugging Support for Other Languages 1.0 |Yes (via JSP) |Yes (via JSP)
+
+|http://jcp.org/en/jsr/detail?id=346[JSR 346] |Contexts and Dependency Injection for the JavaEE Platform 1.1 (Web Beans) |No |Yes, http://seamframework.org/Weld[Weld]
+
+|http://jcp.org/en/jsr/detail?id=330[JSR 330] |Dependency Injection for Java 1.0 |No |Yes as part of a CDI implementation, http://seamframework.org/Weld[Weld]
+
+|http://jcp.org/en/jsr/detail?id=316[JSR 316] |Managed Beans 1.0 |No |Yes, as part of another technology
+
+|http://jcp.org/en/jsr/detail?id=345[JSR 345] |Enterprise JavaBeans 3.2 Lite |No |
+
+|http://jcp.org/en/jsr/detail?id=338[JSR 338] |Java Persistance 2.1 (JPA) |No |Yes, eg http://www.hibernate.org/[Hibernate]
+
+|http://jcp.org/en/jsr/detail?id=250[JSR 250] |Common Annotations for the Java Platform 1.2 |Yes |Partially (for non-core Servlet Spec annotations)
+
+|http://jcp.org/en/jsr/detail?id=907[JSR 907] |Java Transaction API 1.2 (JTA) |Yes |Yes
+
+|http://jcp.org/en/jsr/detail?id=349[JSR 349] |Bean Validation 1.1 |No |Yes as part of another technology eg JSF, or a stand-alone implementation such as http://www.hibernate.org/subprojects/validator/docs.html[Hiberate
+Validator]
+
+|http://jcp.org/en/jsr/detail?id=339[JSR 339] |Java API for RESTful Web Services 2.0 (JAX-RS) |No |
+
+|http://jcp.org/en/jsr/detail?id=356[JSR 356] |Java API for Websocket 1.0 |Yes |No
+
+|http://jcp.org/en/jsr/detail?id=353[JSR 353] |Java API for JSON Processing 1.0 (JSON-P) |No |Yes, eg JSON-P https://java.net/projects/jsonp/[reference implementation]
+
+|link:jcp.org/en/jsr/detail?id=318[JSR 318] |Interceptors 1.2 |No |Yes as part of a CDI implementation
+|=======================================================================
+
+[[qsgd-jetty-javaee-6]]
+==== Jetty EE 6 Web Profile
+
+Here is the matrix of JSRs for Java EE 6 Web Profile, and how they relate to Jetty:
+
+.Java EE 6 Web Profile
+[cols=",,,",options="header",]
+|=======================================================================
+|JSR |Name |Included with jetty-9.0.x |Pluggable
+
+|http://jcp.org/en/jsr/detail?id=315[JSR 315] |Servlet Specification API 3.0 |Yes |
+
+|http://jcp.org/en/jsr/detail?id=314[JSR 314] |JavaServer Faces 2.0 (JSF) |No |Yes, for example, https://javaserverfaces.java.net/[Mojarra] or http://myfaces.apache.org/[MyFaces]
+
+|http://jcp.org/en/jsr/detail?id=245[JSR 245] |JavaServer Pages 2.2/Java Expression Language 2.2 (JSP/EL) |Yes |Yes
+
+|http://jcp.org/en/jsr/detail?id=52[JSR 52] |Java Standard Tag Library 1.2 (JSTL) |Yes |Yes
+
+|http://jcp.org/en/jsr/detail?id=45[JSR 45] |Debugging Support for Other Languages 1.0 |Yes (via JSP) |Yes (via JSP)
+
+|http://jcp.org/en/jsr/detail?id=299[JSR 299] |Contexts and Dependency Injection for the Java EE Platform 1.0 (Web Beans) |No |Yes, http://seamframework.org/Weld[Weld] or http://openwebbeans.apache.org/[OpenWebBeans]
+
+|http://jcp.org/en/jsr/detail?id=330[JSR 330] |Dependency Injection for Java 1.0 |No |Yes as part of a CDI implementation, http://seamframework.org/Weld[Weld]
+
+|http://jcp.org/en/jsr/detail?id=316[JSR 316] |Managed Beans 1.0 |No |Yes, as part of another technology.
+
+|http://jcp.org/en/jsr/detail?id=318[JSR 318] |Enterprise JavaBeans 3.1 |No |Yes, OpenEJB
+
+|http://jcp.org/en/jsr/detail?id=317[JSR 317] |Java Persistance 2.0 (JPA) |No |Yes, http://www.hibernate.org/[Hibernate]
+
+|http://jcp.org/en/jsr/detail?id=250[JSR 250] |Common Annotations for the Java Platform |Yes |Partially (for non-core Servlet Spec annotations)
+
+|http://jcp.org/en/jsr/detail?id=907[JSR 907] |Java Transaction API (JTA) |Yes |Implementations are pluggable, such as http://www.atomikos.com/[Atomikos], http://jotm.ow2.org/xwiki/bin/view/Main/WebHome[JOTM], http://jencks.codehaus.org/Transaction+Manager[Jencks (Geronimo Transaction Manager)]
+
+|http://jcp.org/en/jsr/detail?id=303[JSR 303] |Bean Validation 1.0 |No |Yes as part of another technology (JSF), or a stand-alone implementation such as http://www.hibernate.org/subprojects/validator/docs.html[Hiberate
+Validator]
+|=======================================================================
+
+[[qsgd-jetty-downloading]]
+=== Downloading Jetty
+
+==== Downloading the Jetty Distribution
+
+As part of the Eclipse Foundation, Jetty's website is located in their network of sites and can be found at:
+____
+*Jetty*
+https://www.eclipse.org/jetty/download.html
+____
+
+It is available in both zip and gzip formats; download the one most appropriate for your system.
+When you download and unpack the binary, it is extracted into a directory called `jetty-distribution-VERSION.`
+Put this directory in a convenient location.
+The rest of the instructions in this documentation refer to this location as either `$JETTY_HOME` or as `$(jetty.home).`
+
+_____
+[IMPORTANT]
+It is important that *only* stable releases are used in production environments.
+Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
+_____
+
+[[qsgd-distribution-content]]
+===== Distribution Content
+
+A summary of the distribution's contents follows.
+The top-level directory contains:
+
+.Contents
+[width="80%",cols="40%,60%",options="header"]
+|=======================================================================
+|Location |Description |license-eplv10-aslv20.html |License file for Jetty
+|README.txt |Useful getting started information
+|VERSION.txt |Release information
+|bin/ |Utility shell scripts to help run Jetty on Unix systems
+|demo-base/ |A Jetty base directory to run a Jetty server with demonstration webapps
+|etc/ |Directory for Jetty XML configuration files
+|lib/ |All the JAR files necessary to run Jetty
+|logs/ |Directory for request logs
+|modules/ |Directory of module definitions
+|notice.html |License information and exceptions
+|resources/ |Directory containing additional resources for classpath, activated via configuration
+|start.ini |File containing the arguments that are added to the effective command line (modules, properties and XML configuration files)
+|start.jar |Jar that invokes Jetty (see also xref:quickstart-running-jetty[])
+|webapps/ |Directory containing webapps that run under the default configuration of Jetty
+|=======================================================================
+
+[[qsgd-jetty-home-downloading]]
+==== Downloading the Jetty-Home Distribution
+
+Jetty-Home is an alternate version of the distribution that contains only the necessary items to host a Jetty distribution.
+It is intended for advanced users who are already familiar with Jetty and want to download a smaller distribution package.
+Jetty-Home can be downloaded from the Maven Central repository:
+
+____
+*Jetty-Home*
+http://central.maven.org/maven2/org/eclipse/jetty/jetty-home/
+____
+
+Like the main Jetty distribution, Jetty-Home is available in both zip and gzip formats; download the one most appropriate for your system.
+Notice that there are a number of other files with extensions of .sha or .md5 which are checksum files.
+When you download and unpack the binary, it is extracted into a directory called `jetty-home-VERSION.`
+Put this directory in a convenient location.
+
+[[qsgd-jetty-home-distribution-content]]
+===== Distribution Content
+
+A summary of the Jetty-Home's distribution contents follows.
+The top-level directory contains:
+
+.Contents
+[width="80%",cols="40%,60%",options="header"]
+|=======================================================================
+|Location |Description |license-eplv10-aslv20.html |License file for Jetty
+|VERSION.txt |Release information
+|etc/ |Directory for Jetty XML configuration files
+|lib/ |All the JAR files necessary to run Jetty
+|modules/ |Directory of module definitions
+|notice.html |License information and exceptions
+|start.jar |Jar that invokes Jetty (see also xref:quickstart-running-jetty[])
+|=======================================================================
