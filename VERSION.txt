@@ -1,3 +1,5 @@
+jetty-9.4.12-SNAPSHOT
+
 jetty-9.4.12.RC0 - 11 July 2018
  + 901 Overriding SSL context KeyStoreType requires explicit override of
    TrustStoreType
