@@ -91,17 +91,13 @@ public class SslConnection extends AbstractConnection
     {
         IDLE, // Not Filling any data
         INTERESTED, // We have a pending read interest
-        NEEDS_WRAP,
-        WAIT_FOR_FLUSH,
-        FILLING
+        WAIT_FOR_FLUSH
     }
     
     private enum FlushState 
     { 
         IDLE, // Not flushing any data
-        NEEDS_WRITE, // We need to write encrypted data
         WRITING, // We have a pending write of encrypted data
-        NEEDS_UNWRAP, // We need to do our own fill
         WAIT_FOR_FILL // Waiting for a fill to happen
     }
     
@@ -121,7 +117,7 @@ public class SslConnection extends AbstractConnection
     private FlushState _flushState = FlushState.IDLE;
     private FillState _fillState = FillState.IDLE;
     private boolean _filling;
-    private boolean _flushing;
+    private boolean _fillFromIncompleteFlush;
     private AtomicReference<Handshake> _handshake = new AtomicReference<>(Handshake.INITIAL);
     private boolean _underFlown;
     
@@ -393,43 +389,83 @@ public class SslConnection extends AbstractConnection
         @Override
         protected void onIncompleteFlush()
         {
-            ByteBuffer write = null;
-            boolean fill_interest = false;
+            boolean fillInterest = false;
+            ByteBuffer write;
             synchronized(_decryptedEndPoint)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("onIncompleteFlush {} {}", SslConnection.this, BufferUtil.toDetailString(_encryptedOutput));
                 
-                switch(_flushState)
-                {
-                    case NEEDS_WRITE:
-                        _flushState = FlushState.WRITING;
-                        write = _encryptedOutput==null?BufferUtil.EMPTY_BUFFER:_encryptedOutput;
-                        break;
+                if (_flushState!=FlushState.IDLE)
+                    return;
 
-                    case NEEDS_UNWRAP:
-                        if (_sslEngine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP)
-                        {
+                for(;;)
+                {
+                    HandshakeStatus status = _sslEngine.getHandshakeStatus();
+                    switch(status)
+                    {
+                        case NEED_TASK:
+                        case NEED_WRAP:
+                        case NOT_HANDSHAKING:
+                            // write what we have or an empty buffer to reschedule a call to flush
+                            write = BufferUtil.hasContent(_encryptedOutput)?_encryptedOutput:BufferUtil.EMPTY_BUFFER;
+                            _flushState = FlushState.WRITING;
+                            break;
+
+                        case NEED_UNWRAP:
+                        case NEED_UNWRAP_AGAIN:
+                            // If we have something to write, then write it and ignore the needed unwrap for now.
+                            if (BufferUtil.hasContent(_encryptedOutput))
+                            {
+                                write = _encryptedOutput;
+                                _flushState = FlushState.WRITING;
+                                break;
+                            }
+                            
+                            if (_fillState!=FillState.IDLE)
+                            {
+                                // wait for a fill that is happening anyway
+                                write = null;
+                                _flushState = FlushState.WAIT_FOR_FILL;
+                                break;
+                            }
+                                
+                            // Try filling ourselves
+                            try
+                            {
+                                _fillFromIncompleteFlush = true;
+                                fill(BufferUtil.EMPTY_BUFFER);
+                                // If this changed the status, let's try again
+                                if (_sslEngine.getHandshakeStatus()!=status)
+                                    continue;
+                            }
+                            catch(IOException e)
+                            {
+                                LOG.ignore(e);
+                            }
+                            finally
+                            {
+                                _fillFromIncompleteFlush = false;
+                            }
+
+                            // Else we have to wait for a fill we schedule ourselves
+                            write = null;
+                            fillInterest = true;
+                            _fillState = FillState.INTERESTED;
                             _flushState = FlushState.WAIT_FOR_FILL;
-                            fill_interest = true;
-                        }
-                        else
-                        {
-                            // TODO The state has moved on, so just try to write
-                            // but perhaps we should not duplicate state?
-                            // perhaps would could handle NEEDS_UNWRAP in fill exit???
-                            write = _encryptedOutput==null?BufferUtil.EMPTY_BUFFER:_encryptedOutput;
-                        }
-                        break;
-                 
-                    default:
-                        break;
+                            break;
+
+                        default:
+                            throw new IllegalStateException();    
+                    }
+
+                    break;
                 }
             }
 
             if (write!=null)
                 getEndPoint().write(_incompleteWriteCallback, write);
-            if (fill_interest)
+            else if (fillInterest)
                 ensureFillInterested();
         }
 
@@ -444,7 +480,7 @@ public class SslConnection extends AbstractConnection
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("onFillable {}", SslConnection.this);
-                    
+
                     _fillState = FillState.IDLE;
                     switch(_flushState)
                     {
@@ -750,7 +786,7 @@ public class SslConnection extends AbstractConnection
                                                 
                                             case NEED_WRAP:
                                                 // if we were called from flush, just return
-                                                if (_flushing)
+                                                if (_fillFromIncompleteFlush)
                                                     return 0;
                                                 
                                                 // If nobody else is flushing, let's try ourselves
@@ -910,7 +946,7 @@ public class SslConnection extends AbstractConnection
                     
                     try
                     {
-                        _flushing = true;
+                        _fillFromIncompleteFlush = true;
                         
                         switch(_flushState)
                         {
@@ -925,8 +961,34 @@ public class SslConnection extends AbstractConnection
                         if (_encryptedOutput == null)
                             _encryptedOutput = _bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(), _encryptedDirectBuffers);
 
+                        // Keep going while we can make progress or until we are done
                         while (true)
                         {
+                            switch(_sslEngine.getHandshakeStatus())
+                            {
+                                case NEED_WRAP:
+                                    // That's lucky because wrapping is what we want to do anyway, so break and wrap below
+                                    break;
+                                    
+                                case NOT_HANDSHAKING:
+                                    // Let's just break here and do the wrapping below
+                                    break;
+                                    
+                                case NEED_TASK:
+                                    // run the task and continue
+                                    _sslEngine.getDelegatedTask().run();
+                                    continue;
+                                    
+                                case NEED_UNWRAP:
+                                case NEED_UNWRAP_AGAIN:
+                                    // We could try a fill here as an optimization, but for simplicity let's 
+                                    // allow onIncompleteFlush to do that progression.
+                                    return false;
+                                    
+                                case FINISHED:
+                                    throw new IllegalStateException();
+                            }
+                           
                             // We call sslEngine.wrap to try to take bytes from appOut buffers and encrypt them into the _netOut buffer
                             BufferUtil.compact(_encryptedOutput);
                             int pos = BufferUtil.flipToFill(_encryptedOutput);
@@ -939,139 +1001,65 @@ public class SslConnection extends AbstractConnection
                             {
                                 BufferUtil.flipToFlush(_encryptedOutput, pos);
                             }
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("wrap {} {}", wrapResult.toString().replace('\n',' '), BufferUtil.toHexSummary(_encryptedOutput));
-
-                            Status wrapResultStatus = wrapResult.getStatus();
-
+                            
+                            // Was all the data consumed?
                             boolean allConsumed=true;
                             for (ByteBuffer b : appOuts)
                                 if (BufferUtil.hasContent(b))
                                     allConsumed=false;
 
-                            // and deal with the results returned from the sslEngineWrap
-                            switch (wrapResultStatus)
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("wrap {} ac={} {}", wrapResult.toString().replace('\n',' '), allConsumed, BufferUtil.toHexSummary(_encryptedOutput));
+                            
+                            // if we have net bytes, let's try to flush them
+                            boolean flushed;
+                            if (BufferUtil.isEmpty(_encryptedOutput))
+                                flushed = true;
+                            else
+                            {
+                                flushed = getEndPoint().flush(_encryptedOutput);
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("flushed {} {}",flushed,BufferUtil.toHexSummary(_encryptedOutput));
+                            }
+
+                            // and now finally deal with the results returned from the sslEngineWrap
+                            switch (wrapResult.getStatus())
                             {
                                 case CLOSED:
                                 {
-                                    // The SSL engine has close, but there may be close handshake that needs to be written
-                                    if (BufferUtil.hasContent(_encryptedOutput))
-                                    {
-                                        // This is an optimization to try to flush here rather than let onIncompleteFlush do a write 
-                                        getEndPoint().flush(_encryptedOutput);                                        
-                                        if (BufferUtil.hasContent(_encryptedOutput))
-                                        {
-                                            _flushState = FlushState.NEEDS_WRITE;
-                                            return false;
-                                        }
-                                    }
-                                    
+                                    if (!flushed)
+                                        return false;
                                     getEndPoint().shutdownOutput();
                                     if (allConsumed)
-                                    {
-                                        _flushState = FlushState.IDLE;
                                         return true;
-                                    }
                                     throw new IOException("Broken pipe");
                                 }
                                 
                                 case BUFFER_UNDERFLOW:
                                     throw new IllegalStateException();
                                 
-                                default:
+                                case BUFFER_OVERFLOW:
+                                    return false;
+                                    
+                                case OK:
                                 {
                                     if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
                                         handshakeSucceeded();
 
+                                    // TODO remove renegotiation handling
                                     HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
-
-                                    // Check whether re-negotiation is allowed
                                     if (!allowRenegotiate(handshakeStatus))
                                     {
                                         getEndPoint().shutdownOutput();
-                                        if (allConsumed)
-                                        {
-                                            _flushState = FlushState.IDLE;
+                                        if (allConsumed && BufferUtil.isEmpty(_encryptedOutput))
                                             return true;
-                                        }
                                         throw new IOException("Broken pipe");
                                     }
 
-                                    // if we have net bytes, let's try to flush them
-                                    if (BufferUtil.hasContent(_encryptedOutput))
-                                    {
-                                        boolean flushed = getEndPoint().flush(_encryptedOutput);
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("flushed {} {}",flushed,BufferUtil.toHexSummary(_encryptedOutput));
-                                    }
-
-                                    // But we also might have more to do for the handshaking state.
-                                    switch (handshakeStatus)
-                                    {
-                                        case NOT_HANDSHAKING:
-                                            if (BufferUtil.hasContent(_encryptedOutput))
-                                            {
-                                                _flushState = FlushState.NEEDS_WRITE;
-                                                return false;
-                                            }
-                                            if (allConsumed)
-                                            {
-                                                _flushState = FlushState.IDLE;
-                                                return true;
-                                            }
-
-                                            // TODO can we spin here?
-                                            continue;
-
-                                        case NEED_TASK:
-                                            // run the task and continue
-                                            _sslEngine.getDelegatedTask().run();
-                                            continue;
-
-                                        case NEED_WRAP:
-                                            // Hey we just wrapped! Who knows what the sslEngine is thinking, so continue and we will wrap again
-                                            continue;
-
-                                        case NEED_UNWRAP:
-                                            // If we have encrypted data to write, let's just write it and hope the unwrap happens in the meantime
-                                            if (BufferUtil.hasContent(_encryptedOutput))
-                                            {
-                                                _flushState = FlushState.NEEDS_WRITE;
-                                                return false;
-                                            }
-                                            
-                                            // If we have consumed all the data and flushed the encrypted data, then we don't care about the unwrap for now
-                                            if (allConsumed)
-                                            {
-                                                _flushState = FlushState.IDLE;
-                                                return true;
-                                            }
-                                            
-                                            // If we were called from fill, just return
-                                            if (_filling)
-                                                return false;
-                                            
-                                            // If nobody else is filling, let's try a fill ourselves
-                                            if (_fillState==FillState.IDLE)
-                                            {
-                                                if (LOG.isDebugEnabled())
-                                                    LOG.debug("fill from flush {}", SslConnection.this);
-
-                                                // Try to fill ourselves
-                                                fill(BufferUtil.EMPTY_BUFFER);
-
-                                                // if after the fill() we no longer need the unwrap, then lets continue;
-                                                if (_sslEngine.getHandshakeStatus() != HandshakeStatus.NEED_UNWRAP)
-                                                    continue;
-                                            }
-                                            
-                                            // We need to arrange a fill ourselves
-                                            _flushState = FlushState.NEEDS_UNWRAP;                                                
-                                            return false;
-
-                                        case FINISHED:
-                                            throw new IllegalStateException();
-                                    }
+                                    if (!flushed)
+                                        return false;
+                                    if (allConsumed)
+                                        return true;
                                 }
                             }
                         }
@@ -1083,7 +1071,7 @@ public class SslConnection extends AbstractConnection
                     }
                     finally
                     {
-                        _flushing = false;
+                        _fillFromIncompleteFlush = false;
                         releaseEncryptedOutputBuffer();
                         if (LOG.isDebugEnabled())
                             LOG.debug("flush exit {}", SslConnection.this);
