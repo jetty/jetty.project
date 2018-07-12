@@ -211,7 +211,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private SslContextFactory(boolean trustAll, String keyStorePath)
     {
         setTrustAll(trustAll);
-        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
+        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3", "TLSv1.3");
         setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
         if (keyStorePath != null)
             setKeyStorePath(keyStorePath);
