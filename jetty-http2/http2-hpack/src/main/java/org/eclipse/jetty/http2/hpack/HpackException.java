@@ -27,26 +27,25 @@ public abstract class HpackException extends RuntimeException
         super(String.format(messageFormat, args));
     }
     
-    public static class Stream extends HpackException
+    public static class StreamException extends HpackException
     {
-        Stream(String messageFormat, Object... args)
+        StreamException(String messageFormat, Object... args)
         {
             super(messageFormat,args);
         }
     }
-    
-    
-    public static class Session extends HpackException
+
+    public static class SessionException extends HpackException
     {
-        Session(String messageFormat, Object... args)
+        SessionException(String messageFormat, Object... args)
         {
             super(messageFormat,args);
         }
     }
-    
-    public static class Compression extends Session
+
+    public static class CompressionException extends SessionException
     {
-        public Compression(String messageFormat, Object... args)
+        public CompressionException(String messageFormat, Object... args)
         {
             super(messageFormat,args);    
         }

@@ -224,7 +224,7 @@ public class HpackDecoderTest
             decoder.decode(buffer);
             Assert.fail();
         }
-        catch (HpackException.Session e)
+        catch (HpackException.SessionException e)
         {
             assertThat(e.getMessage(),Matchers.startsWith("Unknown index"));
         }

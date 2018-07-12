@@ -73,7 +73,7 @@ public class HpackDecoder
 
         // If the buffer is big, don't even think about decoding it
         if (buffer.remaining()>_builder.getMaxSize())
-            throw new HpackException.Session("431 Request Header Fields too large",6);
+            throw new HpackException.SessionException("431 Request Header Fields too large");
 
         while(buffer.hasRemaining())
         {
@@ -92,7 +92,7 @@ public class HpackDecoder
                 int index = NBitInteger.decode(buffer,7);
                 Entry entry=_context.get(index);
                 if (entry==null)
-                    throw new HpackException.Session("Unknown index %d",index);
+                    throw new HpackException.SessionException("Unknown index %d",index);
                 
                 if (entry.isStatic())
                 {

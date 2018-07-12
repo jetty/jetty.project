@@ -27,7 +27,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.hpack.HpackException.Session;
+import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 
 public class MetaDataBuilder
 {
@@ -40,7 +40,7 @@ public class MetaDataBuilder
     private String _path;
     private long _contentLength=Long.MIN_VALUE;
     private HttpFields _fields = new HttpFields(10);
-    private HpackException.Stream _streamException;
+    private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
 
@@ -68,7 +68,7 @@ public class MetaDataBuilder
         return _size;
     }
 
-    public void emit(HttpField field) throws HpackException.Session
+    public void emit(HttpField field) throws HpackException.SessionException
     {
         HttpHeader header = field.getHeader();
         String name = field.getName();
@@ -76,7 +76,7 @@ public class MetaDataBuilder
         int field_size = name.length() + (value == null ? 0 : value.length());
         _size+=field_size+32;
         if (_size>_maxSize)
-            throw new HpackException.Session("Header Size %d > %d",_size,_maxSize);
+            throw new HpackException.SessionException("Header Size %d > %d",_size,_maxSize);
 
         if (field instanceof StaticTableHttpField)
         {
@@ -162,10 +162,10 @@ public class MetaDataBuilder
                     break;
                 
                 case TE:
-                    if ("trailors".equalsIgnoreCase(value))
+                    if ("trailers".equalsIgnoreCase(value))
                         _fields.add(field);
                     else
-                        streamException("unsupported TE value %s", value);
+                        streamException("Unsupported TE value %s", value);
                     break;
             
                 case CONNECTION:
@@ -175,7 +175,7 @@ public class MetaDataBuilder
 
                 default:               
                     if (name.charAt(0)==':')
-                        streamException("Unknown psuodo header %s", name);
+                        streamException("Unknown pseudo header %s", name);
                     else
                         _fields.add(field);
                     break;
@@ -184,7 +184,7 @@ public class MetaDataBuilder
         else
         {
             if (name.charAt(0)==':')
-                streamException("Unknown psuedo header %s",name);
+                streamException("Unknown pseudo header %s",name);
             else
                 _fields.add(field);
         }
@@ -192,7 +192,7 @@ public class MetaDataBuilder
 
     void streamException(String messageFormat, Object... args)
     {
-        HpackException.Stream stream = new HpackException.Stream(messageFormat, args);
+        HpackException.StreamException stream = new HpackException.StreamException(messageFormat, args);
         if (_streamException==null)
             _streamException = stream;
         else
@@ -226,13 +226,13 @@ public class MetaDataBuilder
     }
     
 
-    public MetaData build() throws HpackException.Stream
+    public MetaData build() throws HpackException.StreamException
     {
         if (_streamException!=null)
             throw _streamException;
             
         if (_request && _response)
-            throw new HpackException.Stream("Request and Response headers");
+            throw new HpackException.StreamException("Request and Response headers");
             
         try
         {
@@ -266,14 +266,14 @@ public class MetaDataBuilder
      * Check that the max size will not be exceeded.
      * @param length the length
      * @param huffman the huffman name
-     * @throws Session 
+     * @throws SessionException 
      */
-    public void checkSize(int length, boolean huffman) throws Session
+    public void checkSize(int length, boolean huffman) throws SessionException
     {
         // Apply a huffman fudge factor
         if (huffman)
             length=(length*4)/3;
         if ((_size+length)>_maxSize)
-            throw new HpackException.Session("Header too large %d > %d", _size+length, _maxSize);
+            throw new HpackException.SessionException("Header too large %d > %d", _size+length, _maxSize);
     }
 }
