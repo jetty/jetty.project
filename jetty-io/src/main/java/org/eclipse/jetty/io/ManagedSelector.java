@@ -101,7 +101,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _selectorManager.execute(_strategy::produce);
 
         // Set started only if we really are started
-        submit(s->_started.set(true));        
+        submit(s->_started.set(true));
     }
 
     public int size()
@@ -130,7 +130,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             stop_selector._stopped.await();
         }
 
-        super.doStop();        
+        super.doStop();
     }
 
     /**
@@ -158,9 +158,28 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         if (selector != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("wakeup on submit {}", this);
+                LOG.debug("Wakeup on submit {}", this);
             selector.wakeup();
         }
+    }
+
+    private void wakeup()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Wakeup {}", this);
+
+        Selector selector = null;
+        synchronized (ManagedSelector.this)
+        {
+            if (_selecting)
+            {
+                selector = _selector;
+                _selecting = false;
+            }
+        }
+
+        if (selector != null)
+            selector.wakeup();
     }
 
     private void execute(Runnable task)
@@ -236,6 +255,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     public void destroyEndPoint(final EndPoint endPoint)
     {
+        // Waking up the selector is necessary to clean the
+        // cancelled-key set and tell the TCP stack that the
+        // socket is closed (so that senders receive RST).
+        wakeup();
         execute(new DestroyEndPoint(endPoint));
     }
 
