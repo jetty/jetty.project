@@ -228,12 +228,6 @@ public class HttpParser
         for (HttpHeader h:HttpHeader.values())
             if (!CACHE.put(new HttpField(h,(String)null)))
                 throw new IllegalStateException("CACHE FULL");
-        // Add some more common headers
-        CACHE.put(new HttpField(HttpHeader.REFERER,(String)null));
-        CACHE.put(new HttpField(HttpHeader.IF_MODIFIED_SINCE,(String)null));
-        CACHE.put(new HttpField(HttpHeader.IF_NONE_MATCH,(String)null));
-        CACHE.put(new HttpField(HttpHeader.AUTHORIZATION,(String)null));
-        CACHE.put(new HttpField(HttpHeader.COOKIE,(String)null));
     }
 
     private static HttpCompliance compliance()

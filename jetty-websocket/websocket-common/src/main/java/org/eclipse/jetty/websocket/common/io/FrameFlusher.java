@@ -333,11 +333,15 @@ public class FrameFlusher extends IteratingCallback
     @Override
     public String toString()
     {
+        int aggSize = -1;
+        ByteBuffer agg = aggregate;
+        if (agg != null)
+            aggSize = agg.position();
         return String.format("%s@%x[queueSize=%d,aggregateSize=%d,terminated=%s]",
                 getClass().getSimpleName(),
                 hashCode(),
                 getQueueSize(),
-                aggregate == null ? 0 : aggregate.position(),
+                aggSize,
                 terminated);
     }
 
