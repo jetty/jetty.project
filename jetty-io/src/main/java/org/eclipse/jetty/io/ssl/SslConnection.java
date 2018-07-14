@@ -118,6 +118,7 @@ public class SslConnection extends AbstractConnection
     private FlushState _flushState = FlushState.IDLE;
     private FillState _fillState = FillState.IDLE;
     private AtomicReference<Handshake> _handshake = new AtomicReference<>(Handshake.INITIAL);
+    private boolean _underflown;
     
     private abstract class RunnableTask  implements Runnable, Invocable
     {
@@ -473,6 +474,7 @@ public class SslConnection extends AbstractConnection
         @Override
         public int fill(ByteBuffer buffer) throws IOException
         {
+            int filled = Integer.MIN_VALUE;
             try
             {
                 synchronized(_decryptedEndPoint)
@@ -483,11 +485,11 @@ public class SslConnection extends AbstractConnection
                     try
                     {
                         if (_fillState!=FillState.IDLE)
-                            return 0;
+                            return filled = 0;
                         
                         // Do we already have some decrypted data?
                         if (BufferUtil.hasContent(_decryptedInput))
-                            return BufferUtil.append(buffer,_decryptedInput);
+                            return filled = BufferUtil.append(buffer,_decryptedInput);
          
                         // loop filling and unwrapping until we have something
                         while (true)
@@ -511,7 +513,7 @@ public class SslConnection extends AbstractConnection
                                     if (_flushState==FlushState.IDLE && flush(BufferUtil.EMPTY_BUFFER))
                                         continue;
                                     // handle in needsFillInterest
-                                    return 0;
+                                    return filled = 0;
                                     
                                 default:
                                     throw new IllegalStateException();
@@ -547,6 +549,7 @@ public class SslConnection extends AbstractConnection
                             SSLEngineResult unwrapResult;
                             try
                             {
+                                _underflown = false;
                                 unwrapResult = _sslEngine.unwrap(_encryptedInput, app_in);
                             }
                             finally
@@ -570,18 +573,19 @@ public class SslConnection extends AbstractConnection
                             switch (status)
                             {
                                 case CLOSED:
-                                    return -1;
+                                    return filled = -1;
                                     
                                 case BUFFER_UNDERFLOW:
                                     if (net_filled > 0)
                                         continue; // try filling some more
+                                    _underflown = true;
                                     if (net_filled < 0 && _sslEngine.getUseClientMode())
                                     {
                                         closeInbound();
-                                        return -1;
+                                        return filled = -1;
                                     }
                                     
-                                    return getEndPoint().isInputShutdown()?-1:0;
+                                    return filled = getEndPoint().isInputShutdown()?-1:0;
 
                                 case BUFFER_OVERFLOW:
                                 case OK:
@@ -591,7 +595,7 @@ public class SslConnection extends AbstractConnection
 
                                     // Check whether re-negotiation is allowed
                                     if (!allowRenegotiate(_sslEngine.getHandshakeStatus()))
-                                        return -1;
+                                        return filled = -1;
 
                                     // If bytes were produced, don't bother with the handshake status;
                                     // pass the decrypted data to the application, which will perform
@@ -599,14 +603,16 @@ public class SslConnection extends AbstractConnection
                                     if (unwrapResult.bytesProduced() > 0)
                                     {
                                         if (app_in==buffer)
-                                            return unwrapResult.bytesProduced();
-                                        return BufferUtil.append(buffer,_decryptedInput);
+                                            return filled = unwrapResult.bytesProduced();
+                                        return filled = BufferUtil.append(buffer,_decryptedInput);
                                     }
+                                    
+                                    break;
                                 }
+                                
+                                default:
+                                    throw new IllegalStateException();
                             }
-                            
-                            if (getEndPoint().isInputShutdown())
-                                return -1;
                         }
                     }
                     catch (Throwable x)
@@ -618,6 +624,7 @@ public class SslConnection extends AbstractConnection
                             _flushState=FlushState.IDLE;
                             getExecutor().execute(()->_decryptedEndPoint.getWriteFlusher().onFail(x));
                         }
+                        filled = Integer.MIN_VALUE;
                         throw x;
                     }
                     finally
@@ -641,7 +648,7 @@ public class SslConnection extends AbstractConnection
                         }
                         
                         if (LOG.isDebugEnabled())
-                            LOG.debug("fill exit {}", SslConnection.this);
+                            LOG.debug("fill exit {} uf={} {}", filled, _underflown, SslConnection.this);
                     }
                 }
             }
@@ -661,7 +668,11 @@ public class SslConnection extends AbstractConnection
             synchronized(_decryptedEndPoint)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("needFillInterest {}", SslConnection.this);
+                {
+                    LOG.debug("needFillInterest uf={} {}", _underflown, SslConnection.this);
+                    LOG.debug("ei={}",BufferUtil.toDetailString(_encryptedInput));
+                    LOG.debug("di={}",BufferUtil.toDetailString(_decryptedInput));
+                }
                                 
                 if (_fillState!=FillState.IDLE)
                     throw new IllegalStateException();
@@ -675,7 +686,8 @@ public class SslConnection extends AbstractConnection
                     case NEED_UNWRAP:
                     case NEED_UNWRAP_AGAIN:
                     case NOT_HANDSHAKING:
-                        if (BufferUtil.hasContent(_decryptedInput))
+                        if ((BufferUtil.hasContent(_encryptedInput) && !_underflown)
+                        ||   BufferUtil.hasContent(_decryptedInput))
                         {
                             fillable = true;
                             break;
@@ -686,7 +698,8 @@ public class SslConnection extends AbstractConnection
                         break;
                         
                     case NEED_WRAP:
-                        if (BufferUtil.hasContent(_decryptedInput))
+                        if ((BufferUtil.hasContent(_encryptedInput) && !_underflown)
+                        ||   BufferUtil.hasContent(_decryptedInput))
                         {
                             fillable = true;
                             break;
@@ -705,6 +718,9 @@ public class SslConnection extends AbstractConnection
                         throw new IllegalStateException();
                 }
             }
+           
+            if (LOG.isDebugEnabled())
+                LOG.debug("needFillInterest f={} i={} w={}",fillable,interest,BufferUtil.toDetailString(write));
             
             if (write!=null)
                 getEndPoint().write(_incompleteWriteCallback, write);
@@ -881,7 +897,6 @@ public class SslConnection extends AbstractConnection
                                     if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
                                         handshakeSucceeded();
 
-                                    // TODO remove renegotiation handling
                                     HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
                                     if (!allowRenegotiate(handshakeStatus))
                                     {
@@ -895,6 +910,8 @@ public class SslConnection extends AbstractConnection
                                         return false;
                                     if (allConsumed)
                                         return true;
+                                    if (appOuts.length==1 && appOuts[0]==BufferUtil.EMPTY_BUFFER)
+                                        return false;
                                 }
                             }
                         }
