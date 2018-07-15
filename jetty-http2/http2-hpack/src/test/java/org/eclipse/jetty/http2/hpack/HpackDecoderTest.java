@@ -19,7 +19,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -29,12 +28,11 @@ import static org.junit.Assert.assertTrue;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.hpack.HpackException.StreamException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -209,7 +207,7 @@ public class HpackDecoderTest
         MetaData metaData = decoder.decode(buffer);
         
         assertThat(decoder.getHpackContext().getDynamicTableSize(),is(0));
-        assertThat(metaData.getFields().get(HttpHeader.C_PATH),Matchers.startsWith("This is a very large field"));
+        assertThat(((MetaData.Request)metaData).getURI().toString(),Matchers.startsWith("This is a very large field"));
     }
 
     @Test
@@ -230,4 +228,319 @@ public class HpackDecoderTest
         }
     
     }
+    
+    /* 8.1.2.1. Pseudo-Header Fields */
+    @Test()
+    public void test8_1_2_1_PsuedoHeaderFields()
+    {
+        // 1:Sends a HEADERS frame that contains a unknown pseudo-header field
+        MetaDataBuilder mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(":unknown","value"));
+        try
+        {
+            mdb.build();
+            Assert.fail();
+        }
+        catch(StreamException ex)
+        {
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("Unknown pseudo header"));
+        }
+        
+        // 2: Sends a HEADERS frame that contains the pseudo-header field defined for response
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
+        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
+        mdb.emit(new HttpField(HttpHeader.C_PATH,"/path"));
+        mdb.emit(new HttpField(HttpHeader.C_STATUS,"100"));
+        try
+        {
+            mdb.build();
+            Assert.fail();
+        }
+        catch(StreamException ex)
+        {
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("Request and Response headers"));
+        }
+
+        // 3: Sends a HEADERS frame that contains a pseudo-header field as trailers
+        
+        // 4: Sends a HEADERS frame that contains a pseudo-header field that appears in a header block after a regular header field
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
+        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
+        mdb.emit(new HttpField(HttpHeader.C_PATH,"/path"));
+        mdb.emit(new HttpField("Accept","No Compromise"));
+        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost"));
+        try
+        {
+            mdb.build();
+            Assert.fail();
+        }
+        catch(StreamException ex)
+        {
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("Pseudo header :authority after fields"));
+        }
+    }
+    
+    /*
+     * 
+                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
+              ✔ 3: Sends a HEADERS frame that contains a pseudo-header field as trailers
+                 
+              × 4: Sends a HEADERS frame that contains a pseudo-header field that appears in a header block after a regular header field
+                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
+                   
+                   */
+    
+    
+                   
+                   /*
+            8.1.2.2. Connection-Specific Header Fields
+                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [send] HEADERS Frame (length:33, flags:0x05, stream_id:1)
+                   [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
+                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [recv] Timeout
+              × 1: Sends a HEADERS frame that contains the connection-specific header field
+                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
+                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
+                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
+                             Connection closed
+                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [send] HEADERS Frame (length:44, flags:0x05, stream_id:1)
+                   [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
+                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [recv] Timeout
+              × 2: Sends a HEADERS frame that contains the TE header field with any value other than "trailers"
+                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
+                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
+                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
+                             Connection closed
+                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+
+            8.1.2.3. Request Pseudo-Header Fields
+                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [send] HEADERS Frame (length:16, flags:0x05, stream_id:1)
+                   [recv] HEADERS Frame (length:23, flags:0x04, stream_id:1)
+                   [recv] DATA Frame (length:50, flags:0x01, stream_id:1)
+                   [recv] RST_STREAM Frame (length:4, flags:0x00, stream_id:1)
+                   [recv] Timeout
+              × 1: Sends a HEADERS frame with empty ":path" pseudo-header field
+                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
+                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
+                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
+                             Connection closed
+                     Actual: DATA Frame (length:50, flags:0x01, stream_id:1)
+                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [send] HEADERS Frame (length:13, flags:0x05, stream_id:1)
+                   [recv] Timeout
+              × 2: Sends a HEADERS frame that omits ":method" pseudo-header field
+                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
+                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
+                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
+                             Connection closed
+                     Actual: Timeout
+                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [send] HEADERS Frame (length:14, flags:0x05, stream_id:1)
+                   [recv] HEADERS Frame (length:100, flags:0x04, stream_id:1)
+                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [recv] Timeout
+              × 3: Sends a HEADERS frame that omits ":scheme" pseudo-header field
+                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
+                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
+                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
+                             Connection closed
+                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [send] HEADERS Frame (length:14, flags:0x05, stream_id:1)
+                   [recv] GOAWAY Frame (length:20, flags:0x00, stream_id:0)
+              ✔ 4: Sends a HEADERS frame that omits ":path" pseudo-header field
+                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [send] HEADERS Frame (length:16, flags:0x05, stream_id:1)
+                   [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
+                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [recv] Timeout
+              × 5: Sends a HEADERS frame with duplicated ":method" pseudo-header field
+                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
+                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
+                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
+                             Connection closed
+                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [send] HEADERS Frame (length:16, flags:0x05, stream_id:1)
+                   [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
+                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [recv] Timeout
+              × 6: Sends a HEADERS frame with duplicated ":scheme" pseudo-header field
+                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
+                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
+                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
+                             Connection closed
+                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [send] HEADERS Frame (length:18, flags:0x05, stream_id:1)
+                   [recv] HEADERS Frame (length:79, flags:0x05, stream_id:1)
+                   [recv] Timeout
+              × 7: Sends a HEADERS frame with duplicated ":method" pseudo-header field
+                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
+                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
+                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
+                             Connection closed
+                     Actual: HEADERS Frame (length:79, flags:0x05, stream_id:1)
+
+            8.1.2.6. Malformed Requests and Responses
+                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [send] HEADERS Frame (length:18, flags:0x04, stream_id:1)
+                   [send] DATA Frame (length:4, flags:0x01, stream_id:1)
+                   [recv] HEADERS Frame (length:100, flags:0x04, stream_id:1)
+                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [recv] Timeout
+              × 1: Sends a HEADERS frame with the "content-length" header field which does not equal the DATA frame payload length
+                -> The endpoint MUST treat this as a stream error of type PROTOCOL_ERROR.
+                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
+                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
+                             Connection closed
+                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                   [send] HEADERS Frame (length:18, flags:0x04, stream_id:1)
+                   [send] DATA Frame (length:4, flags:0x00, stream_id:1)
+                   [send] DATA Frame (length:4, flags:0x01, stream_id:1)
+                   [recv] HEADERS Frame (length:100, flags:0x04, stream_id:1)
+                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
+                   [recv] Timeout
+              × 2: Sends a HEADERS frame with the "content-length" header field which does not equal the sum of the multiple DATA frames payload length
+                -> The endpoint MUST treat this as a stream error of type PROTOCOL_ERROR.
+                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
+                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
+                             Connection closed
+                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+
+        8.2. Server Push
+               [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+               [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+               [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+               [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+               [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+               [send] PUSH_PROMISE Frame (length:19, flags:0x04, stream_id:1)
+               [recv] GOAWAY Frame (length:20, flags:0x00, stream_id:0)
+          ✔ 1: Sends a PUSH_PROMISE frame
+
+    HPACK: Header Compression for HTTP/2
+      2. Compression Process Overview
+        2.3. Indexing Tables
+          2.3.3. Index Address Space
+                 [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+                 [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+                 [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                 [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+                 [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+                 [send] HEADERS Frame (length:16, flags:0x05, stream_id:1)
+                 [recv] GOAWAY Frame (length:20, flags:0x00, stream_id:0)
+                 [recv] Connection closed
+            ✔ 1: Sends a header field representation with invalid index
+
+      4. Dynamic Table Management
+        4.2. Maximum Table Size
+               [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+               [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+               [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+               [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+               [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+               [send] HEADERS Frame (length:16, flags:0x05, stream_id:1)
+               [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
+               [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
+               [recv] Timeout
+          × 1: Sends a dynamic table size update at the end of header block
+            -> The endpoint MUST treat this as a decoding error.
+               Expected: GOAWAY Frame (Error Code: COMPRESSION_ERROR)
+                         Connection closed
+                 Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+
+      5. Primitive Type Representations
+        5.2. String Literal Representation
+               [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+               [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+               [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+               [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+               [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+               [send] HEADERS Frame (length:27, flags:0x05, stream_id:1)
+               [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
+               [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
+               [recv] Timeout
+          × 1: Sends a Huffman-encoded string literal representation with padding longer than 7 bits
+            -> The endpoint MUST treat this as a decoding error.
+               Expected: GOAWAY Frame (Error Code: COMPRESSION_ERROR)
+                         Connection closed
+                 Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+               [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+               [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+               [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+               [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+               [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+               [send] HEADERS Frame (length:26, flags:0x05, stream_id:1)
+               [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
+               [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
+               [recv] Timeout
+          × 2: Sends a Huffman-encoded string literal representation padded by zero
+            -> The endpoint MUST treat this as a decoding error.
+               Expected: GOAWAY Frame (Error Code: COMPRESSION_ERROR)
+                         Connection closed
+                 Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+               [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
+               [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
+               [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+               [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
+               [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
+               [send] HEADERS Frame (length:28, flags:0x05, stream_id:1)
+               [recv] GOAWAY Frame (length:20, flags:0x00, stream_id:0)
+               [recv] Connection closed
+          ✔ 3: Sends a Huffman-encoded string literal representation containing the EOS symbol
+
+    */
+    
 }

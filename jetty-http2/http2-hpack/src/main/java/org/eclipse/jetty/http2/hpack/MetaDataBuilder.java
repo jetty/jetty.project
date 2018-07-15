@@ -203,12 +203,12 @@ public class MetaDataBuilder
     {
         if (_fields.size()>0)
         {
-            streamException("Psuedo header %s after fields", header.asString());
+            streamException("Pseudo header %s after fields", header.asString());
             return false;
         }
         if (value==-1)
             return true;
-        streamException("Duplicate psuedo header %s", header.asString());
+        streamException("Duplicate pseudo header %s", header.asString());
         return false;
     }
 
@@ -216,20 +216,22 @@ public class MetaDataBuilder
     {
         if (_fields.size()>0)
         {
-            streamException("Psuedo header %s after fields", header.asString());
+            streamException("Pseudo header %s after fields", header.asString());
             return false;
         }
         if (value==null)
             return true;
-        streamException("Duplicate psuedo header %s", header.asString());
+        streamException("Duplicate pseudo header %s", header.asString());
         return false;
     }
-    
 
     public MetaData build() throws HpackException.StreamException
     {
         if (_streamException!=null)
+        {
+            _streamException.addSuppressed(new Throwable());
             throw _streamException;
+        }
             
         if (_request && _response)
             throw new HpackException.StreamException("Request and Response headers");
@@ -239,14 +241,10 @@ public class MetaDataBuilder
             HttpFields fields = _fields;
             _fields = new HttpFields(Math.max(10,fields.size()+5));
 
-            if (_method!=null)
+            if (_method!=null || _path!=null || _authority!=null || _scheme!=null)
                 return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields,_contentLength);
-            if (_status!=0)
+            if (_status>0)
                 return new MetaData.Response(HttpVersion.HTTP_2,_status,fields,_contentLength);
-            if (_path!=null)
-                fields.put(HttpHeader.C_PATH,_path);
-            if (_authority!=null)
-                fields.put(HttpHeader.HOST,_authority.getValue());
                 
             return new MetaData(HttpVersion.HTTP_2,fields,_contentLength);
         }
