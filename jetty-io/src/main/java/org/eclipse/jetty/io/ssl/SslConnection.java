@@ -80,6 +80,8 @@ public class SslConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(SslConnection.class);
 
+    // TODO reduce the about of debug
+    
     private enum Handshake
     {
         INITIAL,
@@ -623,7 +625,6 @@ public class SslConnection extends AbstractConnection
                     }
                     catch (Throwable x)
                     {
-                        LOG.debug(x);
                         handshakeFailed(x);
 
                         if (_flushState==FlushState.WAIT_FOR_FILL)
