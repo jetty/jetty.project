@@ -50,7 +50,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int initialStreamRecvWindow = 512 * 1024;
     private int maxConcurrentStreams = 128;
     private int maxHeaderBlockFragment = 0;
-    private int maxSettingsKeys = 16;
+    private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
 
@@ -146,7 +146,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.streamIdleTimeout = streamIdleTimeout;
     }
 
-    @ManagedAttribute("The max number of keys in a SETTINGS frame")
+    @ManagedAttribute("The max number of keys in all SETTINGS frames")
     public int getMaxSettingsKeys()
     {
         return maxSettingsKeys;

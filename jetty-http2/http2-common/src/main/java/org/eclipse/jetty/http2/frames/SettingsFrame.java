@@ -22,6 +22,8 @@ import java.util.Map;
 
 public class SettingsFrame extends Frame
 {
+    public static final int DEFAULT_MAX_KEYS = 64;
+
     public static final int HEADER_TABLE_SIZE = 1;
     public static final int ENABLE_PUSH = 2;
     public static final int MAX_CONCURRENT_STREAMS = 3;

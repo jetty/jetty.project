@@ -44,7 +44,7 @@ public class SettingsBodyParser extends BodyParser
 
     public SettingsBodyParser(HeaderParser headerParser, Parser.Listener listener)
     {
-        this(headerParser, listener, 16);
+        this(headerParser, listener, SettingsFrame.DEFAULT_MAX_KEYS);
     }
 
     public SettingsBodyParser(HeaderParser headerParser, Parser.Listener listener, int maxKeys)
@@ -60,7 +60,6 @@ public class SettingsBodyParser extends BodyParser
         length = 0;
         settingId = 0;
         settingValue = 0;
-        keys = 0;
         settings = null;
     }
 

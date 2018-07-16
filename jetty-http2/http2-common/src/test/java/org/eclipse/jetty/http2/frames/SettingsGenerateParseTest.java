@@ -41,9 +41,9 @@ public class SettingsGenerateParseTest
     private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
 
     @Test
-    public void testGenerateParseNoSettings() throws Exception
+    public void testGenerateParseNoSettings()
     {
-        List<SettingsFrame> frames = testGenerateParse(Collections.<Integer, Integer>emptyMap());
+        List<SettingsFrame> frames = testGenerateParse(Collections.emptyMap());
         Assert.assertEquals(1, frames.size());
         SettingsFrame frame = frames.get(0);
         Assert.assertEquals(0, frame.getSettings().size());
@@ -51,7 +51,7 @@ public class SettingsGenerateParseTest
     }
 
     @Test
-    public void testGenerateParseSettings() throws Exception
+    public void testGenerateParseSettings()
     {
         Map<Integer, Integer> settings1 = new HashMap<>();
         int key1 = 13;
@@ -73,7 +73,7 @@ public class SettingsGenerateParseTest
     {
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
-        final List<SettingsFrame> frames = new ArrayList<>();
+        List<SettingsFrame> frames = new ArrayList<>();
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
@@ -104,11 +104,11 @@ public class SettingsGenerateParseTest
     }
 
     @Test
-    public void testGenerateParseInvalidSettings() throws Exception
+    public void testGenerateParseInvalidSettings()
     {
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
-        final AtomicInteger errorRef = new AtomicInteger();
+        AtomicInteger errorRef = new AtomicInteger();
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
@@ -139,11 +139,11 @@ public class SettingsGenerateParseTest
     }
 
     @Test
-    public void testGenerateParseOneByteAtATime() throws Exception
+    public void testGenerateParseOneByteAtATime()
     {
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
-        final List<SettingsFrame> frames = new ArrayList<>();
+        List<SettingsFrame> frames = new ArrayList<>();
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
@@ -181,5 +181,73 @@ public class SettingsGenerateParseTest
             Assert.assertEquals(value, settings2.get(key));
             Assert.assertTrue(frame.isReply());
         }
+    }
+
+    @Test
+    public void testGenerateParseTooManySettingsInOneFrame()
+    {
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+
+        AtomicInteger errorRef = new AtomicInteger();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        {
+            @Override
+            public void onConnectionFailure(int error, String reason)
+            {
+                errorRef.set(error);
+            }
+        }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
+        int maxSettingsKeys = 32;
+        parser.setMaxSettingsKeys(maxSettingsKeys);
+
+        Map<Integer, Integer> settings = new HashMap<>();
+        for (int i = 0; i < maxSettingsKeys + 1; ++i)
+            settings.put(i + 10, i);
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateSettings(lease, settings, false);
+
+        for (ByteBuffer buffer : lease.getByteBuffers())
+        {
+            while (buffer.hasRemaining())
+                parser.parse(buffer);
+        }
+
+        Assert.assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
+    }
+
+    @Test
+    public void testGenerateParseTooManySettingsInMultipleFrames()
+    {
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
+
+        AtomicInteger errorRef = new AtomicInteger();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        {
+            @Override
+            public void onConnectionFailure(int error, String reason)
+            {
+                errorRef.set(error);
+            }
+        }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
+        int maxSettingsKeys = 32;
+        parser.setMaxSettingsKeys(maxSettingsKeys);
+
+        Map<Integer, Integer> settings = new HashMap<>();
+        settings.put(13, 17);
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        for (int i = 0; i < maxSettingsKeys + 1; ++i)
+            generator.generateSettings(lease, settings, false);
+
+        for (ByteBuffer buffer : lease.getByteBuffers())
+        {
+            while (buffer.hasRemaining())
+                parser.parse(buffer);
+        }
+
+        Assert.assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }
 }
