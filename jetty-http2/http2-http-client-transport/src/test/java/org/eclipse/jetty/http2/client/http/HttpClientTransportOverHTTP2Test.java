@@ -477,22 +477,33 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 ServerParser parser = new ServerParser(byteBufferPool, new ServerParser.Listener.Adapter()
                 {
                     @Override
-                    public void onHeaders(HeadersFrame request)
+                    public void onPreface()
                     {
                         // Server's preface.
                         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
                         // Reply to client's SETTINGS.
                         generator.control(lease, new SettingsFrame(new HashMap<>(), true));
+                        writeFrames();
+                    }
+
+                    @Override
+                    public void onHeaders(HeadersFrame request)
+                    {
                         // Response.
                         MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
                         HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
                         generator.control(lease, response);
+                        writeFrames();
+                    }
 
+                    private void writeFrames()
+                    {
                         try
                         {
                             // Write the frames.
                             for (ByteBuffer buffer : lease.getByteBuffers())
                                 output.write(BufferUtil.toArray(buffer));
+                            lease.recycle();
                         }
                         catch (Throwable x)
                         {
