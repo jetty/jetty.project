@@ -52,7 +52,7 @@ public class Parser
     private final HeaderParser headerParser;
     private final HeaderBlockParser headerBlockParser;
     private final BodyParser[] bodyParsers;
-    private int maxSettingsKeys = 16;
+    private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean continuation;
     private State state = State.HEADER;
 
