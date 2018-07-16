@@ -129,6 +129,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private List<String> protocols = Arrays.asList("h2", "h2-17", "h2-16", "h2-15", "h2-14");
     private int initialSessionRecvWindow = 16 * 1024 * 1024;
     private int initialStreamRecvWindow = 8 * 1024 * 1024;
+    private int maxSettingsKeys = 16;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
 
     @Override
@@ -332,6 +333,16 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setInitialStreamRecvWindow(int initialStreamRecvWindow)
     {
         this.initialStreamRecvWindow = initialStreamRecvWindow;
+    }
+
+    public int getMaxSettingsKeys()
+    {
+        return maxSettingsKeys;
+    }
+
+    public void setMaxSettingsKeys(int maxSettingsKeys)
+    {
+        this.maxSettingsKeys = maxSettingsKeys;
     }
 
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)

@@ -52,6 +52,7 @@ public class Parser
     private final HeaderParser headerParser;
     private final HeaderBlockParser headerBlockParser;
     private final BodyParser[] bodyParsers;
+    private int maxSettingsKeys = 16;
     private boolean continuation;
     private State state = State.HEADER;
 
@@ -71,7 +72,7 @@ public class Parser
         bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
         bodyParsers[FrameType.RST_STREAM.getType()] = new ResetBodyParser(headerParser, listener);
-        bodyParsers[FrameType.SETTINGS.getType()] = new SettingsBodyParser(headerParser, listener);
+        bodyParsers[FrameType.SETTINGS.getType()] = new SettingsBodyParser(headerParser, listener, getMaxSettingsKeys());
         bodyParsers[FrameType.PUSH_PROMISE.getType()] = new PushPromiseBodyParser(headerParser, listener, headerBlockParser);
         bodyParsers[FrameType.PING.getType()] = new PingBodyParser(headerParser, listener);
         bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
@@ -201,6 +202,16 @@ public class Parser
     protected boolean hasFlag(int bit)
     {
         return headerParser.hasFlag(bit);
+    }
+
+    public int getMaxSettingsKeys()
+    {
+        return maxSettingsKeys;
+    }
+
+    public void setMaxSettingsKeys(int maxSettingsKeys)
+    {
+        this.maxSettingsKeys = maxSettingsKeys;
     }
 
     protected void notifyConnectionFailure(int error, String reason)
