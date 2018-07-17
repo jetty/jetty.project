@@ -19,6 +19,8 @@
 package org.eclipse.jetty.util;
 
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -71,5 +73,32 @@ public class DateCacheTest
             now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
         Assert.assertThat(hits,Matchers.greaterThan(misses));
+    }
+
+    @Test
+    public void test_all_methods() {
+        DateCache dateCache = new DateCache();
+        Assert.assertNotNull(dateCache.formatNow(System.currentTimeMillis()));
+        Assert.assertNotNull(dateCache.formatNow(new Date().getTime()));
+        Assert.assertNotNull(dateCache.formatNow(Instant.now().toEpochMilli()));
+
+        Assert.assertNotNull(dateCache.format(new Date()));
+        Assert.assertNotNull(dateCache.format(new Date(System.currentTimeMillis())));
+
+        Assert.assertNotNull(dateCache.format(System.currentTimeMillis()));
+        Assert.assertNotNull(dateCache.format(new Date().getTime()));
+        Assert.assertNotNull(dateCache.format(Instant.now().toEpochMilli()));
+
+        Assert.assertNotNull(dateCache.formatTick(System.currentTimeMillis()));
+        Assert.assertNotNull(dateCache.formatTick(new Date().getTime()));
+        Assert.assertNotNull(dateCache.formatTick(Instant.now().toEpochMilli()));
+
+        Assert.assertNotNull(dateCache.getFormatString());
+
+        Assert.assertNotNull(dateCache.getTimeZone());
+
+        Assert.assertNotNull(dateCache.now());
+
+        Assert.assertNotNull(dateCache.tick());
     }
 }
