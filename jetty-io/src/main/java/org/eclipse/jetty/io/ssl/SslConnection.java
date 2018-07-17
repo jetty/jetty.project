@@ -672,34 +672,27 @@ public class SslConnection extends AbstractConnection
                 if (_fillState!=FillState.IDLE)
                     return;
                 
+                // Fillable if we have decrypted Input OR encrypted input that has not yet been underflown.
+                fillable = BufferUtil.hasContent(_decryptedInput) || (BufferUtil.hasContent(_encryptedInput) && !_underflown);
+                
                 switch(_sslEngine.getHandshakeStatus())
                 {
                     case NEED_TASK:
+                        // Pretend we are fillable
                         fillable = true;
                         break;
                         
                     case NEED_UNWRAP:
                     case NOT_HANDSHAKING:
-                        if ((BufferUtil.hasContent(_encryptedInput) && !_underflown)
-                                || BufferUtil.hasContent(_decryptedInput))
+                        if (!fillable)
                         {
-                            fillable = true;
-                        }
-                        else
-                        {
-                            fillable = false;
                             interest = true;
                             _fillState = FillState.INTERESTED;
                         }
                         break;
                         
                     case NEED_WRAP:
-                        if ((BufferUtil.hasContent(_encryptedInput) && !_underflown)
-                                || BufferUtil.hasContent(_decryptedInput))
-                        {
-                            fillable = true;
-                        }
-                        else
+                        if (!fillable)
                         {
                             fillable = false;
                             _fillState = FillState.WAIT_FOR_FLUSH;
