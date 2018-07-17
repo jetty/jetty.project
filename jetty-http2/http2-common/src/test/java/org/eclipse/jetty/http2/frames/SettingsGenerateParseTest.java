@@ -197,9 +197,9 @@ public class SettingsGenerateParseTest
                 errorRef.set(error);
             }
         }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
         int maxSettingsKeys = 32;
         parser.setMaxSettingsKeys(maxSettingsKeys);
+        parser.init(UnaryOperator.identity());
 
         Map<Integer, Integer> settings = new HashMap<>();
         for (int i = 0; i < maxSettingsKeys + 1; ++i)
@@ -231,9 +231,9 @@ public class SettingsGenerateParseTest
                 errorRef.set(error);
             }
         }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
         int maxSettingsKeys = 32;
         parser.setMaxSettingsKeys(maxSettingsKeys);
+        parser.init(UnaryOperator.identity());
 
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(13, 17);
