@@ -72,12 +72,6 @@ public class DateCacheBenchmarkTest
         dateCache.formatNow(System.currentTimeMillis());
     }
 
-    @Test
-    public void test() {
-        String f = dateCache.format( timestamp );
-        System.out.println( "f:" + f );
-    }
-
     public static void main(String[] args) throws RunnerException 
     {
         Options opt = new OptionsBuilder()
