@@ -93,8 +93,7 @@ public class SslConnection extends AbstractConnection
     {
         IDLE, // Not Filling any data
         INTERESTED, // We have a pending read interest
-        WAIT_FOR_FLUSH, 
-        FILLABLE
+        WAIT_FOR_FLUSH // Waiting for a flush to happen
     }
     
     private enum FlushState 
@@ -392,7 +391,7 @@ public class SslConnection extends AbstractConnection
             try
             {
                 // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
-                boolean complete_write = false;
+                boolean waiting_for_fill = false;
                 synchronized(_decryptedEndPoint)
                 {
                     if (LOG.isDebugEnabled())
@@ -402,7 +401,7 @@ public class SslConnection extends AbstractConnection
                     switch(_flushState)
                     {
                         case WAIT_FOR_FILL:
-                            complete_write = true;
+                            waiting_for_fill = true;
                             break;
                         default:
                             break;
@@ -410,16 +409,15 @@ public class SslConnection extends AbstractConnection
                 }
 
                 // Ensure a fill is always done if needed then wake up any fill interest
-                if (complete_write)
+                if (waiting_for_fill)
                     fill(BufferUtil.EMPTY_BUFFER);
                 getFillInterest().fillable();
             }
             catch (Throwable e)
             {
                 close(e);
-            }         
+            }
         }
-        
 
         protected void onFillableFail(Throwable failure)
         {
@@ -442,7 +440,6 @@ public class SslConnection extends AbstractConnection
                 } 
             }
 
-
             // wake up whoever is doing the fill
             getFillInterest().onFail(failure);
             
@@ -453,8 +450,6 @@ public class SslConnection extends AbstractConnection
                     close(failure);
             }
         }
-        
-        
 
         @Override
         public void setConnection(Connection connection)
@@ -476,14 +471,14 @@ public class SslConnection extends AbstractConnection
         @Override
         public int fill(ByteBuffer buffer) throws IOException
         {
-            Integer filled = null; //TODO remove
             try
             {
                 synchronized(_decryptedEndPoint)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug(">fill {}", SslConnection.this);
-                    
+
+                    int filled = -2;
                     try
                     {
                         if (_fillState!=FillState.IDLE)
@@ -502,14 +497,9 @@ public class SslConnection extends AbstractConnection
                             switch(status)
                             {
                                 case NEED_UNWRAP:
-                                // TODO case NEED_UNWRAP_AGAIN:
-                                    // How lucky! we are just about to do an unwrap anyway, so lets break out and do it below:
-                                    break;
-                                    
                                 case NOT_HANDSHAKING:
-                                    // handle below
                                     break;
-                                    
+
                                 case NEED_TASK:
                                     _sslEngine.getDelegatedTask().run();
                                     continue;
@@ -528,7 +518,7 @@ public class SslConnection extends AbstractConnection
                                 _encryptedInput = _bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(), _encryptedDirectBuffers);
                                 
                             // can we use the passed buffer if it is big enough
-                            ByteBuffer app_in = null;
+                            ByteBuffer app_in;
                             if (_decryptedInput == null)
                             {
                                 if (BufferUtil.space(buffer) > _sslEngine.getSession().getApplicationBufferSize())
@@ -546,7 +536,7 @@ public class SslConnection extends AbstractConnection
                             int net_filled = getEndPoint().fill(_encryptedInput);
 
                             if (LOG.isDebugEnabled())
-                                LOG.debug(">ep.filled={}", net_filled);
+                                LOG.debug("net filled={}", net_filled);
 
                             if (net_filled > 0 && _handshake.get() == Handshake.INITIAL && _sslEngine.isOutboundDone())
                                 throw new SSLHandshakeException("Closed during handshake");
@@ -592,10 +582,8 @@ public class SslConnection extends AbstractConnection
                                         closeInbound();
                                         return filled = -1;
                                     }
-                                    
-                                    return filled = getEndPoint().isInputShutdown()?-1:0;
+                                    return filled = net_filled;
 
-                                case BUFFER_OVERFLOW:
                                 case OK:
                                 {
                                     if (unwrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
@@ -632,7 +620,7 @@ public class SslConnection extends AbstractConnection
                             _flushState=FlushState.IDLE;
                             getExecutor().execute(()->_decryptedEndPoint.getWriteFlusher().onFail(x));
                         }
-                        filled = Integer.MIN_VALUE;
+
                         throw x;
                     }
                     finally
@@ -672,7 +660,7 @@ public class SslConnection extends AbstractConnection
         {
             boolean fillable;
             ByteBuffer write = null;
-            boolean interest = true;
+            boolean interest = false;
             synchronized(_decryptedEndPoint)
             {
                 if (LOG.isDebugEnabled())
@@ -691,33 +679,35 @@ public class SslConnection extends AbstractConnection
                         break;
                         
                     case NEED_UNWRAP:
-                    // TODO case NEED_UNWRAP_AGAIN:
                     case NOT_HANDSHAKING:
                         if ((BufferUtil.hasContent(_encryptedInput) && !_underflown)
-                        ||   BufferUtil.hasContent(_decryptedInput))
+                                || BufferUtil.hasContent(_decryptedInput))
                         {
                             fillable = true;
-                            break;
                         }
-                        fillable = false;
-                        interest = true;
-                        _fillState = FillState.INTERESTED;
+                        else
+                        {
+                            fillable = false;
+                            interest = true;
+                            _fillState = FillState.INTERESTED;
+                        }
                         break;
                         
                     case NEED_WRAP:
                         if ((BufferUtil.hasContent(_encryptedInput) && !_underflown)
-                        ||   BufferUtil.hasContent(_decryptedInput))
+                                || BufferUtil.hasContent(_decryptedInput))
                         {
                             fillable = true;
-                            break;
                         }
-
-                        fillable = false;
-                        _fillState = FillState.WAIT_FOR_FLUSH;
-                        if (_flushState==FlushState.IDLE)
+                        else
                         {
-                            _flushState = FlushState.WRITING;
-                            write = BufferUtil.hasContent(_encryptedOutput)?_encryptedOutput:BufferUtil.EMPTY_BUFFER;
+                            fillable = false;
+                            _fillState = FillState.WAIT_FOR_FLUSH;
+                            if (_flushState == FlushState.IDLE)
+                            {
+                                _flushState = FlushState.WRITING;
+                                write = BufferUtil.hasContent(_encryptedOutput) ? _encryptedOutput : BufferUtil.EMPTY_BUFFER;
+                            }
                         }
                         break;
                         
@@ -727,7 +717,6 @@ public class SslConnection extends AbstractConnection
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("<needFillInterest s={}/{} f={} i={} w={}",_flushState,_fillState,fillable,interest,BufferUtil.toDetailString(write));
-                
             }
            
             if (write!=null)
@@ -798,7 +787,6 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean flush(ByteBuffer... appOuts) throws IOException
         {
-            Boolean result = null; // TODO remove
             try
             {
                 synchronized(_decryptedEndPoint)
@@ -810,15 +798,12 @@ public class SslConnection extends AbstractConnection
                         for (ByteBuffer b : appOuts)
                             LOG.debug("flush b[{}]={}", i++, BufferUtil.toDetailString(b));
                     }
-                    
+
+                    Boolean result = null;
                     try
-                    {                    
+                    {
                         if (_flushState!=FlushState.IDLE)
                             return result = false;
-
-                        // We will need a network buffer
-                        if (_encryptedOutput == null)
-                            _encryptedOutput = _bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(), _encryptedDirectBuffers);
 
                         // Keep going while we can make progress or until we are done
                         while (true)
@@ -829,30 +814,31 @@ public class SslConnection extends AbstractConnection
                             switch(status)
                             {
                                 case NEED_WRAP:
-                                    // That's lucky because wrapping is what we want to do anyway, so break and wrap below
-                                    break;
-                                    
                                 case NOT_HANDSHAKING:
-                                    // Let's just break here and do the wrapping below
                                     break;
-                                    
+
                                 case NEED_TASK:
-                                    // run the task and continue
                                     _sslEngine.getDelegatedTask().run();
                                     continue;
                                     
                                 case NEED_UNWRAP:
-                                // TODO case NEED_UNWRAP_AGAIN:
                                     if (_fillState==FillState.IDLE)
-                                        fill(BufferUtil.EMPTY_BUFFER);
-                                    if (_sslEngine.getHandshakeStatus()!=status)
-                                        continue;
+                                    {
+                                        int filled = fill(BufferUtil.EMPTY_BUFFER);
+                                        if (_sslEngine.getHandshakeStatus()!=status)
+                                            continue;
+                                        if (filled < 0)
+                                            throw new IOException("Broken pipe");
+                                    }
                                     return result = false;
                                     
                                 default:
                                     throw new IllegalStateException();
                             }
-                           
+
+                            if (_encryptedOutput == null)
+                                _encryptedOutput = _bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(), _encryptedDirectBuffers);
+
                             // We call sslEngine.wrap to try to take bytes from appOut buffers and encrypt them into the _netOut buffer
                             BufferUtil.compact(_encryptedOutput);
                             int pos = BufferUtil.flipToFill(_encryptedOutput);
@@ -875,16 +861,18 @@ public class SslConnection extends AbstractConnection
                                     allConsumed=false;
 
                             // if we have net bytes, let's try to flush them
-                            boolean flushed = BufferUtil.isEmpty(_encryptedOutput)?true:getEndPoint().flush(_encryptedOutput);
+                            boolean flushed = BufferUtil.hasContent(_encryptedOutput) ? getEndPoint().flush(_encryptedOutput) : true;
 
                             if (LOG.isDebugEnabled())
-                                LOG.debug("ac={} ep.flushed={}",allConsumed, flushed);
+                                LOG.debug("net flushed={}, ac={}", flushed, allConsumed);
 
-                            // and now finally deal with the results returned from the sslEngineWrap
+                            // Now deal with the results returned from the wrap
                             switch (wrapResult.getStatus())
                             {
                                 case CLOSED:
                                 {
+                                    // TODO: do we need to remember the CLOSED state or SSLEngine
+                                    // TODO: will produce CLOSED again if wrap() is called again?
                                     if (!flushed)
                                         return result = false;
                                     getEndPoint().shutdownOutput();
@@ -893,21 +881,16 @@ public class SslConnection extends AbstractConnection
                                     throw new IOException("Broken pipe");
                                 }
                                 
-                                case BUFFER_UNDERFLOW:
-                                    throw new IllegalStateException();
-                                
                                 case BUFFER_OVERFLOW:
                                     if (!flushed)
                                         return result = false;
-                                    throw new IllegalStateException();
+                                    continue;
                                     
                                 case OK:
-                                {
                                     if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
                                         handshakeSucceeded();
 
-                                    HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
-                                    if (!allowRenegotiate(handshakeStatus))
+                                    if (!allowRenegotiate(_sslEngine.getHandshakeStatus()))
                                     {
                                         getEndPoint().shutdownOutput();
                                         if (allConsumed && BufferUtil.isEmpty(_encryptedOutput))
@@ -919,13 +902,14 @@ public class SslConnection extends AbstractConnection
                                         return result = false;
                                     if (allConsumed)
                                         return result = true;
-                                    if (appOuts.length==1 && appOuts[0]==BufferUtil.EMPTY_BUFFER)
-                                        return result = false;
-                                }
+                                    break;
+
+                                default:
+                                    throw new IllegalStateException();
                             }
 
                             if (getEndPoint().isOutputShutdown())
-                                break;
+                                return false;
                         }
                     }
                     catch (Throwable x)
@@ -946,10 +930,7 @@ public class SslConnection extends AbstractConnection
                 close(x);
                 throw x;
             }
-            
-            return false;
         }
-        
 
         @Override
         protected void onIncompleteFlush()
@@ -978,7 +959,6 @@ public class SslConnection extends AbstractConnection
                             break;
 
                         case NEED_UNWRAP:
-                        // TODO case NEED_UNWRAP_AGAIN:
                             // If we have something to write, then write it and ignore the needed unwrap for now.
                             if (BufferUtil.hasContent(_encryptedOutput))
                             {
@@ -989,7 +969,7 @@ public class SslConnection extends AbstractConnection
                             
                             if (_fillState!=FillState.IDLE)
                             {
-                                // wait for a fill that is happening anyway
+                                // Wait for a fill that is happening anyway
                                 _flushState = FlushState.WAIT_FOR_FILL;
                                 break;
                             }
@@ -997,20 +977,23 @@ public class SslConnection extends AbstractConnection
                             // Try filling ourselves
                             try
                             {
-                                fill(BufferUtil.EMPTY_BUFFER);
+                                int filled = fill(BufferUtil.EMPTY_BUFFER);
                                 // If this changed the status, let's try again
                                 if (_sslEngine.getHandshakeStatus()!=status)
                                     continue;
+                                if (filled < 0)
+                                    throw new IOException("Broken pipe");
                             }
                             catch(IOException e)
                             {
                                 LOG.debug(e);
                                 close(e);
                                 write = BufferUtil.EMPTY_BUFFER;
+                                _flushState = FlushState.WRITING;
                                 break;
                             }
 
-                            // Else we have to wait for a fill we schedule ourselves
+                            // Make sure we are fill interested.
                             fillInterest = true;
                             _fillState = FillState.INTERESTED;
                             _flushState = FlushState.WAIT_FOR_FILL;
@@ -1019,7 +1002,6 @@ public class SslConnection extends AbstractConnection
                         default:
                             throw new IllegalStateException();    
                     }
-                    
                     break;
                 }
                 
@@ -1033,7 +1015,6 @@ public class SslConnection extends AbstractConnection
                 ensureFillInterested();
         }
 
-        
         @Override
         public void doShutdownOutput()
         {
@@ -1186,13 +1167,13 @@ public class SslConnection extends AbstractConnection
                 synchronized(_decryptedEndPoint)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("IncompleteWriteCB.succeeded {}", SslConnection.this);
+                        LOG.debug("IncompleteWriteCB succeeded {}", SslConnection.this);
         
                     releaseEncryptedOutputBuffer();
                     _flushState = FlushState.IDLE;
                     fillable = _fillState==FillState.WAIT_FOR_FLUSH;
                     if (fillable)
-                        _fillState = FillState.FILLABLE;
+                        _fillState = FillState.IDLE;
                 }
                 
                 _decryptedEndPoint.getWriteFlusher().completeWrite();
