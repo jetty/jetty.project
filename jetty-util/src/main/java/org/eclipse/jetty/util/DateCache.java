@@ -242,13 +242,15 @@ public class DateCache
     {
         long seconds = now / 1000;
 
+        Tick tick=_tick;
         // recheck the tick, to save multiple formats
-        if (_tick==null || _tick._seconds!=seconds)
+        if (tick==null || tick._seconds!=seconds)
         {
             String s = ZonedDateTime.ofInstant(Instant.now(),_zoneId).format(_tzFormat);
-            return _tick=new Tick(seconds,s);
+            _tick=new Tick(seconds,s);
+            tick=_tick;
         }
-        return _tick;
+        return tick;
 
     }
 
