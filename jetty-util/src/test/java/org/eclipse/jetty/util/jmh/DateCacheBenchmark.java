@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.util.jmh;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.DateCache;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
@@ -45,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 @Threads(4)
 @Warmup(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-public class DateCacheBenchmarkTest
+public class DateCacheBenchmark
 {
 
     DateCache dateCache = new DateCache();
@@ -75,7 +71,7 @@ public class DateCacheBenchmarkTest
     public static void main(String[] args) throws RunnerException 
     {
         Options opt = new OptionsBuilder()
-                .include(DateCacheBenchmarkTest.class.getSimpleName())
+                .include(DateCacheBenchmark.class.getSimpleName())
                 .warmupIterations(2)
                 .measurementIterations(3)
                 .forks(1)
