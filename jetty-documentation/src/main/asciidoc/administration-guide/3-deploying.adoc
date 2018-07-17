@@ -20,11 +20,861 @@
 
 == Deploying to Jetty
 
-include::../topics/deploying/anatomy-of-a-webapp.adoc[]
-include::../topics/deploying/automatic-webapp-deployment.adoc[]
-include::../topics/deploying/configuring-specific-webapp-deployment.adoc[]
-include::../topics/deploying/deployment-processing-webapps.adoc[]
-include::../topics/deploying/static-content-deployment.adoc[]
-include::../topics/deploying/hot-deployment.adoc[]
-include::../topics/deploying/deployment-architecture.adoc[]
-include::../topics/deploying/quickstart-webapp.adoc[]
+[[anatomy-of-a-webapp]]
+=== Anatomy of a Web Application
+
+The standard Jetty distribution is capable of deploying standard Servlet Spec Web Applications and Jetty internal ContextHandler deployment descriptors, or even a mix of the two.
+
+Web Applications are deployable collections of dynamic (servlets, filters, jsps, etc..) and static content, support libraries, and descriptive metadata that are bound to a specific context path on Jetty.
+
+Ultimately the format and layout are defined by the Servlet Spec, and the official Servlet Spec documentation should be consulted for a more detailed understanding of Web Application layout and structure; however, this will outline basics about how Jetty views these requirements.
+
+Web Applications can be bundled into a single Web Archive (WAR file) or as a directory tree.
+
+`/WEB-INF/`::
+  Special Servlet API defined directory used to store anything related to the Web Application that are not part of the public access of the Web Application.
+  If there is content that is accessed by a Web Application internally, but that should also never be accessed directly by a web browser, this is the directory it would placed in.
+  
+`/WEB-INF/web.xml`::
+  *Required* deployment descriptor defining various behavior of the Web Application.
+  
+`/WEB-INF/classes/`::
+  Location for Web Application specific compiled java classes
+`/WEB-INF/lib/`::
+  Directory for JAR files (libraries)
+
+The Jetty internal `WebAppClassloader` will load classes from `/WEB-INF/classes/` first, then from jar files found in `/WEB-INF/lib/`.
+
+[[automatic-webapp-deployment]]
+=== Automatic Web Application Deployment
+
+The most basic technique for deploying Web Applications is to put a WAR file or Exploded WAR directory into the `${jetty.base}/webapps/` directory and let Jetty's deployment scanner find it and deploy it under a Context path of the same name.
+
+Only Web Applications that follow the Web Application Layout will be detected by Jetty and deployed this way.
+
+The Context Path assigned to this automatic deployment is based the filename (or directory name) of the WAR.
+
+[cols=",",options="header",]
+|=======================================================================
+|File or Directory Name |Assigned Context Path
+|`/webapps/footrope.war` |http://host/footrope/
+
+|`/webapps/baggywrinkle-1.0.war` |http://host/baggywrinkle-1.0/
+
+|`/webapps/lazaret-2.1.3-SNAPSHOT.war` |http://host/lazaret-2.1.3-SNAPSHOT/
+
+|`/webapps/belaying-pins/WEB-INF/web.xml` |http://host/belaying-pins/
+
+|`/webapps/root.war` _(reserved name)_ |http://host/
+
+|`/webapps/root/WEB-INF/web.xml` _(reserved name)_ |http://host/
+|=======================================================================
+
+[[configuring-specific-webapp-deployment]]
+=== Configuring a Specific Web Application Deployment
+
+Using the Automatic Web Application Deployment model is quick and easy, but sometimes you might need to tune certain deployment properties (for example, you want to deploy with a context path that is not based on the file name, or you want to define a special database connection pool just for this web application).
+You can use a xref:deployable-descriptor-file[] to accomplish such tuning.
+
+[[deployable-descriptor-file]]
+==== Jetty Deployable Descriptor XML File
+
+Jetty supports deploying Web Applications via XML files which will build an instance of a link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler] that Jetty can then deploy.
+
+[[using-basic-descriptor-files]]
+==== Using Basic Descriptor Files
+
+In a default Jetty installation, Jetty scans its `$JETTY_HOME/webapps` directory for context deployment descriptor files.
+To deploy a web application using such a file, simply place the file in that directory.
+
+The deployment descriptor file itself is an xml file that configures a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`] class.
+For a basic installation only two properties need configured:
+
+war::
+  The filesystem path to the web application file (or directory)
+contextPath::
+  The context path to use for the web application
+
+For example, here is a descriptor file that deploys the file `/opt/myapp/myapp.war` to the context path `/wiki`:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/wiki</Set>
+  <Set name="war">/opt/myapp/myapp.war</Set>
+</Configure>
+----
+
+Both `SystemProperty` and `Property` elements can be used in the descriptor file.
+For example, if the system property is set to `myapp.home=/opt/myapp`, the previous example can be rewritten as:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/wiki</Set>
+  <Set name="war"><SystemProperty name="myapp.home"/>/myapp.war</Set>
+</Configure>
+----
+
+If the home path for an application needs altered, only the system property needs changed.
+This is useful if the version of an app is frequently changed.
+
+____
+[NOTE]
+To ensure your `web.xml` files are validated, you will need to set the `validateXml` attribute to true as described link:#jetty-xml-dtd[here.]
+____
+
+[[configuring-advanced-descriptor-files]]
+==== Configuring Advanced Descriptor Files
+
+Official documentation for the for the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`] class lists all the properties that can be set.
+Here are some examples that configure advanced options in the descriptor file.
+
+This first example tells Jetty not to expand the WAR file when deploying it.
+This can help make it clear that users should not make changes to the temporary unpacked WAR because such changes do not persist, and therefore do not apply the next time the web application deploys.
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/wiki</Set>
+  <Set name="war"><SystemProperty name="myapp.home"/>/myapp.war</Set>
+  <Set name="extractWAR">false</Set>
+</Configure>
+----
+
+The next example retrieves the JavaEE Servlet context and sets an initialization parameter on it.
+The `setAttribute` method can also be used to set a Servlet context attribute.
+However, since the `web.xml` for the web application is processed after the deployment descriptor, the `web.xml` values overwrite identically named attributes from the deployment descriptor.
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/wiki</Set>
+  <Set name="war"><SystemProperty name="myapp.home"/>/myapp.war</Set>
+  <Get name="ServletContext">
+     <Call name="setInitParameter">
+       <Arg>myapp.config</Arg>
+       <Arg><SystemProperty name="myapp.home">/config/app-config.xml</Arg>
+    </Call>
+  </Get>
+</Configure>
+----
+
+The following example sets a special `web.xml` override descriptor.
+This descriptor is processed after the web application's `web.xml`, so it may override identically named attributes.
+This feature is useful when adding parameters or additional Servlet mappings without breaking open a packed WAR file.
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/wiki</Set>
+  <Set name="war"><SystemProperty name="myapp.home"/>/myapp.war</Set>
+  <Set name="overrideDescriptor">/opt/myapp/overlay-web.xml</Set>
+</Configure>
+----
+
+The next example configures not only the web application context, but also a database connection pool (see xref:jndi-datasource-examples[]) that the application can then use.
+If the `web.xml` does not include a reference to this data source, an override descriptor mechanism (as shown in the previous example) can be used to include it.
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/wiki</Set>
+  <Set name="war"><SystemProperty name="myapp.home"/>/myapp.war</Set>
+
+  <New id="DSTest" class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg></Arg>
+    <Arg>jdbc/DSTest</Arg>
+    <Arg>
+      <New class="org.apache.commons.dbcp.BasicDataSource">
+        <Set name="driverClassName">org.some.Driver</Set>
+        <Set name="url">jdbc.url</Set>
+        <Set name="username">jdbc.user</Set>
+        <Set name="password">jdbc.pass</Set>
+      </New>
+    </Arg>
+  </New>
+</Configure>
+----
+
+There are many other settings that can be changed in a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`].
+The link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[javadoc] for `WebAppContext` is a good source of information.
+Also see the documentation on link:#troubleshooting-zip-exceptions[avoiding zip file exceptions] for a description of `WebAppContext` settings that determine such things as whether or not the war is automatically unpacked during deployment, or whether certain sections of a webapp are copied to a temporary location.
+
+[[configuring-webapps]]
+=== Deployment Processing of WebAppContexts
+
+Web applications require a certain amount of processing before they can go into service: they may need to be unpacked, a special classloader created for their jar files, `web.xml` and `web-fragment.xml` descriptors processed, and classes scanned for annotations amongst other things.
+As web applications have become more complex, Jetty has added ways to assist with customization by either broadening or lessening the amount of processing that is done at deployment time.
+This section will examine this processing and it can be tailored to fit individual needs.
+
+If instead you're looking for information on how to configure a specific `WebAppContext` - such as its context path, whether it should be unpacked or not - then you can find that in the section entitled link:#configuring-specific-webapp-deployment[Configuring a Specific WebApp Deployment].
+
+[[webapp-configurations]]
+==== Configuration Classes
+
+As a webapp is being deployed, a series of link:{JDURL}/org/eclipse/jetty/webapp/Configuration.html[org.eclipse.jetty.webapp.Configuration] classes are applied to it, each one performing a specific function.
+The ordering of these Configurations is significant as subsequent Configurations tend to build on information extracted or setup in foregoing Configurations.
+These are the default list, in order, of Configurations that are applied to each link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[org.eclipse.jetty.webapp.WebAppContex]t:
+
+.Default Configuration classes
+[cols=",",]
+|=======================================================================
+|link:{JDURL}/org/eclipse/jetty/webapp/WebInfConfiguration.html[org.eclipse.jetty.webapp.WebInfConfiguration]
+|Extracts war, orders jars and defines classpath
+
+|link:{JDURL}/org/eclipse/jetty/webapp/WebXmlConfiguration.html[org.eclipse.jetty.webapp.WebXmlConfiguration]
+|Processes a WEB-INF/web.xml file
+
+|link:{JDURL}/org/eclipse/jetty/webapp/MetaInfConfiguration.html[org.eclipse.jetty.webapp.MetaInfConfiguration]
+|Looks in container and webapp jars for META-INF/resources and
+META-INF/web-fragment.xml
+
+|link:{JDURL}/org/eclipse/jetty/webapp/FragmentConfiguration.html[org.eclipse.jetty.webapp.FragmentConfiguration]
+|Processes all discovered META-INF/web-fragment.xml files
+
+|link:{JDURL}/org/eclipse/jetty/webapp/JettyWebXmlConfiguration.html[org.eclipse.jetty.webapp.JettyWebXmlConfiguration]
+|Processes a WEB-INF/jetty-web.xml file
+|=======================================================================
+
+===== Anatomy of a Configuration Class
+
+A Configuration class is called 5 times in different phases of the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext's`] lifecycle:
+
+preConfigure::
+  As the `WebAppContext` is starting up this phase is executed.
+  The `Configuration` should discover any of the resources it will need during the subsequent phases.
+configure::
+  This phase is where the work of the class is done, usually using the resources discovered during the `preConfigure` phase.
+postConfigure::
+  This phase allows the `Configuration` to clear down any resources that may have been created during the previous 2 phases that are not needed for the lifetime of the `WebAppContext`.
+deconfigure::
+  This phase occurs whenever a `WebAppContext` is being stopped and allows the Configuration to undo any resources/metadata that it created.
+  A `WebAppContext` should be able to be cleanly start/stopped multiple times without resources being held.
+destroy::
+  This phase is called when a `WebAppContext` is actually removed from service.
+  For example, the war file associated with it is deleted from the $JETTY_HOME/webapps directory.
+
+Each phase is called on each `Configuration` class in the order in which the `Configuration` class is listed.
+Using the default `Configuration` classes as an example, `preConfigure()` will be called on `WebInfConfiguration`, `WebXmlConfiguration`, `MetaInfConfiguration`, `FragmentConfiguration` and then `JettyWebXmlConfiguration`.
+The cycle begins again for the `configure()` phase and again for the `postConfigure()` phases.
+The cycle is repeated _in reverse order_ for the `deconfigure()` and eventually the `destroy()` phases.
+
+===== Extending Container Support by Creating Extra Configurations
+
+As shown, there is a default set of Configurations that support basic deployment of a webapp.
+JavaEE features such as JNDI and advanced servlet spec features such as annotations have not been mentioned.
+Jetty's philosophy is to allow the user to tailor the container exactly to their needs.
+If these features are not needed, then Jetty does not pay the price for them - an important consideration because features such as annotations require extensive and time-consuming scanning of `WEB-INF/lib` jars.
+As modern webapps may have scores of these jars, it can be a source of significant deployment delay.
+We will see in the section link:#webapp-context-attributes[Other Configuration] another helpful webapp facility that Jetty provides for cutting down the time spent analyzing jars.
+
+Jetty makes use of the flexibility of Configurations to make JNDI and annotation support pluggable.
+
+Firstly, lets look at how Configurations help enable JNDI.
+
+[[jndi-configuration-classes]]
+====== Example: JNDI Configurations
+
+JNDI lookups within web applications require the container to hookup resources defined in the container's environment to that of the web application.
+To achieve that, we use 2 extra Configurations:
+
+.JNDI Configuration classes
+[cols=",",]
+|=======================================================================
+|link:{JDURL}/org/eclipse/jetty/plus/webapp/EnvConfiguration.html[org.eclipse.jetty.plus.webapp.EnvConfiguration]
+|Creates `java:comp/env` for the webapp, applies a `WEB-INF/jetty-env.xml` file
+
+|link:{JDURL}/org/eclipse/jetty/plus/webapp/PlusConfiguration.html[org.eclipse.jetty.plus.webapp.PlusConfiguration]
+|Processes JNDI related aspects of `WEB-INF/web.xml` and hooks up naming entries
+|=======================================================================
+
+These configurations must be added in _exactly_ the order shown above and should be inserted _immediately before_ the link:{JDURL}/org/eclipse/jetty/webapp/JettyWebXmlConfiguration.html[org.eclipse.jetty.webapp.JettyWebXmlConfiguration] class in the list of configurations.
+To fully support JNDI additional configuration is required, full details of which can be found link:#jndi[here].
+
+====== Example: Annotation Configurations
+
+We need just one extra Configuration class to help provide servlet annotation scanning:
+
+.Annotation Configuration classes
+[cols=",",]
+|=======================================================================
+|link:{JDURL}/org/eclipse/jetty/annotations.AnnotationConfiguration.html[org.eclipse.jetty.annotations.AnnotationConfiguration]
+|Scan container and web app jars looking for @WebServlet, @WebFilter,
+@WebListener etc
+|=======================================================================
+
+The above configuration class must be _inserted immediately before_ the link:{JDURL}/org/eclipse/jetty/webapp/JettyWebXmlConfiguration.html[org.eclipse.jetty.webapp.JettyWebXmlConfiguration] class in the list of configurations.
+To fully support annotations additional configuration is require, details of which can be found link:#webapp-context-attributes[below.]
+
+===== How to Set the List of Configurations
+
+You have a number of options for how to make Jetty use a different list of Configurations.
+
+====== Setting the list directly on the WebAppContext
+
+If you have only one webapp that you wish to affect, this may be the easiest option.
+You will, however, either need to have a context xml file that represents your web app, or you need to call the equivalent in code.
+Let's see an example of how we would add in the Configurations for both JNDI _and_ annotations:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+
+  <Set name="war"><SystemProperty name="jetty.base" default="."/>/webapps/my-cool-webapp</Set>
+
+  <Set name="configurationClasses">
+    <Array type="java.lang.String">
+      <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
+      <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+      <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+      <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
+      <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
+    </Array>
+  </Set>
+
+</Configure>
+----
+
+Of course, you can also use this method to reduce the Configurations applied to a specific `WebAppContext`.
+
+====== Setting the list for all webapps via the Deployer
+
+If you use the link:#deployment-architecture[deployer], you can set up the list of Configuration classes on the link:#default-web-app-provider[WebAppProvider].
+They will then be applied to each `WebAppContext` deployed by the deployer:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <Call name="addBean">
+    <Arg>
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+        <Set name="contexts">
+          <Ref refid="Contexts" />
+        </Set>
+        <Call id="webappprovider" name="addAppProvider">
+          <Arg>
+            <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+              <Set name="monitoredDirName"><Property name="jetty.base" default="." />/webapps</Set>
+              <Set name="configurationClasses">
+                <Array type="java.lang.String">
+                  <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
+                  <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
+                  <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
+                  <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
+                  <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+                  <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+                  <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
+                  <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
+                </Array>
+              </Set>
+            </New>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
+----
+
+====== Adding or inserting to an existing list
+
+Instead of having to enumerate the list in its entirety, you can simply nominate classes that you want to add, and indicate whereabouts in the list you want them inserted.
+Let's look at an example of using this method to add in Configuration support for JNDI - as usual you can either do this in an xml file, or via equivalent code.
+This example uses an xml file, in fact it is the `$JETTY_HOME/etc/jetty-plus.xml` file from the Jetty distribution:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- =========================================================== -->
+  <!-- Add plus Configuring classes to all webapps for this Server -->
+  <!-- =========================================================== -->
+  <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
+    <Arg><Ref refid="Server" /></Arg>
+    <Call name="addAfter">
+      <Arg name="afterClass">org.eclipse.jetty.webapp.FragmentConfiguration</Arg>
+      <Arg>
+        <Array type="String">
+          <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+          <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
+        </Array>
+      </Arg>
+    </Call>
+  </Call>
+
+</Configure>
+----
+
+The link:{JDURL}/org/eclipse/jetty/webapp/Configuration.html[org.eclipse.jetty.webapp.Configuration.ClassList] class provides these methods for insertion:
+
+addAfter::
+  Inserts the supplied list of `Configuration` class names after the given Configuration class name.
+addBefore::
+  Inserts the supplied list of `Configuration` class names before the given Configuration class name.
+
+[[webapp-context-attributes]]
+==== Other Configuration
+
+[[container-include-jar-pattern]]
+===== org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern
+
+This is a link:#context_attributes[context attribute] that can be set on link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[an org.eclipse.jetty.webapp.WebAppContext] to control which parts of the _container's_ classpath should be processed for things like annotations, `META-INF/resources`, `META-INF/web-fragment.xml` and `tlds` inside `META-INF`.
+
+Normally, nothing from the container classpath will be included for processing.
+However, sometimes you will need to include some.
+For example, you may have some libraries that are shared amongst your webapps and thus you have put them into a `$JETTY_HOME/lib` directory.
+The libraries contain annotations and therefore must be scanned.
+
+The value of this attribute is a regexp that defines which _jars_ and _class directories_ from the container's classpath should be examined.
+
+Here's an example from a context xml file (although as always, you could have accomplished the same in code), which would match any jar whose name starts with "foo-" or "bar-", or a directory named "classes":
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+
+    <Call name="setAttribute">
+      <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
+      <Arg>.*/foo-[^/]*\.jar$|.*/bar-[^/]*\.jar$|.*/classes/.*</Arg>
+    </Call>
+
+</Configure>
+----
+
+Note that the order of the patterns defines the ordering of the scanning of the jars or class directories.
+
+[[web-inf-include-jar-pattern]]
+===== org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern
+
+Similarly to the previous link:#context_attributes[context attribute], this attribute controls which jars are processed for things like annotations, `META-INF/resources`, `META-INF/web-fragment.xml` and `tlds` in `META-INF`.
+However, this attribute controls which jars from the _webapp's_ classpath (usually `WEB-INF/lib`) are processed.
+This can be particularly useful when you have dozens of jars in `WEB-INF/lib`, but you know that only a few need to be scanned.
+
+Here's an example in a xml file of a pattern that matches any jar that starts with `spring-`:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+
+    <Call name="setAttribute">
+      <Arg>org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern</Arg>
+      <Arg>.*/spring-[^/]*\.jar$</Arg>
+    </Call>
+
+</Configure>
+----
+
+Note that the order of the patterns defines the ordering of the scanning of jar files.
+
+[[static-content-deployment]]
+=== Configuring Static Content Deployment
+
+To serve purely static content, the Jetty Deployment Descriptor XML concepts and the internal `ResourceHandler` can be used.
+Create a file called `scratch.xml` in the `${jetty.base}/webapps` directory and paste the following file contents in it.
+
+[source, xml, subs="{sub-order}"]
+----
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+  <Set name="contextPath">/scratch</Set>
+  <Set name="handler">
+    <New class="org.eclipse.jetty.server.handler.ResourceHandler">
+      <Set name="resourceBase">/home/jesse/scratch</Set>
+      <Set name="directoriesListed">true</Set>
+    </New>
+  </Set>
+</Configure>
+
+
+----
+
+This is a very basic setup for serving static files.
+For advanced static file serving, use the link:{JDURL}/org/eclipse/jetty/servlet/DefaultServlet.html[DefaultServlet].
+
+[[hot-deployment]]
+=== Hot Deployment
+
+Jetty allows for deploying an arbitrary context or web application by monitoring a directory for changes.
+If a web application or a context descriptor is added to the directory, Jetty's `DeploymentManager` (DM) deploys a new context.
+If a context descriptor is touched or updated, the DM stops, reconfigures, and redeploys its context.
+If a context is removed, the DM stops it and removes it from the server.
+
+This behavior can be controlled by configuring `WebAppProvider` properties.
+
+monitoredDirName::
+  The directory to scan for possible deployable Web Applications (or Deployment Descriptor XML files).
+scanInterval::
+  Number of seconds between scans of the provided `monitoredDirName`.
+  A value of `0` disables the continuous hot deployment scan, Web Applications will be deployed on startup only.
+
+The default location for this configuration is in the `${jetty.home}/etc/jetty-deploy.xml` file.
+To modify it as part of the Jetty distribution, first enable the `deploy` module.
+Once it is enabled, you can edit these properties in either the `$JETTY_BASE/start.d/deploy.ini` or `$JETTY_BASE/start.ini` file, depending on link:#start-vs-startd[how your implementation is configured.]
+
+[source, screen, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+# ---------------------------------------
+# Module: deploy
+# Enables webapplication deployment from the webapps directory.
+# ---------------------------------------
+--module=deploy
+
+# Monitored directory name (relative to $jetty.base)
+# jetty.deploy.monitoredDir=webapps
+# - OR -
+# Monitored directory path (fully qualified)
+# jetty.deploy.monitoredPath=/var/www/webapps
+
+# Defaults Descriptor for all deployed webapps
+# jetty.deploy.defaultsDescriptorPath=${jetty.base}/etc/webdefault.xml
+
+# Monitored directory scan period (seconds)
+# jetty.deploy.scanInterval=1
+
+# Whether to extract *.war files
+# jetty.deploy.extractWars=true
+----
+
+See xref:default-web-app-provider[] for more configuration details.
+
+See also xref:deployment-architecture[] for detailed conceptual information.
+
+[[deployment-architecture]]
+=== Deployment Architecture
+
+Jetty is built around an extensible Deployment Manager architecture complete with formal LifeCycle for Web Applications going through it.
+
+For Jetty to serve content (static or dynamic), a link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler] needs to be configured and added to Jetty in the appropriate location.
+A pluggable `DeploymentManager` exists to make this process easier.
+The Jetty distribution contains example `DeploymentManager` configurations to deploy WAR files found in a directory to Jetty, and to deploy Jetty context xml files into Jetty as well.
+
+The `DeploymentManager` is the heart of the typical webapp deployment mechanism; it operates as a combination of an Application LifeCycle Graph, Application Providers that find and provide Applications into the Application LifeCycle Graph, and a set of bindings in the graph that control the deployment process.
+
+image:deploying/images/Jetty_DeployManager_DeploymentManager_Roles.png[image,width=195]
+
+[[udm-application-providers]]
+==== Application Providers
+
+Before Jetty deploys an application, an link:{JDURL}/org/eclipse/jetty/deploy/AppProvider.html[AppProvider] identifies the App and then provides it to the `DeploymentManager`.
+The main `AppProvider` with the Jetty distribution is the link:{JDURL}/org/eclipse/jetty/deploy/providers/WebAppProvider.html[WebAppProvider.]
+
+[[udm-application-lifecycle-graph]]
+==== Application LifeCycle Graph
+
+The core feature of the `DeploymentManager` is the link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.html[Application LifeCycle Graph].
+
+image:deploying/images/Jetty_DeployManager_AppLifeCycle-1.png[image,width=340]
+
+The nodes and edges of this graph are pre-defined in Jetty along the most common actions and states found.
+These nodes and edges are not hardcoded; they can be adjusted and added to depending on need (for example, any complex requirements for added workflow, approvals, staging, distribution, coordinated deploys for a cluster or cloud, etc.).
+
+New applications enter this graph at the Undeployed node, and the link:{JDURL}/org/eclipse/jetty/deploy/DeploymentManager.html#requestAppGoal(org.eclipse.jetty.deploy.App[`java.lang.String DeploymentManager.requestAppGoal(App,String)`] method pushes them through the graph.
+
+[[udm-lifecycle-bindings]]
+==== LifeCycle Bindings
+
+A set of default link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.Binding.html[`AppLifeCycle.Bindings`] defines standard behavior, and handles deploying, starting, stopping, and undeploying applications.
+If desired, custom `AppLifeCycle.Bindings` can be written and assigned anywhere on the Application LifeCycle graph.
+
+Examples of new `AppLifeCycle.Binding` implementations that can be developed include:
+
+* Validating the incoming application.
+* Preventing the deployment of known forbidden applications.
+* Submitting the installation to an application auditing service in a corporate environment.
+* Distributing the application to other nodes in the cluster or cloud.
+* Emailing owner/admin of change of state of the application.
+
+There are four default bindings:
+
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardDeployer.html[StandardDeployer] — Deploys the ContextHandler into Jetty in the appropriate place.
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardStarter.html[StandardStarter] — Sets the ContextHandler to started and start accepting incoming requests.
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardStopper.html[StandardStopper] — Stops the ContextHandler and stops accepting incoming requests.
+* link:{JDURL}/org/eclipse/jetty/deploy/bindings/StandardUndeployer.html[StandardUndeployer] — Removes the ContextHandler from Jetty.
+
+image:images/Jetty_DeployManager_DefaultAppLifeCycleBindings.png[image,width=851]
+
+A fifth, non-standard binding, called link:{JDURL}/org/eclipse/jetty/deploy/bindings/DebugBinding.html[DebugBinding], is also available for debugging reasons; it logs the various transitions through the Application LifeCycle.
+
+[[default-web-app-provider]]
+==== Understanding the Default WebAppProvider
+
+The link:{JDURL}/org/eclipse/jetty/deploy/providers/WebAppProvider.html[WebAppProvider] is used for the deployment of Web Applications packaged as WAR files, expanded as a directory, or declared in a xref:deployable-descriptor-file[].
+It supports hot (re)deployment.
+
+The basic operation of the `WebAppProvider` is to periodically scan a directory for deployables.
+In the standard Jetty Distribution, this is configured in the `${jetty.home}/etc/jetty-deploy.xml` file.
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <Call name="addBean">
+    <Arg>
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+        <Set name="contexts">
+          <Ref refid="Contexts" />
+        </Set>
+        <Call id="webappprovider" name="addAppProvider">
+          <Arg>
+            <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+              <Set name="monitoredDirName"><Property name="jetty.home" default="." />/webapps</Set>
+              <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml</Set>
+              <Set name="scanInterval">1</Set>
+              <Set name="extractWars">true</Set>
+            </New>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
+----
+
+The above configuration will create a `DeploymentManager` tracked as a Server LifeCycle Bean, with the following configuration.
+
+contexts::
+  A passed in reference to the HandlerContainer into which the discovered webapps are deployed.
+  This is normally a reference that points to the `id="Contexts"` found in the `${jetty.home}/etc/jetty.xml` file, which itself is an instance of `ContextHandlerCollection`.
+
+monitoredDirName::
+  The file path or URL to the directory to scan for web applications.
+
+  Scanning follows these rules:
+
+  1.  A base directory must exist.
+  2.  Hidden Files (starting with `"."`) are ignored.
+  3.  Directories with names ending in `".d"` are ignored.
+  4.  Common CVS directories `"CVS"` and `"CVSROOT"` are ignored.
+  5.  Any `*.war` files are considered link:#automatic-webapp-deployment[automatic deployables].
+  6.  Any `*.xml` files are considered link:#deployable-descriptor-file[context descriptor deployables].
+  7.  In the special case where both a WAR file and XML file exists for same base name, the XML file is assumed to configure and reference the WAR file (see xref:configuring-specific-webapp-deployment[]).
+  Since jetty-9.2.7, if either the WAR file or its corresponding XML file changes, the webapp will be redeployed.
+  8.  A directory is considered to be deployable.
+  9.  In the special case where both a Directory and WAR file of the same name exists, the WAR file is assumed to be an automatic deployable.
+  10. In the special case where both a Directory and XML file of the same name exists, the XML file is assumed to configure and reference the Directory.
+  11. All other directories are subject to automatic deployment.
+  12. If automatic deployment is used, and the special filename `root.war/ROOT.war` or directory name `root/ROOT` will result in a deployment to the `"/"` context path.
+
+defaultsDescriptor::
+  Specifies the default Servlet web descriptor to use for all Web Applications.
+  The intent of this descriptor is to include common configuration for the Web Application before the Web Application's own `/WEB-INF/web.xml` is applied.
+  The `${jetty.home}/etc/webdefault.xml` that comes with the Jetty distribution controls the configuration of the JSP and Default servlets, along with MIME-types and other basic metadata.
+
+scanInterval::
+  The period in seconds between sweeps of the `monitoredDirName` for changes: new contexts to deploy, changed contexts to redeploy, or removed contexts to undeploy.
+
+extractWars::
+  If parameter is true, any packed WAR or zip files are first extracted to a temporary directory before being deployed.
+  This is advisable if there are uncompiled JSPs in the web apps.
+
+parentLoaderPriority::
+  Parameter is a boolean that selects whether the standard Java link:#jetty-classloading[parent first delegation] is used or the link:#jetty-classloading[servlet specification webapp classloading priority].
+  The latter is the default.
+
+[[quickstart-webapp]]
+=== Quickstart Webapps
+
+The auto discovery features of the Servlet specification can make deployments slow and uncertain.
+Auto discovery of Web Application configuration can be useful during the development of a webapp as it allows new features and frameworks to be enabled simply by dropping in a jar file.
+However, for deployment, the need to scan the contents of many jars can have a significant impact of the start time of a webapp.
+
+With the release of Jetty 9.2, a quickstart module was included which allows a webapp to be pre-scanned and preconfigured.
+This means that all the scanning is done prior to deployment and all configuration is encoded into an effective `web.xml`, called `WEB-INF/quickstart-web.xml`, which can be inspected to understand what will be deployed before deploying.
+Not only does the `quickstart-web.xml` contain all the discovered Servlets, Filters and Constraints, but it also encodes as context parameters all discovered:
+
+* ServletContainerInitializers
+* HandlesTypes classes
+* Taglib Descriptors
+
+With the quickstart mechanism, Jetty is able to entirely bypass all scanning and discovery modes and start a webapp in a predictable and fast way.
+Tests have shown that webapps that took many seconds to scan and deploy can now be deployed in a few hundred milliseconds.
+
+==== Setting up Quickstart
+
+===== Prerequisites 
+
+====== Jetty Distribution
+
+In a standard Jetty distribution the quickstart module can be configured with the following command:
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar $JETTY_HOME/start.jar --add-to-start=quickstart
+----
+
+====== Embedded
+
+In a Maven project you add a dependency on the artifact `jetty-quickstart`.
+
+[source, xml, subs="{sub-order}"]
+----
+<dependency>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-quickstart</artifactId>
+    <version>{VERSION}</version>
+</dependency>
+----
+
+
+
+===== Configuration
+
+Webapps need to be instances of link:{JDURL}/org/eclipse/jetty/quickstart/QuickStartWebApp.html[`org.eclipse.jetty.quickstart.QuickStartWebApp`] rather than the normal `org.eclipse.jetty.webapp.WebAppContext`.
+
+`org.eclipse.jetty.quickstart.QuickStartWebApp` instances offer the same setters as the familiar `org.eclipse.jetty.webapp.WebAppContext`, with the addition of:
+
+autoPreconfigure:: 
+                   (true/false). 
+                   If true, the first time the webapp is run, the WEB-INF/quickstart-web.xml is generated BEFORE the webapp is deployed.
+                   Subsequent runs use the previously generated quickstart file.
+originAttribute::
+                   The name of an attribute to insert into the generated elements in quickstart-web.xml that gives the origin of the element.
+                   By default it is `origin`.
+generateOrigin::
+                    (true/false).
+                    By default it is `false`.
+                    If true, the origin attribute will be inserted into each element in quickstart-web.xml.
+                    Note that origin attributes will also be generated if debug log level is enabled.
+
+____
+[NOTE]
+If you are using Spring-Boot you must set `generateOrigin` to true.
+____
+
+The origin is either a descriptor eg web.xml,web-fragment.xml,override-web.xml file, or an annotation eg @WebServlet.
+For xml validation each attribute must be unique, and therefore an integer counter is appended to each value.
+Some examples of elements with origin attribute information are:
+
+[source, xml, subs="{sub-order}"]
+----
+<listener origin="DefaultsDescriptor(file:///path/to/distro/etc/webdefault.xml):21">
+<listener origin="WebDescriptor(file:///path/to/base/webapps/test-spec/WEB-INF/web.xml):22">
+<servlet-class origin="FragmentDescriptor(jar:file:///path/to/base/webapps/test-spec/WEB-INF/lib/test-web-fragment.jar!/META-INF/web-fragment.xml):23">
+<servlet-class origin="@WebServlet(com.acme.test.TestServlet):24">
+----
+
+====== In XML
+If a web application already has a context xml file, eg `webapps/myapp.xml` file, simply change the class in the `Configure` element.
+Otherwise, create a context xml file with the following information (in addition to the usual setting of contextPath, war etc):
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure class="org.eclipse.jetty.quickstart.QuickStartWebApp">
+  <Set name="autoPreconfigure">true</Set>
+</Configure>
+----
+
+====== In Code
+
+Create an instance of link:{JDURL}/org/eclipse/jetty/quickstart/QuickStartWebApp.html[`org.eclipse.jetty.quickstart.QuickStartWebApp`] rather than the normal `org.eclipse.jetty.webapp.WebAppContext`. You then use the QuickStartWebApp instance in exactly the same way that you would a WebAppContext.
+
+Here's a snippet:
+
+[source, java]
+----
+    QuickStartWebApp webapp = new QuickStartWebApp();
+    webapp.setAutoPreconfigure(true);
+----
+
+
+====== Pre-generating the quickstart-web.xml file
+
+Rather than use the `autoPreconfigure` feature of the QuickStartWebApp - which lazily generates the `quickstart-web.xml` file - you can eagerly pre-generate it for an existing war by invoking as a main class link:{JDURL}/org/eclipse/jetty/quickstart/PreconfigureQuickStartWar.html[`org.eclipse.jetty.quickstart.PreconfigureQuickStartWar`]. 
+Note that you will need to provide all necessary jetty jars on the command line classpath.
+This will unpack the war if necessary, and create the `quickstart-web.xml` before the first deployment:
+
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -cp [jetty classpath] org.eclipse.jetty.quickstart.PreconfigureQuickStartWar myapp.war
+----
+
+Run the class with no arguments to see other runtime options.
+
+Alternatively, you could use the link:#get-up-and-running[Jetty Maven Plugin] goal link:#jetty-effective-web-xml[`jetty:effective-web-xml`]: this will generate quickstart information, but print it to stderr. 
+The goal provides a configuration option to save the output to a file, which you can then copy into your webapp's WEB-INF dir.
+Note that as the Jetty Maven Plugin is a general tool for running webapps, it may have more jars on its classpath than are needed by your application, and thus may generate extra quickstart information: we recommend that you use this goal only as a quick guide to the type of information that quickstart generates.
+
+// ==== Preconfiguring the web application
+//
+// If the `QuickStateWebApp` method `setAutoPreconfigure(true)` is called (see example in myapp.xml above), then the first time the webapp is deployed a `WEB-INF/quickstart-web.xml` file will be generated that contains the effective `web.xml` for all the discovered configuration.
+// On subsequent deployments, all the discovery steps are skipped and the `quickstart-web.xml` is used directly to configure the web application.
+//
+// It is also possible to preconfigure a war file manually by running the class link:{JDURL}/org/eclipse/jetty/quickstart/PreconfigureQuickStartWar.html[org.eclipse.jetty.quickstart.PreconfigureQuickStartWar] with the jetty-all-uber (aggregate) jar:
+//
+//
+// This will create the `quickstart-web.xml` file before the first deployment.
+
+==== Avoiding TLD Scans with precompiled JSPs
+
+Of course precompiling JSPs is an excellent way to improve the start time of a web application.
+As of Jetty 9.2 the Apache Jasper JSP implementation has been used and has been augmented to allow the TLD scan to be skipped.
+This can be done by adding a `context-param` to the `web.xml` file (this is done automatically by the Jetty Maven JSPC plugin):
+
+[source, xml, subs="{sub-order}"]
+----
+<context-param>
+  <param-name>org.eclipse.jetty.jsp.precompiled</param-name>
+  <param-value>true</param-value>
+</context-param>
+----
+
+==== Bypassing start.jar
+
+The Jetty `start.jar` mechanism is a very powerful and flexible mechanism for constructing a `classpath` and executing a configuration encoded in Jetty XML format.
+However, this mechanism does take some time to build the `classpath`.
+The start.jar mechanism can be bypassed by using the `–dry-run` option to generate and reuse a complete command line to start Jetty at a later time:
+
+[source, screen, subs="{sub-order}"]
+----
+$ RUN=$(java -jar $JETTY_HOME/start.jar --dry-run)
+$ eval $RUN
+----
+
+Note that `--dry-run` may create a properties file in the temp directory and include it on the generated command line.
+If so, then a copy of the temporary properties file should be taken and the command line updated with it's new persistent location.

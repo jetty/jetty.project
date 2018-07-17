@@ -328,7 +328,7 @@ Without this option, a temporary file is used.
 --commands=<filename>::
 Instructs `start.jar` to use each line of the specified file as arguments on the command line.
 
-===== Debugg and Start Logging
+===== Debug and Start Logging
 
 --debug::
 Enables debugging output of the startup procedure.
