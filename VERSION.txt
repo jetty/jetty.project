@@ -1,6 +1,4 @@
-jetty-9.4.12-SNAPSHOT
-
-jetty-9.4.12.RC0 - 11 July 2018
+jetty-9.4.12.RC0 - 17 July 2018
  + 901 Overriding SSL context KeyStoreType requires explicit override of
    TrustStoreType
  + 2075 Deprecating MultiException
@@ -9,7 +7,7 @@ jetty-9.4.12.RC0 - 11 July 2018
  + 2398 MultiPartFormInputStream parsing should default to UTF-8, but allowed
    to be overridden by Request.setCharacterEncoding()
  + 2468 EWYK concurrent produce can fail SSL connections
- + 2501 Include accepting connections in connection limit
+ + 2501 Include accepting connections in connection limit.
  + 2530 Client waits forever for cancelled large uploads
  + 2560 Review PathResource exception handling
  + 2565 HashLoginService silently ignores file:/ config paths from 9.3.x
@@ -18,13 +16,16 @@ jetty-9.4.12.RC0 - 11 July 2018
  + 2648 LdapLoginModule fails with forceBinding=true under Java 9
  + 2655 WebSocketClient not removing closed WebSocket Session's from managed
    beans
- + 2662 Remove unnecessary boxing conversions
+ + 2662 Unnecessary boxing conversions
  + 2663 Guard Throwable.addSuppressed() calls
+ + 2672 Max local stream count exceeded for HttpClient with HTTP/2 transport  
  + 2675 Demo rewrite rules prevent URL Session tracking
  + 2677 Decode URI before matching against "/favicon.ico"
  + 2683 NPE in FrameFlusher toString()
  + 2684 MimeTypes.getAssumedEncodings() does not work
+ + 2694 Bad DynamicImport-Package in Websocket Servlet
  + 2696 GcloudDataStore dependency generation broken
+ + 2717 Async requests are not considered when shutting down gracefully
 
 jetty-9.4.11.v20180605 - 05 June 2018
  + 1785 Support for vhost@connectorname syntax of virtual hosts
