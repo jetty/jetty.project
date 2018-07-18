@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -68,6 +69,18 @@ public class QuotedCSVWebSocketTest
     @Test
     public void testSplitAt_PreserveQuoting()
     {
+        // TODO (gregw) QuotedCSV is being used incorrectly.  Test should be: 
+        QuotedCSV csv = new QuotedCSV(false,"permessage-compress; method=\"foo, bar\"")
+        {
+            @Override
+            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+            {
+                Assert.assertEquals("permessage-compress",buffer.substring(0,valueLength));
+                Assert.assertEquals("method",buffer.substring(paramName,paramValue-1));
+                Assert.assertEquals("foo, bar",buffer.substring(paramValue));
+            }
+        };
+        
         // [OLD] Iterator<String> iter = QuoteUtil.splitAt("permessage-compress; method=\"foo, bar\"",";");
         Iterator<String> iter = new QuotedCSV(true,"permessage-compress; method=\"foo, bar\"").iterator();
         assertSplitAt(iter,"permessage-compress","method=\"foo, bar\"");
@@ -76,6 +89,19 @@ public class QuotedCSVWebSocketTest
     @Test
     public void testSplitAt_PreserveQuotingWithNestedDelim()
     {
+        // TODO (gregw) QuotedCSV is being used incorrectly.  Test should be: 
+        QuotedCSV csv = new QuotedCSV(false,"permessage-compress; method=\"foo; x=10\"")
+        {
+            @Override
+            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+            {
+                Assert.assertEquals("permessage-compress",buffer.substring(0,valueLength));
+                Assert.assertEquals("method",buffer.substring(paramName,paramValue-1));
+                Assert.assertEquals("foo; x=10",buffer.substring(paramValue));
+            }
+        };
+        
+        
         // [OLD] Iterator<String> iter = QuoteUtil.splitAt("permessage-compress; method=\"foo; x=10\"",";");
         Iterator<String> iter = new QuotedCSV(true,"permessage-compress; method=\"foo; x=10\"").iterator();
         assertSplitAt(iter,"permessage-compress","method=\"foo; x=10\"");
@@ -103,6 +129,9 @@ public class QuotedCSVWebSocketTest
     public void testSplitAtHelloWorld()
     {
         // [OLD] Iterator<String> iter = QuoteUtil.splitAt("Hello World"," =");
+        
+        // TODO (gregw) I think this is an incorrect test as there is only a single value with an internal space.
+        // TODO (gregw) are there any concrete examples from a websocket context that need this split?
         Iterator<String> iter = new QuotedCSV("Hello World").iterator();
         assertSplitAt(iter,"Hello","World");
     }
@@ -110,6 +139,19 @@ public class QuotedCSVWebSocketTest
     @Test
     public void testSplitAtKeyValue_Message()
     {
+        // TODO (gregw) I think this test should be 
+        QuotedCSV csv = new QuotedCSV(false,"value; param = \"foo, bar\"")
+        {
+            @Override
+            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+            {
+                Assert.assertEquals("value",buffer.substring(0,valueLength));
+                Assert.assertEquals("param",buffer.substring(paramName,paramValue-1));
+                Assert.assertEquals("foo, bar",buffer.substring(paramValue));
+            }
+        };
+        
+        
         // [OLD] Iterator<String> iter = QuoteUtil.splitAt("method=\"foo, bar\"","=");
         Iterator<String> iter = new QuotedCSV("method=\"foo, bar\"").iterator();
         assertSplitAt(iter,"method","foo, bar");
@@ -135,7 +177,7 @@ public class QuotedCSVWebSocketTest
 
     @Test
     public void testSplitKeyValue_Quoted()
-    {
+    {        
         // [OLD] Iterator<String> iter = QuoteUtil.splitAt("Key = \"Value\"","=");
         Iterator<String> iter = new QuotedCSV("Key = \"Value\"","=").iterator();
         assertSplitAt(iter,"Key","Value");
@@ -144,6 +186,19 @@ public class QuotedCSVWebSocketTest
     @Test
     public void testSplitKeyValue_QuotedValueList()
     {
+        // TODO (gregw) Again I think this test should be for parameters not a value
+        // TODO (gregw) unless you have websocket examples that show otherwise??
+        QuotedCSV csv = new QuotedCSV(false,"value; Fruit = \"Apple, Banana, Cherry\"")
+        {
+            @Override
+            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+            {
+                Assert.assertEquals("value",buffer.substring(0,valueLength));
+                Assert.assertEquals("Fruit",buffer.substring(paramName,paramValue-1));
+                Assert.assertEquals("Apple, Banana, Cherry",buffer.substring(paramValue));
+            }
+        };
+        
         // [OLD] Iterator<String> iter = QuoteUtil.splitAt("Fruit = \"Apple, Banana, Cherry\"","=");
         Iterator<String> iter = new QuotedCSV("Fruit = \"Apple, Banana, Cherry\"").iterator();
         assertSplitAt(iter,"Fruit","Apple, Banana, Cherry");
@@ -168,6 +223,18 @@ public class QuotedCSVWebSocketTest
     @Test
     public void testSplitKeyValue_WithWhitespace()
     {
+        // TODO (gregw) I think this test should be for a param and not a value
+        QuotedCSV csv = new QuotedCSV(false,"value; Key = Value")
+        {
+            @Override
+            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+            {
+                Assert.assertEquals("value",buffer.substring(0,valueLength));
+                Assert.assertEquals("Key",buffer.substring(paramName,paramValue-1));
+                Assert.assertEquals("Value",buffer.substring(paramValue));
+            }
+        };
+        
         // [OLD] Iterator<String> iter = QuoteUtil.splitAt("Key = Value","=");
         Iterator<String> iter = new QuotedCSV("Key = Value").iterator();
         assertSplitAt(iter,"Key","Value");

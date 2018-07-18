@@ -308,9 +308,12 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
                     return;
                 }
 
+                // The handling of a close frame may have closed the end point
+                if (getEndPoint().isInputShutdown())
+                    return;
+
                 // Shouldn't reach this point if buffer has un-parsed bytes
                 assert (!nBuffer.hasRemaining());
-
                 int filled = getEndPoint().fill(nBuffer);
 
                 if (LOG.isDebugEnabled())

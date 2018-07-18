@@ -28,6 +28,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -341,7 +342,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
         connection.getEndPoint().close();
     }
     
-    private class IncomingState implements IncomingFrames
+    private class IncomingState extends OpCode.Sequence implements IncomingFrames
     {
         @Override
         public void receiveFrame(Frame frame, Callback callback)
@@ -351,9 +352,12 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
                 if (LOG.isDebugEnabled())
                     LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}",
                               frame, callback, state, handler);
-                
-                if (state.isInOpen())
-                {
+
+                String failure = check(frame.getOpCode(),frame.isFin());
+                if (failure!=null)
+                    callback.failed(new IllegalStateException(failure));
+                else if (state.isInOpen())
+                {   
                     // Handle inbound close
                     if (frame.getOpCode() == OpCode.CLOSE)
                     {
@@ -393,6 +397,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Discarding post EOF frame - {}", frame);
+                    callback.failed(new EofException());
                 }
             }
             catch (Throwable t)
@@ -402,40 +407,19 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
         }
     }
 
-    private class OutgoingState implements OutgoingFrames
+    private class OutgoingState extends OpCode.Sequence implements OutgoingFrames
     {
-        // TODO check sufficient mutually exclusion and memory barriers from channel.outgoingFrame
-        byte partial = -1;
-        
         @Override
         public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
         {
-            // TODO This needs to be reviewed against RFC for possible interleavings
-            if (OpCode.isDataFrame(frame.getOpCode()))
-            {
-                // Only valid for Data Frames
-                switch (partial)
-                {
-                    case OpCode.BINARY:
-                    case OpCode.TEXT:
-                        if (frame.getOpCode() != OpCode.CONTINUATION)
-                            callback.failed(new IllegalStateException("Frame " + OpCode.name(frame.getOpCode()) + " != " + OpCode.name(OpCode.CONTINUATION)));
-                        if (frame.isFin())
-                            partial = -1;
-                        break;
-                    case -1:
-                        if (!frame.isFin())
-                            partial = frame.getOpCode();
-                        break;
-                    default:
-                        callback.failed(new IllegalStateException("Unexpected partial state: " + OpCode.name(partial)));
-                }
-            }
-            
-            connection.sendFrame(frame,callback,batchMode);
+            String failure = check(frame.getOpCode(),frame.isFin());
+            if (failure!=null)
+                callback.failed(new IllegalStateException(failure));
+            else
+                connection.sendFrame(frame,callback,batchMode);
         }
-    }
-
+    }    
+    
     @Override
     public String dump()
     {

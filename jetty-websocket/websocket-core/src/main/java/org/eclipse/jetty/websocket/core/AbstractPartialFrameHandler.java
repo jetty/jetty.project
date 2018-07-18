@@ -29,7 +29,7 @@ public abstract class AbstractPartialFrameHandler extends AbstractFrameTypeHandl
     public final /* prevent override */ void onFrame(Frame frame, Callback callback) throws Exception
     {
         super.onFrame(frame, callback);
-        if (frame.isFin())
+        if (frame.isFin() && !frame.isControl())
             dataType = -1;
     }
 

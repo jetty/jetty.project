@@ -69,12 +69,28 @@ public final class OpCode
 
     public static boolean isControlFrame(byte opcode)
     {
-        return (opcode == CLOSE) || (opcode == PING) || (opcode == PONG);
+        switch(opcode)
+        {
+            case CLOSE:
+            case PING:
+            case PONG:
+                return true;
+            default:
+                return false;
+        }
     }
 
     public static boolean isDataFrame(byte opcode)
     {
-        return (opcode == TEXT) || (opcode == BINARY) || (opcode == CONTINUATION);
+        switch(opcode)
+        {
+            case TEXT:
+            case BINARY:
+            case CONTINUATION:
+                return true;
+            default:
+                return false;
+        }
     }
 
     /**
@@ -85,7 +101,18 @@ public final class OpCode
      */
     public static boolean isKnown(byte opcode)
     {
-        return (opcode == CONTINUATION) || (opcode == TEXT) || (opcode == BINARY) || (opcode == CLOSE) || (opcode == PING) || (opcode == PONG);
+        switch(opcode)
+        {
+            case CLOSE:
+            case PING:
+            case PONG:
+            case TEXT:
+            case BINARY:
+            case CONTINUATION:
+                return true;
+            default:
+                return false;
+        }
     }
 
     public static String name(byte opcode)
@@ -108,6 +135,47 @@ public final class OpCode
                 return "PONG";
             default:
                 return "NON-SPEC[" + opcode + "]";
+        }
+    }
+    
+    public static class Sequence
+    {
+        byte state=UNDEFINED;
+        
+        public String check(byte opcode, boolean fin)
+        {
+            if (state==CLOSE)
+                return String.format("CLOSED for %s/%b",name(opcode),fin);
+            
+            switch (opcode)
+            {
+                case UNDEFINED:
+                    return String.format("%s/%b",name(opcode),fin);
+                    
+                case CONTINUATION:
+                    if (state==UNDEFINED)
+                        return String.format("UNDEFINED %s/%b",name(opcode),fin);
+                    if (fin)
+                        state = UNDEFINED;
+                    return null;
+                    
+                case CLOSE:
+                    state = CLOSE;
+                    return null;
+                    
+                case PING:
+                case PONG:
+                    return null;
+                    
+                case TEXT:
+                case BINARY:
+                default:
+                    if (state!=UNDEFINED)
+                        return String.format("%s %s/%b",name(state),name(opcode),fin);
+                    if (!fin)
+                        state = opcode;
+                    return null;
+           }
         }
     }
 }
