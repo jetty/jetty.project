@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.websocket.jsr356.util.InvokerUtils.Arg;
 import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
 
@@ -47,6 +48,7 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.common.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
@@ -80,7 +82,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
     public JavaxWebSocketFrameHandlerFactory(JavaxWebSocketContainer container, InvokerUtils.ParamIdentifier paramIdentifier)
     {
         this.container = container;
-        this.paramIdentifier = paramIdentifier;
+        this.paramIdentifier = paramIdentifier == null ? InvokerUtils.PARAM_IDENTITY : paramIdentifier;
     }
 
     public JavaxWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass)
@@ -129,7 +131,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
 
         if (metadata.hasTextMetdata() && metadata.getTextMetadata().isMaxMessageSizeSet())
             endpointPolicy.setMaxTextMessageSize(metadata.getTextMetadata().maxMessageSize);
-        if (metadata.hasBinaryMetdata() && metadata.getBinaryMetadata().isMaxMessageSizeSet())
+        if (metadata.hasBinaryMetadata() && metadata.getBinaryMetadata().isMaxMessageSizeSet())
             endpointPolicy.setMaxBinaryMessageSize(metadata.getBinaryMetadata().maxMessageSize);
 
         MethodHandle openHandle = metadata.getOpenHandle();
@@ -140,14 +142,30 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
         MessageMetadata textMetadata = metadata.getTextMetadata();
         MessageMetadata binaryMetadata = metadata.getBinaryMetadata();
 
-        // TODO: handle parameterized @PathParam entries?
+        String[] namedVariables = null;
+        Map<String,String> pathParams = null;
+        UriTemplatePathSpec templatePathSpec = metadata.getUriTemplatePathSpec();
+        if(templatePathSpec != null)
+        {
+            namedVariables = templatePathSpec.getVariables();
+            // Handle parameterized @PathParam entries
+            pathParams = templatePathSpec.getPathParams(upgradeRequest.getRequestURI().getRawPath());
+            openHandle = bindTemplateVariables(openHandle, namedVariables, pathParams);
+            closeHandle = bindTemplateVariables(closeHandle, namedVariables, pathParams);
+            errorHandle = bindTemplateVariables(errorHandle, namedVariables, pathParams);
+            pongHandle = bindTemplateVariables(pongHandle, namedVariables, pathParams);
+
+            if(textMetadata != null)
+                textMetadata.handle = bindTemplateVariables(textMetadata.handle, namedVariables, pathParams);
+            if(binaryMetadata != null)
+                binaryMetadata.handle = bindTemplateVariables(binaryMetadata.handle, namedVariables, pathParams);
+        }
 
         openHandle = InvokerUtils.bindTo(openHandle, endpoint);
         closeHandle = InvokerUtils.bindTo(closeHandle, endpoint);
         errorHandle = InvokerUtils.bindTo(errorHandle, endpoint);
         pongHandle = InvokerUtils.bindTo(pongHandle, endpoint);
 
-        // TODO: or handle decoders in createMessageSink?
         CompletableFuture<Session> future = futureSession;
         if (future == null)
             future = new CompletableFuture<>();
@@ -166,6 +184,99 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 id,
                 config,
                 future);
+    }
+
+    /**
+     * Bind the URI Template Variables to their provided values, converting to the type
+     * that the MethodHandle target has declared.
+     *
+     * <p>
+     *     Conversion follows the JSR356 rules for @PathParam and only supports
+     *     String, Primitive Types (and their Boxed version)
+     * </p>
+     *
+     * @param target the target MethodHandle to work with.  This is assumed to contain a
+     *   {@link MethodHandle#type()} where all of the initial parameters are the same
+     *   parameters as found in the provided {@code namedVariables} array.
+     * @param namedVariables the array of named variables.  Can be null.
+     * @param templateValues the Map of template values (Key to Value), must have same number of entries that {@code namedVariables} has.
+     * @return a MethodHandle where all of the {@code namedVariables} in the target type
+     *   have been statically assigned a converted value (and removed from the resulting {@link MethodHandle#type()}
+     */
+    public static MethodHandle bindTemplateVariables(MethodHandle target, String[] namedVariables, Map<String, String> templateValues)
+    {
+        MethodHandle retHandle = target;
+
+        for (String variableName : namedVariables)
+        {
+            String strValue = templateValues.get(variableName);
+            Class<?> type = retHandle.type().parameterType(0);
+            try
+            {
+                if (String.class.isAssignableFrom(type))
+                {
+                    retHandle = MethodHandles.insertArguments(retHandle, 0, strValue);
+                }
+                else if (Integer.TYPE.isAssignableFrom(type))
+                {
+                    int intValue = Integer.parseInt(strValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, 0, intValue);
+                }
+                else if (Long.TYPE.isAssignableFrom(type))
+                {
+                    long longValue = Long.parseLong(strValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, 0, longValue);
+                }
+                else if (Short.TYPE.isAssignableFrom(type))
+                {
+                    short shortValue = Short.parseShort(strValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, 0, shortValue);
+                }
+                else if (Float.TYPE.isAssignableFrom(type))
+                {
+                    float floatValue = Float.parseFloat(strValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, 0, floatValue);
+                }
+                else if (Double.TYPE.isAssignableFrom(type))
+                {
+                    double doubleValue = Double.parseDouble(strValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, 0, doubleValue);
+                }
+                else if (Boolean.TYPE.isAssignableFrom(type))
+                {
+                    boolean boolValue = Boolean.parseBoolean(strValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, 0, boolValue);
+                }
+                else if (Character.TYPE.isAssignableFrom(type))
+                {
+                    if (strValue.length() != 1)
+                        throw new IllegalArgumentException("Invalid Size");
+                    char charValue = strValue.charAt(0);
+                    retHandle = MethodHandles.insertArguments(retHandle, 0, charValue);
+                }
+                else if (Byte.TYPE.isAssignableFrom(type))
+                {
+                    byte buf[] = strValue.getBytes(UTF_8);
+                    if (buf.length != 1)
+                        throw new IllegalArgumentException("Invalid Size");
+                    retHandle = MethodHandles.insertArguments(retHandle, 0, buf[0]);
+                }
+                else
+                {
+                    throw new IllegalStateException("Unsupported Type");
+                }
+            }
+            catch(NumberFormatException e)
+            {
+                throw new IllegalArgumentException("Cannot convert String value <" + strValue + "> to type <" + type + ">: " + e.getMessage(), e);
+            }
+            catch(IllegalArgumentException e)
+            {
+                throw new IllegalArgumentException("Cannot convert String value <" + strValue + "> to type <" + type + ">: " + e.getMessage());
+            }
+        }
+
+        return retHandle;
     }
 
     @SuppressWarnings("Duplicates")
@@ -272,7 +383,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
             assertSignatureValid(endpointClass, onmethod, OnOpen.class);
             final Arg SESSION = new Arg(Session.class);
             final Arg ENDPOINT_CONFIG = new Arg(EndpointConfig.class);
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, ENDPOINT_CONFIG);
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, ENDPOINT_CONFIG);
             metadata.setOpenHandler(methodHandle, onmethod);
         }
 
@@ -283,7 +394,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
             assertSignatureValid(endpointClass, onmethod, OnClose.class);
             final Arg SESSION = new Arg(Session.class);
             final Arg CLOSE_REASON = new Arg(CloseReason.class);
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, CLOSE_REASON);
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CLOSE_REASON);
             metadata.setCloseHandler(methodHandle, onmethod);
         }
         // OnError [0..1]
@@ -293,7 +404,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
             assertSignatureValid(endpointClass, onmethod, OnError.class);
             final Arg SESSION = new Arg(Session.class);
             final Arg CAUSE = new Arg(Throwable.class).required();
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, CAUSE);
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CAUSE);
             metadata.setErrorHandler(methodHandle, onmethod);
         }
 
@@ -398,7 +509,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 MessageMetadata msgMetadata = new MessageMetadata();
                 msgMetadata.maxMessageSize = onMessageAnno.maxMessageSize();
 
-                MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, textCallingArgs);
+                MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), textCallingArgs);
                 if (methodHandle != null)
                 {
                     // Whole Text Message
@@ -409,7 +520,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, textPartialCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), textPartialCallingArgs);
                 if (methodHandle != null)
                 {
                     // Partial Text Message
@@ -420,7 +531,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, binaryBufferCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryBufferCallingArgs);
                 if (methodHandle != null)
                 {
                     // Whole ByteBuffer Binary Message
@@ -431,7 +542,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, binaryPartialBufferCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryPartialBufferCallingArgs);
                 if (methodHandle != null)
                 {
                     // Partial ByteBuffer Binary Message
@@ -442,7 +553,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, binaryArrayCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryArrayCallingArgs);
                 if (methodHandle != null)
                 {
                     // Whole byte[] Binary Message
@@ -453,7 +564,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, binaryPartialArrayCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryPartialArrayCallingArgs);
                 if (methodHandle != null)
                 {
                     // Partial byte[] Binary Message
@@ -464,7 +575,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, inputStreamCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), inputStreamCallingArgs);
                 if (methodHandle != null)
                 {
                     // InputStream Binary Message
@@ -475,7 +586,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, readerCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), readerCallingArgs);
                 if (methodHandle != null)
                 {
                     // Reader Text Message
@@ -491,7 +602,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 // Decoder.Text
                 for (DecodedArgs decodedArgs : decodedTextCallingArgs)
                 {
-                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, decodedArgs.args);
+                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Text Message
@@ -507,7 +618,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 // Decoder.Binary
                 for (DecodedArgs decodedArgs : decodedBinaryCallingArgs)
                 {
-                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, decodedArgs.args);
+                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Binary Message
@@ -523,7 +634,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 // Decoder.TextStream
                 for (DecodedArgs decodedArgs : decodedTextStreamCallingArgs)
                 {
-                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, decodedArgs.args);
+                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Text Stream
@@ -539,7 +650,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                 // Decoder.BinaryStream
                 for (DecodedArgs decodedArgs : decodedBinaryStreamCallingArgs)
                 {
-                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, decodedArgs.args);
+                    methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
                     if (methodHandle != null)
                     {
                         // Decoded Binary Stream

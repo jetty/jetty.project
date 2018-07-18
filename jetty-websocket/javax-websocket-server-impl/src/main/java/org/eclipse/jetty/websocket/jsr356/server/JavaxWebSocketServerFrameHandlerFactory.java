@@ -22,6 +22,7 @@ import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.server.ServerEndpoint;
 
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata;
@@ -41,12 +42,16 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrame
             return createEndpointMetadata((Class<? extends Endpoint>) endpointClass, endpointConfig);
         }
 
-        if (endpointClass.getAnnotation(ServerEndpoint.class) == null)
+        ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+
+        if (anno == null)
         {
             return null;
         }
 
+        UriTemplatePathSpec templatePathSpec = new UriTemplatePathSpec(anno.value());
         JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig);
+        metadata.setUriTemplatePathSpec(templatePathSpec);
         return discoverJavaxFrameHandlerMetadata(endpointClass, metadata);
     }
 }

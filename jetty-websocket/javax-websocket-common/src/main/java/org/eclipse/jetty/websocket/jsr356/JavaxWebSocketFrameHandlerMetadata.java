@@ -24,12 +24,21 @@ import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 
 public class JavaxWebSocketFrameHandlerMetadata
 {
+    /**
+     * Constant for "unset" @OnMessage annotation values.
+     * <p>
+     *     (-2 means unset/undeclared, -1 means whatever that value means, such as: no idletimeout, or no maximum message size limit)
+     * </p>
+     */
+    public static final long UNSET = -2L;
+
     // EndpointConfig entries
     private final EndpointConfig endpointConfig;
     private final AvailableDecoders availableDecoders;
@@ -39,12 +48,37 @@ public class JavaxWebSocketFrameHandlerMetadata
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
 
-    // @OnMessage Settings (-2 means unset, -1 means no-limit)
-    public static long UNSET = -2L;
     private MessageMetadata textMetadata;
     private MessageMetadata binaryMetadata;
 
     private MethodHandle pongHandle;
+
+    /**
+     * For {@code @ServerEndpoint} or {@code ServerEndpointConfig} based endpoints, this
+     * holds the {@link UriTemplatePathSpec} based off of the configured url-pattern.
+     *
+     * <p>
+     *     This is the source of the configured uri-template variables names, as well as the parser
+     *     for the incoming URI to obtain the values for those variables.
+     * </p>
+     * <p>
+     *     Used to bind uri-template variables, with their values from the upgrade, to the methods
+     *     that have declared their interest in these values via {@code @PathParam} annotations.
+     * </p>
+     * <p>
+     *     The parsed values from the {@link UriTemplatePathSpec} are returned as a Map
+     *     of String names to String values.
+     * </p>
+     * <p>
+     *     This Metadata Object does not keep track of the parsed values, as they are request
+     *     specific.
+     * </p>
+     * <p>
+     *     This can be null if Metadata is from a client endpoint, or the server endpoint
+     *     doesn't use uri-template variables.
+     * </p>
+     */
+    private UriTemplatePathSpec uriTemplatePathSpec;
 
     public JavaxWebSocketFrameHandlerMetadata(EndpointConfig endpointConfig)
     {
@@ -53,9 +87,69 @@ public class JavaxWebSocketFrameHandlerMetadata
         this.availableEncoders = new AvailableEncoders(endpointConfig);
     }
 
-    public boolean hasBinaryMetdata()
+    public AvailableDecoders getAvailableDecoders()
+    {
+        return availableDecoders;
+    }
+
+    public AvailableEncoders getAvailableEncoders()
+    {
+        return availableEncoders;
+    }
+
+    public MessageMetadata getBinaryMetadata()
+    {
+        return binaryMetadata;
+    }
+
+    public MethodHandle getCloseHandle()
+    {
+        return closeHandle;
+    }
+
+    public MethodHandle getErrorHandle()
+    {
+        return errorHandle;
+    }
+
+    public MethodHandle getOpenHandle()
+    {
+        return openHandle;
+    }
+
+    public void setUriTemplatePathSpec(UriTemplatePathSpec pathSpec)
+    {
+        this.uriTemplatePathSpec = pathSpec;
+    }
+
+    public UriTemplatePathSpec getUriTemplatePathSpec()
+    {
+        return uriTemplatePathSpec;
+    }
+
+    public String[] getNamedTemplateVariables()
+    {
+        return uriTemplatePathSpec.getVariables();
+    }
+
+    public MethodHandle getPongHandle()
+    {
+        return pongHandle;
+    }
+
+    public MessageMetadata getTextMetadata()
+    {
+        return textMetadata;
+    }
+
+    public boolean hasBinaryMetadata()
     {
         return (binaryMetadata != null);
+    }
+
+    public boolean hasTextMetdata()
+    {
+        return (textMetadata != null);
     }
 
     public void setBinaryMetadata(MessageMetadata metadata, Object origin)
@@ -64,20 +158,20 @@ public class JavaxWebSocketFrameHandlerMetadata
         this.binaryMetadata = metadata;
     }
 
-    public MessageMetadata getBinaryMetadata()
-    {
-        return binaryMetadata;
-    }
-
     public void setCloseHandler(MethodHandle close, Object origin)
     {
         assertNotSet(this.closeHandle, "CLOSE Handler", origin);
         this.closeHandle = close;
     }
 
-    public MethodHandle getCloseHandle()
+    public void setDecoders(Class<? extends Decoder>[] decoders)
     {
-        return closeHandle;
+        this.availableDecoders.registerAll(decoders);
+    }
+
+    public void setEncoders(Class<? extends Encoder>[] encoders)
+    {
+        this.availableEncoders.registerAll(encoders);
     }
 
     public void setErrorHandler(MethodHandle error, Object origin)
@@ -86,40 +180,10 @@ public class JavaxWebSocketFrameHandlerMetadata
         this.errorHandle = error;
     }
 
-    public MethodHandle getErrorHandle()
-    {
-        return errorHandle;
-    }
-
-    public void setEncoders(Class<? extends Encoder>[] encoders)
-    {
-        this.availableEncoders.registerAll(encoders);
-    }
-
-    public AvailableEncoders getAvailableEncoders()
-    {
-        return availableEncoders;
-    }
-
-    public void setDecoders(Class<? extends Decoder>[] decoders)
-    {
-        this.availableDecoders.registerAll(decoders);
-    }
-
-    public AvailableDecoders getAvailableDecoders()
-    {
-        return availableDecoders;
-    }
-
     public void setOpenHandler(MethodHandle open, Object origin)
     {
         assertNotSet(this.openHandle, "OPEN Handler", origin);
         this.openHandle = open;
-    }
-
-    public MethodHandle getOpenHandle()
-    {
-        return openHandle;
     }
 
     public void setPongHandle(MethodHandle pong, Object origin)
@@ -128,25 +192,10 @@ public class JavaxWebSocketFrameHandlerMetadata
         this.pongHandle = pong;
     }
 
-    public MethodHandle getPongHandle()
-    {
-        return pongHandle;
-    }
-
-    public boolean hasTextMetdata()
-    {
-        return (textMetadata != null);
-    }
-
     public void setTextMetadata(MessageMetadata metadata, Object origin)
     {
         assertNotSet(this.textMetadata, "TEXT Messsage Metadata", origin);
         this.textMetadata = metadata;
-    }
-
-    public MessageMetadata getTextMetadata()
-    {
-        return textMetadata;
     }
 
     @SuppressWarnings("Duplicates")

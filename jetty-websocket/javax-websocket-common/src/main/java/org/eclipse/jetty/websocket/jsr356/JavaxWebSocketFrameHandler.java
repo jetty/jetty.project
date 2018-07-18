@@ -70,6 +70,33 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     private final JavaxWebSocketContainer container;
     private final Object endpointInstance;
     private final WebSocketPolicy policy;
+    /**
+     * List of configured named variables in the uri-template.
+     * <p>
+     *     Used to bind uri-template variables, with their values from the upgrade, to the methods
+     *     that have declared their interest in these values via {@code @PathParam} annotations.
+     * </p>
+     * <p>
+     *     Can be null if client side, or no named variables were configured on the server side.
+     * </p>
+     */
+    /**
+     * The Map of path parameter values that arrived during the server side upgrade process.
+     * <p>
+     *     Used to bind uri-template variables, with their values from the upgrade, to the methods
+     *     that have declared their interest in these values via {@code @PathParam} annotations.
+     * </p>
+     * <p>
+     *     The values are represented as {@link String} and are essentially static for this
+     *     instance of the the JavaxWebSocketFrameHandler.   They will be converted to the
+     *     type declared by the {@code @PathParam} annotations following the JSR356 advice
+     *     to only support String, Java Primitives (or their Boxed version).
+     * </p>
+     * <p>
+     *     Can be null if client side, or no named variables were configured on the server side,
+     *     or the server side component didn't use the {@link org.eclipse.jetty.http.pathmap.UriTemplatePathSpec} for its mapping.
+     * </p>
+     */
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;

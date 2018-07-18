@@ -31,8 +31,10 @@ public class InvokerUtils
     public static class Arg
     {
         private final Class<?> type;
-        private boolean required = false;
         private String name;
+        private boolean required = false;
+        private boolean convertible = false;
+        private Class<?> convertedType;
 
         public Arg(Class<?> type)
         {
@@ -53,10 +55,24 @@ public class InvokerUtils
         public boolean matches(Arg other)
         {
             // If tags exist
-            if (this.name != null)
+            if ((this.name != null) && (other.name != null))
             {
                 // They have to match
-                return (this.name.equals(other.name));
+                if(this.name.equals(other.name))
+                {
+                    if(this.type.isAssignableFrom(other.type))
+                    {
+                        // Tags + Types match (perfect match!)
+                        return true;
+                    }
+                    else if(convertible)
+                    {
+                        // remember the "other" type on convertible Args
+                        convertedType = other.type;
+                    }
+
+                    return true;
+                }
             }
 
             // Lastly, if types match, use em
@@ -69,15 +85,31 @@ public class InvokerUtils
             return this;
         }
 
+        public Arg convertible()
+        {
+            this.convertible = true;
+            return this;
+        }
+
         public Class<?> getType()
         {
             return type;
+        }
+
+        public Class<?> getConvertedType()
+        {
+            if(convertible && convertedType != null)
+                return convertedType;
+            else
+                return type;
         }
 
         public boolean isRequired()
         {
             return required;
         }
+
+        public boolean isConvertible() { return convertible; }
     }
 
     public interface ParamIdentifier
@@ -124,10 +156,15 @@ public class InvokerUtils
      * Might need to drop calling args and/or reorder the calling args to fit
      * the actual method being called.
      * </p>
+     *
+     * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
+     * @param method the method to invoke
+     * @param callingArgs the calling arguments.  This is the array of arguments that will always be passed into the returned MethodHandle.
+     * They will be present in the {@link MethodHandle#type()} in the order specified in this array.
      */
     public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, Arg... callingArgs)
     {
-        return mutatedInvoker(targetClass, method, PARAM_IDENTITY, callingArgs);
+        return mutatedInvoker(targetClass, method, PARAM_IDENTITY, null, callingArgs);
     }
 
     /**
@@ -138,17 +175,30 @@ public class InvokerUtils
      * <li>{@link MethodHandles#dropArguments(MethodHandle, int, Class[])} - to drop the unused calling args</li>
      * <li>{@link MethodHandle#invoke(Object...)} - to call the specific method</li>
      * </ol>
+     * <p>
+     *     The returned {@link MethodHandle}.{@link MethodHandle#type()} assumes the following:
+     * </p>
+     * <ol>
+     *     <li>Return type will be what the provided {@link Method} has.</li>
+     *     <li>The first parameter is the type of class provided in the {@code targetClass}.</li>
+     *     <li>The next parameters are all of the found type's of the named arguments, or type {@link String} if not found in provided {@link Method}.</li>
+     *     <li>The next parameters are all of the provided {@code callingArg} types</li>
+     * </ol>
      *
      * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
      * @param method the method to invoke
      * @param paramIdentifier the mechanism to identify parameters in method
-     * @param callingArgs the calling arguments
+     * @param namedVariables the array of named variables.  This is the array of named arguments that the target method might have.
+     * The resulting MethodHandle will include all of these namedVariables as the first non-object arguments in the {@link MethodType}
+     * found on the returned {@link MethodHandle#type()}
+     * @param callingArgs the calling arguments.  This is the array of arguments that will always be passed into the returned MethodHandle.
+     * They will be present in the {@link MethodHandle#type()} in the order specified in this array.
      * @return the MethodHandle for this set of CallingArgs
      * @throws RuntimeException when unable to fit Calling Args to Parameter Types
      */
-    public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, Arg... callingArgs)
+    public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String namedVariables[], Arg... callingArgs)
     {
-        return mutatedInvoker(targetClass, true, method, paramIdentifier, callingArgs);
+        return mutatedInvoker(targetClass, true, method, paramIdentifier, namedVariables, callingArgs);
     }
 
     /**
@@ -163,17 +213,39 @@ public class InvokerUtils
      * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
      * @param method the method to invoke
      * @param paramIdentifier the mechanism to identify parameters in method
-     * @param callingArgs the calling arguments
+     * @param namedVariables the array of named variables.  This is the array of named arguments that the target method might have.
+     * The resulting MethodHandle will include all of these namedVariables as the first non-object arguments in the {@link MethodType}
+     * found on the returned {@link MethodHandle#type()}
+     * @param callingArgs the calling arguments.  This is the array of arguments that will always be passed into the returned MethodHandle.
+     * They will be present in the {@link MethodHandle#type()} in the order specified in this array.
      * @return the MethodHandle for this set of CallingArgs, or null if not possible to create MethodHandle with CallingArgs to provided method
      */
-    public static MethodHandle optionalMutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, Arg... callingArgs)
+    public static MethodHandle optionalMutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String namedVariables[], Arg... callingArgs)
     {
-        return mutatedInvoker(targetClass, false, method, paramIdentifier, callingArgs);
+        return mutatedInvoker(targetClass, false, method, paramIdentifier, namedVariables, callingArgs);
     }
 
-    private static MethodHandle mutatedInvoker(Class<?> targetClass, boolean throwOnFailure, Method method, ParamIdentifier paramIdentifier, Arg... callingArgs)
+    @SuppressWarnings("Duplicates")
+    private static MethodHandle mutatedInvoker(Class<?> targetClass, boolean throwOnFailure, Method method, ParamIdentifier paramIdentifier, String namedVariables[], Arg... rawCallingArgs)
     {
         Class<?> parameterTypes[] = method.getParameterTypes();
+
+        // Construct Actual Calling Args
+        int callingArgSize = rawCallingArgs.length + (namedVariables == null ? 0: namedVariables.length);
+        Arg callingArgs[] = new Arg[callingArgSize];
+        int callingArgIdx = 0;
+        if(namedVariables != null)
+        {
+            for(String namedVariable: namedVariables)
+            {
+                callingArgs[callingArgIdx++] = new Arg(String.class, namedVariable).convertible();
+            }
+        }
+
+        for(Arg rawCallingArg: rawCallingArgs)
+        {
+            callingArgs[callingArgIdx++] = rawCallingArg;
+        }
 
         // Build up Arg list representing the MethodHandle parameters
         // ParamIdentifier is used to find named parameters (like javax.websocket's @PathParam declaration)
@@ -209,6 +281,7 @@ public class InvokerUtils
 
         // Establish MethodType for supplied calling args
         boolean hasNamedCallingArgs = false;
+        boolean hasConvertibleTypes = false;
         List<Class<?>> cTypes = new ArrayList<>();
         cTypes.add(targetClass); // targetClass always at index 0
         for (int i = 0; i < callingArgs.length; i++)
@@ -217,6 +290,10 @@ public class InvokerUtils
             if (arg.name != null)
             {
                 hasNamedCallingArgs = true;
+            }
+            if (arg.convertible)
+            {
+                hasConvertibleTypes = true;
             }
             cTypes.add(arg.getType());
         }
@@ -263,7 +340,7 @@ public class InvokerUtils
                 // Find a reference to argument in callArgs
                 for (int ci = 0; ci < callingArgs.length; ci++)
                 {
-                    if (!usedCallingArgs[ci] && parameterArgs[pi].matches(callingArgs[ci]))
+                    if (!usedCallingArgs[ci] && callingArgs[ci].matches(parameterArgs[pi]))
                     {
                         ref = ci + 1; // add 1 to compensate for parameter 0
                         usedCallingArgs[ci] = true;
@@ -334,6 +411,19 @@ public class InvokerUtils
                     dropTypes.add(callingType.parameterType(callingTypeIdx));
                 }
                 methodHandle = MethodHandles.dropArguments(methodHandle, idxDrop, dropTypes);
+            }
+
+            if (hasConvertibleTypes)
+            {
+                // Use converted Types for callingArgs
+                cTypes = new ArrayList<>();
+                cTypes.add(targetClass); // targetClass always at index 0
+                for (int i = 0; i < callingArgs.length; i++)
+                {
+                    Arg arg = callingArgs[i];
+                    cTypes.add(arg.getConvertedType());
+                }
+                callingType = MethodType.methodType(method.getReturnType(), cTypes);
             }
 
             // Reorder calling args to parameter args
