@@ -269,14 +269,11 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         if (baseRequest.isHandled())
             return;
 
-        if (!HttpMethod.GET.is(request.getMethod()))
+        if (!HttpMethod.GET.is(request.getMethod()) && !HttpMethod.HEAD.is(request.getMethod()))
         {
-            if (!HttpMethod.HEAD.is(request.getMethod()))
-            {
-                // try another handler
-                super.handle(target,baseRequest,request,response);
-                return;
-            }
+            // try another handler
+            super.handle(target,baseRequest,request,response);
+            return;
         }
 
         _resourceService.doGet(request,response);
