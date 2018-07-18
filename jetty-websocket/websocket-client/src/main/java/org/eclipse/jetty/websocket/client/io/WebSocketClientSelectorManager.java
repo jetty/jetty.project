@@ -84,7 +84,7 @@ public class WebSocketClientSelectorManager extends SelectorManager
                 if (sslContextFactory != null)
                 {
                     SSLEngine engine = newSSLEngine(sslContextFactory,channel);
-                    SslConnection sslConnection = new SslConnection(bufferPool,getExecutor(),endPoint,engine);
+                    SslConnection sslConnection = new SslConnection(bufferPool,getExecutor(),endPoint,engine,true,true);
                     sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
                     sslConnection.setRenegotiationLimit(sslContextFactory.getRenegotiationLimit());
                     EndPoint sslEndPoint = sslConnection.getDecryptedEndPoint();

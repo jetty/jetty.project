@@ -87,8 +87,8 @@ public class SslConnection extends AbstractConnection
     private ByteBuffer _decryptedInput;
     private ByteBuffer _encryptedInput;
     private ByteBuffer _encryptedOutput;
-    private final boolean _encryptedDirectBuffers = true;
-    private final boolean _decryptedDirectBuffers = false;
+    private final boolean _encryptedDirectBuffers;
+    private final boolean _decryptedDirectBuffers;
     private boolean _renegotiationAllowed;
     private int _renegotiationLimit = -1;
     private boolean _closedOutbound;
@@ -132,12 +132,20 @@ public class SslConnection extends AbstractConnection
 
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
+        this(byteBufferPool, executor, endPoint, sslEngine, false, false);
+    }
+
+    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,
+                         boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
+    {
         // This connection does not execute calls to onFillable(), so they will be called by the selector thread.
         // onFillable() does not block and will only wakeup another thread to do the actual reading and handling.
         super(endPoint, executor);
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();
+        this._encryptedDirectBuffers = useDirectBuffersForEncryption;
+        this._decryptedDirectBuffers = useDirectBuffersForDecryption;
     }
 
     public void addHandshakeListener(SslHandshakeListener listener)
