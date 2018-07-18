@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util.jmh;
 
-import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.DateCacheNoTick;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;

@@ -164,6 +164,14 @@ def getFullBuild(jdk, os) {
         notifyBuild("Compact3 Failure", jdk)
         throw e
       }
+
+      // jmh run
+      timeout( time: 120, unit: 'MINUTES' ) {
+        withEnv( ["JAVA_HOME=${tool "$jdk"}"] ) {
+          sh "${env.JAVA_HOME}/bin/java -jar perf-test.jar -rff target/jmh_result.json -rf json"
+          jmhReport 'target/jmh_result.json'
+        }
+      }
     }
   }
 }

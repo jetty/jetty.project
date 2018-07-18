@@ -120,20 +120,20 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <descriptors>
-            <descriptor>src/main/assembly/perf-tests.xml</descriptor>
-          </descriptors>
-        </configuration>
         <executions>
           <execution>
-            <id>make-assembly</id>
+            <id>make-perf-assembly</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
             <configuration>
-              <attach>true</attach>
+              <descriptors>
+                <descriptor>src/main/assembly/perf-tests.xml</descriptor>
+              </descriptors>
+              <finalName>perf-test</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <attach>false</attach>
               <archive>
                 <manifest>
                   <mainClass>org.openjdk.jmh.Main</mainClass>
