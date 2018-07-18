@@ -12,6 +12,16 @@ for (def os in oss) {
 
 parallel builds
 
+// jmh run
+node('jmh-build-node') {
+  timeout( time: 120, unit: 'MINUTES' ) {
+    withEnv( ["JAVA_HOME=${tool "jdk8"}"] ) {
+      unstash name: 'perf-tests'
+      sh "${env.JAVA_HOME}/bin/java -jar perf-test.jar -rff target/jmh_result.json -rf json"
+      jmhReport 'target/jmh_result.json'
+    }
+  }
+}
 def getFullBuild(jdk, os) {
   return {
     node(os) {
@@ -106,6 +116,7 @@ def getFullBuild(jdk, os) {
                                 [parserName: 'JavaC']];
               if (isMainBuild( jdk )) {
                 // Collect up the jacoco execution results
+                stash name: 'perf-tests', includes: 'jetty-util/target/perf-test.jar'
                 def jacocoExcludes =
                         // build tools
                         "**/org/eclipse/jetty/ant/**" + ",**/org/eclipse/jetty/maven/**" +
@@ -165,13 +176,6 @@ def getFullBuild(jdk, os) {
         throw e
       }
 
-      // jmh run
-      timeout( time: 120, unit: 'MINUTES' ) {
-        withEnv( ["JAVA_HOME=${tool "$jdk"}"] ) {
-          sh "${env.JAVA_HOME}/bin/java -jar perf-test.jar -rff target/jmh_result.json -rf json"
-          jmhReport 'target/jmh_result.json'
-        }
-      }
     }
   }
 }
