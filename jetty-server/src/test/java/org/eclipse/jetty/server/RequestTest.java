@@ -611,6 +611,42 @@ public class RequestTest
         String responses=_connector.getResponse(request);
         assertThat(responses,startsWith("HTTP/1.1 200"));
     }
+    
+
+    @Test
+    public void testEncodedParamExtraction() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                try
+                {
+                    // This throws an exception if attempted
+                    request.getParameter("param");
+                    return false;
+                }
+                catch(BadMessageException e)
+                {
+                    return e.getCode()==501;
+                }
+            }
+        };
+
+        //Send a request with encoded form content
+        String request="GET / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: application/x-www-nform-urlencoded; charset=utf-8\n"+
+        "Content-Length: 10\n"+
+        "Content-Encoding: gzip\n"+
+        "Connection: close\n"+
+        "\n"+
+        "0123456789\n";
+
+        String responses=_connector.getResponse(request);
+        assertThat(responses,startsWith("HTTP/1.1 200"));
+    }
 
     @Test
     public void testInvalidHostHeader() throws Exception
