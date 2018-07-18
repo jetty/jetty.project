@@ -231,7 +231,7 @@ public class HpackDecoderTest
     
     /* 8.1.2.1. Pseudo-Header Fields */
     @Test()
-    public void test8_1_2_1_PsuedoHeaderFields()
+    public void test8_1_2_1_PsuedoHeaderFields() throws Exception
     {
         // 1:Sends a HEADERS frame that contains a unknown pseudo-header field
         MetaDataBuilder mdb = new MetaDataBuilder(4096);

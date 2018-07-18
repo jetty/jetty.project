@@ -66,7 +66,7 @@ public class HpackDecoder
         _localMaxDynamicTableSize=localMaxdynamciTableSize;
     }
 
-    public MetaData decode(ByteBuffer buffer) throws HpackException
+    public MetaData decode(ByteBuffer buffer) throws HpackException.SessionException, HpackException.StreamException
     {
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets",_context.hashCode(),buffer.remaining()));

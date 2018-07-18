@@ -228,10 +228,7 @@ public class MetaDataBuilder
     public MetaData build() throws HpackException.StreamException
     {
         if (_streamException!=null)
-        {
-            _streamException.addSuppressed(new Throwable());
             throw _streamException;
-        }
             
         if (_request && _response)
             throw new HpackException.StreamException("Request and Response headers");
