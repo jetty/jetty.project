@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -140,6 +141,12 @@ public class SslConnectionTest
         __sslCtxFactory.setKeyStorePassword("storepwd");
         __sslCtxFactory.setKeyManagerPassword("keypwd");
         __sslCtxFactory.start();
+    }
+
+    @AfterClass
+    public static void stopSsl() throws Exception
+    {
+        __sslCtxFactory.stop();
     }
 
     @Before

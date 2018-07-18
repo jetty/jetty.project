@@ -43,6 +43,8 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     private final ByteBufferPool byteBufferPool;
     private final Executor executor;
     private final ClientConnectionFactory connectionFactory;
+    private boolean _directBuffersForEncryption = true;
+    private boolean _directBuffersForDecryption = true;
     private boolean allowMissingCloseMessage = true;
 
     public SslClientConnectionFactory(SslContextFactory sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
@@ -51,6 +53,26 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         this.byteBufferPool = byteBufferPool;
         this.executor = executor;
         this.connectionFactory = connectionFactory;
+    }
+
+    public void setDirectBuffersForEncryption(boolean useDirectBuffers)
+    {
+        this._directBuffersForEncryption = useDirectBuffers;
+    }
+
+    public void setDirectBuffersForDecryption(boolean useDirectBuffers)
+    {
+        this._directBuffersForDecryption = useDirectBuffers;
+    }
+
+    public boolean isDirectBuffersForDecryption()
+    {
+        return _directBuffersForDecryption;
+    }
+
+    public boolean isDirectBuffersForEncryption()
+    {
+        return _directBuffersForEncryption;
     }
 
     public boolean isAllowMissingCloseMessage()
@@ -85,7 +107,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
 
     protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
     {
-        return new SslConnection(byteBufferPool, executor, endPoint, engine);
+        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
     }
 
     @Override
