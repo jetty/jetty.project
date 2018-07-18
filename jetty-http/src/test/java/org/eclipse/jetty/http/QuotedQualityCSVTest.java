@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertThat;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.assertThat;
 
 public class QuotedQualityCSVTest
 {
@@ -309,5 +312,46 @@ public class QuotedQualityCSVTest
         values.addValue("one,two;,three;x=y");
         Assert.assertThat(values.getValues(),Matchers.contains("one","two","three;x=y"));
     }
-    
+
+
+    @Test
+    public void testQuality()
+    {
+        List<String> results = new ArrayList<>();
+
+        QuotedQualityCSV values = new QuotedQualityCSV()
+        {
+            @Override
+            protected void parsedValue(StringBuffer buffer)
+            {
+                results.add("parsedValue: " + buffer.toString());
+
+                super.parsedValue(buffer);
+            }
+
+            @Override
+            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+            {
+                String param = buffer.substring(paramName, buffer.length());
+                results.add("parsedParam: " + param);
+
+                super.parsedParam(buffer, valueLength, paramName, paramValue);
+            }
+        };
+
+
+        // The provided string is not legal according to some RFCs ( not a token because of = and not a parameter because not preceded by ; )
+        // The string is legal according to RFC7239 which allows for just parameters (called forwarded-pairs)
+        values.addValue("p=0.5,q=0.5");
+
+
+        // The QuotedCSV implementation is lenient and adopts the later interpretation and thus sees q=0.5 and p=0.5 both as parameters
+        assertThat(results,contains("parsedValue: ", "parsedParam: p=0.5",
+                                    "parsedValue: ", "parsedParam: q=0.5"));
+
+
+        // However the QuotedQualityCSV only handles the q parameter and that is consumed from the parameter string.
+        assertThat(values,contains("p=0.5", ""));
+
+    }
 }
