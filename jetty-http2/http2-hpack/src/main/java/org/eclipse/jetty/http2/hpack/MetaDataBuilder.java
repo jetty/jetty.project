@@ -236,27 +236,29 @@ public class MetaDataBuilder
         if (_request && _response)
             throw new HpackException.StreamException("Request and Response headers");
             
+
+        HttpFields fields = _fields;
         try
         {
-            HttpFields fields = _fields;
-            _fields = new HttpFields(Math.max(10,fields.size()+5));
-
-            if (_method!=null || _path!=null || _authority!=null || _scheme!=null)
+            if (_request)
                 return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields,_contentLength);
-            if (_status>0)
+            if (_response)
                 return new MetaData.Response(HttpVersion.HTTP_2,_status,fields,_contentLength);
                 
             return new MetaData(HttpVersion.HTTP_2,fields,_contentLength);
         }
         finally
         {
-            _status=0;
+            _fields = new HttpFields(Math.max(10,fields.size()+5));
+            _request=false;
+            _response=false;
+            _status=-1;
             _method=null;
             _scheme=null;
             _authority=null;
             _path=null;
             _size=0;
-            _contentLength=Long.MIN_VALUE;
+            _contentLength=Long.MIN_VALUE; 
         }
     }
 

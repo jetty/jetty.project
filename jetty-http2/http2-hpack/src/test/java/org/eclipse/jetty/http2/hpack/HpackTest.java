@@ -18,15 +18,18 @@
 
 package org.eclipse.jetty.http2.hpack;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Response;
@@ -34,10 +37,6 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 public class HpackTest
 {
@@ -131,9 +130,9 @@ public class HpackTest
             decoder.decode(buffer);
             Assert.fail();
         }
-        catch(BadMessageException e)
+        catch(HpackException.SessionException e)
         {
-            assertEquals(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,e.getCode());
+            assertThat(e.getMessage(),containsString("Header too large"));
         }
     }
 
