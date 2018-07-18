@@ -18,16 +18,11 @@
 
 package org.eclipse.jetty.http;
 
-import static org.eclipse.jetty.http.HttpComplianceSection.NO_FIELD_FOLDING;
-import static org.hamcrest.Matchers.contains;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.util.BufferUtil;
@@ -36,6 +31,9 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.eclipse.jetty.http.HttpComplianceSection.NO_FIELD_FOLDING;
+import static org.hamcrest.Matchers.contains;
 
 public class HttpParserTest
 {
@@ -2360,7 +2358,7 @@ public class HttpParserTest
         @Override
         public int getHeaderCacheSize()
         {
-            return 512;
+            return 4096;
         }
 
         @Override

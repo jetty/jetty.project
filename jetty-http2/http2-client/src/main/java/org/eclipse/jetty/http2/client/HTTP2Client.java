@@ -34,6 +34,7 @@ import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
@@ -129,6 +130,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private List<String> protocols = Arrays.asList("h2", "h2-17", "h2-16", "h2-15", "h2-14");
     private int initialSessionRecvWindow = 16 * 1024 * 1024;
     private int initialStreamRecvWindow = 8 * 1024 * 1024;
+    private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
 
     @Override
@@ -332,6 +334,17 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setInitialStreamRecvWindow(int initialStreamRecvWindow)
     {
         this.initialStreamRecvWindow = initialStreamRecvWindow;
+    }
+
+    @ManagedAttribute("The max number of keys in all SETTINGS frames")
+    public int getMaxSettingsKeys()
+    {
+        return maxSettingsKeys;
+    }
+
+    public void setMaxSettingsKeys(int maxSettingsKeys)
+    {
+        this.maxSettingsKeys = maxSettingsKeys;
     }
 
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)

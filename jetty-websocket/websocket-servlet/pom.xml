@@ -23,7 +23,7 @@
                     <instructions>
                         <Bundle-Description>Websocket Servlet Interface</Bundle-Description>
                         <Bundle-Classpath />
-                        <DynamicImport-Package>org.eclipse.jetty.websocket.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}",org.eclipse.jetty.websocket.server.pathmap.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.websocket.server;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}",org.eclipse.jetty.websocket.server.pathmap.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"</DynamicImport-Package>
                     </instructions>
                 </configuration>
             </plugin>

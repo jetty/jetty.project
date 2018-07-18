@@ -268,7 +268,7 @@ public class HttpGeneratorServerHTTPTest
         @Override
         public int getHeaderCacheSize()
         {
-            return 256;
+            return 4096;
         }
     }
 

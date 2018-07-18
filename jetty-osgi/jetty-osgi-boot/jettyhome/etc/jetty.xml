@@ -49,7 +49,7 @@
       <Set name="responseHeaderSize">8192</Set>
       <Set name="sendServerVersion">true</Set>
       <Set name="sendDateHeader">false</Set>
-      <Set name="headerCacheSize">512</Set>
+      <Set name="headerCacheSize">4096</Set>
     </New>
 
 
