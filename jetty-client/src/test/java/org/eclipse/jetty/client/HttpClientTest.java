@@ -510,7 +510,26 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete() throws Exception
     {
-        start(new RespondThenConsumeHandler());
+        start(new AbstractHandler.ErrorDispatchHandler()
+        {
+            @Override
+            protected void doNonErrorHandle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                response.setContentLength(0);
+                response.setStatus(200);
+                response.flushBuffer();
+
+                byte[] buffer = new byte[1024];
+                InputStream in = request.getInputStream();
+                while(true)
+                {
+                    int read = in.read(buffer);
+                    if (read < 0)
+                        break;
+                }
+            }
+        });
 
         // Prepare a big file to upload
         Path targetTestsDir = testdir.getEmptyPathDir();

@@ -1170,7 +1170,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             InputStream is = client.getInputStream();
 
             os.write((
-                    "POST /echo?charset=utf-8 HTTP/1.1\r\n" +
+                    "POST /echo/0?charset=utf-8 HTTP/1.1\r\n" +
                             "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
@@ -1181,7 +1181,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             ).getBytes("utf-8"));
 
             os.write((
-                    "POST /echo?charset=utf-8 HTTP/1.1\r\n" +
+                    "POST /echo/1?charset=utf-8 HTTP/1.1\r\n" +
                             "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-8\r\n" +
                             "content-length: 10\r\n" +
@@ -1195,7 +1195,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             String content = "Wibble";
             byte[] contentB = content.getBytes(StandardCharsets.UTF_16);
             os.write((
-                    "POST /echo?charset=utf-8 HTTP/1.1\r\n" +
+                    "POST /echo/2?charset=utf-8 HTTP/1.1\r\n" +
                             "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                             "content-type: text/plain; charset=utf-16\r\n" +
                             "content-length: " + contentB.length + "\r\n" +
