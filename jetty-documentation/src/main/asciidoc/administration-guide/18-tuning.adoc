@@ -25,6 +25,210 @@ Are you trying to optimize the serving of static content?
 Do you have a large bit of hardware that you want to give entirely over to Jetty to use to its heart's delight?
 This chapter examines a few of the many different ways to optimize Jetty.
 
-include::../topics/tuning/garbage-collection.adoc[]
-include::../topics/tuning/high-load.adoc[]
-include::../topics/tuning/limit-load.adoc[]
+[[garbage-collection]]
+=== Garbage Collection
+
+Tuning the JVM garbage collection (GC) can greatly improve the performance of the JVM where Jetty and your application are running.
+Optimal tuning of the GC depends on the behavior of the application(s) and requires detailed analysis, but there are general recommendations to follow to at least obtain comprehensive GC logs that can be later analyzed.
+
+See official https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/[Java 8] and https://docs.oracle.com/javase/9/gctuning/introduction-garbage-collection-tuning.htm[Java 9] Garbage Collection documentation for further assistance.
+
+[[garbage-collection-logging-configuration]]
+==== Garbage Collection Logging Configuration
+
+These options are general to OpenJDK (and therefore also for the Oracle JVM).
+They provide good information about the GC activity of your JVM, producing logs that can later be analyzed to perform finer tuning.
+
+.JDK 8 Garbage Collection Logging Configuration
+[source,screen, subs="{sub-order}"]
+....
+-Xloggc:/path/to/myjettybase/logs/gc.log
+-XX:+PrintGCDateStamps
+-XX:+PrintGCDetails
+-XX:+ParallelRefProcEnabled
+-XX:+PrintReferenceGC
+-XX:+PrintTenuringDistribution
+-XX:+PrintAdaptiveSizePolicy
+....
+
+.JDK 9 Garbage Collection Logging Configuration
+[source,screen, subs="{sub-order}"]
+....
+Xlog:gc*,ergo*=trace,ref*=debug,age*=trace:file=/path/to/myjettybase/logs/gc.log:time,level,tags
+....
+
+There are not many recommended options for GC that can apply to all users.
+However, the most obvious one is to disable explicit GC (this is performed regularly by RMI and can introduce an abnormal amount of GC pauses).
+
+[source,screen, subs="{sub-order}"]
+....
+-XX:+DisableExplicitGC
+....
+
+[[high-load]]
+=== High Load
+
+Configuring Jetty for high load, whether for load testing or for production, requires that the operating system, the JVM, Jetty, the application, the network and the load generation all be tuned.
+
+==== Load Generation for Load Testing
+
+Machines handling load generation must have their OS, JVM, etc., tuned just as much as the server machines.
+
+The load generation should not be over the local network on the server machine, as this has unrealistic performance and latency as well as different packet sizes and transport characteristics.
+
+The load generator should generate a realistic load.
+Avoid the following pitfalls:
+
+* A common mistake is that load generators often open relatively few connections that are extremely busy sending as many requests as possible over each connection.
+This causes the measured throughput to be limited by request latency (see http://blogs.webtide.com/gregw/entry/lies_damned_lies_and_benchmarks[Lies, Damned Lies and Benchmarks] for an analysis of such an issue).
+* Another common mistake is to use TCP/IP for a single request, and to open many, many short-lived connections.
+This often results in accept queues filling and limitations due to file descriptor and/or port starvation.
+* A load generator should model the traffic profile from the normal clients of the server.
+For browsers, this is often between two and six connections that are mostly idle and that are used in sporadic bursts with read times in between.
+The connections are typically long held HTTP/1.1 connections.
+* Load generators should be written in asynchronously so that a limited number of threads does not restrict the maximum number of users that can be simulated.
+If the generator is not asynchronous, a thread pool of 2000 may only be able to simulate 500 or fewer users.
+The Jetty `HttpClient` is an ideal choice for building a load generator as it is asynchronous and can simulate many thousands of connections (see the CometD Load Tester for a good example of a realistic load generator).
+
+==== Operating System Tuning
+
+Both the server machine and any load generating machines need to be tuned to support many TCP/IP connections and high throughput.
+
+===== Linux
+
+Linux does a reasonable job of self-configuring TCP/IP, but there are a few limits and defaults that you should increase.
+You can configure most of these in `/etc/security/limits.conf` or via `sysctl`.
+
+====== TCP Buffer Sizes
+
+You should increase TCP buffer sizes to at least 16MB for 10G paths and tune the auto-tuning (keep in mind that you need to consider buffer bloat).
+
+[source, screen, subs="{sub-order}"]
+....
+$ sysctl -w net.core.rmem_max=16777216
+$ sysctl -w net.core.wmem_max=16777216
+$ sysctl -w net.ipv4.tcp_rmem="4096 87380 16777216"
+$ sysctl -w net.ipv4.tcp_wmem="4096 16384 16777216"
+....
+
+====== Queue Sizes
+
+`net.core.somaxconn` controls the size of the connection listening queue.
+The default value is 128.
+If you are running a high-volume server and connections are getting refused at a TCP level, you need to increase this value.
+This setting can take a bit of finesse to get correct: if you set it too high, resource problems occur as it tries to notify a server of a large number of connections, and many remain pending, but if you set it too low, refused connections occur.
+
+[source, screen, subs="{sub-order}"]
+....
+ $ sysctl -w net.core.somaxconn=4096
+....
+
+The `net.core.netdev_max_backlog` controls the size of the incoming packet queue for upper-layer (Java) processing.
+The default (2048) may be increased and other related parameters adjusted with:
+
+[source, screen, subs="{sub-order}"]
+....
+$ sysctl -w net.core.netdev_max_backlog=16384
+$ sysctl -w net.ipv4.tcp_max_syn_backlog=8192
+$ sysctl -w net.ipv4.tcp_syncookies=1
+....
+
+====== Ports
+
+If many outgoing connections are made (for example, on load generators), the operating system might run low on ports.
+Thus it is best to increase the port range, and allow reuse of sockets in `TIME_WAIT`:
+
+[source, screen, subs="{sub-order}"]
+....
+$ sysctl -w net.ipv4.ip_local_port_range="1024 65535"
+$ sysctl -w net.ipv4.tcp_tw_recycle=1
+....
+
+====== File Descriptors
+
+Busy servers and load generators may run out of file descriptors as the system defaults are normally low.
+These can be increased for a specific user in `/etc/security/limits.conf`:
+
+....
+theusername            hard nofile     40000
+theusername            soft nofile     40000
+....
+
+====== Congestion Control
+
+Linux supports pluggable congestion control algorithms.
+To get a list of congestion control algorithms that are available in your kernel run:
+
+[source, screen, subs="{sub-order}"]
+....
+$ sysctl net.ipv4.tcp_available_congestion_control
+....
+
+If cubic and/or htcp are not listed, you need to research the control algorithms for your kernel.
+You can try setting the control to cubic with:
+
+[source, screen, subs="{sub-order}"]
+....
+$ sysctl -w net.ipv4.tcp_congestion_control=cubic
+....
+
+====== Mac OS
+
+Tips welcome.
+
+====== Windows
+
+Tips welcome.
+
+====== Network Tuning
+
+Intermediaries such as nginx can use a non-persistent HTTP/1.0 connection.
+Make sure to use persistent HTTP/1.1 connections.
+
+====== JVM Tuning
+
+* Tune the link:#tuning-examples[Garbage Collection]
+* Allocate sufficient memory
+* Use the -server option
+* Jetty Tuning
+
+//====== Connectors
+
+====== Acceptors
+
+The standard rule of thumb for the number of Accepters to configure is one per CPU on a given machine.
+
+====== Low Resource Limits
+
+Must not be configured for less than the number of expected connections.
+
+====== Thread Pool
+
+Configure with goal of limiting memory usage maximum available.
+Typically this is >50 and <500
+
+[[limit-load]]
+=== Limiting Load
+
+To achieve optimal fair handling for all users of a server, it can be necessary to limit the resources that each user/connection can utilize so as to maximize throughput for the server or to ensure that the entire server runs within the limitations of it's runtime.
+
+==== Low Resources Monitor
+
+An instance of link:{JDURL}/org/eclipse/jetty/server/LowResourcesMonitor.html[LowResourcesMonitor] may be added to a Jetty server to monitor for low resources situations and to take action to limit the number of idle connections on the server.
+To configure the low resources monitor, you can enable the the `lowresources.mod` on the command line, which has the effect of including the following XML configuration:
+
+[source, xml, subs="{sub-order}"]
+----
+include::{SRCDIR}/jetty-server/src/main/config/etc/jetty-lowresources.xml[]
+----
+
+The monitor is configured with a period in milliseconds at which it will scan the server looking for a low resources condition, which may be one of:
+
+* If `monitorThreads` is configured as true and a connectors Executor is an instance of link:{JDURL}/org/eclipse/jetty/util/thread/ThreadPool.html[ThreadPool], then its `isLowOnThreads()` method is used to detect low resources.
+* If `maxConnections` is configured to a number >0 then if the total number of connections from all monitored connectors exceeds this value, then low resources state is entered.
+* If the `maxMemory` field is configured to a number of bytes >0 then if the JVMs total memory minus its idle memory exceeds this value, then low resources state is entered.
+
+Once low resources state is detected, then the monitor will iterate over all existing connections and set their `IdleTimeout` to its configured `lowResourcesIdleTimeout` in milliseconds.
+This allows the idle time of existing connections to be reduced so that the connection is quickly closed if no further request are received.
+
+If the low resources state persists longer than the time in milliseconds configured for the `maxLowResourcesTime` field, the the `lowResourcesIdleTimeout` is repeatedly applied so that new connections as well as existing connections will be limited.

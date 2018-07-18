@@ -20,9 +20,1700 @@
 
 == Logging
 
-include::../topics/logging/configuring-jetty-logging.adoc[]
-include::../topics/logging/default-logging-with-stderrlog.adoc[]
-include::../topics/logging/configuring-jetty-request-logs.adoc[]
-include::../topics/logging/configuring-logging-modules.adoc[]
-include::../topics/logging/example-logback-centralized-logging.adoc[]
-include::../topics/logging/dump-tool.adoc[]
+[[configuring-jetty-logging]]
+=== Configuring Jetty Logging
+
+Jetty provides logging via its own `org.eclipse.jetty.util.log.Logger` layer, and does not natively use any existing Java logging framework.
+All logging events, produced via the Jetty logging layer, have a name, a level, and a message.
+The name is a FQCN (fully qualified class name) similar to how all existing Java logging frameworks operate.
+
+Jetty logging, however, has a slightly different set of levels that it uses internally:
+
+WARN::
+  For events serious enough to inform and log, but not fatal.
+INFO::
+  Informational events.
+DEBUG::
+  Debugging events (very noisy).
+IGNORE::
+  Exception events that you can safely ignore, but useful for some people.
+  You might see this level as DEBUG under some Java logging framework configurations, where it retains the _ignore_ phrase somewhere in the logging.
+____
+[NOTE]
+Jetty logging produces no FATAL or SEVERE events.
+____
+
+[[selecting-log-framework]]
+==== Selecting the Log Framework
+
+Configure the Jetty logging layer via the `org.eclipse.jetty.util.log.Log` class, following link:{GITBROWSEURL}/jetty-util/src/main/java/org/eclipse/jetty/util/log/Log.java[these rules].
+
+1.  Load Properties
+* First from a Classpath Resource called `jetty-logging.properties` (if found).
+* Then from the `System.getProperties()`.
+2.  Determine the log implementation.
+* If property `org.eclipse.jetty.util.log.class` is defined, load the class it defines as the logger implementation from the server `classpath`.
+* If the class `org.slf4j.Logger` exists in server classpath, the Jetty implementation becomes `org.eclipse.jetty.util.log.Slf4jLog`.
+* If no logger implementation is specified, default to `org.eclipse.jetty.util.log.StdErrLog`.
+____
+[NOTE]
+You can create your own custom logging by providing an implementation of the link:{JDURL}org/eclipse/jetty/util/log/Logger.html[Jetty Logger API].
+For an example of a custom logger, see link:{GITBROWSEURL}/jetty-util/src/main/java/org/eclipse/jetty/util/log/JavaUtilLog.java[JavaUtilLog.java].
+____
+
+[[configuring-jetty-stderrlog]]
+==== The jetty-logging.properties file
+
+By default, the internal Jetty Logging discovery mechanism will load logging specific properties from a classpath resource called `jetty-logging.properties` and then initialize the Logging from a combination of properties found in that file, along with any System Properties.
+A typical jetty-logging.properties file will include at least the declaration of which logging implementation you want to use by defining a value for the `org.eclipse.jetty.util.log.class` property.
+
+Examples for various logging frameworks can be found later in this documentation.
+
+* Default Logging with link:#default-logging-with-stderrlog[Jetty's StdErrLog]
+* Using link:#example-logging-log4j[Log4j or Log4j2 via SLF4J]
+* Using link:#example-logging-logback[Logback via SLF4J]
+* Using link:#example-logging-java-util-logging[Java Util Logging via SLF4J]
+* Using link:#example-logging-java-commons-logging[Java Commons Logging via SLF4J]
+* link:#example-logging-logback-centralized[Centralized Logging with Logback and Sfl4jLog]
+
+[[default-logging-with-stderrlog]]
+=== Default Logging with Jetty's StdErrLog
+
+[[stderrlog-configuration]]
+==== StdErrLog Configuration
+
+If you do nothing to configure a separate logging framework, Jetty will default to using an internal `org.eclipse.jetty.util.log.StdErrLog` implementation.
+This will output all logging events to STDERR (aka `System.err`).
+
+Simply use Jetty and `StdErrLog`-based logging is output to the console.
+
+Included in the Jetty distribution is a logging module named `console-capture` that is capable of performing simple capturing of all STDOUT (`System.out`) and STDERR (`System.err`) output to a file that is rotated daily.
+
+To enable this feature, simply activate the `console-capture` module on the command line:
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=console-capture
+INFO  : console-capture initialized in ${jetty.base}/start.d/console-capture.ini
+MKDIR : ${jetty.base}/logs
+INFO  : Base directory was modified
+
+[my-base]$ tree
+.
+├── logs
+└── start.d
+    └── console-capture.ini
+....
+
+The default configuration for logging output will create a file `${jetty.base}/logs/yyyy_mm_dd.stderrout.log` which allows configuration of the output directory by setting the `jetty.logs` property.
+
+____
+[NOTE]
+By default, logs are not set to be appended, meaning a the log file is wiped clean upon sever restart.
+You can change this setting by editing the `console-capture.ini` and un-commenting the line that reads `jetty.console-capture.append=true`.
+____
+
+
+Just enabling the `console-capture` will simply output the values of STDERR and STDOUT to a log file.
+To customize the log further, a module named `logging-jetty` is available to provides a default properties file to configure.
+As with `console-capture`, you activate the `logging-jetty` on the command line.
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=logging-jetty
+INFO  : logging-jetty   initialized in ${jetty.base}/start.d/logging-jetty.ini
+INFO  : resources       transitively enabled
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/logging-jetty/resources/jetty-logging.properties to ${jetty.base}/resources/jetty-logging.properties
+INFO  : Base directory was modified
+
+[my-base]$ tree
+.
+├── logs
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── console-capture.ini
+    └── logging-jetty.ini
+....
+
+Once activated, you can find the properties file at `${jetty.base}/resources/jetty-logging.properties`.
+By default, the following parameters are defined.
+To change them, un-comment the line and substitute your naming scheme and configuration choices.
+
+[source, properties, subs="{sub-order}"]
+....
+## Force jetty logging implementation
+#org.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog
+
+## Set logging levels from: ALL, DEBUG, INFO, WARN, OFF
+#org.eclipse.jetty.LEVEL=INFO
+#com.example.LEVEL=INFO
+
+## Hide stacks traces in logs?
+#com.example.STACKS=false
+
+## Show the source file of a log location?
+#com.example.SOURCE=false
+....
+
+There are a number of properties that can be defined in the configuration that will affect the behavior of StdErr logging with `console-capture`.
+
+`<name>.LEVEL=<level>`::
+  Sets the logging level for all loggers within the `name` specified to the level, which can be (in increasing order of restriction) `ALL`, `DEBUG`, `INFO`, `WARN`, `OFF`.
+  The name (or hierarchy) can be a specific fully qualified class or a package namespace.
+  For example, `org.eclipse.jetty.http.LEVEL=DEBUG` is a package namespace approach to turn all loggers in the Jetty HTTP package to DEBUG level, and  `org.eclipse.jetty.io.ChanelEndPoint.LEVEL=ALL` turns on all logging events for the specific class, including `DEBUG`, `INFO`, `WARN` (and even special internally ignored exception classes).
+  If more than one system property specifies a logging level, the most specific one applies.
+`<name>.SOURCE=<boolean>`::
+  Named Logger specific, attempts to print the Java source file name and line number from where the logging event originated.
+  Name must be a fully qualified class name (this configurable does not support package name hierarchy).
+  Default is false.
+  Be aware that this is a slow operation and has an impact on performance.
+`<name>.STACKS=<boolean>`::
+  Named Logger specific, controls the display of stacktraces.
+  Name must be a fully qualified class name (this configurable does not support package name hierarchy).
+  Default is true.
+`org.eclipse.jetty.util.log.stderr.SOURCE=<boolean>`::
+  Special Global Configuration.
+  Attempts to print the Java source file name and line number from where the logging event originated.
+  Default is false.
+`org.eclipse.jetty.util.log.stderr.LONG=<boolean>`::
+  Special Global Configuration.
+  When true, outputs logging events to `STDERR` using long form, fully qualified class names.
+  When false, uses abbreviated package names.
+  Default is false.
++
+  * Example when set to false:
++
+[source, screen, subs="{sub-order}"]
+....
+2016-10-21 15:31:01.248:INFO::main: Logging initialized @332ms to org.eclipse.jetty.util.log.StdErrLog
+2016-10-21 15:31:01.370:INFO:oejs.Server:main: jetty-9.4.0-SNAPSHOT
+2016-10-21 15:31:01.400:INFO:oejs.AbstractConnector:main: Started ServerConnector@2c330fbc{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+2016-10-21 15:31:01.400:INFO:oejs.Server:main: Started @485ms
+....
++
+  * Example when set to true:
++
+[source, screen, subs="{sub-order}"]
+....
+2016-10-21 15:31:35.020:INFO::main: Logging initialized @340ms to org.eclipse.jetty.util.log.StdErrLog
+2016-10-21 15:31:35.144:INFO:org.eclipse.jetty.server.Server:main: jetty-9.4.0-SNAPSHOT
+2016-10-21 15:31:35.174:INFO:org.eclipse.jetty.server.AbstractConnector:main: Started ServerConnector@edf4efb{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+2016-10-21 15:31:35.175:INFO:org.eclipse.jetty.server.Server:main: Started @495ms
+....
+
+[[deprecated-parameters]]
+==== Deprecated Parameters
+
+These parameters existed in prior versions of Jetty, and are no longer supported.
+They are included here for historical (and search engine) reasons.
+
+`org.eclipse.jetty.util.log.DEBUG`::
+  Formerly used to enable DEBUG level logging on any logger used within Jetty (not just Jetty's own logger).
+  * Replaced with using the logger implementation specific configuration and level filtering.
+`org.eclipse.jetty.util.log.stderr.DEBUG`::
+  Formerly used to enable DEBUG level logging on the internal Jetty `StdErrLog` implementation.
+  * Replaced with level specific equivalent.
+    Example: `org.eclipse.jetty.LEVEL=DEBUG`
+`DEBUG`::
+  Ancient debugging flag that turned on all debugging, even non-logging debugging.
+  * Jetty no longer uses because many third party libraries employ this overly simple property name, which would generate far too much console output.
+
+[[configuring-jetty-request-logs]]
+=== Configuring Jetty Request Logs
+
+Request logs are a record of the requests that the server has processed.
+There is one entry per request received, and commonly in the standard NCSA format, so you can use tools like http://en.wikipedia.org/wiki/Webalizer[Webalizer] to analyze them conveniently.
+
+[[constructing-request-log-entry]]
+==== Constructing a Request Log Entry
+
+A standard request log entry includes the client IP address, date, method, URL, result, size, referrer, user agent and latency.
+For example:
+
+....
+123.4.5.6 - - [20/Jul/2016:10:16:17 +0000]
+  "GET /jetty/tut/XmlConfiguration.html HTTP/1.1"
+  200 76793 "http://localhost:8080/jetty/tut/logging.html"
+  "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040614 Firefox/0.8" 342
+....
+
+[[implementing-request-log]]
+==== Implementing a Request Log
+
+Jetty provides an implementation called `NCSARequestLog` which supports the NCSA format in files that will roll over on a daily basis.
+
+The http://logback.qos.ch/[Logback Project] offers http://logback.qos.ch/access.html[another implementation] of a `RequestLog` interface, providing rich and powerful HTTP-access log functionality.
+
+If neither of these options meets your needs, you can implement a custom request logger by implementing Jetty's link:{JDURL}/org/eclipse/jetty/server/RequestLog.html[`RequestLog.java`] interface and plugging it in similar to the `NCSARequestLog`, as shown below.
+
+[[configuring-request-log]]
+==== Configuring the Request Log module
+
+To enable the Request Log module for the entire server via the Jetty distribution, it first needs to be enabled on the command line:
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ../start.jar --add-to-start=requestlog
+
+INFO: requestlog      initialised in ${jetty.base}/start.d/requestlog.ini
+MKDIR: ${jetty.base}/logs
+INFO: Base directory was modified
+----
+
+The above command will add a new `requestlog.ini` file to your link:#start-vs-startd[`{$jetty.base}/start.d` directory].
+
+____
+[NOTE]
+By default, request logs are not set to be appended, meaning a the log file is wiped clean upon sever restart.
+You can change this setting by editing the `requestlog.ini` and un-commenting the line that reads `jetty.requestlog.append=true`.
+____
+
+The equivalent code for embedded usages of Jetty is:
+
+[source, java, subs="{sub-order}"]
+----
+NCSARequestLog requestLog = new NCSARequestLog("/var/logs/jetty/jetty-yyyy_mm_dd.request.log");
+requestLog.setAppend(true);
+requestLog.setExtended(false);
+requestLog.setLogTimeZone("GMT");
+requestLog.setLogLatency(true);
+requestLog.setRetainDays("90");
+
+server.setRequestLog(requestLog);
+----
+
+This configures a request log in `{$jetty.home}/logs` with filenames including the date.
+Existing log files are appended to and the extended NCSA format is used in the GMT time zone.
+
+The above configuration enables Log Latency, which is the amount of time it took the server to handle the request.
+This value is measured in milliseconds and is appended to the the log file for each request.
+
+You can also customize the number of days you wish to keep request logs.
+By default, log files are kept for 90 days before being deleted.
+The value for `retainDays` (xml) or `setRetainDays` (Java) should be configured as _1 + n_ days.
+For example, if you wanted to keep the logs for the current day and the day prior you would set the `retainDays` (or `setRetainDays`) value to 2.
+
+To examine more configuration options, see link:{JDURL}/org/eclipse/jetty/server/NCSARequestLog.html[NCSARequestLog.java].
+
+[[configuring-separate-request-log-for-web-application]]
+==== Configuring a Separate Request Log For a Web Application
+
+To configure a separate request log for specific a web application, add the following to the context XML file.
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  ...
+  <Call name="insertHandler">
+    <Arg>
+      <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler">
+        <Set name="requestLog">
+          <New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
+            <Set name="filename"><Property name="jetty.logs" default="./logs"/>/test-yyyy_mm_dd.request.log</Set>
+            <Set name="filenameDateFormat">yyyy_MM_dd</Set>
+            <Set name="LogTimeZone">GMT</Set>
+            <Set name="retainDays">90</Set>
+            <Set name="append">true</Set>
+            <Set name="LogLatency">true</Set>
+          </New>
+        </Set>
+      </New>
+    </Arg>
+  </Call>
+  ...
+</Configure>
+----
+
+[[configuring-logging-modules]]
+=== Jetty Logging Integrations (SLF4J, Log4j, Logback, JCL, JUL)
+
+Jetty provides support for several logging frameworks including SLF4J, Java Commons Logging (JCL), Java Util Logging (JUL), Log4j (including version 2), and Logback.
+This page includes examples of how to enable the associated modules for these different frameworks.
+These modules are designed to capture container/server logs; link:#configuring-jetty-request-logs[request logs] and application logs need to be configured separately.
+Please note that enabling these modules provides typical and basic functionality for each framework; advanced implementations may require their link:#startup-modules[own modules] or additional configuration.
+
+Enabling these frameworks in the Jetty distribution is as easy as activating any other module, by adding `--add-to-start=<module name>` to the start command for your server, such as:
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=logging-jetty
+INFO  : logging-jetty   initialized in ${jetty.base}/start.d/logging-jetty.ini
+INFO  : resources       transitively enabled
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/logging-jetty/resources/jetty-logging.properties to ${jetty.base}/resources/jetty-logging.properties
+INFO  : Base directory was modified
+....
+
+As noted above, Jetty supports a wide array of logging technologies.
+If a particular logging framework requires additional jar files, Jetty will automatically download these as part of enabling the associated module and any dependent modules will be transitively enabled.
+
+A list of the base Jetty logging modules by running `java -jar <path-to-jetty.home>/start.jar --list-modules=logging,-internal`.
+
+logging-jcl::
+Configures Jetty logging to use Java Commons Logging (JCL), using SLF4J as a binding.
+logging-jetty::
+Standard Jetty logging that captures `System.err` and `System.out` output.
+logging-jul::
+Configures Jetty logging to use Java Util Logging (JUL), using SLF4J as a binding.
+logging-log4j::
+Configures Jetty logging to use Log4j as the logging implementation, using SLF4J as a binding.
+logging-log4j2::
+Configures Jetty logging to use Log4j2 as the logging implementation, using SLF4J as a binding.
+logging-logback::
+Configures Jetty logging to use Logback as the logging implementation, using SLF4J as a binding.
+logging-slf4j::
+Configures Jetty logging to use SLF4J and provides a `slf4j-impl` which can be used by other logging frameworks.
+If no other logging is configured, `slf4j-simple` is used.
+
+You can view a list of *all* the Jetty logging modules by running `java -jar <path-to-jetty.home>/start.jar --list-modules=logging`.
+This will display all logging modules, including implementation and binding modules.
+
+All these modules (with the exception of `logging-jetty`) arrange for the Jetty private logging API to be routed to the named technology to actually be logged.
+For example, enabling the `logging-log4j` module will do several things:
+
+* it enables an internal Log4j API module so that any container code that uses Log4j will find the API.
+* it enables an internal Log4j Implementation so that any container code that uses the Log4j API will also use a Log4j implementation to handle the logs (and all the normal Log4j configuration mechanisms etc.)
+* it enables the internal `slf4j-log4j` logging binding so that any container code that uses the SLF4j API to also use the Log4j implementation via the Log4j API.
+* it configures the Jetty logging API to use the SLF4J API, which is then bound to Log4j.
+
+So, after enabling `logging-log4j`, within the server container there are 3 logging APIs available: Jetty, SLF4J and Log4J.
+But there is only a single logging *implementation* - Log4j; the 3 APIs act only as facades over the Log4j implementation.
+
+Note that you can add additional APIs to this configuration.
+For example, enabling the internal module `jcl-slf4j` would add in a Java Commons Logging facade that also would use the Log4j implementation via the SLF4J binding.
+
+Most other top level logging modules work in the same way: `logging-jcl`, `logging-jul`, `logging-slf4j`, `logging-log4j2` and `logging-logback` all bind their implementation via SLF4J.
+
+[[example-logging-slf4j]]
+==== Logging with SLF4J
+
+Jetty uses the SLF4J api as a binding to provide logging information to additional frameworks such as Log4j or Logback.
+It can also be used on it's own to provide simple server logging.
+To enable the SLF4J framework, you need to activate the `logging-slf4j` module.
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=logging-slf4j
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO  : slf4j-api       transitively enabled
+INFO  : logging-slf4j   initialized in ${jetty.base}/start.d/logging-slf4j.ini
+MKDIR : ${jetty.base}/lib/slf4j
+DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+INFO  : Base directory was modified
+ERROR : Module logging-slf4j requires a module providing slf4j-impl from one of [slf4j-simple-impl, slf4j-logback, slf4j-jul, slf4j-log4j2, slf4j-log4j]
+
+ERROR : Unsatisfied module dependencies: logging-slf4j
+
+Usage: java -jar $JETTY_HOME/start.jar [options] [properties] [configs]
+       java -jar $JETTY_HOME/start.jar --help  # for more information
+....
+
+As you probably noticed, the system gives an `ERROR` when trying to enable the `logging-slf4j` on it's own.
+The `logging-slf4j` module itself provides the SLF4J api, but as SLF4J is often used as a binding for other logging frameworks does not by default provide an implementation.
+To enable the simple SLF4J implementation, we will also need to activate the `slf4j-simple-impl` module.
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=slf4j-simple-impl
+INFO  : slf4j-simple-impl initialized in ${jetty.base}/start.d/slf4j-simple-impl.ini
+INFO  : resources       transitively enabled
+DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/slf4j-simple-impl/resources/simplelogger.properties to ${jetty.base}/resources/simplelogger.properties
+INFO  : Base directory was modified
+
+[my-base]$ tree
+.
+├── lib
+│   └── slf4j
+│       ├── slf4j-api-1.7.21.jar
+│       └── slf4j-simple-1.7.21.jar
+├── resources
+│   └── simplelogger.properties
+└── start.d
+    ├── logging-slf4j.ini
+    └── slf4j-simple-impl.ini
+....
+
+Jetty is now configured to log using the SLF4J framework.
+A standard SLF4J properties file is located in `${jetty.base}/resources/simplelogger.properties`.
+
+[[example-logging-log4j]]
+==== Logging with Log4j and Log4j2
+
+It is possible to have the Jetty Server logging configured so that Log4j or Log4j2 controls the output of logging events produced by Jetty.
+This is accomplished by configuring Jetty for logging to http://logging.apache.org/log4j/[Apache Log4j] via http://slf4j.org/manual.html[Slf4j] and the http://slf4j.org/manual.html#swapping[Slf4j binding layer for Log4j].
+Implementation of Log4j can be done by enabling the `logging-log4j` module.
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=logging-log4j
+
+ALERT: There are enabled module(s) with licenses.
+The following 2 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: log4j-impl
+  + Log4j is released under the Apache 2.0 license.
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO  : slf4j-api       transitively enabled
+INFO  : log4j-impl      transitively enabled
+INFO  : resources       transitively enabled
+INFO  : slf4j-log4j     transitively enabled
+INFO  : logging-log4j   initialized in ${jetty.base}/start.d/logging-log4j.ini
+MKDIR : ${jetty.base}/lib/slf4j
+DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+MKDIR : ${jetty.base}/lib/log4j
+COPY  : /Users/admin/.m2/repository/log4j/log4j/1.2.17/log4j-1.2.17.jar to ${jetty.base}/lib/log4j/log4j-1.2.17.jar
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/log4j-impl/resources/log4j.xml to ${jetty.base}/resources/log4j.xml
+DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-log4j12/1.7.21/slf4j-log4j12-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-log4j12-1.7.21.jar
+INFO  : Base directory was modified
+
+[my-base]$ tree
+.
+├── lib
+│   ├── log4j
+│   │   └── log4j-1.2.17.jar
+│   └── slf4j
+│       ├── slf4j-api-1.7.21.jar
+│       └── slf4j-log4j12-1.7.21.jar
+├── resources
+│   └── log4j.xml
+└── start.d
+    └── logging-log4j.ini
+....
+
+Jetty is now configured to log using the Log4j framework.
+A standard Log4j configuration file is located in `${jetty.base}/resources/log4j.xml`.
+
+Or, to set up Log4j2, enable the `logging-log4j2` module.
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=logging-log4j2
+
+ALERT: There are enabled module(s) with licenses.
+The following 2 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: log4j2-api
+  + Log4j is released under the Apache 2.0 license.
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO  : slf4j-api       transitively enabled
+INFO  : logging-log4j2  initialized in ${jetty.base}/start.d/logging-log4j2.ini
+INFO  : log4j2-api      transitively enabled
+INFO  : resources       transitively enabled
+INFO  : slf4j-log4j2    transitively enabled
+INFO  : log4j2-impl     transitively enabled
+MKDIR : ${jetty.base}/lib/slf4j
+DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+MKDIR : ${jetty.base}/lib/log4j2
+DOWNLD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.6.1/log4j-api-2.6.1.jar to ${jetty.base}/lib/log4j2/log4j-api-2.6.1.jar
+MKDIR : ${jetty.base}/resources
+DOWNLD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl/2.6.1/log4j-slf4j-impl-2.6.1.jar to ${jetty.base}/lib/log4j2/log4j-slf4j-impl-2.6.1.jar
+DOWNLD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-core/2.6.1/log4j-core-2.6.1.jar to ${jetty.base}/lib/log4j2/log4j-core-2.6.1.jar
+COPY  : ${jetty.home}/modules/log4j2-impl/resources/log4j2.xml to ${jetty.base}/resources/log4j2.xml
+INFO  : Base directory was modified
+
+[my-base]$ tree
+.
+├── lib
+│   ├── log4j2
+│   │   ├── log4j-api-2.6.1.jar
+│   │   ├── log4j-core-2.6.1.jar
+│   │   └── log4j-slf4j-impl-2.6.1.jar
+│   └── slf4j
+│       └── slf4j-api-1.7.21.jar
+├── resources
+│   └── log4j2.xml
+└── start.d
+    └── logging-log4j2.ini
+....
+
+At this point Jetty is configured so that the Jetty server itself will log using Log4j2, using the Log4j2 configuration found in `{$jetty.base}/resources/log4j2.xml`.
+
+[[example-logging-logback]]
+==== Logging with Logback
+
+It is possible to have the Jetty Server logging configured so that Logback controls the output of logging events produced by Jetty.
+This is accomplished by configuring Jetty for logging to `Logback`, which uses http://slf4j.org/manual.html[Slf4j] and the http://logback.qos.ch/[Logback Implementation for Slf4j].
+
+To set up Jetty logging via Logback, enable the `logging-logback` module.
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=logging-logback
+
+ALERT: There are enabled module(s) with licenses.
+The following 2 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: logback-impl
+  + Logback: the reliable, generic, fast and flexible logging framework.
+  + Copyright (C) 1999-2012, QOS.ch. All rights reserved.
+  + This program and the accompanying materials are dual-licensed under
+  + either:
+  + the terms of the Eclipse Public License v1.0
+  + as published by the Eclipse Foundation:
+  + http://www.eclipse.org/legal/epl-v10.html
+  + or (per the licensee's choosing) under
+  + the terms of the GNU Lesser General Public License version 2.1
+  + as published by the Free Software Foundation:
+  + http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO  : slf4j-api       transitively enabled
+INFO  : logback-impl    transitively enabled
+INFO  : slf4j-logback   transitively enabled
+INFO  : logging-logback initialized in ${jetty.base}/start.d/logging-logback.ini
+INFO  : resources       transitively enabled
+MKDIR : ${jetty.base}/lib/slf4j
+DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+MKDIR : ${jetty.base}/lib/logback
+DOWNLD: http://central.maven.org/maven2/ch/qos/logback/logback-core/1.1.7/logback-core-1.1.7.jar to ${jetty.base}/lib/logback/logback-core-1.1.7.jar
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/logback-impl/resources/logback.xml to ${jetty.base}/resources/logback.xml
+DOWNLD: http://central.maven.org/maven2/ch/qos/logback/logback-classic/1.1.7/logback-classic-1.1.7.jar to ${jetty.base}/lib/logback/logback-classic-1.1.7.jar
+INFO  : Base directory was modified
+
+[my-base]$ tree
+.
+├── lib
+│   ├── logback
+│   │   ├── logback-classic-1.1.7.jar
+│   │   └── logback-core-1.1.7.jar
+│   └── slf4j
+│       └── slf4j-api-1.7.21.jar
+├── resources
+│   └── logback.xml
+└── start.d
+    └── logging-logback.ini
+....
+
+At this point Jetty is configured so that the Jetty server itself will log using Logback, using the Logback configuration found in `{$jetty.base}/resources/logback.xml`.
+
+==== Logging with Java Util Logging
+
+[[example-logging-java-util-logging]]
+===== Java Util Logging with SLF4J
+It is possible to have the Jetty Server logging configured so that `java.util.logging` controls the output of logging events produced by Jetty.
+
+This example demonstrates how to configuring Jetty for logging to `java.util.logging` via http://slf4j.org/manual.html[SLF4J] as a binding layer.
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=logging-jul
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO  : jul-impl        transitively enabled
+INFO  : slf4j-api       transitively enabled
+INFO  : slf4j-jul       transitively enabled
+INFO  : logging-jul     initialized in ${jetty.base}/start.d/logging-jul.ini
+INFO  : resources       transitively enabled
+MKDIR : ${jetty.base}/etc
+COPY  : ${jetty.home}/modules/jul-impl/etc/java-util-logging.properties to ${jetty.base}/etc/java-util-logging.properties
+MKDIR : ${jetty.base}/lib/slf4j
+DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-jdk14/1.7.21/slf4j-jdk14-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-jdk14-1.7.21.jar
+INFO  : Base directory was modified
+
+[my-base]$ tree
+.
+├── etc
+│   └── java-util-logging.properties
+├── lib
+│   └── slf4j
+│       ├── slf4j-api-1.7.21.jar
+│       └── slf4j-jdk14-1.7.21.jar
+└── start.d
+    └── logging-jul.ini
+....
+
+Jetty is now configured to log using the JUL framework.
+A standard JUL properties file is located in `${jetty.base}/etc/java-util-logging.properties`.
+
+==== Capturing Console Output
+
+By default, enabling the above modules will output log information to the console.
+Included in the distribution is the `console-capture` module, which can be used in lieu of additional configuration to the selected logging module to capture this output to a `logs` directory in your `${jetty.base}`.
+To enable this functionality, activate the `console-capture` module.
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=console-capture
+INFO  : console-capture initialized in ${jetty.base}/start.d/console-capture.ini
+MKDIR : ${jetty.base}/logs
+INFO  : Base directory was modified
+
+[my-base]$ tree
+.
+├── logs
+└── start.d
+    └── console-capture.ini
+....
+
+As an example, here is the output from Logback before using the `console-capture` module:
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar
+419  [main] INFO  org.eclipse.jetty.util.log - Logging initialized @508ms to org.eclipse.jetty.util.log.Slf4jLog
+540  [main] INFO  org.eclipse.jetty.server.Server - jetty-9.4.0-SNAPSHOT
+575  [main] INFO  o.e.jetty.server.AbstractConnector - Started ServerConnector@3c0ecd4b{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+575  [main] INFO  org.eclipse.jetty.server.Server - Started @668ms
+....
+
+After enabling `console-capture`, the output is as follows, which displays the location the log is being saved to:
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar
+151  [main] INFO  org.eclipse.jetty.util.log - Logging initialized @238ms to org.eclipse.jetty.util.log.Slf4jLog
+196  [main] INFO  org.eclipse.jetty.util.log - Console stderr/stdout captured to /installs/jetty-distribution/mybase/logs/2016_10_21.jetty.log
+....
+
+[[example-logging-logback-centralized]]
+=== Centralized Logging using Logback
+
+The term _Centralized Logging_ refers to a forced logging configuration for the Jetty Server and all web applications that are deployed on the server.
+It routes all logging events from the web applications to a single configuration on the Server side.
+
+The example below shows how to accomplish this with Jetty and Slf4j, using `Logback` to manage the final writing of logs to disk.
+
+____
+[IMPORTANT]
+This mechanism forces all webapps to use the server's configuration for logging, something that isn't 100% appropriate for all webapps.
+An example would be having Jenkins-CI deployed as an webapp, if you force its logging configuration to the server side, you lose the ability on http://jenkins-ci.org/[Jenkins-CI] to see the logs from the various builds (as now those logs are actually going to the main server log).
+____
+
+This configuration is essentially the multiple logger configuration with added configuration to the deployers to force a `WebAppClassLoader` change to use the server classpath over the webapps classpath for the logger specific classes.
+
+The technique used by this configuration is to provide an link:{JDURL}org/eclipse/jetty/deploy/AppLifeCycle.Binding.html[AppLifeCycle.Binding] against the link:{JDURL}/org/eclipse/jetty/deploy/AppLifeCycle.html[`"deploying"`node] that modifies the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#addSystemClass(java.lang.String)[WebAppContext.addSystemClass(String)] for the common logging classes.
+See https://github.com/jetty-project/jetty-webapp-logging/blob/master/src/main/java/org/eclipse/jetty/webapp/logging/CentralizedWebAppLoggingBinding.java[org.eclipse.jetty.logging.CentralizedWebAppLoggingBinding] for actual implementation.
+
+A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for capturing all Jetty server logging from multiple logging frameworks into a single logging output file managed by Logback.
+
+[source, screen, subs="{sub-order}"]
+....
+[mybase]$ mkdir modules
+[mybase]$ cd modules
+
+[modules]$ curl -O https://raw.githubusercontent.com/jetty-project/logging-modules/master/capture-all/logging.mod
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  1416  100  1416    0     0   4241      0 --:--:-- --:--:-- --:--:--  4252
+
+[master]$ curl -O https://raw.githubusercontent.com/jetty-project/logging-modules/master/centralized/webapp-logging.mod
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   660  100   660    0     0   2032      0 --:--:-- --:--:-- --:--:--  2037
+[modules]$ cd ..
+
+[mybase]$ java -jar /opt/jetty-dist/start.jar --add-to-start=logging,webapp-logging
+INFO: logging         initialised in ${jetty.base}/start.ini (appended)
+MKDIR: ${jetty.base}/logs
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.6.6/slf4j-api-1.6.6.jar to lib/logging/slf4j-api-1.6.6.jar
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/log4j-over-slf4j/1.6.6/log4j-over-slf4j-1.6.6.jar to lib/logging/log4j-over-slf4j-1.6.6.jar
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/jul-to-slf4j/1.6.6/jul-to-slf4j-1.6.6.jar to lib/logging/jul-to-slf4j-1.6.6.jar
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.6.6/jcl-over-slf4j-1.6.6.jar to lib/logging/jcl-over-slf4j-1.6.6.jar
+DOWNLOAD: http://central.maven.org/maven2/ch/qos/logback/logback-core/1.0.7/logback-core-1.0.7.jar to lib/logging/logback-core-1.0.7.jar
+DOWNLOAD: http://central.maven.org/maven2/ch/qos/logback/logback-classic/1.0.7/logback-classic-1.0.7.jar to lib/logging/logback-classic-1.0.7.jar
+DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/capture-all/logback.xml to resources/logback.xml
+DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/capture-all/jetty-logging.properties to resources/jetty-logging.properties
+DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/capture-all/jetty-logging.xml to etc/jetty-logging.xml
+INFO: resources       initialised transitively
+INFO: resources       enabled in     ${jetty.base}/start.ini
+INFO: webapp-logging  initialised in ${jetty.base}/start.ini (appended)
+DOWNLOAD: http://central.maven.org/maven2/org/eclipse/jetty/jetty-webapp-logging/9.0.0/jetty-webapp-logging-9.0.0.jar to lib/webapp-logging/jetty-webapp-logging-9.0.0.jar
+DOWNLOAD: https://raw.githubusercontent.com/jetty-project/jetty-webapp-logging/master/src/main/config/etc/jetty-webapp-logging.xml to etc/jetty-webapp-logging.xml
+DOWNLOAD: https://raw.githubusercontent.com/jetty-project/jetty-webapp-logging/master/src/main/config/etc/jetty-mdc-handler.xml to etc/jetty-mdc-handler.xml
+INFO: deploy          initialised transitively
+INFO: deploy          enabled in     ${jetty.base}/start.ini
+INFO: logging         initialised transitively
+INFO: resources       initialised transitively
+INFO: resources       enabled in     ${jetty.base}/start.ini
+
+[mybase]$ java -jar /opt/jetty-dist/start.jar
+....
+
+The replacement `logging.mod` performs a number of tasks.
+
+.  `mybase` is a `${jetty.base}` directory.
+.  The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/` and becomes the `${jetty.home}` directory for this demonstration.
+.  The `curl` command downloads the replacement `logging.mod` and puts it into the `${jetty.base}/modules/` directory for use by mybase only.
+.  The `start.jar --add-to-start=logging,webapp-logging` command performs a number of steps to make the logging module available to the `${jetty.base}` configuration.
+..  Several entries are added to the `${jetty.base}/start.ini` configuration.
+*  `--module=logging` is added to enable the logging module.
+*  `--module=webapp-logging` is added to enable the webapp-logging module.
+..  Required `${jetty.base}` directories are created: `${jetty.base}/logs` and `${jetty.base}/resources`.
+..  Required logging libraries are downloaded (if not present already) to the `${jetty.base}/lib/logging/` directory:
+* `slf4j-api.jar` - API jar for Slf4j (used by most of the rest of the jars)
+* `log4j-over-slf4j.jar` - Slf4j jar that captures all log4j emitted logging events
+* `jul-to-slf4j.jar` - Slf4j jar that captures all java.util.logging events
+* `jcl-over-slf4j.jar` - Slf4j jar that captures all commons-logging events
+* `logback-classic.jar` - the Slf4j adapter jar that routes all of the captured logging events to logback itself.
+* `logback-core.jar` - the logback implementation jar, that handles all of the filtering and output of the logging events.
+..  Required webapp-logging library is downloaded (if not present already) to the `${jetty.base}/lib/webapp-logging/` directory:
+* `jetty-webapp-logging.jar` - the Jetty side deployment manger app-lifecycle bindings for modifying the `WebAppClassloaders` of deployed webapps.
+..  Required configuration files are downloaded (if not present already) to the `${jetty.base}/resources/` directory: `jetty-logging.properties`, and `logback.xml`.
+..  Required initialization commands are downloaded (if not present already) to the `${jetty.base}/etc/` directory: `jetty-logging.xml`, `jetty-webapp-logging.xml`, and `jetty-mdc-handler.xml`.
+
+At this point the Jetty `mybase` is configured so that the jetty server itself will log using slf4j, and all other logging events from other Jetty Server components (such as database drivers, security layers, jsp, mail, and other 3rd party server components) are routed to logback for filtering and output.
+
+All webapps deployed via the `DeploymentManager` have their `WebAppClassLoader` modified to use server side classes and configuration for all logging implementations.
+
+The server classpath can be verified by using the `start.jar --list-config` command.
+
+In essence, Jetty is now configured to emit its own logging events to slf4j, and various slf4j bridge jars are acting on behalf of log4j, `java.util.logging`, and `commons-logging`, routing all of the logging events to logback (a slf4j adapter) for routing (to console, file, etc...).
+
+[[jetty-dump-tool]]
+=== Jetty Dump Tool
+
+The dump feature in Jetty provides a good snapshot of the status of the threadpool, select sets, classloaders, and so forth. 
+To get maximum detail from the dump, you need to `setDetailDump(true)` on any `QueuedThreadPools` you are using. 
+You can do this by a direct call if you are embedding Jetty, or in `jetty.xml`.
+
+[[configuring-dump-feature]]
+==== Configuring the Dump Feature in jetty.xml
+
+You can request that Jetty do a dump immediately after starting and just before stopping by calling the appropriate setters on the `Server` instance. 
+This can be accomplished in `jetty.xml` with:
+
+[source, xml, subs="{sub-order}"]
+----
+<Set name="dumpAfterStart">true</Set>
+<Set name="dumpBeforeStop">true</Set>
+----
+
+[[extra-threadpool-info]]
+==== Extra ThreadPool Information
+
+You can get additional detail from the `QueuedThreadPool` if `setDetailedDump(true)` is called on the thread pool instance. 
+Do this in `jetty.xml` as follows:
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <!-- ==================================== -->
+  <!-- Server Thread Pool                   --> 
+  <!-- ==================================== -->
+  <Set name="ThreadPool">
+     <!-- Default queued blocking threadpool -->
+     <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
+       <Set name="minThreads">10</Set>
+       <Set name="maxThreads">200</Set>
+       <Set name="detailedDump">true</Set>
+     </New>
+  </Set>
+----
+
+[[dump-tool-via-jmx]]
+==== Using the Dump Feature via JMX
+
+The `dump` method is on the Server instance and many of its nested components (Handlers, Connectors, and so forth). 
+Dumps may be obtained by calling these methods either in code or via JMX (see xref:using-jmx[]).
+
+The Server MBean has a `dump()` method, which dumps everything, plus a `dumpStdErr()` operation that dumps to StdErr rather than replying to JConsole.
+
+[[examing-jetty-distro-dump]]
+==== Examining a Jetty Distribution Dump
+
+This is a dump of the stock jetty-distribution with extra threadpool information:
+
+....
+org.eclipse.jetty.server.Server@76f08fe1 - STARTING
+ += qtp1062680061{STARTED,10<=13<=200,i=1,q=0} - STARTED
+ |   +- 12 qtp1062680061-12-selector-0 RUNNABLE
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.kevent0(Native Method)
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.poll(KQueueArrayWrapper.java:159)
+ |   |   +- sun.nio.ch.KQueueSelectorImpl.doSelect(KQueueSelectorImpl.java:103)
+ |   |   +- sun.nio.ch.SelectorImpl.lockAndDoSelect(SelectorImpl.java:87)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:98)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:102)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.run(SelectorManager.java:435)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 13 qtp1062680061-13-selector-6 RUNNABLE
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.kevent0(Native Method)
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.poll(KQueueArrayWrapper.java:159)
+ |   |   +- sun.nio.ch.KQueueSelectorImpl.doSelect(KQueueSelectorImpl.java:103)
+ |   |   +- sun.nio.ch.SelectorImpl.lockAndDoSelect(SelectorImpl.java:87)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:98)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:102)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.run(SelectorManager.java:435)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 14 qtp1062680061-14-selector-5 RUNNABLE
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.kevent0(Native Method)
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.poll(KQueueArrayWrapper.java:159)
+ |   |   +- sun.nio.ch.KQueueSelectorImpl.doSelect(KQueueSelectorImpl.java:103)
+ |   |   +- sun.nio.ch.SelectorImpl.lockAndDoSelect(SelectorImpl.java:87)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:98)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:102)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.run(SelectorManager.java:435)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 15 qtp1062680061-15-acceptor-0-ServerConnector@3d0f282{HTTP/1.1}{0.0.0.0:9090} BLOCKED
+ |   |   +- sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:210)
+ |   |   +- org.eclipse.jetty.server.ServerConnector.accept(ServerConnector.java:284)
+ |   |   +- org.eclipse.jetty.server.AbstractConnector$Acceptor.run(AbstractConnector.java:460)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 16 qtp1062680061-16-selector-1 RUNNABLE
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.kevent0(Native Method)
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.poll(KQueueArrayWrapper.java:159)
+ |   |   +- sun.nio.ch.KQueueSelectorImpl.doSelect(KQueueSelectorImpl.java:103)
+ |   |   +- sun.nio.ch.SelectorImpl.lockAndDoSelect(SelectorImpl.java:87)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:98)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:102)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.run(SelectorManager.java:435)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 17 qtp1062680061-17-selector-2 RUNNABLE
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.kevent0(Native Method)
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.poll(KQueueArrayWrapper.java:159)
+ |   |   +- sun.nio.ch.KQueueSelectorImpl.doSelect(KQueueSelectorImpl.java:103)
+ |   |   +- sun.nio.ch.SelectorImpl.lockAndDoSelect(SelectorImpl.java:87)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:98)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:102)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.run(SelectorManager.java:435)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 18 qtp1062680061-18-selector-3 RUNNABLE
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.kevent0(Native Method)
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.poll(KQueueArrayWrapper.java:159)
+ |   |   +- sun.nio.ch.KQueueSelectorImpl.doSelect(KQueueSelectorImpl.java:103)
+ |   |   +- sun.nio.ch.SelectorImpl.lockAndDoSelect(SelectorImpl.java:87)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:98)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:102)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.run(SelectorManager.java:435)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 19 qtp1062680061-19-selector-4 RUNNABLE
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.kevent0(Native Method)
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.poll(KQueueArrayWrapper.java:159)
+ |   |   +- sun.nio.ch.KQueueSelectorImpl.doSelect(KQueueSelectorImpl.java:103)
+ |   |   +- sun.nio.ch.SelectorImpl.lockAndDoSelect(SelectorImpl.java:87)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:98)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:102)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.run(SelectorManager.java:435)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 20 qtp1062680061-20-selector-7 RUNNABLE
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.kevent0(Native Method)
+ |   |   +- sun.nio.ch.KQueueArrayWrapper.poll(KQueueArrayWrapper.java:159)
+ |   |   +- sun.nio.ch.KQueueSelectorImpl.doSelect(KQueueSelectorImpl.java:103)
+ |   |   +- sun.nio.ch.SelectorImpl.lockAndDoSelect(SelectorImpl.java:87)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:98)
+ |   |   +- sun.nio.ch.SelectorImpl.select(SelectorImpl.java:102)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.run(SelectorManager.java:435)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 21 qtp1062680061-21-acceptor-1-ServerConnector@3d0f282{HTTP/1.1}{0.0.0.0:9090} RUNNABLE
+ |   |   +- sun.nio.ch.ServerSocketChannelImpl.accept0(Native Method)
+ |   |   +- sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:226)
+ |   |   +- org.eclipse.jetty.server.ServerConnector.accept(ServerConnector.java:284)
+ |   |   +- org.eclipse.jetty.server.AbstractConnector$Acceptor.run(AbstractConnector.java:460)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 49 qtp1062680061-49-acceptor-2-ServerConnector@3d0f282{HTTP/1.1}{0.0.0.0:9090} BLOCKED
+ |   |   +- sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:210)
+ |   |   +- org.eclipse.jetty.server.ServerConnector.accept(ServerConnector.java:284)
+ |   |   +- org.eclipse.jetty.server.AbstractConnector$Acceptor.run(AbstractConnector.java:460)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 50 qtp1062680061-50-acceptor-3-ServerConnector@3d0f282{HTTP/1.1}{0.0.0.0:9090} BLOCKED
+ |   |   +- sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:210)
+ |   |   +- org.eclipse.jetty.server.ServerConnector.accept(ServerConnector.java:284)
+ |   |   +- org.eclipse.jetty.server.AbstractConnector$Acceptor.run(AbstractConnector.java:460)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:596)
+ |   |   +- org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:527)
+ |   |   +- java.lang.Thread.run(Thread.java:722)
+ |   +- 52 qtp1062680061-52 TIMED_WAITING IDLE
+ += org.eclipse.jetty.util.thread.ScheduledExecutorScheduler@725f5 - STARTED
+ += org.eclipse.jetty.server.handler.HandlerCollection@58b37561 - STARTED
+ |   += org.eclipse.jetty.server.handler.ContextHandlerCollection@64c6e290 - STARTED
+ |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   += o.e.j.w.WebAppContext@7ea88b1c{/async-rest,[file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/, jar:file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/example-async-rest-jar-9.0.2.v20130417.jar!/META-INF/resources/],AVAILABLE}{/async-rest.war} - STARTED
+ |   |   |   += org.eclipse.jetty.server.session.SessionHandler@6dfb8d2e - STARTED
+ |   |   |   |   += org.eclipse.jetty.server.session.HashSessionManager@6cb83869 - STARTED
+ |   |   |   |   += org.eclipse.jetty.security.ConstraintSecurityHandler@2848c90e - STARTED
+ |   |   |   |   |   +- org.eclipse.jetty.security.DefaultAuthenticatorFactory@52b12fef
+ |   |   |   |   |   += org.eclipse.jetty.servlet.ServletHandler@46bac287 - STARTED
+ |   |   |   |   |   |   += default@5c13d641==org.eclipse.jetty.servlet.DefaultServlet,0,true - STARTED
+ |   |   |   |   |   |   |   +- maxCacheSize=256000000
+ |   |   |   |   |   |   |   +- etags=true
+ |   |   |   |   |   |   |   +- dirAllowed=true
+ |   |   |   |   |   |   |   +- gzip=true
+ |   |   |   |   |   |   |   +- maxCachedFileSize=200000000
+ |   |   |   |   |   |   |   +- redirectWelcome=false
+ |   |   |   |   |   |   |   +- acceptRanges=true
+ |   |   |   |   |   |   |   +- welcomeServlets=false
+ |   |   |   |   |   |   |   +- aliases=false
+ |   |   |   |   |   |   |   +- useFileMappedBuffer=true
+ |   |   |   |   |   |   |   +- maxCachedFiles=2048
+ |   |   |   |   |   |   +- [/]=>default
+ |   |   |   |   |   |   += jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true - STARTED
+ |   |   |   |   |   |   |   +- logVerbosityLevel=DEBUG
+ |   |   |   |   |   |   |   +- fork=false
+ |   |   |   |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-{VERSION}/resources:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
+ |   |   |   |   |   |   |   +- scratchdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/jsp
+ |   |   |   |   |   |   |   +- xpoweredBy=false
+ |   |   |   |   |   |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp
+ |   |   |   |   |   |   += SerialRestServlet@461411d==org.eclipse.jetty.example.asyncrest.SerialRestServlet,-1,false - STARTED
+ |   |   |   |   |   |   +- [/testSerial]=>SerialRestServlet
+ |   |   |   |   |   |   += AsyncRestServlet@73eb9bd5==org.eclipse.jetty.example.asyncrest.AsyncRestServlet,-1,false - STARTED
+ |   |   |   |   |   |   +- [/testAsync]=>AsyncRestServlet
+ |   |   |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   |   |   += HashLoginService[Test Realm] - STARTED
+ |   |   |   |   |   +- org.eclipse.jetty.security.DefaultIdentityService@d2539a6
+ |   |   |   |   |   +- org.eclipse.jetty.security.authentication.BasicAuthenticator@7b239469
+ |   |   |   |   |   |
+ |   |   |   |   |   +> HashLoginService[Test Realm] - STARTED
+ |   |   |   |   |   +> org.eclipse.jetty.security.DefaultIdentityService@d2539a6
+ |   |   |   |   |   +> org.eclipse.jetty.security.authentication.BasicAuthenticator@7b239469
+ |   |   |   |   |   +> []
+ |   |   |   |   |   +> /={TRACE={RoleInfo,F,C[]}}
+ |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   += org.eclipse.jetty.servlet.ErrorPageErrorHandler@3c121009 - STARTED
+ |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   |
+ |   |   |   +> WebAppClassLoader=Async REST Webservice Example@52934ea0
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/classes/
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/example-async-rest-jar-9.0.2.v20130417.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-client-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-ajax-{VERSION}.jar
+ |   |   |   |   +- startJarLoader@7194b34a
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/resources/
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar
+ |   |   |   |       +- sun.misc.Launcher$AppClassLoader@19d1b44b
+ |   |   |   |           +- file:/home/user/jetty-distribution-{VERSION}/start.jar
+ |   |   |   |           +- sun.misc.Launcher$ExtClassLoader@1693b52b
+ |   |   |   +> javax.servlet.context.tempdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-
+ |   |   |   +> org.apache.catalina.jsp_classpath=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/classes:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/example-async-rest-jar-9.0.2.v20130417.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-client-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/jetty-util-ajax-{VERSION}.jar
+ |   |   |   +> org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern=.*/servlet-api-[^/]*\.jar$
+ |   |   |   +> com.sun.jsp.taglibraryCache={}
+ |   |   |   +> com.sun.jsp.tagFileJarUrlsCache={}
+ |   |   += o.e.j.s.h.MovedContextHandler@5e0c8d24{/oldContextPath,null,AVAILABLE} - STARTED
+ |   |   |   += org.eclipse.jetty.server.handler.MovedContextHandler$Redirector@2a4200d3 - STARTED
+ |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   |
+ |   |   |   +> No ClassLoader
+ |   |   |   +> org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern=.*/servlet-api-[^/]*\.jar$
+ |   |   += o.e.j.w.WebAppContext@6f01ba6f{/,file:/home/user/jetty-distribution-{VERSION}/webapps/ROOT/,AVAILABLE}{/ROOT} - STARTED
+ |   |   |   += org.eclipse.jetty.server.session.SessionHandler@5a770658 - STARTED
+ |   |   |   |   += org.eclipse.jetty.server.session.HashSessionManager@746a95ae - STARTED
+ |   |   |   |   += org.eclipse.jetty.security.ConstraintSecurityHandler@1890e38 - STARTED
+ |   |   |   |   |   +- org.eclipse.jetty.security.DefaultAuthenticatorFactory@6242c657
+ |   |   |   |   |   += org.eclipse.jetty.servlet.ServletHandler@debac27 - STARTED
+ |   |   |   |   |   |   += default@5c13d641==org.eclipse.jetty.servlet.DefaultServlet,0,true - STARTED
+ |   |   |   |   |   |   |   +- maxCacheSize=256000000
+ |   |   |   |   |   |   |   +- etags=true
+ |   |   |   |   |   |   |   +- dirAllowed=true
+ |   |   |   |   |   |   |   +- gzip=true
+ |   |   |   |   |   |   |   +- maxCachedFileSize=200000000
+ |   |   |   |   |   |   |   +- redirectWelcome=false
+ |   |   |   |   |   |   |   +- acceptRanges=true
+ |   |   |   |   |   |   |   +- welcomeServlets=false
+ |   |   |   |   |   |   |   +- aliases=false
+ |   |   |   |   |   |   |   +- useFileMappedBuffer=true
+ |   |   |   |   |   |   |   +- maxCachedFiles=2048
+ |   |   |   |   |   |   +- [/]=>default
+ |   |   |   |   |   |   += jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true - STARTED
+ |   |   |   |   |   |   |   +- logVerbosityLevel=DEBUG
+ |   |   |   |   |   |   |   +- fork=false
+ |   |   |   |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-{VERSION}/resources:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
+ |   |   |   |   |   |   |   +- scratchdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-ROOT-_-any-/jsp
+ |   |   |   |   |   |   |   +- xpoweredBy=false
+ |   |   |   |   |   |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp
+ |   |   |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   |   |   +~ HashLoginService[Test Realm] - STARTED
+ |   |   |   |   |   +- org.eclipse.jetty.security.DefaultIdentityService@d2539a6
+ |   |   |   |   |   +- org.eclipse.jetty.security.authentication.BasicAuthenticator@6b733b94
+ |   |   |   |   |   |
+ |   |   |   |   |   +> HashLoginService[Test Realm] - STARTED
+ |   |   |   |   |   +> org.eclipse.jetty.security.DefaultIdentityService@d2539a6
+ |   |   |   |   |   +> org.eclipse.jetty.security.authentication.BasicAuthenticator@6b733b94
+ |   |   |   |   |   +> []
+ |   |   |   |   |   +> /={TRACE={RoleInfo,F,C[]}}
+ |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   += org.eclipse.jetty.servlet.ErrorPageErrorHandler@3c41a9ce - STARTED
+ |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   |
+ |   |   |   +> WebAppClassLoader=ROOT@7af33249
+ |   |   |   |   +- startJarLoader@7194b34a
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/resources/
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar
+ |   |   |   |       +- sun.misc.Launcher$AppClassLoader@19d1b44b
+ |   |   |   |           +- file:/home/user/jetty-distribution-{VERSION}/start.jar
+ |   |   |   |           +- sun.misc.Launcher$ExtClassLoader@1693b52b
+ |   |   |   +> javax.servlet.context.tempdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-ROOT-_-any-
+ |   |   |   +> org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern=.*/servlet-api-[^/]*\.jar$
+ |   |   |   +> com.sun.jsp.taglibraryCache={}
+ |   |   |   +> com.sun.jsp.tagFileJarUrlsCache={}
+ |   |   += o.e.j.s.h.ContextHandler@7b2dffdf{/javadoc,file:/home/user/jetty-distribution-{VERSION}/javadoc,AVAILABLE} - STARTED
+ |   |   |   += org.eclipse.jetty.server.handler.ResourceHandler@8f9c8a7 - STARTED
+ |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   |
+ |   |   |   +> No ClassLoader
+ |   |   |   +> org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern=.*/servlet-api-[^/]*\.jar$
+ |   |   += o.e.j.w.WebAppContext@716d9094{/test,file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/,AVAILABLE}{/test.war} - STARTED
+ |   |   |   += org.eclipse.jetty.server.session.SessionHandler@336abd81 - STARTED
+ |   |   |   |   += org.eclipse.jetty.server.session.HashSessionManager@1246f8d0 - STARTED
+ |   |   |   |   += org.eclipse.jetty.security.ConstraintSecurityHandler@7179290f - STARTED
+ |   |   |   |   |   +- org.eclipse.jetty.security.DefaultAuthenticatorFactory@17d41d12
+ |   |   |   |   |   += org.eclipse.jetty.servlet.ServletHandler@5034037e - STARTED
+ |   |   |   |   |   |   += default@5c13d641==org.eclipse.jetty.servlet.DefaultServlet,0,true - STARTED
+ |   |   |   |   |   |   |   +- maxCacheSize=256000000
+ |   |   |   |   |   |   |   +- etags=true
+ |   |   |   |   |   |   |   +- dirAllowed=true
+ |   |   |   |   |   |   |   +- gzip=true
+ |   |   |   |   |   |   |   +- maxCachedFileSize=200000000
+ |   |   |   |   |   |   |   +- redirectWelcome=false
+ |   |   |   |   |   |   |   +- acceptRanges=true
+ |   |   |   |   |   |   |   +- welcomeServlets=false
+ |   |   |   |   |   |   |   +- aliases=false
+ |   |   |   |   |   |   |   +- useFileMappedBuffer=true
+ |   |   |   |   |   |   |   +- maxCachedFiles=2048
+ |   |   |   |   |   |   +- [/]=>default
+ |   |   |   |   |   |   += jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true - STARTED
+ |   |   |   |   |   |   |   +- logVerbosityLevel=DEBUG
+ |   |   |   |   |   |   |   +- fork=false
+ |   |   |   |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-{VERSION}/resources:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
+ |   |   |   |   |   |   |   +- scratchdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/jsp
+ |   |   |   |   |   |   |   +- xpoweredBy=false
+ |   |   |   |   |   |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp
+ |   |   |   |   |   |   += QoSFilter - STARTED
+ |   |   |   |   |   |   |   +- managedAttr=true
+ |   |   |   |   |   |   |   +- maxRequests=10000
+ |   |   |   |   |   |   +- [/*]/[]==0=>QoSFilter
+ |   |   |   |   |   |   += MultiPart - STARTED
+ |   |   |   |   |   |   |   +- deleteFiles=true
+ |   |   |   |   |   |   +- [/dump/*]/[]==0=>MultiPart
+ |   |   |   |   |   |   += GzipFilter - STARTED
+ |   |   |   |   |   |   |   +- bufferSize=8192
+ |   |   |   |   |   |   |   +- excludedAgents=MSIE 6.0
+ |   |   |   |   |   |   |   +- userAgent=(?:Mozilla[^\(]*\(compatible;\s*+([^;]*);.*)|(?:.*?([^\s]+/[^\s]+).*)
+ |   |   |   |   |   |   |   +- mimeTypes=text/plain,application/xml
+ |   |   |   |   |   |   |   +- uncheckedPrintWriter=true
+ |   |   |   |   |   |   |   +- cacheSize=1024
+ |   |   |   |   |   |   |   +- minGzipSize=2048
+ |   |   |   |   |   |   +- [/dump/gzip/*, *.txt]/[]==0=>GzipFilter
+ |   |   |   |   |   |   += Login@462ff49==com.acme.LoginServlet,1,true - STARTED
+ |   |   |   |   |   |   +- [/login/*]=>Login
+ |   |   |   |   |   |   += Hello@42628b2==com.acme.HelloWorld,1,true - STARTED
+ |   |   |   |   |   |   +- [/hello/*]=>Hello
+ |   |   |   |   |   |   += Dump@20ae14==com.acme.Dump,1,true - STARTED
+ |   |   |   |   |   |   |   +- servlet-override-example=a servlet value
+ |   |   |   |   |   |   +- [/dump/*, *.dump]=>Dump
+ |   |   |   |   |   |   += Session@d9891a76==com.acme.SessionDump,5,true - STARTED
+ |   |   |   |   |   |   +- [/session/*]=>Session
+ |   |   |   |   |   |   += Cookie@78a4f684==com.acme.CookieDump,1,true - STARTED
+ |   |   |   |   |   |   +- [/cookie/*]=>Cookie
+ |   |   |   |   |   |   += Dispatch@14d3a89a==com.acme.DispatchServlet,1,true - STARTED
+ |   |   |   |   |   |   +- [/dispatch/*]=>Dispatch
+ |   |   |   |   |   |   += CGI@10465==org.eclipse.jetty.servlets.CGI,1,true - STARTED
+ |   |   |   |   |   |   +- [/cgi-bin/*]=>CGI
+ |   |   |   |   |   |   += Chat@200778==com.acme.ChatServlet,1,true - STARTED
+ |   |   |   |   |   |   +- [/chat/*]=>Chat
+ |   |   |   |   |   |   += WSChat@99274454==com.acme.WebSocketChatServlet,1,true - STARTED
+ |   |   |   |   |   |   +- [/ws/*]=>WSChat
+ |   |   |   |   |   |   += Rewrite@a4dac96c==com.acme.RewriteServlet,-1,false - STARTED
+ |   |   |   |   |   |   +- [/rewritten/*, /redirected/*]=>Rewrite
+ |   |   |   |   |   |   += SecureMode@d45951da==com.acme.SecureModeServlet,1,true - STARTED
+ |   |   |   |   |   |   +- [/secureMode/*]=>SecureMode
+ |   |   |   |   |   |   += foo.jsp@d7583f1f==org.apache.jasper.servlet.JspServlet,-1,false - STARTED
+ |   |   |   |   |   |   +- [/jsp/foo/]=>foo.jsp
+ |   |   |   |   |   |   +- [*.more]=>Dump
+ |   |   |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   |   |   |   += RegoTest@dafcd1ad==com.acme.RegTest,-1,false - STARTED
+ |   |   |   |   |   |   +- [/rego/*]=>RegoTest
+ |   |   |   |   |   |   += RegoTest2@849d6425==com.acme.RegTest,-1,false - STARTED
+ |   |   |   |   |   |   +- [/rego2/*]=>RegoTest2
+ |   |   |   |   |   |   += TestFilter - STARTED
+ |   |   |   |   |   |   |   +- remote=false
+ |   |   |   |   |   |   +- [/*]/[]==31=>TestFilter
+ |   |   |   |   |   += HashLoginService[Test Realm] - STARTED
+ |   |   |   |   |   +- org.eclipse.jetty.security.authentication.FormAuthenticator@1fa291f2
+ |   |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   |   |   +- org.eclipse.jetty.security.DefaultIdentityService@41917d6d
+ |   |   |   |   |   |
+ |   |   |   |   |   +> HashLoginService[Test Realm] - STARTED
+ |   |   |   |   |   +> org.eclipse.jetty.security.DefaultIdentityService@41917d6d
+ |   |   |   |   |   +> org.eclipse.jetty.security.authentication.FormAuthenticator@1fa291f2
+ |   |   |   |   |   +> [server-administrator, *, admin, user]
+ |   |   |   |   |   +> /rego2/*={*={RoleInfo,C[server-administrator]}}
+ |   |   |   |   |   +> *.htm={*={RoleInfo,C[server-administrator, *, admin, user]}}
+ |   |   |   |   |   +> /dump/auth/ssl/*={*={RoleInfo[]}}
+ |   |   |   |   |   +> /dump/auth/noaccess/*={*={RoleInfo,F,C[]}}
+ |   |   |   |   |   +> /auth/*={*={RoleInfo,F,C[]}}
+ |   |   |   |   |   +> /dump/auth/admin/*={*={RoleInfo,C[admin]}}
+ |   |   |   |   |   +> /dump/auth/relax/*={GET={RoleInfo[]}, HEAD={RoleInfo[]}}
+ |   |   |   |   |   +> /rego/*={*={RoleInfo,C[admin]}}
+ |   |   |   |   |   +> /dump/auth/*={*={RoleInfo,C[server-administrator, *, admin, user]}}
+ |   |   |   |   |   +> /={TRACE={RoleInfo,F,C[]}}
+ |   |   |   |   |   +> /auth/relax.txt={GET={RoleInfo[]}, HEAD={RoleInfo[]}}
+ |   |   |   |   |   +> /auth2/*={*={RoleInfo,C[server-administrator, *, admin, user]}}
+ |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   += org.eclipse.jetty.servlet.ErrorPageErrorHandler@24bf7a86 - STARTED
+ |   |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |   |   +- org.eclipse.jetty.servlets.QoSFilter@6df3d1f5
+ |   |   |   |
+ |   |   |   +> WebAppClassLoader=Test WebApp@3e2f3adb
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/classes/
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-continuation-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-servlets-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/websocket-api-9.0.2.v20130417.jar
+ |   |   |   |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/websocket-servlet-9.0.2.v20130417.jar
+ |   |   |   |   +- startJarLoader@7194b34a
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/resources/
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar
+ |   |   |   |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar
+ |   |   |   |       +- sun.misc.Launcher$AppClassLoader@19d1b44b
+ |   |   |   |           +- file:/home/user/jetty-distribution-{VERSION}/start.jar
+ |   |   |   |           +- sun.misc.Launcher$ExtClassLoader@1693b52b
+ |   |   |   +> org.eclipse.jetty.server.context.ManagedAttributes=QoSFilter,TransparentProxy.ThreadPool,TransparentProxy.HttpClient
+ |   |   |   +> context-override-example=a context value
+ |   |   |   +> javax.servlet.context.tempdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-
+ |   |   |   +> org.apache.catalina.jsp_classpath=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/classes:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-continuation-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-servlets-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/websocket-api-9.0.2.v20130417.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/WEB-INF/lib/websocket-servlet-9.0.2.v20130417.jar
+ |   |   |   +> org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern=.*/servlet-api-[^/]*\.jar$
+ |   |   |   +> QoSFilter=org.eclipse.jetty.servlets.QoSFilter@6df3d1f5
+ |   |   |   +> com.sun.jsp.taglibraryCache={}
+ |   |   |   +> com.sun.jsp.tagFileJarUrlsCache={}
+ |   |   += o.e.j.w.WebAppContext@4ac92718{/proxy,file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/,AVAILABLE}{/xref-proxy.war} - STARTED
+ |   |       += org.eclipse.jetty.server.session.SessionHandler@5c25bf03 - STARTED
+ |   |       |   += org.eclipse.jetty.server.session.HashSessionManager@33053093 - STARTED
+ |   |       |   += org.eclipse.jetty.security.ConstraintSecurityHandler@3bab0b5a - STARTED
+ |   |       |   |   +- org.eclipse.jetty.security.DefaultAuthenticatorFactory@11ad5296
+ |   |       |   |   += org.eclipse.jetty.servlet.ServletHandler@a08feeb - STARTED
+ |   |       |   |   |   += default@5c13d641==org.eclipse.jetty.servlet.DefaultServlet,0,true - STARTED
+ |   |       |   |   |   |   +- maxCacheSize=256000000
+ |   |       |   |   |   |   +- etags=true
+ |   |       |   |   |   |   +- dirAllowed=true
+ |   |       |   |   |   |   +- gzip=true
+ |   |       |   |   |   |   +- maxCachedFileSize=200000000
+ |   |       |   |   |   |   +- redirectWelcome=false
+ |   |       |   |   |   |   +- acceptRanges=true
+ |   |       |   |   |   |   +- welcomeServlets=false
+ |   |       |   |   |   |   +- aliases=false
+ |   |       |   |   |   |   +- useFileMappedBuffer=true
+ |   |       |   |   |   |   +- maxCachedFiles=2048
+ |   |       |   |   |   +- [/]=>default
+ |   |       |   |   |   += jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true - STARTED
+ |   |       |   |   |   |   +- logVerbosityLevel=DEBUG
+ |   |       |   |   |   |   +- fork=false
+ |   |       |   |   |   |   +- com.sun.appserv.jsp.classpath=/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar:/home/user/jetty-distribution-{VERSION}/resources:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar:/home/user/jetty-distribution-{VERSION}/start.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/opt/local/lib/libsvnjavahl-1.0.dylib:/System/Library/Java/Extensions/AppleScriptEngine.jar:/System/Library/Java/Extensions/dns_sd.jar:/System/Library/Java/Extensions/j3daudio.jar:/System/Library/Java/Extensions/j3dcore.jar:/System/Library/Java/Extensions/j3dutils.jar:/System/Library/Java/Extensions/jai_codec.jar:/System/Library/Java/Extensions/jai_core.jar:/System/Library/Java/Extensions/libAppleScriptEngine.jnilib:/System/Library/Java/Extensions/libJ3D.jnilib:/System/Library/Java/Extensions/libJ3DAudio.jnilib:/System/Library/Java/Extensions/libJ3DUtils.jnilib:/System/Library/Java/Extensions/libmlib_jai.jnilib:/System/Library/Java/Extensions/libQTJNative.jnilib:/System/Library/Java/Extensions/mlibwrapper_jai.jar:/System/Library/Java/Extensions/MRJToolkit.jar:/System/Library/Java/Extensions/QTJava.zip:/System/Library/Java/Extensions/vecmath.jar:/usr/lib/java/libjdns_sd.jnilib
+ |   |       |   |   |   |   +- scratchdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/jsp
+ |   |       |   |   |   |   +- xpoweredBy=false
+ |   |       |   |   |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp
+ |   |       |   |   |   += XrefTransparentProxy@b0222797==org.eclipse.jetty.proxy.ProxyServlet$Transparent,1,true - STARTED
+ |   |       |   |   |   |   +- proxyTo=http://download.eclipse.org/jetty/stable-9
+ |   |       |   |   |   |   +- hostHeader=download.eclipse.org
+ |   |       |   |   |   +- [/xref/*]=>XrefTransparentProxy
+ |   |       |   |   |   += JavadocTransparentProxy@8ab9c012==org.eclipse.jetty.proxy.ProxyServlet$Transparent,1,true - STARTED
+ |   |       |   |   |   |   +- proxyTo=http://download.eclipse.org/jetty/stable-9
+ |   |       |   |   |   |   +- hostHeader=download.eclipse.org
+ |   |       |   |   |   +- [/apidocs/*]=>JavadocTransparentProxy
+ |   |       |   |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |       |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |       |   |   +~ HashLoginService[Test Realm] - STARTED
+ |   |       |   |   +- org.eclipse.jetty.security.DefaultIdentityService@d2539a6
+ |   |       |   |   +- org.eclipse.jetty.security.authentication.BasicAuthenticator@5497fb72
+ |   |       |   |   |
+ |   |       |   |   +> HashLoginService[Test Realm] - STARTED
+ |   |       |   |   +> org.eclipse.jetty.security.DefaultIdentityService@d2539a6
+ |   |       |   |   +> org.eclipse.jetty.security.authentication.BasicAuthenticator@5497fb72
+ |   |       |   |   +> []
+ |   |       |   |   +> /={TRACE={RoleInfo,F,C[]}}
+ |   |       |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |       += org.eclipse.jetty.servlet.ErrorPageErrorHandler@321f8d38 - STARTED
+ |   |       |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |       +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   |       |
+ |   |       +> WebAppClassLoader=Transparent Proxy WebApp@3570713d
+ |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/classes/
+ |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-client-{VERSION}.jar
+ |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar
+ |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar
+ |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-proxy-{VERSION}.jar
+ |   |       |   +- file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar
+ |   |       |   +- startJarLoader@7194b34a
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/resources/
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar
+ |   |       |       +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar
+ |   |       |       +- sun.misc.Launcher$AppClassLoader@19d1b44b
+ |   |       |           +- file:/home/user/jetty-distribution-{VERSION}/start.jar
+ |   |       |           +- sun.misc.Launcher$ExtClassLoader@1693b52b
+ |   |       +> javax.servlet.context.tempdir=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-
+ |   |       +> org.apache.catalina.jsp_classpath=/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/classes:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-client-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-http-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-io-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-proxy-{VERSION}.jar:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/WEB-INF/lib/jetty-util-{VERSION}.jar
+ |   |       +> org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern=.*/servlet-api-[^/]*\.jar$
+ |   |       +> JavadocTransparentProxy.HttpClient=org.eclipse.jetty.client.HttpClient@580f016d
+ |   |       +> XrefTransparentProxy.HttpClient=org.eclipse.jetty.client.HttpClient@70c7e52b
+ |   |       +> com.sun.jsp.taglibraryCache={}
+ |   |       +> com.sun.jsp.tagFileJarUrlsCache={}
+ |   += org.eclipse.jetty.server.handler.DefaultHandler@4de4926a - STARTED
+ |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   += org.eclipse.jetty.server.handler.RequestLogHandler@3dc087a2 - STARTED
+ |   |   += org.eclipse.jetty.server.AsyncNCSARequestLog@108a1cf6 - STARTED
+ |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ +- org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   +- [/rego/*]=>RegoTest=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=RegoTest,id=0
+ |   +- org.eclipse.jetty.security.DefaultAuthenticatorFactory@17d41d12=org.eclipse.jetty.security:context=test,type=defaultauthenticatorfactory,id=0
+ |   +- org.eclipse.jetty.server.session.HashSessionManager@1246f8d0=org.eclipse.jetty.server.session:context=test,type=hashsessionmanager,id=0
+ |   +- org.eclipse.jetty.security.ConstraintSecurityHandler@1890e38=org.eclipse.jetty.security:context=ROOT,type=constraintsecurityhandler,id=0
+ |   +- WSChat@99274454==com.acme.WebSocketChatServlet,1,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=WSChat,id=0
+ |   +- org.eclipse.jetty.deploy.DeploymentManager@c8e4be2=org.eclipse.jetty.deploy:type=deploymentmanager,id=0
+ |   +- org.eclipse.jetty.jmx.MBeanContainer@644a5ddd=org.eclipse.jetty.jmx:type=mbeancontainer,id=0
+ |   +- [/dump/gzip/*, *.txt]/[]==0=>GzipFilter=org.eclipse.jetty.servlet:context=test,type=filtermapping,name=GzipFilter,id=0
+ |   +- Hello@42628b2==com.acme.HelloWorld,1,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=Hello,id=0
+ |   +- [/]=>default=org.eclipse.jetty.servlet:context=xref-proxy,type=servletmapping,name=default,id=0
+ |   +- [/login/*]=>Login=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=Login,id=0
+ |   +- org.eclipse.jetty.server.handler.DefaultHandler@4de4926a=org.eclipse.jetty.server.handler:type=defaulthandler,id=0
+ |   +- org.eclipse.jetty.server.session.SessionHandler@5c25bf03=org.eclipse.jetty.server.session:context=xref-proxy,type=sessionhandler,id=0
+ |   +- [/ws/*]=>WSChat=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=WSChat,id=0
+ |   +- o.e.j.w.WebAppContext@6f01ba6f{/,file:/home/user/jetty-distribution-{VERSION}/webapps/ROOT/,AVAILABLE}{/ROOT}=org.eclipse.jetty.webapp:context=ROOT,type=webappcontext,id=0
+ |   +- o.e.j.w.WebAppContext@7ea88b1c{/async-rest,[file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/, jar:file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/example-async-rest-jar-9.0.2.v20130417.jar!/META-INF/resources/],AVAILABLE}{/async-rest.war}=org.eclipse.jetty.webapp:context=async-rest,type=webappcontext,id=0
+ |   +- ServerConnector@3d0f282{HTTP/1.1}{0.0.0.0:9090}=org.eclipse.jetty.server:context=HTTP/1.1@3d0f282,type=serverconnector,id=0
+ |   +- org.eclipse.jetty.security.DefaultAuthenticatorFactory@6242c657=org.eclipse.jetty.security:context=ROOT,type=defaultauthenticatorfactory,id=0
+ |   +- JavadocTransparentProxy@8ab9c012==org.eclipse.jetty.proxy.ProxyServlet$Transparent,1,true=org.eclipse.jetty.servlet:context=xref-proxy,type=servletholder,name=JavadocTransparentProxy,id=0
+ |   +- [/dump/*, *.dump]=>Dump=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=Dump,id=0
+ |   +- [/jsp/foo/]=>foo.jsp=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=foo.jsp,id=0
+ |   +- org.eclipse.jetty.servlet.ServletHandler@46bac287=org.eclipse.jetty.servlet:context=async-rest,type=servlethandler,id=0
+ |   +- GzipFilter=org.eclipse.jetty.servlet:context=test,type=filterholder,name=GzipFilter,id=0
+ |   +- o.e.j.w.WebAppContext@4ac92718{/proxy,file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/,AVAILABLE}{/xref-proxy.war}=org.eclipse.jetty.webapp:context=xref-proxy,type=webappcontext,id=0
+ |   +- qtp1062680061{STARTED,10<=13<=200,i=1,q=0}=org.eclipse.jetty.util.thread:type=queuedthreadpool,id=0
+ |   +- org.eclipse.jetty.server.session.HashSessionManager@33053093=org.eclipse.jetty.server.session:context=xref-proxy,type=hashsessionmanager,id=0
+ |   +- org.eclipse.jetty.security.DefaultAuthenticatorFactory@52b12fef=org.eclipse.jetty.security:context=async-rest,type=defaultauthenticatorfactory,id=0
+ |   +- Login@462ff49==com.acme.LoginServlet,1,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=Login,id=0
+ |   +- org.eclipse.jetty.security.authentication.BasicAuthenticator@7b239469=org.eclipse.jetty.security.authentication:context=async-rest,type=basicauthenticator,id=0
+ |   +- MultiPart=org.eclipse.jetty.servlet:context=test,type=filterholder,name=MultiPart,id=0
+ |   +- default@5c13d641==org.eclipse.jetty.servlet.DefaultServlet,0,true=org.eclipse.jetty.servlet:context=xref-proxy,type=servletholder,name=default,id=0
+ |   +- default@5c13d641==org.eclipse.jetty.servlet.DefaultServlet,0,true=org.eclipse.jetty.servlet:context=ROOT,type=servletholder,name=default,id=0
+ |   +- default@5c13d641==org.eclipse.jetty.servlet.DefaultServlet,0,true=org.eclipse.jetty.servlet:context=async-rest,type=servletholder,name=default,id=0
+ |   +- default@5c13d641==org.eclipse.jetty.servlet.DefaultServlet,0,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=default,id=0
+ |   +- org.eclipse.jetty.server.session.HashSessionManager@746a95ae=org.eclipse.jetty.server.session:context=ROOT,type=hashsessionmanager,id=0
+ |   +- RegoTest2@849d6425==com.acme.RegTest,-1,false=org.eclipse.jetty.servlet:context=test,type=servletholder,name=RegoTest2,id=0
+ |   +- org.eclipse.jetty.server.ServerConnector$ServerConnectorManager@6f0ac4be=org.eclipse.jetty.server:context=HTTP/1.1@3d0f282,type=serverconnector$serverconnectormanager,id=0
+ |   +- [/]=>default=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=default,id=0
+ |   +- SecureMode@d45951da==com.acme.SecureModeServlet,1,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=SecureMode,id=0
+ |   +- org.eclipse.jetty.security.authentication.BasicAuthenticator@6b733b94=org.eclipse.jetty.security.authentication:context=ROOT,type=basicauthenticator,id=0
+ |   +- org.eclipse.jetty.server.session.SessionHandler@6dfb8d2e=org.eclipse.jetty.server.session:context=async-rest,type=sessionhandler,id=0
+ |   +- org.eclipse.jetty.security.DefaultIdentityService@41917d6d=org.eclipse.jetty.security:context=test,type=defaultidentityservice,id=0
+ |   +- jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true=org.eclipse.jetty.servlet:context=xref-proxy,type=servletholder,name=jsp,id=0
+ |   +- jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true=org.eclipse.jetty.servlet:context=ROOT,type=servletholder,name=jsp,id=0
+ |   +- jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true=org.eclipse.jetty.servlet:context=async-rest,type=servletholder,name=jsp,id=0
+ |   +- jsp@19c47==org.apache.jasper.servlet.JspServlet,0,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=jsp,id=0
+ |   +- [/*]/[]==31=>TestFilter=org.eclipse.jetty.servlet:context=test,type=filtermapping,name=TestFilter,id=0
+ |   +- org.eclipse.jetty.server.session.HashSessionManager@6cb83869=org.eclipse.jetty.server.session:context=async-rest,type=hashsessionmanager,id=0
+ |   +- org.eclipse.jetty.io.ArrayByteBufferPool@30ad8942=org.eclipse.jetty.io:context=HTTP/1.1@3d0f282,type=arraybytebufferpool,id=0
+ |   +- [/cgi-bin/*]=>CGI=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=CGI,id=0
+ |   +- org.eclipse.jetty.server.handler.HandlerCollection@58b37561=org.eclipse.jetty.server.handler:type=handlercollection,id=0
+ |   +- Session@d9891a76==com.acme.SessionDump,5,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=Session,id=0
+ |   +- org.eclipse.jetty.servlet.ServletHandler@a08feeb=org.eclipse.jetty.servlet:context=xref-proxy,type=servlethandler,id=0
+ |   +- org.eclipse.jetty.util.thread.ScheduledExecutorScheduler@725f5=org.eclipse.jetty.util.thread:type=scheduledexecutorscheduler,id=0
+ |   +- [/*]/[]==0=>QoSFilter=org.eclipse.jetty.servlet:context=test,type=filtermapping,name=QoSFilter,id=0
+ |   +- org.eclipse.jetty.server.session.SessionHandler@5a770658=org.eclipse.jetty.server.session:context=ROOT,type=sessionhandler,id=0
+ |   +- org.eclipse.jetty.server.session.SessionHandler@336abd81=org.eclipse.jetty.server.session:context=test,type=sessionhandler,id=0
+ |   +- o.e.j.s.h.ContextHandler@7b2dffdf{/javadoc,file:/home/user/jetty-distribution-{VERSION}/javadoc,AVAILABLE}=org.eclipse.jetty.server.handler:context=javadoc,type=contexthandler,id=0
+ |   +- org.eclipse.jetty.servlets.QoSFilter@6df3d1f5=org.eclipse.jetty.servlets:context=test,type=qosfilter,id=0
+ |   +- [*.more]=>Dump=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=Dump,id=1
+ |   +- Dump@20ae14==com.acme.Dump,1,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=Dump,id=0
+ |   +- HttpConnectionFactory@5e47b1b9{HTTP/1.1}=org.eclipse.jetty.server:context=HTTP/1.1@3d0f282,type=httpconnectionfactory,id=0
+ |   +- org.eclipse.jetty.servlet.ServletHandler@debac27=org.eclipse.jetty.servlet:context=ROOT,type=servlethandler,id=0
+ |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp=org.eclipse.jetty.servlet:context=xref-proxy,type=servletmapping,name=jsp,id=0
+ |   +- org.eclipse.jetty.server.handler.MovedContextHandler$Redirector@2a4200d3=org.eclipse.jetty.server.handler:context=oldContextPath,type=movedcontexthandler$redirector,id=0
+ |   +- TestFilter=org.eclipse.jetty.servlet:context=test,type=filterholder,name=TestFilter,id=0
+ |   +- Rewrite@a4dac96c==com.acme.RewriteServlet,-1,false=org.eclipse.jetty.servlet:context=test,type=servletholder,name=Rewrite,id=0
+ |   +- [/dispatch/*]=>Dispatch=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=Dispatch,id=0
+ |   +- [/testSerial]=>SerialRestServlet=org.eclipse.jetty.servlet:context=async-rest,type=servletmapping,name=SerialRestServlet,id=0
+ |   +- org.eclipse.jetty.servlet.ErrorPageErrorHandler@24bf7a86=org.eclipse.jetty.servlet:context=test,type=errorpageerrorhandler,id=0
+ |   +- [/secureMode/*]=>SecureMode=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=SecureMode,id=0
+ |   +- [/]=>default=org.eclipse.jetty.servlet:context=async-rest,type=servletmapping,name=default,id=0
+ |   +- Dispatch@14d3a89a==com.acme.DispatchServlet,1,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=Dispatch,id=0
+ |   +- org.eclipse.jetty.server.handler.ContextHandlerCollection@64c6e290=org.eclipse.jetty.server.handler:type=contexthandlercollection,id=0
+ |   +- org.eclipse.jetty.security.ConstraintSecurityHandler@2848c90e=org.eclipse.jetty.security:context=async-rest,type=constraintsecurityhandler,id=0
+ |   +- [/rego2/*]=>RegoTest2=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=RegoTest2,id=0
+ |   +- [/rewritten/*, /redirected/*]=>Rewrite=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=Rewrite,id=0
+ |   +- org.eclipse.jetty.servlet.ServletHandler@5034037e=org.eclipse.jetty.servlet:context=test,type=servlethandler,id=0
+ |   +- org.eclipse.jetty.servlet.ErrorPageErrorHandler@3c121009=org.eclipse.jetty.servlet:context=async-rest,type=errorpageerrorhandler,id=0
+ |   +- sun.nio.ch.ServerSocketChannelImpl[/0:0:0:0:0:0:0:0:9090]=sun.nio.ch:context=HTTP/1.1@3d0f282,type=serversocketchannelimpl,id=0
+ |   +- org.eclipse.jetty.security.ConstraintSecurityHandler@7179290f=org.eclipse.jetty.security:context=test,type=constraintsecurityhandler,id=0
+ |   +- org.eclipse.jetty.server.session.HashSessionIdManager@289eb857=org.eclipse.jetty.server.session:type=hashsessionidmanager,id=0
+ |   +- org.eclipse.jetty.security.authentication.BasicAuthenticator@5497fb72=org.eclipse.jetty.security.authentication:context=xref-proxy,type=basicauthenticator,id=0
+ |   +- org.eclipse.jetty.security.DefaultAuthenticatorFactory@11ad5296=org.eclipse.jetty.security:context=xref-proxy,type=defaultauthenticatorfactory,id=0
+ |   +- [/dump/*]/[]==0=>MultiPart=org.eclipse.jetty.servlet:context=test,type=filtermapping,name=MultiPart,id=0
+ |   +- o.e.j.s.h.MovedContextHandler@5e0c8d24{/oldContextPath,null,AVAILABLE}=org.eclipse.jetty.server.handler:context=oldContextPath,type=movedcontexthandler,id=0
+ |   +- QoSFilter=org.eclipse.jetty.servlet:context=test,type=filterholder,name=QoSFilter,id=0
+ |   +- org.eclipse.jetty.security.authentication.FormAuthenticator@1fa291f2=org.eclipse.jetty.security.authentication:context=test,type=formauthenticator,id=0
+ |   +- o.e.j.w.WebAppContext@716d9094{/test,file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/,AVAILABLE}{/test.war}=org.eclipse.jetty.webapp:context=test,type=webappcontext,id=0
+ |   +- [/]=>default=org.eclipse.jetty.servlet:context=ROOT,type=servletmapping,name=default,id=0
+ |   +- [/hello/*]=>Hello=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=Hello,id=0
+ |   +- [/chat/*]=>Chat=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=Chat,id=0
+ |   +- [/testAsync]=>AsyncRestServlet=org.eclipse.jetty.servlet:context=async-rest,type=servletmapping,name=AsyncRestServlet,id=0
+ |   +- org.eclipse.jetty.security.DefaultIdentityService@d2539a6=org.eclipse.jetty.security:context=async-rest,type=defaultidentityservice,id=0
+ |   +- org.eclipse.jetty.server.handler.RequestLogHandler@3dc087a2=org.eclipse.jetty.server.handler:type=requestloghandler,id=0
+ |   +- org.eclipse.jetty.servlet.ErrorPageErrorHandler@321f8d38=org.eclipse.jetty.servlet:context=xref-proxy,type=errorpageerrorhandler,id=0
+ |   +- org.eclipse.jetty.server.handler.ResourceHandler@8f9c8a7=org.eclipse.jetty.server.handler:context=javadoc,type=resourcehandler,id=0
+ |   +- CGI@10465==org.eclipse.jetty.servlets.CGI,1,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=CGI,id=0
+ |   +- SerialRestServlet@461411d==org.eclipse.jetty.example.asyncrest.SerialRestServlet,-1,false=org.eclipse.jetty.servlet:context=async-rest,type=servletholder,name=SerialRestServlet,id=0
+ |   +- HashLoginService[Test Realm]=org.eclipse.jetty.security:type=hashloginservice,id=0
+ |   +- AsyncRestServlet@73eb9bd5==org.eclipse.jetty.example.asyncrest.AsyncRestServlet,-1,false=org.eclipse.jetty.servlet:context=async-rest,type=servletholder,name=AsyncRestServlet,id=0
+ |   +- org.eclipse.jetty.server.Server@76f08fe1=org.eclipse.jetty.server:type=server,id=0
+ |   +- org.eclipse.jetty.servlet.ErrorPageErrorHandler@3c41a9ce=org.eclipse.jetty.servlet:context=ROOT,type=errorpageerrorhandler,id=0
+ |   +- [/apidocs/*]=>JavadocTransparentProxy=org.eclipse.jetty.servlet:context=xref-proxy,type=servletmapping,name=JavadocTransparentProxy,id=0
+ |   +- Chat@200778==com.acme.ChatServlet,1,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=Chat,id=0
+ |   +- [/cookie/*]=>Cookie=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=Cookie,id=0
+ |   +- [/session/*]=>Session=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=Session,id=0
+ |   +- org.eclipse.jetty.deploy.providers.WebAppProvider@7b26b7df=org.eclipse.jetty.deploy.providers:type=webappprovider,id=0
+ |   +- org.eclipse.jetty.server.AsyncNCSARequestLog@108a1cf6=org.eclipse.jetty.server:type=asyncncsarequestlog,id=0
+ |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp=org.eclipse.jetty.servlet:context=test,type=servletmapping,name=jsp,id=0
+ |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp=org.eclipse.jetty.servlet:context=ROOT,type=servletmapping,name=jsp,id=0
+ |   +- HashLoginService[Test Realm]=org.eclipse.jetty.security:context=test,type=hashloginservice,id=0
+ |   +- [*.jsp, *.jspf, *.jspx, *.xsp, *.JSP, *.JSPF, *.JSPX, *.XSP]=>jsp=org.eclipse.jetty.servlet:context=async-rest,type=servletmapping,name=jsp,id=0
+ |   +- foo.jsp@d7583f1f==org.apache.jasper.servlet.JspServlet,-1,false=org.eclipse.jetty.servlet:context=test,type=servletholder,name=foo.jsp,id=0
+ |   +- RegoTest@dafcd1ad==com.acme.RegTest,-1,false=org.eclipse.jetty.servlet:context=test,type=servletholder,name=RegoTest,id=0
+ |   +- [/xref/*]=>XrefTransparentProxy=org.eclipse.jetty.servlet:context=xref-proxy,type=servletmapping,name=XrefTransparentProxy,id=0
+ |   +- org.eclipse.jetty.security.ConstraintSecurityHandler@3bab0b5a=org.eclipse.jetty.security:context=xref-proxy,type=constraintsecurityhandler,id=0
+ |   +- HttpConfiguration@703b16bb{32768,8192/8192,https://:8443,[]}=org.eclipse.jetty.server:context=HTTP/1.1@3d0f282,type=httpconfiguration,id=0
+ |   +- org.eclipse.jetty.util.log.Log@dda4f7b=org.eclipse.jetty.util.log:type=log,id=0
+ |   +- Cookie@78a4f684==com.acme.CookieDump,1,true=org.eclipse.jetty.servlet:context=test,type=servletholder,name=Cookie,id=0
+ |   +- XrefTransparentProxy@b0222797==org.eclipse.jetty.proxy.ProxyServlet$Transparent,1,true=org.eclipse.jetty.servlet:context=xref-proxy,type=servletholder,name=XrefTransparentProxy,id=0
+ +- org.eclipse.jetty.util.log.Log@dda4f7b
+ += ServerConnector@3d0f282{HTTP/1.1}{0.0.0.0:9090} - STARTED
+ |   +~ org.eclipse.jetty.server.Server@76f08fe1 - STARTING
+ |   +~ qtp1062680061{STARTED,10<=13<=200,i=1,q=0} - STARTED
+ |   +~ org.eclipse.jetty.util.thread.ScheduledExecutorScheduler@725f5 - STARTED
+ |   +- org.eclipse.jetty.io.ArrayByteBufferPool@30ad8942
+ |   += HttpConnectionFactory@5e47b1b9{HTTP/1.1} - STARTED
+ |   |   +- HttpConfiguration@703b16bb{32768,8192/8192,https://:8443,[]}
+ |   |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   += org.eclipse.jetty.server.ServerConnector$ServerConnectorManager@6f0ac4be - STARTED
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector@61454787 keys=0 selected=0 id=0
+ |   |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   |   +- sun.nio.ch.KQueueSelectorImpl@a0c508b keys=0
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector@2e7bdad4 keys=0 selected=0 id=1
+ |   |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   |   +- sun.nio.ch.KQueueSelectorImpl@5825168 keys=0
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector@2eae85ab keys=0 selected=0 id=2
+ |   |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   |   +- sun.nio.ch.KQueueSelectorImpl@6faa85f6 keys=0
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector@244112c0 keys=0 selected=0 id=3
+ |   |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   |   +- sun.nio.ch.KQueueSelectorImpl@10c6f695 keys=0
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector@7666b8cd keys=0 selected=0 id=4
+ |   |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   |   +- sun.nio.ch.KQueueSelectorImpl@17836c59 keys=0
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector@353e531e keys=0 selected=0 id=5
+ |   |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   |   +- sun.nio.ch.KQueueSelectorImpl@2095f259 keys=0
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector@5459c1c5 keys=0 selected=0 id=6
+ |   |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |   |   +- sun.nio.ch.KQueueSelectorImpl@142c7195 keys=0
+ |   |   +- org.eclipse.jetty.io.SelectorManager$ManagedSelector@71d4f78b keys=0 selected=0 id=7
+ |   |       +- org.eclipse.jetty.io.SelectorManager$ManagedSelector.select(SelectorManager.java:459)
+ |   |       +- sun.nio.ch.KQueueSelectorImpl@16bdab45 keys=0
+ |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ |   +- sun.nio.ch.ServerSocketChannelImpl[/0:0:0:0:0:0:0:0:9090]
+ += org.eclipse.jetty.deploy.DeploymentManager@c8e4be2 - STARTED
+ |   +~ org.eclipse.jetty.deploy.providers.WebAppProvider@7b26b7df - STARTED
+ |   +~ org.eclipse.jetty.jmx.MBeanContainer@644a5ddd
+ +~ HashLoginService[Test Realm] - STARTED
+ += org.eclipse.jetty.server.session.HashSessionIdManager@289eb857 - STARTED
+ |
+ +> startJarLoader@7194b34a
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-xml-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/servlet-api-3.0.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-http-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-continuation-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-server-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-security-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-servlet-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-webapp-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-deploy-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-client-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-jmx-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/com.sun.el-2.2.0.v201303151357.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.el-2.2.0.v201303151357.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/javax.servlet.jsp-2.2.0.v201112011158.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.jasper.glassfish-2.2.2.v201112011158.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/resources/
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-api-9.0.2.v20130417.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-common-9.0.2.v20130417.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-server-9.0.2.v20130417.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/websocket/websocket-servlet-9.0.2.v20130417.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-util-{VERSION}.jar
+     +- file:/home/user/jetty-distribution-{VERSION}/lib/jetty-io-{VERSION}.jar
+     +- sun.misc.Launcher$AppClassLoader@19d1b44b
+         +- file:/home/user/jetty-distribution-{VERSION}/start.jar
+         +- sun.misc.Launcher$ExtClassLoader@1693b52b
+2013-04-29 14:38:39.422:INFO:oejs.Server:Thread-2: Graceful shutdown org.eclipse.jetty.server.Server@76f08fe1 by  Mon Apr 29 14:38:44 CDT 2013
+2013-04-29 14:38:39.429:INFO:oejs.ServerConnector:Thread-2: Stopped ServerConnector@3d0f282{HTTP/1.1}{0.0.0.0:9090}
+2013-04-29 14:38:39.444:INFO:oejsl.ELContextCleaner:Thread-2: javax.el.BeanELResolver purged
+2013-04-29 14:38:39.444:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.w.WebAppContext@4ac92718{/proxy,file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-xref-proxy.war-_xref-proxy-any-/webapp/,UNAVAILABLE}{/xref-proxy.war}
+2013-04-29 14:38:39.447:INFO:oejsl.ELContextCleaner:Thread-2: javax.el.BeanELResolver purged
+2013-04-29 14:38:39.447:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.w.WebAppContext@716d9094{/test,file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-test.war-_test-any-/webapp/,UNAVAILABLE}{/test.war}
+2013-04-29 14:38:39.455:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.s.h.ContextHandler@7b2dffdf{/javadoc,file:/home/user/jetty-distribution-{VERSION}/javadoc,UNAVAILABLE}
+2013-04-29 14:38:39.456:INFO:oejsl.ELContextCleaner:Thread-2: javax.el.BeanELResolver purged
+2013-04-29 14:38:39.456:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.w.WebAppContext@6f01ba6f{/,file:/home/user/jetty-distribution-{VERSION}/webapps/ROOT/,UNAVAILABLE}{/ROOT}
+2013-04-29 14:38:39.456:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.s.h.MovedContextHandler@5e0c8d24{/oldContextPath,null,UNAVAILABLE}
+2013-04-29 14:38:39.457:INFO:oejsl.ELContextCleaner:Thread-2: javax.el.BeanELResolver purged
+2013-04-29 14:38:39.457:INFO:oejsh.ContextHandler:Thread-2: stopped o.e.j.w.WebAppContext@7ea88b1c{/async-rest,[file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/, jar:file:/private/var/folders/br/kbs2g3753c54wmv4j31pnw5r0000gn/T/jetty-0.0.0.0-9090-async-rest.war-_async-rest-any-/webapp/WEB-INF/lib/example-async-rest-jar-9.0.2.v20130417.jar!/META-INF/resources/],UNAVAILABLE}{/async-rest.war}
+.... 
+

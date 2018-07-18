@@ -19,8 +19,370 @@
 [[ag-http2]]
 == HTTP/2
 
-include::../topics/http2/introduction.adoc[]
-include::../topics/http2/enabling-http2.adoc[]
-include::../topics/http2/configuring-http2.adoc[]
-include::../topics/http2/configuring-push.adoc[]
-include::../topics/http2/configuring-haproxy.adoc[]
+[[http2-introduction]]
+=== Introducing HTTP/2
+
+Jetty supports both a client and a server implementation for the HTTP/2 protocol as defined by http://tools.ietf.org/html/rfc7540[RFC 7540].
+
+The requirements for running HTTP/2 are JDK 8 or greater, and typically also ALPN support (see xref:alpn-chapter[]).
+
+A server deployed over TLS (SSL) normally advertises the HTTP/2 protocol via the TLS extension Application Layer Protocol Negotiation link:#alpn[(ALPN)].
+
+____
+[IMPORTANT]
+To use HTTP/2 in Jetty via a TLS connector you need to add the link:#alpn-starting[ALPN boot jar] in the boot classpath.
+This is done automatically when using the Jetty distribution's start.jar link:#startup-modules[module system], but must be configured directly otherwise.
+____
+
+[[http2-modules]]
+==== Jetty HTTP/2 Sub Projects
+
+The Jetty HTTP/2 implementation consists of the following sub-projects (each producing a jar file):
+
+1.  `http2-common`: Contains the HTTP/2 API and a partial implementation shared across other modules.
+2.  `http2-hpack`: Contains the HTTP/2 HPACK implementation for HTTP header compression.
+3.  `http2-server`: Provides the server-side implementation of HTTP/2.
+4.  `http2-client`: Provides the implementation of HTTP/2 client with a low level HTTP/2 API, dealing with HTTP/2 streams, frames, etc.
+5.  `http2-http-client-transport`: Provides the implementation of the HTTP/2 transport for `HttpClient` (see xref:http-client[]).
+Applications can use the higher level API provided by `HttpClient` to send HTTP requests and receive HTTP responses, and the HTTP/2 transport will take care of converting them in HTTP/2 format (see also https://webtide.com/http2-support-for-httpclient/[this blog entry]).
+
+[[http2-enabling]]
+=== Enabling HTTP/2
+
+This section is written assuming that a link:#startup-base-and-home[Jetty base directory] is being used.
+A demo Jetty base that supports HTTP/1, HTTPS/1 and deployment from a webapps directory can be created with the commands:
+
+[source, screen, subs="{sub-order}"]
+....
+$ JETTY_BASE=http2-demo
+$ mkdir $JETTY_BASE
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http,https,deploy
+....
+
+The commands above create a `$JETTY_BASE` directory called `http2-demo`, and initializes the `http,` `https` and `deploy` modules (and their dependencies) to run a typical Jetty Server on port 8080 (for HTTP/1) and 8443 (for HTTPS/1).
+Note that the HTTPS module downloads a demo keystore file with a self signed certificate, which needs to be replaced by a Certificate Authority issued certificate for real deployment.
+
+To add HTTP/2 to this demo base, it is just a matter of enabling the `http2` module with the following command:
+
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http2
+....
+
+This command does not create a new connector, but instead simply adds the HTTP/2 protocol to the existing HTTPS/1 connector, so that it now supports both protocols on port 8443.
+To do this, it also transitively enables the ALPN module for protocol negotiation.
+The support for each protocol can be seen in the info logging when the server is started:
+
+[source,screen, subs="{sub-order}"]
+----
+$ java -jar $JETTY_HOME/start.jar
+...
+2015-06-17 14:16:12.549:INFO:oejs.ServerConnector:main: Started ServerConnector@34c9c77f{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+2015-06-17 14:16:12.782:INFO:oejs.ServerConnector:main: Started ServerConnector@711f39f9{SSL,[ssl, alpn, h2, h2-17, http/1.1]}{0.0.0.0:8443}
+...
+----
+
+This log shows that port 8080 supports only HTTP/1.1 (which by specification includes HTTP/1.0 support), while port 8443 supports the SSL protocol, with ALPN negotiation to select between several versions of HTTP/2 (h2 & the draft h2-17) and HTTP/1.1.
+What is not shown is that HTTP/1.1 is the default ALPN protocol, so that if a client connects that does not speak ALPN, then HTTP/1.1 will be assumed.
+
+A browser can now be pointed at `https://localhost:8443/` and if it supports HTTP/2 then it will be used (often indicated by a lightening bolt icon in the address bar).
+Note that a browser pointed at this server with URL starting with `http://localhost:8080/` will still talk HTTP/1.1, as HTTP/2 has not been enabled on the plain text connector.
+
+HTTP/2 can be enabled on the plain text connector and the server restarted with the following command:
+
+[source,screen]
+....
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http2c
+$ java -jar $JETTY_HOME/start.jar
+..
+2015-06-17 14:16:12.549:INFO:oejs.ServerConnector:main: Started ServerConnector@6f32cd1e{HTTP/1.1,[http/1.1, h2c, h2c-17]}{0.0.0.0:8080}
+2015-06-17 14:16:12.782:INFO:oejs.ServerConnector:main: Started ServerConnector@711f39f9{SSL,[ssl, alpn, h2, h2-17, http/1.1]}{0.0.0.0:8443}
+..
+....
+
+No major browser currently supports plain text HTTP/2, so the 8080 port will only be able to use HTTP/2 with specific clients (eg `curl`) that use the upgrade mechanism or assume HTTP/2.
+
+[[http2-configuring]]
+=== Configuring HTTP/2
+
+Enabling the HTTP/2 module in the Jetty server does not create a HTTP/2 specific connector, but rather it adds a HTTP/2 Connection factory to an
+existing connector.
+Thus configuring HTTP/2 is a combination of configuring common properties on the connector and HTTP/2 specific properties on the connection factory.
+The modules and XML files involved can be seen with the following commands:
+
+[source,screen, subs="{sub-order}"]
+....
+$ java -jar $JETTY_HOME/start.jar --list-modules
+    ...
+    1) alpn-impl  <transitive>
+    ...
+    2) http            ${jetty.base}/start.d/http.ini
+    2) ssl             ${jetty.base}/start.d/ssl.ini
+    3) alpn            ${jetty.base}/start.d/alpn.ini
+    3) http2c          ${jetty.base}/start.d/http2c.ini
+    ...
+    4) http2           ${jetty.base}/start.d/http2.ini
+    5) https           ${jetty.base}/start.d/https.ini
+
+$ java -jar $JETTY_HOME/start.jar --list-config
+ ...
+ ${jetty.home}/etc/jetty-ssl.xml
+ ${jetty.home}/etc/jetty-ssl-context.xml
+ ${jetty.home}/etc/jetty-alpn.xml
+ ${jetty.home}/etc/jetty-http2c.xml
+ ${jetty.home}/etc/jetty-http.xml
+ ...
+ ${jetty.home}/etc/jetty-http2.xml
+ ${jetty.home}/etc/jetty-https.xml
+....
+
+The common properties associated with connectors (host,port, timeouts, etc.) can be set in the module ini files (or `start.ini` if `--add-to-start` was used): `${jetty.base}/start.d/http.ini` and `${jetty.base}/start.d/ssl.ini`.
+These properties are instantiated in the associated XML files: `${jetty.home}/etc/jetty-http.xml`; `${jetty.home}/etc/jetty-ssl.xml`, plus the SSL keystore is instantiated in `${jetty.home}/etc/jetty-ssl-context.xml`.
+
+____
+[NOTE]
+If you are planning to edit XML files, make sure to copy them to your `{$jetty.base}/etc/` directory before doing so.
+The XML files that come with the Jetty distribution should *not* be modified directly.
+____
+
+HTTP/2 specific properties can be set in the module ini files: `${jetty.base}/start.d/http2.ini` and `${jetty.base}/start.d/http2c.ini`, which are instantiated in the associated XML files: `${jetty.home}/etc/jetty-http2.xml`; `${jetty.home}/etc/jetty-http2c.xml`, respectively.
+Currently there are very few HTTP/2 configuration properties and the default values are reasonable:
+
+.HTTP/2 Configuration Properties
+[cols=",",options="header",]
+|=======================================================================
+|Property |Description
+|jetty.http2.maxConcurrentStreams |The maximum number of concurrently open streams allowed on a single HTTP/2 connection (default 128). Larger values increase parallelism but cost a memory commitment.
+|jetty.http2.initialSessionRecvWindow |The initial receive flow control window size for a new session (default 1048576). Larger values may allow greater throughput but also risk head of line blocking if TCP/IP flow control is triggered.
+|jetty.http2.initialStreamRecvWindow |The initial receive flow control window size for a new stream (default 524288). Larger values may allow greater throughput but also risk head of line blocking if TCP/IP flow control is triggered.
+|=======================================================================
+
+[[http2-configuring-push]]
+=== Configuring HTTP/2 Push
+
+HTTP/2 Push is a mechanism that allows the server to send multiple resources to the client for a single client request.
+This will reduce the amount of round-trips necessary to retrieve all the resources that make up a web page and can significantly improve the page load time.
+
+HTTP/2 Push can be automated in your application by configuring a link:{JDURL}/org/eclipse/jetty/servlets/PushCacheFilter.html[`PushCacheFilter`] in the `web.xml`, in this way:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app
+    xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+    metadata-complete="true"
+    version="3.1">
+
+    ...
+    <filter>
+        <filter-name>PushFilter</filter-name>
+        <filter-class>org.eclipse.jetty.servlets.PushCacheFilter</filter-class>
+        <async-supported>true</async-supported>
+    </filter>
+    <filter-mapping>
+        <filter-name>PushFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    ...
+
+</web-app>
+----
+
+`PushCacheFilter` analyzes the HTTP requests for resources that arrive to your web application.
+Some of these requests contain the HTTP `Referer` header that points to a resource that has been requested previously.
+
+This allows the `PushCacheFilter` to organize resources in a tree, for example a root `index.html` resource having two children resources, `styles.css` and `application.js`, and `styles.css` having a child resource, `background.png`.
+The root resource is called the _primary_ resource, while descendant resources are called _secondary_ resources.
+
+The resource tree is built using a time window so that when a root resource is requested, only subsequent requests that are made within the time window will be added to the resource tree.
+The resource tree can also be limited in size so that the number of secondary resources associated to a primary resource is limited.
+
+By default, only the resource _path_ (without the _query_ string) is used to associate secondary resources to the primary resource, but you can configure `PushCacheFilter` to take the query string into account.
+
+`PushCacheFilter` can be configured with the following `init-params`:
+
+* `associatePeriod`: the time window, in milliseconds, within which a request for a secondary resource will be associated to a primary resource; defaults to 4000 ms
+* `maxAssociations`: the max number of secondary resources that may be associated to a primary resource; defaults to 16
+* `hosts`: a comma separated list of hosts that are allowed in the `Referer` header; defaults to the host in the `Host` header
+* `ports`: a comma separated list of ports that are allowed in the `Referer` header; defaults to the port in the `Host` header
+* `useQueryInKey`: a boolean indicating whether the query string of the request should be considered when associating secondary resources to primary resources; defaults to `false`
+
+[[http2-configuring-haproxy]]
+=== Configuring HAProxy and Jetty
+
+Typical website deployments have Apache (or Nginx) configured as reverse proxy to talk to one or more backend Jetty instances.
+This configuration cannot be used for HTTP/2 because Apache does not yet support HTTP/2 (nor does Nginx).
+
+http://haproxy.org[HAProxy] is an open source solution that offers load balancing and proxying for TCP and HTTP based application, and can be used as a replacement for Apache or Nginx when these are used as reverse proxies and has the major benefit that supports HTTP/2.
+It also offers load balancing and several other features which can position it as a complete replacement for Apache or Nginx.
+
+The deployment proposed here will have HAProxy play the role that Apache and Nginx usually do: to perform the TLS offloading (that is, decrypt and encrypt TLS) and then forwarding the now clear-text traffic to a backend Jetty server, speaking either HTTP/1.1 or HTTP/2.
+
+The instructions that follow are for Linux.
+
+[[http2-haproxy-install]]
+==== Installing HAProxy
+
+You will need HAProxy 1.5 or later, because it provides support for SSL and ALPN, both required by HTTP/2. Most Linux distributions have the HAProxy package available to be installed out of the box. For example on Ubuntu 15.04:
+
+[source,screen, subs="{sub-order}"]
+....
+$ sudo apt-get install haproxy
+....
+
+Alternatively you can download the HAProxy source code and build it on your environment by following the README bundled with the HAProxy source code tarball.
+
+____
+[NOTE]
+HAProxy supports ALPN only if built with OpenSSL 1.0.2 or greater.
+Use `haproxy -vv` to know with which OpenSSL version HAProxy has been built.
+____
+
+[[http2-haproxy-ssl]]
+==== Setup SSL for HAProxy
+
+HAProxy will perform the TLS decryption and encryption much more efficiently than a Java implementation.
+
+HAProxy will need a single file containing the X509 certificates and the private key, all in https://en.wikipedia.org/wiki/X.509[PEM format], with the following order:
+
+1.  The site certificate; this certificate's Common Name refers to the site domain (for example: CN=*.webtide.com) and is signed by Certificate Authority #1.
+2.  The Certificate Authority #1 certificate; this certificate may be signed by Certificate Authority #2.
+3.  The Certificate Authority #2 certificate; this certificate may be signed by Certificate Authority #3; and so on until the Root Certificate Authority.
+4.  The Root Certificate Authority certificate.
+5.  The private key corresponding to the site certificate.
+
+Let's use `keytool` to generate a self signed certificate:
+
+[source,screen, subs="{sub-order}"]
+....
+$ keytool -genkeypair -keyalg RSA -keystore keystore.p12 -storetype pkcs12 -storepass storepwd -ext SAN=DNS:domain.com
+What is your first and last name?
+[Unknown]:  *.domain.com
+What is the name of your organizational unit?
+[Unknown]:  Unit
+What is the name of your organization?
+[Unknown]:  Domain
+What is the name of your City or Locality?
+[Unknown]:  Torino
+What is the name of your State or Province?
+[Unknown]:  TO
+What is the two-letter country code for this unit?
+[Unknown]:  IT
+Is CN=*.domain.com, OU=Unit, O=Domain, L=Torino, ST=TO, C=IT correct?
+[no]:  yes
+....
+
+The above command will generate a self signed certificate and private key for `domain.com` and subdomains, stored in the `keystore.p12` file in PKCS#12 format.
+We need to extract the certificate and the private key in PEM format.
+
+To extract the certificate into `certificate.pem`:
+
+[source,screen, subs="{sub-order}"]
+....
+$ keytool -exportcert -keystore keystore.p12 -storetype pkcs12 -storepass storepwd -rfc -file certificate.pem
+....
+
+To export the private key into `private_key.pem`:
+
+[source,screen, subs="{sub-order}"]
+....
+$ openssl pkcs12 -in keystore.p12 -nodes -nocerts -out private_key.pem -passin pass:storepwd
+....
+
+At this point you just need to concatenate the two files into one, in the correct order:
+
+[source,screen, subs="{sub-order}"]
+....
+$ cat certificate.pem private_key.pem > domain.pem
+....
+
+The `domain.pem` file will be used later by HAProxy.
+
+[[http2-haproxy-cfg]]
+==== HAProxy Configuration File
+
+Now we can setup `haproxy.cfg` to configure HAProxy.
+This is a minimal configuration:
+
+[source, ,subs="{sub-order}"]
+....
+global
+tune.ssl.default-dh-param 1024
+
+defaults
+timeout connect 10000ms
+timeout client 60000ms
+timeout server 60000ms
+
+frontend fe_http
+mode http
+bind *:80
+# Redirect to https
+redirect scheme https code 301
+
+frontend fe_https
+mode tcp
+bind *:443 ssl no-sslv3 crt domain.pem ciphers TLSv1.2 alpn h2,http/1.1
+default_backend be_http
+
+backend be_http
+mode tcp
+server domain 127.0.0.1:8282
+....
+
+The HAProxy configuration file works in the following way.
+The `fe_http` front-end accepts connections on port 80 and redirects them to use the `https` scheme.
+
+The `fe_https` front-end accepts connections on port 443 and it is where the TLS decryption/encryption happens.
+You must specify the path to the PEM file containing the TLS key material (the `crt domain.pem` part), the ciphers that are suitable for HTTP/2 (the `ciphers TLSv1.2`), and the ALPN protocols supported (the `alpn h2,http/1.1` ).
+This front-end then forwards the now decrypted bytes to the back-end in `mode tcp`. The `mode tcp` says that HAProxy will not try to interpret the bytes as HTTP/1.1 but instead opaquely forward them to the back-end.
+
+The `be_http` back-end will forward (again in `mode tcp`) the clear-text bytes to a Jetty connector that talks clear-text HTTP/2 and HTTP/1.1 on port 8282.
+
+[[http2-haproxy-jetty]]
+==== Setup Jetty for HTTP/2 and HTTP/1.1
+
+The Jetty setup follows the steps of having Jetty installed in the `JETTY_HOME` directory, creating a `JETTY_BASE` directory and initializing it using Jetty's command line tools.
+You must enable the `http2c` module, that is the module that speaks clear-text HTTP/2.
+Since the `http2c` module depends on the `http` module, the `http` module will be enabled transitively, and the final setup will therefore support both HTTP/2 and HTTP/1.1 in clear text.
+
+Additionally, you will also enable the `deploy` module to be able to deploy a sample web application:
+
+[source,screen, subs="{sub-order}"]
+....
+$ JETTY_BASE=haproxy-jetty-http2
+$ mkdir $JETTY_BASE
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http2c,deploy
+....
+
+Now let's deploy a demo web application and start Jetty:
+
+[source,screen, subs="{sub-order}"]
+....
+$ cd $JETTY_BASE
+$ cp $JETTY_HOME/demo-base/webapps/async-rest.war $JETTY_BASE/webapps/
+$ java -jar $JETTY_HOME/start.jar jetty.http.host=127.0.0.1 jetty.http.port=8282
+....
+
+Now you can browse https://domain.com/async-rest (replace `domain.com` with your own domain, or with `localhost`, to make this example work).
+
+____
+[NOTE]
+You want the Jetty connector that listens on port 8282 to be available only to HAProxy, and not to remote clients.
+For this reason, you want to specify the `jetty.http.host` property on the command line (or in `start.ini`/ `start.d/http.ini` to make this setting persistent) to bind the Jetty connector only on the loopback interface (127.0.0.1), making it available to HAProxy but not to remote clients.
+If your Jetty instance runs on a different machine and/or on a different (sub)network, you may want to adjust both the back-end section of the HAProxy configuration file and the `jetty.http.host` property to match accordingly.
+____
+
+Browsers supporting HTTP/2 will connect to HAProxy, which will decrypt the traffic and send it to Jetty.
+Likewise, HTTP/1.1 clients will connect to HAProxy, which will decrypt the traffic and send it to Jetty.
+
+The Jetty connector, configured with the `http2c` module (and therefore transitively with the `http` module) is able to distinguish whether the incoming bytes are HTTP/2 or HTTP/1.1 and will handle the request accordingly.
+
+The response is relayed back to HAProxy, which will encrypt it and send it back to the remote client.
+
+This configuration offers you efficient TLS offloading, HTTP/2 support and transparent fallback to HTTP/1.1 for clients that don't support HTTP/1.1.
+

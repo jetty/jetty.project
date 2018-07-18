@@ -17,3 +17,350 @@
 //
 
 == Annotations
+
+[[annotations-quick-setup]]
+=== Quick Setup
+
+==== Jetty Distribution
+
+If you are using the jetty distribution, then annotations are enabled by default.
+The annotations link:#startup-modules[module] and its transitive dependencies are responsible for making annotation processing available.
+
+Note that annotations that relate to link:#jndi[JNDI], such as @Resource and @Resources are enabled via the JNDI module, which is a transitive dependency on the annotations module.
+
+==== Jetty Maven Plugin
+
+Annotations and JNDI are pre-enabled for the Maven plugin.
+
+==== Embedding
+
+To use annotations in an embedded scenario, you will need to include the `jetty-annotations` jar and all its dependencies onto your classpath.
+You will also need to include the `org.eclipse.jetty.annotations.AnnotationConfiguration` class into the list of link:#webapp-configurations[Configuration classes] applied to the `org.eclipse.jetty.webapp.WebAppContext` class representing your webapp.
+
+Below is an example application that sets up the standard `test-spec.war` webapp from the distribution in embedded fashion.
+It can also be found in the Jetty GitHub repository on the examples/embedded page as link:{GITBROWSEURL}/examples/embedded/src/main/java/org/eclipse/jetty/embedded[`ServerWithAnnotations.java`.]
+Note that the `test-spec.war` uses not only annotations, but also link:#jndi[JNDI], so this example also enables their processing (via the link:#jndi-configuration-classes[org.eclipse.jetty.plus.webapp.EnvConfiguration], link:#jndi-configuration-classes[org.eclipse.jetty.plus.webapp.PlusConfiguration] and their related jars).
+
+[source, java, subs="{sub-order}"]
+----
+include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/ServerWithAnnotations.java[]
+----
+
+[[using-annotations]]
+=== Working with Annotations
+
+==== Which Annotations Are Supported
+
+Jetty supports interpretation and application of the following annotations:
+
+* @Resource
+* @Resources
+* @PostConstruct
+* @PreDestroy
+* @DeclaredRoles
+* @RunAs
+* @MultipartConfig
+* @WebServlet
+* @WebFilter
+* @WebListener
+* @WebInitParam
+* @ServletSecurity, @HttpConstraint, @HttpMethodConstraint
+* @HandlesTypes (on ServletContainerInitializers)
+
+[[discoverable_introspectable_annotations]]
+==== Discovered vs Introspected Annotations
+
+Some types of annotation can be placed on any class, not necessarily just those with which the container interacts directly.
+These type of annotations are refered to as "discovered" to indicate that the container must take proactive action to go out and find them.
+The other type of annotation is call "introspected", meaning that they occur on classes with which the container interacts during their lifecycle (e.g. `javax.servlet.Servlet`, `javax.servlet.Filter`, ...etc.), and hence can be found by simple inspection of the class at that point.
+
+Some examples of discovered annotations are:
+
+* @WebServlet
+* @WebFilter
+* @WebListener
+
+Some examples of introspected annotations are:
+
+* @PostConstruct
+* @PreDestroy
+* @Resource
+
+[[jars-scanned-for-annotations]]
+==== Which Jar Files Are Scanned For Discovered Annotations
+
+The web.xml file can contain the attribute `metadata-complete`.
+If this is set to `true`, then _no_ scanning of discoverable annotations takes place.
+However, scanning of classes may _still_ occur because of http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerInitializer]s.
+Classes implementing this interface are found by Jetty using the http://docs.oracle.com/javase/6/docs/api/java/util/ServiceLoader.html[javax.util.ServiceLoader] mechanism, and if one is present _and_ it includes the @HandlesTypes annotation, then Jetty must scan the class hierarchy of the web application.
+This may be very time-consuming if you have many jars in the container's path or in the webapp's WEB-INF/lib.
+
+If scanning is to take place - because either `metadata-complete` is `false` or missing, or because there are one or more http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerIntializer]s with @HandlesTypes - then Jetty must consider both the container's classpath and the webapp's classpath.
+
+By default, Jetty will _not_ scan any classes that are on the container's classpath.
+If you need to cause jars and classes that are on the container's classpath to be scanned, then you can use the link:#container-include-jar-pattern[`org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern`] link:#context_attributes[context attribute] to specify a pattern for jars and directories from the container's classpath to scan.
+
+By default Jetty will scan __all__classes from `WEB-INF/classes` and all jars from `WEB-INF/lib` according to the order, if any, established by absolute or relative ordering clauses in web.xml.
+If your webapp contains many jar files, you can significantly speed up deployment by omitting them from scanning.
+To do this, use the link:#web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] link:#context_attributes[context attribute] to define the patterns of jars that you specifically want to be scanned.
+
+Note that if you have configured an link:#using-extra-classpath-method[extraClasspath] for the webapp, then it participates in the scanning process too.
+Any classes dirs are treated the same for scanning purposes as if they were in WEB-INF/classes and jars are treated as if they were in WEB-INF/lib.
+
+See also the next section on link:#servlet-container-initializers[ServletContainerInitializers] if you need to link:#servlet-container-initializers[control the order in which they are applied].
+
+==== Multi-threaded Annotation Scanning
+
+link:#jars-scanned-for-annotations[If annotation scanning is to be performed], by default Jetty will do it in a multi-threaded manner in order to complete it in the minimum amount of time.
+
+If for some reason you don't want multi-threaded scanning, you can configure Jetty to revert to single-threaded scanning.
+There are several ways to configure this:
+
+1.  Set the link:#context_attributes[context attribute] `org.eclipse.jetty.annotations.multiThreaded` to `false`
+2.  Set the link:#server_attributes[Server attribute] `org.eclipse.jetty.annotations.multiThreaded` to `false`
+3.  Set the System property `org.eclipse.jetty.annotations.multiThreaded` to `false`
+
+Method 1 will only affect the current webapp.
+Method 2 will affect all webapps deployed to the same Server instance.
+Method 3 will affect all webapps deployed in the same JVM.
+
+By default, Jetty will wait a maximum of 60 seconds for all of the scanning threads to complete.
+You can set this to a higher or lower number of seconds by doing one of the following:
+
+1.  Set the link:#context_attributes[context attribute] `org.eclipse.jetty.annotations.maxWait`
+2.  Set the link:#server_attributes[Server attribute] `org.eclipse.jetty.annotations.maxWait`
+3.  Set the System property `org.eclipse.jetty.annotations.maxWait`
+
+Method 1 will only affect the current webapp.
+Method 2 will affect all webapps deployed to the same Server instance.
+Method 3 will affect all webapps deployed in the same JVM.
+
+[[servlet-container-initializers]]
+==== ServletContainerInitializers
+
+The http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerInitializer] class can exist in: the container's classpath, the webapp's `WEB-INF/classes` directory, the webapp's `WEB-INF/lib` jars, or any external link:#using-extra-classpath-method[extraClasspath] that you have configured on the webapp.
+
+The http://jcp.org/aboutJava/communityprocess/final/jsr340/[Servlet Specification] does not define any order in which a `ServletContainerInitializer` must be called when the webapp starts.
+By default Jetty will call them in the following order:
+
+1.  ServletContainerInitializers from the container's classpath
+2.  ServletContainerInitializers from WEB-INF/classes
+3.  ServletContainerInitializers from WEB-INF/lib jars __in the order established in web.xml__, or in the order that the SCI is returned by the http://docs.oracle.com/javase/6/docs/api/java/util/ServiceLoader.html[javax.util.ServiceLoader] if there is _no_ ordering
+
+As is the case with annotation scanning, the link:#using-extra-classpath-method[extraClasspath] is fully considered for `ServletContainerInitializer` callbacks. `ServletContainerInitializer` derived from a classes directory on the `extraClasspath` and jars from an `extraClasspath` for the webapp are called in step 2 and 3, respectively.
+
+===== Controlling the order of ServletContainerInitializer invocation
+
+If you need `ServletContainerInitializer` classes called in a specific order that is different from that outlined above, you can use the link:#context_attributes[context attribute] `org.eclipse.jetty.containerInitializerOrder`.
+Set them to a list of comma separated class names of `ServletContainerInitializers` in the order that you want them applied.
+You may optionally use the wildcard character "*" *once* in the list.
+It will match all `ServletContainerInitializer` classed not explicitly named in the list.
+
+Here is an example, setting the context attribute in code (although you can also do the link:#intro-jetty-configuration-webapps[same in xml]):
+
+[source, java, subs="{sub-order}"]
+----
+WebAppContext context = new WebAppContext();
+context.setAttribute("org.eclipse.jetty.containerInitializerOrder",
+                     "org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer, com.acme.Foo.MySCI, *");
+----
+
+In this example, we ensure that the `WebSocketServerContainerInitializer` is the very first `ServletContainerInitializer` that is called, followed by MySCI and then any other `ServletContainerInitializer` instances that were discovered but not yet called.
+
+[[excluding-scis]]
+===== Excluding ServletContainerInitializers
+
+By default, as according to the Servlet Specification, all `ServletContainerInitializer` that are discovered are invoked (see above for how to control the invocation order).
+Sometimes, depending on your requirements, you may need to prevent some being called at all.
+
+In this case, you can define the `org.eclipse.jetty.containerInitializerExclusionPattern` link:#context_attributes[context attribute].
+This is a regular expression that defines http://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html[patterns] of classnames that you want to exclude.
+Here's an example, setting the context attribute in code, although you may do exactly the link:#intro-jetty-configuration-webapps[same in xml]:
+
+[source, java, subs="{sub-order}"]
+----
+WebAppContext context = new WebAppContext();
+context.setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern",
+                     "com.acme.*|com.corp.SlowContainerInitializer");
+----
+
+In this example we exclude *all* `ServletContainerInitializer` instances in the com.acme package, and the `SlowContainerInitializer`.
+
+It is possible to use exclusion and ordering together to control `ServletContainerInitializer` invocation - the exclusions will be applied before the ordering.
+
+[[using-annotations-embedded]]
+=== Using Annotations with Jetty Embedded
+
+==== Setting up the Classpath
+
+You will need to place the following Jetty jar files onto the classpath of your application.
+You can obtain them from the https://www.eclipse.org/jetty/download.html[Jetty distribution], or the http://central.maven.org/maven2/org/eclipse/jetty/jetty-annotations[Maven repository]:
+
+....
+jetty-plus.jar
+jetty-annotations.jar
+....
+
+You will also need the http://asm.ow2.org/[asm] jar, which you can obtain from link:{MVNCENTRAL}/org/eclipse/jetty/orbit/org.objectweb.asm/3.3.1.v201105211655/org.objectweb.asm-3.3.1.v201105211655.jar[this link.]
+
+==== Example
+
+Here's an example application that sets up a Jetty server, performs some setup to ensure that annotations are scanned, and then deploys a webapp that uses annotations.
+This example also uses the @Resource annotation which involves JNDI, so we would also link:#jndi-embedded[add the necessary JNDI jars to the classpath].
+The example also adds in the configuration classes that are responsible for JNDI (see line 19).
+
+The code is as follows:
+
+[source, java, subs="{sub-order}"]
+----
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.webapp.WebAppContext;
+
+/**
+ * ServerWithAnnotations
+ *
+ *
+ */
+public class ServerWithAnnotations
+{
+    public static final void main(String args[]) throws Exception
+    {
+        //Create the server
+        Server server = new Server(8080);
+
+        //Enable parsing of jndi-related parts of web.xml and jetty-env.xml
+        org.eclipse.jetty.webapp.Configuration.ClassList classlist = org.eclipse.jetty.webapp.Configuration.ClassList.setServerDefault(server);
+        classlist.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration", "org.eclipse.jetty.plus.webapp.EnvConfiguration", "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+        classlist.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration", "org.eclipse.jetty.annotations.AnnotationConfiguration");
+
+        //Create a WebApp
+        WebAppContext webapp = new WebAppContext();
+        webapp.setContextPath("/");
+        webapp.setWar("../../tests/test-webapps/test-servlet-spec/test-spec-webapp/target/test-spec-webapp-9.0.4-SNAPSHOT.war");
+        server.setHandler(webapp);
+
+        //Register new transaction manager in JNDI
+        //At runtime, the webapp accesses this as java:comp/UserTransaction
+        org.eclipse.jetty.plus.jndi.Transaction transactionMgr = new org.eclipse.jetty.plus.jndi.Transaction(new com.acme.MockUserTransaction());
+
+        //Define an env entry with webapp scope.
+        org.eclipse.jetty.plus.jndi.EnvEntry maxAmount = new org.eclipse.jetty.plus.jndi.EnvEntry (webapp, "maxAmount", new Double(100), true);
+
+
+        // Register a  mock DataSource scoped to the webapp
+        org.eclipse.jetty.plus.jndi.Resource mydatasource = new org.eclipse.jetty.plus.jndi.Resource(webapp, "jdbc/mydatasource", new com.acme.MockDataSource());
+
+        // Configure a LoginService
+        HashLoginService loginService = new HashLoginService();
+        loginService.setName("Test Realm");
+        loginService.setConfig("src/test/resources/realm.properties");
+        server.addBean(loginService);
+
+
+        server.start();
+        server.join();
+    }
+
+}
+----
+
+On line 19 the configuration classes responsible for setting up JNDI and `java:comp/env` are added.
+
+On line 20 we add in the configuration class that ensures annotations are inspected.
+
+On lines 30, 33 and 37 JNDI resources that we will be able to reference with @Resource annotations are configured.
+
+With the setup above, a servlet that uses annotations and Jetty will honour the annotations when the webapp is deployed can be created:
+
+[source, java, subs="{sub-order}"]
+----
+import javax.annotation.security.DeclareRoles;
+import javax.annotation.security.RunAs;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.annotation.WebInitParam;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
+import javax.transaction.UserTransaction;
+
+/**
+ * AnnotationTest
+ *
+ * Use servlet 3.0 annotations from within Jetty.
+ *
+ * Also uses servlet 2.5 resource injection and lifecycle callbacks
+ */
+
+@RunAs("special")
+@WebServlet(urlPatterns = {"/","/test/*"}, name="AnnotationTest", initParams={@WebInitParam(name="fromAnnotation", value="xyz")})
+@DeclareRoles({"user","client"})
+public class AnnotationTest extends HttpServlet
+{
+    private DataSource myDS;
+
+    @Resource(mappedName="UserTransaction")
+    private UserTransaction myUserTransaction;
+
+    @Resource(mappedName="maxAmount")
+    private Double maxAmount;
+
+
+    @Resource(mappedName="jdbc/mydatasource")
+    public void setMyDatasource(DataSource ds)
+    {
+        myDS=ds;
+    }
+
+
+    @PostConstruct
+    private void myPostConstructMethod ()
+    {
+        System.err.println("PostConstruct called");
+    }
+
+
+    @PreDestroy
+    private void myPreDestroyMethod()
+    {
+        System.err.println("PreDestroy called");
+    }
+
+    public void init(ServletConfig config) throws ServletException
+    {
+        super.init(config);
+    }
+
+
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        doGet(request, response);
+    }
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        try
+        {
+            response.setContentType("text/html");
+            ServletOutputStream out = response.getOutputStream();
+            out.println("<html>");
+            out.println("<body>");
+            out.println("<h1>Results</h1>");
+            out.println(myDS.toString());
+            out.println("<br/>");
+            out.println(maxAmount.toString());
+            out.println("</body>");
+            out.println("</html>");
+            out.flush();
+        }
+        catch (Exception e)
+        {
+            throw new ServletException(e);
+        }
+    }
+}
+----
