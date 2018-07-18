@@ -17,8 +17,8 @@ node('jmh-build-node') {
   timeout( time: 120, unit: 'MINUTES' ) {
     withEnv( ["JAVA_HOME=${tool "jdk8"}"] ) {
       unstash name: 'perf-tests'
-      sh "${env.JAVA_HOME}/bin/java -jar jetty-util/target/perf-test.jar -rff target/jmh_result.json -rf json"
-      jmhReport 'target/jmh_result.json'
+      sh "${env.JAVA_HOME}/bin/java -jar jetty-util/target/perf-test.jar -rff jetty-util/target/jmh_result.json -rf json"
+      jmhReport 'jetty-util/target/jmh_result.json'
     }
   }
 }
