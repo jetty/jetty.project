@@ -645,7 +645,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                         long lastModified;
                         // read last modified without caching a war file
                         // so that webapp can be redeployed on Windows
-                        try (Resource r = Resource.newResource("jar:" + web_app + "!/", false)) {
+                        try (Resource r = Resource.newResource(web_app.getURL().toExternalForm(), false)) {
                             lastModified = r.lastModified();
                         }
                         //only extract if the war file is newer, or a .extract_lock file is left behind meaning a possible partial extraction
