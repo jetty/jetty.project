@@ -20,27 +20,29 @@
 package org.eclipse.jetty.http2.hpack;
 
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 
 public class MetaDataBuilder
 {
     private final int _maxSize;
     private int _size;
-    private int _status;
+    private int _status=-1;
     private String _method;
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
     private String _path;
     private long _contentLength=Long.MIN_VALUE;
     private HttpFields _fields = new HttpFields(10);
+    private HpackException.StreamException _streamException;
+    private boolean _request;
+    private boolean _response;
 
     /**
      * @param maxHeadersSize The maximum size of the headers, expressed as total name and value characters.
@@ -66,7 +68,7 @@ public class MetaDataBuilder
         return _size;
     }
 
-    public void emit(HttpField field)
+    public void emit(HttpField field) throws HpackException.SessionException
     {
         HttpHeader header = field.getHeader();
         String name = field.getName();
@@ -74,7 +76,7 @@ public class MetaDataBuilder
         int field_size = name.length() + (value == null ? 0 : value.length());
         _size+=field_size+32;
         if (_size>_maxSize)
-            throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Header size "+_size+">"+_maxSize);
+            throw new HpackException.SessionException("Header Size %d > %d",_size,_maxSize);
 
         if (field instanceof StaticTableHttpField)
         {
@@ -82,15 +84,21 @@ public class MetaDataBuilder
             switch(header)
             {
                 case C_STATUS:
-                    _status=(Integer)staticField.getStaticValue();
+                    if(checkHeader(header, _status))
+                        _status = (Integer)staticField.getStaticValue();
+                    _response = true;
                     break;
 
                 case C_METHOD:
-                    _method=value;
+                    if(checkPseudoHeader(header, _method))
+                        _method = value;
+                    _request = true;
                     break;
 
                 case C_SCHEME:
-                    _scheme = (HttpScheme)staticField.getStaticValue();
+                    if(checkPseudoHeader(header, _scheme))
+                        _scheme = (HttpScheme)staticField.getStaticValue();
+                    _request = true;
                     break;
 
                 default:
@@ -102,23 +110,32 @@ public class MetaDataBuilder
             switch(header)
             {
                 case C_STATUS:
-                    _status=field.getIntValue();
+                    if(checkHeader(header, _status))
+                        _status = field.getIntValue();
+                    _response = true;
                     break;
 
                 case C_METHOD:
-                    _method=value;
+                    if(checkPseudoHeader(header, _method))
+                       _method = value;
+                    _request = true;
                     break;
 
                 case C_SCHEME:
-                    if (value != null)
+                    if(checkPseudoHeader(header, _scheme) && value != null)
                         _scheme = HttpScheme.CACHE.get(value);
+                    _request = true;
                     break;
 
                 case C_AUTHORITY:
-                    if (field instanceof HostPortHttpField)
-                        _authority = (HostPortHttpField)field;
-                    else if (value != null)
-                        _authority = new AuthorityHttpField(value);
+                    if(checkPseudoHeader(header, _authority))
+                    {
+                        if (field instanceof HostPortHttpField)
+                            _authority = (HostPortHttpField)field;
+                        else if (value != null)
+                            _authority = new AuthorityHttpField(value);
+                    }
+                    _request = true;
                     break;
 
                 case HOST:
@@ -134,54 +151,111 @@ public class MetaDataBuilder
                     break;
 
                 case C_PATH:
-                    _path = value;
+                    if(checkPseudoHeader(header, _path))
+                        _path = value;
+                    _request = true;
                     break;
 
                 case CONTENT_LENGTH:
                     _contentLength = field.getLongValue();
                     _fields.add(field);
                     break;
+                
+                case TE:
+                    if ("trailers".equalsIgnoreCase(value))
+                        _fields.add(field);
+                    else
+                        streamException("Unsupported TE value %s", value);
+                    break;
+            
+                case CONNECTION:
+                    // TODO should other connection specific fields be listed here?
+                    streamException("Connection specific field %s", header);
+                    break;                
 
-                default:
-                    if (name.charAt(0)!=':')
+                default:               
+                    if (name.charAt(0)==':')
+                        streamException("Unknown pseudo header %s", name);
+                    else
                         _fields.add(field);
                     break;
             }
         }
         else
         {
-            if (name.charAt(0)!=':')
+            if (name.charAt(0)==':')
+                streamException("Unknown pseudo header %s",name);
+            else
                 _fields.add(field);
         }
     }
 
-    public MetaData build()
+    void streamException(String messageFormat, Object... args)
     {
+        HpackException.StreamException stream = new HpackException.StreamException(messageFormat, args);
+        if (_streamException==null)
+            _streamException = stream;
+        else
+            _streamException.addSuppressed(stream);
+    }
+
+    private boolean checkHeader(HttpHeader header, int value)
+    {
+        if (_fields.size()>0)
+        {
+            streamException("Pseudo header %s after fields", header.asString());
+            return false;
+        }
+        if (value==-1)
+            return true;
+        streamException("Duplicate pseudo header %s", header.asString());
+        return false;
+    }
+
+    private boolean checkPseudoHeader(HttpHeader header, Object value)
+    {
+        if (_fields.size()>0)
+        {
+            streamException("Pseudo header %s after fields", header.asString());
+            return false;
+        }
+        if (value==null)
+            return true;
+        streamException("Duplicate pseudo header %s", header.asString());
+        return false;
+    }
+
+    public MetaData build() throws HpackException.StreamException
+    {
+        if (_streamException!=null)
+            throw _streamException;
+            
+        if (_request && _response)
+            throw new HpackException.StreamException("Request and Response headers");
+            
+
+        HttpFields fields = _fields;
         try
         {
-            HttpFields fields = _fields;
-            _fields = new HttpFields(Math.max(10,fields.size()+5));
-
-            if (_method!=null)
+            if (_request)
                 return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields,_contentLength);
-            if (_status!=0)
+            if (_response)
                 return new MetaData.Response(HttpVersion.HTTP_2,_status,fields,_contentLength);
-            if (_path!=null)
-                fields.put(HttpHeader.C_PATH,_path);
-            if (_authority!=null)
-                fields.put(HttpHeader.HOST,_authority.getValue());
                 
             return new MetaData(HttpVersion.HTTP_2,fields,_contentLength);
         }
         finally
         {
-            _status=0;
+            _fields = new HttpFields(Math.max(10,fields.size()+5));
+            _request=false;
+            _response=false;
+            _status=-1;
             _method=null;
             _scheme=null;
             _authority=null;
             _path=null;
             _size=0;
-            _contentLength=Long.MIN_VALUE;
+            _contentLength=Long.MIN_VALUE; 
         }
     }
 
@@ -189,13 +263,14 @@ public class MetaDataBuilder
      * Check that the max size will not be exceeded.
      * @param length the length
      * @param huffman the huffman name
+     * @throws SessionException 
      */
-    public void checkSize(int length, boolean huffman)
+    public void checkSize(int length, boolean huffman) throws SessionException
     {
         // Apply a huffman fudge factor
         if (huffman)
             length=(length*4)/3;
         if ((_size+length)>_maxSize)
-            throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Header size "+(_size+length)+">"+_maxSize);
+            throw new HpackException.SessionException("Header too large %d > %d", _size+length, _maxSize);
     }
 }

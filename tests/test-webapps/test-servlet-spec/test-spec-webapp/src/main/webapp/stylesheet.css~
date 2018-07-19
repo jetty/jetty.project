@@ -1,7 +1,0 @@
-body {color: #2E2E2E; font-family:sans-serif; font-size:90%;}
-h1 {font-variant: small-caps; font-size:130%; letter-spacing: 0.1em;}
-h2 {font-variant: small-caps; font-size:100%; letter-spacing: 0.1em; margin-top:2em}
-h3 {font-size:100%; letter-spacing: 0.1em;}
-
-span.pass { color: green; }
-span.fail { color:red; }
