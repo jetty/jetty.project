@@ -642,8 +642,14 @@ public class WebInfConfiguration extends AbstractConfiguration
                     }
                     else
                     {
+                        long lastModified;
+                        // read last modified without caching a war file
+                        // so that webapp can be redeployed on Windows
+                        try (Resource r = Resource.newResource("jar:" + web_app + "!/", false)) {
+                            lastModified = r.lastModified();
+                        }
                         //only extract if the war file is newer, or a .extract_lock file is left behind meaning a possible partial extraction
-                        if (web_app.lastModified() > extractedWebAppDir.lastModified() || extractionLock.exists())
+                        if (lastModified > extractedWebAppDir.lastModified() || extractionLock.exists())
                         {
                             extractionLock.createNewFile();
                             IO.delete(extractedWebAppDir);
