@@ -282,7 +282,6 @@ public class HpackDecoderTest
         }
     }
     
-    /* 8.1.2.2. Connection-Specific Header Fields */
     @Test()
     public void test8_1_2_2_ConnectionSpecificHeaderFields() throws Exception
     {
@@ -321,105 +320,124 @@ public class HpackDecoderTest
         Assert.assertNotNull(mdb.build());
     }
 
+
+    @Test()
+    public void test8_1_2_3_RequestPseudoHeaderFields() throws Exception
+    {
+        MetaDataBuilder mdb;
+
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
+        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
+        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
+        mdb.emit(new HttpField(HttpHeader.C_PATH,"/"));
+        Assert.assertThat(mdb.build(),Matchers.instanceOf(MetaData.Request.class));
+
+        
+        // 1: Sends a HEADERS frame with empty ":path" pseudo-header field
+        mdb = new MetaDataBuilder(4096);
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
+        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
+        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
+        mdb.emit(new HttpField(HttpHeader.C_PATH,""));
+        try
+        {
+            mdb.build();
+            Assert.fail();
+        }
+        catch(StreamException ex)
+        {
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("No Path"));
+        }        
+        
+        // 2: Sends a HEADERS frame that omits ":method" pseudo-header field
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
+        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
+        mdb.emit(new HttpField(HttpHeader.C_PATH,"/"));
+        try
+        {
+            mdb.build();
+            Assert.fail();
+        }
+        catch(StreamException ex)
+        {
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("No Method"));
+        }        
+        
+        
+        // 3: Sends a HEADERS frame that omits ":scheme" pseudo-header field
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
+        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
+        mdb.emit(new HttpField(HttpHeader.C_PATH,"/"));
+        try
+        {
+            mdb.build();
+            Assert.fail();
+        }
+        catch(StreamException ex)
+        {
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("No Scheme"));
+        }        
+        
+        // 4: Sends a HEADERS frame that omits ":path" pseudo-header field
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
+        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
+        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
+        try
+        {
+            mdb.build();
+            Assert.fail();
+        }
+        catch(StreamException ex)
+        {
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("No Path"));
+        }        
+        
+        // 5: Sends a HEADERS frame with duplicated ":method" pseudo-header field
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
+        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
+        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
+        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
+        mdb.emit(new HttpField(HttpHeader.C_PATH,"/"));
+        try
+        {
+            mdb.build();
+            Assert.fail();
+        }
+        catch(StreamException ex)
+        {
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("Duplicate"));
+        }        
+        
+        // 6: Sends a HEADERS frame with duplicated ":scheme" pseudo-header field
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
+        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
+        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
+        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
+        mdb.emit(new HttpField(HttpHeader.C_PATH,"/"));
+        try
+        {
+            mdb.build();
+            Assert.fail();
+        }
+        catch(StreamException ex)
+        {
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("Duplicate"));
+        }        
+        
+        
+        
+    }
+
     
     /*
             8.1.2.3. Request Pseudo-Header Fields
-                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [send] HEADERS Frame (length:16, flags:0x05, stream_id:1)
-                   [recv] HEADERS Frame (length:23, flags:0x04, stream_id:1)
-                   [recv] DATA Frame (length:50, flags:0x01, stream_id:1)
-                   [recv] RST_STREAM Frame (length:4, flags:0x00, stream_id:1)
-                   [recv] Timeout
-              × 1: Sends a HEADERS frame with empty ":path" pseudo-header field
-                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
-                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
-                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
-                             Connection closed
-                     Actual: DATA Frame (length:50, flags:0x01, stream_id:1)
-                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [send] HEADERS Frame (length:13, flags:0x05, stream_id:1)
-                   [recv] Timeout
-              × 2: Sends a HEADERS frame that omits ":method" pseudo-header field
-                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
-                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
-                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
-                             Connection closed
-                     Actual: Timeout
-                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [send] HEADERS Frame (length:14, flags:0x05, stream_id:1)
-                   [recv] HEADERS Frame (length:100, flags:0x04, stream_id:1)
-                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [recv] Timeout
-              × 3: Sends a HEADERS frame that omits ":scheme" pseudo-header field
-                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
-                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
-                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
-                             Connection closed
-                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [send] HEADERS Frame (length:14, flags:0x05, stream_id:1)
-                   [recv] GOAWAY Frame (length:20, flags:0x00, stream_id:0)
-              ✔ 4: Sends a HEADERS frame that omits ":path" pseudo-header field
-                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [send] HEADERS Frame (length:16, flags:0x05, stream_id:1)
-                   [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
-                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [recv] Timeout
-              × 5: Sends a HEADERS frame with duplicated ":method" pseudo-header field
-                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
-                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
-                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
-                             Connection closed
-                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [send] HEADERS Frame (length:16, flags:0x05, stream_id:1)
-                   [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
-                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [recv] Timeout
-              × 6: Sends a HEADERS frame with duplicated ":scheme" pseudo-header field
-                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
-                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
-                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
-                             Connection closed
-                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [send] HEADERS Frame (length:18, flags:0x05, stream_id:1)
-                   [recv] HEADERS Frame (length:79, flags:0x05, stream_id:1)
-                   [recv] Timeout
-              × 7: Sends a HEADERS frame with duplicated ":method" pseudo-header field
-                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
-                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
-                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
-                             Connection closed
-                     Actual: HEADERS Frame (length:79, flags:0x05, stream_id:1)
 
             8.1.2.6. Malformed Requests and Responses
                    [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)

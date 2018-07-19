@@ -152,7 +152,12 @@ public class MetaDataBuilder
 
                 case C_PATH:
                     if(checkPseudoHeader(header, _path))
-                        _path = value;
+                    {
+                        if (value!=null && value.length()>0)
+                            _path = value;
+                        else
+                            streamException("No Path");
+                    }
                     _request = true;
                     break;
 
@@ -230,8 +235,11 @@ public class MetaDataBuilder
     public MetaData build() throws HpackException.StreamException
     {
         if (_streamException!=null)
+        {
+            _streamException.addSuppressed(new Throwable());
             throw _streamException;
-            
+        }
+        
         if (_request && _response)
             throw new HpackException.StreamException("Request and Response headers");
             
@@ -240,7 +248,15 @@ public class MetaDataBuilder
         try
         {
             if (_request)
+            {
+                if (_method==null)
+                    throw new HpackException.StreamException("No Method");
+                if (_scheme==null)
+                    throw new HpackException.StreamException("No Scheme");
+                if (_path==null)
+                    throw new HpackException.StreamException("No Path");
                 return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields,_contentLength);
+            }
             if (_response)
                 return new MetaData.Response(HttpVersion.HTTP_2,_status,fields,_contentLength);
                 
