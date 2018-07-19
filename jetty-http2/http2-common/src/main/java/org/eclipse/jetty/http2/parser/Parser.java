@@ -36,6 +36,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -54,6 +55,7 @@ public class Parser
     private final BodyParser[] bodyParsers;
     private final UnknownBodyParser unknownBodyParser;
     private int maxFrameLength;
+    private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean continuation;
     private State state = State.HEADER;
 
@@ -75,7 +77,7 @@ public class Parser
         bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
         bodyParsers[FrameType.RST_STREAM.getType()] = new ResetBodyParser(headerParser, listener);
-        bodyParsers[FrameType.SETTINGS.getType()] = new SettingsBodyParser(headerParser, listener);
+        bodyParsers[FrameType.SETTINGS.getType()] = new SettingsBodyParser(headerParser, listener, getMaxSettingsKeys());
         bodyParsers[FrameType.PUSH_PROMISE.getType()] = new PushPromiseBodyParser(headerParser, listener, headerBlockParser);
         bodyParsers[FrameType.PING.getType()] = new PingBodyParser(headerParser, listener);
         bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
@@ -175,7 +177,7 @@ public class Parser
             if (LOG.isDebugEnabled())
                 LOG.debug("Ignoring unknown frame type {}", Integer.toHexString(type));
             if (!unknownBodyParser.parse(buffer))
-                return false;
+            return false;
             reset();
             return true;
         }
@@ -219,6 +221,16 @@ public class Parser
     public void setMaxFrameLength(int maxFrameLength)
     {
         this.maxFrameLength = maxFrameLength;
+    }
+
+    public int getMaxSettingsKeys()
+    {
+        return maxSettingsKeys;
+    }
+
+    public void setMaxSettingsKeys(int maxSettingsKeys)
+    {
+        this.maxSettingsKeys = maxSettingsKeys;
     }
 
     protected void notifyConnectionFailure(int error, String reason)

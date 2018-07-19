@@ -33,16 +33,25 @@ import org.eclipse.jetty.util.log.Logger;
 public class SettingsBodyParser extends BodyParser
 {
     private static final Logger LOG = Log.getLogger(SettingsBodyParser.class);
+
+    private final int maxKeys;
     private State state = State.PREPARE;
     private int cursor;
     private int length;
     private int settingId;
     private int settingValue;
+    private int keys;
     private Map<Integer, Integer> settings;
 
     public SettingsBodyParser(HeaderParser headerParser, Parser.Listener listener)
     {
+        this(headerParser, listener, SettingsFrame.DEFAULT_MAX_KEYS);
+    }
+
+    public SettingsBodyParser(HeaderParser headerParser, Parser.Listener listener, int maxKeys)
+    {
         super(headerParser, listener);
+        this.maxKeys = maxKeys;
     }
 
     protected void reset()
@@ -53,6 +62,11 @@ public class SettingsBodyParser extends BodyParser
         settingId = 0;
         settingValue = 0;
         settings = null;
+    }
+
+    public int getMaxKeys()
+    {
+        return maxKeys;
     }
 
     @Override
@@ -117,7 +131,8 @@ public class SettingsBodyParser extends BodyParser
                         settingValue = buffer.getInt();
                         if (LOG.isDebugEnabled())
                             LOG.debug(String.format("setting %d=%d",settingId, settingValue));
-                        settings.put(settingId, settingValue);
+                        if (!onSetting(buffer, settings, settingId, settingValue))
+                            return false;
                         state = State.SETTING_ID;
                         length -= 4;
                         if (length == 0)
@@ -143,7 +158,8 @@ public class SettingsBodyParser extends BodyParser
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug(String.format("setting %d=%d",settingId, settingValue));
-                        settings.put(settingId, settingValue);
+                        if (!onSetting(buffer, settings, settingId, settingValue))
+                            return false;
                         state = State.SETTING_ID;
                         if (length == 0)
                             return onSettings(buffer, settings);
@@ -157,6 +173,15 @@ public class SettingsBodyParser extends BodyParser
             }
         }
         return false;
+    }
+
+    protected boolean onSetting(ByteBuffer buffer, Map<Integer, Integer> settings, int key, int value)
+    {
+        ++keys;
+        if (keys > getMaxKeys())
+            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame");
+        settings.put(key, value);
+        return true;
     }
 
     protected boolean onSettings(ByteBuffer buffer, Map<Integer, Integer> settings)

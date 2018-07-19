@@ -584,7 +584,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         FutureCallback shutdown=new FutureCallback(false);
         _shutdown.compareAndSet(null,shutdown);
         shutdown=_shutdown.get();
-        if (_dispatchedStats.getCurrent()==0)
+        if (_requestStats.getCurrent()==0)
             shutdown.succeeded();
         return shutdown;
     }

@@ -35,6 +35,7 @@ import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
@@ -131,6 +132,8 @@ public class HTTP2Client extends ContainerLifeCycle
     private int initialSessionRecvWindow = 16 * 1024 * 1024;
     private int initialStreamRecvWindow = 8 * 1024 * 1024;
     private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
+    private int maxConcurrentPushedStreams = 32;
+    private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
 
     @Override
@@ -345,6 +348,28 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setMaxFrameLength(int maxFrameLength)
     {
         this.maxFrameLength = maxFrameLength;
+    }
+
+    @ManagedAttribute("The max number of concurrent pushed streams")
+    public int getMaxConcurrentPushedStreams()
+    {
+        return maxConcurrentPushedStreams;
+    }
+
+    public void setMaxConcurrentPushedStreams(int maxConcurrentPushedStreams)
+    {
+        this.maxConcurrentPushedStreams = maxConcurrentPushedStreams;
+    }
+
+    @ManagedAttribute("The max number of keys in all SETTINGS frames")
+    public int getMaxSettingsKeys()
+    {
+        return maxSettingsKeys;
+    }
+
+    public void setMaxSettingsKeys(int maxSettingsKeys)
+    {
+        this.maxSettingsKeys = maxSettingsKeys;
     }
 
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
