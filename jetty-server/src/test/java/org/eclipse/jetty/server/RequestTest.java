@@ -637,7 +637,7 @@ public class RequestTest
         //Send a request with encoded form content
         String request="GET / HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
-        "Content-Type: application/x-www-nform-urlencoded; charset=utf-8\n"+
+        "Content-Type: application/x-www-form-urlencoded; charset=utf-8\n"+
         "Content-Length: 10\n"+
         "Content-Encoding: gzip\n"+
         "Connection: close\n"+
