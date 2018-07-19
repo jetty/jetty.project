@@ -74,6 +74,8 @@ public class HpackDecoder
         // If the buffer is big, don't even think about decoding it
         if (buffer.remaining()>_builder.getMaxSize())
             throw new HpackException.SessionException("431 Request Header Fields too large");
+        
+        boolean emitted = false;
 
         while(buffer.hasRemaining())
         {
@@ -99,6 +101,7 @@ public class HpackDecoder
                     if (LOG.isDebugEnabled())
                         LOG.debug("decode IdxStatic {}",entry);
                     // emit field
+                    emitted = true;
                     _builder.emit(entry.getHttpField());
 
                     // TODO copy and add to reference set if there is room
@@ -109,6 +112,7 @@ public class HpackDecoder
                     if (LOG.isDebugEnabled())
                         LOG.debug("decode Idx {}",entry);
                     // emit
+                    emitted = true;
                     _builder.emit(entry.getHttpField());
                 }
             }
@@ -133,6 +137,8 @@ public class HpackDecoder
                             LOG.debug("decode resize="+size);
                         if (size>_localMaxDynamicTableSize)
                             throw new IllegalArgumentException();
+                        if (emitted)
+                            throw new HpackException.CompressionException("Dynamic table resize after fields");
                         _context.resize(size);
                         continue;
 
@@ -240,6 +246,7 @@ public class HpackDecoder
                 }
 
                 // emit the field
+                emitted = true;
                 _builder.emit(field);
 
                 // if indexed add to dynamic table

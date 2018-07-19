@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.hpack.HpackException.CompressionException;
 import org.eclipse.jetty.http2.hpack.HpackException.StreamException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
@@ -188,26 +189,55 @@ public class HpackDecoderTest
     @Test
     public void testResize() throws Exception
     {
-        String encoded = "3f6166871e33A13a47497f205f8841E92b043d492d49";
+        String encoded = "203f136687A0E41d139d090760881c6490B2Cd39Ba7f";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         MetaData metaData = decoder.decode(buffer);
-        assertThat(metaData.getFields().get(HttpHeader.HOST),is("aHostName"));
-        assertThat(metaData.getFields().get(HttpHeader.CONTENT_TYPE),is("some/content"));
-        assertThat(decoder.getHpackContext().getDynamicTableSize(),is(0));
+        assertThat(metaData.getFields().get(HttpHeader.HOST),is(  "localhost0"));
+        assertThat(metaData.getFields().get(HttpHeader.COOKIE),is("abcdefghij"));
+        assertThat(decoder.getHpackContext().getMaxDynamicTableSize(),is(50));
+        assertThat(decoder.getHpackContext().size(),is(1));
+        
+        
+    }
+
+    @Test
+    public void testBadResize() throws Exception
+    {
+        /*
+        4. Dynamic Table Management
+        4.2. Maximum Table Size
+          × 1: Sends a dynamic table size update at the end of header block
+            -> The endpoint MUST treat this as a decoding error.
+               Expected: GOAWAY Frame (Error Code: COMPRESSION_ERROR)
+                         Connection closed
+        */
+        
+        String encoded = "203f136687A0E41d139d090760881c6490B2Cd39Ba7f20";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+        try
+        {
+            decoder.decode(buffer);
+            Assert.fail();
+        }
+        catch(CompressionException e)
+        {
+            Assert.assertThat(e.getMessage(),Matchers.containsString("Dynamic table resize after fields"));
+        }
     }
     
     @Test
     public void testTooBigToIndex() throws Exception
     {
-        String encoded = "44FfEc02Df3990A190A0D4Ee5b3d2940Ec98Aa4a62D127D29e273a0aA20dEcAa190a503b262d8a2671D4A2672a927aA874988a2471D05510750c951139EdA2452a3a548cAa1aA90bE4B228342864A9E0D450A5474a92992a1aA513395448E3A0Aa17B96cFe3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f14E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F353F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F54f";
+        String encoded = "3f610f17FfEc02Df3990A190A0D4Ee5b3d2940Ec98Aa4a62D127D29e273a0aA20dEcAa190a503b262d8a2671D4A2672a927aA874988a2471D05510750c951139EdA2452a3a548cAa1aA90bE4B228342864A9E0D450A5474a92992a1aA513395448E3A0Aa17B96cFe3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f14E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F353F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F54f";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
         HpackDecoder decoder = new HpackDecoder(128,8192);
         MetaData metaData = decoder.decode(buffer);
         
         assertThat(decoder.getHpackContext().getDynamicTableSize(),is(0));
-        assertThat(((MetaData.Request)metaData).getURI().toString(),Matchers.startsWith("This is a very large field"));
+        assertThat(metaData.getFields().get("host"),Matchers.startsWith("This is a very large field"));
     }
 
     @Test
@@ -430,131 +460,27 @@ public class HpackDecoderTest
         {
             Assert.assertThat(ex.getMessage(),Matchers.containsString("Duplicate"));
         }        
-        
-        
-        
     }
 
     
     /*
-            8.1.2.3. Request Pseudo-Header Fields
-
-            8.1.2.6. Malformed Requests and Responses
-                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [send] HEADERS Frame (length:18, flags:0x04, stream_id:1)
-                   [send] DATA Frame (length:4, flags:0x01, stream_id:1)
-                   [recv] HEADERS Frame (length:100, flags:0x04, stream_id:1)
-                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [recv] Timeout
-              × 1: Sends a HEADERS frame with the "content-length" header field which does not equal the DATA frame payload length
-                -> The endpoint MUST treat this as a stream error of type PROTOCOL_ERROR.
-                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
-                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
-                             Connection closed
-                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [send] HEADERS Frame (length:18, flags:0x04, stream_id:1)
-                   [send] DATA Frame (length:4, flags:0x00, stream_id:1)
-                   [send] DATA Frame (length:4, flags:0x01, stream_id:1)
-                   [recv] HEADERS Frame (length:100, flags:0x04, stream_id:1)
-                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [recv] Timeout
-              × 2: Sends a HEADERS frame with the "content-length" header field which does not equal the sum of the multiple DATA frames payload length
-                -> The endpoint MUST treat this as a stream error of type PROTOCOL_ERROR.
-                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
-                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
-                             Connection closed
-                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
-
-        8.2. Server Push
-               [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-               [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-               [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-               [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-               [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-               [send] PUSH_PROMISE Frame (length:19, flags:0x04, stream_id:1)
-               [recv] GOAWAY Frame (length:20, flags:0x00, stream_id:0)
-          ✔ 1: Sends a PUSH_PROMISE frame
-
-    HPACK: Header Compression for HTTP/2
-      2. Compression Process Overview
-        2.3. Indexing Tables
-          2.3.3. Index Address Space
-                 [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                 [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                 [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                 [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                 [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                 [send] HEADERS Frame (length:16, flags:0x05, stream_id:1)
-                 [recv] GOAWAY Frame (length:20, flags:0x00, stream_id:0)
-                 [recv] Connection closed
-            ✔ 1: Sends a header field representation with invalid index
-
-      4. Dynamic Table Management
-        4.2. Maximum Table Size
-               [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-               [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-               [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-               [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-               [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-               [send] HEADERS Frame (length:16, flags:0x05, stream_id:1)
-               [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
-               [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
-               [recv] Timeout
-          × 1: Sends a dynamic table size update at the end of header block
-            -> The endpoint MUST treat this as a decoding error.
-               Expected: GOAWAY Frame (Error Code: COMPRESSION_ERROR)
-                         Connection closed
-                 Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+        8.1.2.6. Malformed Requests and Responses
+          × 1: Sends a HEADERS frame with the "content-length" header field which does not equal the DATA frame payload length
+          × 2: Sends a HEADERS frame with the "content-length" header field which does not equal the sum of the multiple DATA frames payload length
 
       5. Primitive Type Representations
         5.2. String Literal Representation
-               [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-               [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-               [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-               [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-               [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-               [send] HEADERS Frame (length:27, flags:0x05, stream_id:1)
-               [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
-               [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
-               [recv] Timeout
           × 1: Sends a Huffman-encoded string literal representation with padding longer than 7 bits
             -> The endpoint MUST treat this as a decoding error.
                Expected: GOAWAY Frame (Error Code: COMPRESSION_ERROR)
                          Connection closed
                  Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
-               [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-               [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-               [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-               [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-               [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-               [send] HEADERS Frame (length:26, flags:0x05, stream_id:1)
-               [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
-               [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
-               [recv] Timeout
           × 2: Sends a Huffman-encoded string literal representation padded by zero
             -> The endpoint MUST treat this as a decoding error.
                Expected: GOAWAY Frame (Error Code: COMPRESSION_ERROR)
                          Connection closed
                  Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
-               [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-               [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-               [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-               [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-               [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-               [send] HEADERS Frame (length:28, flags:0x05, stream_id:1)
-               [recv] GOAWAY Frame (length:20, flags:0x00, stream_id:0)
-               [recv] Connection closed
           ✔ 3: Sends a Huffman-encoded string literal representation containing the EOS symbol
-
     */
     
 }
