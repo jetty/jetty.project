@@ -688,8 +688,6 @@ public class ResourceService
                     BufferUtil.writeTo(buffer,out);
                 else
                     content.getResource().writeTo(out,0,content_length);
-
-                response.flushBuffer();
             }
             // else do a bypass write
             else
