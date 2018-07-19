@@ -1,7 +1,8 @@
 #!groovy
 
+// in case of change update method isMainBuild
 def jdks = ["jdk8","jdk10"]
-def oss = ["linux"] //windows?  ,"linux-docker"
+def oss = ["linux"] 
 def builds = [:]
 for (def os in oss) {
   for (def jdk in jdks) {
@@ -16,15 +17,19 @@ def getFullBuild(jdk, os) {
     node(os) {
       // System Dependent Locations
       def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
+      def mvntoolInvoker = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
       def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
       def mvnName = 'maven3.5'
-      def localRepo = ".repository" // "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
+      def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" // 
+      def settingsName = 'oss-settings.xml'
+      def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
       // Environment
       List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
-      mvnEnv.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
+      mvnEnv.add("MAVEN_OPTS=$mavenOpts")
 
-      try {
+      try
+      {
         stage("Checkout - ${jdk}") {
           checkout scm
         }
@@ -33,7 +38,8 @@ def getFullBuild(jdk, os) {
         throw e
       }
 
-      try {
+      try
+      {
         stage("Compile - ${jdk}") {
           withEnv(mvnEnv) {
             timeout(time: 15, unit: 'MINUTES') {
@@ -41,20 +47,22 @@ def getFullBuild(jdk, os) {
                       maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: 'oss-settings.xml',
+                      globalMavenSettingsConfig: settingsName,
+                      mavenOpts: mavenOpts,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B clean install -DskipTests -T6"
+                sh "mvn -V -B clean install -DskipTests -T6 -e"
               }
 
             }
           }
         }
-      } catch (Exception e) {
+      } catch(Exception e) {
         notifyBuild("Compile Failure", jdk)
         throw e
       }
 
-      try {
+      try
+      {
         stage("Javadoc - ${jdk}") {
           withEnv(mvnEnv) {
             timeout(time: 20, unit: 'MINUTES') {
@@ -62,19 +70,21 @@ def getFullBuild(jdk, os) {
                       maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: 'oss-settings.xml',
+                      globalMavenSettingsConfig: settingsName,
+                      mavenOpts: mavenOpts,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B javadoc:javadoc -T5"
+                sh "mvn -V -B javadoc:javadoc -T6 -e"
               }
             }
           }
         }
-      } catch (Exception e) {
+      } catch(Exception e) {
         notifyBuild("Javadoc Failure", jdk)
         throw e
       }
 
-      try {
+      try
+      {
         stage("Test - ${jdk}") {
           withEnv(mvnEnv) {
             timeout(time: 90, unit: 'MINUTES') {
@@ -83,47 +93,54 @@ def getFullBuild(jdk, os) {
                       maven: mvnName,
                       jdk: "$jdk",
                       publisherStrategy: 'EXPLICIT',
+                      globalMavenSettingsConfig: settingsName,
                       //options: [invokerPublisher(disabled: false)],
-                      globalMavenSettingsConfig: 'oss-settings.xml',
+                      mavenOpts: mavenOpts,
                       mavenLocalRepo: localRepo) {
-                //
-                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -Prun-its -T3 -e -Dmaven.repo.local=${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER} -Pmongodb"
+                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -DmavenHome=${mvntoolInvoker} -Dunix.socket.tmp="+env.JENKINS_HOME
               }
               // withMaven doesn't label..
               // Report failures in the jenkins UI
-              junit testResults: '**/target/surefire-reports/TEST-*.xml'
-              // Collect up the jacoco execution results
-              def jacocoExcludes =
-                  // build tools
-                  "**/org/eclipse/jetty/ant/**" + ",**/org/eclipse/jetty/maven/**" +
-                      ",**/org/eclipse/jetty/jspc/**" +
-                      // example code / documentation
-                      ",**/org/eclipse/jetty/embedded/**" + ",**/org/eclipse/jetty/asyncrest/**" +
-                      ",**/org/eclipse/jetty/demo/**" +
-                      // special environments / late integrations
-                      ",**/org/eclipse/jetty/gcloud/**" + ",**/org/eclipse/jetty/infinispan/**" +
-                      ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +
-                      ",**/org/eclipse/jetty/http/spi/**" +
-                      // test classes
-                      ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
-              step([$class          : 'JacocoPublisher',
-                    inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                    exclusionPattern: jacocoExcludes,
-                    execPattern     : '**/target/jacoco.exec',
-                    classPattern    : '**/target/classes',
-                    sourcePattern   : '**/src/main/java'])
+              junit testResults:'**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
+              consoleParsers = [[parserName: 'JavaDoc'],
+                                [parserName: 'JavaC']];
+              if (isMainBuild( jdk )) {
+                // Collect up the jacoco execution results
+                def jacocoExcludes =
+                        // build tools
+                        "**/org/eclipse/jetty/ant/**" + ",**/org/eclipse/jetty/maven/**" +
+                                ",**/org/eclipse/jetty/jspc/**" +
+                                // example code / documentation
+                                ",**/org/eclipse/jetty/embedded/**" + ",**/org/eclipse/jetty/asyncrest/**" +
+                                ",**/org/eclipse/jetty/demo/**" +
+                                // special environments / late integrations
+                                ",**/org/eclipse/jetty/gcloud/**" + ",**/org/eclipse/jetty/infinispan/**" +
+                                ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +
+                                ",**/org/eclipse/jetty/http/spi/**" +
+                                // test classes
+                                ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
+                step( [$class          : 'JacocoPublisher',
+                       inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+                       exclusionPattern: jacocoExcludes,
+                       execPattern     : '**/target/jacoco.exec',
+                       classPattern    : '**/target/classes',
+                       sourcePattern   : '**/src/main/java'] )
+                consoleParsers = [[parserName: 'Maven'],
+                                  [parserName: 'JavaDoc'],
+                                  [parserName: 'JavaC']];
+              }
+
               // Report on Maven and Javadoc warnings
-              step([$class        : 'WarningsPublisher',
-                    consoleParsers: [[parserName: 'Maven'],
-                                     [parserName: 'JavaDoc'],
-                                     [parserName: 'JavaC']]])
+              step( [$class        : 'WarningsPublisher',
+                     consoleParsers: consoleParsers] )
             }
-            if (isUnstable()) {
+            if(isUnstable())
+            {
               notifyBuild("Unstable / Test Errors", jdk)
             }
           }
         }
-      } catch (Exception e) {
+      } catch(Exception e) {
         notifyBuild("Test Failure", jdk)
         throw e
       }
@@ -137,19 +154,24 @@ def getFullBuild(jdk, os) {
                     maven: mvnName,
                     jdk: "$jdk",
                     publisherStrategy: 'EXPLICIT',
-                    globalMavenSettingsConfig: 'oss-settings.xml',
+                    globalMavenSettingsConfig: settingsName,
+                    mavenOpts: mavenOpts,
                     mavenLocalRepo: localRepo) {
               sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
             }
           }
         }
-      } catch (Exception e) {
+      } catch(Exception e) {
         notifyBuild("Compact3 Failure", jdk)
         throw e
       }
       */
     }
   }
+}
+
+def isMainBuild(jdk) {
+  return jdk == "jdk8"
 }
 
 
