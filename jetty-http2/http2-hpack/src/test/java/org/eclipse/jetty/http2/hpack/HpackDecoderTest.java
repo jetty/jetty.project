@@ -282,51 +282,47 @@ public class HpackDecoderTest
         }
     }
     
-    /*
-     * 
-                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
-              ✔ 3: Sends a HEADERS frame that contains a pseudo-header field as trailers
-                 
-              × 4: Sends a HEADERS frame that contains a pseudo-header field that appears in a header block after a regular header field
-                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
-                   
-                   */
-    
-    
-                   
-                   /*
-            8.1.2.2. Connection-Specific Header Fields
-                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [send] HEADERS Frame (length:33, flags:0x05, stream_id:1)
-                   [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
-                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [recv] Timeout
-              × 1: Sends a HEADERS frame that contains the connection-specific header field
-                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
-                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
-                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
-                             Connection closed
-                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)
-                   [send] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [recv] WINDOW_UPDATE Frame (length:4, flags:0x00, stream_id:0)
-                   [recv] SETTINGS Frame (length:0, flags:0x01, stream_id:0)
-                   [send] HEADERS Frame (length:44, flags:0x05, stream_id:1)
-                   [recv] HEADERS Frame (length:101, flags:0x04, stream_id:1)
-                   [recv] DATA Frame (length:687, flags:0x01, stream_id:1)
-                   [recv] Timeout
-              × 2: Sends a HEADERS frame that contains the TE header field with any value other than "trailers"
-                -> The endpoint MUST respond with a stream error of type PROTOCOL_ERROR.
-                   Expected: GOAWAY Frame (Error Code: PROTOCOL_ERROR)
-                             RST_STREAM Frame (Error Code: PROTOCOL_ERROR)
-                             Connection closed
-                     Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
+    /* 8.1.2.2. Connection-Specific Header Fields */
+    @Test()
+    public void test8_1_2_2_ConnectionSpecificHeaderFields() throws Exception
+    {
+        MetaDataBuilder mdb;
 
+        // 1: Sends a HEADERS frame that contains the connection-specific header field
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.CONNECTION,"value"));
+        try
+        {
+            mdb.build();
+            Assert.fail();
+        }
+        catch(StreamException ex)
+        {
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("Connection specific field Connection"));
+        }
+
+        // 2: Sends a HEADERS frame that contains the TE header field with any value other than "trailers"
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.TE,"not_trailers"));
+        try
+        {
+            mdb.build();
+            Assert.fail();
+        }
+        catch(StreamException ex)
+        {
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("Unsupported TE value not_trailers"));
+        }
+
+
+        mdb = new MetaDataBuilder(4096);
+        mdb.emit(new HttpField(HttpHeader.CONNECTION,"TE"));
+        mdb.emit(new HttpField(HttpHeader.TE,"trailers"));
+        Assert.assertNotNull(mdb.build());
+    }
+
+    
+    /*
             8.1.2.3. Request Pseudo-Header Fields
                    [send] SETTINGS Frame (length:6, flags:0x00, stream_id:0)
                    [recv] SETTINGS Frame (length:24, flags:0x00, stream_id:0)

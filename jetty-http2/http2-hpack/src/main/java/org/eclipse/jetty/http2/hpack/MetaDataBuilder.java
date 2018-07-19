@@ -169,8 +169,10 @@ public class MetaDataBuilder
                     break;
             
                 case CONNECTION:
-                    // TODO should other connection specific fields be listed here?
-                    streamException("Connection specific field %s", header);
+                    if ("TE".equalsIgnoreCase(value))
+                        _fields.add(field);
+                    else
+                        streamException("Connection specific field %s", header);
                     break;                
 
                 default:               
