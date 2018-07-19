@@ -163,17 +163,26 @@ public class MetaData implements Iterable<HttpField>
 
         public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields)
         {
-            this(method, new HttpURI(scheme == null ? null : scheme.asString(), hostPort.getHost(), hostPort.getPort(), uri), version, fields);
+            this(method, new HttpURI(scheme == null ? null : scheme.asString(), 
+                hostPort==null?null:hostPort.getHost(),
+                hostPort==null?-1:hostPort.getPort(),
+                uri), version, fields);
         }
 
         public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
         {
-            this(method, new HttpURI(scheme == null ? null : scheme.asString(), hostPort.getHost(), hostPort.getPort(), uri), version, fields, contentLength);
+            this(method, new HttpURI(scheme==null?null:scheme.asString(), 
+                hostPort==null?null:hostPort.getHost(),
+                hostPort==null?-1:hostPort.getPort(), 
+                uri), version, fields, contentLength);
         }
 
         public Request(String method, String scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
         {
-            this(method, new HttpURI(scheme, hostPort.getHost(), hostPort.getPort(), uri), version, fields, contentLength);
+            this(method, new HttpURI(scheme,
+                hostPort==null?null:hostPort.getHost(),
+                hostPort==null?-1:hostPort.getPort(),
+                uri), version, fields, contentLength);
         }
 
         public Request(Request request)
