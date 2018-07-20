@@ -40,10 +40,10 @@ import java.util.concurrent.TimeUnit;
 @Threads(4)
 @Warmup(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-public class DateCacheNoTickBenchmark
+public class DateCacheSimpleDateFormatBenchmark
 {
 
-    DateCacheNoTick dateCache = new DateCacheNoTick();
+    DateCacheSimpleDateFormat dateCache = new DateCacheSimpleDateFormat();
     long timestamp = Instant.now().toEpochMilli();
 
     @Benchmark
@@ -70,7 +70,7 @@ public class DateCacheNoTickBenchmark
     public static void main(String[] args) throws RunnerException 
     {
         Options opt = new OptionsBuilder()
-                .include(DateCacheNoTickBenchmark.class.getSimpleName())
+                .include(DateCacheSimpleDateFormatBenchmark.class.getSimpleName())
                 .warmupIterations(2)
                 .measurementIterations(3)
                 .forks(1)

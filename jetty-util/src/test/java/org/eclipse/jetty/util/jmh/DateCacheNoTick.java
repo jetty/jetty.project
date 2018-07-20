@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util;
+package org.eclipse.jetty.util.jmh;
 
 import java.time.Instant;
 import java.time.ZoneId;
