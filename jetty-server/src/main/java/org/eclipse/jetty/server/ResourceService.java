@@ -195,7 +195,7 @@ public class ResourceService
     }
 
     /* ------------------------------------------------------------ */
-    public void doGet(HttpServletRequest request, HttpServletResponse response)
+    public boolean doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException
     {
         String servletPath=null;
@@ -243,14 +243,14 @@ public class ResourceService
                 if (included)
                     throw new FileNotFoundException("!" + pathInContext);
                 notFound(request,response);
-                return;
+                return response.isCommitted();
             }
 
             // Directory?
             if (content.getResource().isDirectory())
             {
                 sendWelcome(content,pathInContext,endsWithSlash,included,request,response);
-                return;
+                return true;
             }
 
             // Strip slash?
@@ -261,12 +261,12 @@ public class ResourceService
                 if (q!=null&&q.length()!=0)
                     pathInContext+="?"+q;
                 response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),pathInContext)));
-                return;
+                return true;
             }
             
             // Conditional response?
             if (!included && !passConditionalHeaders(request,response,content))
-                return;
+                return true;
                 
             // Precompressed variant available?
             Map<CompressedContentFormat,? extends HttpContent> precompressedContents = checkPrecompressedVariants?content.getPrecompressedContents():null;
@@ -309,6 +309,8 @@ public class ResourceService
                     content.release();
             }
         }
+
+        return true;
     }
 
     private List<String> getPreferredEncodingOrder(HttpServletRequest request)
@@ -533,7 +535,6 @@ public class ResourceService
                     if (!match)
                     {
                         response.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
-                        response.flushBuffer();
                         return false;
                     }
                 }
@@ -545,7 +546,6 @@ public class ResourceService
                     {
                         response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                         response.setHeader(HttpHeader.ETAG.asString(),ifnm);
-                        response.flushBuffer();
                         return false;
                     }
 
@@ -557,7 +557,6 @@ public class ResourceService
                         {
                             response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                             response.setHeader(HttpHeader.ETAG.asString(),tag);
-                            response.flushBuffer();
                             return false;
                         }
                     }
@@ -746,7 +745,6 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                         InclusiveByteRange.to416HeaderRangeString(content_length));
                 content.getResource().writeTo(out,0,content_length);
-                response.flushBuffer();
                 return true;
             }
 
@@ -763,7 +761,6 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                         singleSatisfiableRange.toHeaderRangeString(content_length));
                 content.getResource().writeTo(out,singleSatisfiableRange.getFirst(),singleLength);
-                response.flushBuffer();
                 return true;
             }
 
@@ -846,7 +843,6 @@ public class ResourceService
             if (in!=null)
                 in.close();
             multi.close();
-            response.flushBuffer();
         }
         return true;
     }

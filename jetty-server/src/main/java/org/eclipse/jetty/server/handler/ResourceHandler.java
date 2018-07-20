@@ -276,9 +276,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
             return;
         }
 
-        _resourceService.doGet(request,response);
-
-        if (response.isCommitted())
+        if (_resourceService.doGet(request,response))
             baseRequest.setHandled(true);
         else
             // no resource - try other handlers
