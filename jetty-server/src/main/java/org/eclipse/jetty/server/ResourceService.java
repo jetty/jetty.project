@@ -535,6 +535,7 @@ public class ResourceService
                     if (!match)
                     {
                         response.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
+                        response.flushBuffer();
                         return false;
                     }
                 }
@@ -546,6 +547,7 @@ public class ResourceService
                     {
                         response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                         response.setHeader(HttpHeader.ETAG.asString(),ifnm);
+                        response.flushBuffer();
                         return false;
                     }
 
@@ -557,6 +559,7 @@ public class ResourceService
                         {
                             response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                             response.setHeader(HttpHeader.ETAG.asString(),tag);
+                            response.flushBuffer();
                             return false;
                         }
                     }
@@ -738,6 +741,7 @@ public class ResourceService
             List<InclusiveByteRange> ranges =InclusiveByteRange.satisfiableRanges( reqRanges, content_length);
 
             //  if there are no satisfiable ranges, send 416 response
+            // TODO should we be doing a 416 with a body
             if (ranges==null || ranges.size()==0)
             {
                 putHeaders(response,content,0);
