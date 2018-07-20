@@ -195,7 +195,7 @@ public class ResourceService
     }
 
     /* ------------------------------------------------------------ */
-    public void doGet(HttpServletRequest request, HttpServletResponse response)
+    public boolean doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException
     {
         String servletPath=null;
@@ -243,16 +243,16 @@ public class ResourceService
                 if (included)
                     throw new FileNotFoundException("!" + pathInContext);
                 notFound(request,response);
-                return;
+                return response.isCommitted();
             }
-            
+
             // Directory?
             if (content.getResource().isDirectory())
             {
                 sendWelcome(content,pathInContext,endsWithSlash,included,request,response);
-                return;
+                return true;
             }
-            
+
             // Strip slash?
             if (!included && endsWithSlash && pathInContext.length()>1)
             {
@@ -261,12 +261,12 @@ public class ResourceService
                 if (q!=null&&q.length()!=0)
                     pathInContext+="?"+q;
                 response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),pathInContext)));
-                return;
+                return true;
             }
             
             // Conditional response?
             if (!included && !passConditionalHeaders(request,response,content))
-                return;
+                return true;
                 
             // Precompressed variant available?
             Map<CompressedContentFormat,? extends HttpContent> precompressedContents = checkPrecompressedVariants?content.getPrecompressedContents():null;
@@ -309,6 +309,8 @@ public class ResourceService
                     content.release();
             }
         }
+
+        return true;
     }
 
     private List<String> getPreferredEncodingOrder(HttpServletRequest request)
@@ -510,95 +512,95 @@ public class ResourceService
                 ifms=request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
                 ifums=request.getDateHeader(HttpHeader.IF_UNMODIFIED_SINCE.asString());
             }
-            
-            if (!HttpMethod.HEAD.is(request.getMethod()))
-            {
-                if (_etags)
-                {
-                    String etag=content.getETagValue();
-                    if (ifm!=null)
-                    {
-                        boolean match=false;
-                        if (etag!=null)
-                        {
-                            QuotedCSV quoted = new QuotedCSV(true,ifm);
-                            for (String tag : quoted)
-                            {
-                                if (CompressedContentFormat.tagEquals(etag, tag))
-                                {
-                                    match=true;
-                                    break;
-                                }
-                            }
-                        }
 
-                        if (!match)
-                        {
-                            response.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
-                            return false;
-                        }
-                    }
-                    
-                    if (ifnm!=null && etag!=null)
+            if (_etags)
+            {
+                String etag=content.getETagValue();
+                if (ifm!=null)
+                {
+                    boolean match=false;
+                    if (etag!=null)
                     {
-                        // Handle special case of exact match OR gzip exact match
-                        if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',')<0)
-                        {
-                            response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                            response.setHeader(HttpHeader.ETAG.asString(),ifnm);
-                            return false;
-                        }
-                        
-                        // Handle list of tags
-                        QuotedCSV quoted = new QuotedCSV(true,ifnm);
+                        QuotedCSV quoted = new QuotedCSV(true,ifm);
                         for (String tag : quoted)
                         {
                             if (CompressedContentFormat.tagEquals(etag, tag))
                             {
-                                response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                                response.setHeader(HttpHeader.ETAG.asString(),tag);
-                                return false;
+                                match=true;
+                                break;
                             }
                         }
-                        
-                        // If etag requires content to be served, then do not check if-modified-since
-                        return true;
+                    }
+
+                    if (!match)
+                    {
+                        response.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
+                        response.flushBuffer();
+                        return false;
                     }
                 }
-                
-                // Handle if modified since
-                if (ifms!=null)
+
+                if (ifnm!=null && etag!=null)
                 {
-                    //Get jetty's Response impl
-                    String mdlm=content.getLastModifiedValue();
-                    if (mdlm!=null && ifms.equals(mdlm))
+                    // Handle special case of exact match OR gzip exact match
+                    if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',')<0)
                     {
                         response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                        if (_etags)
-                            response.setHeader(HttpHeader.ETAG.asString(),content.getETagValue());
+                        response.setHeader(HttpHeader.ETAG.asString(),ifnm);
                         response.flushBuffer();
                         return false;
                     }
 
-                    long ifmsl=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
-                    if (ifmsl!=-1 && content.getResource().lastModified()/1000 <= ifmsl/1000)
-                    { 
-                        response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                        if (_etags)
-                            response.setHeader(HttpHeader.ETAG.asString(),content.getETagValue());
-                        response.flushBuffer();
-                        return false;
+                    // Handle list of tags
+                    QuotedCSV quoted = new QuotedCSV(true,ifnm);
+                    for (String tag : quoted)
+                    {
+                        if (CompressedContentFormat.tagEquals(etag, tag))
+                        {
+                            response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                            response.setHeader(HttpHeader.ETAG.asString(),tag);
+                            response.flushBuffer();
+                            return false;
+                        }
                     }
+
+                    // If etag requires content to be served, then do not check if-modified-since
+                    return true;
                 }
+            }
 
-                // Parse the if[un]modified dates and compare to resource
-                if (ifums!=-1 && content.getResource().lastModified()/1000 > ifums/1000)
+            // Handle if modified since
+            if (ifms!=null)
+            {
+                //Get jetty's Response impl
+                String mdlm=content.getLastModifiedValue();
+                if (mdlm!=null && ifms.equals(mdlm))
                 {
-                    response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
+                    response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                    if (_etags)
+                        response.setHeader(HttpHeader.ETAG.asString(),content.getETagValue());
+                    response.flushBuffer();
                     return false;
                 }
 
+                long ifmsl=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
+                if (ifmsl!=-1 && content.getResource().lastModified()/1000 <= ifmsl/1000)
+                {
+                    response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                    if (_etags)
+                        response.setHeader(HttpHeader.ETAG.asString(),content.getETagValue());
+                    response.flushBuffer();
+                    return false;
+                }
             }
+
+            // Parse the if[un]modified dates and compare to resource
+            if (ifums!=-1 && content.getResource().lastModified()/1000 > ifums/1000)
+            {
+                response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
+                return false;
+            }
+
         }
         catch(IllegalArgumentException iae)
         {
@@ -606,6 +608,7 @@ public class ResourceService
                 response.sendError(400, iae.getMessage());
             throw iae;
         }
+
         return true;
     }
 
@@ -649,7 +652,7 @@ public class ResourceService
         final long content_length = content.getContentLengthValue();
         
         // Get the output stream (or writer)
-        OutputStream out =null;
+        OutputStream out;
         boolean written;
         try
         {
@@ -738,6 +741,7 @@ public class ResourceService
             List<InclusiveByteRange> ranges =InclusiveByteRange.satisfiableRanges( reqRanges, content_length);
 
             //  if there are no satisfiable ranges, send 416 response
+            // TODO should we be doing a 416 with a body
             if (ranges==null || ranges.size()==0)
             {
                 putHeaders(response,content,0);

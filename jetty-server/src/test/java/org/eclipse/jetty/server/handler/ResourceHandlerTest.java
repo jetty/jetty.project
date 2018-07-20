@@ -40,6 +40,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -304,5 +305,34 @@ public class ResourceHandlerTest
             Assert.assertEquals('D',buffer.get(buffer.limit()-2));
             
         }
+    }
+
+
+
+    @Test
+    public void testConditionalGetResponseCommitted() throws Exception
+    {
+        _config.setOutputBufferSize(8);
+        _resourceHandler.setEtags(true);
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                                                                                              "If-Match: \"NO_MATCH\"\r\n" +
+                                                                                              "\r\n"));
+
+        assertThat(response.getStatus(),equalTo(HttpStatus.PRECONDITION_FAILED_412));
+    }
+
+
+    @Test
+    public void testConditionalHeadResponseCommitted() throws Exception
+    {
+        _config.setOutputBufferSize(8);
+        _resourceHandler.setEtags(true);
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("HEAD /resource/big.txt HTTP/1.0\r\n" +
+                                                                                              "If-Match: \"NO_MATCH\"\r\n" +
+                                                                                              "\r\n"));
+
+        assertThat(response.getStatus(),equalTo(HttpStatus.PRECONDITION_FAILED_412));
     }
 }
