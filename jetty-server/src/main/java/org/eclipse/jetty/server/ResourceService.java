@@ -32,6 +32,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
@@ -464,6 +465,14 @@ public class ResourceService
         response.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
     
+    protected void sendStatus(HttpServletResponse response, int status, Supplier<String> etag) throws IOException
+    {
+        response.setStatus(status);
+        if (_etags && etag!=null)
+        response.setHeader(HttpHeader.ETAG.asString(),etag.get());
+        response.flushBuffer();
+    }
+    
     /* ------------------------------------------------------------ */
     /* Check modification date headers.
      */
@@ -534,8 +543,7 @@ public class ResourceService
 
                     if (!match)
                     {
-                        response.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
-                        response.flushBuffer();
+                        sendStatus(response,HttpServletResponse.SC_PRECONDITION_FAILED,null);
                         return false;
                     }
                 }
@@ -545,9 +553,7 @@ public class ResourceService
                     // Handle special case of exact match OR gzip exact match
                     if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',')<0)
                     {
-                        response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                        response.setHeader(HttpHeader.ETAG.asString(),ifnm);
-                        response.flushBuffer();
+                        sendStatus(response,HttpServletResponse.SC_NOT_MODIFIED,ifnm::toString);
                         return false;
                     }
 
@@ -557,9 +563,7 @@ public class ResourceService
                     {
                         if (CompressedContentFormat.tagEquals(etag, tag))
                         {
-                            response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                            response.setHeader(HttpHeader.ETAG.asString(),tag);
-                            response.flushBuffer();
+                            sendStatus(response,HttpServletResponse.SC_NOT_MODIFIED,tag::toString);
                             return false;
                         }
                     }
@@ -576,20 +580,14 @@ public class ResourceService
                 String mdlm=content.getLastModifiedValue();
                 if (mdlm!=null && ifms.equals(mdlm))
                 {
-                    response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                    if (_etags)
-                        response.setHeader(HttpHeader.ETAG.asString(),content.getETagValue());
-                    response.flushBuffer();
+                    sendStatus(response,HttpServletResponse.SC_NOT_MODIFIED,content::getETagValue);
                     return false;
                 }
 
                 long ifmsl=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
                 if (ifmsl!=-1 && content.getResource().lastModified()/1000 <= ifmsl/1000)
                 {
-                    response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-                    if (_etags)
-                        response.setHeader(HttpHeader.ETAG.asString(),content.getETagValue());
-                    response.flushBuffer();
+                    sendStatus(response,HttpServletResponse.SC_NOT_MODIFIED,content::getETagValue);
                     return false;
                 }
             }
@@ -741,14 +739,12 @@ public class ResourceService
             List<InclusiveByteRange> ranges =InclusiveByteRange.satisfiableRanges( reqRanges, content_length);
 
             //  if there are no satisfiable ranges, send 416 response
-            // TODO should we be doing a 416 with a body
             if (ranges==null || ranges.size()==0)
             {
                 putHeaders(response,content,0);
-                response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                         InclusiveByteRange.to416HeaderRangeString(content_length));
-                content.getResource().writeTo(out,0,content_length);
+                sendStatus(response,HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE,null);
                 return true;
             }
 
