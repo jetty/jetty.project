@@ -35,6 +35,7 @@ import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -102,6 +103,7 @@ public class GzipHandlerTest
         servlets.addServletWithMapping(ForwardServlet.class,"/forward");
         servlets.addServletWithMapping(IncludeServlet.class,"/include");
         servlets.addServletWithMapping(EchoServlet.class,"/echo/*");
+        servlets.addServletWithMapping(DumpServlet.class,"/dump/*");
         
         _server.start();
     }
@@ -176,6 +178,20 @@ public class GzipHandlerTest
         protected void doPost(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
         {
             doGet(req,response);
+        }
+    }
+    
+    public static class DumpServlet extends HttpServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentType("text/plain");
+            for (Enumeration<String> e = req.getParameterNames(); e.hasMoreElements(); )
+            {
+                String n = e.nextElement();
+                response.getWriter().printf("%s: %s%n",n,req.getParameter(n));
+            }
         }
     }
 
@@ -491,6 +507,35 @@ public class GzipHandlerTest
         assertThat(response.getStatus(),is(200));
         assertThat(response.getContent(),is(data));
 
+    }
+    
+
+    @Test
+    public void testGzipFormRequest() throws Exception
+    {
+        String data = "name=value";
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GZIPOutputStream output = new GZIPOutputStream(baos);
+        output.write(data.getBytes(StandardCharsets.UTF_8));
+        output.close();
+        byte[] bytes = baos.toByteArray();
+        
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("POST");
+        request.setURI("/ctx/dump");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("Content-Type","application/x-www-form-urlencoded; charset=utf-8");
+        request.setHeader("Content-Encoding","gzip");
+        request.setContent(bytes);
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        assertThat(response.getStatus(),is(200));
+        assertThat(response.getContent(),is("name: value\n"));
     }
     
     @Test
