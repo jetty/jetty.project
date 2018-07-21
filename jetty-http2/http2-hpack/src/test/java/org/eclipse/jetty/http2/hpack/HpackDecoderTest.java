@@ -19,12 +19,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
@@ -38,6 +32,12 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class HpackDecoderTest
 {
@@ -495,9 +495,9 @@ public class HpackDecoderTest
             decoder.decode(buffer);
             Assert.fail();
         }
-        catch (StreamException ex)
+        catch (CompressionException ex)
         {
-            Assert.assertThat(ex.getMessage(), Matchers.containsString("Padding length exceeded"));
+            Assert.assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
         }
     }
 
@@ -516,7 +516,7 @@ public class HpackDecoderTest
             decoder.decode(buffer);
             Assert.fail();
         }
-        catch (StreamException ex)
+        catch (CompressionException ex)
         {
             Assert.assertThat(ex.getMessage(), Matchers.containsString("Incorrect padding"));
         }
@@ -537,9 +537,49 @@ public class HpackDecoderTest
             decoder.decode(buffer);
             Assert.fail();
         }
-        catch (StreamException ex)
+        catch (CompressionException ex)
         {
             Assert.assertThat(ex.getMessage(), Matchers.containsString("EOS in content"));
+        }
+    }
+
+
+    @Test()
+    public void testHuffmanEncodedOneIncompleteOctet() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "82868441" + "81" + "FE";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+
+        try
+        {
+            decoder.decode(buffer);
+            Assert.fail();
+        }
+        catch (CompressionException ex)
+        {
+            Assert.assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
+        }
+    }
+
+
+    @Test()
+    public void testHuffmanEncodedTwoIncompleteOctet() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "82868441" + "82" + "FFFE";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+
+        try
+        {
+            decoder.decode(buffer);
+            Assert.fail();
+        }
+        catch (CompressionException ex)
+        {
+            Assert.assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
         }
     }
 }

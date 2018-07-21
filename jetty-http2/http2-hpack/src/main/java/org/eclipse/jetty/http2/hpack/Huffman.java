@@ -345,24 +345,25 @@ public class Huffman
         }
     }
 
-    public static String decode(ByteBuffer buffer) throws HpackException.StreamException
+    public static String decode(ByteBuffer buffer) throws HpackException.CompressionException
     {  
         return decode(buffer,buffer.remaining());
     }
 
-    public static String decode(ByteBuffer buffer,int length) throws HpackException.StreamException
+    public static String decode(ByteBuffer buffer,int length) throws HpackException.CompressionException
     {        
         StringBuilder out = new StringBuilder(length*2);
         int node = 0;
         int current = 0;
         int bits = 0;
-        
+
         byte[] array = buffer.array();
         int position=buffer.position();
         int start=buffer.arrayOffset()+position;
         int end=start+length;
         buffer.position(position+length);
-        
+
+
         for (int i=start; i<end; i++)
         {
             int b = array[i]&0xFF;
@@ -375,7 +376,7 @@ public class Huffman
                 if (rowbits[node]!=0) 
                 {
                     if(rowsym[node] == EOS)
-                        throw new HpackException.StreamException("EOS in content");
+                        throw new HpackException.CompressionException("EOS in content");
 
                     // terminal node
                     out.append(rowsym[node]);
@@ -393,6 +394,7 @@ public class Huffman
         while (bits > 0) 
         {
             int c = (current << (8 - bits)) & 0xFF;
+            int lastNode = node;
             node = tree[node*256+c];
 
             if (rowbits[node]==0 || rowbits[node] > bits)
@@ -402,19 +404,19 @@ public class Huffman
                     requiredPadding = (requiredPadding << 1) | 1;
 
                 if((c>>(8-bits)) != requiredPadding)
-                    throw new HpackException.StreamException("Incorrect padding");
+                    throw new HpackException.CompressionException("Incorrect padding");
 
+                node = lastNode;
                 break;
             }
 
-            // TODO why is this even here
-            if (rowbits[node]==0)
-                throw new IllegalStateException();
-            
             out.append(rowsym[node]);
             bits -= rowbits[node];
             node = 0;
         }
+
+        if(node != 0)
+            throw new HpackException.CompressionException("Bad termination");
 
         return out.toString();
     }
