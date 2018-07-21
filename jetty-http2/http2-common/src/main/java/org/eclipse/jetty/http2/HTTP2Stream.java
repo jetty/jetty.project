@@ -28,6 +28,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FailureFrame;
@@ -59,9 +62,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private final ISession session;
     private final int streamId;
     private final boolean local;
-    private volatile Listener listener;
-    private volatile boolean localReset;
-    private volatile boolean remoteReset;
+    private boolean localReset;
+    private Listener listener;
+    private boolean remoteReset;
+    private long dataLength;
 
     public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, boolean local)
     {
@@ -69,6 +73,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         this.session = session;
         this.streamId = streamId;
         this.local = local;
+        this.dataLength = Long.MIN_VALUE;
     }
 
     @Override
@@ -272,6 +277,15 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     {
         if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
             session.removeStream(this);
+        MetaData metaData = frame.getMetaData();
+        if (metaData.isRequest() || metaData.isResponse())
+        {
+            HttpFields fields = metaData.getFields();
+            long length = -1;
+            if (fields != null)
+                length = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
+            dataLength = length >= 0 ? length : Long.MIN_VALUE;
+        }
         callback.succeeded();
     }
 
@@ -301,8 +315,20 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             return;
         }
 
+        if (dataLength != Long.MIN_VALUE)
+        {
+            dataLength -= frame.remaining();
+            if (frame.isEndStream() && dataLength != 0)
+            {
+                reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
+                callback.failed(new IOException("invalid_data_length"));
+                return;
+            }
+        }
+
         if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
             session.removeStream(this);
+
         notifyData(this, frame, callback);
     }
 
