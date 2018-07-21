@@ -98,7 +98,7 @@ public class HTTP2ClientSession extends HTTP2Session
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Stream #{} not found", streamId);
-            if ((streamId & 1) == 1)
+            if (isClientStream(streamId))
             {
                 // Normal stream.
                 // Headers or trailers arriving after
@@ -134,9 +134,12 @@ public class HTTP2ClientSession extends HTTP2Session
         else
         {
             IStream pushStream = createRemoteStream(pushStreamId);
-            pushStream.process(frame, Callback.NOOP);
-            Stream.Listener listener = notifyPush(stream, pushStream, frame);
-            pushStream.setListener(listener);
+            if (pushStream != null)
+            {
+                pushStream.process(frame, Callback.NOOP);
+                Stream.Listener listener = notifyPush(stream, pushStream, frame);
+                pushStream.setListener(listener);
+            }
         }
     }
 

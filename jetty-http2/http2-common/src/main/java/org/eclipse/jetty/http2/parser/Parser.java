@@ -36,7 +36,6 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -63,8 +62,8 @@ public class Parser
     {
         this.listener = listener;
         this.headerParser = new HeaderParser();
-        this.headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize));
         this.unknownBodyParser = new UnknownBodyParser(headerParser, listener);
+        this.headerBlockParser = new HeaderBlockParser(headerParser, byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize), unknownBodyParser);
         this.maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
@@ -265,6 +264,8 @@ public class Parser
 
         public void onWindowUpdate(WindowUpdateFrame frame);
 
+        public void onStreamFailure(int streamId, int error, String reason);
+
         public void onConnectionFailure(int error, String reason);
 
         public static class Adapter implements Listener
@@ -315,9 +316,95 @@ public class Parser
             }
 
             @Override
+            public void onStreamFailure(int streamId, int error, String reason)
+            {
+            }
+
+            @Override
             public void onConnectionFailure(int error, String reason)
             {
                 LOG.warn("Connection failure: {}/{}", error, reason);
+            }
+        }
+
+        public static class Wrapper implements Listener
+        {
+            private final Parser.Listener listener;
+
+            public Wrapper(Parser.Listener listener)
+            {
+                this.listener = listener;
+            }
+
+            public Listener getParserListener()
+            {
+                return listener;
+            }
+
+            @Override
+            public void onData(DataFrame frame)
+            {
+                listener.onData(frame);
+            }
+
+            @Override
+            public void onHeaders(HeadersFrame frame)
+            {
+                listener.onHeaders(frame);
+            }
+
+            @Override
+            public void onPriority(PriorityFrame frame)
+            {
+                listener.onPriority(frame);
+            }
+
+            @Override
+            public void onReset(ResetFrame frame)
+            {
+                listener.onReset(frame);
+            }
+
+            @Override
+            public void onSettings(SettingsFrame frame)
+            {
+                listener.onSettings(frame);
+            }
+
+            @Override
+            public void onPushPromise(PushPromiseFrame frame)
+            {
+                listener.onPushPromise(frame);
+            }
+
+            @Override
+            public void onPing(PingFrame frame)
+            {
+                listener.onPing(frame);
+            }
+
+            @Override
+            public void onGoAway(GoAwayFrame frame)
+            {
+                listener.onGoAway(frame);
+            }
+
+            @Override
+            public void onWindowUpdate(WindowUpdateFrame frame)
+            {
+                listener.onWindowUpdate(frame);
+            }
+
+            @Override
+            public void onStreamFailure(int streamId, int error, String reason)
+            {
+                listener.onStreamFailure(streamId, error, reason);
+            }
+
+            @Override
+            public void onConnectionFailure(int error, String reason)
+            {
+                listener.onConnectionFailure(error, reason);
             }
         }
     }

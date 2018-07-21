@@ -170,13 +170,16 @@ public class HeadersBodyParser extends BodyParser
                     if (hasFlag(Flags.END_HEADERS))
                     {
                         MetaData metaData = headerBlockParser.parse(buffer, length);
+                        if (metaData == HeaderBlockParser.SESSION_FAILURE)
+                            return false;
                         if (metaData != null)
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Parsed {} frame hpack from {}", FrameType.HEADERS, buffer);
                             state = State.PADDING;
                             loop = paddingLength == 0;
-                            onHeaders(parentStreamId, weight, exclusive, metaData);
+                            if (metaData != HeaderBlockParser.STREAM_FAILURE)
+                                onHeaders(parentStreamId, weight, exclusive, metaData);
                         }
                     }
                     else

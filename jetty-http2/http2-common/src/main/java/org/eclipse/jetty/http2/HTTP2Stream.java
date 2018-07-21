@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.FailureFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
@@ -255,6 +256,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 onWindowUpdate((WindowUpdateFrame)frame, callback);
                 break;
             }
+            case FAILURE:
+            {
+                onFailure((FailureFrame)frame, callback);
+                break;
+            }
             default:
             {
                 throw new UnsupportedOperationException();
@@ -319,6 +325,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private void onWindowUpdate(WindowUpdateFrame frame, Callback callback)
     {
         callback.succeeded();
+    }
+
+    private void onFailure(FailureFrame frame, Callback callback)
+    {
+        notifyFailure(this, frame, callback);
     }
 
     @Override
@@ -498,31 +509,43 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private void notifyData(Stream stream, DataFrame frame, Callback callback)
     {
-        final Listener listener = this.listener;
-        if (listener == null)
-            return;
-        try
+        Listener listener = this.listener;
+        if (listener != null)
         {
-            listener.onData(stream, frame, callback);
+            try
+            {
+                listener.onData(stream, frame, callback);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener " + listener, x);
+                callback.failed(x);
+            }
         }
-        catch (Throwable x)
+        else
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            callback.succeeded();
         }
     }
 
     private void notifyReset(Stream stream, ResetFrame frame, Callback callback)
     {
-        final Listener listener = this.listener;
-        if (listener == null)
-            return;
-        try
+        Listener listener = this.listener;
+        if (listener != null)
         {
-            listener.onReset(stream, frame, callback);
+            try
+            {
+                listener.onReset(stream, frame, callback);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener " + listener, x);
+                callback.failed(x);
+            }
         }
-        catch (Throwable x)
+        else
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            callback.succeeded();
         }
     }
 
@@ -539,6 +562,27 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         {
             LOG.info("Failure while notifying listener " + listener, x);
             return true;
+        }
+    }
+
+    private void notifyFailure(Stream stream, FailureFrame frame, Callback callback)
+    {
+        Listener listener = this.listener;
+        if (listener != null)
+        {
+            try
+            {
+                listener.onFailure(stream, frame.getError(), frame.getReason(), callback);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener " + listener, x);
+                callback.failed(x);
+            }
+        }
+        else
+        {
+            callback.succeeded();
         }
     }
 

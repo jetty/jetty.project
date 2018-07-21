@@ -46,12 +46,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.frames.PingFrame;
-import org.eclipse.jetty.http2.frames.PriorityFrame;
-import org.eclipse.jetty.http2.frames.PushPromiseFrame;
-import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -752,7 +747,7 @@ public class HTTP2Test extends AbstractTest
             @Override
             protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener)
             {
-                return super.newServerParser(connector, new ServerParserListenerWrapper(listener)
+                return super.newServerParser(connector, new ServerParser.Listener.Wrapper(listener)
                 {
                     @Override
                     public void onGoAway(GoAwayFrame frame)
@@ -804,82 +799,6 @@ public class HTTP2Test extends AbstractTest
         catch (InterruptedException x)
         {
             throw new RuntimeException();
-        }
-    }
-
-    private static class ServerParserListenerWrapper implements ServerParser.Listener
-    {
-        private final ServerParser.Listener listener;
-
-        private ServerParserListenerWrapper(ServerParser.Listener listener)
-        {
-            this.listener = listener;
-        }
-
-        @Override
-        public void onPreface()
-        {
-            listener.onPreface();
-        }
-
-        @Override
-        public void onData(DataFrame frame)
-        {
-            listener.onData(frame);
-        }
-
-        @Override
-        public void onHeaders(HeadersFrame frame)
-        {
-            listener.onHeaders(frame);
-        }
-
-        @Override
-        public void onPriority(PriorityFrame frame)
-        {
-            listener.onPriority(frame);
-        }
-
-        @Override
-        public void onReset(ResetFrame frame)
-        {
-            listener.onReset(frame);
-        }
-
-        @Override
-        public void onSettings(SettingsFrame frame)
-        {
-            listener.onSettings(frame);
-        }
-
-        @Override
-        public void onPushPromise(PushPromiseFrame frame)
-        {
-            listener.onPushPromise(frame);
-        }
-
-        @Override
-        public void onPing(PingFrame frame)
-        {
-            listener.onPing(frame);
-        }
-
-        @Override
-        public void onGoAway(GoAwayFrame frame)
-        {
-            listener.onGoAway(frame);
-        }
-
-        @Override
-        public void onWindowUpdate(WindowUpdateFrame frame)
-        {
-            listener.onWindowUpdate(frame);
-        }
-
-        @Override
-        public void onConnectionFailure(int error, String reason)
-        {
-            listener.onConnectionFailure(error, reason);
         }
     }
 }

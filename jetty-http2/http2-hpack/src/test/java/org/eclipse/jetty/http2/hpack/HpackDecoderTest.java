@@ -19,12 +19,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
@@ -38,6 +32,12 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class HpackDecoderTest
 {
@@ -327,7 +327,7 @@ public class HpackDecoderTest
         }
         catch(StreamException ex)
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("Connection specific field Connection"));
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("Connection specific field 'Connection'"));
         }
 
         // 2: Sends a HEADERS frame that contains the TE header field with any value other than "trailers"
@@ -340,7 +340,7 @@ public class HpackDecoderTest
         }
         catch(StreamException ex)
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("Unsupported TE value not_trailers"));
+            Assert.assertThat(ex.getMessage(),Matchers.containsString("Unsupported TE value 'not_trailers'"));
         }
 
 

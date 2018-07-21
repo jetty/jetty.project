@@ -37,6 +37,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.DisconnectFrame;
+import org.eclipse.jetty.http2.frames.FailureFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -106,7 +107,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         this.maxLocalStreams = -1;
         this.maxRemoteStreams = -1;
         this.localStreamIds.set(initialStreamId);
-        this.lastRemoteStreamId.set((initialStreamId & 0x01) == 0x01 ? 0 : -1);
+        this.lastRemoteStreamId.set(isClientStream(initialStreamId) ? 0 : -1);
         this.streamIdleTimeout = endPoint.getIdleTimeout();
         this.sendWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
@@ -251,7 +252,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             // We must enlarge the session flow control window,
             // otherwise other requests will be stalled.
             flowControl.onDataConsumed(this, null, flowControlLength);
-            if (isRemoteStreamClosed(streamId))
+            boolean local = (streamId & 1) == (localStreamIds.get() & 1);
+            boolean closed = local ? isLocalStreamClosed(streamId) : isRemoteStreamClosed(streamId);
+            if (closed)
                 reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), callback);
             else
                 onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_data_frame", callback);
@@ -288,7 +291,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         IStream stream = getStream(streamId);
         if (stream != null)
         {
-            stream.process(frame, new ResetCallback());
+            stream.process(frame, new OnResetCallback());
         }
         else
         {
@@ -501,6 +504,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
+    @Override
+    public void onStreamFailure(int streamId, int error, String reason)
+    {
+        Callback callback = new ResetCallback(streamId, error, Callback.NOOP);
+        IStream stream = getStream(streamId);
+        if (stream != null)
+            stream.process(new FailureFrame(error, reason), callback);
+        else
+            callback.succeeded();
+    }
+
     private boolean sumOverflows(int a, int b)
     {
         try
@@ -520,7 +534,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         onConnectionFailure(error, reason, Callback.NOOP);
     }
 
-    private void onConnectionFailure(int error, String reason, Callback callback)
+    protected void onConnectionFailure(int error, String reason, Callback callback)
     {
         notifyFailure(this, new IOException(String.format("%d/%s", error, reason)), new CloseCallback(error, reason, callback));
     }
@@ -1181,6 +1195,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
+    protected static boolean isClientStream(int streamId)
+    {
+        // Client-initiated stream ids are odd.
+        return (streamId & 1) == 1;
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -1509,7 +1529,37 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    private class ResetCallback implements Callback
+    private class ResetCallback extends Callback.Nested
+    {
+        private final int streamId;
+        private final int error;
+
+        private ResetCallback(int streamId, int error, Callback callback)
+        {
+            super(callback);
+            this.streamId = streamId;
+            this.error = error;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            complete();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            complete();
+        }
+
+        private void complete()
+        {
+            reset(new ResetFrame(streamId, error), getCallback());
+        }
+    }
+
+    private class OnResetCallback implements Callback
     {
         @Override
         public void succeeded()
@@ -1535,17 +1585,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    private class CloseCallback implements Callback
+    private class CloseCallback extends Callback.Nested
     {
         private final int error;
         private final String reason;
-        private final Callback callback;
 
         private CloseCallback(int error, String reason, Callback callback)
         {
+            super(callback);
             this.error = error;
             this.reason = reason;
-            this.callback = callback;
         }
 
         @Override
@@ -1560,15 +1609,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             complete();
         }
 
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
         private void complete()
         {
-            close(error, reason, callback);
+            close(error, reason, getCallback());
         }
     }
 

@@ -84,7 +84,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             LOG.debug("Received {}", frame);
 
         int streamId = frame.getStreamId();
-        if ((streamId & 1) != 1)
+        if (!isClientStream(streamId))
         {
             onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_stream_id");
             return;

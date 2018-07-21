@@ -576,6 +576,40 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         Assert.assertArrayEquals(bytes, response.getContent());
     }
 
+    @Test
+    public void testInvalidResponseHPack() throws Exception
+    {
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                // Produce an invalid HPACK block by adding a request pseudo-header to the response.
+                HttpFields fields = new HttpFields();
+                fields.put(":method", "get");
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, fields, 0);
+                int streamId = stream.getId();
+                HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
+                Callback.Completable callback = new Callback.Completable();
+                stream.headers(responseFrame, callback);
+                byte[] bytes = "hello".getBytes(StandardCharsets.US_ASCII);
+                callback.thenRun(() -> stream.data(new DataFrame(streamId, ByteBuffer.wrap(bytes), true), Callback.NOOP));
+                return null;
+            }
+        });
+
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        latch.countDown();
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
     @Ignore
     @Test
     public void testExternalServer() throws Exception

@@ -170,19 +170,19 @@ public class MetaDataBuilder
                     if ("trailers".equalsIgnoreCase(value))
                         _fields.add(field);
                     else
-                        streamException("Unsupported TE value %s", value);
+                        streamException("Unsupported TE value '%s'", value);
                     break;
             
                 case CONNECTION:
                     if ("TE".equalsIgnoreCase(value))
                         _fields.add(field);
                     else
-                        streamException("Connection specific field %s", header);
+                        streamException("Connection specific field '%s'", header);
                     break;                
 
                 default:               
                     if (name.charAt(0)==':')
-                        streamException("Unknown pseudo header %s", name);
+                        streamException("Unknown pseudo header '%s'", name);
                     else
                         _fields.add(field);
                     break;
@@ -191,7 +191,7 @@ public class MetaDataBuilder
         else
         {
             if (name.charAt(0)==':')
-                streamException("Unknown pseudo header %s",name);
+                streamException("Unknown pseudo header '%s'",name);
             else
                 _fields.add(field);
         }
@@ -281,7 +281,7 @@ public class MetaDataBuilder
      * Check that the max size will not be exceeded.
      * @param length the length
      * @param huffman the huffman name
-     * @throws SessionException 
+     * @throws SessionException in case of size errors
      */
     public void checkSize(int length, boolean huffman) throws SessionException
     {

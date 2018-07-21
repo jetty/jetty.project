@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.util.Locale;
-
 import org.eclipse.jetty.http2.ErrorCode;
 
 public class ResetFrame extends Frame
@@ -49,8 +47,6 @@ public class ResetFrame extends Frame
     @Override
     public String toString()
     {
-        ErrorCode errorCode = ErrorCode.from(error);
-        String reason = errorCode == null ? "error=" + error : errorCode.name().toLowerCase(Locale.ENGLISH);
-        return String.format("%s#%d{%s}", super.toString(), streamId, reason);
+        return String.format("%s#%d{%s}", super.toString(), streamId, ErrorCode.toString(error, null));
     }
 }
