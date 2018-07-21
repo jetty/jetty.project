@@ -734,7 +734,21 @@ public abstract class FlowControlStrategyTest
     public void testClientExceedingSessionWindow() throws Exception
     {
         // On server, we don't consume the data.
-        start(new ServerSessionListener.Adapter());
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        // Do not succeed the callback.
+                    }
+                };
+            }
+        });
 
         final CountDownLatch closeLatch = new CountDownLatch(1);
         Session session = newClient(new Session.Listener.Adapter()
@@ -804,6 +818,19 @@ public abstract class FlowControlStrategyTest
                 // Enlarge the session window.
                 ((ISession)session).updateRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
                 return super.onPreface(session);
+            }
+
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        // Do not succeed the callback.
+                    }
+                };
             }
         });
 

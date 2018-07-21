@@ -81,7 +81,7 @@ public class ContinuationBodyParser extends BodyParser
                         headerBlockFragments.storeFragment(buffer, length, last);
                         reset();
                         if (last)
-                            onHeaders();
+                            return onHeaders();
                         return true;
                     }
                 }
@@ -94,12 +94,17 @@ public class ContinuationBodyParser extends BodyParser
         return false;
     }
 
-    private void onHeaders()
+    private boolean onHeaders()
     {
         ByteBuffer headerBlock = headerBlockFragments.complete();
         MetaData metaData = headerBlockParser.parse(headerBlock, headerBlock.remaining());
+        if (metaData == HeaderBlockParser.SESSION_FAILURE)
+            return false;
+        if (metaData == null || metaData == HeaderBlockParser.STREAM_FAILURE)
+            return true;
         HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, headerBlockFragments.getPriorityFrame(), headerBlockFragments.isEndStream());
         notifyHeaders(frame);
+        return true;
     }
 
     private void reset()

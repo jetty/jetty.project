@@ -28,8 +28,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.FailureFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
@@ -58,9 +62,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private final ISession session;
     private final int streamId;
     private final boolean local;
-    private volatile Listener listener;
-    private volatile boolean localReset;
-    private volatile boolean remoteReset;
+    private boolean localReset;
+    private Listener listener;
+    private boolean remoteReset;
+    private long dataLength;
 
     public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, boolean local)
     {
@@ -68,6 +73,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         this.session = session;
         this.streamId = streamId;
         this.local = local;
+        this.dataLength = Long.MIN_VALUE;
     }
 
     @Override
@@ -255,6 +261,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 onWindowUpdate((WindowUpdateFrame)frame, callback);
                 break;
             }
+            case FAILURE:
+            {
+                onFailure((FailureFrame)frame, callback);
+                break;
+            }
             default:
             {
                 throw new UnsupportedOperationException();
@@ -266,6 +277,15 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     {
         if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
             session.removeStream(this);
+        MetaData metaData = frame.getMetaData();
+        if (metaData.isRequest() || metaData.isResponse())
+        {
+            HttpFields fields = metaData.getFields();
+            long length = -1;
+            if (fields != null)
+                length = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
+            dataLength = length >= 0 ? length : Long.MIN_VALUE;
+        }
         callback.succeeded();
     }
 
@@ -295,8 +315,20 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             return;
         }
 
+        if (dataLength != Long.MIN_VALUE)
+        {
+            dataLength -= frame.remaining();
+            if (frame.isEndStream() && dataLength != 0)
+            {
+                reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
+                callback.failed(new IOException("invalid_data_length"));
+                return;
+            }
+        }
+
         if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
             session.removeStream(this);
+
         notifyData(this, frame, callback);
     }
 
@@ -319,6 +351,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private void onWindowUpdate(WindowUpdateFrame frame, Callback callback)
     {
         callback.succeeded();
+    }
+
+    private void onFailure(FailureFrame frame, Callback callback)
+    {
+        notifyFailure(this, frame, callback);
     }
 
     @Override
@@ -498,31 +535,43 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private void notifyData(Stream stream, DataFrame frame, Callback callback)
     {
-        final Listener listener = this.listener;
-        if (listener == null)
-            return;
-        try
+        Listener listener = this.listener;
+        if (listener != null)
         {
-            listener.onData(stream, frame, callback);
+            try
+            {
+                listener.onData(stream, frame, callback);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener " + listener, x);
+                callback.failed(x);
+            }
         }
-        catch (Throwable x)
+        else
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            callback.succeeded();
         }
     }
 
     private void notifyReset(Stream stream, ResetFrame frame, Callback callback)
     {
-        final Listener listener = this.listener;
-        if (listener == null)
-            return;
-        try
+        Listener listener = this.listener;
+        if (listener != null)
         {
-            listener.onReset(stream, frame, callback);
+            try
+            {
+                listener.onReset(stream, frame, callback);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener " + listener, x);
+                callback.failed(x);
+            }
         }
-        catch (Throwable x)
+        else
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            callback.succeeded();
         }
     }
 
@@ -539,6 +588,27 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         {
             LOG.info("Failure while notifying listener " + listener, x);
             return true;
+        }
+    }
+
+    private void notifyFailure(Stream stream, FailureFrame frame, Callback callback)
+    {
+        Listener listener = this.listener;
+        if (listener != null)
+        {
+            try
+            {
+                listener.onFailure(stream, frame.getError(), frame.getReason(), callback);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener " + listener, x);
+                callback.failed(x);
+            }
+        }
+        else
+        {
+            callback.succeeded();
         }
     }
 

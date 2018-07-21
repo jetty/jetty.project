@@ -18,46 +18,25 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public enum FrameType
+public class FailureFrame extends Frame
 {
-    DATA(0),
-    HEADERS(1),
-    PRIORITY(2),
-    RST_STREAM(3),
-    SETTINGS(4),
-    PUSH_PROMISE(5),
-    PING(6),
-    GO_AWAY(7),
-    WINDOW_UPDATE(8),
-    CONTINUATION(9),
-    // Synthetic frames only needed by the implementation.
-    PREFACE(10),
-    DISCONNECT(11),
-    FAILURE(12);
+    private final int error;
+    private final String reason;
 
-    public static FrameType from(int type)
+    public FailureFrame(int error, String reason)
     {
-        return Types.types.get(type);
+        super(FrameType.FAILURE);
+        this.error = error;
+        this.reason = reason;
     }
 
-    private final int type;
-
-    private FrameType(int type)
+    public int getError()
     {
-        this.type = type;
-        Types.types.put(type, this);
+        return error;
     }
 
-    public int getType()
+    public String getReason()
     {
-        return type;
-    }
-
-    private static class Types
-    {
-        private static final Map<Integer, FrameType> types = new HashMap<>();
+        return reason;
     }
 }

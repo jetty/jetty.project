@@ -83,16 +83,39 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
 
+        int streamId = frame.getStreamId();
+        if (!isClientStream(streamId))
+        {
+            onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_stream_id");
+            return;
+        }
+
+        IStream stream = getStream(streamId);
+
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest())
         {
-            IStream stream = createRemoteStream(frame.getStreamId());
-            if (stream != null)
+            if (stream == null)
             {
-                onStreamOpened(stream);
-                stream.process(frame, Callback.NOOP);
-                Stream.Listener listener = notifyNewStream(stream, frame);
-                stream.setListener(listener);
+                if (isRemoteStreamClosed(streamId))
+                {
+                    onConnectionFailure(ErrorCode.STREAM_CLOSED_ERROR.code, "unexpected_headers_frame");
+                }
+                else
+                {
+                    stream = createRemoteStream(streamId);
+                    if (stream != null)
+                    {
+                        onStreamOpened(stream);
+                        stream.process(frame, Callback.NOOP);
+                        Stream.Listener listener = notifyNewStream(stream, frame);
+                        stream.setListener(listener);
+                    }
+                }
+            }
+            else
+            {
+                onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "duplicate_stream");
             }
         }
         else if (metaData.isResponse())
@@ -102,8 +125,6 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         else
         {
             // Trailers.
-            int streamId = frame.getStreamId();
-            IStream stream = getStream(streamId);
             if (stream != null)
             {
                 stream.process(frame, Callback.NOOP);
@@ -112,7 +133,8 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Ignoring {}, stream #{} not found", frame, streamId);
+                    LOG.debug("Stream #{} not found", streamId);
+                onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_headers_frame");
             }
         }
     }

@@ -27,14 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
-import org.eclipse.jetty.http2.frames.GoAwayFrame;
-import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.frames.PingFrame;
-import org.eclipse.jetty.http2.frames.PriorityFrame;
-import org.eclipse.jetty.http2.frames.PushPromiseFrame;
-import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -220,6 +212,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         private final Callback fillableCallback = new FillableCallback();
         private NetworkBuffer buffer;
         private boolean shutdown;
+        private boolean failed;
 
         private void setInputBuffer(ByteBuffer byteBuffer)
         {
@@ -237,7 +230,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             if (task != null)
                 return task;
 
-            if (isFillInterested() || shutdown)
+            if (isFillInterested() || shutdown || failed)
                 return null;
 
             if (buffer == null)
@@ -248,11 +241,22 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                 if (parse)
                 {
                     buffer.retain();
-
-                    while (buffer.hasRemaining())
-                        parser.parse(buffer.buffer);
-
-                    boolean released = buffer.tryRelease();
+                    boolean released;
+                    try
+                    {
+                        while (buffer.hasRemaining())
+                        {
+                            parser.parse(buffer.buffer);
+                            if (failed)
+                                return null;
+                        }
+                    }
+                    finally
+                    {
+                        released = buffer.tryRelease();
+                        if (failed && released)
+                            releaseNetworkBuffer();
+                    }
 
                     task = pollTask();
                     if (LOG.isDebugEnabled())
@@ -345,13 +349,11 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         }
     }
 
-    private class ParserListener implements Parser.Listener
+    private class ParserListener extends Parser.Listener.Wrapper
     {
-        private final Parser.Listener listener;
-
         private ParserListener(Parser.Listener listener)
         {
-            this.listener = listener;
+            super(listener);
         }
 
         @Override
@@ -364,57 +366,10 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         }
 
         @Override
-        public void onHeaders(HeadersFrame frame)
-        {
-            listener.onHeaders(frame);
-        }
-
-        @Override
-        public void onPriority(PriorityFrame frame)
-        {
-            listener.onPriority(frame);
-        }
-
-        @Override
-        public void onReset(ResetFrame frame)
-        {
-            listener.onReset(frame);
-        }
-
-        @Override
-        public void onSettings(SettingsFrame frame)
-        {
-            listener.onSettings(frame);
-        }
-
-        @Override
-        public void onPushPromise(PushPromiseFrame frame)
-        {
-            listener.onPushPromise(frame);
-        }
-
-        @Override
-        public void onPing(PingFrame frame)
-        {
-            listener.onPing(frame);
-        }
-
-        @Override
-        public void onGoAway(GoAwayFrame frame)
-        {
-            listener.onGoAway(frame);
-        }
-
-        @Override
-        public void onWindowUpdate(WindowUpdateFrame frame)
-        {
-            listener.onWindowUpdate(frame);
-        }
-
-        @Override
         public void onConnectionFailure(int error, String reason)
         {
-            listener.onConnectionFailure(error, reason);
+            producer.failed = true;
+            super.onConnectionFailure(error, reason);
         }
     }
 

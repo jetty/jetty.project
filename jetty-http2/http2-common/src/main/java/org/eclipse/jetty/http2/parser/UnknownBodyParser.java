@@ -16,48 +16,39 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.frames;
+package org.eclipse.jetty.http2.parser;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.ByteBuffer;
 
-public enum FrameType
+public class UnknownBodyParser extends BodyParser
 {
-    DATA(0),
-    HEADERS(1),
-    PRIORITY(2),
-    RST_STREAM(3),
-    SETTINGS(4),
-    PUSH_PROMISE(5),
-    PING(6),
-    GO_AWAY(7),
-    WINDOW_UPDATE(8),
-    CONTINUATION(9),
-    // Synthetic frames only needed by the implementation.
-    PREFACE(10),
-    DISCONNECT(11),
-    FAILURE(12);
+    private int cursor;
 
-    public static FrameType from(int type)
+    public UnknownBodyParser(HeaderParser headerParser, Parser.Listener listener)
     {
-        return Types.types.get(type);
+        super(headerParser, listener);
     }
 
-    private final int type;
-
-    private FrameType(int type)
+    @Override
+    public boolean parse(ByteBuffer buffer)
     {
-        this.type = type;
-        Types.types.put(type, this);
+        int length = cursor == 0 ? getBodyLength() : cursor;
+        cursor = consume(buffer, length);
+        return cursor == 0;
     }
 
-    public int getType()
+    private int consume(ByteBuffer buffer, int length)
     {
-        return type;
-    }
-
-    private static class Types
-    {
-        private static final Map<Integer, FrameType> types = new HashMap<>();
+        int remaining = buffer.remaining();
+        if (remaining >= length)
+        {
+            buffer.position(buffer.position() + length);
+            return 0;
+        }
+        else
+        {
+            buffer.position(buffer.limit());
+            return length - remaining;
+        }
     }
 }

@@ -887,6 +887,11 @@
           <artifactId>buildnumber-maven-plugin</artifactId>
           <version>1.4</version>
         </plugin>
+        <plugin>
+          <groupId>com.github.madgnome</groupId>
+          <artifactId>h2spec-maven-plugin</artifactId>
+          <version>0.3</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>

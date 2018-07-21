@@ -158,6 +158,26 @@ public class ServerParser extends Parser
             {
             }
         }
+
+        public static class Wrapper extends Parser.Listener.Wrapper implements Listener
+        {
+            public Wrapper(ServerParser.Listener listener)
+            {
+                super(listener);
+            }
+
+            @Override
+            public ServerParser.Listener getParserListener()
+            {
+                return (Listener)super.getParserListener();
+            }
+
+            @Override
+            public void onPreface()
+            {
+                getParserListener().onPreface();
+            }
+        }
     }
 
     private enum State

@@ -214,6 +214,11 @@ public interface Stream
             return true;
         }
 
+        public default void onFailure(Stream stream, int error, String reason, Callback callback)
+        {
+            callback.succeeded();
+        }
+
         /**
          * <p>Empty implementation of {@link Listener}</p>
          */

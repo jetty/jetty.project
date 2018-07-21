@@ -68,6 +68,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         session.setMaxRemoteStreams(client.getMaxConcurrentPushedStreams());
 
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
+        parser.setMaxFrameLength(client.getMaxFrameLength());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
@@ -112,6 +113,10 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
                 settings = new HashMap<>();
             settings.computeIfAbsent(SettingsFrame.INITIAL_WINDOW_SIZE, k -> client.getInitialStreamRecvWindow());
             settings.computeIfAbsent(SettingsFrame.MAX_CONCURRENT_STREAMS, k -> client.getMaxConcurrentPushedStreams());
+
+            Integer maxFrameLength = settings.get(SettingsFrame.MAX_FRAME_SIZE);
+            if (maxFrameLength != null)
+                getParser().setMaxFrameLength(maxFrameLength);
 
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);
