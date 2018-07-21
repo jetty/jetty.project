@@ -462,25 +462,124 @@ public class HpackDecoderTest
         }        
     }
 
-    
-    /*
-        8.1.2.6. Malformed Requests and Responses
-          × 1: Sends a HEADERS frame with the "content-length" header field which does not equal the DATA frame payload length
-          × 2: Sends a HEADERS frame with the "content-length" header field which does not equal the sum of the multiple DATA frames payload length
 
-      5. Primitive Type Representations
-        5.2. String Literal Representation
-          × 1: Sends a Huffman-encoded string literal representation with padding longer than 7 bits
-            -> The endpoint MUST treat this as a decoding error.
-               Expected: GOAWAY Frame (Error Code: COMPRESSION_ERROR)
-                         Connection closed
-                 Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
-          × 2: Sends a Huffman-encoded string literal representation padded by zero
-            -> The endpoint MUST treat this as a decoding error.
-               Expected: GOAWAY Frame (Error Code: COMPRESSION_ERROR)
-                         Connection closed
-                 Actual: DATA Frame (length:687, flags:0x01, stream_id:1)
-          ✔ 3: Sends a Huffman-encoded string literal representation containing the EOS symbol
-    */
-    
+    @Test()
+    public void testHuffmanEncodedStandard() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "82868441" + "83" + "49509F";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+
+        MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
+
+        assertEquals("GET", request.getMethod());
+        assertEquals(HttpScheme.HTTP.asString(), request.getURI().getScheme());
+        assertEquals("/", request.getURI().getPath());
+        assertEquals("test", request.getURI().getHost());
+        assertFalse(request.iterator().hasNext());
+    }
+
+
+    /* 5.2.1: Sends a Huffman-encoded string literal representation with padding longer than 7 bits */
+    @Test()
+    public void testHuffmanEncodedExtraPadding() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "82868441" + "84" + "49509FFF";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+
+        try
+        {
+            decoder.decode(buffer);
+            Assert.fail();
+        }
+        catch (CompressionException ex)
+        {
+            Assert.assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
+        }
+    }
+
+
+    /* 5.2.2: Sends a Huffman-encoded string literal representation padded by zero */
+    @Test()
+    public void testHuffmanEncodedZeroPadding() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "82868441" + "83" + "495090";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+
+        try
+        {
+            decoder.decode(buffer);
+            Assert.fail();
+        }
+        catch (CompressionException ex)
+        {
+            Assert.assertThat(ex.getMessage(), Matchers.containsString("Incorrect padding"));
+        }
+    }
+
+
+    /* 5.2.3: Sends a Huffman-encoded string literal representation containing the EOS symbol */
+    @Test()
+    public void testHuffmanEncodedWithEOS() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "82868441" + "87" + "497FFFFFFF427F";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+
+        try
+        {
+            decoder.decode(buffer);
+            Assert.fail();
+        }
+        catch (CompressionException ex)
+        {
+            Assert.assertThat(ex.getMessage(), Matchers.containsString("EOS in content"));
+        }
+    }
+
+
+    @Test()
+    public void testHuffmanEncodedOneIncompleteOctet() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "82868441" + "81" + "FE";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+
+        try
+        {
+            decoder.decode(buffer);
+            Assert.fail();
+        }
+        catch (CompressionException ex)
+        {
+            Assert.assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
+        }
+    }
+
+
+    @Test()
+    public void testHuffmanEncodedTwoIncompleteOctet() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "82868441" + "82" + "FFFE";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+
+        try
+        {
+            decoder.decode(buffer);
+            Assert.fail();
+        }
+        catch (CompressionException ex)
+        {
+            Assert.assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
+        }
+    }
 }
