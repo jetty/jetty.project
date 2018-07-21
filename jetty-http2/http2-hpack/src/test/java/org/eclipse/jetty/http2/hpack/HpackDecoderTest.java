@@ -487,7 +487,7 @@ public class HpackDecoderTest
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
-        String encoded = "82868441" + "83" + "49509FFF";
+        String encoded = "82868441" + "84" + "49509FFF";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
         try
@@ -518,7 +518,7 @@ public class HpackDecoderTest
         }
         catch (StreamException ex)
         {
-            Assert.assertThat(ex.getMessage(), Matchers.containsString("Zero padded"));
+            Assert.assertThat(ex.getMessage(), Matchers.containsString("Incorrect padding"));
         }
     }
 

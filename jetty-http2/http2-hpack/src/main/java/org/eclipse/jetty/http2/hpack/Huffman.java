@@ -287,6 +287,7 @@ public class Huffman
     };
 
     static final int[][] LCCODES = new int[CODES.length][];
+    static final char EOS = 256;
     
     // Huffman decode tree stored in a flattened char array for good 
     // locality of reference.
@@ -344,12 +345,12 @@ public class Huffman
         }
     }
 
-    public static String decode(ByteBuffer buffer)
+    public static String decode(ByteBuffer buffer) throws HpackException.StreamException
     {  
         return decode(buffer,buffer.remaining());
     }
 
-    public static String decode(ByteBuffer buffer,int length)
+    public static String decode(ByteBuffer buffer,int length) throws HpackException.StreamException
     {        
         StringBuilder out = new StringBuilder(length*2);
         int node = 0;
@@ -373,6 +374,9 @@ public class Huffman
                 node = tree[node*256+c];
                 if (rowbits[node]!=0) 
                 {
+                    if(rowsym[node] == EOS)
+                        throw new HpackException.StreamException("EOS in content");
+
                     // terminal node
                     out.append(rowsym[node]);
                     bits -= rowbits[node];
@@ -390,9 +394,20 @@ public class Huffman
         {
             int c = (current << (8 - bits)) & 0xFF;
             node = tree[node*256+c];
-            if (rowbits[node]==0 || rowbits[node] > bits) 
+
+            if (rowbits[node]==0 || rowbits[node] > bits)
+            {
+                int requiredPadding = 0;
+                for(int i=0; i<bits; i++)
+                    requiredPadding = (requiredPadding << 1) | 1;
+
+                if((c>>(8-bits)) != requiredPadding)
+                    throw new HpackException.StreamException("Incorrect padding");
+
                 break;
-            
+            }
+
+            // TODO why is this even here
             if (rowbits[node]==0)
                 throw new IllegalStateException();
             
