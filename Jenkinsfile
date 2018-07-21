@@ -13,6 +13,7 @@ for (def os in oss) {
 parallel builds
 
 // jmh run
+/*
 stage("jmh-run") {
   node( 'jmh-build-node' ) {
     timeout( time: 120, unit: 'MINUTES' ) {
@@ -23,7 +24,8 @@ stage("jmh-run") {
       }
     }
   }
-}
+}*/
+
 def getFullBuild(jdk, os) {
   return {
     node(os) {
