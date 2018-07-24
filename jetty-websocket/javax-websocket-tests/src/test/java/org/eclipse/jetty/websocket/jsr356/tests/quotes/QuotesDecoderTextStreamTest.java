@@ -99,7 +99,6 @@ public class QuotesDecoderTextStreamTest
             session.sendBulk(send);
             
             BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
-            assertThat("Frames", framesQueue.size(), is(2)); // TEXT & CLOSE
             WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
@@ -120,7 +119,6 @@ public class QuotesDecoderTextStreamTest
             session.sendSegmented(send, 3);
             
             BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
-            assertThat("Frames", framesQueue.size(), is(2)); // TEXT & CLOSE
             WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
@@ -141,7 +139,6 @@ public class QuotesDecoderTextStreamTest
             session.sendFrames(send);
             
             BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
-            assertThat("Frames", framesQueue.size(), is(2)); // TEXT & CLOSE
             WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(

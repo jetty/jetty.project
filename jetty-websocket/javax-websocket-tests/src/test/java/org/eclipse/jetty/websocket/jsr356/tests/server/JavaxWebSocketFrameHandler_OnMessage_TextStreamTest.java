@@ -23,6 +23,7 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -51,7 +52,13 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
     private <T extends WSEventTracker> T performOnMessageInvocation(T socket, Consumer<JavaxWebSocketFrameHandler> func) throws Exception
     {
         WebSocketPolicy policy = container.getPolicy().clonePolicy();
-        HandshakeRequest request = new HandshakeRequestAdapter();
+        HandshakeRequest request = new HandshakeRequestAdapter() {
+            @Override
+            public URI getRequestURI()
+            {
+                return URI.create("http://localhost:8080/msg/foo");
+            }
+        };
         HandshakeResponse response = new HandshakeResponseAdapter();
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
 

@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.eclipse.jetty.websocket.jsr356.util.InvokerUtils.Arg;
 import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
+import static org.eclipse.jetty.websocket.jsr356.util.InvokerUtils.Arg;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -60,8 +60,8 @@ import org.eclipse.jetty.websocket.jsr356.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedMessageSink;
-import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextMessageSink;
+import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialByteArrayMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialByteBufferMessageSink;
@@ -201,69 +201,82 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
      * @param namedVariables the array of named variables.  Can be null.
      * @param templateValues the Map of template values (Key to Value), must have same number of entries that {@code namedVariables} has.
      * @return a MethodHandle where all of the {@code namedVariables} in the target type
-     *   have been statically assigned a converted value (and removed from the resulting {@link MethodHandle#type()}
+     *   have been statically assigned a converted value (and removed from the resulting {@link MethodHandle#type()}, or null if
+     *   no {@code target} MethodHandle was provided.
      */
     public static MethodHandle bindTemplateVariables(MethodHandle target, String[] namedVariables, Map<String, String> templateValues)
     {
+        if (target == null)
+        {
+            return null;
+        }
+
+        final int IDX = 1;
+
         MethodHandle retHandle = target;
+
+        if ((templateValues == null) || (templateValues.isEmpty()))
+        {
+            return retHandle;
+        }
 
         for (String variableName : namedVariables)
         {
             String strValue = templateValues.get(variableName);
-            Class<?> type = retHandle.type().parameterType(0);
+            Class<?> type = retHandle.type().parameterType(IDX);
             try
             {
                 if (String.class.isAssignableFrom(type))
                 {
-                    retHandle = MethodHandles.insertArguments(retHandle, 0, strValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, IDX, strValue);
                 }
                 else if (Integer.TYPE.isAssignableFrom(type))
                 {
                     int intValue = Integer.parseInt(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, 0, intValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, IDX, intValue);
                 }
                 else if (Long.TYPE.isAssignableFrom(type))
                 {
                     long longValue = Long.parseLong(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, 0, longValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, IDX, longValue);
                 }
                 else if (Short.TYPE.isAssignableFrom(type))
                 {
                     short shortValue = Short.parseShort(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, 0, shortValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, IDX, shortValue);
                 }
                 else if (Float.TYPE.isAssignableFrom(type))
                 {
                     float floatValue = Float.parseFloat(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, 0, floatValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, IDX, floatValue);
                 }
                 else if (Double.TYPE.isAssignableFrom(type))
                 {
                     double doubleValue = Double.parseDouble(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, 0, doubleValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, IDX, doubleValue);
                 }
                 else if (Boolean.TYPE.isAssignableFrom(type))
                 {
                     boolean boolValue = Boolean.parseBoolean(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, 0, boolValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, IDX, boolValue);
                 }
                 else if (Character.TYPE.isAssignableFrom(type))
                 {
                     if (strValue.length() != 1)
                         throw new IllegalArgumentException("Invalid Size");
                     char charValue = strValue.charAt(0);
-                    retHandle = MethodHandles.insertArguments(retHandle, 0, charValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, IDX, charValue);
                 }
                 else if (Byte.TYPE.isAssignableFrom(type))
                 {
                     byte buf[] = strValue.getBytes(UTF_8);
                     if (buf.length != 1)
                         throw new IllegalArgumentException("Invalid Size");
-                    retHandle = MethodHandles.insertArguments(retHandle, 0, buf[0]);
+                    retHandle = MethodHandles.insertArguments(retHandle, IDX, buf[0]);
                 }
                 else
                 {
-                    throw new IllegalStateException("Unsupported Type");
+                    throw new IllegalStateException("Unsupported Type: " + type);
                 }
             }
             catch(NumberFormatException e)

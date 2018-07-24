@@ -79,12 +79,12 @@ public class InvokerUtils_StaticParamsTest
         Map<String, String> templateValues = new HashMap<>();
         templateValues.put("fruit", "pear");
 
+        // Bind the static values, in same order as declared
+        methodHandle = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
+
         // Assign an instance to call.
         Foo foo = new Foo();
         methodHandle = methodHandle.bindTo(foo);
-
-        // Bind the static values, in same order as declared
-        methodHandle = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
 
         // Call method against instance
         String result = (String) methodHandle.invoke();
@@ -108,12 +108,12 @@ public class InvokerUtils_StaticParamsTest
         Map<String, String> templateValues = new HashMap<>();
         templateValues.put("count", "2222");
 
+        // Bind the static values for the variables, in same order as the variables were declared
+        methodHandle = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
+
         // Assign an instance to call.
         Foo foo = new Foo();
         methodHandle = methodHandle.bindTo(foo);
-
-        // Bind the static values for the variables, in same order as the variables were declared
-        methodHandle = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
 
         // Call method against instance
         String result = (String) methodHandle.invoke();
@@ -139,12 +139,12 @@ public class InvokerUtils_StaticParamsTest
         Map<String, String> templateValues = new HashMap<>();
         templateValues.put("count", "444");
 
+        // Bind the static values for the variables, in same order as the variables were declared
+        methodHandle = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
+
         // Assign an instance to call.
         Foo foo = new Foo();
         methodHandle = methodHandle.bindTo(foo);
-
-        // Bind the static values for the variables, in same order as the variables were declared
-        methodHandle = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
 
         // Call method against instance
         String result = (String) methodHandle.invoke("cherry");
