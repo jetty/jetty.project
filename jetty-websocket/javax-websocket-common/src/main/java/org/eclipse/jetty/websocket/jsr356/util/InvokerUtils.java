@@ -54,29 +54,34 @@ public class InvokerUtils
 
         public boolean matches(Arg other)
         {
-            // If tags exist
-            if ((this.name != null) && (other.name != null))
+            // If named tag exist, on either side, it must match with name.
+            if ((this.name != null) || (other.name != null))
             {
                 // They have to match
                 if(this.name.equals(other.name))
                 {
+                    if(convertible)
+                    {
+                        // remember the "other" type on convertible Args
+                        convertedType = other.type;
+                        return true;
+                    }
+
                     if(this.type.isAssignableFrom(other.type))
                     {
                         // Tags + Types match (perfect match!)
                         return true;
                     }
-                    else if(convertible)
-                    {
-                        // remember the "other" type on convertible Args
-                        convertedType = other.type;
-                    }
 
                     return true;
                 }
+
+                // name is used, but no match
+                return false;
             }
 
-            // Lastly, if types match, use em
-            return (this.type.isAssignableFrom(other.type));
+            // Not named, then its a simple type / assignable match
+            return (other.type.isAssignableFrom(this.type));
         }
 
         public Arg required()
@@ -230,36 +235,41 @@ public class InvokerUtils
     {
         Class<?> parameterTypes[] = method.getParameterTypes();
 
-        // Construct Actual Calling Args
-        int callingArgSize = rawCallingArgs.length + (namedVariables == null ? 0: namedVariables.length);
-        Arg callingArgs[] = new Arg[callingArgSize];
-        int callingArgIdx = 0;
-        if(namedVariables != null)
+        // Construct Actual Calling Args.
+        // This is the array of args, arriving as all of the named variables (usually static in nature),
+        // then the raw calling arguments (very dynamic in nature)
+        Arg callingArgs[] = new Arg[rawCallingArgs.length + (namedVariables == null ? 0: namedVariables.length)];
         {
-            for(String namedVariable: namedVariables)
+            int callingArgIdx = 0;
+            if (namedVariables != null)
             {
-                callingArgs[callingArgIdx++] = new Arg(String.class, namedVariable).convertible();
+                for (String namedVariable : namedVariables)
+                {
+                    callingArgs[callingArgIdx++] = new Arg(String.class, namedVariable).convertible();
+                }
             }
-        }
 
-        for(Arg rawCallingArg: rawCallingArgs)
-        {
-            callingArgs[callingArgIdx++] = rawCallingArg;
+            for (Arg rawCallingArg : rawCallingArgs)
+            {
+                callingArgs[callingArgIdx++] = rawCallingArg;
+            }
         }
 
         // Build up Arg list representing the MethodHandle parameters
         // ParamIdentifier is used to find named parameters (like javax.websocket's @PathParam declaration)
         boolean hasNamedParamArgs = false;
         Arg parameterArgs[] = new Arg[parameterTypes.length + 1];
-        parameterArgs[0] = new Arg(targetClass); // first type is always the calling object instance type
-        for (int i = 0; i < parameterTypes.length; i++)
         {
-            Arg arg = paramIdentifier.getParamArg(method, parameterTypes[i], i);
-            if (arg.name != null)
+            parameterArgs[0] = new Arg(targetClass); // first type is always the calling object instance type
+            for (int i = 0; i < parameterTypes.length; i++)
             {
-                hasNamedParamArgs = true;
+                Arg arg = paramIdentifier.getParamArg(method, parameterTypes[i], i);
+                if (arg.name != null)
+                {
+                    hasNamedParamArgs = true;
+                }
+                parameterArgs[i + 1] = arg;
             }
-            parameterArgs[i + 1] = arg;
         }
 
         // Parameter to Calling Argument mapping.
@@ -283,19 +293,21 @@ public class InvokerUtils
         boolean hasNamedCallingArgs = false;
         boolean hasConvertibleTypes = false;
         List<Class<?>> cTypes = new ArrayList<>();
-        cTypes.add(targetClass); // targetClass always at index 0
-        for (int i = 0; i < callingArgs.length; i++)
         {
-            Arg arg = callingArgs[i];
-            if (arg.name != null)
+            cTypes.add(targetClass); // targetClass always at index 0
+            for (int i = 0; i < callingArgs.length; i++)
             {
-                hasNamedCallingArgs = true;
+                Arg arg = callingArgs[i];
+                if (arg.name != null)
+                {
+                    hasNamedCallingArgs = true;
+                }
+                if (arg.convertible)
+                {
+                    hasConvertibleTypes = true;
+                }
+                cTypes.add(arg.getType());
             }
-            if (arg.convertible)
-            {
-                hasConvertibleTypes = true;
-            }
-            cTypes.add(arg.getType());
         }
         MethodType callingType = MethodType.methodType(method.getReturnType(), cTypes);
 
@@ -434,7 +446,6 @@ public class InvokerUtils
         }
         catch (IllegalAccessException | NoSuchMethodException e)
         {
-            // TODO: throw Invalid Invoker Exception
             if (!throwOnFailure)
             {
                 return null;

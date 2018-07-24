@@ -19,6 +19,8 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.lang.invoke.MethodHandle;
+import java.util.Arrays;
+import java.util.Collection;
 
 import javax.websocket.Decoder;
 import javax.websocket.Encoder;
@@ -38,6 +40,8 @@ public class JavaxWebSocketFrameHandlerMetadata
      * </p>
      */
     public static final long UNSET = -2L;
+
+    private static final String[] NO_VARIABLES = new String[0];
 
     // EndpointConfig entries
     private final EndpointConfig endpointConfig;
@@ -129,7 +133,9 @@ public class JavaxWebSocketFrameHandlerMetadata
 
     public String[] getNamedTemplateVariables()
     {
-        return uriTemplatePathSpec.getVariables();
+        if(uriTemplatePathSpec != null)
+            return uriTemplatePathSpec.getVariables();
+        return NO_VARIABLES;
     }
 
     public MethodHandle getPongHandle()

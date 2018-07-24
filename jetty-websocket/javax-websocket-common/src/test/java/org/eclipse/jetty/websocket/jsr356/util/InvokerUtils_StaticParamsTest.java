@@ -51,7 +51,7 @@ public class InvokerUtils_StaticParamsTest
 
         public String onLabeledCount(String label, @Name("count") int count)
         {
-            return String.format("onLabeledCount('%s', %d)", count);
+            return String.format("onLabeledCount('%s', %d)", label, count);
         }
 
         public String onColorMessage(Session session, String message, @Name("color") String color)

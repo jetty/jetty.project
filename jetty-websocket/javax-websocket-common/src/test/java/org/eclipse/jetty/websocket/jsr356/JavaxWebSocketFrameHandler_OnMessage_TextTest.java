@@ -77,7 +77,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
     {
         MessageSocket socket = new MessageSocket();
         expectedException.expect(InvalidSignatureException.class);
-        expectedException.expectMessage(containsString("@OnMessage public void onMessage"));
+        expectedException.expectMessage(containsString("@OnMessage public void " + MessageSocket.class.getName() + "#onMessage"));
         onText(socket, "Hello World");
     }
     
@@ -116,7 +116,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
         MessageSessionSocket socket = new MessageSessionSocket();
 
         expectedException.expect(InvalidSignatureException.class);
-        expectedException.expectMessage(containsString("@OnMessage public void onMessage"));
+        expectedException.expectMessage(containsString("@OnMessage public void " + MessageSessionSocket.class.getName() + "#onMessage"));
         onText(socket, "Hello World");
     }
     
