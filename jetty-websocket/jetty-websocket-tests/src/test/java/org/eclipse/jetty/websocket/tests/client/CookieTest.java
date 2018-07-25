@@ -19,12 +19,15 @@
 package org.eclipse.jetty.websocket.tests.client;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 import java.net.CookieManager;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -61,9 +64,9 @@ public class CookieTest
         public void onOpen(Session session)
         {
             StringBuilder resp = new StringBuilder();
-            handshakeRequest.getCookies().forEach((cookie) -> {
-                resp.append(cookie.toString()).append("\n");
-            });
+            List<HttpCookie> cookies = handshakeRequest.getCookies();
+            assertThat("Cookies", cookies, notNullValue());
+            cookies.forEach((cookie) -> resp.append(cookie.toString()).append("\n"));
             session.getRemote().sendText(resp.toString(), Callback.NOOP);
         }
     }
@@ -127,8 +130,8 @@ public class CookieTest
 
         // client confirms upgrade and receipt of frame
         String responseMessage = clientSocket.messageQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Cookies seen at server side", responseMessage, containsString("hello=world"));
-        assertThat("Cookies seen at server side", responseMessage, containsString("foo=bar is the word"));
+        assertThat("Cookies seen at server side", responseMessage, containsString("hello=\"world\""));
+        assertThat("Cookies seen at server side", responseMessage, containsString("foo=\"bar is the word\""));
     }
 
     @Test
@@ -151,6 +154,6 @@ public class CookieTest
 
         // client confirms upgrade and receipt of frame
         String responseMessage = clientSocket.messageQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Cookies seen at server side", responseMessage, containsString("hello=world"));
+        assertThat("Cookies seen at server side", responseMessage, containsString("hello=\"world\""));
     }
 }

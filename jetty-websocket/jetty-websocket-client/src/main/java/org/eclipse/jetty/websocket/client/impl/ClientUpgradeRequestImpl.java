@@ -18,11 +18,14 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
+import java.net.HttpCookie;
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -34,6 +37,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
 public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
 {
@@ -60,6 +64,18 @@ public class ClientUpgradeRequestImpl extends WebSocketCoreClientUpgradeRequest
             // Copy request details into actual request
             HttpFields fields = getHeaders();
             request.getHeadersMap().forEach((name, values) -> fields.put(name, values));
+
+            // Copy manually created Cookies into place
+            List<HttpCookie> cookies = request.getCookies();
+            if(cookies != null)
+            {
+                HttpFields headers = getHeaders();
+                // TODO: remove existing Cookie header (if set)?
+                for (HttpCookie cookie: cookies)
+                {
+                    headers.add(HttpHeader.COOKIE, cookie.toString());
+                }
+            }
 
             // Copy sub-protocols
             setSubProtocols(request.getSubProtocols());

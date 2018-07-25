@@ -101,21 +101,25 @@ public class ManyConnectionsCleanupTest
         {
             if (req.hasSubProtocol("fastclose"))
             {
+                resp.setAcceptedSubProtocol("fastclose");
                 closeSocket = new FastCloseSocket(calls);
                 return closeSocket;
             }
             
             if (req.hasSubProtocol("fastfail"))
             {
+                resp.setAcceptedSubProtocol("fastfail");
                 closeSocket = new FastFailSocket(calls);
                 return closeSocket;
             }
             
             if (req.hasSubProtocol("container"))
             {
+                resp.setAcceptedSubProtocol("container");
                 closeSocket = new ContainerSocket(calls);
                 return closeSocket;
             }
+
             return new RFC6455Socket();
         }
     }
@@ -296,7 +300,7 @@ public class ManyConnectionsCleanupTest
     private void fastClose() throws Exception
     {
         client.setMaxIdleTimeout(1000);
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
         
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
@@ -314,7 +318,7 @@ public class ManyConnectionsCleanupTest
     private void fastFail() throws Exception
     {
         client.setMaxIdleTimeout(1000);
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
         
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
@@ -333,7 +337,7 @@ public class ManyConnectionsCleanupTest
     private void dropConnection() throws Exception
     {
         client.setMaxIdleTimeout(1000);
-        URI wsUri = server.getServerUri();
+        URI wsUri = server.getWsUri();
         
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();

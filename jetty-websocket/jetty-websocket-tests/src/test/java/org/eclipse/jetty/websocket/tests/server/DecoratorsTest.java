@@ -63,7 +63,7 @@ public class DecoratorsTest
 {
     private static final Logger LOG = Log.getLogger(DecoratorsTest.class);
     
-    private static class DecoratorsSocket extends WebSocketAdapter
+    public static class DecoratorsSocket extends WebSocketAdapter
     {
         private final DecoratedObjectFactory objFactory;
         
