@@ -357,63 +357,66 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
             MethodHandle wholeMsgMethodHandle = lookup.findVirtual(MessageHandler.Whole.class, "onMessage", MethodType.methodType(Void.TYPE, Object.class));
             wholeMsgMethodHandle = wholeMsgMethodHandle.bindTo(handler);
 
-            AvailableDecoders availableDecoders = session.getDecoders();
-
-            AvailableDecoders.RegisteredDecoder registeredDecoder = availableDecoders.getRegisteredDecoderFor(clazz);
-            if (registeredDecoder == null)
-            {
-                throw new IllegalStateException("Unable to find Decoder for type: " + clazz);
-            }
-
-            MessageMetadata metadata = new MessageMetadata();
-            metadata.handle = wholeMsgMethodHandle;
-            metadata.registeredDecoder = registeredDecoder;
-
             if (PongMessage.class.isAssignableFrom(clazz))
             {
                 assertBasicTypeNotRegistered(OpCode.PONG, this.pongHandle, handler.getClass().getName());
                 this.pongHandle = wholeMsgMethodHandle;
                 registerMessageHandler(OpCode.PONG, clazz, handler, null);
             }
-            else if (registeredDecoder.implementsInterface(Decoder.Binary.class))
-            {
-                assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
-                Decoder.Binary<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
-                MessageSink messageSink = new DecodedBinaryMessageSink(session, decoder, wholeMsgMethodHandle);
-                metadata.sinkClass = messageSink.getClass();
-                this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
-                this.binaryMetadata = metadata;
-            }
-            else if (registeredDecoder.implementsInterface(Decoder.BinaryStream.class))
-            {
-                assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
-                Decoder.BinaryStream<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
-                MessageSink messageSink = new DecodedBinaryStreamMessageSink(session, decoder, wholeMsgMethodHandle);
-                metadata.sinkClass = messageSink.getClass();
-                this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
-                this.binaryMetadata = metadata;
-            }
-            else if (registeredDecoder.implementsInterface(Decoder.Text.class))
-            {
-                assertBasicTypeNotRegistered(OpCode.TEXT, this.textMetadata, handler.getClass().getName());
-                Decoder.Text<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
-                MessageSink messageSink = new DecodedTextMessageSink(session, decoder, wholeMsgMethodHandle);
-                metadata.sinkClass = messageSink.getClass();
-                this.textSink = registerMessageHandler(OpCode.TEXT, clazz, handler, messageSink);
-                this.textMetadata = metadata;
-            }
-            else if (registeredDecoder.implementsInterface(Decoder.TextStream.class))
-            {
-                assertBasicTypeNotRegistered(OpCode.TEXT, this.textMetadata, handler.getClass().getName());
-                Decoder.TextStream<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
-                MessageSink messageSink = new DecodedTextStreamMessageSink(session, decoder, wholeMsgMethodHandle);
-                metadata.sinkClass = messageSink.getClass();
-                this.textSink = registerMessageHandler(OpCode.TEXT, clazz, handler, messageSink);
-                this.textMetadata = metadata;
-            }
             else
             {
-                throw new RuntimeException("Unable to add " + handler.getClass().getName() + ": type " + clazz + " is unrecognized by declared decoders");
+                AvailableDecoders availableDecoders = session.getDecoders();
+
+                AvailableDecoders.RegisteredDecoder registeredDecoder = availableDecoders.getRegisteredDecoderFor(clazz);
+                if (registeredDecoder == null)
+                {
+                    throw new IllegalStateException("Unable to find Decoder for type: " + clazz);
+                }
+
+                MessageMetadata metadata = new MessageMetadata();
+                metadata.handle = wholeMsgMethodHandle;
+                metadata.registeredDecoder = registeredDecoder;
+
+                if (registeredDecoder.implementsInterface(Decoder.Binary.class))
+                {
+                    assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
+                    Decoder.Binary<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
+                    MessageSink messageSink = new DecodedBinaryMessageSink(session, decoder, wholeMsgMethodHandle);
+                    metadata.sinkClass = messageSink.getClass();
+                    this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
+                    this.binaryMetadata = metadata;
+                }
+                else if (registeredDecoder.implementsInterface(Decoder.BinaryStream.class))
+                {
+                    assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
+                    Decoder.BinaryStream<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
+                    MessageSink messageSink = new DecodedBinaryStreamMessageSink(session, decoder, wholeMsgMethodHandle);
+                    metadata.sinkClass = messageSink.getClass();
+                    this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
+                    this.binaryMetadata = metadata;
+                }
+                else if (registeredDecoder.implementsInterface(Decoder.Text.class))
+                {
+                    assertBasicTypeNotRegistered(OpCode.TEXT, this.textMetadata, handler.getClass().getName());
+                    Decoder.Text<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
+                    MessageSink messageSink = new DecodedTextMessageSink(session, decoder, wholeMsgMethodHandle);
+                    metadata.sinkClass = messageSink.getClass();
+                    this.textSink = registerMessageHandler(OpCode.TEXT, clazz, handler, messageSink);
+                    this.textMetadata = metadata;
+                }
+                else if (registeredDecoder.implementsInterface(Decoder.TextStream.class))
+                {
+                    assertBasicTypeNotRegistered(OpCode.TEXT, this.textMetadata, handler.getClass().getName());
+                    Decoder.TextStream<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
+                    MessageSink messageSink = new DecodedTextStreamMessageSink(session, decoder, wholeMsgMethodHandle);
+                    metadata.sinkClass = messageSink.getClass();
+                    this.textSink = registerMessageHandler(OpCode.TEXT, clazz, handler, messageSink);
+                    this.textMetadata = metadata;
+                }
+                else
+                {
+                    throw new RuntimeException("Unable to add " + handler.getClass().getName() + ": type " + clazz + " is unrecognized by declared decoders");
+                }
             }
         }
         catch (NoSuchMethodException e)

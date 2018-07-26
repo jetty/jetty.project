@@ -145,7 +145,6 @@ public class PingPongTest
     }
 
     private static WSServer server;
-    private static URI serverUri;
     private static WebSocketCoreClient client;
 
     @BeforeClass
@@ -160,7 +159,6 @@ public class PingPongTest
         server.copyClass(PongSocket.class);
 
         server.start();
-        serverUri = server.getServerUri();
 
         WebAppContext webapp = server.createWebAppContext();
         server.deployWebapp(webapp);
@@ -182,7 +180,7 @@ public class PingPongTest
     private void assertEcho(String endpointPath, Consumer<FrameHandler.Channel> sendAction, String... expectedMsgs) throws Exception
     {
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        URI toUri = serverUri.resolve(endpointPath);
+        URI toUri = server.getWsUri().resolve(endpointPath);
 
         // Connect
         Future<FrameHandler.Channel> futureChannel = client.connect(clientSocket, toUri);
