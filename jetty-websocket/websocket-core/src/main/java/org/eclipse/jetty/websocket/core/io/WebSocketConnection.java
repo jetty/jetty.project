@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -378,6 +379,14 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         if (LOG.isDebugEnabled())
             LOG.debug("onOpen() {}",this);
 
+        // Connection Settings
+        long channelIdleTimeout = channel.getIdleTimeout(TimeUnit.MILLISECONDS);
+        if (channelIdleTimeout >= -1)
+        {
+            this.setMaxIdleTimeout(channelIdleTimeout);
+        }
+
+        // Open Channel
         channel.onOpen();
         super.onOpen();
     }

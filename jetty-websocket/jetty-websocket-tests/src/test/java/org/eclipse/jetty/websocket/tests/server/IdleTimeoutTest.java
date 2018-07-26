@@ -26,8 +26,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
@@ -47,8 +49,15 @@ public class IdleTimeoutTest
     @WebSocket(maxIdleTime = 500)
     public static class FastTimeoutSocket
     {
+        @OnWebSocketError
+        public void onIgnoreError(Throwable cause)
+        {
+            if(cause instanceof WebSocketTimeoutException)
+                return;
+            cause.printStackTrace(System.err);
+        }
     }
-    
+
     @SuppressWarnings("serial")
     public static class TimeoutServlet extends WebSocketServlet
     {
@@ -58,25 +67,25 @@ public class IdleTimeoutTest
             factory.register(FastTimeoutSocket.class);
         }
     }
-    
+
     protected static SimpleServletServer server;
-    
+
     @Rule
     public TestName testname = new TestName();
-    
+
     @BeforeClass
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new TimeoutServlet());
         server.start();
     }
-    
+
     @AfterClass
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     /**
      * Test IdleTimeout on server.
      *
@@ -89,15 +98,15 @@ public class IdleTimeoutTest
         {
             // wait 1 second to allow timeout to fire off
             TimeUnit.SECONDS.sleep(1);
-            
+
             session.sendFrames(new TextFrame().setPayload("You shouldn't be there"));
-            
+
             BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
-            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            WebSocketFrame frame = framesQueue.poll(3, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CLOSE));
 
             CloseStatus closeStatus = CloseFrame.toCloseStatus(frame.getPayload());
-            assertThat("Close.statusCode", closeStatus.getCode(), is(StatusCode.SHUTDOWN));
+            assertThat("Close.statusCode", closeStatus.getCode(), is(StatusCode.SHUTDOWN.getCode()));
             assertThat("Close.reason", closeStatus.getReason(), containsString("Timeout"));
         }
     }

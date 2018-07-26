@@ -125,25 +125,25 @@ public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
-        WebSocketPolicy endpointPolicy = policy.clonePolicy();
+        // Update passed in (unique) policy for this Frame Handler instance
         if (metadata.getIdleTimeout() > 0)
         {
-            endpointPolicy.setIdleTimeout(metadata.getIdleTimeout());
+            policy.setIdleTimeout(metadata.getIdleTimeout());
         }
 
         if (metadata.getInputBufferSize() > 0)
         {
-            endpointPolicy.setInputBufferSize(metadata.getInputBufferSize());
+            policy.setInputBufferSize(metadata.getInputBufferSize());
         }
 
         if (metadata.getMaxBinaryMessageSize() >= -1)
         {
-            endpointPolicy.setMaxBinaryMessageSize(metadata.getMaxBinaryMessageSize());
+            policy.setMaxBinaryMessageSize(metadata.getMaxBinaryMessageSize());
         }
 
         if (metadata.getMaxTextMessageSize() >= -1)
         {
-            endpointPolicy.setMaxTextMessageSize(metadata.getMaxTextMessageSize());
+            policy.setMaxTextMessageSize(metadata.getMaxTextMessageSize());
         }
 
         MethodHandle openHandle = metadata.getOpenHandle();
@@ -173,7 +173,7 @@ public class JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory
         return new JettyWebSocketFrameHandler(
                 container,
                 endpointInstance,
-                endpointPolicy,
+                policy,
                 upgradeRequest, upgradeResponse,
                 openHandle, closeHandle, errorHandle,
                 textHandle, binaryHandle,

@@ -91,7 +91,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     @Override
     public long getIdleTimeout(TimeUnit units)
     {
-        return TimeUnit.MILLISECONDS.convert(getConnection().getEndPoint().getIdleTimeout(),units);
+        return TimeUnit.MILLISECONDS.convert(getPolicy().getIdleTimeout(),units);
     }
     
     @Override
@@ -249,7 +249,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
             {
                 // Open connection and handler
                 state.onOpen();
-                handler.onOpen(this);                
+                handler.onOpen(this);
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
             }

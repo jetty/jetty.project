@@ -155,7 +155,7 @@ public interface FrameHandler
          * Get the Idle Timeout in the unit provided.
          *
          * @param units the time unit interested in.
-         * @return the idle timeout in the unit provided (or -1 if unset / infinite)
+         * @return the idle timeout in the unit provided (or -1 for no idle timeout, -2 for unset)
          * TODO: is this how we want to handle infinite timeout?
          */
         long getIdleTimeout(TimeUnit units);
@@ -163,7 +163,7 @@ public interface FrameHandler
         /**
          * Set the Idle Timeout in the unit provided.
          *
-         * @param timeout the timeout duration (if -1, the timeout is infinite)
+         * @param timeout the timeout duration (or -1 for no idle timeout, -2 for unset)
          * @param units the time unit
          * TODO: is this how we want to handle infinite timeout?
          * TODO: what to do if someone sets a ridiculous timeout? eg: (600,000, DAYS) allow it?

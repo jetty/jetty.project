@@ -158,4 +158,10 @@ public class WebSocketSessionImpl implements Session
         // TODO: need to implement
         throw new UnsupportedOperationException("Not supported in websocket-core yet");
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("WebSocketSessionImpl[%s,to=%,d,%s,%s]", sessionPolicy.getBehavior(), sessionPolicy.getIdleTimeout(), getLocalSocketAddress(), getRemoteSocketAddress());
+    }
 }
