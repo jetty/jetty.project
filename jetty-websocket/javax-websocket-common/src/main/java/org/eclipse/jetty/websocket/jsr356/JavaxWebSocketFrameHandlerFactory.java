@@ -46,6 +46,7 @@ import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
+import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
@@ -425,7 +426,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
         Method onMessages[] = ReflectUtils.findAnnotatedMethods(endpointClass, OnMessage.class);
         if (onMessages != null && onMessages.length > 0)
         {
-            // The different kind of @OnWebSocketMessage method parameter signatures expected
+            // The different kind of @OnMessage method parameter signatures expected
             Arg textCallingArgs[] = new Arg[]{
                     new Arg(Session.class),
                     new Arg(String.class).required()
@@ -467,6 +468,11 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
             Arg readerCallingArgs[] = new Arg[]{
                     new Arg(Session.class),
                     new Arg(Reader.class).required()
+            };
+
+            Arg pongCallingArgs[] = new Arg[]{
+                    new Arg(Session.class),
+                    new Arg(PongMessage.class).required()
             };
 
             List<DecodedArgs> decodedTextCallingArgs = new ArrayList<>();
@@ -676,7 +682,18 @@ public abstract class JavaxWebSocketFrameHandlerFactory implements FrameHandlerF
                     }
                 }
 
-                // Not a valid @OnWebSocketMessage declaration signature
+                // == Pong ==
+
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), pongCallingArgs);
+                if (methodHandle != null)
+                {
+                    // Pong Message
+                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
+                    metadata.setPongHandle(methodHandle, onMsg);
+                    continue onmessageloop;
+                }
+
+                // Not a valid @OnMessage declaration signature
                 throw InvalidSignatureException.build(endpointClass, OnMessage.class, onMsg);
             }
         }
