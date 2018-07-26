@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util;
+package org.eclipse.jetty.util.jmh;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -41,65 +41,50 @@ import java.util.TimeZone;
  * If consecutive calls are frequently very different, then this
  * may be a little slower than a normal DateFormat.
  */
-public class DateCache
+public class DateCacheNoTick
 {
     public static final String DEFAULT_FORMAT="EEE MMM dd HH:mm:ss zzz yyyy";
-    
+
     private final String _formatString;
     private final String _tzFormatString;
     private final DateTimeFormatter _tzFormat;
     private final Locale _locale;
     private final ZoneId _zoneId;
-    
-    private volatile Tick _tick;
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    public static class Tick
-    {
-        final long _seconds;
-        final String _string;
-        public Tick(long seconds, String string)
-        {
-            _seconds = seconds;
-            _string = string;
-        }
-    }
 
     /* ------------------------------------------------------------ */
     /** Constructor.
      * Make a DateCache that will use a default format. The default format
      * generates the same results as Date.toString().
      */
-    public DateCache()
+    public DateCacheNoTick()
     {
         this(DEFAULT_FORMAT);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Constructor.
      * Make a DateCache that will use the given format
      * @param format the format to use
      */
-    public DateCache(String format)
+    public DateCacheNoTick( String format)
     {
         this(format,null,TimeZone.getDefault());
     }
-    
+
     /* ------------------------------------------------------------ */
-    public DateCache(String format,Locale l)
+    public DateCacheNoTick( String format, Locale l)
     {
         this(format,l,TimeZone.getDefault());
     }
 
     /* ------------------------------------------------------------ */
-    public DateCache(String format,Locale l,String tz)
+    public DateCacheNoTick( String format, Locale l, String tz)
     {
         this(format,l,TimeZone.getTimeZone(tz));
     }
-    
+
     /* ------------------------------------------------------------ */
-    public DateCache(String format,Locale l,TimeZone tz)
+    public DateCacheNoTick( String format, Locale l, TimeZone tz)
     {
         _formatString=format;
         _locale = l;
@@ -151,7 +136,6 @@ public class DateCache
         }
         _zoneId = tz.toZoneId();
         _tzFormat.withZone(_zoneId);
-        _tick=null;
     }
     
 
@@ -169,17 +153,7 @@ public class DateCache
      */
     public String format(Date inDate)
     {
-        long seconds = inDate.getTime() / 1000;
-
-        Tick tick=_tick;
-        
-        // Is this the cached time
-        if (tick==null || seconds!=tick._seconds)
-        {
-            return ZonedDateTime.ofInstant(inDate.toInstant(),_zoneId).format( _tzFormat );
-        }
-        
-        return tick._string;
+        return ZonedDateTime.ofInstant(inDate.toInstant(),_zoneId).format( _tzFormat );
     }
     
     /* ------------------------------------------------------------ */
@@ -191,18 +165,7 @@ public class DateCache
      */
     public String format(long inDate)
     {
-        long seconds = inDate / 1000;
-
-        Tick tick=_tick;
-        
-        // Is this the cached time
-        if (tick==null || seconds!=tick._seconds)
-        {
-            // It's a cache miss
-            return ZonedDateTime.ofInstant(Instant.ofEpochMilli(inDate),_zoneId).format( _tzFormat );
-        }
-        
-        return tick._string;
+        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(inDate),_zoneId).format( _tzFormat );
     }
     
     /* ------------------------------------------------------------ */
@@ -215,43 +178,13 @@ public class DateCache
      */
     public String formatNow(long now)
     {
-        long seconds = now / 1000;
-
-        Tick tick=_tick;
-        
-        // Is this the cached time
-        if (tick!=null && tick._seconds==seconds)
-            return tick._string;
-        return formatTick(now)._string;
+        return format(now);
     }
     
     /* ------------------------------------------------------------ */
     public String now()
     {
         return formatNow(System.currentTimeMillis());
-    }
-    
-    /* ------------------------------------------------------------ */
-    public Tick tick()
-    {
-        return formatTick(System.currentTimeMillis());
-    }
-    
-    /* ------------------------------------------------------------ */
-    protected Tick formatTick(long now)
-    {
-        long seconds = now / 1000;
-
-        Tick tick=_tick;
-        // recheck the tick, to save multiple formats
-        if (tick==null || tick._seconds!=seconds)
-        {
-            String s = ZonedDateTime.ofInstant(Instant.now(),_zoneId).format(_tzFormat);
-            _tick=new Tick(seconds,s);
-            tick=_tick;
-        }
-        return tick;
-
     }
 
     /* ------------------------------------------------------------ */

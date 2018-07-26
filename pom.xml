@@ -27,7 +27,7 @@
     <alpn.version>undefined</alpn.version>
     <conscrypt.version>1.1.4</conscrypt.version>
     <asm.version>6.2</asm.version>
-    <jmh.version>1.20</jmh.version>
+    <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <surefireVersion>2.21.0</surefireVersion>
 
@@ -590,7 +590,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
