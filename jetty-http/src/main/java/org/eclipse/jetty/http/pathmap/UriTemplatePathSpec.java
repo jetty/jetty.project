@@ -30,6 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -321,7 +322,8 @@ public class UriTemplatePathSpec extends RegexPathSpec
             int groupCount = matcher.groupCount();
             for (int i = 1; i <= groupCount; i++)
             {
-                ret.put(this.variables[i - 1],matcher.group(i));
+                String value = UrlEncoded.decodeString(matcher.group(i));
+                ret.put(this.variables[i - 1], value);
             }
             return ret;
         }
