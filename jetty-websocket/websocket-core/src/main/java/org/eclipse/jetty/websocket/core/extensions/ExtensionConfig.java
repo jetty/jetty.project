@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
 /**
  * Represents an Extension Configuration, as seen during the connection Handshake process.
@@ -46,7 +46,7 @@ public class ExtensionConfig
 
     /**
      * Parse a single parameterized name.
-     * 
+     *
      * @param parameterizedName
      *            the parameterized name
      * @return the ExtensionConfig
@@ -61,7 +61,7 @@ public class ExtensionConfig
 
     /**
      * Parse enumeration of {@code Sec-WebSocket-Extensions} header values into a {@code ExtensionConfig} list
-     * 
+     *
      * @param valuesEnum
      *            the raw header values enum
      * @return the list of extension configs
@@ -74,7 +74,8 @@ public class ExtensionConfig
         {
             while (valuesEnum.hasMoreElements())
             {
-                Iterator<String> extTokenIter = QuoteUtil.splitAt(valuesEnum.nextElement(),",");
+                QuotedCSV csv = new QuotedCSV(valuesEnum.nextElement());
+                Iterator<String> extTokenIter = csv.iterator();
                 while (extTokenIter.hasNext())
                 {
                     String extToken = extTokenIter.next();
@@ -88,7 +89,7 @@ public class ExtensionConfig
 
     /**
      * Parse 1 or more raw {@code Sec-WebSocket-Extensions} header values into a {@code ExtensionConfig} list
-     * 
+     *
      * @param rawSecWebSocketExtensions
      *            the raw header values
      * @return the list of extension configs
@@ -99,7 +100,8 @@ public class ExtensionConfig
 
         for (String rawValue : rawSecWebSocketExtensions)
         {
-            Iterator<String> extTokenIter = QuoteUtil.splitAt(rawValue,",");
+            QuotedCSV csv = new QuotedCSV(rawValue);
+            Iterator<String> extTokenIter = csv.iterator();
             while (extTokenIter.hasNext())
             {
                 String extToken = extTokenIter.next();
@@ -112,7 +114,7 @@ public class ExtensionConfig
 
     /**
      * Convert a list of {@code ExtensionConfig} to a header value
-     * 
+     *
      * @param configs
      *            the list of extension configs
      * @return the header value (null if no configs present)
@@ -160,23 +162,17 @@ public class ExtensionConfig
 
     public ExtensionConfig(String parameterizedName)
     {
-        Iterator<String> extListIter = QuoteUtil.splitAt(parameterizedName,";");
-        this.name = extListIter.next();
-        this.parameters = new HashMap<>();
+        ParamParser paramParser = new ParamParser(parameterizedName);
+        List<String> keys = paramParser.parse();
 
-        // now for parameters
-        while (extListIter.hasNext())
-        {
-            String extParam = extListIter.next();
-            Iterator<String> extParamIter = QuoteUtil.splitAt(extParam,"=");
-            String key = extParamIter.next().trim();
-            String value = null;
-            if (extParamIter.hasNext())
-            {
-                value = extParamIter.next();
-            }
-            parameters.put(key,value);
-        }
+        if (keys.size() > 1)
+            throw new IllegalStateException("parameterizedName contains multiple ExtensionConfigs: " + parameterizedName);
+        if (keys.isEmpty())
+            throw new IllegalStateException("parameterizedName contains no ExtensionConfigs: " + parameterizedName);
+
+        this.name = keys.get(0);
+        this.parameters = new HashMap<>();
+        this.parameters.putAll(paramParser.params.get(this.name));
     }
 
     public String getName()
@@ -216,10 +212,38 @@ public class ExtensionConfig
             if (value != null)
             {
                 str.append('=');
-                QuoteUtil.quoteIfNeeded(str,value,";=");
+                quoteIfNeeded(str,value);
             }
         }
         return str.toString();
+    }
+
+    public static void quoteIfNeeded(StringBuilder buf, String str)
+    {
+        if (str == null)
+        {
+            return;
+        }
+        // check for delimiters in input string
+        int len = str.length();
+        if (len == 0)
+        {
+            return;
+        }
+        int ch;
+        for (int i = 0; i < len; i++)
+        {
+            ch = str.codePointAt(i);
+            if(ch == ';' || ch == '=')
+            {
+                // found a special extension delimiter codepoints. we need to quote it.
+                buf.append('"').append(str).append('"');
+                return;
+            }
+        }
+
+        // no special delimiters used, no quote needed.
+        buf.append(str);
     }
 
     public final Set<String> getParameterKeys()
@@ -229,7 +253,7 @@ public class ExtensionConfig
 
     /**
      * Return parameters found in request URI.
-     * 
+     *
      * @return the parameter map
      */
     public final Map<String, String> getParameters()
@@ -256,5 +280,76 @@ public class ExtensionConfig
     public String toString()
     {
         return getParameterizedName();
+    }
+
+    private static class ParamParser extends QuotedCSV
+    {
+        Map<String, Map<String, String>> params;
+
+        public ParamParser(String rawParams)
+        {
+            super(false, rawParams);
+        }
+
+        @Override
+        protected void parsedParam(StringBuffer buffer, int valueLength, int paramNameIdx, int paramValueIdx)
+        {
+            String extName = buffer.substring(0, valueLength);
+            String paramName = "";
+            String paramValue = null;
+
+            if (paramValueIdx > 0)
+            {
+                paramName = buffer.substring(paramNameIdx, paramValueIdx - 1);
+                paramValue = buffer.substring(paramValueIdx);
+            }
+            else if (paramNameIdx > 0)
+            {
+                paramName = buffer.substring(paramNameIdx);
+            }
+
+            Map<String, String> paramMap = getParamMap(extName);
+
+            System.out.printf("  -- extName: %s%n", extName);
+            System.out.printf("  -- paramName: %s%n", paramName);
+            System.out.printf("  -- paramValue: %s%n", paramValue);
+
+            paramMap.put(paramName, paramValue);
+
+            super.parsedParam(buffer, valueLength, paramNameIdx, paramValueIdx);
+        }
+
+        @Override
+        protected void parsedValue(StringBuffer buffer)
+        {
+            String extName = buffer.toString();
+            getParamMap(extName);
+            super.parsedValue(buffer);
+        }
+
+        private Map<String,String> getParamMap(String extName)
+        {
+            if(params == null)
+            {
+                params = new HashMap<>();
+            }
+
+            Map<String, String> paramMap = params.get(extName);
+            if (paramMap == null)
+            {
+                paramMap = new HashMap<>();
+                params.put(extName, paramMap);
+            }
+            return paramMap;
+        }
+
+        public List<String> parse()
+        {
+            Iterator<String> iter = iterator();
+            while (iter.hasNext())
+                iter.next();
+
+            return new ArrayList<>(params.keySet());
+        }
     }
 }

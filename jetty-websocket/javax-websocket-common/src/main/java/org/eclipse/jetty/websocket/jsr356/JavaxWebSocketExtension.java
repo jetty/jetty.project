@@ -25,7 +25,6 @@ import java.util.Map;
 import javax.websocket.Extension;
 
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
 public class JavaxWebSocketExtension implements Extension
 {
@@ -123,7 +122,7 @@ public class JavaxWebSocketExtension implements Extension
             if (value != null)
             {
                 str.append('=');
-                QuoteUtil.quoteIfNeeded(str,value,";=");
+                ExtensionConfig.quoteIfNeeded(str, value);
             }
         }
         return str.toString();

@@ -26,7 +26,7 @@ import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.websocket.core.util.QuoteUtil;
+import org.eclipse.jetty.websocket.core.util.HeaderUtil;
 
 public class JsrBrowserConfigurator extends ServerEndpointConfig.Configurator
 {
@@ -40,8 +40,8 @@ public class JsrBrowserConfigurator extends ServerEndpointConfig.Configurator
 
     private String getHeaderValue(HandshakeRequest request, String key)
     {
-        List<String> value = request.getHeaders().get(key);
-        return QuoteUtil.join(value,",");
+        List<String> values = request.getHeaders().get(key);
+        return HeaderUtil.joinValues(values);
     }
 
     @Override

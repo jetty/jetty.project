@@ -29,7 +29,6 @@ import javax.websocket.server.ServerEndpointConfig.Configurator;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
 /**
  * The "Container Default Configurator" per the JSR-356 spec.
@@ -96,7 +95,7 @@ public final class ContainerDefaultConfigurator extends Configurator
         if ((supported == null) || (supported.isEmpty()))
         {
             // Just return the first hit in this case
-            LOG.warn("Client requested Subprotocols on endpoint with none supported: {}",QuoteUtil.join(requested,","));
+            LOG.warn("Client requested Subprotocols on endpoint with none supported: {}", String.join(",", requested));
             return NO_SUBPROTOCOL;
         }
 
@@ -115,8 +114,9 @@ public final class ContainerDefaultConfigurator extends Configurator
             }
         }
 
-        LOG.warn("Client requested subprotocols {} do not match any endpoint supported subprotocols {}",QuoteUtil.join(requested,","),
-                QuoteUtil.join(supported,","));
+        LOG.warn("Client requested subprotocols {} do not match any endpoint supported subprotocols {}",
+                String.join(",", requested),
+                String.join(",", supported));
         return NO_SUBPROTOCOL;
     }
 

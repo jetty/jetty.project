@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
@@ -120,5 +122,40 @@ public class ExtensionConfigTest
         ExtensionConfig cfg = ExtensionConfig.parse("foo");
         Map<String, String> expectedParams = new HashMap<>();
         assertConfig(cfg,"foo",expectedParams);
+    }
+
+    @Test
+    public void testParseList_Simple()
+    {
+        String rawHeaders[] = new String[] {
+                "permessage-compress; client_max_window_bits",
+                "capture; output=\"wscapture.log\"",
+                "identity"
+        };
+
+        List<ExtensionConfig> configs = ExtensionConfig.parseList(rawHeaders);
+        assertThat("Configs", configs.size(), is(3));
+        assertThat("Configs[0]", configs.get(0).getName(), is("permessage-compress"));
+        assertThat("Configs[1]", configs.get(1).getName(), is("capture"));
+        assertThat("Configs[2]", configs.get(2).getName(), is("identity"));
+    }
+
+    /**
+     * Parse a list of headers from a client that isn't following the RFC spec properly,
+     * where they include multiple extensions in 1 header.
+     */
+    @Test
+    public void testParseList_Unsplit()
+    {
+        String rawHeaders[] = new String[] {
+                "permessage-compress; client_max_window_bits, identity",
+                "capture; output=\"wscapture.log\""
+        };
+
+        List<ExtensionConfig> configs = ExtensionConfig.parseList(rawHeaders);
+        assertThat("Configs", configs.size(), is(3));
+        assertThat("Configs[0]", configs.get(0).getName(), is("permessage-compress"));
+        assertThat("Configs[1]", configs.get(1).getName(), is("identity"));
+        assertThat("Configs[2]", configs.get(2).getName(), is("capture"));
     }
 }

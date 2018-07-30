@@ -62,7 +62,7 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.util.QuoteUtil;
+import org.eclipse.jetty.websocket.core.util.HeaderUtil;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.eclipse.jetty.websocket.jsr356.tests.Timeouts;
@@ -160,7 +160,7 @@ public class ConfiguratorTest
                 }
                 else
                 {
-                    response.append(QuoteUtil.join(values, ","));
+                    response.append(HeaderUtil.joinValues(values));
                 }
             }
 
@@ -181,7 +181,7 @@ public class ConfiguratorTest
         @Override
         public String getNegotiatedSubprotocol(List<String> supported, List<String> requested)
         {
-            String seen = QuoteUtil.join(requested, ",");
+            String seen = String.join(",", requested);
             seenProtocols.compareAndSet(null, seen);
             return super.getNegotiatedSubprotocol(supported, requested);
         }
