@@ -56,49 +56,6 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <finalName>${jmhjar.name}</finalName>
-              <shadeTestJar>true</shadeTestJar>
-              <artifactSet>
-                <includes>
-                  <include>org.openjdk.jmh:jmh-core</include>
-                </includes>
-              </artifactSet>
-              <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>org.openjdk.jmh.Main</mainClass>
-                </transformer>
-              </transformers>
-              <filters>
-                <filter>
-                   <artifact>org.openjdk.jmh:jmh-core</artifact>
-                   <includes>
-                       <include>**</include>
-                   </includes>
-                </filter>
-                <filter>
-                  <artifact>*:*</artifact>
-                  <excludes>
-                    <exclude>META-INF/*.SF</exclude>
-                    <exclude>META-INF/*.DSA</exclude>
-                    <exclude>META-INF/*.RSA</exclude>
-                  </excludes>
-                </filter>
-              </filters>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <executions>
           <execution>
@@ -113,32 +70,6 @@
                   <version>${jmh.version}</version>
                 </path>
               </annotationProcessorPaths>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>make-perf-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/perf-tests.xml</descriptor>
-              </descriptors>
-              <finalName>perf-test</finalName>
-              <appendAssemblyId>false</appendAssemblyId>
-              <attach>false</attach>
-              <archive>
-                <manifest>
-                  <mainClass>org.openjdk.jmh.Main</mainClass>
-                </manifest>
-              </archive>
             </configuration>
           </execution>
         </executions>
