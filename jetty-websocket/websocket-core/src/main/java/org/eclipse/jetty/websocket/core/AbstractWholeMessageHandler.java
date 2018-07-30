@@ -65,16 +65,21 @@ public abstract class AbstractWholeMessageHandler extends AbstractPartialFrameHa
 
         // handle below here
         if (frame.getOpCode() == OpCode.BINARY)
+        {
             binaryMessage = ByteBuffer.allocate(frame.getPayloadLength());
+        }
 
         if (frame.hasPayload())
         {
             BufferUtil.ensureCapacity(binaryMessage, binaryMessage.remaining() + frame.getPayloadLength());
-            BufferUtil.put(frame.getPayload(), binaryMessage);
+            binaryMessage.put(frame.getPayload());
         }
 
         if (frame.isFin())
+        {
+            BufferUtil.flipToFlush(binaryMessage, 0);
             onWholeBinary(binaryMessage, callback);
+        }
         else
             callback.succeeded();
     }
