@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util;
+package org.eclipse.jetty.util.jmh;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -40,10 +40,10 @@ import java.util.concurrent.TimeUnit;
 @Threads(4)
 @Warmup(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-public class DateCacheBenchmark
+public class DateCacheSimpleDateFormatBenchmark
 {
 
-    DateCache dateCache = new DateCache();
+    DateCacheSimpleDateFormat dateCache = new DateCacheSimpleDateFormat();
     long timestamp = Instant.now().toEpochMilli();
 
     @Benchmark
@@ -70,7 +70,7 @@ public class DateCacheBenchmark
     public static void main(String[] args) throws RunnerException 
     {
         Options opt = new OptionsBuilder()
-                .include(DateCacheBenchmark.class.getSimpleName())
+                .include(DateCacheSimpleDateFormatBenchmark.class.getSimpleName())
                 .warmupIterations(2)
                 .measurementIterations(3)
                 .forks(1)

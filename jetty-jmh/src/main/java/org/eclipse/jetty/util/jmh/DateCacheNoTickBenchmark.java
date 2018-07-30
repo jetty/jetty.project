@@ -16,107 +16,61 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.util.thread;
+package org.eclipse.jetty.util.jmh;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ExecutorThreadPool;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
+import java.time.Instant;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
 @State(Scope.Benchmark)
 @Threads(4)
 @Warmup(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-public class ThreadPoolBenchmark
+public class DateCacheNoTickBenchmark
 {
-    public enum Type
+
+    DateCacheNoTick dateCache = new DateCacheNoTick();
+    long timestamp = Instant.now().toEpochMilli();
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    public void testDateCacheTimestamp()
     {
-        QTP, ETP;
-    }
-
-    @Param({ "QTP", "ETP"})
-    Type type;
-
-    @Param({ "50"})
-    int tasks;
-    
-    @Param({ "200", "2000"})
-    int size;
-
-    ThreadPool pool;
-
-    @Setup // (Level.Iteration)
-    public void buildPool()
-    {
-        switch(type)
-        {
-            case QTP:
-                pool = new QueuedThreadPool(size);
-                break;
-                
-            case ETP:
-                pool = new ExecutorThreadPool(size);
-                break;
-        }
-        LifeCycle.start(pool);
+        dateCache.format(timestamp);
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testPool()
+    public void testDateCacheNow()
     {
-        doWork().join();
+        dateCache.format(new Date());
     }
 
-    @TearDown // (Level.Iteration)
-    public void shutdownPool()
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    public void testDateCacheFormatNow()
     {
-        LifeCycle.stop(pool);
-        pool = null;
-    }
-
-    CompletableFuture<Void> doWork()
-    {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        for (int i = 0; i < tasks; i++)
-        {
-            final CompletableFuture<Void> f = new CompletableFuture<Void>();
-            futures.add(f);
-            pool.execute(() -> {
-                Blackhole.consumeCPU(64);
-                f.complete(null);
-            });
-        }
-
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        dateCache.formatNow(System.currentTimeMillis());
     }
 
     public static void main(String[] args) throws RunnerException 
     {
         Options opt = new OptionsBuilder()
-                .include(ThreadPoolBenchmark.class.getSimpleName())
+                .include(DateCacheNoTickBenchmark.class.getSimpleName())
                 .warmupIterations(2)
                 .measurementIterations(3)
                 .forks(1)
