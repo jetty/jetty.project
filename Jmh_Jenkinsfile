@@ -15,11 +15,11 @@ node("linux") {
   mvnEnv.add("MAVEN_OPTS=$mavenOpts")
 
 
-  stage("Checkout - ${jdk}") {
-    checkout scm
+  stage("Checkout") {
+    git url: 'https://github.com/eclipse/jetty.project.git', branch: 'jetty-9.4.x'
   }
 
-  stage("Compile - ${jdk}") {
+  stage("Compile") {
     withEnv(mvnEnv) {
       timeout(time: 15, unit: 'MINUTES') {
         withMaven(
@@ -45,8 +45,8 @@ stage("jmh-run") {
     timeout( time: 120, unit: 'MINUTES' ) {
       withEnv( ["JAVA_HOME=${tool "jdk8"}"] ) {
         unstash name: 'perf-tests'
-        sh "${env.JAVA_HOME}/bin/java -jar jetty-util/target/benchmarks.jar -rff jetty-util/target/jmh_result.json -rf json"
-        jmhReport 'jetty-util/target/jmh_result.json'
+        sh "${env.JAVA_HOME}/bin/java -jar jetty-jmh/target/benchmarks.jar -rff jetty-jmh/target/jmh_result.json -rf json"
+        jmhReport 'jetty-jmh/target/jmh_result.json'
       }
     }
   }
