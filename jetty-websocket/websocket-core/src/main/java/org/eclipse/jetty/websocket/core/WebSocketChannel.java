@@ -326,6 +326,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
             }
         }
 
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("sendFrame({}, {}, {})", frame, callback, batchMode);
+        }
+
         extensionStack.sendFrame(frame,callback,batchMode);
     }
 

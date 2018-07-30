@@ -287,8 +287,7 @@ public class MessageReceivingTest
             int segmentCount = Math.max(1, copy.remaining() / segmentSize);
             if (LOG.isDebugEnabled())
             {
-                LOG.debug(".onText(payload.length={})", wholeMessage.remaining());
-                LOG.debug("segmentSize={}, segmentCount={}", segmentSize, segmentCount);
+                LOG.debug(".onWholeBinary(payload.length={}): segmentCount={}", wholeMessage.remaining(), segmentCount);
             }
             for (int i = 0; i < segmentCount; i++)
             {
@@ -297,15 +296,15 @@ public class MessageReceivingTest
                 int remaining = segment.remaining();
                 segment.limit(segment.position() + Math.min(remaining, segmentSize));
                 boolean last = (i >= (segmentCount - 1));
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("segment[{}].sendPartialBytes({}, {})", i, BufferUtil.toDetailString(segment), last);
-                }
                 DataFrame frame;
                 if (i == 0) frame = new BinaryFrame();
                 else frame = new ContinuationFrame();
                 frame.setPayload(segment);
                 frame.setFin(last);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("segment[{}]: {}", i, frame);
+                }
                 channel.sendFrame(frame, Callback.NOOP, BatchMode.OFF);
             }
             callback.succeeded();
