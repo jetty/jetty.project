@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ContainerProvider;
@@ -78,7 +79,7 @@ public class MisbehavingClassTest
         {
             // expecting IOException during onOpen
             expectedException.expect(IOException.class);
-            expectedException.expectCause(instanceOf(RuntimeException.class));
+            expectedException.expectCause(instanceOf(ExecutionException.class));
             container.connectToServer(socket, server.getWsUri());
             expectedException.reportMissingExceptionWithMessage("Should have failed .connectToServer()");
             
@@ -101,7 +102,7 @@ public class MisbehavingClassTest
         {
             // expecting IOException during onOpen
             expectedException.expect(IOException.class);
-            expectedException.expectCause(instanceOf(RuntimeException.class));
+            expectedException.expectCause(instanceOf(ExecutionException.class));
             container.connectToServer(socket, server.getWsUri());
             expectedException.reportMissingExceptionWithMessage("Should have failed .connectToServer()");
             
