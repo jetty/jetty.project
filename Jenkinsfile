@@ -222,7 +222,7 @@ def notifyBuild(String buildStatus, String jdk)
           body: detail
   )
 
-  slackSend "Build Failed - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
+  slackSend color:"danger", message: "Build " + buildStatus + " - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
