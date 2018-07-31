@@ -10,6 +10,8 @@ for (def os in oss) {
   }
 }
 
+slackSend "Build Started - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
+
 parallel builds
 
 
@@ -219,6 +221,8 @@ def notifyBuild(String buildStatus, String jdk)
           subject: summary,
           body: detail
   )
+
+  slackSend "Build Failed - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
