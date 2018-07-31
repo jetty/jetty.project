@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import javax.websocket.DeploymentException;
@@ -81,6 +82,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     private List<ServerEndpointConfig> deferredEndpointConfigs;
     
     /**
+     * Main entry point for {@link JavaxWebSocketServerContainerInitializer}.
      *
      * @param containerContext the {@link WebSocketContainerContext} to use
      * @param httpClient the {@link HttpClient} instance to use
@@ -88,6 +90,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     public JavaxWebSocketServerContainer(WebSocketContainerContext containerContext, MappedWebSocketServletNegotiator mappedWebSocketServletNegotiator, HttpClient httpClient)
     {
         super(new WebSocketCoreClient(httpClient));
+        this.coreClient.addBean(httpClient, false);
         this.containerContext = containerContext;
         this.mappedWebSocketServletNegotiator = mappedWebSocketServletNegotiator;
         this.frameHandlerFactory = new JavaxWebSocketServerFrameHandlerFactory(this);
@@ -133,6 +136,24 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     public WebSocketPolicy getPolicy()
     {
         return this.containerContext.getPolicy();
+    }
+
+    @Override
+    protected WebSocketCoreClient getWebSocketCoreClient() throws Exception
+    {
+        // Lazy Start Http Client
+        if(!coreClient.getHttpClient().isStarted())
+        {
+            coreClient.getHttpClient().start();
+        }
+
+        // Lazy Start WebSocket Client
+        if (!coreClient.isStarted())
+        {
+            coreClient.start();
+        }
+
+        return coreClient;
     }
 
     @Override

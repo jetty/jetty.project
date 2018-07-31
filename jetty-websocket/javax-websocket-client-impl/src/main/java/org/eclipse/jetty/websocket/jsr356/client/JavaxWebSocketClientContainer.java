@@ -35,6 +35,7 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
@@ -53,7 +54,7 @@ import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
 @ManagedObject("JSR356 Client Container")
 public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer implements javax.websocket.WebSocketContainer
 {
-    private final WebSocketCoreClient coreClient;
+    protected final WebSocketCoreClient coreClient;
     private final JavaxWebSocketClientFrameHandlerFactory frameHandlerFactory;
     private ClassLoader contextClassLoader;
     private DecoratedObjectFactory objectFactory;
@@ -62,7 +63,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     public JavaxWebSocketClientContainer()
     {
         this(new WebSocketCoreClient());
-        this.coreClient.getHttpClient().setName("Javax-WebSocketClient");
+        this.coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(this.coreClient.getHttpClient().hashCode()));
         // We created WebSocketCoreClient, let lifecycle be managed by us
         addManaged(coreClient);
     }
@@ -78,6 +79,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     {
         super(coreClient.getPolicy());
         this.coreClient = coreClient;
+        this.addBean(this.coreClient);
         this.contextClassLoader = this.getClass().getClassLoader();
         this.objectFactory = new DecoratedObjectFactory();
         this.extensionRegistry = new WebSocketExtensionRegistry();
@@ -95,17 +97,30 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         return coreClient.getHttpClient();
     }
 
+    protected WebSocketCoreClient getWebSocketCoreClient() throws Exception
+    {
+        return coreClient;
+    }
+
     /**
      * Connect to remote websocket endpoint
      *
      * @param upgradeRequest the upgrade request information
      * @return the future for the session, available on success of connect
-     * @throws IOException if unable to connect
      */
-    private CompletableFuture<Session> connect(ClientUpgradeRequestImpl upgradeRequest) throws IOException
+    private CompletableFuture<Session> connect(ClientUpgradeRequestImpl upgradeRequest)
     {
-        coreClient.connect(upgradeRequest);
-        return upgradeRequest.getFutureSession();
+        CompletableFuture<Session> fut = upgradeRequest.getFutureSession();
+        try
+        {
+            getWebSocketCoreClient().connect(upgradeRequest);
+            return fut;
+        }
+        catch (Exception e)
+        {
+            fut.completeExceptionally(e);
+            return fut;
+        }
     }
 
     private Session connect(ConfiguredEndpoint configuredEndpoint, URI destURI) throws IOException
@@ -142,12 +157,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         {
             Future<Session> sessionFuture = connect(upgradeRequest);
             // TODO: apply connect timeouts here?
-            return sessionFuture.get();
-        }
-        catch (IOException e)
-        {
-            // rethrow
-            throw e;
+            return sessionFuture.get(); // TODO: unwrap IOException from ExecutionException?
         }
         catch (Exception e)
         {

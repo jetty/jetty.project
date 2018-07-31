@@ -39,6 +39,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.servlet.NativeWebSocketServletContainerInitializer;
@@ -147,10 +148,18 @@ public class JavaxWebSocketServerContainerInitializer implements ServletContaine
         NativeWebSocketConfiguration nativeWebSocketConfiguration = NativeWebSocketServletContainerInitializer.getDefaultFrom(context.getServletContext());
         
         // Build HttpClient
-        HttpClient httpClient = (HttpClient) context.getServletContext().getAttribute(HTTPCLIENT_ATTRIBUTE);
-        if(httpClient == null)
+        HttpClient httpClient = null;
+
+        httpClient = (HttpClient) context.getServletContext().getAttribute(HTTPCLIENT_ATTRIBUTE);
+        if (httpClient == null)
         {
             httpClient = (HttpClient) context.getServer().getAttribute(HTTPCLIENT_ATTRIBUTE);
+        }
+
+        if (httpClient == null)
+        {
+            httpClient = new HttpClient();
+            httpClient.setName("Javax-WebSocketServer@" + Integer.toHexString(httpClient.hashCode()));
         }
         
         // Create the Jetty ServerContainer implementation

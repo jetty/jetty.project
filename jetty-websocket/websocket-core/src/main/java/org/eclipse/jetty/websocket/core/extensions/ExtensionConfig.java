@@ -309,11 +309,6 @@ public class ExtensionConfig
             }
 
             Map<String, String> paramMap = getParamMap(extName);
-
-            System.out.printf("  -- extName: %s%n", extName);
-            System.out.printf("  -- paramName: %s%n", paramName);
-            System.out.printf("  -- paramValue: %s%n", paramValue);
-
             paramMap.put(paramName, paramValue);
 
             super.parsedParam(buffer, valueLength, paramNameIdx, paramValueIdx);

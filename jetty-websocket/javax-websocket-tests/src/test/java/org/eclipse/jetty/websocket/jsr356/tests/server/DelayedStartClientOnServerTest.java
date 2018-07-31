@@ -47,6 +47,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
+import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
@@ -57,8 +58,11 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.websocket.core.util.WSURI;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.junit.Test;
 
@@ -71,6 +75,21 @@ public class DelayedStartClientOnServerTest
         public String echo(String msg)
         {
             return msg;
+        }
+
+        @OnError
+        public void onError(Throwable cause)
+        {
+            // ignore
+        }
+    }
+
+    public static class EndpointAdapter extends Endpoint
+    {
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+            /* do nothing */
         }
     }
     
@@ -88,14 +107,7 @@ public class DelayedStartClientOnServerTest
             try
             {
                 URI wsURI = WSURI.toWebsocket(req.getRequestURL()).resolve("/echo");
-                Session session = container.connectToServer(new Endpoint()
-                {
-                    @Override
-                    public void onOpen(Session session, EndpointConfig config)
-                    {
-                        /* do nothing */
-                    }
-                }, wsURI);
+                Session session = container.connectToServer(new EndpointAdapter(), wsURI);
                 // don't care about the data sent, just the connect itself.
                 session.getBasicRemote().sendText("Hello");
                 session.close();
@@ -125,14 +137,7 @@ public class DelayedStartClientOnServerTest
             try
             {
                 URI wsURI = WSURI.toWebsocket(req.getRequestURL()).resolve("/echo");
-                Session session = container.connectToServer(new Endpoint()
-                {
-                    @Override
-                    public void onOpen(Session session, EndpointConfig config)
-                    {
-                        /* do nothing */
-                    }
-                }, wsURI);
+                Session session = container.connectToServer(new EndpointAdapter(), wsURI);
                 // don't care about the data sent, just the connect itself.
                 session.getBasicRemote().sendText("Hello");
                 session.close();
@@ -223,7 +228,6 @@ public class DelayedStartClientOnServerTest
             assertNoHttpClientPoolThreads(threadNames);
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketClient@"))));
-            assertThat("Threads", threadNames, not(hasItem(containsString("Jsr356Client@"))));
         }
         finally
         {
@@ -249,7 +253,7 @@ public class DelayedStartClientOnServerTest
             
             List<String> threadNames = getThreadNames(server, (ContainerLifeCycle)container);
             assertNoHttpClientPoolThreads(threadNames);
-            assertThat("Threads", threadNames, hasItem(containsString("Jsr356Client@")));
+            assertThat("Threads", threadNames, hasItem(containsString("qtp")));
         }
         finally
         {
@@ -274,7 +278,7 @@ public class DelayedStartClientOnServerTest
             assertThat("Response", response, startsWith("Connected to ws://"));
             List<String> threadNames = getThreadNames((ContainerLifeCycle)container, server);
             assertNoHttpClientPoolThreads(threadNames);
-            assertThat("Threads", threadNames, hasItem(containsString("WebSocketClient@")));
+            assertThat("Threads", threadNames, hasItem(containsString("Javax-WebSocketServer@")));
         }
         finally
         {
@@ -301,7 +305,8 @@ public class DelayedStartClientOnServerTest
             assertNoHttpClientPoolThreads(threadNames);
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketClient@"))));
-            assertThat("Threads", threadNames, not(hasItem(containsString("Jsr356Client@"))));
+            assertThat("Threads", threadNames, not(hasItem(containsString("Javax-WebSocketServer@"))));
+            assertThat("Threads", threadNames, not(hasItem(containsString("Javax-WebSocketClient@"))));
         }
         finally
         {
@@ -323,11 +328,10 @@ public class DelayedStartClientOnServerTest
         {
             server.start();
             String response = GET(server.getURI().resolve("/configure"));
-            assertThat("Response", response, startsWith("Configured " + JavaxWebSocketServerContainerInitializer.class.getName()));
+            assertThat("Response", response, startsWith("Configured " + JavaxWebSocketServerContainer.class.getName()));
             List<String> threadNames = getThreadNames((ContainerLifeCycle)container, server);
             assertNoHttpClientPoolThreads(threadNames);
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
-            assertThat("Threads", threadNames, not(hasItem(containsString("Jsr356Client@"))));
         }
         finally
         {
@@ -379,6 +383,11 @@ public class DelayedStartClientOnServerTest
         Collection<Executor> executors = container.getBeans(Executor.class);
         for (Executor executor : executors)
         {
+            if(executor instanceof ReservedThreadExecutor)
+            {
+                executor = ((ReservedThreadExecutor) executor).getExecutor();
+            }
+
             if (executor instanceof QueuedThreadPool)
             {
                 QueuedThreadPool qtp = (QueuedThreadPool) executor;
