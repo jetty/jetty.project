@@ -38,7 +38,6 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -46,11 +45,11 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
-    
-    private static final Pattern PARAM_PATTERN = Pattern.compile("([^=]+)=(.*)");
-    private static final Pattern TYPE_PATTERN = Pattern.compile("([^\\s]+)(\\s+(.*))?");
-    private static final Pattern MULTIPLE_CHALLENGE_PATTERN = Pattern.compile("(.*?)\\s*,\\s*([^=\\s,]+(\\s+[^=\\s].*)?)");
-    private static final Pattern BASE64_PATTERN = Pattern.compile("[\\+\\-\\.\\/\\dA-Z_a-z~]+=*");
+
+    private enum State { AUTH_SCHEME, TOKEN68, AUTH_PARAMS, CHALLENGE_END }
+    private static final Pattern AUTH_SCHEME = Pattern.compile("([!#$%&'*+\\-.^_`|~0-9A-Za-z]+)(?:\\s+(.*))?");
+    private static final Pattern AUTH_PARAM = Pattern.compile("([!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:\"(.*)\"|(.*))");
+    private static final Pattern TOKEN_68 = Pattern.compile("([a-zA-Z0-9\\-._~+\\/]+=*)");
 
     private final HttpClient client;
     private final int maxContentLength;
@@ -85,77 +84,106 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     
 
     
-    protected List<HeaderInfo> getHeaderInfo(String value) throws IllegalArgumentException
+    protected List<HeaderInfo> getHeaderInfo(String header) throws IllegalArgumentException
     {
-        String header = value;
+
         List<HeaderInfo> headerInfos = new ArrayList<>();
-        
+        List<String> values = new QuotedCSV(true, header).getValues();
+
+        Matcher m;
+        String authScheme = null;
+        Map<String,String> authParams = new HashMap<>();
+
+        State state = State.AUTH_SCHEME;
+
+        int index = 0;
+        String value = values.get(index);
+
+        Loop:
         while(true)
         {
-            Matcher m = MULTIPLE_CHALLENGE_PATTERN.matcher(header);
-            if (m.matches())
+            switch(state)
             {
-                headerInfos.add(newHeaderInfo(m.group(1)));
-                header = m.group(2);
+                case AUTH_SCHEME:
+
+                    m = AUTH_SCHEME.matcher(value);
+                    if(m.matches())
+                    {
+                        authScheme = m.group(1);
+                        value = m.group(2);
+                        state = State.AUTH_PARAMS;
+
+                        if(value==null)
+                            break;
+
+                        m = TOKEN_68.matcher(value);
+                        if(m.matches())
+                        {
+                            value = m.group(1);
+                            state = State.TOKEN68;
+                            continue;
+                        }
+
+                        continue;
+                    }
+
+                    throw new IllegalArgumentException("Invalid auth-scheme");
+
+
+                case TOKEN68:
+                    authParams.put("base64", value);
+                    state = State.CHALLENGE_END;
+                    break;
+
+
+                case AUTH_PARAMS:
+                    if(value == null)
+                    {
+                        state = State.CHALLENGE_END;
+                        continue;
+                    }
+
+                    m = AUTH_PARAM.matcher(value);
+                    if(m.matches())
+                    {
+                        String paramVal = (m.group(2)!=null) ? m.group(2) : m.group(3);
+                        authParams.put(m.group(1), paramVal);
+                        break;
+                    }
+
+                    m = AUTH_SCHEME.matcher(value);
+                    if(m.matches())
+                    {
+                        state = State.CHALLENGE_END;
+                        continue;
+                    }
+
+                    throw new IllegalArgumentException("Invalid auth-param");
+
+
+                case CHALLENGE_END:
+                    headerInfos.add(new HeaderInfo(getAuthorizationHeader(), authScheme, authParams));
+                    authScheme = null;
+                    authParams = new HashMap<>();
+                    state = State.AUTH_SCHEME;
+
+                    if(value==null)
+                        break Loop;
+
+                    continue;
+
+
+                default:
+                    throw new IllegalStateException("Invalid state");
             }
-            else
-            {
-                headerInfos.add(newHeaderInfo(header));
-                break;
-            }
+
+
+            value = (++index < values.size()) ? values.get(index) : null;
         }
         
         return headerInfos;
     }
 
-    protected HeaderInfo newHeaderInfo(String value) throws IllegalArgumentException
-    {
-        String type;
-        Map<String,String> params = new HashMap<>();
-        
-        Matcher m = TYPE_PATTERN.matcher(value);
-        if (m.matches())
-        {
-            type = m.group(1);
-            if (m.group(2) != null)
-                params = parseParameters(m.group(3));
-        }
-        else
-        {
-            throw new IllegalArgumentException("Invalid Authentication Format");
-        }
-        
-        return new HeaderInfo(getAuthorizationHeader(), type, params);
-    }
-    
-    protected Map<String, String> parseParameters(String wwwAuthenticate) throws IllegalArgumentException
-    {
-        Map<String, String> result = new HashMap<>();
-        
-        Matcher b64 = BASE64_PATTERN.matcher(wwwAuthenticate);
-        if (b64.matches())
-        {
-            result.put("base64", wwwAuthenticate);
-            return result;
-        }
-        
-        QuotedCSV parts = new QuotedCSV(false, wwwAuthenticate);
-        for (String part : parts)
-        {
-            Matcher params = PARAM_PATTERN.matcher(part);
-            if (params.matches())
-            {
-                String name = StringUtil.asciiToLowerCase(params.group(1));
-                String value = (params.group(2)==null) ? "" : params.group(2);
-                result.put(name, value);
-            }
-            else
-            {
-                throw new IllegalArgumentException("Invalid Authentication Format");
-            }
-        }
-        return result;
-    }
 
     private class AuthenticationListener extends BufferingResponseListener
     {
