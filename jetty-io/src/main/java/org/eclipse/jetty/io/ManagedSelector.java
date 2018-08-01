@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -101,7 +102,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _selectorManager.execute(_strategy::produce);
 
         // Set started only if we really are started
-        submit(s->_started.set(true));
+        Start start = new Start();
+        submit(start);
+        start._started.await();
     }
 
     public int size()
@@ -426,6 +429,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} woken up from select, {}/{}/{} selected", selector, selected, selector.selectedKeys().size(), selector.keys().size());
 
+                    if (Thread.interrupted() && !isRunning())
+                        throw new ClosedSelectorException();
+
                     int updates;
                     synchronized(ManagedSelector.this)
                     {
@@ -534,6 +540,18 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     public interface SelectorUpdate
     {
         public void update(Selector selector);
+    }
+
+    private class Start implements SelectorUpdate
+    {
+        private final CountDownLatch _started = new CountDownLatch(1);
+
+        @Override
+        public void update(Selector selector)
+        {
+            ManagedSelector.this._started.set(true);
+            _started.countDown();
+        }
     }
 
     private static class DumpKeys implements SelectorUpdate
