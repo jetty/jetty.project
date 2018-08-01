@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -425,6 +426,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     }
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} woken up from select, {}/{}/{} selected", selector, selected, selector.selectedKeys().size(), selector.keys().size());
+
+                    if (Thread.interrupted() && !isRunning())
+                        throw new ClosedSelectorException();
 
                     int updates;
                     synchronized(ManagedSelector.this)
