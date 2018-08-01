@@ -37,6 +37,7 @@ def getFullBuild(jdk, os) {
       def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" // 
       def settingsName = 'oss-settings.xml'
       def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
+      def extraMvnCli = getExtraMvnCli();
 
       // Environment
       List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
@@ -64,7 +65,7 @@ def getFullBuild(jdk, os) {
                       globalMavenSettingsConfig: settingsName,
                       mavenOpts: mavenOpts,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B clean install -DskipTests -T6 -e"
+                sh "mvn -V -B clean install -DskipTests -T6 $extraMvnCli"
               }
 
             }
@@ -111,7 +112,7 @@ def getFullBuild(jdk, os) {
                       //options: [invokerPublisher(disabled: false)],
                       mavenOpts: mavenOpts,
                       mavenLocalRepo: localRepo) {
-                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -DmavenHome=${mvntoolInvoker} -Dunix.socket.tmp="+env.JENKINS_HOME
+                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 $extraMvnCli -DmavenHome=${mvntoolInvoker} -Dunix.socket.tmp="+env.JENKINS_HOME
               }
               // withMaven doesn't label..
               // Report failures in the jenkins UI
@@ -171,7 +172,7 @@ def getFullBuild(jdk, os) {
                     globalMavenSettingsConfig: settingsName,
                     mavenOpts: mavenOpts,
                     mavenLocalRepo: localRepo) {
-              sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
+              sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5 $extraMvnCli"
             }
           }
         }
@@ -196,6 +197,16 @@ def isActiveBranch()
   def branchName = "${env.BRANCH_NAME}"
   return ( branchName == "master" ||
           ( branchName.startsWith("jetty-") && branchName.endsWith(".x") ) );
+}
+
+def getExtraMvnCli()
+{
+  def branchName = "${env.BRANCH_NAME}"
+  if(branchName == "experiment/no_logging")
+  {
+    return '-Pno-logger-debug -U';
+  }
+  return ""
 }
 
 // Test if the Jenkins Pipeline or Step has marked the
