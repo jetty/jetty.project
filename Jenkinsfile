@@ -10,10 +10,7 @@ for (def os in oss) {
   }
 }
 
-slackSend "Build Started - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
-
 parallel builds
-
 
 def getFullBuild(jdk, os) {
   return {
@@ -221,8 +218,11 @@ def notifyBuild(String buildStatus, String jdk)
           subject: summary,
           body: detail
   )
-
-  slackSend color:"danger", message: "Build " + buildStatus + " - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
+  def slackColor = "danger"
+  if(buildStatus=="UNSTABLE") {
+    slackColor = "warning"
+  }
+  slackSend color:slackColor, message: "Build " + buildStatus + " - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
