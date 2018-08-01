@@ -253,7 +253,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                     }
                     finally
                     {
-                        released = buffer.tryRelease();
+                        released = buffer.release();
                         if (failed && released)
                             releaseNetworkBuffer();
                     }
@@ -275,6 +275,9 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                             buffer = acquireNetworkBuffer();
                     }
                 }
+
+                // Here we know that this.buffer is not retained:
+                // either it has been released, or it's a new one.
 
                 int filled = fill(getEndPoint(), buffer.buffer);
                 if (LOG.isDebugEnabled())
@@ -311,14 +314,10 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
         private void releaseNetworkBuffer()
         {
-            if (!buffer.hasRemaining())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Released {}", buffer);
-                buffer.release();
-                byteBufferPool.release(buffer.buffer);
-                buffer = null;
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Released {}", buffer);
+            buffer.recycle();
+            buffer = null;
         }
 
         @Override
@@ -399,16 +398,31 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             refCount.incrementAndGet();
         }
 
-        @Override
-        public void succeeded()
+        private boolean release()
         {
-            release();
+            return refCount.decrementAndGet() == 0;
         }
 
         @Override
-        public void failed(Throwable x)
+        public void succeeded()
         {
-            release();
+            if (release())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released retained {}", this);
+                recycle();
+            }
+        }
+
+        @Override
+        public void failed(Throwable failure)
+        {
+            if (release())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released retained " + this, failure);
+                recycle();
+            }
         }
 
         @Override
@@ -417,19 +431,9 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             return InvocationType.NON_BLOCKING;
         }
 
-        private void release()
+        private void recycle()
         {
-            if (tryRelease())
-            {
-                byteBufferPool.release(buffer);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Released retained {}", this);
-            }
-        }
-
-        private boolean tryRelease()
-        {
-            return refCount.decrementAndGet() == 0;
+            byteBufferPool.release(buffer);
         }
 
         @Override
