@@ -102,7 +102,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _selectorManager.execute(_strategy::produce);
 
         // Set started only if we really are started
-        submit(s->_started.set(true));
+        Start start = new Start();
+        submit(start);
+        start._started.await();
     }
 
     public int size()
@@ -538,6 +540,18 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     public interface SelectorUpdate
     {
         public void update(Selector selector);
+    }
+
+    private class Start implements SelectorUpdate
+    {
+        private final CountDownLatch _started = new CountDownLatch(1);
+
+        @Override
+        public void update(Selector selector)
+        {
+            ManagedSelector.this._started.set(true);
+            _started.countDown();
+        }
     }
 
     private static class DumpKeys implements SelectorUpdate
