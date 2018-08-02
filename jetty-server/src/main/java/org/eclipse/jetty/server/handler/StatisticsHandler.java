@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BooleanSupplier;
 
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AsyncContextEvent;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelState;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.FutureCallback;
@@ -77,7 +79,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final AsyncListener _onCompletion = new AsyncListener()
     {
         @Override
-        public void onTimeout(AsyncEvent event) throws IOException
+        public void onTimeout(@SuppressWarnings("unused") AsyncEvent event) throws IOException
         {
             _expires.increment();
         }
@@ -89,7 +91,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
         
         @Override
-        public void onError(AsyncEvent event) throws IOException
+        public void onError(@SuppressWarnings("unused") AsyncEvent event) throws IOException
         {
         }
 
@@ -115,6 +117,15 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
                 if (shutdown!=null)
                     shutdown.succeeded();
             }   
+        }
+    };
+    
+    private final BooleanSupplier _isShutdown = new BooleanSupplier()
+    {
+        @Override
+        public boolean getAsBoolean()
+        {
+            return _shutdown.get()!=null;
         }
     };
 
@@ -166,16 +177,22 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         {
             Handler handler = getHandler();
             if (handler!=null && _shutdown.get()==null && isStarted())
+            {
+                baseRequest.getResponse().setShutdown(_isShutdown);
                 handler.handle(path, baseRequest, request, response);
-            else if (baseRequest.isHandled())
-            {
-                if (_wrapWarning.compareAndSet(false,true))
-                    LOG.warn("Bad statistics configuration. Latencies will be incorrect in {}",this);
             }
-            else
+            else 
             {
-                baseRequest.setHandled(true);
-                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+                if (!baseRequest.isHandled())
+                    baseRequest.setHandled(true);
+                else if (_wrapWarning.compareAndSet(false,true))
+                    LOG.warn("Bad statistics configuration. Latencies will be incorrect in {}",this);
+                
+                if (!baseRequest.getResponse().isCommitted())
+                {
+                    baseRequest.getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
+                    response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+                }         
             }
         }
         finally
@@ -551,7 +568,6 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         sb.append("Max request time: ").append(getRequestTimeMax()).append("<br />\n");
         sb.append("Request time standard deviation: ").append(getRequestTimeStdDev()).append("<br />\n");
 
-
         sb.append("<h2>Dispatches:</h2>\n");
         sb.append("Total dispatched: ").append(getDispatched()).append("<br />\n");
         sb.append("Active dispatched: ").append(getDispatchedActive()).append("<br />\n");
@@ -560,7 +576,6 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         sb.append("Mean dispatched time: ").append(getDispatchedTimeMean()).append("<br />\n");
         sb.append("Max dispatched time: ").append(getDispatchedTimeMax()).append("<br />\n");
         sb.append("Dispatched time standard deviation: ").append(getDispatchedTimeStdDev()).append("<br />\n");
-
 
         sb.append("Total requests suspended: ").append(getAsyncRequests()).append("<br />\n");
         sb.append("Total requests expired: ").append(getExpires()).append("<br />\n");
@@ -588,4 +603,11 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             shutdown.succeeded();
         return shutdown;
     }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s,r=%d,d=%d}",getClass().getSimpleName(),hashCode(),getState(),_requestStats.getCurrent(),_dispatchedStats.getCurrent());
+    }
+
 }
