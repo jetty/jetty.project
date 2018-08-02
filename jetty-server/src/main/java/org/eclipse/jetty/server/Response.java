@@ -110,7 +110,6 @@ public class Response implements HttpServletResponse
     private ResponseWriter _writer;
     private long _contentLength = -1;
     private Supplier<HttpFields> _trailers;
-    private BooleanSupplier _shutdown;
 
     private enum EncodingFrom { NOT_SET, INFERRED, SET_LOCALE, SET_CONTENT_TYPE, SET_CHARACTER_ENCODING }
     private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET,EncodingFrom.INFERRED);
@@ -1313,16 +1312,6 @@ public class Response implements HttpServletResponse
     {
         _out.resetBuffer();
     }
-
-    public void setShutdown(BooleanSupplier shutdown)
-    {
-        this._shutdown = shutdown;
-    }
-    
-    public BooleanSupplier getShutdown()
-    {
-        return _shutdown;
-    }
     
     public void setTrailers(Supplier<HttpFields> trailers)
     {
@@ -1336,10 +1325,6 @@ public class Response implements HttpServletResponse
 
     protected MetaData.Response newResponseMetaData()
     {
-        // Close connection if we are shutting down
-        if (_shutdown!=null && _shutdown.getAsBoolean() && !_fields.contains(HttpHeader.CONNECTION,"close"))
-            _fields.add(HttpConnection.CONNECTION_CLOSE);
-        
         MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
         info.setTrailerSupplier(getTrailers());
         return info;

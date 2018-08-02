@@ -33,9 +33,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.AsyncContextEvent;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
@@ -120,12 +123,18 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
     };
     
-    private final BooleanSupplier _isShutdown = new BooleanSupplier()
+    private final HttpChannel.Listener _shutdownListener = new HttpChannel.Listener()
     {
-        @Override
-        public boolean getAsBoolean()
+        @Override 
+        public void onResponseBegin(Request request)
         {
-            return _shutdown.get()!=null;
+            if (_shutdown.get()==null)
+                return;
+            
+            MetaData.Response response = request.getHttpChannel().getCommittedMetaData();
+
+            if (!response.getFields().contains(HttpHeader.CONNECTION,"close"))
+                response.getFields().add(HttpConnection.CONNECTION_CLOSE);
         }
     };
 
@@ -178,7 +187,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             Handler handler = getHandler();
             if (handler!=null && _shutdown.get()==null && isStarted())
             {
-                baseRequest.getResponse().setShutdown(_isShutdown);
+                baseRequest.getHttpChannel().addListener(_shutdownListener);
                 handler.handle(path, baseRequest, request, response);
             }
             else 
@@ -197,6 +206,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
         finally
         {
+            baseRequest.getHttpChannel().removeListener(_shutdownListener);
+            
             final long now = System.currentTimeMillis();
             final long dispatched=now-start;
 
@@ -227,6 +238,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
                 }   
             }
             // else onCompletion will handle it.
+            
+            
         }
     }
 
@@ -609,5 +622,4 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     {
         return String.format("%s@%x{%s,r=%d,d=%d}",getClass().getSimpleName(),hashCode(),getState(),_requestStats.getCurrent(),_dispatchedStats.getCurrent());
     }
-
 }
