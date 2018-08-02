@@ -10,7 +10,15 @@ for (def os in oss) {
   }
 }
 
-parallel builds
+//parallel builds
+def branchName = "${env.BRANCH_NAME}"
+echo branchName
+buildStatus = buildStatus ?: "UNKNOWN"
+def slackColor = "danger"
+if(buildStatus=="UNSTABLE") {
+  slackColor = "warning"
+}
+slackSend color:slackColor, message: "Build " + buildStatus + " jdk: " + jdk + " - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
 
 def getFullBuild(jdk, os) {
   return {
