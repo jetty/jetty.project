@@ -115,7 +115,7 @@ public class HttpServerTestFixture
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            Log.getRootLogger().info("handle "+target);
+            Log.getRootLogger().debug("handle "+target);
             baseRequest.setHandled(true);
 
             if (request.getContentType()!=null)
@@ -157,7 +157,7 @@ public class HttpServerTestFixture
             if (reader.read()>=0)
                 throw new IllegalStateException("Not closed");
 
-            Log.getRootLogger().info("handled "+target);
+            Log.getRootLogger().debug("handled "+target);
         }
     }
 
