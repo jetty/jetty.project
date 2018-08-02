@@ -424,13 +424,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Selector {} woken with none selected", selector);
+
+                        if (Thread.interrupted() && !isRunning())
+                            throw new ClosedSelectorException();
+
                         selected = selector.selectNow();
                     }
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} woken up from select, {}/{}/{} selected", selector, selected, selector.selectedKeys().size(), selector.keys().size());
-
-                    if (Thread.interrupted() && !isRunning())
-                        throw new ClosedSelectorException();
 
                     int updates;
                     synchronized(ManagedSelector.this)
