@@ -11,6 +11,7 @@ for (def os in oss) {
 }
 
 //parallel builds
+def jdk = "foo"
 def branchName = "${env.BRANCH_NAME}"
 echo branchName
 def buildStatus = "UNKNOWN"
