@@ -13,7 +13,7 @@ for (def os in oss) {
 //parallel builds
 def branchName = "${env.BRANCH_NAME}"
 echo branchName
-buildStatus = buildStatus ?: "UNKNOWN"
+def buildStatus = buildStatus ?: "UNKNOWN"
 def slackColor = "danger"
 if(buildStatus=="UNSTABLE") {
   slackColor = "warning"
