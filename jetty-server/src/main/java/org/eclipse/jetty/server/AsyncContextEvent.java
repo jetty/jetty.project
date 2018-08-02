@@ -171,4 +171,10 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         else if (e != _throwable)
             _throwable.addSuppressed(e);
     }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{c=%s,d=%b,t=%s,ex=%s}",AsyncContextEvent.class.getSimpleName(),this.hashCode(),_context,_dispatchContext!=null||_dispatchPath!=null,_timeoutTask,_throwable);
+    }
 }

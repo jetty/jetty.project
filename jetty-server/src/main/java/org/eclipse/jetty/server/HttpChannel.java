@@ -390,10 +390,20 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case ERROR_DISPATCH:
                     {
+                        Throwable failure = (Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+                        Integer icode = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                        
+                        if (_response.isCommitted())
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Could not perform ERROR dispatch for " + failure);
+                            abort(failure);
+                            break;
+                        }
+                        
                         try
                         {
                             _response.reset(true);
-                            Integer icode = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
                             int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _response.setStatus(code);
                             _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,code);
@@ -420,18 +430,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         catch (Throwable x)
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Could not perform ERROR dispatch, aborting", x);
-                            Throwable failure = (Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+                                LOG.debug("Could not perform ERROR dispatch for " + failure, x);
                             if (failure==null)
-                            {
-                                minimalErrorResponse(x);
-                            }
+                                failure = x;
                             else
-                            {
-                                if (x != failure)
-                                    failure.addSuppressed(x);
-                                minimalErrorResponse(failure);
-                            }
+                                failure.addSuppressed(x);
+                            minimalErrorResponse(failure);
                         }
                         break;
                     }
@@ -589,18 +593,23 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void minimalErrorResponse(Throwable failure)
     {
-        try
-        {
-            Integer code=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-            _response.reset(true);
-            _response.setStatus(code == null ? 500 : code);
-            _response.flushBuffer();
-        }
-        catch (Throwable x)
-        {
-            if (x != failure)
-                failure.addSuppressed(x);
+        if (_response.isCommitted())
             abort(failure);
+        else
+        {
+            try
+            {
+                Integer code=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                _response.reset(true);
+                _response.setStatus(code == null ? 500 : code);
+                _response.flushBuffer();
+            }
+            catch (Throwable x)
+            {
+                if (x != failure)
+                    failure.addSuppressed(x);
+                abort(failure);
+            }
         }
     }
 

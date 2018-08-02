@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.AsyncListener;
@@ -31,6 +33,8 @@ import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.AbstractEndPoint;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.log.Log;
@@ -560,6 +564,11 @@ public class HttpChannelState
 
     protected void onTimeout()
     {
+        TimeoutException timeout = new TimeoutException("AsyncContext Timeout");
+        EndPoint endp = getHttpChannel().getEndPoint();
+        if (endp instanceof AbstractEndPoint)
+            ((AbstractEndPoint)endp).onIoFail(timeout);
+        
         final List<AsyncListener> listeners;
         AsyncContextEvent event;
         try(Locker.Lock lock= _locker.lock())
@@ -571,8 +580,8 @@ public class HttpChannelState
                 return;
             _async=Async.EXPIRING;
             event=_event;
+            event.addThrowable(timeout);
             listeners=_asyncListeners;
-
         }
 
         final AtomicReference<Throwable> error=new AtomicReference<>();
@@ -640,7 +649,7 @@ public class HttpChannelState
                 dispatch=true;
             }
         }
-
+        
         if (th!=null)
         {
             if (LOG.isDebugEnabled())
@@ -715,6 +724,10 @@ public class HttpChannelState
     
     protected void onError(Throwable failure)
     {
+        EndPoint endp = getHttpChannel().getEndPoint();
+        if (endp instanceof AbstractEndPoint)
+            ((AbstractEndPoint)endp).onIoFail(failure);
+        
         final List<AsyncListener> listeners;
         final AsyncContextEvent event;
         final Request baseRequest = _channel.getRequest();

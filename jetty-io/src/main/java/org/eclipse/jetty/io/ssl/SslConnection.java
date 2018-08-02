@@ -388,12 +388,6 @@ public class SslConnection extends AbstractConnection
             return getEndPoint().getRemoteAddress();
         }
 
-        @Override
-        protected WriteFlusher getWriteFlusher()
-        {
-            return super.getWriteFlusher();
-        }
-
         protected void onFillable()
         {
             try
