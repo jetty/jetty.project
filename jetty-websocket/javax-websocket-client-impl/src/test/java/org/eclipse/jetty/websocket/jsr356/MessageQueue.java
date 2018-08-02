@@ -25,6 +25,10 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * @deprecated use {@code BlockingArrayQueue<String>} instead
+ */
+@Deprecated
 public class MessageQueue extends BlockingArrayQueue<String>
 {
     private static final Logger LOG = Log.getLogger(MessageQueue.class);
