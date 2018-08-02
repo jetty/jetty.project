@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.BooleanSupplier;
 
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -82,7 +81,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final AsyncListener _onCompletion = new AsyncListener()
     {
         @Override
-        public void onTimeout(@SuppressWarnings("unused") AsyncEvent event) throws IOException
+        public void onTimeout(AsyncEvent event) throws IOException
         {
             _expires.increment();
         }
@@ -94,7 +93,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
         
         @Override
-        public void onError(@SuppressWarnings("unused") AsyncEvent event) throws IOException
+        public void onError(AsyncEvent event) throws IOException
         {
         }
 
