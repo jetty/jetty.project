@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.util.List;
@@ -125,7 +127,8 @@ public class ConfiguratorTest
         session.getBasicRemote().sendText("Echo");
 
         // Wait for echo
-        echoer.textCapture.messageQueue.awaitMessages(1,1000,TimeUnit.MILLISECONDS);
+        String echoed = echoer.textCapture.messages.poll(1,TimeUnit.SECONDS);
+        assertThat("Echoed", echoed, is("Echo"));
 
         // Validate client side configurator use
         Assert.assertThat("configurator.request",configurator.request,notNullValue());
