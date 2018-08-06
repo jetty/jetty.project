@@ -546,7 +546,7 @@ public class SslConnection extends AbstractConnection
                             if (LOG.isDebugEnabled())
                                 LOG.debug("net filled={}", net_filled);
 
-                            if (net_filled > 0 && _handshake.get() == Handshake.INITIAL && _sslEngine.isOutboundDone())
+                            if (net_filled > 0 && _handshake.get() == Handshake.INITIAL && isOutboundDone())
                                 throw new SSLHandshakeException("Closed during handshake");
 
                             // Let's unwrap even if we have no net data because in that
@@ -782,6 +782,10 @@ public class SslConnection extends AbstractConnection
                     throw x;
                 else
                     LOG.ignore(x);
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
             }
         }
         
@@ -1036,7 +1040,7 @@ public class SslConnection extends AbstractConnection
                     if (!_closedOutbound)
                     {
                         _closedOutbound=true; // Only attempt this once
-                        _sslEngine.closeOutbound();
+                        closeOutbound();
                         flush = true;
                     }
 
@@ -1059,6 +1063,18 @@ public class SslConnection extends AbstractConnection
             }
         }
 
+        private void closeOutbound()
+        {
+            try
+            {
+                _sslEngine.closeOutbound();
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+            }
+        }
+
         private void ensureFillInterested()
         {
             if (LOG.isDebugEnabled())
@@ -1069,7 +1085,20 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean isOutputShutdown()
         {
-            return _sslEngine.isOutboundDone() || getEndPoint().isOutputShutdown();
+            return isOutboundDone() || getEndPoint().isOutputShutdown();
+        }
+
+        private boolean isOutboundDone()
+        {
+            try
+            {
+                return _sslEngine.isOutboundDone();
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+                return true;
+            }
         }
 
         @Override
@@ -1090,7 +1119,20 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean isInputShutdown()
         {
-            return getEndPoint().isInputShutdown() || _sslEngine.isInboundDone();
+            return getEndPoint().isInputShutdown() || isInboundDone();
+        }
+
+        private boolean isInboundDone()
+        {
+            try
+            {
+                return _sslEngine.isInboundDone();
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+                return true;
+            }
         }
 
         private void notifyHandshakeSucceeded(SSLEngine sslEngine)
