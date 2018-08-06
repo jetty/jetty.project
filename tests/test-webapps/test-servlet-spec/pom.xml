@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.2.26-SNAPSHOT</version>
+    <version>9.2.26.v20180806</version>
   </parent>
   <artifactId>test-servlet-spec-parent</artifactId>
   <name>Jetty Tests :: Spec Test WebApp :: Parent</name>
