@@ -82,10 +82,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     protected List<HeaderInfo> getHeaderInfo(String header) throws IllegalArgumentException
     {
         List<HeaderInfo> headerInfos = new ArrayList<>();
-
         Matcher m;
-        String authScheme = null;
-        Map<String,String> authParams = new HashMap<>();
 
         for(String value : new QuotedCSV(true, header))
         {
@@ -94,30 +91,19 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             {
                 if(m.group("schemeOnly") != null)
                 {
-                    if (authScheme != null)
-                    {
-                        headerInfos.add(new HeaderInfo(getAuthorizationHeader(), authScheme, authParams));
-                        authParams = new HashMap<>();
-                    }
-
-                    authScheme = m.group(1);
+                    headerInfos.add(new HeaderInfo(getAuthorizationHeader(), m.group(1), new HashMap<>()));
                     continue;
                 }
 
                 if (m.group("scheme") != null)
                 {
-                    if (authScheme != null)
-                    {
-                        headerInfos.add(new HeaderInfo(getAuthorizationHeader(), authScheme, authParams));
-                        authParams = new HashMap<>();
-                    }
-
-                    authScheme = m.group("scheme");
+                    headerInfos.add(new HeaderInfo(getAuthorizationHeader(), m.group("scheme"), new HashMap<>()));
                 }
 
-                if (authScheme == null)
+                if (headerInfos.isEmpty())
                     throw new IllegalArgumentException("Parameters without auth-scheme");
 
+                Map<String, String> authParams = headerInfos.get(headerInfos.size() - 1).getParameters();
                 if (m.group("paramName") != null)
                 {
                     String paramVal = QuotedCSV.unquote(m.group("paramValue"));
@@ -129,16 +115,10 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                         throw new IllegalArgumentException("token68 after auth-params");
 
                     authParams.put("base64", m.group("token68"));
-                    headerInfos.add(new HeaderInfo(getAuthorizationHeader(), authScheme, authParams));
-                    authScheme = null;
-                    authParams = new HashMap<>();
                 }
             }
         }
 
-        if(authScheme != null)
-            headerInfos.add(new HeaderInfo(getAuthorizationHeader(), authScheme, authParams));
-        
         return headerInfos;
     }
 
