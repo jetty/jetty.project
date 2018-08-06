@@ -451,6 +451,10 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private void extractContentParameters()
     {
+        // Content cannot be encoded
+        if (_metaData!=null && getHttpFields().contains(HttpHeader.CONTENT_ENCODING))
+            throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
+        
         String contentType = getContentType();
         if (contentType == null || contentType.isEmpty())
             _contentParameters=NO_PARAMS;

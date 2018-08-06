@@ -83,6 +83,7 @@ public class HeadersFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s#%d{end=%b}", super.toString(), streamId, endStream);
+        return String.format("%s#%d{end=%b}%s", super.toString(), streamId, endStream,
+                priority == null ? "" : String.format("+%s", priority));
     }
 }

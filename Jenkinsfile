@@ -12,6 +12,7 @@ for (def os in oss) {
 
 parallel builds
 
+
 def getFullBuild(jdk, os) {
   return {
     node(os) {
@@ -164,6 +165,7 @@ def getFullBuild(jdk, os) {
         notifyBuild("Compact3 Failure", jdk)
         throw e
       }
+
     }
   }
 }

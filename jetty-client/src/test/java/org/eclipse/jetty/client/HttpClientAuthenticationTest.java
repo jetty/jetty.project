@@ -732,4 +732,40 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertTrue(headerInfos.get(1).getType().equalsIgnoreCase("Negotiate"));
         Assert.assertTrue(headerInfos.get(1).getBase64().equals("YIIJvwYGKwYBBQUCoIIJszCCCa+gJDAi="));
     }
+
+
+
+    @Test
+    public void testEqualsInParam()
+    {
+        AuthenticationProtocolHandler aph = new WWWAuthenticationProtocolHandler(client);
+        HeaderInfo headerInfo;
+
+        headerInfo = aph.getHeaderInfo("Digest realm=\"=the=rmo=stat=\", qop=\"=a=u=t=h=\", nonce=\"=1523430383=\"").get(0);
+        Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
+        Assert.assertTrue(headerInfo.getParameter("qop").equals("=a=u=t=h="));
+        Assert.assertTrue(headerInfo.getParameter("realm").equals("=the=rmo=stat="));
+        Assert.assertTrue(headerInfo.getParameter("nonce").equals("=1523430383="));
+
+
+        // test multiple authentications
+        List<HeaderInfo> headerInfoList = aph.getHeaderInfo("Digest qop=\"=au=th=\", realm=\"=ther=mostat=\", nonce=\"=152343=0383=\", "
+                + "Digest realm=\"=thermostat2\", qop=\"=auth2\", nonce=\"=4522530354\", "
+                + "Digest qop=\"auth3=\", nonce=\"9523570528=\", realm=\"thermostat3=\", ");
+
+        Assert.assertTrue(headerInfoList.get(0).getType().equalsIgnoreCase("Digest"));
+        Assert.assertTrue(headerInfoList.get(0).getParameter("qop").equals("=au=th="));
+        Assert.assertTrue(headerInfoList.get(0).getParameter("realm").equals("=ther=mostat="));
+        Assert.assertTrue(headerInfoList.get(0).getParameter("nonce").equals("=152343=0383="));
+
+        Assert.assertTrue(headerInfoList.get(1).getType().equalsIgnoreCase("Digest"));
+        Assert.assertTrue(headerInfoList.get(1).getParameter("qop").equals("=auth2"));
+        Assert.assertTrue(headerInfoList.get(1).getParameter("realm").equals("=thermostat2"));
+        Assert.assertTrue(headerInfoList.get(1).getParameter("nonce").equals("=4522530354"));
+
+        Assert.assertTrue(headerInfoList.get(2).getType().equalsIgnoreCase("Digest"));
+        Assert.assertTrue(headerInfoList.get(2).getParameter("qop").equals("auth3="));
+        Assert.assertTrue(headerInfoList.get(2).getParameter("realm").equals("thermostat3="));
+        Assert.assertTrue(headerInfoList.get(2).getParameter("nonce").equals("9523570528="));
+    }
 }

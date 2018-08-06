@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -42,11 +42,13 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -106,7 +108,7 @@ public class TrailersTest extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 Request jettyRequest = (Request)request;
                 // No trailers yet.
@@ -238,7 +240,7 @@ public class TrailersTest extends AbstractTest
         start(new EmptyHttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 Request jettyRequest = (Request)request;
                 Response jettyResponse = jettyRequest.getResponse();
@@ -286,5 +288,64 @@ public class TrailersTest extends AbstractTest
         Assert.assertFalse(data.isEndStream());
         Assert.assertTrue(trailers.isEndStream());
         Assert.assertThat(trailers.getMetaData().getFields().get(trailerName), Matchers.equalTo(trailerValue));
+    }
+
+    @Test
+    public void testRequestTrailerInvalidHpack() throws Exception
+    {
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                try
+                {
+                    // Read the content to read the trailers
+                    ServletInputStream input = request.getInputStream();
+                    while (true)
+                    {
+                        int read = input.read();
+                        if (read < 0)
+                            break;
+                    }
+                }
+                catch (IOException x)
+                {
+                    serverLatch.countDown();
+                    throw x;
+                }
+            }
+        });
+
+        CountDownLatch clientLatch = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request request = newRequest("POST", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(request, null, false);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        session.newStream(requestFrame, promise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onReset(Stream stream, ResetFrame frame)
+            {
+                clientLatch.countDown();
+            }
+        });
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
+        Callback.Completable completable = new Callback.Completable();
+        stream.data(new DataFrame(stream.getId(), data, false), completable);
+        completable.thenRun(() ->
+        {
+            // Invalid trailer: cannot contain pseudo headers.
+            HttpFields trailerFields = new HttpFields();
+            trailerFields.put(HttpHeader.C_METHOD, "GET");
+            MetaData trailer = new MetaData(HttpVersion.HTTP_2, trailerFields);
+            HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), trailer, null, true);
+            stream.headers(trailerFrame, Callback.NOOP);
+        });
+
+        Assert.assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
 }

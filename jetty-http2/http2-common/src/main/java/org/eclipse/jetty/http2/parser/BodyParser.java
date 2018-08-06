@@ -222,4 +222,21 @@ public abstract class BodyParser
             LOG.info("Failure while notifying listener " + listener, x);
         }
     }
+
+    protected void streamFailure(int streamId, int error, String reason)
+    {
+        notifyStreamFailure(streamId, error, reason);
+    }
+
+    private void notifyStreamFailure(int streamId, int error, String reason)
+    {
+        try
+        {
+            listener.onStreamFailure(streamId, error, reason);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
+    }
 }

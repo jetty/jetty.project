@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.ListIterator;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 
 import javax.servlet.DispatcherType;
@@ -36,6 +37,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
@@ -153,6 +156,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public static final int DEFAULT_MIN_GZIP_SIZE=16;
     public static final int COMPRESSION_LEVEL = Deflater.DEFAULT_COMPRESSION;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
+    private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding","gzip");
+    private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
 
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     private boolean _syncFlush = false;
@@ -601,16 +606,31 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         // Handle request inflation
         if (_inflateBufferSize>0)
         {
-            HttpField ce = baseRequest.getHttpFields().getField(HttpHeader.CONTENT_ENCODING);
-            if (ce!=null && "gzip".equalsIgnoreCase(ce.getValue()))
+            for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext();)
             {
-                // TODO should check ce.contains and then remove just the gzip encoding
-                baseRequest.getHttpFields().remove(HttpHeader.CONTENT_ENCODING);
-                baseRequest.getHttpFields().add(new HttpField("X-Content-Encoding",ce.getValue()));
-                baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(),_inflateBufferSize));
-            }
+                HttpField field = i.next();
+                if (field.getHeader()!=HttpHeader.CONTENT_ENCODING)
+                    continue;
+
+                if (field.getValue().equalsIgnoreCase("gzip"))
+                {
+                    i.set(X_CE_GZIP);
+                    baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(),_inflateBufferSize));
+                    break;
+                }
+
+                if (COMMA_GZIP.matcher(field.getValue()).matches())
+                {
+                    String v = field.getValue();
+                    v = v.substring(0,v.lastIndexOf(','));
+                    i.set(new HttpField(HttpHeader.CONTENT_ENCODING,v));
+                    i.add(X_CE_GZIP);
+                    baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(),_inflateBufferSize));
+                    break;
+                }
+            }                
         }
-        
+
         // Are we already being gzipped?
         HttpOutput out = baseRequest.getResponse().getHttpOutput();
         HttpOutput.Interceptor interceptor = out.getInterceptor();

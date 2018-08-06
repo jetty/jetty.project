@@ -18,20 +18,29 @@
 
 package org.eclipse.jetty.websocket.tests.jsr356.endpoints;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Session;
+
+import org.eclipse.jetty.util.BlockingArrayQueue;
 
 /**
  * Legitimate structure for an Endpoint
  */
 public class EchoStringEndpoint extends AbstractStringEndpoint
 {
-    public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
+    public BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
+
+    @Override
+    public void onOpen(Session session, EndpointConfig config)
+    {
+        super.onOpen(session, config);
+        this.session.getUserProperties().put("endpoint", this);
+    }
     
     @Override
     public void onMessage(String message)
     {
-        messageQueue.offer(message);
-        session.getAsyncRemote().sendText(message);
+        this.messages.offer(message);
+        this.session.getAsyncRemote().sendText(message);
     }
 }

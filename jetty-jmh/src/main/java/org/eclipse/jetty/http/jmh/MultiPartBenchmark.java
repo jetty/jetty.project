@@ -20,34 +20,42 @@ package org.eclipse.jetty.http.jmh;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.http.MultiPartCaptureTest.MultipartExpectations;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
+@Threads(4)
+@Warmup(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 public class MultiPartBenchmark
 {
     
@@ -212,15 +220,23 @@ public class MultiPartBenchmark
     {
         for (String multiPart : data)
         {
-            Path multipartRawFile = MavenTestingUtils.getTestResourcePathFile("multipart/" + multiPart + ".raw");
-            Path expectationPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + multiPart + ".expected.txt");
+            //Path multipartRawFile = MavenTestingUtils.getTestResourcePathFile("multipart/" + multiPart + ".raw");
+            String expectationPath = "multipart/" + multiPart + ".expected.txt";
+            //Path expectationPath = MavenTestingUtils.getTestResourcePathFile("multipart/" + multiPart + ".expected.txt");
+
+            File expectationFile = File.createTempFile( expectationPath, ".tmp" );
+
+            try(InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(expectationPath);
+                OutputStream os = Files.newOutputStream( expectationFile.toPath() )) {
+                IO.copy( inputStream, os );
+            }
+
+            Path outputDir = Files.createTempDirectory( "expected_output_jmh_jetty" );// new File("/tmp").toPath();
             
-            Path outputDir = new File("/tmp").toPath();
-            
-            MultipartExpectations multipartExpectations = new MultipartExpectations(expectationPath);
+            MultipartExpectations multipartExpectations = new MultipartExpectations(expectationFile.toPath());
             MultipartConfigElement config = newMultipartConfigElement(outputDir);
             
-            try (InputStream in = Files.newInputStream(multipartRawFile))
+            try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream( "multipart/" + multiPart + ".raw" ))
             {
                 switch (parserType)
                 {

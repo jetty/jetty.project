@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import java.util.List;
 import java.util.Map;
@@ -63,7 +63,7 @@ public class ConfiguratorTest
     }
 
     private static SimpleServletServer server;
-    
+
     @BeforeClass
     public static void startServer() throws Exception
     {

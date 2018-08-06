@@ -257,7 +257,7 @@ public class HttpURI
                             state=State.PATH;
                             encoded=true;
                             break;
-                            
+
                         default:
                             mark=i;
                             if (_scheme==null)
@@ -336,14 +336,14 @@ public class HttpURI
                             path_mark=mark;
                             state=State.PATH;
                             break;
-                            
+
                         case '.':
                             // it is a path
                             encoded=true;
                             path_mark=mark;
                             state=State.PATH;
                             break;
-                            
+
                         default:
                             // it is a path
                             path_mark=mark;
@@ -425,7 +425,7 @@ public class HttpURI
                     }
                     break;
                 }
-                
+
                 case PATH:
                 {
                     switch (c)
@@ -453,9 +453,9 @@ public class HttpURI
                     }
                     break;
                 }
-                
-                
-                
+
+
+
 
                 case PARAM:
                 {
@@ -747,7 +747,7 @@ public class HttpURI
         _port=port;
         _uri=null;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param path the path
@@ -769,7 +769,7 @@ public class HttpURI
         _path=URIUtil.encodePath(path);
         _decodedPath=path;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setPathQuery(String path)
     {
@@ -808,7 +808,7 @@ public class HttpURI
     {
         return _host!=null;
     }
-    
+
     /* ------------------------------------------------------------ */
     public String getAuthority()
     {

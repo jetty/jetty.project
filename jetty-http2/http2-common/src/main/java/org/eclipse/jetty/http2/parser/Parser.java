@@ -24,6 +24,7 @@ import java.util.function.UnaryOperator;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -35,7 +36,6 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -52,6 +52,8 @@ public class Parser
     private final HeaderParser headerParser;
     private final HeaderBlockParser headerBlockParser;
     private final BodyParser[] bodyParsers;
+    private final UnknownBodyParser unknownBodyParser;
+    private int maxFrameLength;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean continuation;
     private State state = State.HEADER;
@@ -60,7 +62,9 @@ public class Parser
     {
         this.listener = listener;
         this.headerParser = new HeaderParser();
-        this.headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize));
+        this.unknownBodyParser = new UnknownBodyParser(headerParser, listener);
+        this.headerBlockParser = new HeaderBlockParser(headerParser, byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize), unknownBodyParser);
+        this.maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 
@@ -128,8 +132,7 @@ public class Parser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
-            BufferUtil.clear(buffer);
-            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "parser_error");
+            connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR, "parser_error");
         }
     }
 
@@ -138,31 +141,27 @@ public class Parser
         if (!headerParser.parse(buffer))
             return false;
 
-        FrameType frameType = FrameType.from(getFrameType());
         if (LOG.isDebugEnabled())
-            LOG.debug("Parsed {} frame header from {}", frameType, buffer);
+            LOG.debug("Parsed {} frame header from {}", headerParser, buffer);
 
+        if (headerParser.getLength() > getMaxFrameLength())
+            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR, "invalid_frame_length");
+
+        FrameType frameType = FrameType.from(getFrameType());
         if (continuation)
         {
+            // SPEC: CONTINUATION frames must be consecutive.
             if (frameType != FrameType.CONTINUATION)
-            {
-                // SPEC: CONTINUATION frames must be consecutive.
-                BufferUtil.clear(buffer);
-                notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "continuation_frame_expected");
-                return false;
-            }
+                return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR, "expected_continuation_frame");
             if (headerParser.hasFlag(Flags.END_HEADERS))
-            {
                 continuation = false;
-            }
         }
         else
         {
-            if (frameType == FrameType.HEADERS &&
-                    !headerParser.hasFlag(Flags.END_HEADERS))
-            {
-                continuation = true;
-            }
+            if (frameType == FrameType.HEADERS)
+                continuation = !headerParser.hasFlag(Flags.END_HEADERS);
+            else if (frameType == FrameType.CONTINUATION)
+                return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR, "unexpected_continuation_frame");
         }
         state = State.BODY;
         return true;
@@ -173,9 +172,13 @@ public class Parser
         int type = getFrameType();
         if (type < 0 || type >= bodyParsers.length)
         {
-            BufferUtil.clear(buffer);
-            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unknown_frame_type_" + type);
+            // Unknown frame types must be ignored.
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring unknown frame type {}", Integer.toHexString(type));
+            if (!unknownBodyParser.parse(buffer))
             return false;
+            reset();
+            return true;
         }
 
         BodyParser bodyParser = bodyParsers[type];
@@ -194,6 +197,11 @@ public class Parser
         return true;
     }
 
+    private boolean connectionFailure(ByteBuffer buffer, ErrorCode error, String reason)
+    {
+        return unknownBodyParser.connectionFailure(buffer, error.code, reason);
+    }
+
     protected int getFrameType()
     {
         return headerParser.getFrameType();
@@ -202,6 +210,16 @@ public class Parser
     protected boolean hasFlag(int bit)
     {
         return headerParser.hasFlag(bit);
+    }
+
+    public int getMaxFrameLength()
+    {
+        return maxFrameLength;
+    }
+
+    public void setMaxFrameLength(int maxFrameLength)
+    {
+        this.maxFrameLength = maxFrameLength;
     }
 
     public int getMaxSettingsKeys()
@@ -245,6 +263,8 @@ public class Parser
         public void onGoAway(GoAwayFrame frame);
 
         public void onWindowUpdate(WindowUpdateFrame frame);
+
+        public void onStreamFailure(int streamId, int error, String reason);
 
         public void onConnectionFailure(int error, String reason);
 
@@ -296,9 +316,95 @@ public class Parser
             }
 
             @Override
+            public void onStreamFailure(int streamId, int error, String reason)
+            {
+            }
+
+            @Override
             public void onConnectionFailure(int error, String reason)
             {
                 LOG.warn("Connection failure: {}/{}", error, reason);
+            }
+        }
+
+        public static class Wrapper implements Listener
+        {
+            private final Parser.Listener listener;
+
+            public Wrapper(Parser.Listener listener)
+            {
+                this.listener = listener;
+            }
+
+            public Listener getParserListener()
+            {
+                return listener;
+            }
+
+            @Override
+            public void onData(DataFrame frame)
+            {
+                listener.onData(frame);
+            }
+
+            @Override
+            public void onHeaders(HeadersFrame frame)
+            {
+                listener.onHeaders(frame);
+            }
+
+            @Override
+            public void onPriority(PriorityFrame frame)
+            {
+                listener.onPriority(frame);
+            }
+
+            @Override
+            public void onReset(ResetFrame frame)
+            {
+                listener.onReset(frame);
+            }
+
+            @Override
+            public void onSettings(SettingsFrame frame)
+            {
+                listener.onSettings(frame);
+            }
+
+            @Override
+            public void onPushPromise(PushPromiseFrame frame)
+            {
+                listener.onPushPromise(frame);
+            }
+
+            @Override
+            public void onPing(PingFrame frame)
+            {
+                listener.onPing(frame);
+            }
+
+            @Override
+            public void onGoAway(GoAwayFrame frame)
+            {
+                listener.onGoAway(frame);
+            }
+
+            @Override
+            public void onWindowUpdate(WindowUpdateFrame frame)
+            {
+                listener.onWindowUpdate(frame);
+            }
+
+            @Override
+            public void onStreamFailure(int streamId, int error, String reason)
+            {
+                listener.onStreamFailure(streamId, error, reason);
+            }
+
+            @Override
+            public void onConnectionFailure(int error, String reason)
+            {
+                listener.onConnectionFailure(error, reason);
             }
         }
     }
