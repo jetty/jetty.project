@@ -705,7 +705,19 @@ public class SslConnection extends AbstractConnection
             {
                 _sslEngine.closeInbound();
             }
-            catch (SSLException x)
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+            }
+        }
+
+        private void closeOutbound()
+        {
+            try
+            {
+                _sslEngine.closeOutbound();
+            }
+            catch (Throwable x)
             {
                 LOG.ignore(x);
             }
@@ -728,7 +740,7 @@ public class SslConnection extends AbstractConnection
             {
                 if (_cannotAcceptMoreAppDataToFlush)
                 {
-                    if (_sslEngine.isOutboundDone())
+                    if (isOutboundDone())
                         throw new EofException(new ClosedChannelException());
                     return false;
                 }
@@ -897,7 +909,7 @@ public class SslConnection extends AbstractConnection
             {
                 try
                 {
-                    _sslEngine.closeOutbound();
+                    closeOutbound();
                     flush(BufferUtil.EMPTY_BUFFER); // Send close handshake
                     SslConnection.this.fillInterested(); // seek reply FIN or RST or close handshake
                 }
@@ -912,7 +924,7 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean isOutputShutdown()
         {
-            return _sslEngine.isOutboundDone() || getEndPoint().isOutputShutdown();
+            return isOutboundDone() || getEndPoint().isOutputShutdown();
         }
 
         @Override
@@ -939,7 +951,33 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean isInputShutdown()
         {
-            return _sslEngine.isInboundDone();
+            return isInboundDone();
+        }
+
+        private boolean isOutboundDone()
+        {
+            try
+            {
+                return _sslEngine.isOutboundDone();
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+                return true;
+            }
+        }
+
+        private boolean isInboundDone()
+        {
+            try
+            {
+                return _sslEngine.isInboundDone();
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+                return true;
+            }
         }
 
         @Override
