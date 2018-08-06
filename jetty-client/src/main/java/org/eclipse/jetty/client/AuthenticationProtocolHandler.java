@@ -45,15 +45,11 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
-
-    private enum State { AUTH_SCHEME, TOKEN68, AUTH_PARAMS, CHALLENGE_END }
-    private static final Pattern AUTH_SCHEME = Pattern.compile("([!#$%&'*+\\-.^_`|~0-9A-Za-z]+)(?:\\s+(.*))?");
-    private static final Pattern AUTH_PARAM = Pattern.compile("([!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:\"(.*)\"|(.*))");
-    private static final Pattern TOKEN_68 = Pattern.compile("([a-zA-Z0-9\\-._~+\\/]+=*)");
-
     private final HttpClient client;
     private final int maxContentLength;
     private final ResponseNotifier notifier;
+
+    private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:\"(?<paramValueQuoted>.*)\"|(?<paramValueUnquoted>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+))|(?<token68>[a-zA-Z0-9\\-._~+\\/]+=*))");
 
     protected AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
     {
@@ -81,105 +77,67 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         // Return new instances every time to keep track of the response content
         return new AuthenticationListener();
     }
-    
 
-    
+
     protected List<HeaderInfo> getHeaderInfo(String header) throws IllegalArgumentException
     {
-
         List<HeaderInfo> headerInfos = new ArrayList<>();
-        List<String> values = new QuotedCSV(true, header).getValues();
 
         Matcher m;
         String authScheme = null;
         Map<String,String> authParams = new HashMap<>();
 
-        State state = State.AUTH_SCHEME;
-
-        int index = 0;
-        String value = values.get(index);
-
-        Loop:
-        while(true)
+        for(String value : new QuotedCSV(true, header))
         {
-            switch(state)
+            m = CHALLENGE_PATTERN.matcher(value);
+            if (m.matches())
             {
-                case AUTH_SCHEME:
-
-                    m = AUTH_SCHEME.matcher(value);
-                    if(m.matches())
+                if(m.group("schemeOnly") != null)
+                {
+                    if (authScheme != null)
                     {
-                        authScheme = m.group(1);
-                        value = m.group(2);
-                        state = State.AUTH_PARAMS;
-
-                        if(value==null)
-                            break;
-
-                        m = TOKEN_68.matcher(value);
-                        if(m.matches())
-                        {
-                            value = m.group(1);
-                            state = State.TOKEN68;
-                            continue;
-                        }
-
-                        continue;
+                        headerInfos.add(new HeaderInfo(getAuthorizationHeader(), authScheme, authParams));
+                        authParams = new HashMap<>();
                     }
 
-                    throw new IllegalArgumentException("Invalid auth-scheme");
+                    authScheme = m.group(1);
+                    continue;
+                }
 
-
-                case TOKEN68:
-                    authParams.put("base64", value);
-                    state = State.CHALLENGE_END;
-                    break;
-
-
-                case AUTH_PARAMS:
-                    if(value == null)
+                if (m.group("scheme") != null)
+                {
+                    if (authScheme != null)
                     {
-                        state = State.CHALLENGE_END;
-                        continue;
+                        headerInfos.add(new HeaderInfo(getAuthorizationHeader(), authScheme, authParams));
+                        authParams = new HashMap<>();
                     }
 
-                    m = AUTH_PARAM.matcher(value);
-                    if(m.matches())
-                    {
-                        String paramVal = (m.group(2)!=null) ? m.group(2) : m.group(3);
-                        authParams.put(m.group(1), paramVal);
-                        break;
-                    }
+                    authScheme = m.group("scheme");
+                }
 
-                    m = AUTH_SCHEME.matcher(value);
-                    if(m.matches())
-                    {
-                        state = State.CHALLENGE_END;
-                        continue;
-                    }
+                if (authScheme == null)
+                    throw new IllegalArgumentException("Parameters without auth-scheme");
 
-                    throw new IllegalArgumentException("Invalid auth-param");
+                if (m.group("paramName") != null)
+                {
+                    String paramVal = (m.group("paramValueQuoted") != null) ? m.group("paramValueQuoted") : m.group("paramValueUnquoted");
+                    authParams.put(m.group("paramName"), paramVal);
+                }
+                else if (m.group("token68") != null)
+                {
+                    if (!authParams.isEmpty())
+                        throw new IllegalArgumentException("token68 after auth-params");
 
-
-                case CHALLENGE_END:
+                    authParams.put("base64", m.group("token68"));
                     headerInfos.add(new HeaderInfo(getAuthorizationHeader(), authScheme, authParams));
                     authScheme = null;
                     authParams = new HashMap<>();
-                    state = State.AUTH_SCHEME;
-
-                    if(value==null)
-                        break Loop;
-
-                    continue;
-
-
-                default:
-                    throw new IllegalStateException("Invalid state");
+                }
             }
-
-
-            value = (++index < values.size()) ? values.get(index) : null;
         }
+
+        if(authScheme != null)
+            headerInfos.add(new HeaderInfo(getAuthorizationHeader(), authScheme, authParams));
         
         return headerInfos;
     }

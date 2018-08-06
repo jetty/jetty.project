@@ -675,7 +675,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Newauth"));
         Assert.assertTrue(headerInfos.get(0).getParameter("realm").equals("apps"));
         Assert.assertTrue(headerInfos.get(0).getParameter("type").equals("1"));
-        Assert.assertThat(headerInfos.get(0).getParameter("title"), Matchers.equalTo("Login to \\\"apps\\\"")); // TODO verify change from "Login to \"apps\""
+        Assert.assertThat(headerInfos.get(0).getParameter("title"), Matchers.equalTo("Login to \\\"apps\\\""));
         Assert.assertTrue(headerInfos.get(1).getType().equalsIgnoreCase("Basic"));
         Assert.assertTrue(headerInfos.get(1).getParameter("realm").equals("simple"));        
     }
