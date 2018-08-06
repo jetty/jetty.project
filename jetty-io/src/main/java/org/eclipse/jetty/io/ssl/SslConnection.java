@@ -587,7 +587,7 @@ public class SslConnection extends AbstractConnection
                             // Let's try reading some encrypted data... even if we have some already.
                             int net_filled = getEndPoint().fill(_encryptedInput);
 
-                            if (net_filled > 0 && !_handshaken && _sslEngine.isOutboundDone())
+                            if (net_filled > 0 && !_handshaken && isOutboundDone())
                                 throw new SSLHandshakeException("Closed during handshake");
 
                             decryption: while (true)
@@ -860,6 +860,10 @@ public class SslConnection extends AbstractConnection
                 else
                     LOG.ignore(x);
             }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+            }
         }
 
         @Override
@@ -886,7 +890,7 @@ public class SslConnection extends AbstractConnection
                     {
                         if (_cannotAcceptMoreAppDataToFlush)
                         {
-                            if (_sslEngine.isOutboundDone())
+                            if (isOutboundDone())
                                 throw new EofException(new ClosedChannelException());
                             return false;
                         }
@@ -1062,7 +1066,7 @@ public class SslConnection extends AbstractConnection
                     if (!_closedOutbound)
                     {
                         _closedOutbound=true; // Only attempt this once
-                        _sslEngine.closeOutbound();
+                        closeOutbound();
                         flush = true;
                     }
 
@@ -1084,7 +1088,19 @@ public class SslConnection extends AbstractConnection
                 getEndPoint().close();
             }
         }
-        
+
+        private void closeOutbound()
+        {
+            try
+            {
+                _sslEngine.closeOutbound();
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+            }
+        }
+
         private void ensureFillInterested()
         {
             if (getFillInterest().isCallbackNonBlocking())
@@ -1100,7 +1116,20 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean isOutputShutdown()
         {
-            return _sslEngine.isOutboundDone() || getEndPoint().isOutputShutdown();
+            return isOutboundDone() || getEndPoint().isOutputShutdown();
+        }
+
+        private boolean isOutboundDone()
+        {
+            try
+            {
+                return _sslEngine.isOutboundDone();
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+                return true;
+            }
         }
 
         @Override
@@ -1129,7 +1158,20 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean isInputShutdown()
         {
-            return getEndPoint().isInputShutdown() || _sslEngine.isInboundDone();
+            return getEndPoint().isInputShutdown() || isInboundDone();
+        }
+
+        private boolean isInboundDone()
+        {
+            try
+            {
+                return _sslEngine.isInboundDone();
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+                return true;
+            }
         }
 
         private void notifyHandshakeSucceeded(SSLEngine sslEngine)
