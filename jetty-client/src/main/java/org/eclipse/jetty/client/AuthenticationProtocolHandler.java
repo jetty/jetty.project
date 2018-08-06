@@ -49,7 +49,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     private final int maxContentLength;
     private final ResponseNotifier notifier;
 
-    private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:\"(?<paramValueQuoted>.*)\"|(?<paramValueUnquoted>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+))|(?<token68>[a-zA-Z0-9\\-._~+\\/]+=*))");
+    private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<token68>[a-zA-Z0-9\\-._~+\\/]+=*)|(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:(?<paramValue>.*)))");
 
     protected AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
     {
@@ -120,7 +120,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
                 if (m.group("paramName") != null)
                 {
-                    String paramVal = (m.group("paramValueQuoted") != null) ? m.group("paramValueQuoted") : m.group("paramValueUnquoted");
+                    String paramVal = QuotedCSV.unquote(m.group("paramValue"));
                     authParams.put(m.group("paramName"), paramVal);
                 }
                 else if (m.group("token68") != null)
