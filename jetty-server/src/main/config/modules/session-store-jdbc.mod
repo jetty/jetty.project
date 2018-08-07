@@ -27,6 +27,10 @@ db-connection-type?=datasource
 #jetty.session.gracePeriod.seconds=3600
 #jetty.session.savePeriod.seconds=0
 
+#jetty.session.jdbc.blobType=
+#jetty.session.jdbc.longType=
+#jetty.session.jdbc.stringType=
+
 ## Connection type:Datasource
 db-connection-type=datasource
 #jetty.session.jdbc.datasourceName=/jdbc/sessions
