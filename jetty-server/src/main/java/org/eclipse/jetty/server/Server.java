@@ -32,7 +32,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.JavaVersion;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
@@ -60,12 +60,10 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 /* ------------------------------------------------------------ */
 /** Jetty HTTP Servlet Server.
@@ -419,6 +417,7 @@ public class Server extends HandlerWrapper implements Attributes
             super.start(l);
     }
 
+    
     /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
@@ -429,8 +428,6 @@ public class Server extends HandlerWrapper implements Attributes
         if (LOG.isDebugEnabled())
             LOG.debug("doStop {}",this);
 
-        MultiException mex=new MultiException();
-
         // list if graceful futures
         List<Future<Void>> futures = new ArrayList<>();
 
@@ -438,38 +435,9 @@ public class Server extends HandlerWrapper implements Attributes
         for (Connector connector : _connectors)
             futures.add(connector.shutdown());
 
-        // Then tell the contexts that we are shutting down
-        Handler[] gracefuls = getChildHandlersByClass(Graceful.class);
-        for (Handler graceful : gracefuls)
-            futures.add(((Graceful)graceful).shutdown());
-
-        // Shall we gracefully wait for zero connections?
-        long stopTimeout = getStopTimeout();
-        if (stopTimeout>0)
-        {
-            long stop_by=System.currentTimeMillis()+stopTimeout;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Graceful shutdown {} by ",this,new Date(stop_by));
-
-            // Wait for shutdowns
-            for (Future<Void> future: futures)
-            {
-                try
-                {
-                    if (!future.isDone())
-                        future.get(Math.max(1L,stop_by-System.currentTimeMillis()),TimeUnit.MILLISECONDS);
-                }
-                catch (Exception e)
-                {
-                    mex.add(e);
-                }
-            }
-        }
-
-        // Cancel any shutdowns not done
-        for (Future<Void> future: futures)
-            if (!future.isDone())
-                future.cancel(true);
+        MultiException mex = doShutdown(futures);
+        if (mex==null)
+            mex = new MultiException();
 
         // Now stop the connectors (this will close existing connections)
         for (Connector connector : _connectors)

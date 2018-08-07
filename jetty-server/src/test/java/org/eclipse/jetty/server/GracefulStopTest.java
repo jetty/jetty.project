@@ -27,7 +27,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.BufferedReader;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -48,7 +47,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -109,15 +107,8 @@ public class GracefulStopTest
         assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),lessThan(900L));
 
         assertThat(client.getInputStream().read(),Matchers.is(-1));
-
-        assertThat(handler.handling.get(),Matchers.is(false));
-        assertThat(handler.thrown.get(),
-                Matchers.anyOf(
-                instanceOf(ClosedChannelException.class),
-                instanceOf(EofException.class),
-                instanceOf(EOFException.class))
-                );
-
+        assertThat(handler.handling.get(),Matchers.is(false));      
+        assertThat(handler.thrown.get(),Matchers.notNullValue());
         client.close();
     }
 
@@ -290,10 +281,10 @@ public class GracefulStopTest
         {
 
             @Override
-            public Connection newConnection(Connector connector, EndPoint endPoint)
+            public Connection newConnection(Connector con, EndPoint endPoint)
             {
                 // Slow closing connection
-                HttpConnection conn = new HttpConnection(getHttpConfiguration(), connector, endPoint, getHttpCompliance(), isRecordHttpComplianceViolations())
+                HttpConnection conn = new HttpConnection(getHttpConfiguration(), con, endPoint, getHttpCompliance(), isRecordHttpComplianceViolations())
                 {
                     @Override
                     public void close()
@@ -326,7 +317,7 @@ public class GracefulStopTest
                         }
                     }
                 };
-                return configure(conn, connector, endPoint);
+                return configure(conn, con, endPoint);
             }
             
         });
@@ -514,6 +505,91 @@ public class GracefulStopTest
         assertTrue(latch.await(10,TimeUnit.SECONDS));
     }
 
+    @Test
+    public void testContextStop() throws Exception
+    {
+        Server server= new Server();
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        ContextHandler context = new ContextHandler(server,"/");
+        
+        StatisticsHandler stats = new StatisticsHandler();
+        context.setHandler(stats);
+        
+        Exchanger<Void> exchanger0 = new Exchanger<>();
+        Exchanger<Void> exchanger1 = new Exchanger<>();
+        stats.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                    throws IOException, ServletException
+            {
+                try
+                {
+                    exchanger0.exchange(null);
+                    exchanger1.exchange(null);
+                }
+                catch(Throwable x)
+                {
+                    throw new ServletException(x);
+                }
+
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.getWriter().println("The Response");
+                response.getWriter().close();
+            }            
+        });
+
+        context.setStopTimeout(1000);
+        server.start();
+
+        LocalEndPoint endp = connector.executeRequest(
+                "GET / HTTP/1.1\r\n"+
+                        "Host: localhost\r\n" +
+                        "\r\n"
+                );
+
+        exchanger0.exchange(null);
+        exchanger1.exchange(null);
+
+        String response = endp.getResponse();
+        assertThat(response,containsString("200 OK"));
+        assertThat(response,Matchers.not(containsString("Connection: close")));
+
+        endp.addInputAndExecute(BufferUtil.toBuffer("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
+        exchanger0.exchange(null);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        new Thread(()->
+        { 
+            try 
+            {
+                context.stop();
+                latch.countDown();
+            } 
+            catch(Exception e) 
+            {
+                e.printStackTrace();
+            }
+        }).start();
+        while(context.isStarted())  
+            Thread.sleep(10);
+
+        // Check new connections accepted, but don't find context!
+        String unavailable = connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n");
+        assertThat(unavailable,containsString(" 404 Not Found"));
+        
+        // Check completed 200 has close
+        exchanger1.exchange(null);
+        response = endp.getResponse();
+        assertThat(response,containsString("200 OK"));
+        assertThat(response,Matchers.containsString("Connection: close"));
+        assertTrue(latch.await(10,TimeUnit.SECONDS));
+    }
+    
     static class NoopHandler extends AbstractHandler 
     {           
         final CountDownLatch latch = new CountDownLatch(1);

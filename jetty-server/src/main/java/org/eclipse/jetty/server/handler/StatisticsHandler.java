@@ -281,7 +281,6 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         super.doStart();
         statsReset();
     }
-    
 
     @Override
     protected void doStop() throws Exception
@@ -608,12 +607,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     public Future<Void> shutdown()
     {
-        FutureCallback shutdown=new FutureCallback(false);
-        _shutdown.compareAndSet(null,shutdown);
-        shutdown=_shutdown.get();
-        if (_requestStats.getCurrent()==0)
-            shutdown.succeeded();
-        return shutdown;
+        return _shutdown.updateAndGet(fcb->{return fcb==null?new FutureCallback(_requestStats.getCurrent()==0):fcb;});
     }
     
     @Override
