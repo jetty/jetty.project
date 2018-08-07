@@ -190,7 +190,7 @@ public class GzipHandlerTest
             for (Enumeration<String> e = req.getParameterNames(); e.hasMoreElements(); )
             {
                 String n = e.nextElement();
-                response.getWriter().printf("%s: %s%n",n,req.getParameter(n));
+                response.getWriter().printf("%s: %s\n",n,req.getParameter(n));
             }
         }
     }
