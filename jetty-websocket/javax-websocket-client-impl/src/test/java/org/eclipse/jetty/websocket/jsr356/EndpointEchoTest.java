@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
@@ -98,7 +100,8 @@ public class EndpointEchoTest
         session.getBasicRemote().sendText("Echo");
         if (LOG.isDebugEnabled())
             LOG.debug("Client Message Sent");
-        echoer.textCapture.messageQueue.awaitMessages(1,1000,TimeUnit.MILLISECONDS);
+        String echoed = echoer.textCapture.messages.poll(1, TimeUnit.SECONDS);
+        assertThat("Echoed message", echoed, is("Echo"));
     }
 
     @Test
@@ -113,8 +116,9 @@ public class EndpointEchoTest
         session.getBasicRemote().sendText("Echo");
         if (LOG.isDebugEnabled())
             LOG.debug("Client Message Sent");
-        // TODO: figure out echo verification.
-        // echoer.textCapture.messageQueue.awaitMessages(1,1000,TimeUnit.MILLISECONDS);
+        EndpointEchoClient client = (EndpointEchoClient) session.getUserProperties().get("endpoint");
+        String echoed = client.textCapture.messages.poll(1, TimeUnit.SECONDS);
+        assertThat("Echoed message", echoed, is("Echo"));
     }
 
     @Test
@@ -131,7 +135,8 @@ public class EndpointEchoTest
         session.getBasicRemote().sendText("Echo");
         if (LOG.isDebugEnabled())
             LOG.debug("Client Message Sent");
-        echoer.messageQueue.awaitMessages(1,1000,TimeUnit.MILLISECONDS);
+        String echoed = echoer.messages.poll(1, TimeUnit.SECONDS);
+        assertThat("Echoed message", echoed, is("Echo"));
     }
 
     @Test
@@ -146,7 +151,8 @@ public class EndpointEchoTest
         session.getBasicRemote().sendText("Echo");
         if (LOG.isDebugEnabled())
             LOG.debug("Client Message Sent");
-        // TODO: figure out echo verification.
-        // echoer.messageQueue.awaitMessages(1,1000,TimeUnit.MILLISECONDS);
+        EchoStringEndpoint client = (EchoStringEndpoint) session.getUserProperties().get("endpoint");
+        String echoed = client.messages.poll(1, TimeUnit.SECONDS);
+        assertThat("Echoed message", echoed, is("Echo"));
     }
 }
