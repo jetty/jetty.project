@@ -20,10 +20,8 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import javax.servlet.AsyncEvent;
@@ -36,6 +34,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.AsyncContextEvent;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpChannelState;
@@ -74,7 +73,15 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final LongAdder _responses5xx = new LongAdder();
     private final LongAdder _responsesTotalBytes = new LongAdder();
 
-    private final AtomicReference<FutureCallback> _shutdown=new AtomicReference<>();
+
+    private final Graceful.Shutdown _shutdown = new Graceful.Shutdown()
+    {
+        @Override
+        protected FutureCallback newShutdownCallback()
+        {
+            return new FutureCallback(_requestStats.getCurrent()==0);
+        }
+    };
     
     private final AtomicBoolean _wrapWarning = new AtomicBoolean();
     
@@ -127,13 +134,17 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         @Override 
         public void onResponseBegin(Request request)
         {
-            if (_shutdown.get()==null)
-                return;
-            
-            MetaData.Response response = request.getHttpChannel().getCommittedMetaData();
+            if (_shutdown.isShutdown())
+            {
+                Connector connector = request.getHttpChannel().getConnector();
+                if (connector instanceof Graceful && ((Graceful)connector).isShutdown())
+                {
+                    MetaData.Response response = request.getHttpChannel().getCommittedMetaData();
 
-            if (!response.getFields().contains(HttpHeader.CONNECTION,"close"))
-                response.getFields().add(HttpConnection.CONNECTION_CLOSE);
+                    if (!response.getFields().contains(HttpHeader.CONNECTION,"close"))
+                        response.getFields().add(HttpConnection.CONNECTION_CLOSE);
+                }
+            }
         }
     };
 
@@ -184,7 +195,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         try
         {
             Handler handler = getHandler();
-            if (handler!=null && _shutdown.get()==null && isStarted())
+            if (handler!=null && !_shutdown.isShutdown() && isStarted())
             {
                 baseRequest.getHttpChannel().addListener(_shutdownListener);
                 handler.handle(path, baseRequest, request, response);
@@ -277,7 +288,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     protected void doStart() throws Exception
     {
-        _shutdown.set(null);
+        _shutdown.cancel();
         super.doStart();
         statsReset();
     }
@@ -285,10 +296,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     protected void doStop() throws Exception
     {
+        _shutdown.cancel();
         super.doStop();
-        FutureCallback shutdown = _shutdown.get();
-        if (shutdown!=null && !shutdown.isDone())
-            shutdown.failed(new TimeoutException());
     }
 
     /**
@@ -601,13 +610,18 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         sb.append("Bytes sent total: ").append(getResponsesBytesTotal()).append("<br />\n");
 
         return sb.toString();
-
     }
 
     @Override
     public Future<Void> shutdown()
     {
-        return _shutdown.updateAndGet(fcb->{return fcb==null?new FutureCallback(_requestStats.getCurrent()==0):fcb;});
+        return _shutdown.shutdown();
+    }
+    
+    @Override
+    public boolean isShutdown()
+    {
+        return _shutdown.isShutdown();
     }
     
     @Override

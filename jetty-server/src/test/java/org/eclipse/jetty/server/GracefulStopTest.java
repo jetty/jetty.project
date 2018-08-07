@@ -582,11 +582,11 @@ public class GracefulStopTest
         String unavailable = connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n");
         assertThat(unavailable,containsString(" 404 Not Found"));
         
-        // Check completed 200 has close
+        // Check completed 200 does not have close
         exchanger1.exchange(null);
         response = endp.getResponse();
         assertThat(response,containsString("200 OK"));
-        assertThat(response,Matchers.containsString("Connection: close"));
+        assertThat(response,Matchers.not(Matchers.containsString("Connection: close")));
         assertTrue(latch.await(10,TimeUnit.SECONDS));
     }
     

@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FutureCallback implements Future<Void>,Callback
 {
+    public static FutureCallback SUCCEEDED=new FutureCallback(true);
+    
     private static Throwable COMPLETED=new ConstantThrowable();
     private final AtomicBoolean _done=new AtomicBoolean(false);
     private final CountDownLatch _latch=new CountDownLatch(1);
