@@ -168,4 +168,19 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         
         return "server";
     }
+
+    /* ------------------------------------------------------------ */
+    /** Find a servername.
+     * If {@link #setServerName(String)} has not been called, then
+     * use the name of the a principal in the service subject.
+     * If not found, return "server".
+     * @param server the server to use
+     * @param subject not used
+     * @return the server name from the subject of the server (or default value if not found in subject or principals)
+     */
+    @Deprecated
+    protected String findServerName(Server server, Subject subject)
+    {
+        return findServerName(server);
+    }
 }
