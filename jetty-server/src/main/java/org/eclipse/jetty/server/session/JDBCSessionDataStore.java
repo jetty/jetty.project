@@ -57,9 +57,9 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     public static final String NULL_CONTEXT_PATH = "/";
     
     protected boolean _initialized = false;
-    private DatabaseAdaptor _dbAdaptor;
-    private SessionTableSchema _sessionTableSchema;
-    private boolean _schemaProvided;
+    protected DatabaseAdaptor _dbAdaptor;
+    protected SessionTableSchema _sessionTableSchema;
+    protected boolean _schemaProvided;
 
 
     
@@ -733,7 +733,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
 
 
-    private void doInsert (String id, SessionData data) 
+    protected void doInsert (String id, SessionData data) 
     throws Exception
     {
         String s = _sessionTableSchema.getInsertSessionStatementAsString();
@@ -778,7 +778,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
 
     
-    private void doUpdate (String id, SessionData data)
+    protected void doUpdate (String id, SessionData data)
             throws Exception
     {
         try (Connection connection = _dbAdaptor.getConnection())        
