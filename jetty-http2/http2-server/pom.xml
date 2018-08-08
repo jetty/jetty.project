@@ -23,10 +23,6 @@
         <configuration>
           <mainClass>org.eclipse.jetty.http2.server.H2SpecServer</mainClass>
           <skip>${skipTests}</skip>
-          <!-- TODO: remove the exclusion when upgrading to h2spec 2.1.1+ -->
-          <excludeSpecs>
-            <excludeSpec>5.1 - closed: Sends a DATA frame</excludeSpec>
-          </excludeSpecs>
         </configuration>
         <executions>
           <execution>

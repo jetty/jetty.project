@@ -62,4 +62,13 @@ public class ListenerHolder extends BaseHolder<EventListener>
         
         super.doStart();
     }
+
+
+    @Override
+    public String toString()
+    {
+        return super.toString()+(_listener == null?"":": "+getClassName());
+    }
+    
+    
 }
