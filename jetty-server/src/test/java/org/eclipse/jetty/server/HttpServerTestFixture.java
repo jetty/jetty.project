@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
@@ -114,6 +115,7 @@ public class HttpServerTestFixture
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            Log.getRootLogger().debug("handle "+target);
             baseRequest.setHandled(true);
 
             if (request.getContentType()!=null)
@@ -154,6 +156,8 @@ public class HttpServerTestFixture
 
             if (reader.read()>=0)
                 throw new IllegalStateException("Not closed");
+
+            Log.getRootLogger().debug("handled "+target);
         }
     }
 

@@ -63,7 +63,9 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * Runner
  * <p>
  * Combine jetty classes into a single executable jar and run webapps based on the args to it.
+ * @deprecated No replacement provided or available.  Migrate to jetty-home (and use {@code ${jetty.base}} directory).
  */
+@Deprecated
 public class Runner
 {
     private static final Logger LOG = Log.getLogger(Runner.class);
@@ -553,6 +555,10 @@ public class Runner
 
     public static void main(String[] args)
     {
+        System.err.println("WARNING: jetty-runner is deprecated.");
+        System.err.println("         See Jetty Documentation for startup options");
+        System.err.println("         https://www.eclipse.org/jetty/documentation/");
+
         Runner runner = new Runner();
 
         try

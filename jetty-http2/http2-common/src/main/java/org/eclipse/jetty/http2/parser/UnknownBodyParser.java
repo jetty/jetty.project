@@ -16,30 +16,39 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.client;
+package org.eclipse.jetty.http2.parser;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.server.handler.AbstractHandler;
-
-class RespondThenConsumeHandler extends AbstractHandler
+public class UnknownBodyParser extends BodyParser
 {
-    @Override
-    public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException
+    private int cursor;
+
+    public UnknownBodyParser(HeaderParser headerParser, Parser.Listener listener)
     {
-        baseRequest.setHandled(true);
-        response.setContentLength(0);
-        response.setStatus(200);
-        response.flushBuffer();
-        
-        InputStream in = request.getInputStream();
-        while(in.read()>=0);
+        super(headerParser, listener);
     }
-    
+
+    @Override
+    public boolean parse(ByteBuffer buffer)
+    {
+        int length = cursor == 0 ? getBodyLength() : cursor;
+        cursor = consume(buffer, length);
+        return cursor == 0;
+    }
+
+    private int consume(ByteBuffer buffer, int length)
+    {
+        int remaining = buffer.remaining();
+        if (remaining >= length)
+        {
+            buffer.position(buffer.position() + length);
+            return 0;
+        }
+        else
+        {
+            buffer.position(buffer.limit());
+            return length - remaining;
+        }
+    }
 }

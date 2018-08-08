@@ -45,7 +45,7 @@ public class GoAwayGenerator extends FrameGenerator
     public int generateGoAway(ByteBufferPool.Lease lease, int lastStreamId, int error, byte[] payload)
     {
         if (lastStreamId < 0)
-            throw new IllegalArgumentException("Invalid last stream id: " + lastStreamId);
+            lastStreamId = 0;
 
         // The last streamId + the error code.
         int fixedLength = 4 + 4;

@@ -27,8 +27,8 @@ jetty-9.4.11.v20180605 - 05 June 2018
  + 2571 Jetty Client 9.4.x incorrectly handles too large fields from nginx 1.14
    server
  + 2574 Clarify max request queued exception message
- + 2575 Work around broken OSGi implementations Bundle.getEntry() behavior returning
-   with unescaped URLs
+ + 2575 Work around broken OSGi implementations Bundle.getEntry() behavior
+   returning with unescaped URLs
  + 2580 Stop creating unnecessary exceptions with MultiException
  + 2586 Update to asm 6.2
  + 2603 WebSocket ByteAccumulator initialized with wrong maximum

@@ -411,7 +411,7 @@ public class HpackContextTest
     }
     
     @Test
-    public void testStaticHuffmanValues()
+    public void testStaticHuffmanValues() throws Exception
     {
         HpackContext ctx = new HpackContext(4096);
         for (int i=2;i<=14;i++)

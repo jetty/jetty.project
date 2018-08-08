@@ -21,10 +21,8 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.TypeUtil;
@@ -66,14 +64,16 @@ public class HpackDecoder
         _localMaxDynamicTableSize=localMaxdynamciTableSize;
     }
 
-    public MetaData decode(ByteBuffer buffer)
+    public MetaData decode(ByteBuffer buffer) throws HpackException.SessionException, HpackException.StreamException
     {
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets",_context.hashCode(),buffer.remaining()));
 
         // If the buffer is big, don't even think about decoding it
         if (buffer.remaining()>_builder.getMaxSize())
-            throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Header frame size "+buffer.remaining()+">"+_builder.getMaxSize());
+            throw new HpackException.SessionException("431 Request Header Fields too large");
+        
+        boolean emitted = false;
 
         while(buffer.hasRemaining())
         {
@@ -92,14 +92,14 @@ public class HpackDecoder
                 int index = NBitInteger.decode(buffer,7);
                 Entry entry=_context.get(index);
                 if (entry==null)
-                {
-                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Unknown index "+index);
-                }
-                else if (entry.isStatic())
+                    throw new HpackException.SessionException("Unknown index %d",index);
+                
+                if (entry.isStatic())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("decode IdxStatic {}",entry);
                     // emit field
+                    emitted = true;
                     _builder.emit(entry.getHttpField());
 
                     // TODO copy and add to reference set if there is room
@@ -110,6 +110,7 @@ public class HpackDecoder
                     if (LOG.isDebugEnabled())
                         LOG.debug("decode Idx {}",entry);
                     // emit
+                    emitted = true;
                     _builder.emit(entry.getHttpField());
                 }
             }
@@ -134,6 +135,8 @@ public class HpackDecoder
                             LOG.debug("decode resize="+size);
                         if (size>_localMaxDynamicTableSize)
                             throw new IllegalArgumentException();
+                        if (emitted)
+                            throw new HpackException.CompressionException("Dynamic table resize after fields");
                         _context.resize(size);
                         continue;
 
@@ -178,7 +181,8 @@ public class HpackDecoder
                         char c=name.charAt(i);
                         if (c>='A'&&c<='Z')
                         {
-                            throw new BadMessageException(400,"Uppercase header name");
+                            _builder.streamException("Uppercase header name %s",name);
+                            break;
                         }
                     }
                     header=HttpHeader.CACHE.get(name);
@@ -240,6 +244,7 @@ public class HpackDecoder
                 }
 
                 // emit the field
+                emitted = true;
                 _builder.emit(field);
 
                 // if indexed add to dynamic table

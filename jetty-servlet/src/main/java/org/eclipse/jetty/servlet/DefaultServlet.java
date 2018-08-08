@@ -455,7 +455,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException
     {
-        _resourceService.doGet(request,response);
+        if(!_resourceService.doGet(request,response))
+            response.sendError(404);
     }
 
     /* ------------------------------------------------------------ */

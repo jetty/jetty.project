@@ -1654,7 +1654,7 @@ public class SessionHandler extends ScopedHandler
             }
         }
 
-        if (requested_session_id == null || session == null)
+        if (isUsingURLs() && (requested_session_id == null || session == null))
         {
             String uri = request.getRequestURI();
 
