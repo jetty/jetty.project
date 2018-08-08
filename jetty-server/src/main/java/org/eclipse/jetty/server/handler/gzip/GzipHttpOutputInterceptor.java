@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Response;
@@ -310,6 +309,13 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             super(callback);
             _content=content;
             _last=complete;
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable x) {
+            _factory.recycle(_deflater);
+            _deflater=null;
+            super.onCompleteFailure(x);
         }
 
         @Override
