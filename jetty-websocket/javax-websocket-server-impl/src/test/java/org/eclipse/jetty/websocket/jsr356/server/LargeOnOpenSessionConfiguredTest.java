@@ -31,33 +31,34 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.eclipse.jetty.websocket.jsr356.server.samples.echo.LargeEchoAnnotatedSocket;
-import org.junit.AfterClass;
+import org.eclipse.jetty.websocket.jsr356.server.samples.echo.LargeEchoConfiguredSocket;
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Test Echo of Large messages, targeting the {@code @OnMessage(maxMessage=###)} functionality
+ * Test Echo of Large messages, targeting the use of {@link javax.websocket.Session#setMaxTextMessageBufferSize(int)}
+ * from within the {@code @OnOpen} method call functionality.
  */
-public class LargeAnnotatedTest
+public class LargeOnOpenSessionConfiguredTest
 {
-    private static WSServer server;
+    private WSServer server;
 
-    @BeforeClass
-    public static void startServer() throws Exception
+    @Before
+    public void startServer() throws Exception
     {
         Path testDir = MavenTestingUtils.getTargetTestingPath(LargeOnOpenSessionConfiguredTest.class.getSimpleName());
 
         server = new WSServer(testDir,"app");
         server.createWebInf();
-        server.copyEndpoint(LargeEchoAnnotatedSocket.class);
+        server.copyEndpoint(LargeEchoConfiguredSocket.class);
 
         server.start();
     }
 
-    @AfterClass
-    public static void stopServer()
+    @After
+    public void stopServer()
     {
         server.stop();
     }
@@ -75,7 +76,7 @@ public class LargeAnnotatedTest
         WebSocketClient client = new WebSocketClient();
         try
         {
-            client.getPolicy().setMaxTextMessageSize(128*1024);
+            client.getPolicy().setMaxTextMessageSize(128 * 1024);
             client.start();
             JettyEchoSocket clientEcho = new JettyEchoSocket();
             Future<Session> foo = client.connect(clientEcho,uri.resolve("echo/large"));
