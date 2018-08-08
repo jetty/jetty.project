@@ -204,7 +204,7 @@ public class WebSocketPolicy
     }
 
     /**
-     * The time in ms (milliseconds) that a websocket connection may by idle before being closed automatically.
+     * The time in ms (milliseconds) that a websocket connection may be idle before being closed automatically.
      * 
      * @return the timeout in milliseconds for idle timeout.
      */
