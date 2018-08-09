@@ -92,6 +92,7 @@
     <module>jetty-memcached</module>
     <module>jetty-hazelcast</module>
     <module>jetty-unixsocket</module>
+    <module>jetty-jmh</module>
     <module>tests</module>
     <module>examples</module>
     <module>jetty-quickstart</module>
@@ -890,7 +891,7 @@
         <plugin>
           <groupId>com.github.madgnome</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>0.3</version>
+          <version>0.4</version>
         </plugin>
       </plugins>
     </pluginManagement>

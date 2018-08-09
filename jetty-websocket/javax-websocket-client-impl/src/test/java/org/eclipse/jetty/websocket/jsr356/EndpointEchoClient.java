@@ -52,6 +52,7 @@ public class EndpointEchoClient extends Endpoint
         if (LOG.isDebugEnabled())
             LOG.debug("onOpen({}, {})",session,config);
         this.session = session;
+        this.session.getUserProperties().put("endpoint", this);
         Assert.assertThat("Session is required",session,notNullValue());
         Assert.assertThat("EndpointConfig is required",config,notNullValue());
         this.session.addMessageHandler(textCapture);

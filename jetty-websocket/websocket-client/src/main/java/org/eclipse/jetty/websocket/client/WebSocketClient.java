@@ -269,7 +269,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         }
 
         // Ensure we get a Client version of the policy.
-        this.policy = scope.getPolicy().clonePolicy(WebSocketBehavior.CLIENT);
+        this.policy = scope.getPolicy().delegateAs(WebSocketBehavior.CLIENT);
         // Support Late Binding of Object Factory (for CDI)
         this.objectFactorySupplier = () -> scope.getObjectFactory();
         this.extensionRegistry = new WebSocketExtensionFactory(this);
