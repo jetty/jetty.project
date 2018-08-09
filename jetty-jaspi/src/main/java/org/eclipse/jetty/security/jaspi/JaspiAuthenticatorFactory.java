@@ -97,7 +97,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
             RegistrationListener listener = (layer, appContext) -> {};
 
             Subject serviceSubject=findServiceSubject(server);
-            String serverName=findServerName(server);
+            String serverName=findServerName(server, serviceSubject);
 
             String contextPath=context.getContextPath();
             if (contextPath==null || contextPath.length()==0)
