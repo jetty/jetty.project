@@ -34,6 +34,7 @@ import java.util.function.Supplier;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
@@ -548,59 +549,75 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * spawned thread writes the response content; in such case, we attempt to commit the error directly
      * bypassing the {@link ErrorHandler} mechanisms and the response OutputStream.</p>
      *
-     * @param failure the Throwable that caused the problem
+     * @param th the Throwable that caused the problem
      */
-    protected void handleException(Throwable failure)
+    protected void handleException(Throwable th)
     {
-        // Unwrap wrapping Jetty exceptions.
-        if (failure instanceof RuntimeIOException)
-            failure = failure.getCause();
+        // Unwrap wrapping Jetty and Servlet exceptions.
+        Throwable cause = unwrap(th);
 
-        if (failure instanceof QuietException || !getServer().isRunning())
+        if (cause instanceof QuietException || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(_request.getRequestURI(), failure);
+                LOG.debug(_request.getRequestURI(), th);
         }
-        else if (failure instanceof BadMessageException | failure instanceof IOException | failure instanceof TimeoutException)
+        else if (cause instanceof BadMessageException | cause instanceof IOException | cause instanceof TimeoutException)
         {
             // No stack trace unless there is debug turned on
-            LOG.warn("{} {}",_request.getRequestURI(), failure.toString()); 
+            LOG.warn("{} {}",_request.getRequestURI(), cause.toString()); 
             if (LOG.isDebugEnabled())
-                LOG.debug(_request.getRequestURI(), failure);
+                LOG.debug(_request.getRequestURI(), th);
         }
         else
         {
-            LOG.warn(_request.getRequestURI(), failure);
+            LOG.warn(_request.getRequestURI(), th);
         }
 
         try
         {
-            _state.onError(failure);
+            _state.onError(th);
         }
         catch (Throwable e)
         {
-            if (e != failure)
-                failure.addSuppressed(e);
-            LOG.warn("ERROR dispatch failed", failure);
+            if (e != th)
+                th.addSuppressed(e);
+            LOG.warn("ERROR dispatch failed", th);
             // Try to send a minimal response.
-            minimalErrorResponse(failure);
+            minimalErrorResponse(cause);
         }
     }
 
-    private void minimalErrorResponse(Throwable failure)
+    protected Throwable unwrap(Throwable th)
+    {
+        while (th.getCause()!=null && (th instanceof RuntimeIOException || th instanceof ServletException))
+            th = th.getCause();
+        return th;
+    }
+    
+    private void minimalErrorResponse(Throwable th)
     {
         try
-        {
-            Integer code=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+        {        
+            int code = 500;
+            Integer status=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+            if (status!=null)
+                code = status.intValue();
+            else
+            {
+                Throwable cause = unwrap(th);
+                if (cause instanceof BadMessageException)
+                    code = ((BadMessageException)cause).getCode();
+            }
+            
             _response.reset(true);
-            _response.setStatus(code == null ? 500 : code);
+            _response.setStatus(code);
             _response.flushBuffer();
         }
         catch (Throwable x)
         {
-            if (x != failure)
-                failure.addSuppressed(x);
-            abort(failure);
+            if (x != th)
+                th.addSuppressed(x);
+            abort(th);
         }
     }
 

@@ -18,19 +18,24 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.AsyncListener;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.log.Log;
@@ -713,7 +718,7 @@ public class HttpChannelState
         cancelTimeout();
     }
     
-    protected void onError(Throwable failure)
+    protected void onError(Throwable th)
     {
         final List<AsyncListener> listeners;
         final AsyncContextEvent event;
@@ -721,15 +726,16 @@ public class HttpChannelState
         
         int code=HttpStatus.INTERNAL_SERVER_ERROR_500;
         String reason=null;
-        if (failure instanceof BadMessageException)
+        Throwable cause = _channel.unwrap(th);
+        if (cause instanceof BadMessageException)
         {
-            BadMessageException bme = (BadMessageException)failure;
+            BadMessageException bme = (BadMessageException)cause;
             code = bme.getCode();
             reason = bme.getReason();
         }
-        else if (failure instanceof UnavailableException)
+        else if (cause instanceof UnavailableException)
         {
-            if (((UnavailableException)failure).isPermanent())
+            if (((UnavailableException)cause).isPermanent())
                 code = HttpStatus.NOT_FOUND_404;
             else
                 code = HttpStatus.SERVICE_UNAVAILABLE_503;
@@ -738,15 +744,15 @@ public class HttpChannelState
         try(Locker.Lock lock= _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onError {} {}",toStringLocked(),failure);
+                LOG.debug("onError {} {}",toStringLocked(),th);
             
             // Set error on request.
             if(_event!=null)
             {
-                _event.addThrowable(failure);
+                _event.addThrowable(th);
                 _event.getSuppliedRequest().setAttribute(ERROR_STATUS_CODE,code);
-                _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION,failure);
-                _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,failure==null?null:failure.getClass());
+                _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION,th);
+                _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th==null?null:th.getClass());
                 _event.getSuppliedRequest().setAttribute(ERROR_MESSAGE,reason);
             }
             else
@@ -755,8 +761,8 @@ public class HttpChannelState
                 if (error!=null)
                     throw new IllegalStateException("Error already set",error);
                 baseRequest.setAttribute(ERROR_STATUS_CODE,code);
-                baseRequest.setAttribute(ERROR_EXCEPTION,failure);
-                baseRequest.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,failure==null?null:failure.getClass());
+                baseRequest.setAttribute(ERROR_EXCEPTION,th);
+                baseRequest.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th==null?null:th.getClass());
                 baseRequest.setAttribute(ERROR_MESSAGE,reason);
             }
             
