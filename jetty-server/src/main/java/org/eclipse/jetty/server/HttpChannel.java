@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 
@@ -44,6 +45,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -520,9 +522,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * spawned thread writes the response content; in such case, we attempt to commit the error directly
      * bypassing the {@link ErrorHandler} mechanisms and the response OutputStream.</p>
      *
-     * @param x the Throwable that caused the problem
+     * @param failure the Throwable that caused the problem
      */
-    protected void handleException(Throwable x)
+    protected void handleException(Throwable failure)
     {
         if (_state.isAsyncStarted())
         {
@@ -530,15 +532,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             Throwable root = _state.getAsyncContextEvent().getThrowable();
             if (root==null)
             {
-                _state.error(x);
+                _state.error(failure);
             }
             else
             {
                 // TODO Can this happen?  Should this just be ISE???
                 // We've already processed an error before!
-                root.addSuppressed(x);
+                root.addSuppressed(failure);
                 LOG.warn("Error while handling async error: ", root);
-                abort(x);
+                abort(failure);
                 _state.errorComplete();
             }
         }
@@ -548,27 +550,28 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             {
                 // Handle error normally
                 _request.setHandled(true);
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, x);
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE, x.getClass());
+                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, failure);
+                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE, failure.getClass());
 
                 if (isCommitted())
                 {
-                    abort(x);
+                    abort(failure);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Could not send response error 500, already committed", x);
+                        LOG.debug("Could not send response error 500, already committed", failure);
                 }
                 else
                 {
                     _response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
 
-                    if (x instanceof BadMessageException)
+                    Throwable cause = unwrap(failure);
+                    if (cause instanceof BadMessageException)
                     {
-                        BadMessageException bme = (BadMessageException)x;
+                        BadMessageException bme = (BadMessageException)cause;
                         _response.sendError(bme.getCode(), bme.getReason());
                     }
-                    else if (x instanceof UnavailableException)
+                    else if (cause instanceof UnavailableException)
                     {
-                        if (((UnavailableException)x).isPermanent())
+                        if (((UnavailableException)cause).isPermanent())
                             _response.sendError(HttpStatus.NOT_FOUND_404);
                         else
                             _response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
@@ -584,6 +587,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     LOG.debug("Could not commit response error 500", e);
             }
         }
+    }
+
+    protected Throwable unwrap(Throwable th)
+    {
+        while (th.getCause()!=null && (th instanceof RuntimeIOException || th instanceof ServletException))
+            th = th.getCause();
+        return th;
     }
 
     public boolean isExpecting100Continue()
