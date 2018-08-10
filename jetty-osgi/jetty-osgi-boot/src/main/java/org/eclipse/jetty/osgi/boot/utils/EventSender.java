@@ -28,7 +28,7 @@ import org.osgi.service.event.EventAdmin;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
- * Utility class for emiting OSGi EventAdmin events
+ * Utility class for emitting OSGi EventAdmin events
  */
 public class EventSender
 {    

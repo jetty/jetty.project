@@ -165,7 +165,7 @@ public class TestABCase6_BadUTF extends AbstractABCase
 
         try (Fuzzer fuzzer = new Fuzzer(this))
         {
-            try (StacklessLogging supress = new StacklessLogging(Parser.class))
+            try (StacklessLogging suppress = new StacklessLogging(Parser.class))
             {
                 fuzzer.connect();
                 fuzzer.setSendMode(Fuzzer.SendMode.BULK);

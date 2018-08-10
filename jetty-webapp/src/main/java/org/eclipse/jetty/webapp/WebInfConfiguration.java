@@ -243,7 +243,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
         }
         
-        //if we're targetting jdk 9 or above, we also need to examine the 
+        //if we're targeting jdk 9 or above, we also need to examine the 
         //module path
         if (targetPlatform >= 9)
         {

@@ -646,7 +646,7 @@ Modules for tag 'session':
         XML: etc/sessions/infinispan/remote.xml
 
      Module: session-store-jdbc [session-store]
-           : Enables JDBC peristent/distributed session storage.
+           : Enables JDBC persistent/distributed session storage.
        Tags: session
      Depend: sessions, sessions/jdbc/${db-connection-type}
         XML: etc/sessions/jdbc/session-store.xml

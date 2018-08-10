@@ -142,7 +142,7 @@ public class IOTest
             // and the server output is not shutdown
             assertFalse(server.isOutputShutdown());
 
-            // until we explictly shut it down
+            // until we explicitly shut it down
             server.shutdownOutput();
 
             // and now we can't write
@@ -168,7 +168,7 @@ public class IOTest
             // but not the other end
             assertFalse(server.isClosed());
 
-            // which has to be closed explictly
+            // which has to be closed explicitly
             server.close();
             assertTrue(server.isClosed());
         }

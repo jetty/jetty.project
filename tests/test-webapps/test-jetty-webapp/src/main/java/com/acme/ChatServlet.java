@@ -112,7 +112,7 @@ public class ChatServlet extends HttpServlet
         LOG.debug("doPost called. join={},message={},username={}", join, message, username);
         if (username == null)
         {
-            LOG.debug("no paramter user set, sending 503");
+            LOG.debug("no parameter user set, sending 503");
             response.sendError(503, "user==null");
             return;
         }
