@@ -662,13 +662,13 @@ public abstract class RFC2616BaseTest
         response = responses.get(0); // response 1
         assertEquals("8.1 Persistent Connections", HttpStatus.OK_200, response.getStatus());
         assertTrue("8.1 Persistent Connections",response.get("Content-Length") != null);
-        assertTrue("8.1 Peristent Connections", response.getContent().contains("Resource=R1"));
+        assertTrue("8.1 Persistent Connections", response.getContent().contains("Resource=R1"));
 
         response = responses.get(1); // response 2
         assertEquals("8.1.2.2 Persistent Connections / Pipeline", HttpStatus.OK_200, response.getStatus());
         assertTrue("8.1.2.2 Persistent Connections / Pipeline", response.get("Content-Length") != null);
         assertEquals("8.1.2.2 Persistent Connections / Pipeline","close", response.get("Connection"));
-        assertTrue("8.1.2.2 Peristent Connections / Pipeline", response.getContent().contains("Resource=R2"));
+        assertTrue("8.1.2.2 Persistent Connections / Pipeline", response.getContent().contains("Resource=R2"));
     }
 
     /**

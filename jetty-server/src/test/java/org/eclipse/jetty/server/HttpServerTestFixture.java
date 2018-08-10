@@ -145,7 +145,7 @@ public class HttpServerTestFixture
             if (count==0)
             {
                 if (_musthavecontent)
-                    throw new IllegalStateException("no input recieved");
+                    throw new IllegalStateException("no input received");
 
                 writer.println("No content");
             }

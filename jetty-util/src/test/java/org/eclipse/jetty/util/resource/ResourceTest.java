@@ -227,8 +227,8 @@ public class ResourceTest
         String urlRef = cases.uriRef.toASCIIString();
         Data zdata = new Data("jar:"+urlRef +"TestData/test.zip!/",EXISTS,DIR);
         cases.addCase(zdata);
-        cases.addCase(new Data(zdata,"Unkown",!EXISTS,!DIR));
-        cases.addCase(new Data(zdata,"/Unkown/",!EXISTS,DIR));
+        cases.addCase(new Data(zdata,"Unknown",!EXISTS,!DIR));
+        cases.addCase(new Data(zdata,"/Unknown/",!EXISTS,DIR));
 
         cases.addCase(new Data(zdata,"subdir",EXISTS,DIR));
         cases.addCase(new Data(zdata,"/subdir/",EXISTS,DIR));

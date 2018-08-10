@@ -553,7 +553,7 @@ public class StreamResetTest extends AbstractTest
                     {
                         // Wait to let the data sent by the client to be queued.
                         Thread.sleep(1000);
-                        throw new IllegalStateException("explictly_thrown_by_test");
+                        throw new IllegalStateException("explicitly_thrown_by_test");
                     }
                     catch (InterruptedException e)
                     {

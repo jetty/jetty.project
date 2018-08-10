@@ -303,7 +303,7 @@ public class QuotedStringTokenizer
     /* ------------------------------------------------------------ */
     /** Quote a string.
      * The string is quoted only if quoting is required due to
-     * embeded delimiters, quote characters or the
+     * embedded delimiters, quote characters or the
      * empty string.
      * @param s The string to quote.
      * @return quoted string

@@ -425,7 +425,7 @@ public class DefaultSessionCacheTest
        context.getSessionHandler().setSessionCache(cache);
        context.start(); 
 
-       //test remove non-existant session
+       //test remove non-existent session
        Session session = cache.delete("1234");
        assertNull(session);
 

@@ -225,7 +225,7 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
      * 
      * Support only 2 types of packaging for the bundle: - the bundle is a jar
      * (recommended for runtime.) - the bundle is a folder and contain jars in
-     * the root and/or in the lib folder (nice for PDE developement situations)
+     * the root and/or in the lib folder (nice for PDE development situations)
      * Unsupported: the bundle is a jar that embeds more jars.
      * 
      * @param locatorHelper
