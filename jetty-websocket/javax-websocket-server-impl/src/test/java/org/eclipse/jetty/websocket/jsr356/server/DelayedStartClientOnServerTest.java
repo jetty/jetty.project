@@ -73,7 +73,7 @@ public class DelayedStartClientOnServerTest
             return msg;
         }
     }
-    
+
     /**
      * Using the Client specific techniques of JSR356, connect to the echo socket
      * and perform an echo request.

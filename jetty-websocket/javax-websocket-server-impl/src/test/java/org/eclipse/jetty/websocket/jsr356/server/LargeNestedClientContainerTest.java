@@ -34,7 +34,9 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.LargeEchoAnnotatedSocket;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -109,6 +111,13 @@ public class LargeNestedClientContainerTest
         });
 
         return scenarios;
+    }
+
+    @After
+    public void resetClientContainerProvider()
+    {
+        JettyClientContainerProvider.useServerContainer(false);
+        JettyClientContainerProvider.useSingleton(false);
     }
 
     private static final AtomicInteger appDirIdx = new AtomicInteger(0);
