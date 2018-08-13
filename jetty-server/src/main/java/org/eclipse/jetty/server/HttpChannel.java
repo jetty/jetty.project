@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -563,7 +564,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 {
                     _response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
 
-                    Throwable cause = unwrap(failure);
+                    Throwable cause = unwrap(failure,BadMessageException.class,UnavailableException.class);
                     if (cause instanceof BadMessageException)
                     {
                         BadMessageException bme = (BadMessageException)cause;
@@ -582,22 +583,29 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (Throwable e)
             {
-                abort(e);
+                failure.addSuppressed(e);
+                abort(failure);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not commit response error 500", e);
+                    LOG.debug("Could not commit response error 500", failure);
             }
         }
     }
 
-    protected Throwable unwrap(Throwable th)
+    /** Unwrap failure causes to find target class
+     * @param failure The throwable to have its causes unwrapped
+     * @param targets Exception classes that we should not unwrap
+     * @return A target throwable or null
+     */
+    protected Throwable unwrap(Throwable failure, Class<?> ... targets)
     {
-        // Unwrap to root cause:
-        // RuntimeIOExceptions are unwrapped as they are holders of IOExceptions that may be verbosity controlled
-        // ServletExceptions are unwrapped as are just general holders of exceptions
-        // UnavailableException are not unwrapped as they are specialized ServletExceptions that carry extra information.
-        while (th.getCause()!=null && (th instanceof RuntimeIOException || ((th instanceof ServletException) && !(th instanceof UnavailableException))))
-            th = th.getCause();
-        return th;
+        while (failure!=null)
+        {
+            for (Class<?> x : targets)
+                if (x.isInstance(failure))
+                    return failure;
+            failure = failure.getCause();
+        }
+        return null;        
     }
 
     public boolean isExpecting100Continue()
