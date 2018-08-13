@@ -550,57 +550,63 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * spawned thread writes the response content; in such case, we attempt to commit the error directly
      * bypassing the {@link ErrorHandler} mechanisms and the response OutputStream.</p>
      *
-     * @param th the Throwable that caused the problem
+     * @param failure the Throwable that caused the problem
      */
-    protected void handleException(Throwable th)
+    protected void handleException(Throwable failure)
     {
         // Unwrap wrapping Jetty and Servlet exceptions.
-        Throwable cause = unwrap(th);
+        Throwable quiet = unwrap(failure, QuietException.class);
+        Throwable no_stack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
 
-        if (cause instanceof QuietException || !getServer().isRunning())
+        if (quiet!=null || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(_request.getRequestURI(), th);
+                LOG.debug(_request.getRequestURI(), failure);
         }
-        else if (cause instanceof BadMessageException | cause instanceof IOException | cause instanceof TimeoutException)
+        else if (no_stack!=null)
         {
             // No stack trace unless there is debug turned on
-            LOG.warn("{} {}",_request.getRequestURI(), cause.toString()); 
+            LOG.warn("{} {}",_request.getRequestURI(), no_stack.toString()); 
             if (LOG.isDebugEnabled())
-                LOG.debug(_request.getRequestURI(), th);
+                LOG.debug(_request.getRequestURI(), failure);
         }
         else
         {
-            LOG.warn(_request.getRequestURI(), th);
+            LOG.warn(_request.getRequestURI(), failure);
         }
 
         try
         {
-            _state.onError(th);
+            _state.onError(failure);
         }
         catch (Throwable e)
         {
-            if (e != th)
-                th.addSuppressed(e);
-            LOG.warn("ERROR dispatch failed", th);
+            if (e != failure)
+                failure.addSuppressed(e);
+            LOG.warn("ERROR dispatch failed", failure);
             // Try to send a minimal response.
-            minimalErrorResponse(cause);
+            minimalErrorResponse(failure);
         }
     }
 
-
-    protected Throwable unwrap(Throwable th)
+    /** Unwrap failure causes to find target class
+     * @param failure The throwable to have its causes unwrapped
+     * @param targets Exception classes that we should not unwrap
+     * @return A target throwable or null
+     */
+    protected Throwable unwrap(Throwable failure, Class<?> ... targets)
     {
-        // Unwrap to root cause:
-        // RuntimeIOExceptions are unwrapped as they are holders of IOExceptions that may be verbosity controlled
-        // ServletExceptions are unwrapped as are just general holders of exceptions
-        // UnavailableException are not unwrapped as they are specialized ServletExceptions that carry extra information.
-        while (th.getCause()!=null && (th instanceof RuntimeIOException || ((th instanceof ServletException) && !(th instanceof UnavailableException))))
-            th = th.getCause();
-        return th;
+        while (failure!=null)
+        {
+            for (Class<?> x : targets)
+                if (x.isInstance(failure))
+                    return failure;
+            failure = failure.getCause();
+        }
+        return null;        
     }
     
-    private void minimalErrorResponse(Throwable th)
+    private void minimalErrorResponse(Throwable failure)
     {
         try
         {        
@@ -610,7 +616,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 code = status.intValue();
             else
             {
-                Throwable cause = unwrap(th);
+                Throwable cause = unwrap(failure,BadMessageException.class);
                 if (cause instanceof BadMessageException)
                     code = ((BadMessageException)cause).getCode();
             }
@@ -621,9 +627,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch (Throwable x)
         {
-            if (x != th)
-                th.addSuppressed(x);
-            abort(th);
+            if (x != failure)
+                failure.addSuppressed(x);
+            abort(failure);
         }
     }
 

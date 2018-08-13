@@ -18,34 +18,29 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
+import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
+import static javax.servlet.RequestDispatcher.ERROR_MESSAGE;
+import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.AsyncListener;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
-
-import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
-import static javax.servlet.RequestDispatcher.ERROR_MESSAGE;
-import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
 /**
  * Implementation of AsyncContext interface that holds the state of request-response cycle.
@@ -726,7 +721,7 @@ public class HttpChannelState
         
         int code=HttpStatus.INTERNAL_SERVER_ERROR_500;
         String reason=null;
-        Throwable cause = _channel.unwrap(th);
+        Throwable cause = _channel.unwrap(th,BadMessageException.class,UnavailableException.class);
         if (cause instanceof BadMessageException)
         {
             BadMessageException bme = (BadMessageException)cause;
