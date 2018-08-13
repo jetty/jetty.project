@@ -591,7 +591,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     protected Throwable unwrap(Throwable th)
     {
-        while (th.getCause()!=null && (th instanceof RuntimeIOException || th instanceof ServletException))
+        // Unwrap to root cause:
+        // RuntimeIOExceptions are unwrapped as they are holders of IOExceptions that may be verbosity controlled
+        // ServletExceptions are unwrapped as are just general holders of exceptions
+        // UnavailableException are not unwrapped as they are specialized ServletExceptions that carry extra information.
+        while (th.getCause()!=null && (th instanceof RuntimeIOException || ((th instanceof ServletException) && !(th instanceof UnavailableException))))
             th = th.getCause();
         return th;
     }
