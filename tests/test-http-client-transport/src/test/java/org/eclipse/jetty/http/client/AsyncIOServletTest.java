@@ -25,19 +25,24 @@ import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -75,6 +80,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
@@ -425,6 +431,109 @@ public class AsyncIOServletTest extends AbstractTest
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
     }
 
+
+    @Test
+    public void testAsyncWriteAsyncTimeout() throws Exception
+    {
+        CountDownLatch errorLatch = new CountDownLatch(1);
+        CountDownLatch timeoutLatch = new CountDownLatch(1);
+        CountDownLatch completeLatch = new CountDownLatch(1);
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                assertScope();
+                AsyncContext asyncContext = request.startAsync(request, response);
+                asyncContext.setTimeout(1_000);
+                final ServletOutputStream output = response.getOutputStream();
+                output.setWriteListener(new WriteListener()
+                {
+                    @Override
+                    public void onWritePossible() throws IOException
+                    {
+                        // write until it is blocked
+                        while (output.isReady()) 
+                        {
+                            final byte[] data = new byte[8 * 1024 * 1024];
+                            Arrays.fill(data, (byte) 'W');
+                            output.write(data);
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        errorLatch.countDown();
+                        asyncContext.complete();
+                    }
+                });
+                
+                asyncContext.addListener(new AsyncListener()
+                {
+                    @Override
+                    public void onTimeout(AsyncEvent event) throws IOException
+                    {
+                        timeoutLatch.countDown();
+                    }
+                    
+                    @Override
+                    public void onStartAsync(AsyncEvent event) throws IOException
+                    {                        
+                    }
+                    
+                    @Override
+                    public void onError(AsyncEvent event) throws IOException
+                    {                        
+                    }
+                    
+                    @Override
+                    public void onComplete(AsyncEvent event) throws IOException
+                    {              
+                        completeLatch.countDown();
+                    }
+                });
+            }
+        });
+
+        BlockingQueue<Callback> callbacks = new LinkedBlockingQueue<>();
+        client.newRequest(newURI())
+                .path(servletPath)
+                .timeout(4, TimeUnit.SECONDS)
+                .onResponseContentAsync((r, content, callback) ->
+                {
+                    try
+                    {
+                        // Don't succeed callback to cause server writing to block
+                        content.clear();
+                        callbacks.offer(callback);
+                    }
+                    catch(Exception e)
+                    {
+                        callback.failed(e);
+                    }
+                })
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        // response should be aborted
+                        if (result.getFailure()!=null)
+                            failureLatch.countDown();
+                    }
+                });
+        
+        assertTrue(errorLatch.await(50, TimeUnit.SECONDS));
+        assertTrue(timeoutLatch.await(50, TimeUnit.SECONDS));
+        assertTrue(completeLatch.await(50, TimeUnit.SECONDS));
+        assertTrue(failureLatch.await(50, TimeUnit.SECONDS));
+       
+    }
+
+    
+    
     @Test
     @Ignore // TODO fix this test! #2243
     public void testAsyncWriteClosed() throws Exception

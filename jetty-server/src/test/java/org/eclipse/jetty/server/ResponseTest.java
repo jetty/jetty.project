@@ -178,6 +178,12 @@ public class ResponseTest
             }
 
             @Override
+            public boolean cancelIO(Throwable failure)
+            {
+                return false;
+            }
+
+            @Override
             public boolean isOptimizedForDirectBuffers()
             {
                 return false;
