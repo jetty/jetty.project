@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +32,6 @@ import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -565,9 +563,7 @@ public class HttpChannelState
     protected void onTimeout()
     {
         TimeoutException timeout = new TimeoutException("AsyncContext Timeout");
-        EndPoint endp = getHttpChannel().getEndPoint();
-        if (endp instanceof AbstractEndPoint)
-            ((AbstractEndPoint)endp).onIoFail(timeout);
+        _channel.cancelIO(timeout);
         
         final List<AsyncListener> listeners;
         AsyncContextEvent event;
@@ -724,9 +720,7 @@ public class HttpChannelState
     
     protected void onError(Throwable failure)
     {
-        EndPoint endp = getHttpChannel().getEndPoint();
-        if (endp instanceof AbstractEndPoint)
-            ((AbstractEndPoint)endp).onIoFail(failure);
+        _channel.cancelIO(failure);
         
         final List<AsyncListener> listeners;
         final AsyncContextEvent event;

@@ -70,6 +70,18 @@ public interface HttpTransport
      * @param failure the failure that caused the abort.
      */
     void abort(Throwable failure);
+    
+    /** Cancel IO operations/
+     * <p>
+     * If any IO operations are pending, they are cancelled and the passed
+     * failure is used to call their failure callbacks. 
+     * If there are no IO operations pending, this call is a noop.
+     * If pending IO operations cannot be cancelled, then this call may be
+     * equivalent to {@link #abort(Throwable)}.
+     * @param failure the exception that caused the cancel
+     * @return true iff an IO operation was cancelled.
+     */
+    boolean cancelIO(Throwable failure);
 
     /* ------------------------------------------------------------ */
     /** Is the underlying transport optimized for DirectBuffer usage

@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
@@ -902,6 +903,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _transport.abort(failure);
     }
 
+    /**
+     * Called to cancel any outstanding IO operations by calling {@link HttpTransport#cancelIO(Throwable)}.
+     *
+     * @param failure the exception that caused the cancellation
+     * @return true iff an IO operation was outstanding.
+     */
+    public boolean cancelIO(Throwable failure)
+    {
+        return _transport.cancelIO(failure);
+    }
+    
     private void notifyRequestBegin(Request request)
     {
         notifyEvent1(listener -> listener::onRequestBegin, request);
@@ -1283,4 +1295,5 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 notifyResponseEnd(_request);
         }
     }
+
 }

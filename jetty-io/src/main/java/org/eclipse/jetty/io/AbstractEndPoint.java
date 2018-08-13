@@ -232,7 +232,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     {
     }
 
-    public boolean onIoFail(Throwable failure)
+    public boolean cancelIO(Throwable failure)
     {
         boolean flush_fail = _writeFlusher.onFail(failure);
         boolean fill_fail = _fillInterest.onFail(failure);
@@ -242,7 +242,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     protected void onClose(Throwable failure)
     {
         super.onClose();
-        onIoFail(failure);
+        cancelIO(failure);
     }
 
     @Override
@@ -409,7 +409,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
         boolean output_shutdown=isOutputShutdown();
         boolean input_shutdown=isInputShutdown();
-        boolean ioFailed = onIoFail(timeout);
+        boolean ioFailed = cancelIO(timeout);
 
         // If the endpoint is half closed and there was no fill/write handling, then close here.
         // This handles the situation where the connection has completed its close handling
