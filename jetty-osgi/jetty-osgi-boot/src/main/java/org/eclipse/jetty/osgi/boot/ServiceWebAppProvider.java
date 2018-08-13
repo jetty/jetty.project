@@ -268,7 +268,7 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
     {
         BundleContext bundleContext = FrameworkUtil.getBundle(this.getClass()).getBundleContext();
 
-        //Start a tracker to find webapps that are osgi services that are targetted to my server name
+        //Start a tracker to find webapps that are osgi services that are targeted to my server name
         webappTracker = new WebAppTracker (bundleContext, 
                                             Util.createFilter(bundleContext, WebAppContext.class.getName(), getServerInstanceWrapper().getManagedServerName()));
         webappTracker.open();

@@ -343,7 +343,7 @@ id::
 user::
   the name of the user
 pwd::
-  the user's password (possibily obfuscated or MD5 encrypted)
+  the user's password (possibly obfuscated or MD5 encrypted)
 * *user-roles* is a table containing one row for every role granted to a
 user:
 +

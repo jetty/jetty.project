@@ -132,7 +132,7 @@ public class ObjectMBeanUtilTest
         objectMBean.getAttribute("doodle4");
 
         // then
-        fail("An InvocationTargetException must have occured by now as doodle4() internally throwing exception");
+        fail("An InvocationTargetException must have occurred by now as doodle4() internally throwing exception");
     }
 
     private void setUpGetAttribute(String property, String value) throws Exception
@@ -148,7 +148,7 @@ public class ObjectMBeanUtilTest
         objectMBean.getAttribute("ffname");
 
         // then
-        fail("An AttributeNotFoundException must have occured by now as there is no " + "attribute with the name ffname in bean");
+        fail("An AttributeNotFoundException must have occurred by now as there is no " + "attribute with the name ffname in bean");
     }
 
     @Test
@@ -174,7 +174,7 @@ public class ObjectMBeanUtilTest
         objectMBean.getAttribute(null);
 
         // then
-        fail("An AttributeNotFoundException must have occured by now as there is no attribute with the name null");
+        fail("An AttributeNotFoundException must have occurred by now as there is no attribute with the name null");
     }
 
     @Test(expected = AttributeNotFoundException.class)
@@ -187,7 +187,7 @@ public class ObjectMBeanUtilTest
         objectMBean.setAttribute(attribute);
 
         // then
-        fail("An AttributeNotFoundException must have occured by now as there is no attribute " + "with the name ffname in bean");
+        fail("An AttributeNotFoundException must have occurred by now as there is no attribute " + "with the name ffname in bean");
     }
 
     @Test
@@ -231,7 +231,7 @@ public class ObjectMBeanUtilTest
 
         // then
         assertNotNull("Address object shouldn't be null",mBeanDerivedManaged.getAttribute("aliasNames"));
-        assertNull("Derived object shouldn't registerd with container so its value will be null",mBeanDerivedManaged.getAttribute("derived"));
+        assertNull("Derived object shouldn't be registered with container so its value will be null",mBeanDerivedManaged.getAttribute("derived"));
     }
 
     private Derived[] getArrayTypeAttribute()
@@ -292,7 +292,7 @@ public class ObjectMBeanUtilTest
         objectMBean.invoke("doodle2",new Object[] {},new String[] {});
 
         // then
-        fail("An MBeanException must have occured by now as doodle2() in Derived bean throwing exception");
+        fail("An MBeanException must have occurred by now as doodle2() in Derived bean throwing exception");
     }
 
     @Test(expected = ReflectionException.class)
@@ -305,7 +305,7 @@ public class ObjectMBeanUtilTest
         objectMBean.invoke("doodle1",new Object[] {},new String[] {});
 
         // then
-        fail("An ReflectionException must have occured by now as doodle1() has private access in Derived bean");
+        fail("An ReflectionException must have occurred by now as doodle1() has private access in Derived bean");
     }
 
     @Test
@@ -334,7 +334,7 @@ public class ObjectMBeanUtilTest
         { "int aone" });
 
         // then
-        fail("An ReflectionException must have occured by now as we cannot call a methow with wrong signature");
+        fail("An ReflectionException must have occurred by now as we cannot call a methow with wrong signature");
     }
 
     private void setMBeanInfoForInvoke()

@@ -336,7 +336,7 @@ public class IO
 
     /* ------------------------------------------------------------ */
     /** Delete File.
-     * This delete will recursively delete directories - BE CAREFULL
+     * This delete will recursively delete directories - BE CAREFUL
      * @param file The file (or directory) to be deleted.
      * @return true if anything was deleted. (note: this does not mean that all content in a directory was deleted)
      */

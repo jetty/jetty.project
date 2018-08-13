@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 /* ------------------------------------------------------------ */
 /**
  * TYPE Utilities.
- * Provides various static utiltiy methods for manipulating types and their
+ * Provides various static utility methods for manipulating types and their
  * string representations.
  *
  * @since Jetty 4.1
