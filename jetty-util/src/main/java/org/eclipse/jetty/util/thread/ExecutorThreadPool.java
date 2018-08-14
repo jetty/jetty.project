@@ -95,7 +95,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
         _group = group;
         _minThreads = minThreads;
         _reservedThreads = reservedThreads;
-        _budget = new ThreadPoolBudget(this,minThreads);
+        _budget = new ThreadPoolBudget(this,ProcessorUtils.availableProcessors());
     }
 
     /**

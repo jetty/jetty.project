@@ -96,9 +96,10 @@ public class ThreadPoolBudget
      * Construct a budget for a SizedThreadPool, with the warning level set by heuristic.
      * @param pool The pool to budget thread allocation for.
      */
+    @Deprecated
     public ThreadPoolBudget(ThreadPool.SizedThreadPool pool)
     {
-        this(pool,Math.min(ProcessorUtils.availableProcessors(),pool.getMinThreads()));
+        this(pool,ProcessorUtils.availableProcessors());
     }
 
     /**
