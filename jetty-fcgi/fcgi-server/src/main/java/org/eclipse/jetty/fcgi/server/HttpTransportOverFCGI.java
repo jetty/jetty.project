@@ -26,6 +26,7 @@ import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
@@ -146,6 +147,13 @@ public class HttpTransportOverFCGI implements HttpTransport
             LOG.debug("abort {} {}",this,failure);
         aborted = true;
         flusher.shutdown();
+    }
+    
+    @Override
+    public boolean cancelIO(Throwable failure)
+    {
+        // TODO implement???
+        return false;
     }
 
     @Override

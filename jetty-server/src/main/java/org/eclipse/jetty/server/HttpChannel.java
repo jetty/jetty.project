@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
@@ -390,10 +391,22 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case ERROR_DISPATCH:
                     {
+                        Throwable failure = (Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+                        if (failure==null)
+                            failure = _state.getAsyncContextEvent().getThrowable();
+                        Integer icode = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                        
+                        if (_response.isCommitted())
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Committed prior to ERROR dispatch for " + failure);
+                            abort(failure);
+                            break;
+                        }
+                        
                         try
                         {
                             _response.reset(true);
-                            Integer icode = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
                             int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _response.setStatus(code);
                             _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,code);
@@ -420,18 +433,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         catch (Throwable x)
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Could not perform ERROR dispatch, aborting", x);
-                            Throwable failure = (Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+                                LOG.debug("Could not perform ERROR dispatch for " + failure, x);
                             if (failure==null)
-                            {
-                                minimalErrorResponse(x);
-                            }
+                                failure = x;
                             else
-                            {
-                                if (x != failure)
-                                    failure.addSuppressed(x);
-                                minimalErrorResponse(failure);
-                            }
+                                failure.addSuppressed(x);
+                            minimalErrorResponse(failure);
                         }
                         break;
                     }
@@ -449,21 +456,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     
                     case READ_CALLBACK:
                     {
-                        ContextHandler handler=_state.getContextHandler();
-                        if (handler!=null)
-                            handler.handle(_request,_request.getHttpInput());
-                        else
-                            _request.getHttpInput().run();
+                        _request.getHttpInput().run(_state.getContextHandler());
                         break;
                     }
 
                     case WRITE_CALLBACK:
                     {
-                        ContextHandler handler=_state.getContextHandler();
-                        if (handler!=null)
-                            handler.handle(_request,_response.getHttpOutput());
-                        else
-                            _response.getHttpOutput().run();
+                        _response.getHttpOutput().run(_state.getContextHandler());
                         break;
                     }
 
@@ -490,6 +489,26 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                     _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500,"insufficient content written");
                             }
                         }
+                        
+                        if (_state.isAsync())
+                        {
+                            Throwable failure = _state.getAsyncContextEvent()==null?null:_state.getAsyncContextEvent().getThrowable();
+                            if (failure==null)
+                                failure = new IOException("Complete");
+
+                            if (cancelIO(failure))
+                                abort(failure);
+                            try
+                            {
+                                _request.getHttpInput().run(_state.getContextHandler());
+                                _response.getHttpOutput().run(_state.getContextHandler());
+                            }
+                            catch (Throwable th)
+                            {
+                                LOG.ignore(th);
+                            }
+                        }
+                       
                         _response.closeOutput();
                         _request.setHandled(true);
 
@@ -589,18 +608,23 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void minimalErrorResponse(Throwable failure)
     {
-        try
-        {
-            Integer code=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-            _response.reset(true);
-            _response.setStatus(code == null ? 500 : code);
-            _response.flushBuffer();
-        }
-        catch (Throwable x)
-        {
-            if (x != failure)
-                failure.addSuppressed(x);
+        if (_response.isCommitted())
             abort(failure);
+        else
+        {
+            try
+            {
+                Integer code=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                _response.reset(true);
+                _response.setStatus(code == null ? 500 : code);
+                _response.flushBuffer();
+            }
+            catch (Throwable x)
+            {
+                if (x != failure)
+                    failure.addSuppressed(x);
+                abort(failure);
+            }
         }
     }
 
@@ -893,6 +917,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _transport.abort(failure);
     }
 
+    /**
+     * Called to cancel any outstanding IO operations by calling {@link HttpTransport#cancelIO(Throwable)}.
+     *
+     * @param failure the exception that caused the cancellation
+     * @return true iff an IO operation was outstanding.
+     */
+    public boolean cancelIO(Throwable failure)
+    {
+        return _transport.cancelIO(failure);
+    }
+    
     private void notifyRequestBegin(Request request)
     {
         notifyEvent1(listener -> listener::onRequestBegin, request);
@@ -1274,4 +1309,5 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 notifyResponseEnd(_request);
         }
     }
+
 }

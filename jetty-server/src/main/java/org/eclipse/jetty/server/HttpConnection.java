@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -550,9 +551,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         if (LOG.isDebugEnabled())
             LOG.debug("abort {} {}",this,failure);
+
         // Do a direct close of the output, as this may indicate to a client that the
         // response is bad either with RST or by abnormal completion of chunked response.
         getEndPoint().close();
+    }
+    
+    @Override
+    public boolean cancelIO(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("cancel {} {}",this,failure);
+        if (getEndPoint() instanceof AbstractEndPoint)
+            return ((AbstractEndPoint)getEndPoint()).cancelIO(failure);
+        return false;
     }
 
     @Override

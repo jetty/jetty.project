@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.AsyncListener;
@@ -417,7 +418,6 @@ public class HttpChannelState
                     throw new IllegalStateException(this.getStatusStringLocked());
             }
 
-            _initial=false;
             switch(_async)
             {
                 case COMPLETE:
@@ -431,6 +431,7 @@ public class HttpChannelState
                     return Action.ASYNC_DISPATCH;
 
                 case STARTED:
+                    _initial=false;
                     switch(_asyncRead)
                     {
                         case READY:
@@ -560,6 +561,8 @@ public class HttpChannelState
 
     protected void onTimeout()
     {
+        TimeoutException timeout = new TimeoutException("AsyncContext Timeout");
+        
         final List<AsyncListener> listeners;
         AsyncContextEvent event;
         try(Locker.Lock lock= _locker.lock())
@@ -571,8 +574,8 @@ public class HttpChannelState
                 return;
             _async=Async.EXPIRING;
             event=_event;
+            event.addThrowable(timeout);
             listeners=_asyncListeners;
-
         }
 
         final AtomicReference<Throwable> error=new AtomicReference<>();
