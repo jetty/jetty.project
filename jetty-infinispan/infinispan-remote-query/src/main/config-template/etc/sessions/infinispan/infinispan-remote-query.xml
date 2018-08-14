@@ -22,6 +22,13 @@
   </New>
   
   <New id="properties" class="java.util.Properties">
+    <Call name="load">
+      <Arg>
+	  <New class="java.io.FileInputStream">
+              <Arg><Property name="jetty.base" default="."/>/resources/hotrod-client.properties</Arg>
+          </New>
+      </Arg>
+    </Call>
     <Call name="put">
       <Arg><Get class="org.hibernate.search.cfg.Environment" name="MODEL_MAPPING"/></Arg>
       <Arg><Ref refid="mapping"/></Arg>
@@ -31,18 +38,13 @@
   <New class="org.infinispan.client.hotrod.configuration.ConfigurationBuilder">
     <Call name="withProperties">
       <Arg><Ref refid="properties"/></Arg>
-      <Call name="addServer">
-        <Call name="host">
-          <Arg type="String">127.0.0.1</Arg> <!-- TODO should this even be here -->
-          <Call name="marshaller">
-            <Arg>
-              <New class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller"/>
-            </Arg>
-            <Call id="config" name="build"/>
-          </Call>
-        </Call>
-      </Call>
     </Call>
+    <Call name="marshaller">
+      <Arg>
+          <New class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller"/>
+       </Arg>
+    </Call>
+    <Call id="config" name="build"/>
   </New>  
  
   <New id="remoteCacheManager" class="org.infinispan.client.hotrod.RemoteCacheManager">
@@ -78,7 +80,7 @@
   <!-- ===================================================================== -->  
   <Ref refid="remoteCacheManager">
     <Call id="cache" name="getCache">
-      <Arg><Property name="jetty.session.infinispan.remoteCacheName" default="sessions"/></Arg> <!-- name: sessions DNE -->
+      <Arg><Property name="jetty.session.infinispan.remoteCacheName" default="sessions"/></Arg>
     </Call>
   </Ref>
   

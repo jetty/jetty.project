@@ -28,7 +28,6 @@ public class EmbeddedQueryManager implements QueryManager
         Set<String> ids = new HashSet<>();
         for(Object[] sl : list)
             ids.add((String)sl[0]);
-        
         return ids;
     }
     

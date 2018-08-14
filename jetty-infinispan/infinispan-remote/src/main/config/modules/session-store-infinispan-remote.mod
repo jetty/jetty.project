@@ -9,16 +9,13 @@ session-store
 
 [depend]
 infinispan-common
-remote-manager
+infinispan-remote
 
 [lib]
-maven://org.infinispan/infinispan-remote/9.1.0.Final|lib/infinispan/infinispan-remote-9.10.jar
+maven://org.infinispan/infinispan-remote/${infinispan.version}|lib/infinispan/infinispan-remote-${infinispan.version}.jar
 
-[files]
-basehome:modules/session-store-infinispan-remote/
-
-[lib]
-lib/infinispan/*.jar
+[ini]
+infinispan.version?=9.1.0.Final
 
 
 [license]
@@ -31,3 +28,4 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 #jetty.session.infinispan.idleTimeout.seconds=0
 #jetty.session.gracePeriod.seconds=3600
 #jetty.session.savePeriod.seconds=0
+

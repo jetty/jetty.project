@@ -10,3 +10,4 @@ infinispan-embedded
 [xml]
 etc/sessions/infinispan/infinispan-embedded.xml
 etc/sessions/infinispan/infinispan-common.xml
+

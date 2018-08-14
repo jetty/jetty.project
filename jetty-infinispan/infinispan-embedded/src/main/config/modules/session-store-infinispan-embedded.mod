@@ -18,3 +18,7 @@ maven://org.infinispan/infinispan-embedded/${infinispan.version}|lib/infinispan/
 [ini]
 infinispan.version?=9.1.0.Final
 
+[ini-template]
+#jetty.session.infinispan.idleTimeout.seconds=0
+#jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0

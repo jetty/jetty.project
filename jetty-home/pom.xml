@@ -473,7 +473,7 @@
                   <classifier>config</classifier>
                 </artifactItem>
               </artifactItems>
-              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+              <failOnMissingClassifierArtifact>true</failOnMissingClassifierArtifact>
               <excludes>META-INF/**</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
