@@ -22,7 +22,7 @@ node("linux") {
   stage('Compile') {
     withEnv(mvnEnv) {
       timeout(time: 15, unit: 'MINUTES') {
-        withmaven(
+        withMaven(
             maven: mvnName,
             jdk: "$jdk",
             publisherStrategy: 'EXPLICIT',
@@ -38,7 +38,7 @@ node("linux") {
   stage('Javadoc') {
     withEnv(mvnEnv) {
       timeout(time: 15, unit: 'MINUTES') {
-        withmaven(
+        withMaven(
             maven: mvnName,
             jdk: "$jdk",
             publisherStrategy: 'EXPLICIT',
@@ -54,7 +54,7 @@ node("linux") {
   stage('Test') {
     withEnv(mvnEnv) {
       timeout(time: 60, unit: 'MINUTES') {
-        withmaven(
+        withMaven(
             maven: mvnName,
             jdk: "$jdk",
             publisherStrategy: 'EXPLICIT',
