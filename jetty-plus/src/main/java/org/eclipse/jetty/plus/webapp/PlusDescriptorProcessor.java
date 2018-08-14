@@ -679,7 +679,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 catch (ClassNotFoundException e)
                 {
-                    LOG.warn("Couldn't load pre-destory target class "+className);
+                    LOG.warn("Couldn't load pre-destroy target class "+className);
                 }
                 break;
             }
@@ -700,7 +700,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     }
                     catch (ClassNotFoundException e)
                     {
-                        LOG.warn("Couldn't load pre-destory target class "+className);
+                        LOG.warn("Couldn't load pre-destroy target class "+className);
                     }
                 }
                 break;
@@ -717,7 +717,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 catch (ClassNotFoundException e)
                 {
-                    LOG.warn("Couldn't load pre-destory target class "+className);
+                    LOG.warn("Couldn't load pre-destroy target class "+className);
                 }
                 break;
             }

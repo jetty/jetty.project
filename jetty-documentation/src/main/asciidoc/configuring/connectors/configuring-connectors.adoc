@@ -481,7 +481,7 @@ Read more about SSL keystores in link:#configuring-ssl[Configuring SSL].
 Often a Connector needs to be configured to accept connections from an intermediary such as a Reverse Proxy and/or Load Balancer deployed in front of the server.
 In such environments, the TCP/IP connection terminating on the server does not originate from the client, but from the intermediary, so that the Remote IP and port number can be reported incorrectly in logs and in some circumstances the incorrect server address and port may be used.
 
-Thus Intermediaries typically implement one of several de facto standards to communicate to the server information about the orginal client connection terminating on the intermediary.
+Thus Intermediaries typically implement one of several de facto standards to communicate to the server information about the original client connection terminating on the intermediary.
 Jetty supports the `X-Forwarded-For` header and the http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt[Proxy Protocol] mechanisms as described below.
 
 ____

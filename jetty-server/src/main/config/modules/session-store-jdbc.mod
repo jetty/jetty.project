@@ -1,7 +1,7 @@
 DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables JDBC peristent/distributed session storage.
+Enables JDBC persistent/distributed session storage.
 
 [tags]
 session

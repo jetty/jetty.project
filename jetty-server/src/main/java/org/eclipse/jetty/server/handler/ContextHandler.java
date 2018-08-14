@@ -1514,7 +1514,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /* ------------------------------------------------------------ */
     /*
-     * Set a context attribute. Attributes set via this API cannot be overriden by the ServletContext.setAttribute API. Their lifecycle spans the stop/start of
+     * Set a context attribute. Attributes set via this API cannot be overridden by the ServletContext.setAttribute API. Their lifecycle spans the stop/start of
      * a context. No attribute listener events are triggered by this API.
      *
      * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
