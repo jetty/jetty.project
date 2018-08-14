@@ -179,31 +179,26 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
             boolean handle;
             boolean released;
-            networkBuffer.retain();
+            NetworkBuffer netBuf = networkBuffer;
+            netBuf.retain();
             try
             {
-                handle = parser.parseNext(networkBuffer.getByteBuffer());
+                // When handle == true, the async code may run
+                // process() concurrently with this code, so we
+                // cannot reference fields of this class.
+                handle = parser.parseNext(netBuf.getByteBuffer());
                 if (LOG.isDebugEnabled())
                     LOG.debug("Parsed {}, {} {}", handle, networkBuffer, parser);
             }
             finally
             {
-                released = networkBuffer.unretain();
+                released = netBuf.unretain();
             }
-
-            boolean complete = this.complete;
-            this.complete = false;
-
-            boolean consumed = !networkBuffer.hasRemaining();
 
             if (handle)
-            {
-                if (consumed && released)
-                    releaseNetworkBuffer();
                 return false;
-            }
 
-            if (consumed)
+            if (!netBuf.hasRemaining())
             {
                 if (!released)
                     networkBuffer = acquireNetworkBuffer();
@@ -214,7 +209,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Discarding unexpected content after response: {}", networkBuffer);
-                networkBuffer.clear();
+                netBuf.clear();
                 return true;
             }
         }
@@ -259,6 +254,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return false;
+
+        complete = false;
 
         String method = exchange.getRequest().getMethod();
         parser.setHeadResponse(HttpMethod.HEAD.is(method) ||
