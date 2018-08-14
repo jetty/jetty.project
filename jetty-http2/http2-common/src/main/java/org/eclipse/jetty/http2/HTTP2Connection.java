@@ -136,7 +136,8 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         }
         catch (IOException x)
         {
-            LOG.debug("Could not read from " + endPoint, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not read from " + endPoint, x);
             return -1;
         }
     }
@@ -210,15 +211,15 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
         private final Callback fillableCallback = new FillableCallback();
-        private NetworkBuffer buffer;
+        private NetworkBuffer networkBuffer;
         private boolean shutdown;
         private boolean failed;
 
         private void setInputBuffer(ByteBuffer byteBuffer)
         {
-            if (buffer == null)
-                buffer = acquireNetworkBuffer();
-            buffer.put(byteBuffer);
+            if (networkBuffer == null)
+                networkBuffer = acquireNetworkBuffer();
+            networkBuffer.put(byteBuffer);
         }
 
         @Override
@@ -233,27 +234,29 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             if (isFillInterested() || shutdown || failed)
                 return null;
 
-            if (buffer == null)
-                buffer = acquireNetworkBuffer();
-            boolean parse = buffer.hasRemaining();
+            if (networkBuffer == null)
+                networkBuffer = acquireNetworkBuffer();
+
+            boolean parse = networkBuffer.hasRemaining();
+
             while (true)
             {
                 if (parse)
                 {
-                    buffer.retain();
                     boolean released;
+                    networkBuffer.retain();
                     try
                     {
-                        while (buffer.hasRemaining())
+                        while (networkBuffer.hasRemaining())
                         {
-                            parser.parse(buffer.buffer);
+                            parser.parse(networkBuffer.buffer);
                             if (failed)
                                 return null;
                         }
                     }
                     finally
                     {
-                        released = buffer.release();
+                        released = networkBuffer.release();
                         if (failed && released)
                             releaseNetworkBuffer();
                     }
@@ -266,40 +269,40 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                         if (released)
                             releaseNetworkBuffer();
                         else
-                            buffer = null;
+                            networkBuffer = null;
                         return task;
                     }
                     else
                     {
                         if (!released)
-                            buffer = acquireNetworkBuffer();
+                            networkBuffer = acquireNetworkBuffer();
                     }
                 }
 
                 // Here we know that this.buffer is not retained:
                 // either it has been released, or it's a new one.
 
-                int filled = fill(getEndPoint(), buffer.buffer);
+                int filled = fill(getEndPoint(), networkBuffer.buffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Filled {} bytes in {}", filled, buffer);
+                    LOG.debug("Filled {} bytes in {}", filled, networkBuffer);
 
-                if (filled == 0)
+                if (filled > 0)
+                {
+                    bytesIn.addAndGet(filled);
+                    parse = true;
+                }
+                else if (filled == 0)
                 {
                     releaseNetworkBuffer();
                     getEndPoint().fillInterested(fillableCallback);
                     return null;
                 }
-                else if (filled < 0)
+                else
                 {
                     releaseNetworkBuffer();
                     shutdown = true;
                     session.onShutdown();
                     return null;
-                }
-                else
-                {
-                    bytesIn.addAndGet(filled);
-                    parse = true;
                 }
             }
         }
@@ -315,9 +318,9 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         private void releaseNetworkBuffer()
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Released {}", buffer);
-            buffer.recycle();
-            buffer = null;
+                LOG.debug("Released {}", networkBuffer);
+            networkBuffer.recycle();
+            networkBuffer = null;
         }
 
         @Override
@@ -358,9 +361,9 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         @Override
         public void onData(DataFrame frame)
         {
-            NetworkBuffer buffer = producer.buffer;
-            buffer.retain();
-            Callback callback = buffer;
+            NetworkBuffer networkBuffer = producer.networkBuffer;
+            networkBuffer.retain();
+            Callback callback = networkBuffer;
             session.onData(frame, callback);
         }
 
