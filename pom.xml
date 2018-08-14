@@ -21,6 +21,8 @@
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <npn.version>undefined</npn.version>
     <alpn.version>undefined</alpn.version>
+    <tycho-version>1.2.0</tycho-version>
+    <cbi-plugins.version>1.1.5</cbi-plugins.version>
   </properties>
   <scm>
     <connection>scm:git:https://github.com/eclipse/jetty.project.git</connection>
@@ -1053,6 +1055,60 @@
       </properties>
     </profile>
     <profile>
+      <id>eclipse-sign</id>
+      <activation>
+        <property>
+          <name>eclipse-sign</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eclipse.tycho.extras</groupId>
+            <artifactId>tycho-pack200a-plugin</artifactId>
+            <version>${tycho-version}</version>
+            <executions>
+              <execution>
+                <id>pack200-normalize</id>
+                <goals>
+                  <goal>normalize</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.eclipse.cbi.maven.plugins</groupId>
+            <artifactId>eclipse-jarsigner-plugin</artifactId>
+	        <version>${cbi-plugins.version}</version>
+            <executions>
+              <execution>
+                <id>sign</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.eclipse.tycho.extras</groupId>
+            <artifactId>tycho-pack200b-plugin</artifactId>
+            <version>${tycho-version}</version>
+            <executions>
+              <execution>
+                <id>pack200-pack</id>
+                <goals>
+                  <goal>pack</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>8u00</id>
       <activation>
         <property>
@@ -1461,4 +1517,15 @@
       </properties>
     </profile>
   </profiles>
+
+  <pluginRepositories>
+    <pluginRepository>
+        <id>cbi-releases</id>
+        <url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
+        <snapshots>
+            <enabled>false</enabled>
+        </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
 </project>
