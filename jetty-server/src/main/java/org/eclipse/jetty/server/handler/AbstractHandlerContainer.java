@@ -153,17 +153,18 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
      * @param futures A list of Futures which must also be waited on for the shutdown (or null)
      * returns A MultiException to which any failures are added or null
      */
-    protected MultiException doShutdown(List<Future<Void>> futures) 
+    protected void doShutdown(List<Future<Void>> futures) throws MultiException
     {
         MultiException mex = null;
-        // Then tell the contexts that we are shutting down
+        
+        // tell the graceful handlers that we are shutting down
         Handler[] gracefuls = getChildHandlersByClass(Graceful.class);
         if (futures==null)
             futures = new ArrayList<>(gracefuls.length);
         for (Handler graceful : gracefuls)
             futures.add(((Graceful)graceful).shutdown());
 
-        // Shall we gracefully wait for zero connections?
+        // Wait for all futures with a reducing time budget
         long stopTimeout = getStopTimeout();
         if (stopTimeout>0)
         {
@@ -195,6 +196,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
             if (!future.isDone())
                 future.cancel(true);
         
-        return mex;
+        if (mex!=null)
+            mex.ifExceptionThrowMulti();
     }
 }

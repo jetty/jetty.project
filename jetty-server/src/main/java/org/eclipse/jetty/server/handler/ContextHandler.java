@@ -969,8 +969,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         // Should we attempt a graceful shutdown?
         MultiException mex = null;
+
         if (getStopTimeout()>0)
-            mex = doShutdown(null);
+        {
+            try
+            {
+                doShutdown(null);
+            }
+            catch (MultiException e)
+            {
+                mex = e;
+            }
+        }
         
         _availability = Availability.UNAVAILABLE;
 

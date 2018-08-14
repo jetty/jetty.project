@@ -62,6 +62,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 
@@ -417,7 +418,6 @@ public class Server extends HandlerWrapper implements Attributes
             super.start(l);
     }
 
-    
     /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
@@ -428,17 +428,23 @@ public class Server extends HandlerWrapper implements Attributes
         if (LOG.isDebugEnabled())
             LOG.debug("doStop {}",this);
 
-        // list if graceful futures
-        List<Future<Void>> futures = new ArrayList<>();
+        MultiException mex = new MultiException();
 
-        // First close the network connectors to stop accepting new connections
-        for (Connector connector : _connectors)
-            futures.add(connector.shutdown());
-
-        MultiException mex = doShutdown(futures);
-        if (mex==null)
-            mex = new MultiException();
-
+        try
+        {
+            // list if graceful futures
+            List<Future<Void>> futures = new ArrayList<>();
+            // First shutdown the network connectors to stop accepting new connections
+            for (Connector connector : _connectors)
+                futures.add(connector.shutdown());
+            // then shutdown all graceful handlers 
+            doShutdown(futures);
+        }
+        catch(Throwable e)
+        {
+            mex.add(e);
+        }
+        
         // Now stop the connectors (this will close existing connections)
         for (Connector connector : _connectors)
         {
