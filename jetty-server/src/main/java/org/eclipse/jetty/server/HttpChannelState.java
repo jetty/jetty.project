@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
+import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
 import static javax.servlet.RequestDispatcher.ERROR_MESSAGE;
 import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
@@ -747,7 +748,7 @@ public class HttpChannelState
                 _event.addThrowable(th);
                 _event.getSuppliedRequest().setAttribute(ERROR_STATUS_CODE,code);
                 _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION,th);
-                _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th==null?null:th.getClass());
+                _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION_TYPE,th==null?null:th.getClass());
                 _event.getSuppliedRequest().setAttribute(ERROR_MESSAGE,reason);
             }
             else

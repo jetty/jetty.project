@@ -110,6 +110,7 @@ public class ErrorHandlerTest
                     baseRequest.setHandled(true);
                     response.setCharacterEncoding("utf-8");
                     response.sendError(404);
+                    return;
                 }
                 
                 if(target.startsWith("/badmessage/"))
