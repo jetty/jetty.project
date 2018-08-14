@@ -109,7 +109,6 @@ public class DatabaseAdaptor
 
     public String getLongType ()
     {
-        System.err.println("long type null:"+(_longType==null?"null":_longType)+" dbname is oracle:"+(_dbName.startsWith("oracle")?"oracle":"no"));
         if (_longType != null)
             return _longType;
 
@@ -130,7 +129,6 @@ public class DatabaseAdaptor
     
     public String getStringType ()
     {
-        System.err.println("String type null:"+(_stringType==null?"null":_stringType));
         if (_stringType != null)
             return _stringType;
         
