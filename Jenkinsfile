@@ -1,10 +1,11 @@
 #!groovy
 
+def jdk = 'jdk7'
+
 node("linux") {
   // System Dependent Locations
-  def jdk = 'jdk7'
   def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
-  def jdktool = tool name: $jdk, type: 'hudson.model.JDK'
+  def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
   def mvnName = 'maven3.5'
   def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" //
   def settingsName = 'oss-settings.xml'
