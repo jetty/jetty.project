@@ -44,6 +44,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -169,7 +170,7 @@ public class AsyncRequestReadTest
 
             InputStream in = socket.getInputStream();
             String response = IO.toString(in);
-            assertTrue(tst,response.indexOf("200 OK")>0);
+            assertThat(tst,response,Matchers.containsString(" 200 OK"));
 
             long total=__total.poll(30,TimeUnit.SECONDS);
             assertEquals(tst,content.length, total);

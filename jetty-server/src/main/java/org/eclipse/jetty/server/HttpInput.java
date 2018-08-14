@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Destroyable;
@@ -838,6 +839,14 @@ public class HttpInput extends ServletInputStream implements Runnable
         return false;
     }
 
+    public void run(ContextHandler contextHandler)
+    {
+        if (contextHandler == null)
+            run();
+        else
+            contextHandler.handle(this);
+    }
+    
     /*
      * <p> While this class is-a Runnable, it should never be dispatched in it's own thread. It is a runnable only so that the calling thread can use {@link
      * ContextHandler#handle(Runnable)} to setup classloaders etc. </p>
@@ -852,6 +861,8 @@ public class HttpInput extends ServletInputStream implements Runnable
         synchronized (_inputQ)
         {
             listener = _listener;
+            if (listener == null)
+                return;
 
             if (_state == EOF)
                 return;
@@ -1156,4 +1167,5 @@ public class HttpInput extends ServletInputStream implements Runnable
             return "AEOF";
         }
     };
+
 }

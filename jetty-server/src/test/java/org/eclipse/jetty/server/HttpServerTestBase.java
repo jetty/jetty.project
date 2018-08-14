@@ -1257,7 +1257,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
              StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            ((AbstractLogger)Log.getLogger(HttpChannel.class)).info("Expecting exception after commit then could not send 500....");
+            ((AbstractLogger)Log.getLogger(HttpChannel.class)).info("Expecting exception after commit....");
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 

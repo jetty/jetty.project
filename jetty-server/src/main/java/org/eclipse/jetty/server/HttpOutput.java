@@ -33,6 +33,7 @@ import javax.servlet.WriteListener;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -1016,6 +1017,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
         }
     }
+    
+    public void run(ContextHandler contextHandler)
+    {
+        if (contextHandler == null)
+            run();
+        else
+            contextHandler.handle(this);
+    }
 
     @Override
     public void run()
@@ -1089,7 +1098,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s}", this.getClass().getSimpleName(), hashCode(), _state.get());
+        return String.format("%s@%x{%s,%s}", this.getClass().getSimpleName(), hashCode(), _state.get(),_onError);
     }
 
     private abstract class AsyncICB extends IteratingCallback

@@ -79,7 +79,8 @@ public class MimeTypes
         TEXT_JSON_UTF_8("text/json;charset=utf-8",TEXT_JSON),
 
         APPLICATION_JSON_8859_1("application/json;charset=iso-8859-1",APPLICATION_JSON),
-        APPLICATION_JSON_UTF_8("application/json;charset=utf-8",APPLICATION_JSON);
+        APPLICATION_JSON_UTF_8("application/json;charset=utf-8",APPLICATION_JSON),
+        APPLICATION_OCTET_STREAM("application/octet-stream");
 
 
         /* ------------------------------------------------------------ */

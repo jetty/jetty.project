@@ -293,10 +293,16 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         IStream stream = this.stream;
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 Response #{}/{} aborted", stream == null ? -1 : stream.getId(),
-                    stream == null ? -1 : Integer.toHexString(stream.getSession().hashCode()));
+            LOG.debug("HTTP2 Response #{}/{} aborted for {}", stream == null ? -1 : stream.getId(),
+                    stream == null ? -1 : Integer.toHexString(stream.getSession().hashCode()), failure);
         if (stream != null)
             stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP);
+    }
+    
+    @Override
+    public boolean cancelIO(Throwable failure)
+    {
+        return false;
     }
 
     private class TransportCallback implements Callback

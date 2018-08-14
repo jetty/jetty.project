@@ -19,10 +19,9 @@
 package org.eclipse.jetty.servlet;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -42,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import javax.servlet.AsyncContext;
@@ -58,6 +56,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.DebugListener;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -81,6 +80,7 @@ public class AsyncServletIOTest
     protected AsyncIOServlet2 _servlet2=new AsyncIOServlet2();
     protected AsyncIOServlet3 _servlet3=new AsyncIOServlet3();
     protected AsyncIOServlet4 _servlet4=new AsyncIOServlet4();
+    protected AsyncIOServlet5 _servlet5=new AsyncIOServlet5();
     protected StolenAsyncReadServlet _servletStolenAsyncRead=new StolenAsyncReadServlet();
     protected int _port;
     protected WrappingQTP _wQTP;
@@ -105,7 +105,6 @@ public class AsyncServletIOTest
         _server.setHandler(context);
         _servletHandler=context.getServletHandler();
         
-        
         ServletHolder holder=new ServletHolder(_servlet0);
         holder.setAsyncSupported(true);
         _servletHandler.addServletWithMapping(holder,"/path/*");
@@ -122,9 +121,13 @@ public class AsyncServletIOTest
         holder4.setAsyncSupported(true);
         _servletHandler.addServletWithMapping(holder4,"/path4/*");
         
-        ServletHolder holder5=new ServletHolder(_servletStolenAsyncRead);
+        ServletHolder holder5=new ServletHolder(_servlet5);
         holder5.setAsyncSupported(true);
-        _servletHandler.addServletWithMapping(holder5,"/stolen/*");
+        _servletHandler.addServletWithMapping(holder5,"/path5/*");
+        
+        ServletHolder holder6=new ServletHolder(_servletStolenAsyncRead);
+        holder6.setAsyncSupported(true);
+        _servletHandler.addServletWithMapping(holder6,"/stolen/*");
         
         _server.start();
         _port=_connector.getLocalPort();
@@ -799,6 +802,129 @@ public class AsyncServletIOTest
             });
             
         }
+    }
+    
+    
+
+    @Test
+    public void testTimeoutWhilePendingWrite() throws Exception
+    {        
+        _servlet5.completeOnTimeout = false;
+        StringBuilder request = new StringBuilder(512);
+        request.append("POST /ctx/path5/info HTTP/1.1\r\n")
+        .append("Host: localhost\r\n")
+        .append("Content-Type: text/plain\r\n")
+        .append("Content-Length: 0\r\n")
+        .append("\r\n");
+        int port=_port;
+
+        try (Socket socket = new Socket("localhost",port))
+        {
+            socket.setSoTimeout(10000);
+            OutputStream out = socket.getOutputStream();
+            out.write(request.toString().getBytes(ISO_8859_1));
+            out.flush();
+            
+            Assert.assertTrue(_servlet5.completeLatch.await(10000,TimeUnit.SECONDS)); 
+            Assert.assertEquals(0,_servlet5.writeErrorLatch.getCount());            
+        }
+    }
+    
+    @Test
+    public void testTimeoutCompleteWhilePendingWrite() throws Exception
+    {        
+        _servlet5.completeOnTimeout = true;
+        StringBuilder request = new StringBuilder(512);
+        request.append("POST /ctx/path5/info HTTP/1.1\r\n")
+        .append("Host: localhost\r\n")
+        .append("Content-Type: text/plain\r\n")
+        .append("Content-Length: 0\r\n")
+        .append("\r\n");
+        int port=_port;
+
+        try (Socket socket = new Socket("localhost",port))
+        {
+            socket.setSoTimeout(10000);
+            OutputStream out = socket.getOutputStream();
+            out.write(request.toString().getBytes(ISO_8859_1));
+            out.flush();
+            
+            Assert.assertTrue(_servlet5.completeLatch.await(10000,TimeUnit.SECONDS)); 
+            Assert.assertEquals(0,_servlet5.writeErrorLatch.getCount());            
+        }
+    }
+    
+    @SuppressWarnings("serial")
+    public class AsyncIOServlet5 extends HttpServlet
+    {
+        final CountDownLatch completeLatch = new CountDownLatch(1);
+        final CountDownLatch writeErrorLatch = new CountDownLatch(1);
+     
+        boolean completeOnTimeout;
+        
+        @Override
+        protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
+                throws ServletException, IOException {
+            resp.setContentType(MimeTypes.Type.APPLICATION_OCTET_STREAM.asString());
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.setBufferSize(8192);
+            resp.flushBuffer();
+            final AsyncContext async = req.startAsync();
+            async.setTimeout(1000);
+            final ServletOutputStream output = resp.getOutputStream();
+            
+            async.addListener(new AsyncListener()
+            {
+                @Override
+                public void onTimeout(AsyncEvent event) throws IOException
+                {
+                    if (completeOnTimeout)
+                        event.getAsyncContext().complete();
+                }
+
+                @Override
+                public void onStartAsync(AsyncEvent event) throws IOException
+                { 
+                }
+
+                @Override
+                public void onError(AsyncEvent event) throws IOException
+                {
+                }
+
+                @Override
+                public void onComplete(AsyncEvent event) throws IOException
+                {     
+                    completeLatch.countDown();
+                }
+            });
+            output.setWriteListener(new WriteListener()
+            {
+                @Override
+                public void onWritePossible() throws IOException
+                {
+                    try
+                    {
+                        while (output.isReady()) 
+                        {
+                            final byte[] data = new byte[8 * 1024 * 1024];
+                            Arrays.fill(data, (byte) 'W');
+                            output.write(data);
+                        }
+                    }
+                    finally
+                    {
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t)
+                {
+                    writeErrorLatch.countDown();
+                }
+            });
+        }
+
     }
     
 
