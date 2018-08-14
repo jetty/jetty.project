@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -31,10 +30,9 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.NetworkBuffer;
 import org.eclipse.jetty.io.WriteFlusher;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -249,14 +247,14 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                     {
                         while (networkBuffer.hasRemaining())
                         {
-                            parser.parse(networkBuffer.buffer);
+                            parser.parse(networkBuffer.getByteBuffer());
                             if (failed)
                                 return null;
                         }
                     }
                     finally
                     {
-                        released = networkBuffer.release();
+                        released = networkBuffer.unretain();
                         if (failed && released)
                             releaseNetworkBuffer();
                     }
@@ -282,7 +280,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                 // Here we know that this.buffer is not retained:
                 // either it has been released, or it's a new one.
 
-                int filled = fill(getEndPoint(), networkBuffer.buffer);
+                int filled = fill(getEndPoint(), networkBuffer.getByteBuffer());
                 if (LOG.isDebugEnabled())
                     LOG.debug("Filled {} bytes in {}", filled, networkBuffer);
 
@@ -309,7 +307,8 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
         private NetworkBuffer acquireNetworkBuffer()
         {
-            NetworkBuffer networkBuffer = new NetworkBuffer();
+            // TODO: make directness customizable.
+            NetworkBuffer networkBuffer = new NetworkBuffer(byteBufferPool, bufferSize, false);
             if (LOG.isDebugEnabled())
                 LOG.debug("Acquired {}", networkBuffer);
             return networkBuffer;
@@ -372,77 +371,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         {
             producer.failed = true;
             super.onConnectionFailure(error, reason);
-        }
-    }
-
-    private class NetworkBuffer implements Callback, Retainable
-    {
-        private final AtomicInteger refCount = new AtomicInteger();
-        private final ByteBuffer buffer;
-
-        private NetworkBuffer()
-        {
-            buffer = byteBufferPool.acquire(bufferSize, false); // TODO: make directness customizable
-        }
-
-        private void put(ByteBuffer source)
-        {
-            BufferUtil.append(buffer, source);
-        }
-
-        private boolean hasRemaining()
-        {
-            return buffer.hasRemaining();
-        }
-
-        @Override
-        public void retain()
-        {
-            refCount.incrementAndGet();
-        }
-
-        private boolean release()
-        {
-            return refCount.decrementAndGet() == 0;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            if (release())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Released retained {}", this);
-                recycle();
-            }
-        }
-
-        @Override
-        public void failed(Throwable failure)
-        {
-            if (release())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Released retained " + this, failure);
-                recycle();
-            }
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
-        private void recycle()
-        {
-            byteBufferPool.release(buffer);
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), buffer);
         }
     }
 }

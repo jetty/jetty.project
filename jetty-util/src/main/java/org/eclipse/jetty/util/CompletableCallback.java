@@ -64,6 +64,12 @@ public abstract class CompletableCallback implements Callback
     @Override
     public void succeeded()
     {
+        if (trySucceed())
+            resume();
+    }
+
+    protected boolean trySucceed()
+    {
         while (true)
         {
             State current = state.get();
@@ -72,21 +78,18 @@ public abstract class CompletableCallback implements Callback
                 case IDLE:
                 {
                     if (state.compareAndSet(current, State.SUCCEEDED))
-                        return;
+                        return false;
                     break;
                 }
                 case COMPLETED:
                 {
                     if (state.compareAndSet(current, State.SUCCEEDED))
-                    {
-                        resume();
-                        return;
-                    }
+                        return true;
                     break;
                 }
                 case FAILED:
                 {
-                    return;
+                    return false;
                 }
                 default:
                 {
@@ -99,6 +102,12 @@ public abstract class CompletableCallback implements Callback
     @Override
     public void failed(Throwable x)
     {
+        if (tryFail())
+            abort(x);
+    }
+
+    protected boolean tryFail()
+    {
         while (true)
         {
             State current = state.get();
@@ -108,15 +117,12 @@ public abstract class CompletableCallback implements Callback
                 case COMPLETED:
                 {
                     if (state.compareAndSet(current, State.FAILED))
-                    {
-                        abort(x);
-                        return;
-                    }
+                        return true;
                     break;
                 }
                 case FAILED:
                 {
-                    return;
+                    return false;
                 }
                 default:
                 {

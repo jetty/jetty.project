@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -358,8 +357,7 @@ public abstract class HttpReceiver
                 }
                 else
                 {
-                    int size = decodeds.size();
-                    CountingCallback counter = new CountingCallback(callback, size);
+                    Callback counter = new ResponseNotifier.ContentCallback(callback, decodeds.size());
                     for (ByteBuffer decoded : decodeds)
                         notifier.notifyContent(response, decoded, counter, contentListeners);
                 }

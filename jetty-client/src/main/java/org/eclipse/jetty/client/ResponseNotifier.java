@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -28,8 +29,10 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.util.BackPressure;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.util.Demandable;
+import org.eclipse.jetty.util.Releasable;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -115,13 +118,22 @@ public class ResponseNotifier
 
     public void notifyContent(Response response, ByteBuffer buffer, Callback callback, List<Response.AsyncContentListener> contentListeners)
     {
-        if (contentListeners.isEmpty())
+        int size = contentListeners.size();
+        if (size == 0)
         {
             callback.succeeded();
         }
+        else if (size == 1)
+        {
+            Retainable retainable = callback instanceof Retainable ? (Retainable)callback : null;
+            if (retainable != null)
+                retainable.retain();
+            Response.AsyncContentListener listener = contentListeners.get(0);
+            notifyContent(listener, response, buffer, callback);
+        }
         else
         {
-            CountingCallback counter = new CountingCallback(callback, contentListeners.size());
+            ContentCallback counter = new ContentCallback(callback, size);
             Retainable retainable = callback instanceof Retainable ? (Retainable)callback : null;
             for (Response.AsyncContentListener listener : contentListeners)
             {
@@ -247,5 +259,57 @@ public class ResponseNotifier
     {
         forwardFailure(listeners, response, responseFailure);
         notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
+    }
+
+    static class ContentCallback extends Callback.Nested implements Retainable, BackPressure
+    {
+        private final AtomicInteger releases = new AtomicInteger();
+        private final AtomicInteger demands = new AtomicInteger();
+        private final int count;
+
+        ContentCallback(Callback callback, int count)
+        {
+            super(callback);
+            this.count = count;
+        }
+
+        @Override
+        public void retain()
+        {
+            Callback callback = getCallback();
+            if (callback instanceof Retainable)
+                ((Retainable)callback).retain();
+        }
+
+        @Override
+        public void release()
+        {
+            if (releases.incrementAndGet() == count)
+            {
+                Callback callback = getCallback();
+                if (callback instanceof Releasable)
+                    ((Releasable)callback).release();
+            }
+        }
+
+        @Override
+        public void demand()
+        {
+            if (demands.incrementAndGet() == count)
+            {
+                Callback callback = getCallback();
+                if (callback instanceof Demandable)
+                    ((Demandable)callback).demand();
+                else
+                    super.succeeded();
+            }
+        }
+
+        @Override
+        public void succeeded()
+        {
+            release();
+            demand();
+        }
     }
 }

@@ -55,9 +55,12 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
+import org.eclipse.jetty.util.BackPressure;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.util.Demandable;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Releasable;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -1485,7 +1488,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    private class DataCallback extends Callback.Nested implements Retainable
+    private class DataCallback extends Callback.Nested implements Retainable, BackPressure
     {
         private final IStream stream;
         private final int flowControlLength;
@@ -1503,6 +1506,23 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             Callback callback = getCallback();
             if (callback instanceof Retainable)
                 ((Retainable)callback).retain();
+        }
+
+        @Override
+        public void release()
+        {
+            complete();
+            Callback callback = getCallback();
+            if (callback instanceof Releasable)
+                ((Releasable)callback).release();
+        }
+
+        @Override
+        public void demand()
+        {
+            Callback callback = getCallback();
+            if (callback instanceof Demandable)
+                ((Demandable)callback).demand();
         }
 
         @Override

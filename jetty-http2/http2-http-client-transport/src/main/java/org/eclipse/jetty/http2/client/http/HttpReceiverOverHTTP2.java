@@ -43,9 +43,12 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.util.BackPressure;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Demandable;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Releasable;
 import org.eclipse.jetty.util.Retainable;
 
 public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listener
@@ -184,11 +187,13 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
 
     private void notifyContent(HttpExchange exchange, DataFrame frame, Callback callback)
     {
+        // We need an IteratingCallback because multiple frames
+        // can be queued (until HTTP/2 flow control is exhausted).
         contentNotifier.offer(new DataInfo(exchange, frame, callback));
         contentNotifier.iterate();
     }
 
-    private class ContentNotifier extends IteratingCallback implements Retainable
+    private class ContentNotifier extends IteratingCallback implements Retainable, BackPressure
     {
         private final Queue<DataInfo> queue = new ArrayDeque<>();
         private DataInfo dataInfo;
@@ -233,6 +238,23 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             Callback callback = dataInfo.callback;
             if (callback instanceof Retainable)
                 ((Retainable)callback).retain();
+        }
+
+        @Override
+        public void release()
+        {
+            Callback callback = dataInfo.callback;
+            if (callback instanceof Releasable)
+                ((Releasable)callback).release();
+        }
+
+        @Override
+        public void demand()
+        {
+            Callback callback = dataInfo.callback;
+            if (callback instanceof Demandable)
+                ((Demandable)callback).demand();
+            super.succeeded();
         }
 
         @Override
