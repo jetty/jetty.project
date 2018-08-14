@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -30,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 
@@ -46,7 +44,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -583,7 +580,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (Throwable e)
             {
-                failure.addSuppressed(e);
+                if (failure==null)
+                    failure = e;
+                else
+                    failure.addSuppressed(e);
                 abort(failure);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Could not commit response error 500", failure);
