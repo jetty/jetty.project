@@ -574,6 +574,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
 
         try
+                    if (cause instanceof BadMessageException)
         {
             _state.onError(failure);
         }
@@ -595,13 +596,30 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             _response.reset(true);
             _response.setStatus(code == null ? 500 : code);
             _response.flushBuffer();
+            }
         }
         catch (Throwable x)
         {
             if (x != failure)
                 failure.addSuppressed(x);
             abort(failure);
+    }
+
+    /** Unwrap failure causes to find target class
+     * @param failure The throwable to have its causes unwrapped
+     * @param targets Exception classes that we should not unwrap
+     * @return A target throwable or null
+     */
+    protected Throwable unwrap(Throwable failure, Class<?> ... targets)
+    {
+        while (failure!=null)
+        {
+            for (Class<?> x : targets)
+                if (x.isInstance(failure))
+                    return failure;
+            failure = failure.getCause();
         }
+        return null;        
     }
 
     public boolean isExpecting100Continue()
