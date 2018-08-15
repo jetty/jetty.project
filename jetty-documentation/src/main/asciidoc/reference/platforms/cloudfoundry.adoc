@@ -55,7 +55,7 @@ $ cf push snifftest --buildpack=git://github.com/jmcc0nn3ll/jetty-buildpack.git
 ____
 [TIP]
 In this example the web application is uploaded from the *current* directory so make sure you have changed directory into the root of your web application.
-The `snifftest` on the commandline referrs to what you are calling the application, not the directory to deploy.
+The `snifftest` on the commandline refers to what you are calling the application, not the directory to deploy.
 Also note that the webapplication is installed into the `ROOT` context of Jetty as is available at the root context of the server.
 Any additional web applications will have to be configured within the buildpack as mentioned above.
 ____

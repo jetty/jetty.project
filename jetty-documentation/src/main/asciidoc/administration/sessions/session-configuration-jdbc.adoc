@@ -52,7 +52,7 @@ Opening the `start.d/session-store-jdbc.ini` will show a list of all the configu
 ----
 # ---------------------------------------
 # Module: session-store-jdbc
-# Enables JDBC peristent/distributed session storage.
+# Enables JDBC persistent/distributed session storage.
 # ---------------------------------------
 --module=session-store-jdbc
 

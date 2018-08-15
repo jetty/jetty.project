@@ -34,7 +34,7 @@ string.  The time the request thread is held by the servlet is displayed in red 
 </tr>
 
 </table>
-By the use of Asynchronous Servlets and the Jetty Asychronous client, the server is able to release the thread (green) while
+By the use of Asynchronous Servlets and the Jetty Asynchronous client, the server is able to release the thread (green) while
 waiting for the response from Ebay.  This thread goes back into the thread pool and can service many other requests during the wait.
 This greatly reduces the number of threads needed, which in turn greatly reduces the memory requirements of the server.
 <p>

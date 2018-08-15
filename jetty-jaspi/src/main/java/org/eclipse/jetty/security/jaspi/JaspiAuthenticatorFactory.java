@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.security.auth.Subject;
 import javax.security.auth.message.AuthException;
 import javax.security.auth.message.config.AuthConfigFactory;
@@ -95,20 +94,16 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         try 
         {
             AuthConfigFactory authConfigFactory = AuthConfigFactory.getFactory();
-            RegistrationListener listener = new RegistrationListener()
-            {
-                @Override
-                public void notify(String layer, String appContext)
-                {}
-            };
+            RegistrationListener listener = (layer, appContext) -> {};
 
             Subject serviceSubject=findServiceSubject(server);
-            String serverName=findServerName(server,serviceSubject);
+            String serverName=findServerName(server, serviceSubject);
+
             String contextPath=context.getContextPath();
             if (contextPath==null || contextPath.length()==0)
                 contextPath="/";
-            String appContext = serverName + " " + context.getContextPath();
-            
+            String appContext = serverName + " " + contextPath;
+
             AuthConfigProvider authConfigProvider = authConfigFactory.getConfigProvider(MESSAGE_LAYER,appContext,listener);
   
             if (authConfigProvider != null)
@@ -146,7 +141,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
             return _serviceSubject;
         List<Subject> subjects = (List<Subject>)server.getBeans(Subject.class);
         if (subjects.size()>0)
-            return (Subject)subjects.get(0);
+            return subjects.get(0);
         return null;
     }
 
@@ -155,14 +150,15 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
      * If {@link #setServerName(String)} has not been called, then
      * use the name of the a principal in the service subject.
      * If not found, return "server".
-     * @param server not used
-     * @param subject the subject to use
-     * @return the server name from the subject (or default value if not found in subject or principals)
+     * @param server the server to find the name of
+     * @return the server name from the service Subject (or default value if not found in subject or principals)
      */
-    protected String findServerName(Server server, Subject subject)
+    protected String findServerName(Server server)
     {
         if (_serverName!=null)
             return _serverName;
+
+        Subject subject = findServiceSubject(server);
         if (subject!=null)
         {
             Set<Principal> principals = subject.getPrincipals();
@@ -171,5 +167,20 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         }
         
         return "server";
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Find a servername.
+     * If {@link #setServerName(String)} has not been called, then
+     * use the name of the a principal in the service subject.
+     * If not found, return "server".
+     * @param server the server to use
+     * @param subject not used
+     * @return the server name from the subject of the server (or default value if not found in subject or principals)
+     */
+    @Deprecated
+    protected String findServerName(Server server, Subject subject)
+    {
+        return findServerName(server);
     }
 }

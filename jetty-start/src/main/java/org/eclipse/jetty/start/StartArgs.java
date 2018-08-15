@@ -131,7 +131,7 @@ public class StartArgs
     /** List of all active [xml] sections from enabled modules */
     private List<Path> xmls = new ArrayList<>();
 
-    /** JVM arguments, found via commmand line and in all active [exec] sections from enabled modules */
+    /** JVM arguments, found via command line and in all active [exec] sections from enabled modules */
     private List<String> jvmArgs = new ArrayList<>();
 
     /** List of all xml references found directly on command line or start.ini */

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.embedded;
 
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 
 public class OneHandler
