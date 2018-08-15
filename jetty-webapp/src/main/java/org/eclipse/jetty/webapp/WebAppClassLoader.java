@@ -543,27 +543,17 @@ public class WebAppClassLoader extends URLClassLoader
             else
             {
                 // Not parent loader priority, so...
-
-                // Try the webapp classloader first
-                // Look in the webapp classloader as a resource, to avoid 
-                // loading a system class.
-                String path = name.replace('.', '/').concat(".class");
-                URL webapp_url = findResource(path);
-                
-                if (webapp_url!=null && !_context.isSystemResource(name,webapp_url))
+                webapp_class = loadAsResource(name, true);
+                if (webapp_class != null)
                 {
-                    webapp_class = this.foundClass(name,webapp_url);
-                    resolveClass(webapp_class);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("WAP webapp loaded {}",webapp_class);
                     return webapp_class;
                 }
+
 
                 // Try the parent loader
                 try
                 {
                     parent_class = _parent.loadClass(name); 
-                    
                     // If the webapp is allowed to see this class
                     if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parent_class))
                     {
@@ -579,12 +569,9 @@ public class WebAppClassLoader extends URLClassLoader
 
                 // We couldn't find a parent class, so OK to return a webapp one if it exists 
                 // and we just couldn't see it before 
-                if (webapp_url!=null)
+                webapp_class = loadAsResource(name, false);
+                if (webapp_class != null)
                 {
-                    webapp_class = this.foundClass(name,webapp_url);
-                    resolveClass(webapp_class);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("WAP !server webapp loaded {}",webapp_class);
                     return webapp_class;
                 }
                 
@@ -628,12 +615,47 @@ public class WebAppClassLoader extends URLClassLoader
         return _transformers.remove(transformer);
     }
 
+    
+    /**
+     * Look for the classname as a resource to avoid loading a class that is 
+     * potentially a system resource.
+     * 
+     * @param name the name of the class to load
+     * @param checkSystemResource if true and the class isn't a system class we return it
+     * @return the loaded class
+     * @throws ClassNotFoundException
+     */
+    protected Class<?> loadAsResource (final String name, boolean checkSystemResource) throws ClassNotFoundException
+    {
+        // Try the webapp classloader first
+        // Look in the webapp classloader as a resource, to avoid 
+        // loading a system class.
+        Class<?> webapp_class = null;
+        String path = name.replace('.', '/').concat(".class");
+        URL webapp_url = findResource(path);
+        
+        if (webapp_url!=null && (!checkSystemResource || !_context.isSystemResource(name,webapp_url)))
+        {
+
+            webapp_class = this.foundClass(name,webapp_url);
+            resolveClass(webapp_class);
+            if (LOG.isDebugEnabled())
+                LOG.debug("WAP webapp loaded {}",webapp_class);
+        }
+        
+        return webapp_class;
+    }
+    
+    
+    
     /* ------------------------------------------------------------ */
     @Override
     protected Class<?> findClass(final String name) throws ClassNotFoundException
     {
         if (_transformers.isEmpty())
+        { 
             return super.findClass(name);
+        }
 
         String path = name.replace('.', '/').concat(".class");
         URL url = findResource(path);
