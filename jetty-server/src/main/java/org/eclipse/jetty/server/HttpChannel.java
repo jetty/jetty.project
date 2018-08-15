@@ -633,23 +633,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    /** Unwrap failure causes to find target class
-     * @param failure The throwable to have its causes unwrapped
-     * @param targets Exception classes that we should not unwrap
-     * @return A target throwable or null
-     */
-    protected Throwable unwrap(Throwable failure, Class<?> ... targets)
-    {
-        while (failure!=null)
-        {
-            for (Class<?> x : targets)
-                if (x.isInstance(failure))
-                    return failure;
-            failure = failure.getCause();
-        }
-        return null;        
-    }
-
     public boolean isExpecting100Continue()
     {
         return false;
