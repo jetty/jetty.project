@@ -574,7 +574,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
 
         try
-                    if (cause instanceof BadMessageException)
         {
             _state.onError(failure);
         }
@@ -596,13 +595,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             _response.reset(true);
             _response.setStatus(code == null ? 500 : code);
             _response.flushBuffer();
-            }
         }
         catch (Throwable x)
         {
             if (x != failure)
                 failure.addSuppressed(x);
             abort(failure);
+        }
     }
 
     /** Unwrap failure causes to find target class
