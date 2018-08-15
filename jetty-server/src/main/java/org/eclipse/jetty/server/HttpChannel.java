@@ -520,9 +520,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * spawned thread writes the response content; in such case, we attempt to commit the error directly
      * bypassing the {@link ErrorHandler} mechanisms and the response OutputStream.</p>
      *
-     * @param x the Throwable that caused the problem
+     * @param failure the Throwable that caused the problem
      */
-    protected void handleException(Throwable x)
+    protected void handleException(Throwable failure)
     {
         if (_state.isAsyncStarted())
         {
@@ -530,15 +530,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             Throwable root = _state.getAsyncContextEvent().getThrowable();
             if (root==null)
             {
-                _state.error(x);
+                _state.error(failure);
             }
             else
             {
                 // TODO Can this happen?  Should this just be ISE???
                 // We've already processed an error before!
-                root.addSuppressed(x);
+                root.addSuppressed(failure);
                 LOG.warn("Error while handling async error: ", root);
-                abort(x);
+                abort(failure);
                 _state.errorComplete();
             }
         }
@@ -548,27 +548,28 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             {
                 // Handle error normally
                 _request.setHandled(true);
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, x);
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE, x.getClass());
+                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, failure);
+                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE, failure.getClass());
 
                 if (isCommitted())
                 {
-                    abort(x);
+                    abort(failure);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Could not send response error 500, already committed", x);
+                        LOG.debug("Could not send response error 500, already committed", failure);
                 }
                 else
                 {
                     _response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
 
-                    if (x instanceof BadMessageException)
+                    Throwable cause = unwrap(failure,BadMessageException.class,UnavailableException.class);
+                    if (cause instanceof BadMessageException)
                     {
-                        BadMessageException bme = (BadMessageException)x;
+                        BadMessageException bme = (BadMessageException)cause;
                         _response.sendError(bme.getCode(), bme.getReason());
                     }
-                    else if (x instanceof UnavailableException)
+                    else if (cause instanceof UnavailableException)
                     {
-                        if (((UnavailableException)x).isPermanent())
+                        if (((UnavailableException)cause).isPermanent())
                             _response.sendError(HttpStatus.NOT_FOUND_404);
                         else
                             _response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
@@ -579,11 +580,32 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (Throwable e)
             {
-                abort(e);
+                if (failure==null)
+                    failure = e;
+                else
+                    failure.addSuppressed(e);
+                abort(failure);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not commit response error 500", e);
+                    LOG.debug("Could not commit response error 500", failure);
             }
         }
+    }
+
+    /** Unwrap failure causes to find target class
+     * @param failure The throwable to have its causes unwrapped
+     * @param targets Exception classes that we should not unwrap
+     * @return A target throwable or null
+     */
+    protected Throwable unwrap(Throwable failure, Class<?> ... targets)
+    {
+        while (failure!=null)
+        {
+            for (Class<?> x : targets)
+                if (x.isInstance(failure))
+                    return failure;
+            failure = failure.getCause();
+        }
+        return null;        
     }
 
     public boolean isExpecting100Continue()
