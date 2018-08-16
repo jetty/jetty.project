@@ -367,6 +367,39 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         Assert.assertTrue(failures.toString(), failures.isEmpty());
     }
 
+    @Test
+    public void testTwoConcurrentStreamsFirstTimesOut() throws Exception
+    {
+        long timeout = 1000;
+        start(1, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                if (target.endsWith("/1"))
+                    sleep(2 * timeout);
+            }
+        });
+        client.setMaxConnectionsPerDestination(1);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .path("/1")
+                .timeout(timeout, TimeUnit.MILLISECONDS)
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        latch.countDown();
+                });
+
+        ContentResponse response2 = client.newRequest("localhost", connector.getLocalPort())
+                .path("/2")
+                .send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response2.getStatus());
+        Assert.assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
+    }
+
     private void primeConnection() throws Exception
     {
         // Prime the connection so that the maxConcurrentStream setting arrives to the client.
