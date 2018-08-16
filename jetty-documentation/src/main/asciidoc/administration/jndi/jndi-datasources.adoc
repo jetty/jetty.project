@@ -221,6 +221,24 @@ Implements `javax.sql.DataSource` and `javax.sql.ConnectionPoolDataSource`.
     </New>
 ----
 
+[[mariadb-pooled-datasource]]
+===== MariaDB
+
+[source, xml, subs="{sub-order}"]
+----
+<New id='DSTest' class='org.eclipse.jetty.plus.jndi.Resource'>
+    <Arg></Arg>
+    <Arg>jdbc/DSTest</Arg>
+    <Arg>
+        <New class="org.mariadb.jdbc.MariaDbPoolDataSource">
+            <Set name="user">root</Set>
+            <Set name="password">root</Set>
+            <Set name="url">jdbc:mariadb://localhost:3306/databasename</Set>
+        </New>
+    </Arg>
+</New>
+----
+
 [[postgreSQL-pooled-datasource]]
 ===== PostgreSQL
 
