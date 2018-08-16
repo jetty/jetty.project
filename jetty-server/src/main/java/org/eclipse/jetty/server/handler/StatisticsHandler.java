@@ -30,15 +30,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.AsyncContextEvent;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpChannelState;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.FutureCallback;
@@ -72,7 +67,6 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final LongAdder _responses4xx = new LongAdder();
     private final LongAdder _responses5xx = new LongAdder();
     private final LongAdder _responsesTotalBytes = new LongAdder();
-
 
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown()
     {
@@ -128,25 +122,6 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             }   
         }
     };
-    
-    private final HttpChannel.Listener _shutdownListener = new HttpChannel.Listener()
-    {
-        @Override 
-        public void onResponseBegin(Request request)
-        {
-            if (_shutdown.isShutdown())
-            {
-                Connector connector = request.getHttpChannel().getConnector();
-                if (connector instanceof Graceful && ((Graceful)connector).isShutdown())
-                {
-                    MetaData.Response response = request.getHttpChannel().getCommittedMetaData();
-
-                    if (!response.getFields().contains(HttpHeader.CONNECTION,"close"))
-                        response.getFields().add(HttpConnection.CONNECTION_CLOSE);
-                }
-            }
-        }
-    };
 
     /**
      * Resets the current request statistics.
@@ -196,28 +171,19 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         {
             Handler handler = getHandler();
             if (handler!=null && !_shutdown.isShutdown() && isStarted())
-            {
-                baseRequest.getHttpChannel().addListener(_shutdownListener);
                 handler.handle(path, baseRequest, request, response);
-            }
-            else 
+            else
             {
                 if (!baseRequest.isHandled())
                     baseRequest.setHandled(true);
                 else if (_wrapWarning.compareAndSet(false,true))
                     LOG.warn("Bad statistics configuration. Latencies will be incorrect in {}",this);
-                
                 if (!baseRequest.getResponse().isCommitted())
-                {
-                    baseRequest.getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
                     response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
-                }         
             }
         }
         finally
         {
-            baseRequest.getHttpChannel().removeListener(_shutdownListener);
-            
             final long now = System.currentTimeMillis();
             final long dispatched=now-start;
 
@@ -248,8 +214,6 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
                 }   
             }
             // else onCompletion will handle it.
-            
-            
         }
     }
 

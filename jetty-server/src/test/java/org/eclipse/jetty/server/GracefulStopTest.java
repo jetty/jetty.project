@@ -417,7 +417,79 @@ public class GracefulStopTest
     }
 
     @Test
-    public void testGracefulResponsesAreClosed() throws Exception
+    public void testResponsesAreClosed() throws Exception
+    {
+        Server server= new Server();
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        StatisticsHandler stats = new StatisticsHandler();
+        server.setHandler(stats);
+        
+        ContextHandler context = new ContextHandler(stats,"/");
+        
+        Exchanger<Void> exchanger0 = new Exchanger<>();
+        Exchanger<Void> exchanger1 = new Exchanger<>();
+        context.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                    throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.setContentLength(13);
+                response.flushBuffer();
+                
+                try
+                {
+                    exchanger0.exchange(null);
+                    exchanger1.exchange(null);
+                }
+                catch(Throwable x)
+                {
+                    throw new ServletException(x);
+                }
+
+                response.getOutputStream().print("The Response\n");
+            }            
+        });
+
+        server.setStopTimeout(1000);
+        server.start();
+
+        LocalEndPoint endp = connector.executeRequest("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+
+        exchanger0.exchange(null);
+        exchanger1.exchange(null);
+
+        String response = endp.getResponse();
+        assertThat(response,containsString("200 OK"));
+
+        endp.addInputAndExecute(BufferUtil.toBuffer("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"));
+
+        exchanger0.exchange(null);
+
+        server.getConnectors()[0].shutdown().get();
+        
+        // Check completed 200 does not have close
+        exchanger1.exchange(null);
+        response = endp.getResponse();
+        assertThat(response,containsString("200 OK"));
+        assertThat(response,Matchers.not(containsString("Connection: close")));
+        
+        // But endpoint is still closes soon after
+        long end = System.nanoTime()+TimeUnit.SECONDS.toNanos(1);
+        while (endp.isOpen() && System.nanoTime()<end)
+            Thread.sleep(10);
+        Assert.assertFalse(endp.isOpen());
+    }
+    
+    
+
+    @Test
+    public void testCommittedResponsesAreClosed() throws Exception
     {
         Server server= new Server();
 

@@ -1311,7 +1311,7 @@ public class Response implements HttpServletResponse
     {
         _out.resetBuffer();
     }
-    
+
     public void setTrailers(Supplier<HttpFields> trailers)
     {
         this._trailers = trailers;

@@ -1047,7 +1047,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         
         if (mex!=null)
             mex.ifExceptionThrow();
-
     }
 
     /* ------------------------------------------------------------ */

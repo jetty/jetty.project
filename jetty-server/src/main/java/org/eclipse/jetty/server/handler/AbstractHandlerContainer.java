@@ -182,7 +182,8 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
                 }
                 catch (Exception e)
                 {
-                    if (!future.isDone() && future instanceof Callback)
+                    // If the future is also a callback, fail it here (rather than cancel) so we can capture the exception 
+                    if (future instanceof Callback && !future.isDone())
                         ((Callback)future).failed(e);
                     if (mex==null)
                         mex = new MultiException();
