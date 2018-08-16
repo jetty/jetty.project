@@ -564,9 +564,10 @@ public class SslConnection extends AbstractConnection
                             }
 
                             if (LOG.isDebugEnabled())
-                                LOG.debug("unwrap {} {} {}", 
+                                LOG.debug("unwrap {} {} unwrapBuffer={} appBuffer={}",
                                     net_filled, 
                                     unwrapResult.toString().replace('\n',' '),
+                                    BufferUtil.toDetailString(app_in),
                                     BufferUtil.toDetailString(buffer));
 
                             SSLEngineResult.Status unwrap = unwrapResult.getStatus();
