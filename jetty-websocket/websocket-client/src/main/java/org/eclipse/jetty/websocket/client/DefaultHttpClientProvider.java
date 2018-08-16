@@ -45,6 +45,8 @@ class DefaultHttpClientProvider
         if (sslContextFactory == null)
         {
             sslContextFactory = new SslContextFactory();
+            sslContextFactory.setTrustAll(false);
+            sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         }
         
         HttpClient client = new HttpClient(sslContextFactory);
