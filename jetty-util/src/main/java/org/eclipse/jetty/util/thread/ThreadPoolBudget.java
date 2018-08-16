@@ -134,9 +134,10 @@ public class ThreadPoolBudget
 
     /**
      * Check registered allocations against the budget.
+     * @return true if passes check, false if otherwise (see logs for details)
      * @throws IllegalStateException if insufficient threads are configured.
      */
-    public void check() throws IllegalStateException
+    public boolean check() throws IllegalStateException
     {
         int required = allocations.stream()
             .mapToInt(Lease::getThreads)
@@ -155,7 +156,9 @@ public class ThreadPoolBudget
             infoOnLeases();
             if (warned.compareAndSet(false,true))
                 LOG.warn("Low configured threads: (max={} - required={})={} < warnAt={} for {}", maximum, required, actual, warnAt, pool);
+            return false;
         }
+        return true;
     }
 
     private void infoOnLeases()

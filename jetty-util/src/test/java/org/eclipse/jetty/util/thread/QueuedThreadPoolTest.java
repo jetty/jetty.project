@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -35,8 +25,18 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(AdvancedRunner.class)
-public class QueuedThreadPoolTest
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.log.StacklessLogging;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 {
     private final AtomicInteger _jobs=new AtomicInteger();
 
@@ -71,6 +71,20 @@ public class QueuedThreadPoolTest
             if (!_stopped.await(10,TimeUnit.SECONDS))
                 throw new IllegalStateException();
         }
+    }
+
+    private static int originalCoreCount;
+
+    @BeforeClass
+    public static void saveState()
+    {
+        originalCoreCount = ProcessorUtils.availableProcessors();
+    }
+
+    @AfterClass
+    public static void restoreState()
+    {
+        ProcessorUtils.setAvailableProcessors(originalCoreCount);
     }
 
     @Test
@@ -296,5 +310,29 @@ public class QueuedThreadPoolTest
     public void testConstructorMinMaxThreadsValidation()
     {
         new QueuedThreadPool(4, 8);
+    }
+
+    @Test
+    public void testThreadBudget_HighCoreCount_MinEqualsMax() throws Exception
+    {
+        ProcessorUtils.setAvailableProcessors(64);
+        QueuedThreadPool pool = new QueuedThreadPool(1408, 1408);
+        assertBudgetCheck(pool, "Pool of max==min should be valid", is(true));
+    }
+
+    @Test
+    public void testThreadBudget_HighCoreCount() throws Exception
+    {
+        ProcessorUtils.setAvailableProcessors(64);
+        QueuedThreadPool pool = new QueuedThreadPool(64, 1);
+        assertBudgetCheck(pool, "Pool at core count is invalid", is(false));
+    }
+
+    @Test
+    public void testThreadBudget_HighCoreCount_LowThreadMax() throws Exception
+    {
+        ProcessorUtils.setAvailableProcessors(64);
+        QueuedThreadPool pool = new QueuedThreadPool(8, 1);
+        assertBudgetCheck(pool, "Pool smaller then core count should be valid", is(true));
     }
 }
