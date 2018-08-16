@@ -18,10 +18,14 @@
 
 package org.eclipse.jetty.util.ssl;
 
+import static org.eclipse.jetty.toolchain.test.matchers.RegexMatcher.matchesPattern;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -30,7 +34,12 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -70,7 +79,49 @@ public class SslContextFactoryTest
 
         cf.start();
 
-        cf.dump(System.out, "");
+        // cf.dump(System.out, "");
+        List<SslSelectionDump> dumps = cf.selectionDump();
+
+        SslSelectionDump cipherDump = dumps.stream()
+                .filter((dump)-> dump.type.contains("Cipher Suite"))
+                .findFirst().get();
+
+        for(String enabledCipher : cipherDump.enabled)
+        {
+            assertThat("Enabled Cipher Suite", enabledCipher, not(matchesPattern(".*_RSA_.*(SHA1|MD5|SHA)")));
+        }
+    }
+
+    @Test
+    public void testDump_IncludeTlsRsa() throws Exception
+    {
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+        cf.setIncludeCipherSuites("TLS_RSA_.*");
+        cf.setExcludeCipherSuites("BOGUS"); // just to not exclude anything
+
+        cf.start();
+
+        // cf.dump(System.out, "");
+        List<SslSelectionDump> dumps = cf.selectionDump();
+
+        SSLEngine ssl = SSLContext.getDefault().createSSLEngine();
+
+        List<String> tlsRsaSuites = Stream.of(ssl.getSupportedCipherSuites())
+                .filter((suite)->suite.startsWith("TLS_RSA_"))
+                .collect(Collectors.toList());
+
+        List<String> selectedSuites = Arrays.asList(cf.getSelectedCipherSuites());
+        SslSelectionDump cipherDump = dumps.stream()
+                .filter((dump)-> dump.type.contains("Cipher Suite"))
+                .findFirst().get();
+        assertThat("Dump Enabled List size is equal to selected list size", cipherDump.enabled.size(), is(selectedSuites.size()));
+
+        for(String expectedCipherSuite: tlsRsaSuites)
+        {
+            assertThat("Selected Cipher Suites", selectedSuites, hasItem(expectedCipherSuite));
+            assertThat("Dump Enabled Cipher Suites", cipherDump.enabled, hasItem(expectedCipherSuite));
+        }
     }
 
     @Test
