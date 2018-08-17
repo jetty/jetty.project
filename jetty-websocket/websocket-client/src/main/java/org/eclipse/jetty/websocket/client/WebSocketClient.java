@@ -278,7 +278,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         this.sessionFactory = sessionFactory == null ? new WebSocketSessionFactory(this) : sessionFactory;
     }
 
-    public Future<Session> connect(Object websocket, URI toUri) throws IOException
+    public Future<Session> connect(Object websocket, URI toUri)
     {
         ClientUpgradeRequest request = new ClientUpgradeRequest(toUri);
         request.setRequestURI(toUri);
@@ -300,7 +300,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @throws IOException
      *             if unable to connect
      */
-    public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request) throws IOException
+    public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request)
     {
         return connect(websocket,toUri,request,(UpgradeListener)null);
     }
@@ -320,7 +320,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @throws IOException
      *             if unable to connect
      */
-    public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request, UpgradeListener upgradeListener) throws IOException
+    public Future<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request, UpgradeListener upgradeListener)
     {
         /* Note: UpgradeListener is used by javax.websocket.ClientEndpointConfig.Configurator
          * See: org.eclipse.jetty.websocket.jsr356.JsrUpgradeListener
@@ -560,7 +560,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return httpClient.getSslContextFactory();
     }
 
-    private synchronized void init() throws IOException
+    private synchronized void init()
     {
         if (isStopAtShutdown() && !ShutdownThread.isRegistered(this))
         {
