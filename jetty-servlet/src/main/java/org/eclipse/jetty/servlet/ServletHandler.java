@@ -50,6 +50,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.PathMap;
@@ -647,8 +648,15 @@ public class ServletHandler extends ScopedHandler
                     else
                         response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 }
+                else if (th instanceof BadMessageException)
+                {
+                    BadMessageException bme = (BadMessageException)th;
+                    response.sendError(bme.getCode(),bme.getMessage());
+                }
                 else
+                {
                     response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                }
             }
             else
             {
