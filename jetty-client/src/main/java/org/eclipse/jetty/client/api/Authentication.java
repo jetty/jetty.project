@@ -73,6 +73,11 @@ public interface Authentication
      */
     Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context);
 
+    default boolean isMultipleRounds()
+    {
+        return false;
+    }
+
     /**
      * Structure holding information about the {@code WWW-Authenticate} (or {@code Proxy-Authenticate}) header.
      */

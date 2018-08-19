@@ -22,6 +22,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -47,6 +50,8 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.DigestAuthentication;
+import org.eclipse.jetty.client.util.SpnegoAuthentication;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -65,6 +70,10 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
+import org.ietf.jgss.GSSContext;
+import org.ietf.jgss.GSSException;
+import org.ietf.jgss.GSSManager;
+import org.ietf.jgss.Oid;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -109,6 +118,86 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         securityHandler.setHandler(handler);
         start(securityHandler);
+    }
+
+    public void startSpnego(final int numRound) throws Exception
+    {
+        server = new Server();
+        start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+                String authVal = request.getHeader(HttpHeader.AUTHORIZATION.name());
+                if (authVal == null)
+                {
+                    response.setStatus(HttpStatus.UNAUTHORIZED_401);
+                    response.addHeader("WWW-Authenticate",
+                            "Negotiate " + Base64.getEncoder().encodeToString("blah1".getBytes(Charset.forName("UTF-8"))));
+                    response.addHeader("Connection", "Keep-Alive");
+                }
+                else
+                {
+                    if (!authVal.startsWith("Negotiate "))
+                    {
+                        response.setStatus(HttpStatus.UNAUTHORIZED_401);
+                    }
+                    String base64Token = authVal.substring("Negotiate ".length());
+                    String token = new String(Base64.getDecoder().decode(new String(Base64.getDecoder().decode(base64Token))));
+                    int lastRound = Integer.parseInt(token.substring("v_blah".length()));
+                    if (lastRound != numRound)
+                    {
+                        response.setStatus(HttpStatus.UNAUTHORIZED_401);
+                        response.addHeader("WWW-Authenticate",
+                                "Negotiate " + Base64.getEncoder().encodeToString(("blah"+(lastRound+1)).getBytes(Charset.forName("UTF-8"))));
+                        response.addHeader("Connection", "Keep-Alive");
+                    }
+                }
+            }
+        });
+    }
+
+    static class VerifiedMockGssContext extends MockGSSContext
+    {
+        @Override
+        public byte[] initSecContext(byte[] inputBuf, int offset, int len) throws GSSException
+        {
+            assert offset == 0;
+            String content = new String(inputBuf);
+            String base64Out = "v_"+ content;
+            return Base64.getEncoder().encode(base64Out.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    @Test
+    public void test_SpnegeScheme() throws Exception
+    {
+        startSpnego(1);
+        test_Authentication(new SpnegoAuthentication(null, false, false)
+        {
+            @Override
+            protected GSSContext createGSSContext(GSSManager manager, Oid oid, String authServer) throws GSSException
+            {
+                return new VerifiedMockGssContext();
+            }
+        });
+    }
+
+    @Test
+    public void test_SpnegeSchemeMultipleRounds() throws Exception
+    {
+        startSpnego(5);
+        AtomicInteger numInstances = new AtomicInteger(0);
+        test_Authentication(new SpnegoAuthentication(null, false, false)
+        {
+            @Override
+            protected GSSContext createGSSContext(GSSManager manager, Oid oid, String authServer) throws GSSException
+            {
+                numInstances.incrementAndGet();
+                return new VerifiedMockGssContext();
+            }
+        });
+        // Use the same context for multiple rounds
+        Assert.assertEquals(2, numInstances.get());
     }
 
     @Test
@@ -467,20 +556,20 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
-    
+
     @Test
     public void test_RequestFailsAfterResponse() throws Exception
-    {        
+    {
         startBasic(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request,
                                    HttpServletResponse response) throws IOException, ServletException
             {
-                IO.readBytes(jettyRequest.getInputStream());              
+                IO.readBytes(jettyRequest.getInputStream());
             }
         });
-        
+
         CountDownLatch authLatch = new CountDownLatch(1);
         client.getProtocolHandlers().remove(WWWAuthenticationProtocolHandler.NAME);
         client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(client)
@@ -505,7 +594,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 };
             }
         });
-        
+
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
         URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
 
@@ -531,7 +620,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                         }
                         catch(InterruptedException e)
                         {}
-                        
+
                         // Trigger request failure.
                         throw new RuntimeException();
                     }
@@ -539,7 +628,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                     {
                         return null;
                     }
-                    
+
                 default:
                     throw new IllegalStateException();
             }
@@ -615,119 +704,119 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             };
         }
     }
-    
+
     @Test
     public void testTestHeaderInfoParsing() {
         AuthenticationProtocolHandler aph = new WWWAuthenticationProtocolHandler(client);
-        
+
         HeaderInfo headerInfo = aph.getHeaderInfo("Digest realm=\"thermostat\", qop=\"auth\", nonce=\"1523430383\"").get(0);
         Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
         Assert.assertTrue(headerInfo.getParameter("qop").equals("auth"));
         Assert.assertTrue(headerInfo.getParameter("realm").equals("thermostat"));
         Assert.assertTrue(headerInfo.getParameter("nonce").equals("1523430383"));
-        
+
         headerInfo = aph.getHeaderInfo("Digest qop=\"auth\", realm=\"thermostat\", nonce=\"1523430383\"").get(0);
         Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
         Assert.assertTrue(headerInfo.getParameter("qop").equals("auth"));
         Assert.assertTrue(headerInfo.getParameter("realm").equals("thermostat"));
         Assert.assertTrue(headerInfo.getParameter("nonce").equals("1523430383"));
-        
+
         headerInfo = aph.getHeaderInfo("Digest qop=\"auth\", nonce=\"1523430383\", realm=\"thermostat\"").get(0);
         Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
         Assert.assertTrue(headerInfo.getParameter("qop").equals("auth"));
         Assert.assertTrue(headerInfo.getParameter("realm").equals("thermostat"));
         Assert.assertTrue(headerInfo.getParameter("nonce").equals("1523430383"));
-        
+
         headerInfo = aph.getHeaderInfo("Digest qop=\"auth\", nonce=\"1523430383\"").get(0);
         Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Digest"));
         Assert.assertTrue(headerInfo.getParameter("qop").equals("auth"));
         Assert.assertTrue(headerInfo.getParameter("realm") == null);
         Assert.assertTrue(headerInfo.getParameter("nonce").equals("1523430383"));
-        
-        
+
+
         // test multiple authentications
         List<HeaderInfo> headerInfoList = aph.getHeaderInfo("Digest qop=\"auth\", realm=\"thermostat\", nonce=\"1523430383\", "
                                                           + "Digest realm=\"thermostat2\", qop=\"auth2\", nonce=\"4522530354\", "
                                                           + "Digest qop=\"auth3\", nonce=\"9523570528\", realm=\"thermostat3\", "
                                                           + "Digest qop=\"auth4\", nonce=\"3526435321\"");
-        
+
         Assert.assertTrue(headerInfoList.get(0).getType().equalsIgnoreCase("Digest"));
         Assert.assertTrue(headerInfoList.get(0).getParameter("qop").equals("auth"));
         Assert.assertTrue(headerInfoList.get(0).getParameter("realm").equals("thermostat"));
         Assert.assertTrue(headerInfoList.get(0).getParameter("nonce").equals("1523430383"));
-        
+
         Assert.assertTrue(headerInfoList.get(1).getType().equalsIgnoreCase("Digest"));
         Assert.assertTrue(headerInfoList.get(1).getParameter("qop").equals("auth2"));
         Assert.assertTrue(headerInfoList.get(1).getParameter("realm").equals("thermostat2"));
         Assert.assertTrue(headerInfoList.get(1).getParameter("nonce").equals("4522530354"));
-        
+
         Assert.assertTrue(headerInfoList.get(2).getType().equalsIgnoreCase("Digest"));
         Assert.assertTrue(headerInfoList.get(2).getParameter("qop").equals("auth3"));
         Assert.assertTrue(headerInfoList.get(2).getParameter("realm").equals("thermostat3"));
         Assert.assertTrue(headerInfoList.get(2).getParameter("nonce").equals("9523570528"));
-        
+
         Assert.assertTrue(headerInfoList.get(3).getType().equalsIgnoreCase("Digest"));
         Assert.assertTrue(headerInfoList.get(3).getParameter("qop").equals("auth4"));
         Assert.assertTrue(headerInfoList.get(3).getParameter("realm") == null);
         Assert.assertTrue(headerInfoList.get(3).getParameter("nonce").equals("3526435321"));
-        
+
         List<HeaderInfo> headerInfos = aph.getHeaderInfo("Newauth realm=\"apps\", type=1, title=\"Login to \\\"apps\\\"\", Basic realm=\"simple\"");
         Assert.assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Newauth"));
         Assert.assertTrue(headerInfos.get(0).getParameter("realm").equals("apps"));
         Assert.assertTrue(headerInfos.get(0).getParameter("type").equals("1"));
         Assert.assertThat(headerInfos.get(0).getParameter("title"), Matchers.equalTo("Login to \"apps\""));
         Assert.assertTrue(headerInfos.get(1).getType().equalsIgnoreCase("Basic"));
-        Assert.assertTrue(headerInfos.get(1).getParameter("realm").equals("simple"));        
+        Assert.assertTrue(headerInfos.get(1).getParameter("realm").equals("simple"));
     }
-    
+
     @Test
     public void testTestHeaderInfoParsingUnusualCases() {
         AuthenticationProtocolHandler aph = new WWWAuthenticationProtocolHandler(client);
-        
+
         HeaderInfo headerInfo = aph.getHeaderInfo("Scheme").get(0);
         Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Scheme"));
         Assert.assertTrue(headerInfo.getParameter("realm") == null);
-        
+
         List<HeaderInfo> headerInfos = aph.getHeaderInfo("Scheme1    ,    Scheme2        ,      Scheme3");
         Assert.assertEquals(3, headerInfos.size());
         Assert.assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Scheme1"));
         Assert.assertTrue(headerInfos.get(1).getType().equalsIgnoreCase("Scheme2"));
         Assert.assertTrue(headerInfos.get(2).getType().equalsIgnoreCase("Scheme3"));
-        
+
         headerInfo = aph.getHeaderInfo("Scheme name=\"value\", other=\"value2\"").get(0);
         Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Scheme"));
         Assert.assertTrue(headerInfo.getParameter("name").equals("value"));
         Assert.assertTrue(headerInfo.getParameter("other").equals("value2"));
-        
+
         headerInfo = aph.getHeaderInfo("Scheme   name   = value   , other   =  \"value2\"    ").get(0);
         Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Scheme"));
         Assert.assertTrue(headerInfo.getParameter("name").equals("value"));
         Assert.assertTrue(headerInfo.getParameter("other").equals("value2"));
-        
+
         headerInfos = aph.getHeaderInfo(", , , ,  ,,,Scheme name=value, ,,Scheme2   name=value2,,  ,,");
         Assert.assertEquals(headerInfos.size(), 2);
         Assert.assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Scheme"));
         Assert.assertTrue(headerInfos.get(0).getParameter("nAmE").equals("value"));
         Assert.assertThat(headerInfos.get(1).getType(), Matchers.equalToIgnoringCase("Scheme2"));
         Assert.assertTrue(headerInfos.get(1).getParameter("nAmE").equals("value2"));
-        
+
         headerInfos = aph.getHeaderInfo("Scheme ,   ,, ,, name=value, Scheme2 name=value2");
         Assert.assertEquals(headerInfos.size(), 2);
         Assert.assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Scheme"));
         Assert.assertTrue(headerInfos.get(0).getParameter("name").equals("value"));
         Assert.assertTrue(headerInfos.get(1).getType().equalsIgnoreCase("Scheme2"));
         Assert.assertTrue(headerInfos.get(1).getParameter("name").equals("value2"));
-        
+
         //Negotiate with base64 Content
         headerInfo = aph.getHeaderInfo("Negotiate TlRMTVNTUAABAAAAB4IIogAAAAAAAAAAAAAAAAAAAAAFAs4OAAAADw==").get(0);
         Assert.assertTrue(headerInfo.getType().equalsIgnoreCase("Negotiate"));
         Assert.assertTrue(headerInfo.getBase64().equals("TlRMTVNTUAABAAAAB4IIogAAAAAAAAAAAAAAAAAAAAAFAs4OAAAADw=="));
-        
+
         headerInfos = aph.getHeaderInfo("Negotiate TlRMTVNTUAABAAAAAAAAAFAs4OAAAADw==, "
                                     +  "Negotiate YIIJvwYGKwYBBQUCoIIJszCCCa+gJDAi=");
         Assert.assertTrue(headerInfos.get(0).getType().equalsIgnoreCase("Negotiate"));
         Assert.assertTrue(headerInfos.get(0).getBase64().equals("TlRMTVNTUAABAAAAAAAAAFAs4OAAAADw=="));
-        
+
         Assert.assertTrue(headerInfos.get(1).getType().equalsIgnoreCase("Negotiate"));
         Assert.assertTrue(headerInfos.get(1).getBase64().equals("YIIJvwYGKwYBBQUCoIIJszCCCa+gJDAi="));
     }
