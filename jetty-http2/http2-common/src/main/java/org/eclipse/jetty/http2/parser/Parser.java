@@ -48,9 +48,10 @@ public class Parser
 {
     private static final Logger LOG = Log.getLogger(Parser.class);
 
+    private final ByteBufferPool byteBufferPool;
     private final Listener listener;
     private final HeaderParser headerParser;
-    private final HeaderBlockParser headerBlockParser;
+    private final HpackDecoder hpackDecoder;
     private final BodyParser[] bodyParsers;
     private UnknownBodyParser unknownBodyParser;
     private int maxFrameLength;
@@ -60,9 +61,10 @@ public class Parser
 
     public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
     {
+        this.byteBufferPool = byteBufferPool;
         this.listener = listener;
         this.headerParser = new HeaderParser();
-        this.headerBlockParser = new HeaderBlockParser(headerParser, byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize), unknownBodyParser);
+        this.hpackDecoder = new HpackDecoder(maxDynamicTableSize, maxHeaderSize);
         this.maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
@@ -71,6 +73,7 @@ public class Parser
     {
         Listener listener = wrapper.apply(this.listener);
         unknownBodyParser = new UnknownBodyParser(headerParser, listener);
+        HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, byteBufferPool, hpackDecoder, unknownBodyParser);
         HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments();
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
         bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
