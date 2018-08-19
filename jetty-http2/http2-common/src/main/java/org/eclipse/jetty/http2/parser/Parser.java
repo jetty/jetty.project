@@ -52,7 +52,7 @@ public class Parser
     private final HeaderParser headerParser;
     private final HeaderBlockParser headerBlockParser;
     private final BodyParser[] bodyParsers;
-    private final UnknownBodyParser unknownBodyParser;
+    private UnknownBodyParser unknownBodyParser;
     private int maxFrameLength;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean continuation;
@@ -62,7 +62,6 @@ public class Parser
     {
         this.listener = listener;
         this.headerParser = new HeaderParser();
-        this.unknownBodyParser = new UnknownBodyParser(headerParser, listener);
         this.headerBlockParser = new HeaderBlockParser(headerParser, byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize), unknownBodyParser);
         this.maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
         this.bodyParsers = new BodyParser[FrameType.values().length];
@@ -71,6 +70,7 @@ public class Parser
     public void init(UnaryOperator<Listener> wrapper)
     {
         Listener listener = wrapper.apply(this.listener);
+        unknownBodyParser = new UnknownBodyParser(headerParser, listener);
         HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments();
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
         bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
@@ -176,7 +176,7 @@ public class Parser
             if (LOG.isDebugEnabled())
                 LOG.debug("Ignoring unknown frame type {}", Integer.toHexString(type));
             if (!unknownBodyParser.parse(buffer))
-            return false;
+                return false;
             reset();
             return true;
         }
