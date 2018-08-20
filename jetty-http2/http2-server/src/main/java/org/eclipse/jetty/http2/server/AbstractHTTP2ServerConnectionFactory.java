@@ -18,13 +18,20 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
@@ -37,13 +44,17 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 @ManagedObject
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
-    private final Connection.Listener connectionListener = new ConnectionListener();
+    private final SessionContainer sessionContainer = new SessionContainer();
     private final HttpConfiguration httpConfiguration;
     private int maxDynamicTableSize = 4096;
     private int initialSessionRecvWindow = 1024 * 1024;
@@ -68,7 +79,20 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
                 throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: "+p);
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
         addBean(httpConfiguration);
+        addBean(sessionContainer);
         setInputBufferSize(Frame.DEFAULT_MAX_LENGTH + Frame.HEADER_LENGTH);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
     }
 
     @ManagedAttribute("The HPACK dynamic table maximum size")
@@ -234,7 +258,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
                         endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
-        connection.addListener(connectionListener);
+        connection.addListener(sessionContainer);
         return configure(connection, connector, endPoint);
     }
 
@@ -245,18 +269,39 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize());
     }
 
-    private class ConnectionListener implements Connection.Listener
+    
+    @ManagedObject
+    public class SessionContainer extends AbstractLifeCycle implements Connection.Listener, Dumpable
     {
+        Set<ISession> sessions = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        
         @Override
         public void onOpened(Connection connection)
         {
-            addManaged((LifeCycle)((HTTP2Connection)connection).getSession());
+            ISession session = ((HTTP2Connection)connection).getSession();
+            sessions.add(session);
         }
 
         @Override
         public void onClosed(Connection connection)
         {
-            removeBean(((HTTP2Connection)connection).getSession());
+            ISession session = ((HTTP2Connection)connection).getSession();
+            sessions.remove(session);
         }
+
+        @Override
+        @ManagedOperation
+        public String dump()
+        {
+            return ContainerLifeCycle.dump(this);
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            ContainerLifeCycle.dumpObject(out, this);
+            ContainerLifeCycle.dump(out, indent, sessions);
+        }
+        
     }
 }
