@@ -59,15 +59,12 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Retainable;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-@ManagedObject
 public abstract class HTTP2Session extends ContainerLifeCycle implements ISession, Parser.Listener
 {
     private static final Logger LOG = Log.getLogger(HTTP2Session.class);
@@ -144,7 +141,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         });
     }
 
-    @ManagedAttribute(value = "The flow control strategy", readonly = true)
     public FlowControlStrategy getFlowControlStrategy()
     {
         return flowControl;
@@ -170,7 +166,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         this.maxRemoteStreams = maxRemoteStreams;
     }
 
-    @ManagedAttribute("The stream's idle timeout")
     public long getStreamIdleTimeout()
     {
         return streamIdleTimeout;
@@ -181,7 +176,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         this.streamIdleTimeout = streamIdleTimeout;
     }
 
-    @ManagedAttribute("The initial size of session's flow control receive window")
     public int getInitialSessionRecvWindow()
     {
         return initialSessionRecvWindow;
@@ -852,7 +846,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         return new ArrayList<>(streams.values());
     }
 
-    @ManagedAttribute("The number of active streams")
     public int getStreamCount()
     {
         return streams.size();
@@ -864,13 +857,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         return streams.get(streamId);
     }
 
-    @ManagedAttribute(value = "The flow control send window", readonly = true)
     public int getSendWindow()
     {
         return sendWindow.get();
     }
 
-    @ManagedAttribute(value = "The flow control receive window", readonly = true)
     public int getRecvWindow()
     {
         return recvWindow.get();
@@ -904,7 +895,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     }
 
     @Override
-    @ManagedAttribute(value = "Whether HTTP/2 push is enabled", readonly = true)
     public boolean isPushEnabled()
     {
         return pushEnabled;
