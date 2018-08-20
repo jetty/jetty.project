@@ -416,10 +416,15 @@ public class SslConnection extends AbstractConnection
                     }      
                 }
 
+                boolean filled = getFillInterest().fillable();
+                if (!filled && waiting_for_fill)
+                    fill(BufferUtil.EMPTY_BUFFER);
+/*
                 // Ensure a fill is always done if needed then wake up any fill interest
                 if (waiting_for_fill)
                     fill(BufferUtil.EMPTY_BUFFER);
                 getFillInterest().fillable();
+*/
             }
             catch (Throwable e)
             {
@@ -1246,11 +1251,11 @@ public class SslConnection extends AbstractConnection
                     if (fillable)
                         _fillState = FillState.IDLE;
                 }
-                
-                _decryptedEndPoint.getWriteFlusher().completeWrite();
 
                 if (fillable)
                     _decryptedEndPoint.getFillInterest().fillable();
+
+                _decryptedEndPoint.getWriteFlusher().completeWrite();
             }
         
             @Override
