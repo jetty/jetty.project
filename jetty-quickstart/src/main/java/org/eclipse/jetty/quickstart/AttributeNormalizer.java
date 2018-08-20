@@ -235,7 +235,7 @@ public class AttributeNormalizer
         Collections.sort(paths,attrComparator);
         Collections.sort(uris,attrComparator);
         
-        Stream.concat(paths.stream(),uris.stream()).forEach(a->attributes.put(a.key,a));        
+        Stream.concat(paths.stream(),uris.parallelStream()).forEach(a->attributes.put(a.key,a));        
         
         if (LOG.isDebugEnabled())
         {
