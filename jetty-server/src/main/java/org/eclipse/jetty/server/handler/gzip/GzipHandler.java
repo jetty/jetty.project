@@ -405,13 +405,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     protected void doStart() throws Exception
     {
-        if (_deflaterPool == null)
-        {
-            _deflaterPool = getServer().getBean(DeflaterPool.class);
-            if (_deflaterPool == null)
-                _deflaterPool = new DeflaterPool(POOL_CAPACITY, getCompressionLevel(), true);
-        }
-
+        _deflaterPool = newDeflaterPool(POOL_CAPACITY);
         _vary=(_agentPatterns.size()>0)?GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING_USER_AGENT:GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
         super.doStart();
     }
@@ -981,27 +975,28 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-     * Set the {@link DeflaterPool} that is used to manage instances of {@link Deflater}
-     * @param deflaterPool
+     * Gets the maximum number of Deflaters that the DeflaterPool can hold.
+     * @return the Deflater pool capacity
      */
-    public void setDeflaterPool(DeflaterPool deflaterPool)
-    {
-        if(isStarted())
-            throw new IllegalStateException(getState());
-
-        _deflaterPool = deflaterPool;
-    }
-
     public int getDeflaterPoolCapacity()
     {
         return POOL_CAPACITY;
     }
 
+    /**
+     * Sets the maximum number of Deflaters that the DeflaterPool can hold.
+     * @param capacity
+     */
     public void setDeflaterPoolCapacity(int capacity)
     {
         if(isStarted())
             throw new IllegalStateException(getState());
 
         POOL_CAPACITY = capacity;
+    }
+
+    protected DeflaterPool newDeflaterPool(int capacity)
+    {
+        return new DeflaterPool(capacity, getCompressionLevel(), true);
     }
 }
