@@ -158,7 +158,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding","gzip");
     private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
 
-    public static final int DEFAULT_POOL_CAPACITY = 20;
+    private int POOL_CAPACITY = -1;
     private DeflaterPool _deflaterPool = null;
 
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
@@ -409,7 +409,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         {
             _deflaterPool = getServer().getBean(DeflaterPool.class);
             if (_deflaterPool == null)
-                _deflaterPool = new DeflaterPool(DEFAULT_POOL_CAPACITY, getCompressionLevel(), true);
+                _deflaterPool = new DeflaterPool(POOL_CAPACITY, getCompressionLevel(), true);
         }
 
         _vary=(_agentPatterns.size()>0)?GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING_USER_AGENT:GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
@@ -462,10 +462,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             return null;
         }
 
-        Deflater df = _deflaterPool.acquire();
-        df.setLevel(_compressionLevel);
-
-        return df;
+        return _deflaterPool.acquire();
     }
 
     /**
@@ -823,6 +820,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void setCompressionLevel(int compressionLevel)
     {
+        if(isStarted())
+            throw new IllegalStateException(getState());
+
         _compressionLevel = compressionLevel;
     }
 
@@ -980,14 +980,28 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         return String.join(",", getExcludedMethods());
     }
 
-
-    public DeflaterPool getDeflaterPool()
-    {
-        return _deflaterPool;
-    }
-
+    /**
+     * Set the {@link DeflaterPool} that is used to manage instances of {@link Deflater}
+     * @param deflaterPool
+     */
     public void setDeflaterPool(DeflaterPool deflaterPool)
     {
+        if(isStarted())
+            throw new IllegalStateException(getState());
+
         _deflaterPool = deflaterPool;
+    }
+
+    public int getDeflaterPoolCapacity()
+    {
+        return POOL_CAPACITY;
+    }
+
+    public void setDeflaterPoolCapacity(int capacity)
+    {
+        if(isStarted())
+            throw new IllegalStateException(getState());
+
+        POOL_CAPACITY = capacity;
     }
 }

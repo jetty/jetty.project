@@ -28,14 +28,16 @@ public class DeflaterPool
     private final Queue<Deflater> _pool;
     private final int _compressionLevel;
     private final boolean _nowrap;
-    private int _capacity;
-    private AtomicInteger _numDeflaters = new AtomicInteger(0);
+    private final AtomicInteger _numDeflaters = new AtomicInteger(0);
+    private final int _capacity;
+
 
     /**
-     * Create a {@link Deflater} Pool
+     * Create a Pool of {@link Deflater} instances.
      *
-     * If given a capacity less or equal to zero the Deflaters will not be pooled
+     * If given a capacity equal to zero the Deflaters will not be pooled
      * and will be created on acquire and ended on release.
+     * If given a negative capacity equal to zero there will be no size restrictions on the DeflaterPool
      *
      * @param capacity maximum number of Deflaters which can be contained in the pool
      * @param compressionLevel the default compression level for new Deflater objects
@@ -47,7 +49,7 @@ public class DeflaterPool
         _compressionLevel = compressionLevel;
         _nowrap = nowrap;
 
-        if (_capacity > 0)
+        if (_capacity != 0)
             _pool = new ConcurrentLinkedQueue<>();
         else
             _pool = null;
@@ -63,15 +65,23 @@ public class DeflaterPool
      */
     public Deflater acquire()
     {
-        if (_pool == null)
-            return newDeflater();
+        Deflater deflater;
 
-        Deflater deflater = _pool.poll();
-        if (deflater == null)
+        if (_capacity == 0)
             deflater = newDeflater();
+        else if (_capacity < 0)
+        {
+            deflater = _pool.poll();
+            if (deflater == null)
+                deflater = newDeflater();
+        }
         else
         {
-            _numDeflaters.decrementAndGet();
+            deflater = _pool.poll();
+            if (deflater == null)
+                deflater = newDeflater();
+            else
+                _numDeflaters.decrementAndGet();
         }
 
         return deflater;
@@ -85,27 +95,34 @@ public class DeflaterPool
         if (deflater == null)
             return;
 
-        if (_pool == null)
+        if (_capacity == 0)
         {
             deflater.end();
             return;
         }
-
-        while(true)
+        else if (_capacity < 0)
         {
-            int d = _numDeflaters.get();
-
-            if (d >= _capacity)
+            deflater.reset();
+            _pool.add(deflater);
+        }
+        else
+        {
+            while (true)
             {
-                deflater.end();
-                break;
-            }
+                int d = _numDeflaters.get();
 
-            if (_numDeflaters.compareAndSet(d,d+1))
-            {
-                deflater.reset();
-                _pool.add(deflater);
-                break;
+                if (d >= _capacity)
+                {
+                    deflater.end();
+                    break;
+                }
+
+                if (_numDeflaters.compareAndSet(d, d + 1))
+                {
+                    deflater.reset();
+                    _pool.add(deflater);
+                    break;
+                }
             }
         }
     }
