@@ -48,6 +48,7 @@ public class CustomResourcesMonitorTest
     ServerConnector _connector;
     FileOnDirectoryMonitor _fileOnDirectoryMonitor;
     Path _monitoredPath;
+    LowResourceMonitor _lowResourceMonitor;
 
     @Before
     public void before() throws Exception
@@ -64,9 +65,10 @@ public class CustomResourcesMonitorTest
         _server.setHandler(new DumpHandler());
 
         _monitoredPath = Files.createTempDirectory( "jetty_test" );
-        _fileOnDirectoryMonitor=new FileOnDirectoryMonitor(_server, _monitoredPath);
-        _server.addBean( _fileOnDirectoryMonitor );
-
+        _fileOnDirectoryMonitor=new FileOnDirectoryMonitor(_monitoredPath);
+        _lowResourceMonitor = new LowResourceMonitor(_server);
+        _server.addBean( _lowResourceMonitor );
+        _lowResourceMonitor.addLowResourceCheck( _fileOnDirectoryMonitor );
         _server.start();
     }
     
@@ -79,12 +81,12 @@ public class CustomResourcesMonitorTest
     @Test
     public void testFileOnDirectoryMonitor() throws Exception
     {
-        int monitorPeriod = _fileOnDirectoryMonitor.getPeriod();
-        int lowResourcesIdleTimeout = _fileOnDirectoryMonitor.getLowResourcesIdleTimeout();
+        int monitorPeriod = _lowResourceMonitor.getPeriod();
+        int lowResourcesIdleTimeout = _lowResourceMonitor.getLowResourcesIdleTimeout();
         assertThat(lowResourcesIdleTimeout, Matchers.lessThanOrEqualTo(monitorPeriod));
 
         int maxLowResourcesTime = 5 * monitorPeriod;
-        _fileOnDirectoryMonitor.setMaxLowResourcesTime(maxLowResourcesTime);
+        _lowResourceMonitor.setMaxLowResourcesTime(maxLowResourcesTime);
         assertFalse(_fileOnDirectoryMonitor.isLowOnResources());
 
         try(Socket socket0 = new Socket("localhost",_connector.getLocalPort()))
@@ -144,48 +146,37 @@ public class CustomResourcesMonitorTest
     }
 
 
-    static class FileOnDirectoryMonitor extends AbstractResourceMonitor {
-
+    static class FileOnDirectoryMonitor implements LowResourceMonitor.LowResourceCheck
+    {
         private static final Logger LOG = Log.getLogger( FileOnDirectoryMonitor.class);
 
         private final Path _pathToMonitor;
 
-        public FileOnDirectoryMonitor( Server server, Path pathToMonitor )
+        private String reason;
+
+        public FileOnDirectoryMonitor(Path pathToMonitor )
         {
-            super( server );
             _pathToMonitor = pathToMonitor;
         }
 
         @Override
-        protected void monitor()
+        public boolean isLowOnResources()
         {
             try
             {
                 Stream<Path> paths = Files.list( _pathToMonitor );
                 List<Path> content = paths.collect( Collectors.toList() );
-                if(!content.isEmpty()){
-                    if (enableLowOnResources(false,true))
-                    {
-                        LOG.info( "directory not empty so enable low resources" );
-                        setLowResourcesReasons("directory not empty");
-                        setLowResourcesStarted(System.currentTimeMillis());
-                        setLowResources();
-                    }
-                } else {
-                    if (enableLowOnResources(true,false))
-                    {
-                        LOG.info( "directory empty so disable low resources" );
-                        setLowResourcesReasons(null);
-                        setLowResourcesStarted(0);
-                        setCause(null);
-                        clearLowResources();
-                    }
+                if(!content.isEmpty())
+                {
+                    reason= "directory not empty so enable low resources";
+                    return true;
                 }
             }
             catch ( IOException e )
             {
                 LOG.info( "ignore issue looking at directory content", e );
             }
+            return false;
         }
     }
 }
