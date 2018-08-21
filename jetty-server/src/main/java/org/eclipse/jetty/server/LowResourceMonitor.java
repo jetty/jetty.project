@@ -73,7 +73,6 @@ public class LowResourceMonitor extends AbstractLifeCycle
 
     private final AtomicBoolean _low = new AtomicBoolean();
 
-    private String _cause;
     private String _reasons;
 
     private long _lowStarted;
@@ -153,15 +152,15 @@ public class LowResourceMonitor extends AbstractLifeCycle
     }
 
 
-    @ManagedAttribute("The cause the monitored connectors are low on resources")
-    public String getCause()
+    @ManagedAttribute("The reasons the monitored connectors are low on resources")
+    public String getReasons()
     {
-        return _cause;
+        return _reasons;
     }
 
-    protected void setCause(String cause)
+    protected void setReasons(String reasons)
     {
-        _cause = cause;
+        _reasons = reasons;
     }
 
     @ManagedAttribute("Are the monitored connectors low on resources?")
@@ -310,24 +309,25 @@ public class LowResourceMonitor extends AbstractLifeCycle
     protected void monitor()
     {
 
+        String reasons="";
+
+
         for(LowResourceCheck lowResourceCheck : _lowResourceChecks)
         {
             if(lowResourceCheck.isLowOnResources())
             {
-                //  TODO check reason
+                reasons = lowResourceCheck.toString();
+                break;
             }
         }
-
-        String reasons=null;
-        String cause="";
 
         if (reasons!=null)
         {
             // Log the reasons if there is any change in the cause
-            if (!cause.equals(getCause()))
+            if (!reasons.equals(getReasons()))
             {
                 LOG.warn("Low Resources: {}",reasons);
-                setCause(cause);
+                setReasons(reasons);
             }
 
             // Enter low resources state?
@@ -349,7 +349,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
                 LOG.info("Low Resources cleared");
                 setLowResourcesReasons(null);
                 setLowResourcesStarted(0);
-                setCause(null);
+                setReasons(null);
                 clearLowResources();
             }
         }

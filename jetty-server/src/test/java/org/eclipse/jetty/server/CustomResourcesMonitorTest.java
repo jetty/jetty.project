@@ -178,5 +178,11 @@ public class CustomResourcesMonitorTest
             }
             return false;
         }
+
+        @Override
+        public String toString()
+        {
+            return reason;
+        }
     }
 }
