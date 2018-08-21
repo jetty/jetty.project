@@ -130,14 +130,16 @@ def getFullBuild(jdk, os) {
       try
       {
         stage ("Compact3 - ${jdk}") {
-          withMaven(
-                  maven: mvnName,
-                  jdk: "$jdk",
-                  publisherStrategy: 'EXPLICIT',
-                  globalMavenSettingsConfig: settingsName,
-                  mavenOpts: mavenOpts,
-                  mavenLocalRepo: localRepo) {
-            sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
+          withEnv(mvnEnv) {
+            withMaven(
+                    maven: mvnName,
+                    jdk: "$jdk",
+                    publisherStrategy: 'EXPLICIT',
+                    globalMavenSettingsConfig: settingsName,
+                    mavenOpts: mavenOpts,
+                    mavenLocalRepo: localRepo) {
+              sh "mvn -pl :jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
+            }
           }
         }
       } catch(Exception e) {
