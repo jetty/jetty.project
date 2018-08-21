@@ -415,16 +415,17 @@ public class SslConnection extends AbstractConnection
                             break;
                     }      
                 }
-
-                boolean filled = getFillInterest().fillable();
-                if (!filled && waiting_for_fill)
-                    fill(BufferUtil.EMPTY_BUFFER);
-/*
-                // Ensure a fill is always done if needed then wake up any fill interest
-                if (waiting_for_fill)
-                    fill(BufferUtil.EMPTY_BUFFER);
+                
                 getFillInterest().fillable();
-*/
+                if (waiting_for_fill)
+                {
+                  synchronized(_decryptedEndPoint)
+                  {
+                    waiting_for_fill = _flushState==FlushState.WAIT_FOR_FILL;
+                  }
+                  if (waiting_for_fill)
+                    fill(BufferUtil.EMPTY_BUFFER);
+                }
             }
             catch (Throwable e)
             {
