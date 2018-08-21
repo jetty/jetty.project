@@ -18,27 +18,25 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -57,7 +55,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  *
  */
 @ManagedObject ("Monitor for low resource conditions and activate a low resource mode if detected")
-public class LowResourceMonitor extends AbstractLifeCycle
+public class LowResourceMonitor extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(LowResourceMonitor.class);
 
@@ -100,17 +98,6 @@ public class LowResourceMonitor extends AbstractLifeCycle
     public LowResourceMonitor(@Name("server") Server server)
     {
         _server = server;
-
-        // create default LowResourceChecks..
-        if(_monitorThreads){
-            this._lowResourceChecks.add( new MainThreadPoolLowResourceCheck() );
-        }
-
-        if(_monitorThreads && !getMonitoredConnectors().isEmpty()){
-            this._lowResourceChecks.add( new ConnectorsThreadPoolLowResourceCheck());
-        }
-
-        this._lowResourceChecks.add(new MemoryLowResourceCheck());
     }
 
     @ManagedAttribute("True if low available threads status is monitored")
@@ -122,6 +109,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
     /**
      * @param monitorThreads If true, check connectors executors to see if they are
      * {@link ThreadPool} instances that are low on threads.
+     * @deprecated use {@link ConnectorsThreadPoolLowResourceCheck#setMonitorThreads(boolean)}
      */
     public void setMonitorThreads(boolean monitorThreads)
     {
@@ -365,7 +353,19 @@ public class LowResourceMonitor extends AbstractLifeCycle
             _scheduler=new LRMScheduler();
             _scheduler.start();
         }
+
         super.doStart();
+
+        // create default LowResourceChecks..
+        if(_monitorThreads){
+            this._lowResourceChecks.add( new MainThreadPoolLowResourceCheck() );
+        }
+
+        if(_monitorThreads && !getMonitoredConnectors().isEmpty()){
+            this._lowResourceChecks.add( new ConnectorsThreadPoolLowResourceCheck(getMonitorThreads(),getMaxConnections()));
+        }
+
+        this._lowResourceChecks.add(new MemoryLowResourceCheck(getMaxMemory()));
 
         _scheduler.schedule(_monitor,_period,TimeUnit.MILLISECONDS);
     }
@@ -427,6 +427,8 @@ public class LowResourceMonitor extends AbstractLifeCycle
     interface LowResourceCheck
     {
         boolean isLowOnResources();
+
+        String getReason();
     }
 
     //------------------------------------------------------
@@ -455,29 +457,73 @@ public class LowResourceMonitor extends AbstractLifeCycle
         }
 
         @Override
-        public String toString()
+        public String getReason()
         {
             return reason;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Check if the server ThreadPool is lowOnThreads";
         }
     }
 
     public class ConnectorsThreadPoolLowResourceCheck implements LowResourceCheck
     {
         private String reason;
+        private boolean monitorThreads;
+        private int maxConnections;
 
-
-        public ConnectorsThreadPoolLowResourceCheck()
+        public ConnectorsThreadPoolLowResourceCheck(boolean monitorThreads, int maxConnections)
         {
-            // no op
+            this.monitorThreads = monitorThreads;
+            this.maxConnections = maxConnections;
+        }
+
+        @ManagedAttribute("True if low available threads status is monitored")
+        public boolean getMonitorThreads()
+        {
+            return monitorThreads;
+        }
+
+        /**
+         * @param monitorThreads If true, check connectors executors to see if they are
+         * {@link ThreadPool} instances that are low on threads.
+         */
+        public void setMonitorThreads( boolean monitorThreads )
+        {
+            this.monitorThreads = monitorThreads;
+        }
+
+        /**
+         * @return The maximum connections allowed for the monitored connectors before low resource handling is activated
+         * @deprecated Replaced by ConnectionLimit
+         */
+        @ManagedAttribute("The maximum connections allowed for the monitored connectors before low resource handling is activated")
+        @Deprecated
+        public int getMaxConnections()
+        {
+            return maxConnections;
+        }
+
+        /**
+         * @param maxConnections The maximum connections before low resources state is triggered
+         * @deprecated Replaced by ConnectionLimit
+         */
+        @Deprecated
+        public void setMaxConnections(int maxConnections)
+        {
+            if (maxConnections>0)
+                LOG.warn("LowResourceMonitor.setMaxConnections is deprecated. Use ConnectionLimit.");
+            this.maxConnections = maxConnections;
         }
 
         @Override
         public boolean isLowOnResources()
         {
             ThreadPool serverThreads = _server.getThreadPool();
-
             int connections=0;
-
             for(Connector connector : getMonitoredConnectors())
             {
                 connections+=connector.getConnectedEndPoints().size();
@@ -485,53 +531,68 @@ public class LowResourceMonitor extends AbstractLifeCycle
                 if (executor instanceof ThreadPool && executor!=serverThreads)
                 {
                     ThreadPool connectorThreads=(ThreadPool)executor;
-                    if (_monitorThreads && connectorThreads.isLowOnThreads())
+                    if (monitorThreads && connectorThreads.isLowOnThreads())
                     {
                         reason ="Connector low on threads: "+connectorThreads;
                         return true;
                     }
                 }
             }
-            if (_maxConnections>0 && connections>_maxConnections)
+            if (maxConnections>0 && connections>maxConnections)
             {
-                reason ="Max Connections exceeded: "+connections+">"+_maxConnections;
+                reason ="Max Connections exceeded: "+connections+">"+maxConnections;
                 return true;
             }
             return false;
         }
 
         @Override
-        public String toString()
+        public String getReason()
         {
             return reason;
         }
+
+        @Override
+        public String toString()
+        {
+            return "Check if the ThreadPool from monitored connectors are lowOnThreads and if all connections number is higher than the allowed maxConnection";
+        }
+
+
     }
 
     public class MemoryLowResourceCheck implements LowResourceCheck
     {
         private String reason;
+        private final long maxMemory;
 
-        public MemoryLowResourceCheck()
+        public MemoryLowResourceCheck(long maxMemory)
         {
-            // no op
+            this.maxMemory = maxMemory;
         }
 
         @Override
         public boolean isLowOnResources()
         {
             long memory=Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory();
-            if (_maxMemory>0 && memory>_maxMemory)
+            if (maxMemory>0 && memory>maxMemory)
             {
-                reason = "Max memory exceeded: "+memory+">"+_maxMemory;
+                reason = "Max memory exceeded: "+memory+">"+maxMemory;
                 return true;
             }
             return false;
         }
 
         @Override
-        public String toString()
+        public String getReason()
         {
             return reason;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Check if used memory is higher than the allowed max memory";
         }
     }
 

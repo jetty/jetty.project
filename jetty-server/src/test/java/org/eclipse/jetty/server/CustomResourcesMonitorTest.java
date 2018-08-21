@@ -180,9 +180,15 @@ public class CustomResourcesMonitorTest
         }
 
         @Override
-        public String toString()
+        public String getReason()
         {
             return reason;
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getName();
         }
     }
 }
