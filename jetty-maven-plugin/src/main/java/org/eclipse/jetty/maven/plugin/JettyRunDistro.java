@@ -355,7 +355,7 @@ public class JettyRunDistro extends JettyRunMojo
     /**
      * Create or configure a jetty base.
      * 
-     * @throws Exception if any error occured while copying files
+     * @throws Exception if any error occurred while copying files
      */
     public void configureJettyBase() throws Exception
     {

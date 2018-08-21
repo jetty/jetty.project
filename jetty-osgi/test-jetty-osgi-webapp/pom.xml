@@ -56,7 +56,7 @@
             <Bundle-Name>Jetty OSGi Test WebApp</Bundle-Name>
             <Bundle-Activator>com.acme.osgi.Activator</Bundle-Activator>
             <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-            <!-- disable the uses directive: jetty will accomodate pretty much any versions
+            <!-- disable the uses directive: jetty will accommodate pretty much any versions
             of the packages it uses; no need to reflect some tight dependency determined at
             compilation time. -->
             <Export-Package>com.acme.osgi</Export-Package>

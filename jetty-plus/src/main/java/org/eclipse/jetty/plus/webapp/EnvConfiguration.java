@@ -126,6 +126,7 @@ public class EnvConfiguration extends AbstractConfiguration
                 {
                     localContextRoot.getRoot().addListener(listener);
                     XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlUrl);
+                    configuration.setJettyStandardIdsAndProperties(context.getServer(), null);
                     WebAppClassLoader.runWithServerClassAccess(()->{configuration.configure(context);return null;});
                 }
                 finally

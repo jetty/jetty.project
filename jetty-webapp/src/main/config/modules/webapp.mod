@@ -24,7 +24,7 @@ lib/jetty-webapp-${jetty.version}.jar
 ##  + a package name e.g. 'net.example.'
 ##  + a jar file e.g. '${jetty.base.uri}/lib/dependency.jar' 
 ##  + a directory of jars,resource or classes e.g. '${jetty.base.uri}/resources' 
-##  + A pattern preceeded with a '-' is an exclusion, all other patterns are inclusions
+##  + A pattern preceded with a '-' is an exclusion, all other patterns are inclusions
 ##
 ## The +=, operator appends to a CSV list with a comma as needed.
 ##
