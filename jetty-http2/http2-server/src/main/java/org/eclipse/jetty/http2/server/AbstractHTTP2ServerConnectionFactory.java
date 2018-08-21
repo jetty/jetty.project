@@ -252,7 +252,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize());
     }
 
-    private class HTTP2SessionContainer implements Connection.Listener, Dumpable
+    @ManagedObject("The container of HTTP/2 sessions")
+    public static class HTTP2SessionContainer implements Connection.Listener, Dumpable
     {
         private final Set<Session> sessions = ConcurrentHashMap.newKeySet();
 
@@ -270,6 +271,12 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
             Session session = ((HTTP2Connection)connection).getSession();
             if (sessions.remove(session))
                 LifeCycle.stop(session);
+        }
+
+        @ManagedAttribute(value = "The number of HTTP/2 sessions", readonly = true)
+        public int getSize()
+        {
+            return sessions.size();
         }
 
         @Override
