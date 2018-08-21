@@ -82,8 +82,8 @@ public class Modules implements Iterable<Module>
 
     public void dump(List<String> tags)
     {
-        Set<String> exclude = tags.stream().filter(t->t.startsWith("-")).map(t->t.substring(1)).collect(Collectors.toSet());
-        Set<String> include = tags.stream().filter(t->!t.startsWith("-")).collect(Collectors.toSet());
+        Set<String> exclude = tags.parallelStream().filter(t->t.startsWith("-")).map(t->t.substring(1)).collect(Collectors.toSet());
+        Set<String> include = tags.parallelStream().filter(t->!t.startsWith("-")).collect(Collectors.toSet());
         boolean all = include.contains("*") || include.isEmpty();
         AtomicReference<String> tag = new AtomicReference<>();
         
@@ -246,7 +246,7 @@ public class Modules implements Iterable<Module>
 
     public List<Module> getEnabled()
     {
-        List<Module> enabled = _modules.stream().filter(m->{return m.isEnabled();}).collect(Collectors.toList());
+        List<Module> enabled = _modules.parallelStream().filter(m->{return m.isEnabled();}).collect(Collectors.toList());
 
         TopologicalSort<Module> sort = new TopologicalSort<>();
         for (Module module: enabled)
@@ -357,14 +357,14 @@ public class Modules implements Iterable<Module>
                     if (providers==null || providers.isEmpty())
                         throw new UsageException("Module %s does not provide %s",_baseHome.toShortForm(file),dependsOn);
 
-                    enable(newlyEnabled,providers.stream().findFirst().get(),"dynamic dependency of "+module.getName(),true);
+                    enable(newlyEnabled,providers.parallelStream().findFirst().get(),"dynamic dependency of "+module.getName(),true);
                     continue;
                 }
                 throw new UsageException("No module found to provide %s for %s",dependsOn,module);
             }
             
             // If a provider is already enabled, then add a transitive enable
-            if (providers.stream().filter(Module::isEnabled).count()>0)
+            if (providers.parallelStream().filter(Module::isEnabled).count()>0)
                 providers.stream().filter(m->m.isEnabled()&&!m.equals(module)).forEach(m->enable(newlyEnabled,m,"transitive provider of "+dependsOn+" for "+module.getName(),true));
             else
             {
