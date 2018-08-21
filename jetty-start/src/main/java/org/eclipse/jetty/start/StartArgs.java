@@ -19,6 +19,7 @@
 package org.eclipse.jetty.start;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -346,6 +347,32 @@ public class StartArgs
         for (String key : sortedKeys)
         {
             dumpProperty(key);
+        }
+        
+        for (Path path : propertyFiles)
+        {
+            String p = baseHome.toShortForm(path);
+            if (Files.isReadable(path))
+            {
+                Properties props = new Properties();
+                try
+                {
+                    props.load(new FileInputStream(path.toFile()));
+                    for (Object key : props.keySet())
+                    {
+                        System.out.printf(" %s:%s = %s%n",p,key,props.getProperty(String.valueOf(key)));
+                    }
+                }
+                catch (Throwable th)
+                {
+                    System.out.printf(" %s NOT READABLE!%n",p);
+                }
+            }
+            else
+            {
+
+                System.out.printf(" %s NOT READABLE!%n",p);
+            }
         }
     }
 
