@@ -93,15 +93,19 @@ public abstract class FillInterest
     /**
      * Call to signal that a read is now possible.
      */
-    public void fillable()
+    public boolean fillable()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("fillable {}",this);
         Callback callback = _interested.get();
         if (callback != null && _interested.compareAndSet(callback, null))
+        {
             callback.succeeded();
-        else if (LOG.isDebugEnabled())
+            return true;
+        }
+        if (LOG.isDebugEnabled())
             LOG.debug("{} lost race {}",this,callback);
+        return false;
     }
 
     /**
