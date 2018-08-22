@@ -93,8 +93,6 @@ public class LowResourceMonitor extends ContainerLifeCycle
         }
     };
 
-    private boolean _monitorThreads=true;
-    private int _maxConnections;
     private long _maxMemory;
 
     public LowResourceMonitor(@Name("server") Server server)
@@ -131,7 +129,10 @@ public class LowResourceMonitor extends ContainerLifeCycle
     @Deprecated
     public int getMaxConnections()
     {
-        return _maxConnections;
+        ConnectorsThreadPoolLowResourceCheck check = getBean(ConnectorsThreadPoolLowResourceCheck.class);
+        if (check==null)
+            return -1;
+        return check.getMaxConnections();
     }
 
     /**
@@ -142,12 +143,17 @@ public class LowResourceMonitor extends ContainerLifeCycle
     public void setMaxConnections(int maxConnections)
     {
         if (maxConnections>0)
-            LOG.warn("LowResourceMonitor.setMaxConnections is deprecated. Use ConnectionLimit.");
-        _maxConnections = maxConnections;
-        if(isRunning())
         {
-            findLowResourceCheck( ConnectorsThreadPoolLowResourceCheck.class ).stream() //
-                .forEach( lowResourceCheck -> ( (ConnectorsThreadPoolLowResourceCheck) lowResourceCheck ).setMaxConnections( maxConnections ) );
+            LOG.warn("LowResourceMonitor.setMaxConnections is deprecated. Use ConnectionLimit.");
+            Collection<ConnectorsThreadPoolLowResourceCheck> checks = getBeans(ConnectorsThreadPoolLowResourceCheck.class);
+            if (checks.isEmpty())
+                addBean(new ConnectorsThreadPoolLowResourceCheck(false,maxConnections));
+            else
+                checks.forEach(c->c.setMaxConnections(maxConnections));
+        }
+        else
+        {
+            getBeans(ConnectorsThreadPoolLowResourceCheck.class).forEach(this::removeBean);
         }
     }
 
@@ -301,11 +307,13 @@ public class LowResourceMonitor extends ContainerLifeCycle
 
     public void setLowResourceChecks( Set<LowResourceCheck> lowResourceChecks )
     {
+        updateBeans(_lowResourceChecks.toArray(),lowResourceChecks.toArray());
         this._lowResourceChecks = lowResourceChecks;
     }
 
     public void addLowResourceCheck( LowResourceCheck lowResourceCheck )
     {
+        addBean(lowResourceCheck);
         this._lowResourceChecks.add(lowResourceCheck);
     }
 
@@ -372,22 +380,28 @@ public class LowResourceMonitor extends ContainerLifeCycle
         super.doStart();
 
         // create default LowResourceChecks..
-        if(_monitorThreads){
+        if(_monitorThreads && getBean(MainThreadPoolLowResourceCheck.class)==null)
+        {
             MainThreadPoolLowResourceCheck lowResourceCheck = new MainThreadPoolLowResourceCheck();
             this._lowResourceChecks.add( lowResourceCheck );
-            _server.addBean( lowResourceCheck );
+            addBean( lowResourceCheck );
         }
 
-        if(_monitorThreads && !getMonitoredConnectors().isEmpty()){
+        if(_monitorThreads && !getMonitoredConnectors().isEmpty() && getBean(ConnectorsThreadPoolLowResourceCheck.class)==null)
+        {
+            // TODO How can this work without maxConnections?
             ConnectorsThreadPoolLowResourceCheck lowResourceCheck = new ConnectorsThreadPoolLowResourceCheck(getMonitorThreads(),getMaxConnections());
             this._lowResourceChecks.add(lowResourceCheck);
-            _server.addBean( lowResourceCheck );
+            addBean( lowResourceCheck );
         }
         
-        MemoryLowResourceCheck lowResourceCheck = new MemoryLowResourceCheck(getMaxMemory());
-        this._lowResourceChecks.add(lowResourceCheck);
-        _server.addBean( lowResourceCheck );
-
+        if (getBean(MemoryLowResourceCheck.class)==null)
+        {
+            MemoryLowResourceCheck lowResourceCheck = new MemoryLowResourceCheck(getMaxMemory());
+            this._lowResourceChecks.add(lowResourceCheck);
+            addBean( lowResourceCheck );
+        }
+        
         _scheduler.schedule(_monitor,_period,TimeUnit.MILLISECONDS);
     }
 
@@ -438,14 +452,6 @@ public class LowResourceMonitor extends ContainerLifeCycle
         if (reasons==null)
             return newReason;
         return reasons+", "+newReason;
-    }
-
-
-    public List<LowResourceCheck> findLowResourceCheck(Class clazz)
-    {
-        return _lowResourceChecks.stream()
-            .filter( lowResourceCheck -> lowResourceCheck.getClass() == clazz )
-            .collect( Collectors.toList() );
     }
 
     private static class LRMScheduler extends ScheduledExecutorScheduler
