@@ -18,4 +18,11 @@
 
 [[troubleshooting-report]]
 
-== Reporting Issues In Jetty 
+=== Reporting Issues In Jetty
+
+General good practices when reporting problems::
+* Report version, repeatability, etc.
+* Determine and report the time and timezone of the incident
+* For all log/debug reports provided, give a description of when they were taken and the state of the server.
+* Practice these steps on a good working server and save the results for comparison.
+** Have known health check URIs that you can hit etc.

@@ -16,6 +16,8 @@
 //  ========================================================================
 //
 
-[[troubleshooting-diagnose]]
+[[optimizing]]
+== Diagnose
 
-== Diagnosing Issues In Jetty
+include::diagnose.adoc[]
+include::dump-tool.adoc[]

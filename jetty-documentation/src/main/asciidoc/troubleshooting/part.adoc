@@ -20,6 +20,6 @@
 
 = Jetty Troubleshooting Guide
 
-include::troubleshooting/diagnose.adoc[]
-include::troubleshooting/analyze.adoc[]
-include::troubleshooting/reporting.adoc[]
+include::diagnose/chapter.adoc[]
+include::analyze/chapter.adoc[]
+include::report/chapter.adoc[]

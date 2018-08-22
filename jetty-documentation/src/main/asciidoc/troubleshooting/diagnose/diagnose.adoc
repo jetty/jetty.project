@@ -16,6 +16,15 @@
 //  ========================================================================
 //
 
-[[troubleshooting-analyze]]
+[[troubleshooting-diagnose]]
 
-== Analyzing Issues In Jetty
+=== Diagnosing Issues In Jetty
+
+How to check the server if you think there is a problem::
+* checking CPU
+* checking FDs
+* hitting static resources
+* making new connections
+* creating new sessions
+* getting thread dump(s)
+* getting server dump(s)

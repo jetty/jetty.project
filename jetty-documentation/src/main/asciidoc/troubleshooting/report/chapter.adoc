@@ -16,10 +16,7 @@
 //  ========================================================================
 //
 
-[[bugs]]
-=== Issues, Features, and Bugs
+[[optimizing]]
+== Report
 
-As with any constantly evolving software project, there will be issues, features, and bugs.
-We want to know whats bugging you!
-
-File bugs as Issues in our Github repository http://github.com/eclipse/jetty.project[Issues at Github]
+include::reporting.adoc[]

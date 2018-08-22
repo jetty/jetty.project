@@ -16,10 +16,12 @@
 //  ========================================================================
 //
 
-[[bugs]]
-=== Issues, Features, and Bugs
+[[troubleshooting-analyze]]
 
-As with any constantly evolving software project, there will be issues, features, and bugs.
-We want to know whats bugging you!
+=== Analyzing Issues In Jetty
 
-File bugs as Issues in our Github repository http://github.com/eclipse/jetty.project[Issues at Github]
+How to analyse dumps themselves::
+* Looking for selector threads
+* Looking for acceptor threads (if any)
+* Checking for idle threads
+* Looking for blocked applications etc.
