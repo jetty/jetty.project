@@ -626,7 +626,7 @@ public class HttpGenerator
         HttpField transfer_encoding=null;
         boolean http11 = info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean close = false;
-        _trailers = info.getHttpVersion() == HttpVersion.HTTP_1_1?info.getTrailerSupplier():null;
+        _trailers = http11?info.getTrailerSupplier():null;
         boolean chunked_hint = _trailers!=null;
         boolean content_type = false;
         long content_length = info.getContentLength();
