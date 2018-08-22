@@ -20,9 +20,11 @@ package org.eclipse.jetty.http2.frames;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -43,6 +45,30 @@ public class UnknownParseTest
     public void testParseOneByteAtATime()
     {
         testParse(buffer -> ByteBuffer.wrap(new byte[]{buffer.get()}));
+    }
+
+    @Test
+    public void testInvalidFrameSize()
+    {
+        AtomicInteger failure = new AtomicInteger();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter(), 4096, 8192);
+        parser.init(listener -> new Parser.Listener.Wrapper(listener)
+        {
+            @Override
+            public void onConnectionFailure(int error, String reason)
+            {
+                failure.set(error);
+            }
+        });
+        parser.setMaxFrameLength(Frame.DEFAULT_MAX_LENGTH);
+
+        // 0x4001 == 16385 which is > Frame.DEFAULT_MAX_LENGTH.
+        byte[] bytes = new byte[]{0, 0x40, 0x01, 64, 0, 0, 0, 0, 0};
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        while (buffer.hasRemaining())
+            parser.parse(buffer);
+
+        Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, failure.get());
     }
 
     private void testParse(Function<ByteBuffer, ByteBuffer> fn)
