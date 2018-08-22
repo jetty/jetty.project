@@ -476,7 +476,10 @@ public class WebAppProvider extends ScanningAppProvider
 
         //is the file that was removed an .xml file?
         if (lowname.endsWith(".xml"))
+        {
             super.fileRemoved(filename);
+            return;
+        }
 
         //is there a .xml file of the same name?
         if (exists(file.getName()+".xml")||exists(file.getName()+".XML"))
