@@ -1,5 +1,7 @@
 #!groovy
 
+def branch = params.get("JETTY_BRANCH" ,"jetty-9.4.x")
+def owner = params.get("REPO_OWNER", "eclipse")
 
 node("linux") {
   // System Dependent Locations
@@ -16,7 +18,7 @@ node("linux") {
 
 
   stage("Checkout") {
-    git url: 'https://github.com/eclipse/jetty.project.git', branch: 'jetty-9.4.x'
+    git url: "https://github.com/$owner/jetty.project.git", branch: "$branch"
   }
 
   stage("Compile") {

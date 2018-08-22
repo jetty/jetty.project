@@ -184,7 +184,7 @@ public class SettingsGenerateParseTest
     }
 
     @Test
-    public void testGenerateParseTooManySettingsInOneFrame()
+    public void testGenerateParseTooManyDifferentSettingsInOneFrame()
     {
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
@@ -213,6 +213,47 @@ public class SettingsGenerateParseTest
             while (buffer.hasRemaining())
                 parser.parse(buffer);
         }
+
+        Assert.assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
+    }
+
+    @Test
+    public void testGenerateParseTooManySameSettingsInOneFrame() throws Exception
+    {
+        int keyValueLength = 6;
+        int pairs = Frame.DEFAULT_MAX_LENGTH / keyValueLength;
+        int maxSettingsKeys = pairs / 2;
+
+        AtomicInteger errorRef = new AtomicInteger();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter(), 4096, 8192);
+        parser.setMaxSettingsKeys(maxSettingsKeys);
+        parser.setMaxFrameLength(Frame.DEFAULT_MAX_LENGTH);
+        parser.init(listener -> new Parser.Listener.Wrapper(listener)
+        {
+            @Override
+            public void onConnectionFailure(int error, String reason)
+            {
+                errorRef.set(error);
+            }
+        });
+
+        int length = pairs * keyValueLength;
+        ByteBuffer buffer = ByteBuffer.allocate(1 + 9 + length);
+        buffer.putInt(length);
+        buffer.put((byte)FrameType.SETTINGS.getType());
+        buffer.put((byte)0); // Flags.
+        buffer.putInt(0); // Stream ID.
+        // Add the same setting over and over again.
+        for (int i = 0; i < pairs; ++i)
+        {
+            buffer.putShort((short)SettingsFrame.MAX_CONCURRENT_STREAMS);
+            buffer.putInt(i);
+        }
+        // Only 3 bytes for the length, skip the first.
+        buffer.flip().position(1);
+
+        while (buffer.hasRemaining())
+            parser.parse(buffer);
 
         Assert.assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }
