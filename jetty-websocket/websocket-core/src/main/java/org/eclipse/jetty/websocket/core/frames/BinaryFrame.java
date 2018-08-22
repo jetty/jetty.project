@@ -54,8 +54,9 @@ public class BinaryFrame extends DataFrame
     }
 
     @Override
-    public Type getType()
+    public final Type getType()
     {
+        // TODO this is very confusing!
         if (getOpCode() == OpCode.CONTINUATION)
             return Type.CONTINUATION;
         return Type.BINARY;

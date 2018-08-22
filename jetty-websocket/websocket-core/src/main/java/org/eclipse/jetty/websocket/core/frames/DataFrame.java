@@ -66,13 +66,13 @@ public class DataFrame extends WebSocketFrame
     }
 
     @Override
-    public boolean isControlFrame()
+    public final boolean isControlFrame()
     {
         return false;
     }
 
     @Override
-    public boolean isDataFrame()
+    public final boolean isDataFrame()
     {
         return true;
     }

@@ -37,7 +37,7 @@ public class CloseFrame extends ControlFrame
     }
 
     @Override
-    public Type getType()
+    public final Type getType()
     {
         return Type.CLOSE;
     }

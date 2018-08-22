@@ -110,13 +110,13 @@ public abstract class ControlFrame extends WebSocketFrame
     }
 
     @Override
-    public boolean isControlFrame()
+    public final boolean isControlFrame()
     {
         return true;
     }
 
     @Override
-    public boolean isDataFrame()
+    public final boolean isDataFrame()
     {
         return false;
     }

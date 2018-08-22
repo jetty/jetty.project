@@ -42,7 +42,7 @@ public class PongFrame extends ControlFrame
     }
 
     @Override
-    public Type getType()
+    public final Type getType()
     {
         return Type.PONG;
     }

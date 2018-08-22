@@ -252,10 +252,6 @@ public abstract class WebSocketFrame implements Frame
         return ((payload != null) && payload.hasRemaining());
     }
 
-    public abstract boolean isControlFrame();
-
-    public abstract boolean isDataFrame();
-
     @Override
     public boolean isFin()
     {

@@ -52,7 +52,7 @@ public class ContinuationFrame extends DataFrame
     }
 
     @Override
-    public Type getType()
+    public final Type getType()
     {
         return Type.CONTINUATION;
     }

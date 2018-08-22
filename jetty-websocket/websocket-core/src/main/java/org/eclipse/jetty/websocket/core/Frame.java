@@ -116,17 +116,14 @@ public interface Frame
 
     boolean isRsv3();
 
-    default boolean isControl()
+    default boolean isControlFrame()
     {
-        switch(getType())
-        {
-            case BINARY:
-            case TEXT:
-            case CONTINUATION:
-                return false;
-
-            default:
-                return true;
-        }
+        return getType().isControl();
     }
+
+    default boolean isDataFrame()
+    {
+        return !isControlFrame();
+    }
+    
 }
