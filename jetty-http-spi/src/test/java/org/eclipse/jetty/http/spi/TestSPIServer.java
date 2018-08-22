@@ -71,12 +71,7 @@ public class TestSPIServer
             server = new JettyHttpServerProvider().createHttpServer(null, 10);
 
             final HttpContext httpContext = server.createContext("/",
-                                                                 new HttpHandler()
-            {
-
-                @Override
-                public void handle(HttpExchange exchange) throws IOException
-                {
+                exchange -> {
                     Headers responseHeaders = exchange.getResponseHeaders();
                     responseHeaders.set("Content-Type","text/plain");
                     exchange.sendResponseHeaders(200,0);
@@ -93,8 +88,6 @@ public class TestSPIServer
                         responseBody.write(s.getBytes());
                     }
                     responseBody.close();
-
-                }
             });
 
             httpContext.setAuthenticator(new BasicAuthenticator("Test")
@@ -161,12 +154,7 @@ public class TestSPIServer
                                                                     InetSocketAddress("localhost", 0), 10);
 
             final HttpContext httpContext = server.createContext("/",
-                                                                 new HttpHandler()
-            {
-
-                @Override
-                public void handle(HttpExchange exchange) throws IOException
-                {
+                exchange -> {
                     Headers responseHeaders = exchange.getResponseHeaders();
                     responseHeaders.set("Content-Type","text/plain");
                     exchange.sendResponseHeaders(200,0);
@@ -183,8 +171,6 @@ public class TestSPIServer
                         responseBody.write(s.getBytes());
                     }
                     responseBody.close();
-
-                }
             });
 
             httpContext.setAuthenticator(new BasicAuthenticator("Test")
