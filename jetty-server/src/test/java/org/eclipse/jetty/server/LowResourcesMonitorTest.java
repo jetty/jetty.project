@@ -34,6 +34,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -70,6 +71,7 @@ public class LowResourcesMonitorTest
         _lowResourcesMonitor.setLowResourcesIdleTimeout(200);
         _lowResourcesMonitor.setMaxConnections(20);
         _lowResourcesMonitor.setPeriod(900);
+        _lowResourcesMonitor.setMonitoredConnectors( Collections.singleton( _connector ) );
         _server.addBean(_lowResourcesMonitor);
 
         _server.start();
@@ -88,7 +90,7 @@ public class LowResourcesMonitorTest
         Thread.sleep(1200);
         _threadPool.setMaxThreads(_threadPool.getThreads()-_threadPool.getIdleThreads()+10);
         Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources());
+        assertFalse(_lowResourcesMonitor.getReasons(), _lowResourcesMonitor.isLowOnResources());
         
         final CountDownLatch latch = new CountDownLatch(1);
         
@@ -112,7 +114,7 @@ public class LowResourcesMonitorTest
         
         latch.countDown();
         Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
     }
     
 
@@ -123,7 +125,7 @@ public class LowResourcesMonitorTest
         Thread.sleep(1200);
         _threadPool.setMaxThreads(_threadPool.getThreads()-_threadPool.getIdleThreads()+10);
         Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
         
         for (AbstractConnector c : _server.getBeans(AbstractConnector.class))
             assertThat(c.isAccepting(),Matchers.is(true));
@@ -151,7 +153,7 @@ public class LowResourcesMonitorTest
         
         latch.countDown();
         Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
         for (AbstractConnector c : _server.getBeans(AbstractConnector.class))
             assertThat(c.isAccepting(),Matchers.is(true));   
     }
@@ -163,7 +165,7 @@ public class LowResourcesMonitorTest
     {
         _lowResourcesMonitor.setMaxMemory(Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory()+(100*1024*1024));
         Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
 
         byte[] data = new byte[100*1024*1024];
         Arrays.fill(data,(byte)1);
@@ -177,7 +179,7 @@ public class LowResourcesMonitorTest
         System.gc();
 
         Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
     }
     
 
@@ -185,7 +187,7 @@ public class LowResourcesMonitorTest
     public void testMaxConnectionsAndMaxIdleTime() throws Exception
     {
         _lowResourcesMonitor.setMaxMemory(0);
-        assertFalse(_lowResourcesMonitor.isLowOnResources());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
 
         Socket[] socket = new Socket[_lowResourcesMonitor.getMaxConnections()+1];
         for (int i=0;i<socket.length;i++)
@@ -198,7 +200,7 @@ public class LowResourcesMonitorTest
         {
             // wait for low idle time to close sockets, but not new Socket
             Thread.sleep(1200);
-            assertFalse(_lowResourcesMonitor.isLowOnResources());
+            assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
 
             for (int i=0;i<socket.length;i++)
                 assertEquals(-1,socket[i].getInputStream().read());
@@ -217,7 +219,7 @@ public class LowResourcesMonitorTest
 
         int maxLowResourcesTime = 5 * monitorPeriod;
         _lowResourcesMonitor.setMaxLowResourcesTime(maxLowResourcesTime);
-        assertFalse(_lowResourcesMonitor.isLowOnResources());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
 
         try(Socket socket0 = new Socket("localhost",_connector.getLocalPort()))
         {

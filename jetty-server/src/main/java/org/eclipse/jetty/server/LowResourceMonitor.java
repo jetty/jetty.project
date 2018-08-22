@@ -33,10 +33,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 
 /**
@@ -114,6 +116,11 @@ public class LowResourceMonitor extends ContainerLifeCycle
     public void setMonitorThreads(boolean monitorThreads)
     {
         _monitorThreads = monitorThreads;
+        if(isRunning())
+        {
+            findLowResourceCheck( ConnectorsThreadPoolLowResourceCheck.class ).stream() //
+                .forEach( lowResourceCheck -> ( (ConnectorsThreadPoolLowResourceCheck) lowResourceCheck ).setMonitorThreads( monitorThreads ) );
+        }
     }
 
     /**
@@ -137,6 +144,11 @@ public class LowResourceMonitor extends ContainerLifeCycle
         if (maxConnections>0)
             LOG.warn("LowResourceMonitor.setMaxConnections is deprecated. Use ConnectionLimit.");
         _maxConnections = maxConnections;
+        if(isRunning())
+        {
+            findLowResourceCheck( ConnectorsThreadPoolLowResourceCheck.class ).stream() //
+                .forEach( lowResourceCheck -> ( (ConnectorsThreadPoolLowResourceCheck) lowResourceCheck ).setMaxConnections( maxConnections ) );
+        }
     }
 
 
@@ -263,8 +275,6 @@ public class LowResourceMonitor extends ContainerLifeCycle
         _maxLowResourcesTime = maxLowResourcesTimeMS;
     }
 
-
-
     @ManagedAttribute("The maximum memory (in bytes) that can be used before low resources is triggered.  Memory used is calculated as (totalMemory-freeMemory).")
     public long getMaxMemory()
     {
@@ -277,6 +287,11 @@ public class LowResourceMonitor extends ContainerLifeCycle
     public void setMaxMemory(long maxMemoryBytes)
     {
         _maxMemory = maxMemoryBytes;
+        if(isRunning())
+        {
+            findLowResourceCheck( MemoryLowResourceCheck.class ).stream() //
+                .forEach( lowResourceCheck -> ( (MemoryLowResourceCheck) lowResourceCheck ).setMaxMemory( maxMemoryBytes ) );
+        }
     }
 
     public Set<LowResourceCheck> getLowResourceChecks()
@@ -297,7 +312,7 @@ public class LowResourceMonitor extends ContainerLifeCycle
     protected void monitor()
     {
 
-        String reasons="";
+        String reasons=null;
 
 
         for(LowResourceCheck lowResourceCheck : _lowResourceChecks)
@@ -358,14 +373,20 @@ public class LowResourceMonitor extends ContainerLifeCycle
 
         // create default LowResourceChecks..
         if(_monitorThreads){
-            this._lowResourceChecks.add( new MainThreadPoolLowResourceCheck() );
+            MainThreadPoolLowResourceCheck lowResourceCheck = new MainThreadPoolLowResourceCheck();
+            this._lowResourceChecks.add( lowResourceCheck );
+            _server.addBean( lowResourceCheck );
         }
 
         if(_monitorThreads && !getMonitoredConnectors().isEmpty()){
-            this._lowResourceChecks.add( new ConnectorsThreadPoolLowResourceCheck(getMonitorThreads(),getMaxConnections()));
+            ConnectorsThreadPoolLowResourceCheck lowResourceCheck = new ConnectorsThreadPoolLowResourceCheck(getMonitorThreads(),getMaxConnections());
+            this._lowResourceChecks.add(lowResourceCheck);
+            _server.addBean( lowResourceCheck );
         }
-
-        this._lowResourceChecks.add(new MemoryLowResourceCheck(getMaxMemory()));
+        
+        MemoryLowResourceCheck lowResourceCheck = new MemoryLowResourceCheck(getMaxMemory());
+        this._lowResourceChecks.add(lowResourceCheck);
+        _server.addBean( lowResourceCheck );
 
         _scheduler.schedule(_monitor,_period,TimeUnit.MILLISECONDS);
     }
@@ -419,6 +440,13 @@ public class LowResourceMonitor extends ContainerLifeCycle
         return reasons+", "+newReason;
     }
 
+
+    public List<LowResourceCheck> findLowResourceCheck(Class clazz)
+    {
+        return _lowResourceChecks.stream()
+            .filter( lowResourceCheck -> lowResourceCheck.getClass() == clazz )
+            .collect( Collectors.toList() );
+    }
 
     private static class LRMScheduler extends ScheduledExecutorScheduler
     {
@@ -564,7 +592,7 @@ public class LowResourceMonitor extends ContainerLifeCycle
     public class MemoryLowResourceCheck implements LowResourceCheck
     {
         private String reason;
-        private final long maxMemory;
+        private long maxMemory;
 
         public MemoryLowResourceCheck(long maxMemory)
         {
@@ -581,6 +609,19 @@ public class LowResourceMonitor extends ContainerLifeCycle
                 return true;
             }
             return false;
+        }
+
+        public long getMaxMemory()
+        {
+            return maxMemory;
+        }
+
+        /**
+         * @param maxMemoryBytes The maximum memory in bytes in use before low resources is triggered.
+         */
+        public void setMaxMemory( long maxMemoryBytes )
+        {
+            this.maxMemory = maxMemoryBytes;
         }
 
         @Override
