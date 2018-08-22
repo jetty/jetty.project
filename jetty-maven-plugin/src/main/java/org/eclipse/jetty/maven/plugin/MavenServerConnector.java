@@ -54,7 +54,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     public static final int DEFAULT_MAX_IDLE_TIME = 30000;
     
     private Server server;
-    private ServerConnector delegate;
+    private volatile ServerConnector delegate;
     private String host;
     private String name;
     private int port;
@@ -133,33 +133,28 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         this.delegate = null;
     }
 
-    /** 
-     * @see org.eclipse.jetty.util.component.Graceful#shutdown()
-     */
     @Override
     public Future<Void> shutdown()
     {
-        checkDelegate();
-        return this.delegate.shutdown();
+        return checkDelegate().shutdown();
+    }
+    
+    @Override
+    public boolean isShutdown()
+    {
+        return checkDelegate().isShutdown();
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.Connector#getServer()
-     */
     @Override
     public Server getServer()
     {
         return this.server;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.Connector#getExecutor()
-     */
     @Override
     public Executor getExecutor()
     {
-        checkDelegate();
-        return this.delegate.getExecutor();
+        return checkDelegate().getExecutor();
     }
 
     /** 
@@ -168,8 +163,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     @Override
     public Scheduler getScheduler()
     {
-        checkDelegate();
-        return this.delegate.getScheduler();
+        return checkDelegate().getScheduler();
     }
 
     /** 
@@ -178,8 +172,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     @Override
     public ByteBufferPool getByteBufferPool()
     {
-        checkDelegate();
-        return this.delegate.getByteBufferPool();
+        return checkDelegate().getByteBufferPool();
     }
 
     /** 
@@ -188,8 +181,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     @Override
     public ConnectionFactory getConnectionFactory(String nextProtocol)
     {
-        checkDelegate();
-        return this.delegate.getConnectionFactory(nextProtocol);
+        return checkDelegate().getConnectionFactory(nextProtocol);
     }
 
     /** 
@@ -198,8 +190,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     @Override
     public <T> T getConnectionFactory(Class<T> factoryType)
     {
-        checkDelegate();
-        return this.delegate.getConnectionFactory(factoryType);
+        return checkDelegate().getConnectionFactory(factoryType);
     }
 
     /** 
@@ -208,8 +199,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     @Override
     public ConnectionFactory getDefaultConnectionFactory()
     {
-        checkDelegate();
-        return this.delegate.getDefaultConnectionFactory();
+        return checkDelegate().getDefaultConnectionFactory();
     }
 
     /** 
@@ -218,8 +208,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     @Override
     public Collection<ConnectionFactory> getConnectionFactories()
     {
-        checkDelegate();
-        return this.delegate.getConnectionFactories();
+        return checkDelegate().getConnectionFactories();
     }
 
     /** 
@@ -228,8 +217,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     @Override
     public List<String> getProtocols()
     {
-        checkDelegate();
-        return this.delegate.getProtocols();
+        return checkDelegate().getProtocols();
     }
 
     /** 
@@ -239,8 +227,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     @ManagedAttribute("maximum time a connection can be idle before being closed (in ms)")
     public long getIdleTimeout()
     {
-        checkDelegate();
-        return this.delegate.getIdleTimeout();
+        return checkDelegate().getIdleTimeout();
     }
 
     /** 
@@ -249,8 +236,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     @Override
     public Object getTransport()
     {
-        checkDelegate();
-        return this.delegate.getTransport();
+        return checkDelegate().getTransport();
     }
 
     /** 
@@ -259,8 +245,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     @Override
     public Collection<EndPoint> getConnectedEndPoints()
     {
-        checkDelegate();
-        return this.delegate.getConnectedEndPoints();
+        return checkDelegate().getConnectedEndPoints();
     }
 
     /** 
@@ -277,9 +262,11 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return this.delegate.getLocalPort();
     }
     
-    private void checkDelegate() throws IllegalStateException
+    private ServerConnector checkDelegate() throws IllegalStateException
     {
-        if (this.delegate == null)
+        ServerConnector d = this.delegate;
+        if (d == null)
             throw new IllegalStateException ("MavenServerConnector delegate not ready");
+        return d;
     }
 }

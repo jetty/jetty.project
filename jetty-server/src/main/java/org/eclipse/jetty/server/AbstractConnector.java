@@ -41,13 +41,13 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -153,6 +153,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Thread[] _acceptors;
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
+    private final Graceful.Shutdown _shutdown = new Graceful.Shutdown();
     private CountDownLatch _stopping;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
@@ -261,6 +262,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     protected void doStart() throws Exception
     {
+        _shutdown.cancel();
+        
         if(_defaultProtocol==null)
             throw new IllegalStateException("No default protocol for "+this);
         _defaultConnectionFactory = getConnectionFactory(_defaultProtocol);
@@ -301,13 +304,19 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             }
         }
     }
-
+        
     @Override
     public Future<Void> shutdown()
     {
-        return new FutureCallback(true);
+        return _shutdown.shutdown();
     }
 
+    @Override
+    public boolean isShutdown()
+    {
+        return _shutdown.isShutdown();
+    }
+    
     @Override
     protected void doStop() throws Exception
     {
