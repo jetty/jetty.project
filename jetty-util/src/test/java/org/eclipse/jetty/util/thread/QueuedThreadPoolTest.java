@@ -31,9 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.AfterClass;
+import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class QueuedThreadPoolTest extends AbstractThreadPoolTest
@@ -71,20 +70,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             if (!_stopped.await(10,TimeUnit.SECONDS))
                 throw new IllegalStateException();
         }
-    }
-
-    private static int originalCoreCount;
-
-    @BeforeClass
-    public static void saveState()
-    {
-        originalCoreCount = ProcessorUtils.availableProcessors();
-    }
-
-    @AfterClass
-    public static void restoreState()
-    {
-        ProcessorUtils.setAvailableProcessors(originalCoreCount);
     }
 
     @Test
@@ -312,27 +297,10 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         new QueuedThreadPool(4, 8);
     }
 
-    @Test
-    public void testThreadBudget_HighCoreCount_MinEqualsMax() throws Exception
+    @Override
+    protected SizedThreadPool newPool(int max)
     {
-        ProcessorUtils.setAvailableProcessors(64);
-        QueuedThreadPool pool = new QueuedThreadPool(1408, 1408);
-        assertBudgetCheck(pool, "Pool of max==min should be valid", is(true));
+        return new QueuedThreadPool(max);
     }
-
-    @Test
-    public void testThreadBudget_HighCoreCount() throws Exception
-    {
-        ProcessorUtils.setAvailableProcessors(64);
-        QueuedThreadPool pool = new QueuedThreadPool(64, 1);
-        assertBudgetCheck(pool, "Pool at core count is invalid", is(false));
-    }
-
-    @Test
-    public void testThreadBudget_HighCoreCount_LowThreadMax() throws Exception
-    {
-        ProcessorUtils.setAvailableProcessors(64);
-        QueuedThreadPool pool = new QueuedThreadPool(8, 1);
-        assertBudgetCheck(pool, "Pool smaller then core count should be valid", is(true));
-    }
+    
 }

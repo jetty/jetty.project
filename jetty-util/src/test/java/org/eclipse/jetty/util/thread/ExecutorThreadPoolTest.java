@@ -18,34 +18,13 @@
 
 package org.eclipse.jetty.util.thread;
 
-import static org.hamcrest.Matchers.is;
-
-import org.eclipse.jetty.util.ProcessorUtils;
-import org.junit.Test;
+import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
 public class ExecutorThreadPoolTest extends AbstractThreadPoolTest
 {
-    @Test
-    public void testThreadBudget_HighCoreCount_MinEqualsMax() throws Exception
+    @Override
+    protected SizedThreadPool newPool(int max)
     {
-        ProcessorUtils.setAvailableProcessors(64);
-        ExecutorThreadPool pool = new ExecutorThreadPool(1408, 1408);
-        assertBudgetCheck(pool, "Pool of max==min should be valid", is(true));
-    }
-
-    @Test
-    public void testThreadBudget_HighCoreCount() throws Exception
-    {
-        ProcessorUtils.setAvailableProcessors(64);
-        ExecutorThreadPool pool = new ExecutorThreadPool(64, 1);
-        assertBudgetCheck(pool, "Pool at core count is invalid", is(false));
-    }
-
-    @Test
-    public void testThreadBudget_HighCoreCount_LowThreadMax() throws Exception
-    {
-        ProcessorUtils.setAvailableProcessors(64);
-        ExecutorThreadPool pool = new ExecutorThreadPool(8, 1);
-        assertBudgetCheck(pool, "Pool smaller then core count should be valid", is(true));
+        return new ExecutorThreadPool(max);
     }
 }

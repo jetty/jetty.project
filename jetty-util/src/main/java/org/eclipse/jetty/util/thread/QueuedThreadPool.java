@@ -118,7 +118,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         }
         _jobs=queue;
         _threadGroup=threadGroup;
-        setThreadPoolBudget(new ThreadPoolBudget(this,ProcessorUtils.availableProcessors()));
+        setThreadPoolBudget(new ThreadPoolBudget(this));
     }
 
     @Override
@@ -258,6 +258,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     public void setMaxThreads(int maxThreads)
     {
+        if (_budget!=null)
+            _budget.check(maxThreads);
         _maxThreads = maxThreads;
         if (_minThreads > _maxThreads)
             _minThreads = _maxThreads;

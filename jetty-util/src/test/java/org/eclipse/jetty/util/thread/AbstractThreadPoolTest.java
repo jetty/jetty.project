@@ -22,9 +22,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public abstract class AbstractThreadPoolTest
 {
@@ -42,28 +46,49 @@ public abstract class AbstractThreadPoolTest
         ProcessorUtils.setAvailableProcessors(originalCoreCount);
     }
 
-    public void assertBudgetCheck(ThreadPool.SizedThreadPool pool, String message, Matcher<Boolean> matcher) throws Exception
+    abstract protected SizedThreadPool newPool(int max);
+    
+    @Test
+    public void testBudget_constructMaxThenLease()
     {
+        SizedThreadPool pool = newPool(4);
+        
+        pool.getThreadPoolBudget().leaseTo(this,2);
+
         try
         {
-            if (pool instanceof LifeCycle)
-            {
-                ((LifeCycle) pool).start();
-            }
-            assertThat("ThreadPoolBudget.check(): " + message, pool.getThreadPoolBudget().check(), matcher);
+            pool.getThreadPoolBudget().leaseTo(this,3);
+            Assert.fail();
         }
-        finally
+        catch(IllegalStateException e)
         {
-            if (pool instanceof LifeCycle)
-            {
-                try
-                {
-                    ((LifeCycle) pool).stop();
-                }
-                catch (Exception ignore)
-                {
-                }
-            }
+            Assert.assertThat(e.getMessage(),Matchers.containsString("Insufficient configured threads"));
         }
+
+        pool.getThreadPoolBudget().leaseTo(this,1);
     }
+
+    @Test
+    public void testBudget_LeaseThenSetMax()
+    {
+        SizedThreadPool pool = newPool(4);
+        
+        pool.getThreadPoolBudget().leaseTo(this,2);
+        
+        pool.setMaxThreads(3);
+
+        try
+        {
+            pool.setMaxThreads(1);
+            Assert.fail();
+        }
+        catch(IllegalStateException e)
+        {
+            Assert.assertThat(e.getMessage(),Matchers.containsString("Insufficient configured threads"));
+        }
+
+        Assert.assertThat(pool.getMaxThreads(),Matchers.is(3));
+        
+    }
+    
 }

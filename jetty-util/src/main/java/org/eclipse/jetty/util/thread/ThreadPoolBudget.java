@@ -93,19 +93,20 @@ public class ThreadPoolBudget
     final int warnAt;
 
     /**
-     * Construct a budget for a SizedThreadPool, with the warning level set by heuristic.
+     * Construct a budget for a SizedThreadPool.
      * @param pool The pool to budget thread allocation for.
      */
-    @Deprecated
     public ThreadPoolBudget(ThreadPool.SizedThreadPool pool)
     {
-        this(pool,ProcessorUtils.availableProcessors());
+        this.pool = pool;
+        this.warnAt = -1;
     }
 
     /**
      * @param pool The pool to budget thread allocation for.
      * @param warnAt The level of free threads at which a warning is generated.
      */
+    @Deprecated
     public ThreadPoolBudget(ThreadPool.SizedThreadPool pool, int warnAt)
     {
         this.pool = pool;
@@ -128,21 +129,40 @@ public class ThreadPoolBudget
     {
         Leased lease = new Leased(leasee,threads);
         allocations.add(lease);
-        check();
+        try
+        {
+            check();
+        }
+        catch(IllegalStateException e)
+        {
+            lease.close();
+            throw e;
+        }
         return lease;
     }
 
     /**
-     * Check registered allocations against the budget.
+     * Check registered allocations against the budget and delta.
      * @return true if passes check, false if otherwise (see logs for details)
      * @throws IllegalStateException if insufficient threads are configured.
      */
     public boolean check() throws IllegalStateException
     {
+        return check(pool.getMaxThreads());
+    }
+    
+    /**
+     * Check registered allocations against the budget.
+     * @param maxThreads A proposed change to the maximum threads to check.
+     * @return true if passes check, false if otherwise (see logs for details)
+     * @throws IllegalStateException if insufficient threads are configured.
+     */
+    public boolean check(int maxThreads) throws IllegalStateException
+    {
         int required = allocations.stream()
             .mapToInt(Lease::getThreads)
             .sum();
-        int maximum = pool.getMaxThreads();
+        int maximum = maxThreads;
         int actual = maximum - required;
 
         if (actual <= 0)
@@ -155,7 +175,7 @@ public class ThreadPoolBudget
         {
             infoOnLeases();
             if (warned.compareAndSet(false,true))
-                LOG.warn("Low configured threads: (max={} - required={})={} < warnAt={} for {}", maximum, required, actual, warnAt, pool);
+                LOG.info("Low configured threads: (max={} - required={})={} < warnAt={} for {}", maximum, required, actual, warnAt, pool);
             return false;
         }
         return true;
