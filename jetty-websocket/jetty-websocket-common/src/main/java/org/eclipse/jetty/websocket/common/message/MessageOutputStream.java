@@ -45,7 +45,7 @@ public class MessageOutputStream extends OutputStream
     private long frameCount;
     private long bytesSent;
     private BinaryFrame frame;
-    private ByteBuffer buffer;
+    private ByteBuffer buffer; // Kept in fill mode
     private Callback callback;
     private boolean closed;
 
@@ -136,21 +136,20 @@ public class MessageOutputStream extends OutputStream
             BufferUtil.flipToFlush(buffer, 0);
             frame.setPayload(buffer);
             frame.setFin(fin);
-
             try(SharedBlockingCallback.Blocker b=blocker.acquire())
             {
                 channel.sendFrame(frame, b, BatchMode.OFF);
                 b.block();
+                assert buffer.remaining() == 0;
+            }
+            finally
+            {
+                BufferUtil.clearToFill(buffer);
             }
 
             ++frameCount;
             // Any flush after the first will be a CONTINUATION frame.
             frame.setIsContinuation();
-
-            // Buffer has been sent, buffer should have been consumed
-            assert buffer.remaining() == 0;
-
-            BufferUtil.clearToFill(buffer);
         }
     }
 
@@ -163,20 +162,20 @@ public class MessageOutputStream extends OutputStream
 
             int remaining = length;
             int off = offset;
+            int space = buffer.remaining();
             while (remaining > 0)
             {
                 // There may be no space available, we want
                 // to handle correctly when space == 0.
-                int space = buffer.remaining();
                 int size = Math.min(space, remaining);
                 buffer.put(bytes, off, size);
                 off += size;
                 remaining -= size;
-                if (remaining > 0)
+                space = buffer.remaining();
+                if (space == 0)
                 {
-                    // If we could not write everything, it means
-                    // that the buffer was full, so flush it.
                     flush(false);
+                    space = buffer.remaining();
                 }
             }
             bytesSent += length;
