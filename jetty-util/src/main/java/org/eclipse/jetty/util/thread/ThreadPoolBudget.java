@@ -19,13 +19,11 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -48,8 +46,8 @@ public class ThreadPoolBudget
      */
     public class Leased implements Lease
     {
-        final Object leasee;
-        final int threads;
+        private final Object leasee;
+        private final int threads;
 
         private Leased(Object leasee,int threads)
         {
@@ -66,8 +64,7 @@ public class ThreadPoolBudget
         @Override
         public void close()
         {
-            info.remove(this);
-            allocations.remove(this);
+            leases.remove(this);
             warned.set(false);
         }
     }
@@ -75,7 +72,7 @@ public class ThreadPoolBudget
     private static final Lease NOOP_LEASE = new Lease()
     {
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
 
@@ -86,11 +83,10 @@ public class ThreadPoolBudget
         }
     };
 
-    final ThreadPool.SizedThreadPool pool;
-    final Set<Leased> allocations = new CopyOnWriteArraySet<>();
-    final Set<Leased> info = new CopyOnWriteArraySet<>();
-    final AtomicBoolean warned = new AtomicBoolean();
-    final int warnAt;
+    private final Set<Leased> leases = new CopyOnWriteArraySet<>();
+    private final AtomicBoolean warned = new AtomicBoolean();
+    private final ThreadPool.SizedThreadPool pool;
+    private final int warnAt;
 
     /**
      * Construct a budget for a SizedThreadPool.
@@ -120,74 +116,60 @@ public class ThreadPoolBudget
 
     public void reset()
     {
-        allocations.clear();
-        info.clear();
+        leases.clear();
         warned.set(false);
     }
 
     public Lease leaseTo(Object leasee, int threads)
     {
         Leased lease = new Leased(leasee,threads);
-        allocations.add(lease);
+        leases.add(lease);
         try
         {
-            check();
+            check(pool.getMaxThreads());
+            return lease;
         }
         catch(IllegalStateException e)
         {
             lease.close();
             throw e;
         }
-        return lease;
     }
 
     /**
-     * Check registered allocations against the budget and delta.
-     * @return true if passes check, false if otherwise (see logs for details)
-     * @throws IllegalStateException if insufficient threads are configured.
-     */
-    public boolean check() throws IllegalStateException
-    {
-        return check(pool.getMaxThreads());
-    }
-    
-    /**
-     * Check registered allocations against the budget.
+     * <p>Checks leases against the given number of {@code maxThreads}.</p>
+     *
      * @param maxThreads A proposed change to the maximum threads to check.
      * @return true if passes check, false if otherwise (see logs for details)
      * @throws IllegalStateException if insufficient threads are configured.
      */
     public boolean check(int maxThreads) throws IllegalStateException
     {
-        int required = allocations.stream()
+        int required = leases.stream()
             .mapToInt(Lease::getThreads)
             .sum();
-        int maximum = maxThreads;
-        int actual = maximum - required;
-
-        if (actual <= 0)
+        int left = maxThreads - required;
+        if (left <= 0)
         {
-            infoOnLeases();
-            throw new IllegalStateException(String.format("Insufficient configured threads: required=%d < max=%d for %s", required, maximum, pool));
+            printInfoOnLeases();
+            throw new IllegalStateException(String.format("Insufficient configured threads: required=%d < max=%d for %s", required, maxThreads, pool));
         }
 
-        if (actual < warnAt)
+        if (left < warnAt)
         {
-            infoOnLeases();
             if (warned.compareAndSet(false,true))
-                LOG.info("Low configured threads: (max={} - required={})={} < warnAt={} for {}", maximum, required, actual, warnAt, pool);
+            {
+                printInfoOnLeases();
+                LOG.info("Low configured threads: (max={} - required={})={} < warnAt={} for {}", maxThreads, required, left, warnAt, pool);
+            }
             return false;
         }
         return true;
     }
 
-    private void infoOnLeases()
+    private void printInfoOnLeases()
     {
-        allocations.stream().filter(lease->!info.contains(lease))
-            .forEach(lease->{
-                info.add(lease);
-                LOG.info("{} requires {} threads from {}",lease.leasee,lease.getThreads(),pool);
-            });
+        leases.forEach(lease-> LOG.info("{} requires {} threads from {}",lease.leasee,lease.getThreads(),pool));
     }
 
     public static Lease leaseFrom(Executor executor, Object leasee, int threads)
