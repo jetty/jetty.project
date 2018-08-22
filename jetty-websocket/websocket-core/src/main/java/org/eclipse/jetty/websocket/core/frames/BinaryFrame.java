@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.core.Frame;
 
 public class BinaryFrame extends DataFrame
 {
@@ -29,9 +30,9 @@ public class BinaryFrame extends DataFrame
         super(OpCode.BINARY);
     }
     
-    public BinaryFrame(BinaryFrame frame)
+    public BinaryFrame(Frame frame)
     {
-        super(frame);
+        super(OpCode.BINARY, frame);
     }
 
     @Override
@@ -56,9 +57,6 @@ public class BinaryFrame extends DataFrame
     @Override
     public final Type getType()
     {
-        // TODO this is very confusing!
-        if (getOpCode() == OpCode.CONTINUATION)
-            return Type.CONTINUATION;
         return Type.BINARY;
     }
 }

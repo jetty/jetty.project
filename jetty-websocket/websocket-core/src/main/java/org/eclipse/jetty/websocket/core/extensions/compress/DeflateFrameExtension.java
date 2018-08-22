@@ -23,6 +23,7 @@ import java.util.zip.DataFormatException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.DataFrame;
 
 /**
  * Implementation of the
@@ -61,13 +62,15 @@ public class DeflateFrameExtension extends CompressExtension
             nextIncomingFrame(frame, callback);
             return;
         }
-        
+
+        DataFrame dataFrame = (DataFrame)frame;
+
         try
         {
             ByteAccumulator accumulator = new ByteAccumulator(getPolicy().getMaxAllowedFrameSize());
             decompress(accumulator, frame.getPayload());
             decompress(accumulator, TAIL_BYTES_BUF.slice());
-            forwardIncoming(frame, callback, accumulator);
+            forwardIncoming(dataFrame, callback, accumulator);
         }
         catch (DataFormatException e)
         {

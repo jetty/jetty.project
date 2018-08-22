@@ -33,6 +33,8 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.DataFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
@@ -52,7 +54,7 @@ public class MessageWriter extends Writer
     private final FrameHandler.Channel channel;
     private final SharedBlockingCallback blocker;
     private long frameCount;
-    private TextFrame frame;
+    private DataFrame frame;
     private CharBuffer buffer;
     private Callback callback;
     private boolean closed;
@@ -155,7 +157,7 @@ public class MessageWriter extends Writer
 
             ++frameCount;
             // Any flush after the first will be a CONTINUATION frame.
-            frame.setIsContinuation();
+            frame = new ContinuationFrame(frame);
         }
     }
 

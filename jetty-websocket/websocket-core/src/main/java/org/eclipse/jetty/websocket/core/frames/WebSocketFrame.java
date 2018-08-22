@@ -116,39 +116,26 @@ public abstract class WebSocketFrame implements Frame
      */
     protected WebSocketFrame(byte opcode)
     {
-        reset();
-        setOpCode(opcode);
+        finRsvOp = (byte)0x80; // FIN (!RSV, opcode 0)
+        masked = false;
+        payload = null;
+        mask = null;
+        this.finRsvOp = (byte)((finRsvOp & 0xF0) | (opcode & 0x0F));
     }
 
     public abstract void assertValid();
 
     protected void copyHeaders(Frame frame)
     {
-        finRsvOp = 0x00;
-        finRsvOp |= frame.isFin()?0x80:0x00;
-        finRsvOp |= frame.isRsv1()?0x40:0x00;
-        finRsvOp |= frame.isRsv2()?0x20:0x00;
-        finRsvOp |= frame.isRsv3()?0x10:0x00;
-        finRsvOp |= frame.getOpCode() & 0x0F;
+        byte opCode = (byte)(finRsvOp & 0x0F);
+        finRsvOp = (byte)(frame.getFinRsvOp()&0xF0);
+        finRsvOp |= opCode;
 
         masked = frame.isMasked();
         if (masked)
-        {
-            mask = frame.getMask();
-        }
+            mask = Arrays.copyOf(frame.getMask(), frame.getMask().length);
         else
-        {
             mask = null;
-        }
-    }
-
-    protected void copyHeaders(WebSocketFrame copy)
-    {
-        finRsvOp = copy.finRsvOp;
-        masked = copy.masked;
-        mask = null;
-        if (copy.mask != null)
-            mask = Arrays.copyOf(copy.mask, copy.mask.length);
     }
 
     @Override
@@ -205,6 +192,12 @@ public abstract class WebSocketFrame implements Frame
         return (byte)(finRsvOp & 0x0F);
     }
 
+    @Override
+    public byte getFinRsvOp()
+    {
+        return finRsvOp;
+    }
+
     /**
      * Get the payload ByteBuffer. possible null.
      */
@@ -216,7 +209,10 @@ public abstract class WebSocketFrame implements Frame
 
     public String getPayloadAsUTF8()
     {
-        return BufferUtil.toUTF8String(getPayload());
+        if (payload == null)
+            return "";
+
+        return BufferUtil.toUTF8String(payload);
     }
 
     @Override

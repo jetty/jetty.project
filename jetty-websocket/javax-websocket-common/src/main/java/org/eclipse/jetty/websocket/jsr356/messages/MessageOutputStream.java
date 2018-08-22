@@ -30,6 +30,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.DataFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
@@ -44,7 +46,7 @@ public class MessageOutputStream extends OutputStream
     private final SharedBlockingCallback blocker;
     private long frameCount;
     private long bytesSent;
-    private BinaryFrame frame;
+    private DataFrame frame;
     private ByteBuffer buffer;
     private Callback callback;
     private boolean closed;
@@ -145,7 +147,7 @@ public class MessageOutputStream extends OutputStream
 
             ++frameCount;
             // Any flush after the first will be a CONTINUATION frame.
-            frame.setIsContinuation();
+            frame = new ContinuationFrame(frame);
 
             // Buffer has been sent, buffer should have been consumed
             assert buffer.remaining() == 0;

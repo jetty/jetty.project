@@ -31,16 +31,24 @@ public class DataFrame extends WebSocketFrame
         super(opcode);
     }
 
+    protected DataFrame(byte opCode, Frame basedOn)
+    {
+        super(opCode);
+        copyHeaders(basedOn);
+    }
+
     /**
      * Construct new DataFrame based on headers of provided frame.
      * <p>
      * Useful for when working in extensions and a new frame needs to be created.
      * @param basedOn the frame this one is based on
+     * @return the newly constructed DataFrame
      */
-    public DataFrame(Frame basedOn)
+    public static DataFrame newDataFrame(Frame basedOn)
     {
-        this(basedOn,false);
+        return newDataFrame(basedOn, false);
     }
+
 
     /**
      * Construct new DataFrame based on headers of provided frame, overriding for continuations if needed.
@@ -48,16 +56,22 @@ public class DataFrame extends WebSocketFrame
      * Useful for when working in extensions and a new frame needs to be created.
      * @param basedOn the frame this one is based on
      * @param continuation true if this is a continuation frame
+     * @return the newly constructed DataFrame
      */
-    public DataFrame(Frame basedOn, boolean continuation)
+    public static DataFrame newDataFrame(Frame basedOn, boolean continuation)
     {
-        super(basedOn.getOpCode());
-        copyHeaders(basedOn);
-        if (continuation)
-        {
-            setOpCode(OpCode.CONTINUATION);
-        }
+        if(continuation || (basedOn.getType() == Type.CONTINUATION))
+            return new ContinuationFrame(basedOn);
+
+        if(basedOn.getType() == Type.BINARY)
+            return new BinaryFrame(basedOn);
+
+        if(basedOn.getType() == Type.TEXT)
+            return new TextFrame(basedOn);
+
+        throw new IllegalArgumentException("Invalid FrameType");
     }
+
 
     @Override
     public void assertValid()
@@ -75,14 +89,6 @@ public class DataFrame extends WebSocketFrame
     public final boolean isDataFrame()
     {
         return true;
-    }
-
-    /**
-     * Set the data frame to continuation mode
-     */
-    public void setIsContinuation()
-    {
-        setOpCode(OpCode.CONTINUATION);
     }
     
     @Override

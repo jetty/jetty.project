@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.core.frames;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.core.Frame;
 
 public class TextFrame extends DataFrame
 {
@@ -30,18 +30,9 @@ public class TextFrame extends DataFrame
         super(OpCode.TEXT);
     }
     
-    public TextFrame(TextFrame frame)
+    public TextFrame(Frame frame)
     {
-        super(frame);
-    }
-
-    @Override
-    public final Type getType()
-    {
-        // TODO this is very confusing?
-        if (getOpCode() == OpCode.CONTINUATION)
-            return Type.CONTINUATION;
-        return Type.TEXT;
+        super(OpCode.TEXT, frame);
     }
 
     public TextFrame setPayload(String str)
@@ -49,14 +40,10 @@ public class TextFrame extends DataFrame
         setPayload(ByteBuffer.wrap(StringUtil.getUtf8Bytes(str)));
         return this;
     }
-    
+
     @Override
-    public String getPayloadAsUTF8()
+    public final Type getType()
     {
-        if (payload == null)
-        {
-            return "";
-        }
-        return BufferUtil.toUTF8String(payload);
+        return Type.TEXT;
     }
 }

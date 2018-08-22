@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.core.Frame;
 
 public class ContinuationFrame extends DataFrame
 {
@@ -29,9 +30,9 @@ public class ContinuationFrame extends DataFrame
         super(OpCode.CONTINUATION);
     }
     
-    public ContinuationFrame(ContinuationFrame frame)
+    public ContinuationFrame(Frame frame)
     {
-        super(frame,true);
+        super(OpCode.CONTINUATION, frame);
     }
 
     @Override
@@ -39,6 +40,12 @@ public class ContinuationFrame extends DataFrame
     {
         super.setPayload(buf);
         return this;
+    }
+
+    @Override
+    public final Type getType()
+    {
+        return Type.CONTINUATION;
     }
 
     public ContinuationFrame setPayload(byte buf[])
@@ -49,11 +56,5 @@ public class ContinuationFrame extends DataFrame
     public ContinuationFrame setPayload(String message)
     {
         return this.setPayload(StringUtil.getUtf8Bytes(message));
-    }
-
-    @Override
-    public final Type getType()
-    {
-        return Type.CONTINUATION;
     }
 }
