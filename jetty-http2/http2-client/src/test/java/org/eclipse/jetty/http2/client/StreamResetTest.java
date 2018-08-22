@@ -27,6 +27,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -698,7 +699,10 @@ public class StreamResetTest extends AbstractTest
         // Give time to the server to process the reset and drain the flusher queue.
         Thread.sleep(500);
 
-        HTTP2Session session = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).getBean(HTTP2Session.class);
+        AbstractHTTP2ServerConnectionFactory http2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
+        Set<Session> sessions = http2.getBean(AbstractHTTP2ServerConnectionFactory.HTTP2SessionContainer.class).getSessions();
+        Assert.assertEquals(1, sessions.size());
+        HTTP2Session session = (HTTP2Session)sessions.iterator().next();
         HTTP2Flusher flusher = session.getBean(HTTP2Flusher.class);
         Assert.assertEquals(0, flusher.getFrameQueueSize());
     }

@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -273,6 +274,11 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
                 LifeCycle.stop(session);
         }
 
+        public Set<Session> getSessions()
+        {
+            return new HashSet<>(sessions);
+        }
+
         @ManagedAttribute(value = "The number of HTTP/2 sessions", readonly = true)
         public int getSize()
         {
@@ -295,7 +301,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         @Override
         public String toString()
         {
-            return String.format("%s@%x[size=%d]", getClass().getSimpleName(), hashCode(), sessions.size());
+            return String.format("%s@%x[size=%d]", getClass().getSimpleName(), hashCode(), getSize());
         }
     }
 }
