@@ -109,16 +109,10 @@ public class LowResourceMonitor extends ContainerLifeCycle
     public void setMonitorThreads(boolean monitorThreads)
     {
         if(monitorThreads)
-        {
             // already configured?
-            if(!getMonitorThreads())
-            {
-                addLowResourceCheck( new ConnectorsThreadPoolLowResourceCheck() );
-            }
-        } else
-        {
+            if ( !getMonitorThreads() ) addLowResourceCheck( new ConnectorsThreadPoolLowResourceCheck() );
+        else
             getBeans(ConnectorsThreadPoolLowResourceCheck.class).forEach(this::removeBean);
-        }
     }
 
     /**
@@ -308,14 +302,9 @@ public class LowResourceMonitor extends ContainerLifeCycle
         }
         Collection<MemoryLowResourceCheck> beans = getBeans(MemoryLowResourceCheck.class);
         if(beans.isEmpty())
-        {
             addLowResourceCheck( new MemoryLowResourceCheck( maxMemoryBytes ) );
-        } else
-        {
+        else
             beans.forEach( lowResourceCheck -> lowResourceCheck.setMaxMemory( maxMemoryBytes ) );
-        }
-
-
     }
 
     public Set<LowResourceCheck> getLowResourceChecks()
@@ -397,29 +386,6 @@ public class LowResourceMonitor extends ContainerLifeCycle
 
         super.doStart();
 
-//        // create default LowResourceChecks..
-//        if(_monitorThreads && getBean(MainThreadPoolLowResourceCheck.class)==null)
-//        {
-//            MainThreadPoolLowResourceCheck lowResourceCheck = new MainThreadPoolLowResourceCheck();
-//            this._lowResourceChecks.add( lowResourceCheck );
-//            addBean( lowResourceCheck );
-//        }
-//
-//        if(_monitorThreads && !getMonitoredConnectors().isEmpty() && getBean(ConnectorsThreadPoolLowResourceCheck.class)==null)
-//        {
-//            // TODO How can this work without maxConnections?
-//            ConnectorsThreadPoolLowResourceCheck lowResourceCheck = new ConnectorsThreadPoolLowResourceCheck(getMonitorThreads(),getMaxConnections());
-//            this._lowResourceChecks.add(lowResourceCheck);
-//            addBean( lowResourceCheck );
-//        }
-//
-//        if (getBean(MemoryLowResourceCheck.class)==null)
-//        {
-//            MemoryLowResourceCheck lowResourceCheck = new MemoryLowResourceCheck(getMaxMemory());
-//            this._lowResourceChecks.add(lowResourceCheck);
-//            addBean( lowResourceCheck );
-//        }
-        
         _scheduler.schedule(_monitor,_period,TimeUnit.MILLISECONDS);
     }
 
@@ -568,6 +534,7 @@ public class LowResourceMonitor extends ContainerLifeCycle
         }
     }
 
+    @ManagedObject("Check max allowed connections on connectors")
     public class MaxConnectionsLowResourceCheck implements LowResourceCheck
     {
         private String reason;
