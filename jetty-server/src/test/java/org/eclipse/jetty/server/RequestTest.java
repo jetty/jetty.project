@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1060,7 +1061,7 @@ public class RequestTest
         String response = _connector.getResponse(request);
         assertThat(response, containsString(" 200 OK"));
     }
-    
+
     @Test
     public void testPartialRead() throws Exception
     {
@@ -1252,7 +1253,7 @@ public class RequestTest
                     200, TimeUnit.MILLISECONDS
                     );
         assertThat(response, containsString("200"));
-        assertThat(response, Matchers.not(containsString("Connection: close")));
+        assertThat(response, not(containsString("Connection: close")));
         assertThat(response, containsString("Hello World"));
 
         response=_connector.getResponse(
@@ -1282,7 +1283,7 @@ public class RequestTest
                     "\n"
                     );
         assertThat(response, containsString("200"));
-        assertThat(response, Matchers.not(containsString("Connection: close")));
+        assertThat(response, not(containsString("Connection: close")));
         assertThat(response, containsString("Hello World"));
 
         response=_connector.getResponse(

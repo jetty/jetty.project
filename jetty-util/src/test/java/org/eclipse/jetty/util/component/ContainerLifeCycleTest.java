@@ -205,65 +205,65 @@ public class ContainerLifeCycleTest
     {
         ContainerLifeCycle a0 = new ContainerLifeCycle();
         String dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
+        dump = check(dump, "ContainerLifeCycl");
 
         ContainerLifeCycle aa0 = new ContainerLifeCycle();
         a0.addBean(aa0);
         dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
-        dump = check(dump, " +? org.eclipse.jetty.util.component.ContainerLife");
+        dump = check(dump, "ContainerLifeCycl");
+        dump = check(dump, " +? ContainerLife");
 
         ContainerLifeCycle aa1 = new ContainerLifeCycle();
         a0.addBean(aa1);
         dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
-        dump = check(dump, " +? org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " +? org.eclipse.jetty.util.component.ContainerLife");
+        dump = check(dump, "ContainerLifeCycl");
+        dump = check(dump, " +? ContainerLife");
+        dump = check(dump, " +? ContainerLife");
         dump = check(dump, "");
 
         ContainerLifeCycle aa2 = new ContainerLifeCycle();
         a0.addBean(aa2, false);
         dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
-        dump = check(dump, " +? org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " +? org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " +~ org.eclipse.jetty.util.component.ContainerLife");
+        dump = check(dump, "ContainerLifeCycl");
+        dump = check(dump, " +? ContainerLife");
+        dump = check(dump, " +? ContainerLife");
+        dump = check(dump, " +~ ContainerLife");
         dump = check(dump, "");
 
         aa1.start();
         a0.start();
         dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " +~ org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " +~ org.eclipse.jetty.util.component.ContainerLife");
+        dump = check(dump, "ContainerLifeCycl");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " +~ ContainerLife");
+        dump = check(dump, " +~ ContainerLife");
         dump = check(dump, "");
 
         a0.manage(aa1);
         a0.removeBean(aa2);
         dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
+        dump = check(dump, "ContainerLifeCycl");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " += ContainerLife");
         dump = check(dump, "");
 
         ContainerLifeCycle aaa0 = new ContainerLifeCycle();
         aa0.addBean(aaa0);
         dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " |   +~ org.eclipse.jetty.util.component.Container");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
+        dump = check(dump, "ContainerLifeCycl");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " |   +~ Container");
+        dump = check(dump, " += ContainerLife");
         dump = check(dump, "");
 
         ContainerLifeCycle aa10 = new ContainerLifeCycle();
         aa1.addBean(aa10, true);
         dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " |   +~ org.eclipse.jetty.util.component.Container");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, "     += org.eclipse.jetty.util.component.Container");
+        dump = check(dump, "ContainerLifeCycl");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " |   +~ Container");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, "     += Container");
         dump = check(dump, "");
 
         final ContainerLifeCycle a1 = new ContainerLifeCycle();
@@ -282,57 +282,57 @@ public class ContainerLifeCycleTest
         };
         a0.addBean(aa, true);
         dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " |   +~ org.eclipse.jetty.util.component.Container");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " |   += org.eclipse.jetty.util.component.Container");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
+        dump = check(dump, "ContainerLifeCycl");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " |   +~ Container");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " |   += Container");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, "     +- Container");
+        dump = check(dump, "     +- Container");
+        dump = check(dump, "     +- Container");
+        dump = check(dump, "     +- Container");
         dump = check(dump, "");
 
         a2.addBean(aa0, true);
         dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " |   +~ org.eclipse.jetty.util.component.Container");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " |   += org.eclipse.jetty.util.component.Container");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
-        dump = check(dump, "     |   += org.eclipse.jetty.util.component.Conta");
-        dump = check(dump, "     |       +~ org.eclipse.jetty.util.component.C");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
+        dump = check(dump, "ContainerLifeCycl");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " |   +~ Container");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " |   += Container");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, "     +- Container");
+        dump = check(dump, "     +- Container");
+        dump = check(dump, "     |   += Conta");
+        dump = check(dump, "     |       +~ C");
+        dump = check(dump, "     +- Container");
+        dump = check(dump, "     +- Container");
         dump = check(dump, "");
 
         a2.unmanage(aa0);
         dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " |   +~ org.eclipse.jetty.util.component.Container");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " |   += org.eclipse.jetty.util.component.Container");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
-        dump = check(dump, "     |   +~ org.eclipse.jetty.util.component.Conta");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
-        dump = check(dump, "     +- org.eclipse.jetty.util.component.Container");
+        dump = check(dump, "ContainerLifeCycl");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " |   +~ Container");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " |   += Container");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, "     +- Container");
+        dump = check(dump, "     +- Container");
+        dump = check(dump, "     |   +~ Conta");
+        dump = check(dump, "     +- Container");
+        dump = check(dump, "     +- Container");
         dump = check(dump, "");
 
         a0.unmanage(aa);
         dump = trim(a0.dump());
-        dump = check(dump, "org.eclipse.jetty.util.component.ContainerLifeCycl");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " |   +~ org.eclipse.jetty.util.component.Container");
-        dump = check(dump, " += org.eclipse.jetty.util.component.ContainerLife");
-        dump = check(dump, " |   += org.eclipse.jetty.util.component.Container");
-        dump = check(dump, " +~ org.eclipse.jetty.util.component.ContainerLife");
+        dump = check(dump, "ContainerLifeCycl");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " |   +~ Container");
+        dump = check(dump, " += ContainerLife");
+        dump = check(dump, " |   += Container");
+        dump = check(dump, " +~ ContainerLife");
         dump = check(dump, "");
     }
 
@@ -580,7 +580,7 @@ public class ContainerLifeCycleTest
             s = s.substring(0, nl);
         }
 
-        Assert.assertEquals(x, s);
+        Assert.assertThat(s,Matchers.startsWith(x));
 
         return r;
     }

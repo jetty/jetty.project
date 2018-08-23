@@ -135,6 +135,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _state;
     }
 
+    public boolean addListener(Listener listener)
+    {
+        return _listeners.add(listener);
+    }
+    
+    public boolean removeListener(Listener listener)
+    {
+        return _listeners.remove(listener);
+    }
+    
     public long getBytesWritten()
     {
         return _written;

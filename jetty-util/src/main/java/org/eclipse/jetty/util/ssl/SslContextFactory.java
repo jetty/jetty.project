@@ -353,34 +353,40 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     
         try
         {
-            /* Use a pristine SSLEngine (not one from this SslContextFactory).
-             * This will allow for proper detection and identification
-             * of JRE/lib/security/java.security level disabled features
-             */
-            SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine();
-    
-            List<Object> selections = new ArrayList<>();
-            
-            // protocols
-            selections.add(new SslSelectionDump("Protocol",
-                    sslEngine.getSupportedProtocols(),
-                    sslEngine.getEnabledProtocols(),
-                    getExcludeProtocols(),
-                    getIncludeProtocols()));
-            
-            // ciphers
-            selections.add(new SslSelectionDump("Cipher Suite",
-                    sslEngine.getSupportedCipherSuites(),
-                    sslEngine.getEnabledCipherSuites(),
-                    getExcludeCipherSuites(),
-                    getIncludeCipherSuites()));
-            
+            List<SslSelectionDump> selections = selectionDump();
             ContainerLifeCycle.dump(out, indent, selections);
         }
         catch (NoSuchAlgorithmException ignore)
         {
             LOG.ignore(ignore);
         }
+    }
+
+    List<SslSelectionDump> selectionDump() throws NoSuchAlgorithmException
+    {
+        /* Use a pristine SSLEngine (not one from this SslContextFactory).
+         * This will allow for proper detection and identification
+         * of JRE/lib/security/java.security level disabled features
+         */
+        SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine();
+
+        List<SslSelectionDump> selections = new ArrayList<>();
+
+        // protocols
+        selections.add(new SslSelectionDump("Protocol",
+                sslEngine.getSupportedProtocols(),
+                sslEngine.getEnabledProtocols(),
+                getExcludeProtocols(),
+                getIncludeProtocols()));
+
+        // ciphers
+        selections.add(new SslSelectionDump("Cipher Suite",
+                sslEngine.getSupportedCipherSuites(),
+                sslEngine.getEnabledCipherSuites(),
+                getExcludeCipherSuites(),
+                getIncludeCipherSuites()));
+
+        return selections;
     }
     
     @Override

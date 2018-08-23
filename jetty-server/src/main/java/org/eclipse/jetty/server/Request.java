@@ -365,7 +365,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private MultiMap<String> getParameters()
     {
-        if (!_contentParamsExtracted) 
+        if (!_contentParamsExtracted)
         {
             // content parameters need boolean protection as they can only be read
             // once, but may be reset to null by a reset
@@ -406,7 +406,7 @@ public class Request implements HttpServletRequest
             _parameters=_contentParameters;
         else if (isNoParams(_contentParameters) || _contentParameters.size()==0)
             _parameters=_queryParameters;
-        else
+        else if(_parameters == null)
         {
             _parameters = new MultiMap<>();
             _parameters.addAllValues(_queryParameters);

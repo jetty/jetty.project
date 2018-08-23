@@ -76,7 +76,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
@@ -969,6 +968,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     protected void doStop() throws Exception
     {
+        // Should we attempt a graceful shutdown?
+        MultiException mex = null;
+
+        if (getStopTimeout()>0)
+        {
+            try
+            {
+                doShutdown(null);
+            }
+            catch (MultiException e)
+            {
+                mex = e;
+            }
+        }
+        
         _availability = Availability.UNAVAILABLE;
 
         ClassLoader old_classloader = null;
@@ -1014,6 +1028,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
             _programmaticListeners.clear();
         }
+        catch(Throwable x)
+        {
+            if (mex==null)
+                mex = new MultiException();
+            mex.add(x);
+        }
         finally
         {
             __context.set(old_context);
@@ -1022,9 +1042,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // reset the classloader
             if ((old_classloader == null || (old_classloader != old_webapploader)) && current_thread != null)
                 current_thread.setContextClassLoader(old_classloader);
-        }
 
-        _scontext.clearAttributes();
+            _scontext.clearAttributes();
+        }
+        
+        if (mex!=null)
+            mex.ifExceptionThrow();
     }
 
     /* ------------------------------------------------------------ */

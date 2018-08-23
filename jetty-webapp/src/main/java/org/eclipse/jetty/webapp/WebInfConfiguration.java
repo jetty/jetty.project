@@ -313,6 +313,13 @@ public class WebInfConfiguration extends AbstractConfiguration
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Try webapp=" + web_app + ", exists=" + web_app.exists() + ", directory=" + web_app.isDirectory()+" file="+(web_app.getFile()));
+
+            // Track the original web_app Resource, as this could be a PathResource.
+            // Later steps force the Resource to be a JarFileResource, which introduces
+            // URLConnection caches in such a way that it prevents Hot Redeployment
+            // on MS Windows.
+            Resource originalWarResource = web_app;
+
             // Is the WAR usable directly?
             if (web_app.exists() && !web_app.isDirectory() && !web_app.toString().startsWith("jar:"))
             {
@@ -373,8 +380,9 @@ public class WebInfConfiguration extends AbstractConfiguration
                     }
                     else
                     {
-                        //only extract if the war file is newer, or a .extract_lock file is left behind meaning a possible partial extraction
-                        if (web_app.lastModified() > extractedWebAppDir.lastModified() || extractionLock.exists())
+                        // Only extract if the war file is newer, or a .extract_lock file is left behind meaning a possible partial extraction
+                        // Use the original War Resource to obtain lastModified to avoid filesystem locks on MS Windows.
+                        if (originalWarResource.lastModified() > extractedWebAppDir.lastModified() || extractionLock.exists())
                         {
                             extractionLock.createNewFile();
                             IO.delete(extractedWebAppDir);

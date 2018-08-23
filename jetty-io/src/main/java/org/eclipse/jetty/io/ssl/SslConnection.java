@@ -399,27 +399,27 @@ public class SslConnection extends AbstractConnection
             try
             {
                 // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
-                boolean waiting_for_fill = false;
+                boolean waiting_for_fill;
                 synchronized(_decryptedEndPoint)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("onFillable {}", SslConnection.this);
 
                     _fillState = FillState.IDLE;
-                    switch(_flushState)
-                    {
-                        case WAIT_FOR_FILL:
-                            waiting_for_fill = true;
-                            break;
-                        default:
-                            break;
-                    }      
+                    waiting_for_fill = _flushState==FlushState.WAIT_FOR_FILL;
                 }
-
-                // Ensure a fill is always done if needed then wake up any fill interest
-                if (waiting_for_fill)
-                    fill(BufferUtil.EMPTY_BUFFER);
+                
                 getFillInterest().fillable();
+                
+                if (waiting_for_fill)
+                {
+                    synchronized(_decryptedEndPoint)
+                    {
+                        waiting_for_fill = _flushState==FlushState.WAIT_FOR_FILL;
+                    }
+                    if (waiting_for_fill)
+                        fill(BufferUtil.EMPTY_BUFFER);
+                }
             }
             catch (Throwable e)
             {
@@ -1246,11 +1246,11 @@ public class SslConnection extends AbstractConnection
                     if (fillable)
                         _fillState = FillState.IDLE;
                 }
-                
-                _decryptedEndPoint.getWriteFlusher().completeWrite();
 
                 if (fillable)
                     _decryptedEndPoint.getFillInterest().fillable();
+
+                _decryptedEndPoint.getWriteFlusher().completeWrite();
             }
         
             @Override

@@ -234,4 +234,17 @@ public abstract class AbstractLifeCycle implements LifeCycle
         @Override public void lifeCycleStopped(LifeCycle event) {}
         @Override public void lifeCycleStopping(LifeCycle event) {}
     }
+    
+    @Override
+    public String toString()
+    {
+        Class<?> clazz = getClass();
+        String name = clazz.getSimpleName();
+        if ((name==null || name.length()==0) && clazz.getSuperclass()!=null)
+        {
+            clazz = clazz.getSuperclass();
+            name = clazz.getSimpleName();
+        }
+        return String.format("%s@%x{%s}",name,hashCode(),getState());
+    }
 }

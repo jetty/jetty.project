@@ -199,7 +199,19 @@ public abstract class AbstractConnection implements Connection
             LOG.debug("onOpen {}", this);
 
         for (Listener listener : _listeners)
+            onOpened(listener);
+    }
+
+    private void onOpened(Listener listener)
+    {
+        try
+        {
             listener.onOpened(this);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
     }
 
     @Override
@@ -209,7 +221,19 @@ public abstract class AbstractConnection implements Connection
             LOG.debug("onClose {}",this);
 
         for (Listener listener : _listeners)
+            onClosed(listener);
+    }
+
+    private void onClosed(Listener listener)
+    {
+        try
+        {
             listener.onClosed(this);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
     }
 
     @Override
