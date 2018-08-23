@@ -87,6 +87,7 @@ public class LowResourcesMonitorTest
     @Test
     public void testLowOnThreads() throws Exception
     {
+        _lowResourcesMonitor.setMonitorThreads(true);
         Thread.sleep(1200);
         _threadPool.setMaxThreads(_threadPool.getThreads()-_threadPool.getIdleThreads()+10);
         Thread.sleep(1200);
@@ -122,8 +123,11 @@ public class LowResourcesMonitorTest
     public void testNotAccepting() throws Exception
     {
         _lowResourcesMonitor.setAcceptingInLowResources(false);
+        _lowResourcesMonitor.setMonitorThreads( true );
         Thread.sleep(1200);
-        _threadPool.setMaxThreads(_threadPool.getThreads()-_threadPool.getIdleThreads()+10);
+        int maxThreads = _threadPool.getThreads()-_threadPool.getIdleThreads()+10;
+        System.out.println("maxThreads:"+maxThreads);
+        _threadPool.setMaxThreads(maxThreads);
         Thread.sleep(1200);
         assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
         
@@ -189,6 +193,7 @@ public class LowResourcesMonitorTest
         _lowResourcesMonitor.setMaxMemory(0);
         assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
 
+        assertEquals( 20, _lowResourcesMonitor.getMaxConnections() );
         Socket[] socket = new Socket[_lowResourcesMonitor.getMaxConnections()+1];
         for (int i=0;i<socket.length;i++)
             socket[i]=new Socket("localhost",_connector.getLocalPort());

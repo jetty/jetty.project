@@ -33,12 +33,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 
 /**
@@ -93,8 +91,6 @@ public class LowResourceMonitor extends ContainerLifeCycle
         }
     };
 
-    private long _maxMemory;
-
     public LowResourceMonitor(@Name("server") Server server)
     {
         _server = server;
@@ -103,21 +99,25 @@ public class LowResourceMonitor extends ContainerLifeCycle
     @ManagedAttribute("True if low available threads status is monitored")
     public boolean getMonitorThreads()
     {
-        return _monitorThreads;
+        return !getBeans(ConnectorsThreadPoolLowResourceCheck.class).isEmpty();
     }
 
     /**
      * @param monitorThreads If true, check connectors executors to see if they are
      * {@link ThreadPool} instances that are low on threads.
-     * @deprecated use {@link ConnectorsThreadPoolLowResourceCheck#setMonitorThreads(boolean)}
      */
     public void setMonitorThreads(boolean monitorThreads)
     {
-        _monitorThreads = monitorThreads;
-        if(isRunning())
+        if(monitorThreads)
         {
-            findLowResourceCheck( ConnectorsThreadPoolLowResourceCheck.class ).stream() //
-                .forEach( lowResourceCheck -> ( (ConnectorsThreadPoolLowResourceCheck) lowResourceCheck ).setMonitorThreads( monitorThreads ) );
+            // already configured?
+            if(!getMonitorThreads())
+            {
+                addLowResourceCheck( new ConnectorsThreadPoolLowResourceCheck() );
+            }
+        } else
+        {
+            getBeans(ConnectorsThreadPoolLowResourceCheck.class).forEach(this::removeBean);
         }
     }
 
@@ -129,10 +129,14 @@ public class LowResourceMonitor extends ContainerLifeCycle
     @Deprecated
     public int getMaxConnections()
     {
-        ConnectorsThreadPoolLowResourceCheck check = getBean(ConnectorsThreadPoolLowResourceCheck.class);
-        if (check==null)
-            return -1;
-        return check.getMaxConnections();
+        for(MaxConnectionsLowResourceCheck lowResourceCheck : getBeans(MaxConnectionsLowResourceCheck.class))
+        {
+            if (lowResourceCheck.getMaxConnections()>0)
+            {
+                return lowResourceCheck.getMaxConnections();
+            }
+        }
+        return -1;
     }
 
     /**
@@ -144,12 +148,13 @@ public class LowResourceMonitor extends ContainerLifeCycle
     {
         if (maxConnections>0)
         {
-            LOG.warn("LowResourceMonitor.setMaxConnections is deprecated. Use ConnectionLimit.");
-            Collection<ConnectorsThreadPoolLowResourceCheck> checks = getBeans(ConnectorsThreadPoolLowResourceCheck.class);
-            if (checks.isEmpty())
-                addBean(new ConnectorsThreadPoolLowResourceCheck(false,maxConnections));
-            else
-                checks.forEach(c->c.setMaxConnections(maxConnections));
+            if (getBeans(MaxConnectionsLowResourceCheck.class).isEmpty())
+            {
+                addLowResourceCheck(new MaxConnectionsLowResourceCheck(maxConnections));
+            } else
+            {
+                getBeans(MaxConnectionsLowResourceCheck.class).forEach( c -> c.setMaxConnections( maxConnections ) );
+            }
         }
         else
         {
@@ -284,7 +289,12 @@ public class LowResourceMonitor extends ContainerLifeCycle
     @ManagedAttribute("The maximum memory (in bytes) that can be used before low resources is triggered.  Memory used is calculated as (totalMemory-freeMemory).")
     public long getMaxMemory()
     {
-        return _maxMemory;
+        Collection<MemoryLowResourceCheck> beans = getBeans(MemoryLowResourceCheck.class);
+        if(beans.isEmpty())
+        {
+            return 0;
+        }
+        return beans.stream().findFirst().get().getMaxMemory();
     }
 
     /**
@@ -292,12 +302,20 @@ public class LowResourceMonitor extends ContainerLifeCycle
      */
     public void setMaxMemory(long maxMemoryBytes)
     {
-        _maxMemory = maxMemoryBytes;
-        if(isRunning())
+        if(maxMemoryBytes<=0)
         {
-            findLowResourceCheck( MemoryLowResourceCheck.class ).stream() //
-                .forEach( lowResourceCheck -> ( (MemoryLowResourceCheck) lowResourceCheck ).setMaxMemory( maxMemoryBytes ) );
+            return;
         }
+        Collection<MemoryLowResourceCheck> beans = getBeans(MemoryLowResourceCheck.class);
+        if(beans.isEmpty())
+        {
+            addLowResourceCheck( new MemoryLowResourceCheck( maxMemoryBytes ) );
+        } else
+        {
+            beans.forEach( lowResourceCheck -> lowResourceCheck.setMaxMemory( maxMemoryBytes ) );
+        }
+
+
     }
 
     public Set<LowResourceCheck> getLowResourceChecks()
@@ -379,28 +397,28 @@ public class LowResourceMonitor extends ContainerLifeCycle
 
         super.doStart();
 
-        // create default LowResourceChecks..
-        if(_monitorThreads && getBean(MainThreadPoolLowResourceCheck.class)==null)
-        {
-            MainThreadPoolLowResourceCheck lowResourceCheck = new MainThreadPoolLowResourceCheck();
-            this._lowResourceChecks.add( lowResourceCheck );
-            addBean( lowResourceCheck );
-        }
-
-        if(_monitorThreads && !getMonitoredConnectors().isEmpty() && getBean(ConnectorsThreadPoolLowResourceCheck.class)==null)
-        {
-            // TODO How can this work without maxConnections?
-            ConnectorsThreadPoolLowResourceCheck lowResourceCheck = new ConnectorsThreadPoolLowResourceCheck(getMonitorThreads(),getMaxConnections());
-            this._lowResourceChecks.add(lowResourceCheck);
-            addBean( lowResourceCheck );
-        }
-        
-        if (getBean(MemoryLowResourceCheck.class)==null)
-        {
-            MemoryLowResourceCheck lowResourceCheck = new MemoryLowResourceCheck(getMaxMemory());
-            this._lowResourceChecks.add(lowResourceCheck);
-            addBean( lowResourceCheck );
-        }
+//        // create default LowResourceChecks..
+//        if(_monitorThreads && getBean(MainThreadPoolLowResourceCheck.class)==null)
+//        {
+//            MainThreadPoolLowResourceCheck lowResourceCheck = new MainThreadPoolLowResourceCheck();
+//            this._lowResourceChecks.add( lowResourceCheck );
+//            addBean( lowResourceCheck );
+//        }
+//
+//        if(_monitorThreads && !getMonitoredConnectors().isEmpty() && getBean(ConnectorsThreadPoolLowResourceCheck.class)==null)
+//        {
+//            // TODO How can this work without maxConnections?
+//            ConnectorsThreadPoolLowResourceCheck lowResourceCheck = new ConnectorsThreadPoolLowResourceCheck(getMonitorThreads(),getMaxConnections());
+//            this._lowResourceChecks.add(lowResourceCheck);
+//            addBean( lowResourceCheck );
+//        }
+//
+//        if (getBean(MemoryLowResourceCheck.class)==null)
+//        {
+//            MemoryLowResourceCheck lowResourceCheck = new MemoryLowResourceCheck(getMaxMemory());
+//            this._lowResourceChecks.add(lowResourceCheck);
+//            addBean( lowResourceCheck );
+//        }
         
         _scheduler.schedule(_monitor,_period,TimeUnit.MILLISECONDS);
     }
@@ -506,28 +524,58 @@ public class LowResourceMonitor extends ContainerLifeCycle
     public class ConnectorsThreadPoolLowResourceCheck implements LowResourceCheck
     {
         private String reason;
-        private boolean monitorThreads;
+
+        public ConnectorsThreadPoolLowResourceCheck()
+        {
+            // no op
+        }
+
+        @Override
+        public boolean isLowOnResources()
+        {
+            ThreadPool serverThreads = _server.getThreadPool();
+            if(serverThreads.isLowOnThreads())
+            {
+                reason ="Server low on threads: "+serverThreads.getThreads()+", idleThreads:"+serverThreads.getIdleThreads();
+                return true;
+            }
+            for(Connector connector : getMonitoredConnectors())
+            {
+                Executor executor = connector.getExecutor();
+                if (executor instanceof ThreadPool && executor!=serverThreads)
+                {
+                    ThreadPool connectorThreads=(ThreadPool)executor;
+                    if (connectorThreads.isLowOnThreads())
+                    {
+                        reason ="Connector low on threads: "+connectorThreads;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public String getReason()
+        {
+            return reason;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Check if the ThreadPool from monitored connectors are lowOnThreads and if all connections number is higher than the allowed maxConnection";
+        }
+    }
+
+    public class MaxConnectionsLowResourceCheck implements LowResourceCheck
+    {
+        private String reason;
         private int maxConnections;
 
-        public ConnectorsThreadPoolLowResourceCheck(boolean monitorThreads, int maxConnections)
+        public MaxConnectionsLowResourceCheck(int maxConnections)
         {
-            this.monitorThreads = monitorThreads;
             this.maxConnections = maxConnections;
-        }
-
-        @ManagedAttribute("True if low available threads status is monitored")
-        public boolean getMonitorThreads()
-        {
-            return monitorThreads;
-        }
-
-        /**
-         * @param monitorThreads If true, check connectors executors to see if they are
-         * {@link ThreadPool} instances that are low on threads.
-         */
-        public void setMonitorThreads( boolean monitorThreads )
-        {
-            this.monitorThreads = monitorThreads;
         }
 
         /**
@@ -556,21 +604,10 @@ public class LowResourceMonitor extends ContainerLifeCycle
         @Override
         public boolean isLowOnResources()
         {
-            ThreadPool serverThreads = _server.getThreadPool();
             int connections=0;
             for(Connector connector : getMonitoredConnectors())
             {
                 connections+=connector.getConnectedEndPoints().size();
-                Executor executor = connector.getExecutor();
-                if (executor instanceof ThreadPool && executor!=serverThreads)
-                {
-                    ThreadPool connectorThreads=(ThreadPool)executor;
-                    if (monitorThreads && connectorThreads.isLowOnThreads())
-                    {
-                        reason ="Connector low on threads: "+connectorThreads;
-                        return true;
-                    }
-                }
             }
             if (maxConnections>0 && connections>maxConnections)
             {
@@ -589,10 +626,8 @@ public class LowResourceMonitor extends ContainerLifeCycle
         @Override
         public String toString()
         {
-            return "Check if the ThreadPool from monitored connectors are lowOnThreads and if all connections number is higher than the allowed maxConnection";
+            return "All connections number is higher than the allowed maxConnection";
         }
-
-
     }
 
     public class MemoryLowResourceCheck implements LowResourceCheck
