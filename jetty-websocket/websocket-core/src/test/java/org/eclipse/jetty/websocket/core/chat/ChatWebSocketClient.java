@@ -1,0 +1,176 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.websocket.core.chat;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
+
+/**
+
+ */
+public class ChatWebSocketClient implements FrameHandler
+{
+    private static Logger LOG = Log.getLogger(ChatWebSocketClient.class);
+
+    public static void main(String[] args)
+    {
+        String hostname = "localhost";
+        int port = 8888;
+
+        if (args.length > 0)
+        {
+            hostname = args[0];
+        }
+
+        if (args.length > 1)
+        {
+            port = Integer.parseInt(args[1]);
+        }
+
+        ChatWebSocketClient client = null;
+        try
+        {
+            String userAgent = "ChatWebsocketClient/0.9";
+            client = new ChatWebSocketClient(hostname, port, userAgent);
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(System.in,StandardCharsets.UTF_8));
+            
+            String line = in.readLine();
+            while(line!=null)
+            {
+                client.chat(line);
+                line = in.readLine();
+            }
+            
+        }
+        catch (Throwable t)
+        {
+            t.printStackTrace(System.err);
+        }
+        finally
+        {
+        }
+    }
+
+
+    private URI baseWebsocketUri;
+    private WebSocketCoreClient client;
+    private Channel channel;
+
+    public ChatWebSocketClient(String hostname, int port, String userAgent) throws Exception
+    {
+        this.baseWebsocketUri = new URI("ws://" + hostname + ":" + port);
+        this.client = new WebSocketCoreClient();
+       
+        this.client.getPolicy().setMaxBinaryMessageSize(20 * 1024 * 1024);
+        this.client.getPolicy().setMaxTextMessageSize(20 * 1024 * 1024);
+        // this.client.getExtensionFactory().register("permessage-deflate",PerMessageDeflateExtension.class);
+        this.client.start();
+        
+        
+        URI wsUri = baseWebsocketUri.resolve("/chat");
+        
+        WebSocketCoreClientUpgradeRequest request = new WebSocketCoreClientUpgradeRequest(client, wsUri) 
+        {
+            @Override
+            public FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response)
+            {
+                return ChatWebSocketClient.this;
+            }
+        };
+        request.setSubProtocols("chat");
+        
+        Future<FrameHandler.Channel> response = client.connect(request);
+
+        response.get(5, TimeUnit.SECONDS);
+                
+    }
+
+    @Override
+    public void onOpen(Channel channel) throws Exception
+    {
+        LOG.info("onOpen {}",channel);
+        this.channel = channel;
+        
+    }
+
+    @Override
+    public void onFrame(Frame frame, Callback callback) throws Exception
+    {
+        LOG.info("onFrame {}",frame);
+        callback.succeeded();
+    }
+
+    @Override
+    public void onClosed(CloseStatus closeStatus) throws Exception
+    {
+        LOG.info("onClosed {}",closeStatus);
+        this.channel = null;
+    }
+
+    @Override
+    public void onError(Throwable cause) throws Exception
+    {
+        LOG.warn("onError",cause);
+        this.channel = null;
+    }
+        
+    private void chat(String line)
+    {
+        LOG.info("sending {}...",line);
+        TextFrame frame = new TextFrame();
+        frame.setFin(true);
+        frame.setPayload(line);
+
+        Callback callback = new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                LOG.info("message sent");
+                Callback.super.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                LOG.warn(x);
+            }
+            
+        };
+        channel.sendFrame(frame,callback,BatchMode.AUTO);
+    }
+}
