@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.core.chat;
 
 import java.io.IOException;
-
+import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -30,37 +30,40 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
-/**
- */
-public class ChatWebSocketServer
+public class ChatWebSocketServer implements FrameHandler
 {
     public static void main(String[] args) throws Exception
     {
         Server server = new Server();
+        ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
 
-        ServerConnector connector = new ServerConnector(
-                server,
-                new HttpConnectionFactory()
-        );
         connector.addBean(new WebSocketPolicy(WebSocketBehavior.SERVER));
         connector.addBean(new RFC6455Handshaker());
-
         connector.setPort(8888);
-        connector.setIdleTimeout(10000);
+        connector.setIdleTimeout(1000000);
         server.addConnector(connector);
 
         ContextHandler context = new ContextHandler("/");
         server.setHandler(context);
-        WebSocketNegotiator negotiator =  
-                new ChatWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool());
+        WebSocketNegotiator negotiator =  new ChatWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool());
 
         WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler(negotiator);
         context.setHandler(handler);
@@ -78,5 +81,56 @@ public class ChatWebSocketServer
 
         server.start();
         server.join();
+    }
+
+
+    private static Logger LOG = Log.getLogger(ChatWebSocketServer.class);
+
+    private Channel channel;
+    private Set<Channel> channelSet;
+
+    public ChatWebSocketServer(Set<Channel> channels)
+    {
+        channelSet = channels;
+    }
+
+    @Override
+    public void onOpen(Channel channel) throws Exception
+    {
+        LOG.info("onOpen {}",channel);
+        this.channel = channel;
+        this.channelSet.add(channel);
+    }
+
+    @Override
+    public void onFrame(Frame frame, Callback callback) throws Exception
+    {
+        String message = BufferUtil.toString(frame.getPayload());
+        for (Channel channel : channelSet)
+        {
+            LOG.info("Sending Message: " + message);
+            channel.sendFrame(new WebSocketFrame(OpCode.TEXT).setPayload(message), Callback.NOOP, BatchMode.AUTO);
+        }
+
+        callback.succeeded();
+    }
+
+
+    @Override
+    public void onClosed(CloseStatus closeStatus) throws Exception
+    {
+        LOG.info("onClosed {}",closeStatus);
+        channel.close(Callback.NOOP);
+        channelSet.remove(channel);
+        channel = null;
+    }
+
+    @Override
+    public void onError(Throwable cause) throws Exception
+    {
+        LOG.warn("onError",cause);
+        channel.close(Callback.NOOP);
+        channelSet.remove(channel);
+        channel = null;
     }
 }

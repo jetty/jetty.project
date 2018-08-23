@@ -19,7 +19,10 @@
 package org.eclipse.jetty.websocket.core.chat;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -34,6 +37,8 @@ class ChatWebSocketNegotiator implements WebSocketNegotiator
     final DecoratedObjectFactory objectFactory;
     final WebSocketExtensionRegistry extensionRegistry;
     final ByteBufferPool bufferPool;
+
+    Set<FrameHandler.Channel> channelSet = Collections.synchronizedSet(new HashSet());
 
     public ChatWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool)
     {
@@ -58,7 +63,7 @@ class ChatWebSocketNegotiator implements WebSocketNegotiator
             return null;        
         negotiation.setSubprotocol("chat");
         //  + MUST return the FrameHandler or null or exception?
-        return new ChatServerFrameHandler();
+        return new ChatWebSocketServer(channelSet);
     }
 
     @Override

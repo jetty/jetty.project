@@ -29,7 +29,7 @@ public class ContinuationFrame extends DataFrame
     {
         super(OpCode.CONTINUATION);
     }
-    
+
     public ContinuationFrame(Frame frame)
     {
         super(OpCode.CONTINUATION, frame);

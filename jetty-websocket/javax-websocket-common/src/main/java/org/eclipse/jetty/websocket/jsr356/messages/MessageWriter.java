@@ -157,7 +157,7 @@ public class MessageWriter extends Writer
 
             ++frameCount;
             // Any flush after the first will be a CONTINUATION frame.
-            frame = new ContinuationFrame(frame);
+            frame = new ContinuationFrame();
         }
     }
 

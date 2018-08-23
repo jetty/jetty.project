@@ -95,8 +95,6 @@ public interface Frame
 
     Type getType();
 
-    byte getFinRsvOp();
-
     boolean hasPayload();
 
     boolean isFin();

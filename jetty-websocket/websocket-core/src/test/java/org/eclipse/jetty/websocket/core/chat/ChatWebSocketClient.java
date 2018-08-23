@@ -24,8 +24,11 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -35,6 +38,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
@@ -51,14 +55,10 @@ public class ChatWebSocketClient implements FrameHandler
         int port = 8888;
 
         if (args.length > 0)
-        {
             hostname = args[0];
-        }
 
         if (args.length > 1)
-        {
             port = Integer.parseInt(args[1]);
-        }
 
         ChatWebSocketClient client = null;
         try
@@ -89,6 +89,7 @@ public class ChatWebSocketClient implements FrameHandler
     private URI baseWebsocketUri;
     private WebSocketCoreClient client;
     private Channel channel;
+    private String name;
 
     public ChatWebSocketClient(String hostname, int port, String userAgent) throws Exception
     {
@@ -124,36 +125,90 @@ public class ChatWebSocketClient implements FrameHandler
     {
         LOG.info("onOpen {}",channel);
         this.channel = channel;
-        
     }
 
     @Override
     public void onFrame(Frame frame, Callback callback) throws Exception
     {
-        LOG.info("onFrame {}",frame);
+        System.out.println(BufferUtil.toString(frame.getPayload()));
         callback.succeeded();
     }
 
     @Override
     public void onClosed(CloseStatus closeStatus) throws Exception
     {
-        LOG.info("onClosed {}",closeStatus);
+        Callback callback = new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                LOG.info("closed {}", closeStatus);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                LOG.warn(x);
+            }
+
+        };
+
+        channel.close(callback);
         this.channel = null;
     }
 
     @Override
     public void onError(Throwable cause) throws Exception
     {
-        LOG.warn("onError",cause);
+        Callback callback = new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                LOG.info("error");
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                LOG.warn(x);
+            }
+        };
+
+        channel.close(callback);
         this.channel = null;
     }
-        
+
+
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("/([^\\s]+)\\s+([^\\s]+)", Pattern.CASE_INSENSITIVE);
+
     private void chat(String line)
     {
+        if(line.startsWith("/"))
+        {
+            Matcher matcher = COMMAND_PATTERN.matcher(line);
+            if (matcher.matches())
+            {
+                String command = matcher.group(1);
+                String value = matcher.group(2);
+
+                if ("name".equalsIgnoreCase(command))
+                {
+                    if (value != null && value.length() > 0)
+                    {
+                        name = value;
+                        LOG.info("name changed: " + name);
+                    }
+                }
+
+                return;
+            }
+        }
+
         LOG.info("sending {}...",line);
         TextFrame frame = new TextFrame();
         frame.setFin(true);
-        frame.setPayload(line);
+        frame.setPayload(name + ": " + line);
 
         Callback callback = new Callback()
         {
@@ -161,7 +216,6 @@ public class ChatWebSocketClient implements FrameHandler
             public void succeeded()
             {
                 LOG.info("message sent");
-                Callback.super.succeeded();
             }
 
             @Override
@@ -171,6 +225,7 @@ public class ChatWebSocketClient implements FrameHandler
             }
             
         };
+
         channel.sendFrame(frame,callback,BatchMode.AUTO);
     }
 }

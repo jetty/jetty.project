@@ -68,12 +68,6 @@ public class ReadOnlyDelegatedFrame implements Frame
     }
 
     @Override
-    public byte getFinRsvOp()
-    {
-        return delegate.getFinRsvOp();
-    }
-
-    @Override
     public boolean hasPayload()
     {
         return delegate.hasPayload();

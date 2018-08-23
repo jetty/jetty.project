@@ -22,7 +22,9 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.ProtocolException;
 
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
@@ -48,7 +50,7 @@ import org.eclipse.jetty.websocket.core.Frame;
  *   +---------------------------------------------------------------+
  * </pre>
  */
-public abstract class WebSocketFrame implements Frame
+public class WebSocketFrame implements Frame
 {
     public static WebSocketFrame copy(Frame original)
     {
@@ -114,7 +116,7 @@ public abstract class WebSocketFrame implements Frame
      * Construct form opcode
      * @param opcode the opcode the frame is based on
      */
-    protected WebSocketFrame(byte opcode)
+    public WebSocketFrame(byte opcode)
     {
         finRsvOp = (byte)0x80; // FIN (!RSV, opcode 0)
         masked = false;
@@ -123,12 +125,46 @@ public abstract class WebSocketFrame implements Frame
         this.finRsvOp = (byte)((finRsvOp & 0xF0) | (opcode & 0x0F));
     }
 
-    public abstract void assertValid();
+    public void assertValid()
+    {
+        if (isControlFrame())
+        {
+            if (getPayloadLength() > ControlFrame.MAX_CONTROL_PAYLOAD)
+            {
+                throw new ProtocolException("Desired payload length [" + getPayloadLength() + "] exceeds maximum control payload length ["
+                        + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
+            }
+
+            if ((finRsvOp & 0x80) == 0)
+            {
+                throw new ProtocolException("Cannot have FIN==false on Control frames");
+            }
+
+            if ((finRsvOp & 0x40) != 0)
+            {
+                throw new ProtocolException("Cannot have RSV1==true on Control frames");
+            }
+
+            if ((finRsvOp & 0x20) != 0)
+            {
+                throw new ProtocolException("Cannot have RSV2==true on Control frames");
+            }
+
+            if ((finRsvOp & 0x10) != 0)
+            {
+                throw new ProtocolException("Cannot have RSV3==true on Control frames");
+            }
+        }
+    }
 
     protected void copyHeaders(Frame frame)
     {
         byte opCode = (byte)(finRsvOp & 0x0F);
-        finRsvOp = (byte)(frame.getFinRsvOp()&0xF0);
+        finRsvOp = 0x00;
+        finRsvOp |= frame.isFin()?0x80:0x00;
+        finRsvOp |= frame.isRsv1()?0x40:0x00;
+        finRsvOp |= frame.isRsv2()?0x20:0x00;
+        finRsvOp |= frame.isRsv3()?0x10:0x00;
         finRsvOp |= opCode;
 
         masked = frame.isMasked();
@@ -190,12 +226,6 @@ public abstract class WebSocketFrame implements Frame
     public final byte getOpCode()
     {
         return (byte)(finRsvOp & 0x0F);
-    }
-
-    @Override
-    public byte getFinRsvOp()
-    {
-        return finRsvOp;
     }
 
     /**
@@ -336,6 +366,12 @@ public abstract class WebSocketFrame implements Frame
     public WebSocketFrame setPayload(ByteBuffer buf)
     {
         payload = buf;
+        return this;
+    }
+
+    public WebSocketFrame setPayload(String str)
+    {
+        setPayload(ByteBuffer.wrap(StringUtil.getUtf8Bytes(str)));
         return this;
     }
 

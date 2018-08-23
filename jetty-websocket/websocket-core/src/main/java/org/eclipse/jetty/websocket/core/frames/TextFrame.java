@@ -35,12 +35,6 @@ public class TextFrame extends DataFrame
         super(OpCode.TEXT, frame);
     }
 
-    public TextFrame setPayload(String str)
-    {
-        setPayload(ByteBuffer.wrap(StringUtil.getUtf8Bytes(str)));
-        return this;
-    }
-
     @Override
     public final Type getType()
     {

@@ -151,7 +151,7 @@ public class MessageOutputStream extends OutputStream
 
             ++frameCount;
             // Any flush after the first will be a CONTINUATION frame.
-            frame = new ContinuationFrame(frame);
+            frame = new ContinuationFrame();
         }
     }
 

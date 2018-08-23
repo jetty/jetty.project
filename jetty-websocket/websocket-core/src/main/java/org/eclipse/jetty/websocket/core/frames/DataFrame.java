@@ -26,7 +26,7 @@ import org.eclipse.jetty.websocket.core.Frame;
  */
 public class DataFrame extends WebSocketFrame
 {
-    protected DataFrame(byte opcode)
+    public DataFrame(byte opcode)
     {
         super(opcode);
     }
@@ -70,13 +70,6 @@ public class DataFrame extends WebSocketFrame
             return new TextFrame(basedOn);
 
         throw new IllegalArgumentException("Invalid FrameType");
-    }
-
-
-    @Override
-    public void assertValid()
-    {
-        /* no extra validation for data frames (yet) here */
     }
 
     @Override
