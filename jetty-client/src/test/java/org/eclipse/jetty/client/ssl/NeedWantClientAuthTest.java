@@ -96,9 +96,7 @@ public class NeedWantClientAuthTest
     @Test
     public void testWantClientAuthWithoutAuth() throws Exception
     {
-        SslContextFactory serverSSL = new SslContextFactory();
-        serverSSL.setKeyStorePath("src/test/resources/keystore.jks");
-        serverSSL.setKeyStorePassword("storepwd");
+        SslContextFactory serverSSL = createSslContextFactory();
         serverSSL.setWantClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
 
@@ -115,9 +113,7 @@ public class NeedWantClientAuthTest
     @Test
     public void testWantClientAuthWithAuth() throws Exception
     {
-        SslContextFactory serverSSL = new SslContextFactory();
-        serverSSL.setKeyStorePath("src/test/resources/keystore.jks");
-        serverSSL.setKeyStorePassword("storepwd");
+        SslContextFactory serverSSL = createSslContextFactory();
         serverSSL.setWantClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
         CountDownLatch handshakeLatch = new CountDownLatch(1);
@@ -157,9 +153,14 @@ public class NeedWantClientAuthTest
     @Test
     public void testNeedClientAuthWithoutAuth() throws Exception
     {
-        SslContextFactory serverSSL = new SslContextFactory();
-        serverSSL.setKeyStorePath("src/test/resources/keystore.jks");
-        serverSSL.setKeyStorePassword("storepwd");
+        // In TLS 1.2, the TLS handshake on the client finishes after the TLS handshake on the server.
+        // The server detects the lack of the client certificate, fails its TLS handshake and sends
+        // bad_certificate to the client, which then fails its own TLS handshake.
+        // In TLS 1.3, the TLS handshake on the client finishes before the TLS handshake on the server.
+        // The server still sends bad_certificate to the client, but the client handshake has already
+        // completed successfully its TLS handshake.
+
+        SslContextFactory serverSSL = createSslContextFactory();
         serverSSL.setNeedClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
 
@@ -168,6 +169,13 @@ public class NeedWantClientAuthTest
         CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.addBean(new SslHandshakeListener()
         {
+            @Override
+            public void handshakeSucceeded(Event event)
+            {
+                if ("TLSv1.3".equals(event.getSSLEngine().getSession().getProtocol()))
+                    handshakeLatch.countDown();
+            }
+
             @Override
             public void handshakeFailed(Event event, Throwable failure)
             {
@@ -182,7 +190,11 @@ public class NeedWantClientAuthTest
                 .send(result ->
                 {
                     if (result.isFailed())
-                        latch.countDown();
+                    {
+                        Throwable failure = result.getFailure();
+                        if (failure instanceof SSLHandshakeException)
+                            latch.countDown();
+                    }
                 });
 
         Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
@@ -192,9 +204,7 @@ public class NeedWantClientAuthTest
     @Test
     public void testNeedClientAuthWithAuth() throws Exception
     {
-        SslContextFactory serverSSL = new SslContextFactory();
-        serverSSL.setKeyStorePath("src/test/resources/keystore.jks");
-        serverSSL.setKeyStorePassword("storepwd");
+        SslContextFactory serverSSL = createSslContextFactory();
         serverSSL.setNeedClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
         CountDownLatch handshakeLatch = new CountDownLatch(1);
