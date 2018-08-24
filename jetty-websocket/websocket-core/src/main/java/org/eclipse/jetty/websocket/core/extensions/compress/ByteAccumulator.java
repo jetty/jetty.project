@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 
 /**
@@ -62,19 +61,17 @@ public class ByteAccumulator
         return length;
     }
 
-    public void transferTo(ByteBuffer buffer)
+    public void transferTo(ByteBuffer bufferInFillMode)
     {
-        if (buffer.remaining() < length)
+        if (bufferInFillMode.remaining() < length)
         {
             throw new IllegalArgumentException(String.format("Not enough space in ByteBuffer remaining [%d] for accumulated buffers length [%d]",
-                    buffer.remaining(),length));
+                    bufferInFillMode.remaining(),length));
         }
 
-        int position = buffer.position();
         for (byte[] chunk : chunks)
         {
-            buffer.put(chunk,0,chunk.length);
+            bufferInFillMode.put(chunk,0,chunk.length);
         }
-        BufferUtil.flipToFlush(buffer,position);
     }
 }

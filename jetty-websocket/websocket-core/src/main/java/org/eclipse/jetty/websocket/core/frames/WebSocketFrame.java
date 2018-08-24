@@ -52,7 +52,8 @@ import org.eclipse.jetty.websocket.core.ProtocolException;
  */
 public class WebSocketFrame implements Frame
 {
-    public static WebSocketFrame copy(Frame original)
+
+    public static <F extends Frame> F copyWithoutPayload(F original)
     {
         WebSocketFrame copy;
         switch (original.getOpCode())
@@ -80,6 +81,12 @@ public class WebSocketFrame implements Frame
         }
 
         copy.copyHeaders(original);
+        return (F)copy;
+    }
+
+    public static WebSocketFrame copy(Frame original)
+    {
+        WebSocketFrame copy = (WebSocketFrame)copyWithoutPayload(original);
         ByteBuffer payload = original.getPayload();
         if (payload != null)
         {
@@ -124,6 +131,31 @@ public class WebSocketFrame implements Frame
         mask = null;
         this.finRsvOp = (byte)((finRsvOp & 0xF0) | (opcode & 0x0F));
     }
+
+    public WebSocketFrame(byte opCode, ByteBuffer payload)
+    {
+        this(opCode);
+        setPayload(payload);
+    }
+
+    public WebSocketFrame(byte opCode, String payload)
+    {
+        this(opCode);
+        setPayload(payload);
+    }
+
+    public WebSocketFrame(byte opCode, boolean fin, ByteBuffer payload)
+    {
+        this(opCode, payload);
+        setFin(fin);
+    }
+
+    public WebSocketFrame(byte opCode, boolean fin, String payload)
+    {
+        this(opCode, payload);
+        setFin(fin);
+    }
+
 
     public void assertValid()
     {
@@ -240,7 +272,7 @@ public class WebSocketFrame implements Frame
     public String getPayloadAsUTF8()
     {
         if (payload == null)
-            return "";
+            return null;
 
         return BufferUtil.toUTF8String(payload);
     }

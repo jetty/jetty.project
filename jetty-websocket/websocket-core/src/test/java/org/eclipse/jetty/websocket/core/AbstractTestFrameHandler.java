@@ -25,14 +25,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.DataFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
@@ -76,27 +71,27 @@ public class AbstractTestFrameHandler implements FrameHandler
         switch (opcode)
         {
             case OpCode.PING:
-                onPingFrame((PingFrame)frame,callback);
+                onPingFrame(frame,callback);
                 break;
          
             case OpCode.PONG:
-                onPongFrame((PongFrame)frame,callback);
+                onPongFrame(frame,callback);
                 break;
                 
             case OpCode.TEXT:
-                onTextFrame((TextFrame)frame,callback);
+                onTextFrame(frame,callback);
                 break;
                 
             case OpCode.BINARY:
-                onBinaryFrame((BinaryFrame)frame,callback);
+                onBinaryFrame(frame,callback);
                 break;
                 
             case OpCode.CONTINUATION:
-                onContinuationFrame((ContinuationFrame)frame,callback);
+                onContinuationFrame(frame,callback);
                 break;
                 
             case OpCode.CLOSE:
-                onCloseFrame((CloseFrame)frame,callback);
+                onCloseFrame(frame,callback);
                 break;
         }
     }
@@ -112,7 +107,7 @@ public class AbstractTestFrameHandler implements FrameHandler
      * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      */
-    protected void onPingFrame(PingFrame frame, Callback callback)
+    protected void onPingFrame(Frame frame, Callback callback)
     {
         ByteBuffer pongBuf;
         if (frame.hasPayload())
@@ -144,7 +139,7 @@ public class AbstractTestFrameHandler implements FrameHandler
      * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      */
-    protected void onPongFrame(PongFrame frame, Callback callback)
+    protected void onPongFrame(Frame frame, Callback callback)
     {
         callback.succeeded();
     }
@@ -160,7 +155,7 @@ public class AbstractTestFrameHandler implements FrameHandler
      * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      */
-    protected void onTextFrame(DataFrame frame, Callback callback)
+    protected void onTextFrame(Frame frame, Callback callback)
     {
         if (utf8==null)
             utf8 = new Utf8StringBuilder(Math.max(1024,frame.getPayloadLength()*2));
@@ -180,8 +175,8 @@ public class AbstractTestFrameHandler implements FrameHandler
     
     /** 
      * Notification method for when UTF8 text is received. This method is 
-     * called by {@link #onTextFrame(DataFrame, Callback)} and 
-     * {@link #onContinuationFrame(ContinuationFrame, Callback)}.  Implementations
+     * called by {@link #onTextFrame(Frame, Callback)} and
+     * {@link #onContinuationFrame(Frame, Callback)}.  Implementations
      * may consume partial content with {@link Utf8StringBuilder#takePartialString()}
      * or leave it to accumulate over multiple calls.
      * The default implementation just succeeds the callback.
@@ -205,7 +200,7 @@ public class AbstractTestFrameHandler implements FrameHandler
      * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      */
-    protected void onBinaryFrame(DataFrame frame, Callback callback)
+    protected void onBinaryFrame(Frame frame, Callback callback)
     {
         if (frame.isFin())
         {
@@ -224,14 +219,14 @@ public class AbstractTestFrameHandler implements FrameHandler
             if (frame.hasPayload())
                 BufferUtil.append(byteBuffer,frame.getPayload());
             
-            onBinary(byteBuffer,callback,frame.isFin());
+            onBinary(byteBuffer,callback,false);
         }
     }
 
     /** 
      * Notification method for when binary data is received. This method is 
-     * called by {@link #onBinaryFrame(DataFrame, Callback)} and 
-     * {@link #onContinuationFrame(ContinuationFrame, Callback)}.  Implementations
+     * called by {@link #onBinaryFrame(Frame, Callback)} and
+     * {@link #onContinuationFrame(Frame, Callback)}.  Implementations
      * may consume partial content from the {@link ByteBuffer}
      * or leave it to accumulate over multiple calls.
      * The default implementation just succeeds the callback.
@@ -252,7 +247,7 @@ public class AbstractTestFrameHandler implements FrameHandler
      * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      */
-    protected void onContinuationFrame(ContinuationFrame frame, Callback callback)
+    protected void onContinuationFrame(Frame frame, Callback callback)
     {
         if (partial==null)
         {
@@ -296,12 +291,13 @@ public class AbstractTestFrameHandler implements FrameHandler
      * @param frame The received frame
      * @param callback The callback to indicate completion of frame handling.
      */
-    protected void onCloseFrame(CloseFrame frame, Callback callback)
+    protected void onCloseFrame(Frame frame, Callback callback)
     {
         int respond;
         String reason=null;
-        
-        int code = frame.hasPayload() ? frame.getCloseStatus().getCode() : -1;
+
+
+        int code = frame.hasPayload() ? CloseFrame.toCloseStatus(frame.getPayload()).getCode() : -1;
         
         switch(code)
         {

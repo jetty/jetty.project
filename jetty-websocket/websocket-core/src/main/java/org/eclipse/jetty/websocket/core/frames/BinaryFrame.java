@@ -21,18 +21,12 @@ package org.eclipse.jetty.websocket.core.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.Frame;
 
 public class BinaryFrame extends DataFrame
 {
     public BinaryFrame()
     {
         super(OpCode.BINARY);
-    }
-    
-    public BinaryFrame(Frame frame)
-    {
-        super(OpCode.BINARY, frame);
     }
 
     @Override

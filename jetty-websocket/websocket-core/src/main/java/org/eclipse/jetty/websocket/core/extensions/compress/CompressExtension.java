@@ -35,11 +35,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.extensions.AbstractExtension;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.DataFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public abstract class CompressExtension extends AbstractExtension
@@ -132,7 +129,7 @@ public abstract class CompressExtension extends AbstractExtension
 
     protected void forwardIncoming(DataFrame frame, Callback callback, ByteAccumulator accumulator)
     {
-        DataFrame newFrame = DataFrame.newDataFrame(frame);
+        DataFrame newFrame = DataFrame.copyWithoutPayload(frame);
 
         // Unset RSV1 since it's not compressed anymore.
         newFrame.setRsv1(false);
@@ -140,8 +137,16 @@ public abstract class CompressExtension extends AbstractExtension
         ByteBuffer buffer = getBufferPool().acquire(accumulator.getLength(),false);
         try
         {
-            BufferUtil.flipToFill(buffer);
-            accumulator.transferTo(buffer);
+            int position = BufferUtil.flipToFill(buffer);
+            try
+            {
+                accumulator.transferTo(buffer);
+            }
+            finally
+            {
+                BufferUtil.flipToFlush(buffer,position);
+            }
+
             newFrame.setPayload(buffer);
             nextIncomingFrame(newFrame, callback);
         }
@@ -533,7 +538,7 @@ public abstract class CompressExtension extends AbstractExtension
             }
 
             boolean continuation = frame.getType().isContinuation() || !first;
-            DataFrame chunk = DataFrame.newDataFrame(frame,continuation);
+            DataFrame chunk = new DataFrame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
             if (rsvUse == RSV_USE_ONLY_FIRST)
             {
                 chunk.setRsv1(!continuation);

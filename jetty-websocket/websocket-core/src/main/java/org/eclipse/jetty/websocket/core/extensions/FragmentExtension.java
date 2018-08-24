@@ -148,7 +148,7 @@ public class FragmentExtension extends AbstractExtension
             finished = length == remaining;
 
             boolean continuation = frame.getType().isContinuation() || !first;
-            DataFrame fragment = DataFrame.newDataFrame(frame, continuation);
+            DataFrame fragment = new DataFrame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
             boolean fin = frame.isFin() && finished;
             fragment.setFin(fin);
 

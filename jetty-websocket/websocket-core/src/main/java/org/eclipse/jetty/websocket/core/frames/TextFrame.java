@@ -18,21 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.frames;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.Frame;
-
 public class TextFrame extends DataFrame
 {
     public TextFrame()
     {
         super(OpCode.TEXT);
-    }
-    
-    public TextFrame(Frame frame)
-    {
-        super(OpCode.TEXT, frame);
     }
 
     @Override

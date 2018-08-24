@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.frames;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.Frame;
 
 /**
  * A Data Frame
@@ -31,45 +32,28 @@ public class DataFrame extends WebSocketFrame
         super(opcode);
     }
 
-    protected DataFrame(byte opCode, Frame basedOn)
+    public DataFrame(byte opCode, ByteBuffer payload)
     {
-        super(opCode);
-        copyHeaders(basedOn);
+        this(opCode);
+        setPayload(payload);
     }
 
-    /**
-     * Construct new DataFrame based on headers of provided frame.
-     * <p>
-     * Useful for when working in extensions and a new frame needs to be created.
-     * @param basedOn the frame this one is based on
-     * @return the newly constructed DataFrame
-     */
-    public static DataFrame newDataFrame(Frame basedOn)
+    public DataFrame(byte opCode, String payload)
     {
-        return newDataFrame(basedOn, false);
+        this(opCode);
+        setPayload(payload);
     }
 
-
-    /**
-     * Construct new DataFrame based on headers of provided frame, overriding for continuations if needed.
-     * <p>
-     * Useful for when working in extensions and a new frame needs to be created.
-     * @param basedOn the frame this one is based on
-     * @param continuation true if this is a continuation frame
-     * @return the newly constructed DataFrame
-     */
-    public static DataFrame newDataFrame(Frame basedOn, boolean continuation)
+    public DataFrame(byte opCode, ByteBuffer payload, boolean fin)
     {
-        if(continuation || (basedOn.getType() == Type.CONTINUATION))
-            return new ContinuationFrame(basedOn);
+        this(opCode, payload);
+        setFin(fin);
+    }
 
-        if(basedOn.getType() == Type.BINARY)
-            return new BinaryFrame(basedOn);
-
-        if(basedOn.getType() == Type.TEXT)
-            return new TextFrame(basedOn);
-
-        throw new IllegalArgumentException("Invalid FrameType");
+    public DataFrame(byte opCode, String payload, boolean fin)
+    {
+        this(opCode, payload);
+        setFin(fin);
     }
 
     @Override

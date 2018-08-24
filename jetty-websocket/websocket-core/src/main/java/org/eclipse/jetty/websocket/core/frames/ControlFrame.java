@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.core.frames;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 
 public abstract class ControlFrame extends WebSocketFrame
@@ -97,15 +96,5 @@ public abstract class ControlFrame extends WebSocketFrame
             throw new ProtocolException("Control Payloads can not exceed " + MAX_CONTROL_PAYLOAD + " bytes in length.");
         }
         return super.setPayload(buf);
-    }
-
-    @Override
-    public ByteBuffer getPayload()
-    {
-        if (super.getPayload() == null)
-        {
-            return BufferUtil.EMPTY_BUFFER;
-        }
-        return super.getPayload();
     }
 }

@@ -21,18 +21,12 @@ package org.eclipse.jetty.websocket.core.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.Frame;
 
 public class ContinuationFrame extends DataFrame
 {
     public ContinuationFrame()
     {
         super(OpCode.CONTINUATION);
-    }
-
-    public ContinuationFrame(Frame frame)
-    {
-        super(OpCode.CONTINUATION, frame);
     }
 
     @Override
