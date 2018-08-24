@@ -207,7 +207,10 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     return;
                 }
 
-                conversation.setAttribute(authenticationAttribute, true);
+                if (!authentication.isMultipleRounds())
+                {
+                    conversation.setAttribute(authenticationAttribute, true);
+                }
 
                 URI requestURI = request.getURI();
                 String path = null;
@@ -225,7 +228,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 copyIfAbsent(request, newRequest, HttpHeader.AUTHORIZATION);
                 copyIfAbsent(request, newRequest, HttpHeader.PROXY_AUTHORIZATION);
 
-                newRequest.onResponseSuccess(r -> client.getAuthenticationStore().addAuthenticationResult(authnResult));
+                if (authnResult.getURI() != null)
+                    newRequest.onResponseSuccess(r -> client.getAuthenticationStore().addAuthenticationResult(authnResult));
 
                 Connection connection = (Connection)request.getAttributes().get(Connection.class.getName());
                 if (connection != null)
