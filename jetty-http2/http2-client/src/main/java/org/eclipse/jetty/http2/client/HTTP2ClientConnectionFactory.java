@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.http2.client;
 
-import java.io.IOException;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -53,7 +52,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     private final Connection.Listener connectionListener = new ConnectionListener();
 
     @Override
-    public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         HTTP2Client client = (HTTP2Client)context.get(CLIENT_CONTEXT_KEY);
         ByteBufferPool byteBufferPool = (ByteBufferPool)context.get(BYTE_BUFFER_POOL_CONTEXT_KEY);
@@ -66,7 +65,11 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Generator generator = new Generator(byteBufferPool);
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
+        session.setMaxRemoteStreams(client.getMaxConcurrentPushedStreams());
+
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
+        parser.setMaxFrameLength(client.getMaxFrameLength());
+        parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
                 parser, session, client.getInputBufferSize(), promise, listener);
@@ -107,7 +110,13 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         {
             Map<Integer, Integer> settings = listener.onPreface(getSession());
             if (settings == null)
-                settings = Collections.emptyMap();
+                settings = new HashMap<>();
+            settings.computeIfAbsent(SettingsFrame.INITIAL_WINDOW_SIZE, k -> client.getInitialStreamRecvWindow());
+            settings.computeIfAbsent(SettingsFrame.MAX_CONCURRENT_STREAMS, k -> client.getMaxConcurrentPushedStreams());
+
+            Integer maxFrameLength = settings.get(SettingsFrame.MAX_FRAME_SIZE);
+            if (maxFrameLength != null)
+                getParser().setMaxFrameLength(maxFrameLength);
 
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);
@@ -129,11 +138,12 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @Override
         public void succeeded()
         {
+            super.onOpen();
+            promise.succeeded(getSession());
             // Only start reading from server after we have sent the client preface,
             // otherwise we risk to read the server preface (a SETTINGS frame) and
             // reply to that before we have the chance to send the client preface.
-            super.onOpen();
-            promise.succeeded(getSession());
+            produce();
         }
 
         @Override

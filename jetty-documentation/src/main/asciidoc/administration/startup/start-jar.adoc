@@ -258,3 +258,7 @@ This allows for some complex hierarchies of configuration details.
 If the file does not exist at the given location, download it from the given http URI.
 Note: location is always relative to `${jetty.base}`.
 You might need to escape the slash "\|" to use this on some environments.
+
+maven.repo.uri=[url]::
+The url to use to download Maven dependencies.
+Default is https://repo1.maven.org/maven2/.

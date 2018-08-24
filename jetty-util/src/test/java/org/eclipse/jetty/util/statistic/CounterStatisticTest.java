@@ -90,10 +90,7 @@ public class CounterStatisticTest
         final CountDownLatch decBarrier = new CountDownLatch(N/2);
         
         for (int i=N;i-->0;)
-        {
-            final int I = i;
-      
-                
+        {                
             threads[i]=(i>=N/2)
             ?new Thread()
             {

@@ -351,8 +351,7 @@ public class MimeTypes
 
         if (type==null)
         {
-            if (type==null)
-                type=__dftMimeMap.get("*");
+            type=__dftMimeMap.get("*");
         }
 
         return type;
@@ -517,7 +516,7 @@ public class MimeTypes
      */
     public static Map<String,String> getAssumedEncodings()
     {
-        return __inferredEncodings;
+        return __assumedEncodings;
     }
 
     @Deprecated

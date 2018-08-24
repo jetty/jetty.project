@@ -53,6 +53,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.DebugListener;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannel.Listener;
 import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -134,6 +135,16 @@ public class AsyncServletTest
         _port=_connector.getLocalPort();
         __history.clear();
         __latch=new CountDownLatch(1);
+        
+        _connector.addBean(new HttpChannel.Listener()
+        {
+            @Override
+            public void onComplete(Request request)
+            {
+                __latch.countDown();
+            }
+            
+        });
     }
 
     @After
@@ -1073,7 +1084,6 @@ public class AsyncServletTest
         public void onComplete(AsyncEvent event) throws IOException
         {
             historyAdd("onComplete");
-            __latch.countDown();
         }
     };
 

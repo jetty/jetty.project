@@ -30,9 +30,9 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 
-public class SslSelectionDump extends ContainerLifeCycle implements Dumpable
+class SslSelectionDump extends ContainerLifeCycle implements Dumpable
 {
-    private static class CaptionedList extends ArrayList<String> implements Dumpable
+    static class CaptionedList extends ArrayList<String> implements Dumpable
     {
         private final String caption;
         
@@ -57,9 +57,9 @@ public class SslSelectionDump extends ContainerLifeCycle implements Dumpable
         }
     }
     
-    private final String type;
-    private SslSelectionDump.CaptionedList enabled = new SslSelectionDump.CaptionedList("Enabled");
-    private SslSelectionDump.CaptionedList disabled = new SslSelectionDump.CaptionedList("Disabled");
+    final String type;
+    final SslSelectionDump.CaptionedList enabled = new SslSelectionDump.CaptionedList("Enabled");
+    final SslSelectionDump.CaptionedList disabled = new SslSelectionDump.CaptionedList("Disabled");
     
     public SslSelectionDump(String type,
                             String[] supportedByJVM,
@@ -87,16 +87,7 @@ public class SslSelectionDump extends ContainerLifeCycle implements Dumpable
                     
                     StringBuilder s = new StringBuilder();
                     s.append(entry);
-                    if (!jvmEnabled.contains(entry))
-                    {
-                        if (isPresent)
-                        {
-                            s.append(" -");
-                            isPresent = false;
-                        }
-                        s.append(" JreDisabled:java.security");
-                    }
-                    
+
                     for (Pattern pattern : excludedPatterns)
                     {
                         Matcher m = pattern.matcher(entry);
@@ -114,10 +105,11 @@ public class SslSelectionDump extends ContainerLifeCycle implements Dumpable
                             s.append(" ConfigExcluded:'").append(pattern.pattern()).append('\'');
                         }
                     }
-                    
+
+                    boolean isIncluded = false;
+
                     if (!includedPatterns.isEmpty())
                     {
-                        boolean isIncluded = false;
                         for (Pattern pattern : includedPatterns)
                         {
                             Matcher m = pattern.matcher(entry);
@@ -139,10 +131,22 @@ public class SslSelectionDump extends ContainerLifeCycle implements Dumpable
                             {
                                 s.append(",");
                             }
-                            s.append(" ConfigIncluded:NotSpecified");
+
+                            s.append(" ConfigIncluded:NotSelected");
                         }
                     }
-                    
+
+                    if (!isIncluded && !jvmEnabled.contains(entry))
+                    {
+                        if (isPresent)
+                        {
+                            s.append(" -");
+                            isPresent = false;
+                        }
+
+                        s.append(" JVM:disabled");
+                    }
+
                     if (isPresent)
                     {
                         enabled.add(s.toString());

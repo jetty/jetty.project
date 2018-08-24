@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -193,8 +194,9 @@ public class ResourceTest
     public static Collection<Data[]> data() throws Exception
     {
         UseCases cases = new UseCases("src/test/resources/");
-        
-        File testDir = MavenTestingUtils.getTargetTestingDir(ResourceTest.class.getName());
+
+        Path targetPath = MavenTestingUtils.getTargetTestingPath();
+        File testDir = targetPath.resolve("ResourceTest with spaces").toFile();
         FS.ensureEmpty(testDir);
         File tmpFile = new File(testDir, "test.tmp");
         FS.touch(tmpFile);
@@ -225,8 +227,8 @@ public class ResourceTest
         String urlRef = cases.uriRef.toASCIIString();
         Data zdata = new Data("jar:"+urlRef +"TestData/test.zip!/",EXISTS,DIR);
         cases.addCase(zdata);
-        cases.addCase(new Data(zdata,"Unkown",!EXISTS,!DIR));
-        cases.addCase(new Data(zdata,"/Unkown/",!EXISTS,DIR));
+        cases.addCase(new Data(zdata,"Unknown",!EXISTS,!DIR));
+        cases.addCase(new Data(zdata,"/Unknown/",!EXISTS,DIR));
 
         cases.addCase(new Data(zdata,"subdir",EXISTS,DIR));
         cases.addCase(new Data(zdata,"/subdir/",EXISTS,DIR));

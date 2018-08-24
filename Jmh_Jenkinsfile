@@ -1,0 +1,58 @@
+#!groovy
+
+def branch = params.get("JETTY_BRANCH" ,"jetty-9.4.x")
+def owner = params.get("REPO_OWNER", "eclipse")
+
+node("linux") {
+  // System Dependent Locations
+  def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
+  def jdktool = tool name: "jdk8", type: 'hudson.model.JDK'
+  def mvnName = 'maven3.5'
+  def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
+  def settingsName = 'oss-settings.xml'
+  def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
+
+  // Environment
+  List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
+  mvnEnv.add("MAVEN_OPTS=$mavenOpts")
+
+
+  stage("Checkout") {
+    git url: "https://github.com/$owner/jetty.project.git", branch: "$branch"
+  }
+
+  stage("Compile") {
+    withEnv(mvnEnv) {
+      timeout(time: 15, unit: 'MINUTES') {
+        withMaven(
+                maven: mvnName,
+                jdk: "jdk8",
+                publisherStrategy: 'EXPLICIT',
+                globalMavenSettingsConfig: settingsName,
+                mavenOpts: mavenOpts,
+                mavenLocalRepo: localRepo) {
+          sh "mvn -V -B clean install -DskipTests -T6 -e"
+        }
+
+      }
+      stash name: 'perf-tests', includes: 'jetty-jmh/target/benchmarks.jar'
+    }
+  }
+}
+
+// jmh run
+
+stage("jmh-run") {
+  node( 'jmh-build-node' ) {
+    timeout( time: 120, unit: 'MINUTES' ) {
+      withEnv( ["JAVA_HOME=${tool "jdk8"}"] ) {
+        unstash name: 'perf-tests'
+        sh "${env.JAVA_HOME}/bin/java -jar jetty-jmh/target/benchmarks.jar -rff jetty-jmh/target/jmh_result.json -rf json"
+        jmhReport 'jetty-jmh/target/jmh_result.json'
+      }
+    }
+  }
+}
+
+
+// vim: et:ts=2:sw=2:ft=groovy

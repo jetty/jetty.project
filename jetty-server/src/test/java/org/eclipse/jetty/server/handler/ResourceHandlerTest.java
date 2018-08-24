@@ -40,6 +40,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -185,6 +186,24 @@ public class ResourceHandlerTest
         assertThat(response.get(SERVER),containsString("Jetty"));
         assertThat(response.getContent(),containsString("simple text"));
     }
+    
+    @Test
+    public void testIfModifiedSince() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/simple.txt HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(),equalTo(200));
+        assertThat(response.get(LAST_MODIFIED),Matchers.notNullValue());
+        assertThat(response.getContent(),containsString("simple text"));
+        String last_modified = response.get(LAST_MODIFIED);
+        
+        response = HttpTester.parseResponse(_local.getResponse(
+            "GET /resource/simple.txt HTTP/1.0\r\n" +
+            "If-Modified-Since: " + last_modified + "\r\n" +
+            "\r\n"));
+        
+        assertThat(response.getStatus(),equalTo(304));
+    }
 
     @Test
     public void testBigFile() throws Exception
@@ -266,7 +285,7 @@ public class ResourceHandlerTest
     @Slow
     public void testSlowBiggest() throws Exception
     {
-        _connector.setIdleTimeout(10000);
+        _connector.setIdleTimeout(9000);
         
         File dir = MavenTestingUtils.getTargetFile("test-classes/simple");
         File biggest = new File(dir,"biggest.txt");
@@ -291,7 +310,7 @@ public class ResourceHandlerTest
             ByteBuffer buffer=null;
             while(true)
             {
-                Thread.sleep(100);
+                Thread.sleep(25);
                 int len=in.read(array);
                 if (len<0)
                     break;
@@ -304,5 +323,33 @@ public class ResourceHandlerTest
             Assert.assertEquals('D',buffer.get(buffer.limit()-2));
             
         }
+    }
+
+
+    @Test
+    public void testConditionalGetResponseCommitted() throws Exception
+    {
+        _config.setOutputBufferSize(8);
+        _resourceHandler.setEtags(true);
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                                                                                              "If-Match: \"NO_MATCH\"\r\n" +
+                                                                                              "\r\n"));
+
+        assertThat(response.getStatus(),equalTo(HttpStatus.PRECONDITION_FAILED_412));
+    }
+
+
+    @Test
+    public void testConditionalHeadResponseCommitted() throws Exception
+    {
+        _config.setOutputBufferSize(8);
+        _resourceHandler.setEtags(true);
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("HEAD /resource/big.txt HTTP/1.0\r\n" +
+                                                                                              "If-Match: \"NO_MATCH\"\r\n" +
+                                                                                              "\r\n"));
+
+        assertThat(response.getStatus(),equalTo(HttpStatus.PRECONDITION_FAILED_412));
     }
 }

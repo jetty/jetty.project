@@ -20,6 +20,7 @@ package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 
 import javax.net.ssl.SSLEngine;
@@ -42,14 +43,36 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     private final ByteBufferPool byteBufferPool;
     private final Executor executor;
     private final ClientConnectionFactory connectionFactory;
+    private boolean _directBuffersForEncryption = true;
+    private boolean _directBuffersForDecryption = true;
     private boolean allowMissingCloseMessage = true;
 
     public SslClientConnectionFactory(SslContextFactory sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
     {
-        this.sslContextFactory = sslContextFactory;
+        this.sslContextFactory = Objects.requireNonNull(sslContextFactory, "Missing SslContextFactory");
         this.byteBufferPool = byteBufferPool;
         this.executor = executor;
         this.connectionFactory = connectionFactory;
+    }
+
+    public void setDirectBuffersForEncryption(boolean useDirectBuffers)
+    {
+        this._directBuffersForEncryption = useDirectBuffers;
+    }
+
+    public void setDirectBuffersForDecryption(boolean useDirectBuffers)
+    {
+        this._directBuffersForDecryption = useDirectBuffers;
+    }
+
+    public boolean isDirectBuffersForDecryption()
+    {
+        return _directBuffersForDecryption;
+    }
+
+    public boolean isDirectBuffersForEncryption()
+    {
+        return _directBuffersForEncryption;
     }
 
     public boolean isAllowMissingCloseMessage()
@@ -84,7 +107,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
 
     protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
     {
-        return new SslConnection(byteBufferPool, executor, endPoint, engine);
+        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
     }
 
     @Override

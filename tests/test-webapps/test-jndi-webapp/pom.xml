@@ -91,16 +91,16 @@
           </webAppConfig>
         </configuration>
         <dependencies>
-            <dependency>
-              <groupId>org.eclipse.jetty.tests</groupId>
-              <artifactId>test-mock-resources</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.eclipse.jetty.orbit</groupId>
-              <artifactId>javax.mail.glassfish</artifactId>
-              <version>1.4.1.v201005082020</version>
-            </dependency>
+          <dependency>
+            <groupId>org.eclipse.jetty.tests</groupId>
+            <artifactId>test-mock-resources</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.eclipse.jetty.orbit</groupId>
+            <artifactId>javax.mail.glassfish</artifactId>
+            <version>1.4.1.v201005082020</version>
+          </dependency>
         </dependencies>
       </plugin>
     </plugins>

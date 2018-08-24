@@ -125,11 +125,14 @@ public class PushPromiseBodyParser extends BodyParser
                 case HEADERS:
                 {
                     MetaData metaData = headerBlockParser.parse(buffer, length);
+                    if (metaData == HeaderBlockParser.SESSION_FAILURE)
+                        return false;
                     if (metaData != null)
                     {
                         state = State.PADDING;
                         loop = paddingLength == 0;
-                        onPushPromise(streamId, metaData);
+                        if (metaData != HeaderBlockParser.STREAM_FAILURE)
+                            onPushPromise(streamId, metaData);
                     }
                     break;
                 }

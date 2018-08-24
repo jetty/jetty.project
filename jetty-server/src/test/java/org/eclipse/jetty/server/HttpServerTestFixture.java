@@ -27,17 +27,15 @@ import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLSession;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
@@ -59,7 +57,6 @@ public class HttpServerTestFixture
         Socket socket = new Socket(host,port);
         socket.setSoTimeout(10000);
         socket.setTcpNoDelay(true);
-        socket.setSoLinger(false,0);
         return socket;
     }
 
@@ -118,6 +115,7 @@ public class HttpServerTestFixture
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            Log.getRootLogger().debug("handle "+target);
             baseRequest.setHandled(true);
 
             if (request.getContentType()!=null)
@@ -147,7 +145,7 @@ public class HttpServerTestFixture
             if (count==0)
             {
                 if (_musthavecontent)
-                    throw new IllegalStateException("no input recieved");
+                    throw new IllegalStateException("no input received");
 
                 writer.println("No content");
             }
@@ -158,6 +156,8 @@ public class HttpServerTestFixture
 
             if (reader.read()>=0)
                 throw new IllegalStateException("Not closed");
+
+            Log.getRootLogger().debug("handled "+target);
         }
     }
 
@@ -269,12 +269,4 @@ public class HttpServerTestFixture
     }
 
 
-    public final static HostnameVerifier __hostnameverifier = new HostnameVerifier()
-    {
-        @Override
-        public boolean verify(String hostname, SSLSession session)
-        {
-            return true;
-        }
-    };
 }

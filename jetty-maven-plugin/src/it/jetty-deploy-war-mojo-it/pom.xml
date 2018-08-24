@@ -6,22 +6,24 @@
   <groupId>org.eclipse.jetty.its.jetty-deploy-war-mojo-it</groupId>
   <artifactId>jetty-simple-project</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
 
   <name>Jetty :: Simple deploy war mojo test</name>
 
   <properties>
     <jetty.version>@project.version@</jetty.version>
-    <jetty.port.file>${project.build.directory}/jetty-run-war-port.txt</jetty.port.file>
+    <jetty.port.file>${project.build.directory}/jetty-deploy-war-port.txt</jetty.port.file>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
+      <artifactId>jetty-maven-plugin</artifactId>
       <version>@project.version@</version>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -43,25 +45,18 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>@surefireVersion@</version>
-        <configuration>
-          <skip>true</skip>
-          <systemPropertyVariables>
-            <jetty.port.file>${jetty.port.file}</jetty.port.file>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>@surefireVersion@</version>
         <configuration>
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
+            <contentCheck>Bean Validation Webapp example</contentCheck>
           </systemPropertyVariables>
+          <dependenciesToScan>
+            <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
+          </dependenciesToScan>
           <includes>
-            <include>**/*TestHelloServlet*</include>
+            <include>**/*TestGetContent*</include>
           </includes>
         </configuration>
         <executions>
@@ -91,6 +86,9 @@
               <goal>deploy-war</goal>
             </goals>
             <configuration>
+              <supportedPackagings>
+                <supportedPackaging>pom</supportedPackaging>
+              </supportedPackagings>
               <war>${project.build.directory}/bean-validation-webapp-2.25.1.war</war>
               <nonBlocking>true</nonBlocking>
               <systemProperties>
@@ -136,5 +134,33 @@
 
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>jdk9+</id>
+      <activation>
+        <jdk>[1.9,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.eclipse.jetty</groupId>
+              <artifactId>jetty-maven-plugin</artifactId>
+              <version>@project.version@</version>
+              <dependencies>
+                <dependency>
+                  <groupId>javax.xml.bind</groupId>
+                  <artifactId>jaxb-api</artifactId>
+                  <version>2.3.0</version>
+                </dependency>
+              </dependencies>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+
+    </profile>
+  </profiles>
 
 </project>

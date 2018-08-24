@@ -19,7 +19,6 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.plugin.MojoExecutionException;
@@ -75,19 +74,7 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
         super.finishConfigurationBeforeStart();
     }
     
-    /**
-     * 
-     * @see AbstractJettyMojo#checkPomConfiguration()
-     */
-    @Override
-    public void checkPomConfiguration() throws MojoExecutionException
-    {
-        return;
-    }
 
-    
-    
-    
     /**
      * @see AbstractJettyMojo#configureScanner()
      */

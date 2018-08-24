@@ -91,7 +91,9 @@ public class BaseBuilder
             if (localRepoDir != null)
             {
                 // Use provided local repo directory
-                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome,localRepoDir,args.getMavenLocalRepoDir()==null));
+                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome, localRepoDir,
+                                                                       args.getMavenLocalRepoDir()==null,
+                                                                       startArgs.getMavenBaseUri()));
             }
             else
             {
@@ -205,7 +207,7 @@ public class BaseBuilder
                     } 
                     else 
                     {
-                        // if (explictly added and ini file modified)
+                        // if (explicitly added and ini file modified)
                         if (startArgs.getStartModules().contains(module.getName()))
                         {
                             ini=builder.get().addModule(module, startArgs.getProperties());
@@ -244,7 +246,7 @@ public class BaseBuilder
 
         files.addAll(startArgs.getFiles());
         if (!files.isEmpty() && processFileResources(files))
-            modified.set(Boolean.TRUE);
+            modified.set(true);
         
         return modified.get();
     }
@@ -310,7 +312,7 @@ public class BaseBuilder
 
         boolean dirty = false;
 
-        List<String> failures = new ArrayList<String>();
+        List<String> failures = new ArrayList<>();
 
         for (FileArg arg : files)
         {

@@ -24,10 +24,8 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -53,7 +51,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *  is assembled into a war, saving time during the development cycle.
  *  <p>
  *  The plugin forks a parallel lifecycle to ensure that the "compile" phase has been completed before invoking Jetty. This means
- *  that you do not need to explicity execute a "mvn compile" first. It also means that a "mvn clean jetty:run" will ensure that
+ *  that you do not need to explicitly execute a "mvn compile" first. It also means that a "mvn clean jetty:run" will ensure that
  *  a full fresh compile is done before invoking Jetty.
  *  <p>
  *  Once invoked, the plugin can be configured to run continuously, scanning for changes in the project and automatically performing a 
@@ -158,14 +156,10 @@ public class JettyRunMojo extends AbstractJettyMojo
      * List of deps that are wars
      */
     protected List<Artifact> warArtifacts;
-    
-    
+
     protected Resource originalBaseResource;
 
-    @Parameter(defaultValue = "${reactorProjects}", readonly = true, required = true)
-    private List<MavenProject> reactorProjects;
-
-    /** 
+     /**
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
      */
     @Override
@@ -181,7 +175,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      * @see AbstractJettyMojo#checkPomConfiguration()
      */
     @Override
-    public void checkPomConfiguration () throws MojoExecutionException
+    public boolean checkPomConfiguration () throws MojoExecutionException
     {
         // check the location of the static content/jsps etc
         try
@@ -238,6 +232,8 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             throw new MojoExecutionException("Location of classesDirectory does not exist");
         }
+
+        return true;
     }
 
    

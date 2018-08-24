@@ -180,6 +180,11 @@ public class HttpClient extends ContainerLifeCycle
     public HttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
     {
         this.transport = transport;
+        if (sslContextFactory == null)
+        {
+            sslContextFactory = new SslContextFactory(false);
+            sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
+        }
         this.sslContextFactory = sslContextFactory;
     }
 

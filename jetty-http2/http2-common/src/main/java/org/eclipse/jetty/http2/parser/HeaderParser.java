@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.http2.frames.FrameType;
 
 /**
  * <p>The parser for the frame header of HTTP/2 frames.</p>
@@ -142,6 +143,12 @@ public class HeaderParser
     public int getStreamId()
     {
         return streamId;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("[%s|%d|%d|%d]", FrameType.from(getFrameType()), getLength(), flags, getStreamId());
     }
 
     private enum State

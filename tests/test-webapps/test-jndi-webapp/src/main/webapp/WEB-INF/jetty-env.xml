@@ -27,7 +27,18 @@
   </New>
 
 
-
+ <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
+   <Arg><Ref refid='wac'/></Arg>
+   <Arg>svr</Arg>
+   <Arg type="java.lang.String">
+     <Ref id="Server">
+       <Get name="class">
+         <Get name="name"/>
+       </Get>
+     </Ref>
+   </Arg>
+   <Arg type="boolean">true</Arg>
+ </New>
 
 
 </Configure>

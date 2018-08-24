@@ -27,6 +27,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -553,7 +554,7 @@ public class StreamResetTest extends AbstractTest
                     {
                         // Wait to let the data sent by the client to be queued.
                         Thread.sleep(1000);
-                        throw new IllegalStateException("explictly_thrown_by_test");
+                        throw new IllegalStateException("explicitly_thrown_by_test");
                     }
                     catch (InterruptedException e)
                     {
@@ -623,7 +624,7 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        Deque<Object> dataQueue = new ArrayDeque<>();
+        Deque<Callback> dataQueue = new ArrayDeque<>();
         AtomicLong received = new AtomicLong();
         CountDownLatch latch = new CountDownLatch(1);
         Session client = newClient(new Session.Listener.Adapter());
@@ -635,7 +636,6 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
-                dataQueue.offer(frame);
                 dataQueue.offer(callback);
                 // Do not consume the data yet.
                 if (received.addAndGet(frame.getData().remaining()) == windowSize)
@@ -647,10 +647,7 @@ public class StreamResetTest extends AbstractTest
 
         // Reset and consume.
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        dataQueue.stream()
-                .filter(item -> item instanceof Callback)
-                .map(item -> (Callback)item)
-                .forEach(Callback::succeeded);
+        dataQueue.forEach(Callback::succeeded);
 
         Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
     }
@@ -702,7 +699,10 @@ public class StreamResetTest extends AbstractTest
         // Give time to the server to process the reset and drain the flusher queue.
         Thread.sleep(500);
 
-        HTTP2Session session = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).getBean(HTTP2Session.class);
+        AbstractHTTP2ServerConnectionFactory http2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
+        Set<Session> sessions = http2.getBean(AbstractHTTP2ServerConnectionFactory.HTTP2SessionContainer.class).getSessions();
+        Assert.assertEquals(1, sessions.size());
+        HTTP2Session session = (HTTP2Session)sessions.iterator().next();
         HTTP2Flusher flusher = session.getBean(HTTP2Flusher.class);
         Assert.assertEquals(0, flusher.getFrameQueueSize());
     }

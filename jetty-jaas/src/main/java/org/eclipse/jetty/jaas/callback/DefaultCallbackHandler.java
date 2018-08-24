@@ -30,7 +30,10 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.security.Password;
 
 /** 
- * DefaultUsernameCredentialCallbackHandler
+ * DefaultCallbackHandler
+ * 
+ * An implementation of the JAAS CallbackHandler. Users can provide
+ * their own implementation instead and set the name of its class on the JAASLoginService.
  */
 public class DefaultCallbackHandler extends AbstractCallbackHandler
 {
@@ -38,7 +41,7 @@ public class DefaultCallbackHandler extends AbstractCallbackHandler
 
     public void setRequest (Request request)
     {
-        this._request = request;
+        _request = request;
     }
 
     @Override
@@ -70,6 +73,10 @@ public class DefaultCallbackHandler extends AbstractCallbackHandler
             {
                 RequestParameterCallback callback = (RequestParameterCallback)callbacks[i];
                 callback.setParameterValues(Arrays.asList(_request.getParameterValues(callback.getParameterName())));
+            }
+            else if (callbacks[i] instanceof ServletRequestCallback)
+            {
+                ((ServletRequestCallback)callbacks[i]).setRequest(_request);
             }
             else
                 throw new UnsupportedCallbackException(callbacks[i]);

@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -476,22 +477,33 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 ServerParser parser = new ServerParser(byteBufferPool, new ServerParser.Listener.Adapter()
                 {
                     @Override
-                    public void onHeaders(HeadersFrame request)
+                    public void onPreface()
                     {
                         // Server's preface.
                         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
                         // Reply to client's SETTINGS.
                         generator.control(lease, new SettingsFrame(new HashMap<>(), true));
+                        writeFrames();
+                    }
+
+                    @Override
+                    public void onHeaders(HeadersFrame request)
+                    {
                         // Response.
                         MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
                         HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
                         generator.control(lease, response);
+                        writeFrames();
+                    }
 
+                    private void writeFrames()
+                    {
                         try
                         {
                             // Write the frames.
                             for (ByteBuffer buffer : lease.getByteBuffers())
                                 output.write(BufferUtil.toArray(buffer));
+                            lease.recycle();
                         }
                         catch (Throwable x)
                         {
@@ -499,6 +511,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         }
                     }
                 }, 4096, 8192);
+                parser.init(UnaryOperator.identity());
 
                 byte[] bytes = new byte[1024];
                 while (true)
@@ -561,6 +574,40 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         Assert.assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
         // No logic on the client to discard content for no-content status codes.
         Assert.assertArrayEquals(bytes, response.getContent());
+    }
+
+    @Test
+    public void testInvalidResponseHPack() throws Exception
+    {
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                // Produce an invalid HPACK block by adding a request pseudo-header to the response.
+                HttpFields fields = new HttpFields();
+                fields.put(":method", "get");
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, fields, 0);
+                int streamId = stream.getId();
+                HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
+                Callback.Completable callback = new Callback.Completable();
+                stream.headers(responseFrame, callback);
+                byte[] bytes = "hello".getBytes(StandardCharsets.US_ASCII);
+                callback.thenRun(() -> stream.data(new DataFrame(streamId, ByteBuffer.wrap(bytes), true), Callback.NOOP));
+                return null;
+            }
+        });
+
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        latch.countDown();
+                });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Ignore

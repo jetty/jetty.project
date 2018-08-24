@@ -29,7 +29,6 @@
         <Set name="host"><Property name="jetty.ssl.host" /></Set>
         <Set name="port"><Property name="jetty.ssl.port" default="8443" /></Set>
         <Set name="idleTimeout"><Property name="jetty.ssl.idleTimeout" default="30000"/></Set>
-        <Set name="soLingerTime"><Property name="jetty.ssl.soLingerTime" default="-1"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="jetty.ssl.acceptorPriorityDelta" default="0"/></Set>
         <Set name="acceptQueueSize"><Property name="jetty.ssl.acceptQueueSize" default="0"/></Set>
         <Get name="SelectorManager">

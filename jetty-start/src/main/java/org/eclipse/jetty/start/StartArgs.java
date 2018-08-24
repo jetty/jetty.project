@@ -19,6 +19,7 @@
 package org.eclipse.jetty.start;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -131,7 +132,7 @@ public class StartArgs
     /** List of all active [xml] sections from enabled modules */
     private List<Path> xmls = new ArrayList<>();
 
-    /** JVM arguments, found via commmand line and in all active [exec] sections from enabled modules */
+    /** JVM arguments, found via command line and in all active [exec] sections from enabled modules */
     private List<String> jvmArgs = new ArrayList<>();
 
     /** List of all xml references found directly on command line or start.ini */
@@ -175,6 +176,7 @@ public class StartArgs
     private boolean dryRun = false;
     private boolean createStartd = false;
     private boolean updateIni = false;
+    private String mavenBaseUri;
 
     private boolean exec = false;
     private String exec_properties;
@@ -345,6 +347,32 @@ public class StartArgs
         for (String key : sortedKeys)
         {
             dumpProperty(key);
+        }
+        
+        for (Path path : propertyFiles)
+        {
+            String p = baseHome.toShortForm(path);
+            if (Files.isReadable(path))
+            {
+                Properties props = new Properties();
+                try
+                {
+                    props.load(new FileInputStream(path.toFile()));
+                    for (Object key : props.keySet())
+                    {
+                        System.out.printf(" %s:%s = %s%n",p,key,props.getProperty(String.valueOf(key)));
+                    }
+                }
+                catch (Throwable th)
+                {
+                    System.out.printf(" %s NOT READABLE!%n",p);
+                }
+            }
+            else
+            {
+
+                System.out.printf(" %s NOT READABLE!%n",p);
+            }
         }
     }
 
@@ -807,7 +835,12 @@ public class StartArgs
         return updateIni;
     }
 
-    public void parse(ConfigSources sources)
+    public String getMavenBaseUri()
+    {
+        return mavenBaseUri;
+    }
+
+    public void parse( ConfigSources sources)
     {
         ListIterator<ConfigSource> iter = sources.reverseListIterator();
         while (iter.hasPrevious())
@@ -1277,6 +1310,12 @@ public class StartArgs
                 ue.initCause(x);
                 throw ue;
             }
+        }
+
+        // to override default https://repo1.maven.org/maven2/
+        if (key.equals("maven.repo.uri"))
+        {
+            this.mavenBaseUri = value;
         }
     }
 

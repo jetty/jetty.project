@@ -161,14 +161,12 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void testTimeoutOnListenerWithExplicitConnection() throws Exception
     {
-        Assume.assumeTrue(connector instanceof NetworkConnector);
-        NetworkConnector network_connector = (NetworkConnector)connector;
-        
         long timeout = 1000;
         start(new TimeoutHandler(2 * timeout));
+        Assume.assumeTrue(connector instanceof NetworkConnector);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = client.getDestination(getScheme(), "localhost", network_connector.getLocalPort());
+        Destination destination = client.getDestination(getScheme(), "localhost", ((NetworkConnector)connector).getLocalPort());
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
@@ -188,14 +186,12 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void testTimeoutIsCancelledOnSuccessWithExplicitConnection() throws Exception
     {
-        Assume.assumeTrue(connector instanceof NetworkConnector);
-        NetworkConnector network_connector = (NetworkConnector)connector;   
-        
         long timeout = 1000;
         start(new TimeoutHandler(timeout));
+        Assume.assumeTrue(connector instanceof NetworkConnector);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = client.getDestination(getScheme(), "localhost", network_connector.getLocalPort());
+        Destination destination = client.getDestination(getScheme(), "localhost", ((NetworkConnector)connector).getLocalPort());
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
@@ -278,14 +274,13 @@ public class HttpClientTimeoutTest extends AbstractTest
 
     private void testConnectTimeoutFailsRequest(boolean blocking) throws Exception
     {
-        Assume.assumeTrue(connector instanceof NetworkConnector);
-
         String host = "10.255.255.1";
         int port = 80;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
         start(new EmptyServerHandler());
+        Assume.assumeTrue(connector instanceof NetworkConnector);
         client.stop();
         client.setConnectTimeout(connectTimeout);
         client.setConnectBlocking(blocking);
@@ -307,13 +302,13 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout() throws Exception
     {
-        Assume.assumeTrue(connector instanceof NetworkConnector);
         String host = "10.255.255.1";
         int port = 80;
         int connectTimeout = 2000;
         assumeConnectTimeout(host, port, connectTimeout);
 
         start(new EmptyServerHandler());
+        Assume.assumeTrue(connector instanceof NetworkConnector);
         client.stop();
         client.setConnectTimeout(connectTimeout);
         client.start();
@@ -337,14 +332,13 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void retryAfterConnectTimeout() throws Exception
     {
-        Assume.assumeTrue(connector instanceof NetworkConnector);
-
         final String host = "10.255.255.1";
         final int port = 80;
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
         start(new EmptyServerHandler());
+        Assume.assumeTrue(connector instanceof NetworkConnector);
         client.stop();
         client.setConnectTimeout(connectTimeout);
         client.start();
@@ -387,13 +381,11 @@ public class HttpClientTimeoutTest extends AbstractTest
     @Test
     public void testTimeoutCancelledWhenSendingThrowsException() throws Exception
     {
-        Assume.assumeTrue(connector instanceof NetworkConnector);
-        NetworkConnector network_connector = (NetworkConnector)connector;
-        
         start(new EmptyServerHandler());
+        Assume.assumeTrue(connector instanceof NetworkConnector);
 
         long timeout = 1000;
-        Request request = client.newRequest("badscheme://localhost:" + network_connector.getLocalPort());
+        Request request = client.newRequest("badscheme://localhost:" + ((NetworkConnector)connector).getLocalPort());
 
         try
         {

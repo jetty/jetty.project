@@ -35,8 +35,10 @@
 
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
+      <artifactId>jetty-maven-plugin</artifactId>
       <version>@project.version@</version>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
@@ -69,9 +71,6 @@
         <version>@surefireVersion@</version>
         <configuration>
           <skip>true</skip>
-          <systemPropertyVariables>
-            <jetty.port.file>${jetty.port.file}</jetty.port.file>
-          </systemPropertyVariables>
         </configuration>
       </plugin>
       <plugin>
@@ -81,9 +80,14 @@
         <configuration>
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
+            <pingServlet>true</pingServlet>
+            <helloServlet>true</helloServlet>
           </systemPropertyVariables>
+          <dependenciesToScan>
+            <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
+          </dependenciesToScan>
           <includes>
-            <include>**/*TestHelloServlet*</include>
+            <include>**/*TestGetContent*</include>
           </includes>
         </configuration>
         <executions>

@@ -365,7 +365,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private MultiMap<String> getParameters()
     {
-        if (!_contentParamsExtracted) 
+        if (!_contentParamsExtracted)
         {
             // content parameters need boolean protection as they can only be read
             // once, but may be reset to null by a reset
@@ -406,7 +406,7 @@ public class Request implements HttpServletRequest
             _parameters=_contentParameters;
         else if (isNoParams(_contentParameters) || _contentParameters.size()==0)
             _parameters=_queryParameters;
-        else
+        else if(_parameters == null)
         {
             _parameters = new MultiMap<>();
             _parameters.addAllValues(_queryParameters);
@@ -451,6 +451,10 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     private void extractContentParameters()
     {
+        // Content cannot be encoded
+        if (_metaData!=null && getHttpFields().contains(HttpHeader.CONTENT_ENCODING))
+            throw new BadMessageException(HttpStatus.NOT_IMPLEMENTED_501,"Unsupported Content-Encoding");
+        
         String contentType = getContentType();
         if (contentType == null || contentType.isEmpty())
             _contentParameters=NO_PARAMS;
@@ -511,7 +515,7 @@ public class Request implements HttpServletRequest
                 }
                 else if (obj instanceof String)
                 {
-                    maxFormContentSize = Integer.valueOf((String)obj);
+                    maxFormContentSize = Integer.parseInt((String)obj);
                 }
             }
 
@@ -527,7 +531,7 @@ public class Request implements HttpServletRequest
                 }
                 else if (obj instanceof String)
                 {
-                    maxFormKeys = Integer.valueOf((String)obj);
+                    maxFormKeys = Integer.parseInt((String)obj);
                 }
             }
 
@@ -2336,11 +2340,16 @@ public class Request implements HttpServletRequest
                 }
             }
 
-            // charset should be:
-            //  1. the charset set in the parts content type; else
-            //  2. the default charset set in the _charset_ part; else
-            //  3. the default charset set in the request.setCharacterEncoding; else
-            //  4. the default charset set to UTF_8
+            /*
+            Select Charset to use for this part. (NOTE: charset behavior is for the part value only and not the part header/field names)
+                1. Use the part specific charset as provided in that part's Content-Type header; else
+                2. Use the overall default charset. Determined by:
+                    a. if part name _charset_ exists, use that part's value.
+                    b. if the request.getCharacterEncoding() returns a value, use that.
+                        (note, this can be either from the charset field on the request Content-Type
+                        header, or from a manual call to request.setCharacterEncoding())
+                    c. use utf-8.
+             */
             Charset defaultCharset;
             if (_charset_ != null)
                 defaultCharset = Charset.forName(_charset_);

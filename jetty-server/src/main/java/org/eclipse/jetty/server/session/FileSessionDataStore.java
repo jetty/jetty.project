@@ -57,13 +57,11 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class FileSessionDataStore extends AbstractSessionDataStore
 {
-    
-    
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
-    private File _storeDir;
-    private boolean _deleteUnrestorableFiles = false;
-    private Map<String,String> _sessionFileMap = new ConcurrentHashMap<>();
-    private String _contextString;
+    protected File _storeDir;
+    protected boolean _deleteUnrestorableFiles = false;
+    protected Map<String,String> _sessionFileMap = new ConcurrentHashMap<>();
+    protected String _contextString;
     protected long _lastSweepTime = 0L;
 
     @Override
@@ -516,7 +514,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @param data the info of the session
      * @throws IOException
      */
-    private void save(OutputStream os, String id, SessionData data)  throws IOException
+    protected void save(OutputStream os, String id, SessionData data)  throws IOException
     {    
         DataOutputStream out = new DataOutputStream(os);
         out.writeUTF(id);
@@ -657,7 +655,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @return the session data
      * @throws Exception
      */
-    private SessionData load (InputStream is, String expectedId)
+    protected SessionData load (InputStream is, String expectedId)
             throws Exception
     {
         String id = null; //the actual id from inside the file
@@ -703,7 +701,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @param data the data to restore to
      * @throws Exception
      */
-    private void restoreAttributes (InputStream is, int size, SessionData data)
+    protected void restoreAttributes (InputStream is, int size, SessionData data)
             throws Exception
     {
         if (size>0)

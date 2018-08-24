@@ -24,6 +24,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.TimeUnit;
 
+import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.MulticastConfig;
+import com.hazelcast.config.NetworkConfig;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 
@@ -39,11 +42,14 @@ import com.hazelcast.core.HazelcastInstance;
  */
 public class HazelcastTestHelper
 {
-    static String _hazelcastInstanceName = "SESSION_TEST_"+Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+    static final String _hazelcastInstanceName = "SESSION_TEST_"+Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
     
-    static String _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
-    static HazelcastInstance _instance = Hazelcast.getOrCreateHazelcastInstance( new Config() //
+    static final String _name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
+    static final HazelcastInstance _instance = Hazelcast.getOrCreateHazelcastInstance( new Config() //
                                             .setInstanceName(_hazelcastInstanceName ) //
+                                            .setNetworkConfig( new NetworkConfig().setJoin( //
+                                                new JoinConfig().setMulticastConfig( //
+                                                    new MulticastConfig().setEnabled( false ) ) ) ) //
                                             .addMapConfig( new MapConfig().setName(_name) ) );
 
     public HazelcastTestHelper ()
@@ -51,12 +57,9 @@ public class HazelcastTestHelper
         // noop
     }
 
-    // definitely not thread safe so tests cannot be executed in parallel
-    // TODO use ThreadContext variable for this Map name
     public SessionDataStoreFactory createSessionDataStoreFactory(boolean onlyClient)
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
-        //_name = Long.toString( TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) );
         factory.setOnlyClient( onlyClient );
         factory.setMapName(_name);
         factory.setHazelcastInstance(_instance);

@@ -1,5 +1,5 @@
 /*
- * @(#)UnixCrypt.java	0.9 96/11/25
+ * @(#)UnixCrypt.java 0.9 96/11/25
  *
  * Copyright (c) 1996 Aki Yoshida. All rights reserved.
  *
@@ -12,8 +12,8 @@
 /**
  * Unix crypt(3C) utility
  *
- * @version 	0.9, 11/25/96
- * @author 	Aki Yoshida
+ * @version  0.9, 11/25/96
+ * @author Aki Yoshida
  */
 
 /**
@@ -177,7 +177,7 @@ public class UnixCrypt
             init_perm(PC2ROT[j], perm, 8);
         }
 
-        // Bit reverse, intial permupation, expantion
+        // Bit reverse, initial permupation, expantion
         for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)

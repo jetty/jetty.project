@@ -22,7 +22,7 @@
 ==== Setting up the Classpath
 
 You will need to place the following Jetty jar files onto the classpath of your application.
-You can obtain them from the https://www.eclipse.org/jetty/download.html[Jetty distribution], or the http://central.maven.org/maven2/org/eclipse/jetty/jetty-annotations[Maven repository]:
+You can obtain them from the https://www.eclipse.org/jetty/download.html[Jetty distribution], or the https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-annotations[Maven repository]:
 
 ....
 jetty-plus.jar

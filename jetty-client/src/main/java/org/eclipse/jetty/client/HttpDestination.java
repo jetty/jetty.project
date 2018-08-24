@@ -274,7 +274,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Max queue size {} exceeded by {} for {}", client.getMaxRequestsQueuedPerDestination(), request, this);
-                request.abort(new RejectedExecutionException("Max requests per destination " + client.getMaxRequestsQueuedPerDestination() + " exceeded for " + this));
+                request.abort(new RejectedExecutionException("Max requests queued per destination " + client.getMaxRequestsQueuedPerDestination() + " exceeded for " + this));
             }
         }
         else

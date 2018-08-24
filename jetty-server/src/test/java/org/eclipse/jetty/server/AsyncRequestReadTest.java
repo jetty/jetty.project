@@ -354,7 +354,7 @@ public class AsyncRequestReadTest
 
             BufferedReader in = request.getReader();
             PrintWriter out =httpResponse.getWriter();
-            int read=Integer.valueOf(request.getParameter("read"));
+            int read=Integer.parseInt(request.getParameter("read"));
             // System.err.println("read="+read);
             for (int i=read;i-->0;)
             {

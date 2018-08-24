@@ -92,6 +92,8 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
             this.initialStreamSendWindow = initialStreamWindow;
         }
         int delta = initialStreamWindow - previousInitialStreamWindow;
+        if (delta == 0)
+            return;
 
         // SPEC: updates of the initial window size only affect stream windows, not session's.
         for (Stream stream : session.getStreams())

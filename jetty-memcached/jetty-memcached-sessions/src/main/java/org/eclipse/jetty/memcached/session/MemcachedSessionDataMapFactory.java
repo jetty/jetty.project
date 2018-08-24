@@ -44,9 +44,12 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
     {
         if (addresses == null)
             _addresses = null;
-        _addresses = new ArrayList<>();
-        for (InetSocketAddress a:addresses)
-            _addresses.add(a);
+        else
+        {
+            _addresses = new ArrayList<>();
+            for (InetSocketAddress a:addresses)
+                _addresses.add(a);
+        }
     }
     
     /**

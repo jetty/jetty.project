@@ -25,6 +25,8 @@ import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -183,6 +185,9 @@ public class DeleteUnloadableSessionTest
         TestServer server = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         
+        TestContextScopeListener scopeListener = new TestContextScopeListener();
+        context.addEventListener(scopeListener);
+        
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         context.addServlet(holder, servletMapping);
@@ -195,11 +200,16 @@ public class DeleteUnloadableSessionTest
             client.start();
             try
             {
+                CountDownLatch latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 String sessionCookie = "JSESSIONID=w0rm3zxpa6h1zg1mevtv76b3te00.w0;$Path=/";
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping+ "?action=test");
                 request.header("Cookie", sessionCookie);
                 ContentResponse response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                
+                //ensure request fully finished handlers
+                latch.await(5, TimeUnit.SECONDS);
                 
                 assertFalse(context.getSessionHandler().getSessionCache().getSessionDataStore().exists(TestServer.extractSessionId(sessionCookie)));
 

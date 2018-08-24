@@ -27,10 +27,10 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -249,7 +249,28 @@ public class HpackEncoderTest
         context.get(HpackContext.STATIC_SIZE+1).getSize()+context.get(HpackContext.STATIC_SIZE+2).getSize()));
         
     }
-
     
+    @Test
+    public void testResize()
+    {
+        HttpFields fields = new HttpFields();
+        fields.add("host",  "localhost0");
+        fields.add("cookie","abcdefghij");
 
+        HpackEncoder encoder = new HpackEncoder(4096);
+        
+        ByteBuffer buffer = BufferUtil.allocate(4096);
+        int pos = BufferUtil.flipToFill(buffer);
+        encoder.encodeMaxDynamicTableSize(buffer,0);
+        encoder.setRemoteMaxDynamicTableSize(50);
+        encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));        
+        BufferUtil.flipToFlush(buffer,pos);
+        
+        HpackContext context = encoder.getHpackContext();
+        
+        Assert.assertThat(context.getMaxDynamicTableSize(),Matchers.is(50));
+        Assert.assertThat(context.size(),Matchers.is(1));
+        
+
+    }
 }

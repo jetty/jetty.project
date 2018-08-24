@@ -704,6 +704,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 _callback = callback;
                 _header = null;
                 _shutdownOut = false;
+                
+                if (getConnector().isShutdown())
+                    _generator.setPersistent(false);
+                
                 return true;
             }
 
@@ -817,7 +821,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         continue;
                     }
                     case DONE:
-                    {
+                    {   
+                        // If shutdown after commit, we can still close here.
+                        if (getConnector().isShutdown())
+                            _shutdownOut=true;
+
                         return Action.SUCCEEDED;
                     }
                     case CONTINUE:

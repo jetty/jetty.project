@@ -34,6 +34,8 @@ import java.util.function.Supplier;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
@@ -133,6 +135,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _state;
     }
 
+    public boolean addListener(Listener listener)
+    {
+        return _listeners.add(listener);
+    }
+    
+    public boolean removeListener(Listener listener)
+    {
+        return _listeners.remove(listener);
+    }
+    
     public long getBytesWritten()
     {
         return _written;
@@ -428,7 +440,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             }
                             else
                             {
-                                if (failure != x)
+                                if (x != failure)
                                     failure.addSuppressed(x);
                                 minimalErrorResponse(failure);
                             }
@@ -552,21 +564,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     protected void handleException(Throwable failure)
     {
-        // Unwrap wrapping Jetty exceptions.
-        if (failure instanceof RuntimeIOException)
-            failure = failure.getCause();
+        // Unwrap wrapping Jetty and Servlet exceptions.
+        Throwable quiet = unwrap(failure, QuietException.class);
+        Throwable no_stack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
 
-        if (failure instanceof QuietException || !getServer().isRunning())
+        if (quiet!=null || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
         }
-        else if (failure instanceof BadMessageException | failure instanceof IOException | failure instanceof TimeoutException)
+        else if (no_stack!=null)
         {
+            // No stack trace unless there is debug turned on
+            LOG.warn("{} {}",_request.getRequestURI(), no_stack.toString()); 
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
-            else
-                LOG.warn(_request.getRequestURI(), failure);
         }
         else
         {
@@ -579,25 +591,54 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch (Throwable e)
         {
-            failure.addSuppressed(e);
+            if (e != failure)
+                failure.addSuppressed(e);
             LOG.warn("ERROR dispatch failed", failure);
             // Try to send a minimal response.
             minimalErrorResponse(failure);
         }
     }
 
+    /** Unwrap failure causes to find target class
+     * @param failure The throwable to have its causes unwrapped
+     * @param targets Exception classes that we should not unwrap
+     * @return A target throwable or null
+     */
+    protected Throwable unwrap(Throwable failure, Class<?> ... targets)
+    {
+        while (failure!=null)
+        {
+            for (Class<?> x : targets)
+                if (x.isInstance(failure))
+                    return failure;
+            failure = failure.getCause();
+        }
+        return null;        
+    }
+    
     private void minimalErrorResponse(Throwable failure)
     {
         try
-        {
-            Integer code=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+        {        
+            int code = 500;
+            Integer status=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+            if (status!=null)
+                code = status.intValue();
+            else
+            {
+                Throwable cause = unwrap(failure,BadMessageException.class);
+                if (cause instanceof BadMessageException)
+                    code = ((BadMessageException)cause).getCode();
+            }
+            
             _response.reset(true);
-            _response.setStatus(code == null ? 500 : code);
+            _response.setStatus(code);
             _response.flushBuffer();
         }
         catch (Throwable x)
         {
-            failure.addSuppressed(x);
+            if (x != failure)
+                failure.addSuppressed(x);
             abort(failure);
         }
     }
@@ -721,7 +762,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             action=_state.handling();
         }
-        catch(IllegalStateException e)
+        catch(Throwable e)
         {
             // The bad message cannot be handled in the current state,
             // so rethrow, hopefully somebody will be able to handle.
@@ -749,12 +790,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         finally
         {
-            // TODO: review whether it's the right state to check.
-            if (_state.unhandle()==Action.COMPLETE)
-                _state.onComplete();
-            else
-                throw new IllegalStateException(); // TODO: don't throw from finally blocks !
-            onCompleted();
+            try
+            {
+                onCompleted();
+            }
+            catch(Throwable e)
+            {
+                LOG.debug(e);
+                abort(e);
+            }
         }
     }
 

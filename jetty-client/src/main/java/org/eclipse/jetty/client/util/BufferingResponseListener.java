@@ -25,11 +25,13 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.BufferUtil;
 
 /**
@@ -41,9 +43,9 @@ import org.eclipse.jetty.util.BufferUtil;
 public abstract class BufferingResponseListener extends Listener.Adapter
 {
     private final int maxLength;
-    private volatile ByteBuffer buffer;
-    private volatile String mediaType;
-    private volatile String encoding;
+    private ByteBuffer buffer;
+    private String mediaType;
+    private String encoding;
 
     /**
      * Creates an instance with a default maximum length of 2 MiB.
@@ -60,6 +62,8 @@ public abstract class BufferingResponseListener extends Listener.Adapter
      */
     public BufferingResponseListener(int maxLength)
     {
+        if (maxLength < 0)
+            throw new IllegalArgumentException("Invalid max length " + maxLength);
         this.maxLength = maxLength;
     }
 
@@ -68,15 +72,16 @@ public abstract class BufferingResponseListener extends Listener.Adapter
     {
         super.onHeaders(response);
 
+        Request request = response.getRequest();
         HttpFields headers = response.getHeaders();
         long length = headers.getLongField(HttpHeader.CONTENT_LENGTH.asString());
+        if (HttpMethod.HEAD.is(request.getMethod()))
+            length = 0;
         if (length > maxLength)
         {
-            response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
+            response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
             return;
         }
-
-        buffer = BufferUtil.allocate(length > 0 ? (int)length : 1024);
 
         String contentType = headers.get(HttpHeader.CONTENT_TYPE);
         if (contentType != null)
@@ -113,10 +118,9 @@ public abstract class BufferingResponseListener extends Listener.Adapter
         int length = content.remaining();
         if (length > BufferUtil.space(buffer))
         {
-            int requiredCapacity = buffer == null ? 0 : buffer.capacity() + length;
+            int requiredCapacity = buffer == null ? length : buffer.capacity() + length;
             if (requiredCapacity > maxLength)
-                response.abort(new IllegalArgumentException("Buffering capacity exceeded"));
-
+                response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
             int newCapacity = Math.min(Integer.highestOneBit(requiredCapacity) << 1, maxLength);
             buffer = BufferUtil.ensureCapacity(buffer, newCapacity);
         }
@@ -190,7 +194,7 @@ public abstract class BufferingResponseListener extends Listener.Adapter
     public InputStream getContentAsInputStream()
     {
         if (buffer == null)
-            return new ByteArrayInputStream(new byte[]{});
+            return new ByteArrayInputStream(new byte[0]);
         return new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), buffer.remaining());
     }
 }

@@ -86,14 +86,18 @@ public abstract class AbstractLoginModule implements LoginModule
         public void setJAASInfo (Subject subject)
         {
             subject.getPrincipals().add(this.principal);
-            subject.getPrivateCredentials().add(this.user.getCredential());
+            if (this.user.getCredential() != null) {
+                subject.getPrivateCredentials().add(this.user.getCredential());
+            }
             subject.getPrincipals().addAll(roles);
         }
 
         public void unsetJAASInfo (Subject subject)
         {
             subject.getPrincipals().remove(this.principal);
-            subject.getPrivateCredentials().remove(this.user.getCredential());
+            if (this.user.getCredential() != null) {
+                subject.getPrivateCredentials().remove(this.user.getCredential());
+            }
             subject.getPrincipals().removeAll(this.roles);
         }
 
@@ -115,6 +119,12 @@ public abstract class AbstractLoginModule implements LoginModule
         }
     }
 
+    
+    
+    public abstract UserInfo getUserInfo (String username) throws Exception;
+    
+    
+    
     public Subject getSubject ()
     {
         return this.subject;
@@ -198,7 +208,6 @@ public abstract class AbstractLoginModule implements LoginModule
 
     public Callback[] configureCallbacks ()
     {
-
         Callback[] callbacks = new Callback[3];
         callbacks[0] = new NameCallback("Enter user name");
         callbacks[1] = new ObjectCallback();
@@ -211,9 +220,7 @@ public abstract class AbstractLoginModule implements LoginModule
     {
         return false;
     }
-    
-    
-    public abstract UserInfo getUserInfo (String username) throws Exception;
+
 
 
 

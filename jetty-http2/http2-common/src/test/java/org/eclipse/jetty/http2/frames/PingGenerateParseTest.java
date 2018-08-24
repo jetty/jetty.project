@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.PingGenerator;
@@ -49,6 +50,7 @@ public class PingGenerateParseTest
                 frames.add(frame);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         byte[] payload = new byte[8];
         new Random().nextBytes(payload);
@@ -89,6 +91,7 @@ public class PingGenerateParseTest
                 frames.add(frame);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         byte[] payload = new byte[8];
         new Random().nextBytes(payload);
@@ -129,6 +132,7 @@ public class PingGenerateParseTest
                 frames.add(frame);
             }
         }, 4096, 8192);
+        parser.init(UnaryOperator.identity());
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         PingFrame ping = new PingFrame(System.nanoTime(), true);

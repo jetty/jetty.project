@@ -460,21 +460,6 @@ public class WebAppProvider extends ScanningAppProvider
     { 
         File file = new File(filename);
 
-        //is the file that was removed a directory? 
-        if (file.isDirectory())
-        {
-            //is there a .xml file of the same name?
-            if (exists(file.getName()+".xml")||exists(file.getName()+".XML"))
-                return; //assume we will get removed events for the xml file
-
-            //is there .war file of the same name?
-            if (exists(file.getName()+".war")||exists(file.getName()+".WAR"))
-                return; //assume we will get removed events for the war file
-
-            super.fileRemoved(filename);
-            return;
-        }
-  
         //is the file that was removed a .war file?
         String lowname = file.getName().toLowerCase(Locale.ENGLISH);
         if (lowname.endsWith(".war"))
@@ -491,7 +476,20 @@ public class WebAppProvider extends ScanningAppProvider
 
         //is the file that was removed an .xml file?
         if (lowname.endsWith(".xml"))
+        {
             super.fileRemoved(filename);
+            return;
+        }
+
+        //is there a .xml file of the same name?
+        if (exists(file.getName()+".xml")||exists(file.getName()+".XML"))
+            return; //assume we will get removed events for the xml file
+
+        //is there .war file of the same name?
+        if (exists(file.getName()+".war")||exists(file.getName()+".WAR"))
+            return; //assume we will get removed events for the war file
+
+        super.fileRemoved(filename);
     }
 
 }

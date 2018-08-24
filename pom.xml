@@ -29,12 +29,15 @@
     <alpn.version>undefined</alpn.version>
     <conscrypt.version>1.1.4</conscrypt.version>
     <asm.version>6.2</asm.version>
-    <jmh.version>1.20</jmh.version>
+    <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <surefireVersion>2.21.0</surefireVersion>
+    <tycho-version>1.2.0</tycho-version>
+    <cbi-plugins.version>1.1.5</cbi-plugins.version>
 
     <mavenPluginToolsVersion>3.5.2</mavenPluginToolsVersion>
     <mavenVersion>3.5.0</mavenVersion>
+    <unix.socket.tmp></unix.socket.tmp>
   </properties>
 
   <licenses>
@@ -92,6 +95,7 @@
     <module>jetty-memcached</module>
     <module>jetty-hazelcast</module>
     <module>jetty-unixsocket</module>
+    <module>jetty-jmh</module>
     <module>tests</module>
     <module>examples</module>
     <module>jetty-quickstart</module>
@@ -590,7 +594,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -637,7 +641,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.1</version>
+          <version>0.8.2</version>
         </plugin>
         <plugin>
           <groupId>com.agilejava.docbkx</groupId>
@@ -667,6 +671,7 @@
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
               <Bundle-Copyright>Copyright (c) 2008-2018 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <Import-Package>javax.servlet*;version="[2.6.0,4.1)",javax.transaction*;version="[1.1,1.3)",org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
             </instructions>
@@ -887,6 +892,11 @@
           <artifactId>buildnumber-maven-plugin</artifactId>
           <version>1.4</version>
         </plugin>
+        <plugin>
+          <groupId>com.github.madgnome</groupId>
+          <artifactId>h2spec-maven-plugin</artifactId>
+          <version>0.4</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -1040,40 +1050,6 @@
   </dependencyManagement>
 
   <profiles>
-    <!-- use last snapshot of jacoco for jdk11 -->
-    <profile>
-      <id>jdk11</id>
-      <activation>
-        <jdk>11</jdk>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.jacoco</groupId>
-              <artifactId>jacoco-maven-plugin</artifactId>
-              <version>0.8.2-SNAPSHOT</version>
-              <configuration>
-                <skip>true</skip>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-      <pluginRepositories>
-        <pluginRepository>
-          <id>oss.snapshots</id>
-          <name>OSS Snapshots</name>
-          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </pluginRepository>
-      </pluginRepositories>
-    </profile>
     <profile>
       <id>errorprone</id>
       <build>
@@ -1305,6 +1281,60 @@
       <modules>
         <module>aggregates/jetty-all-compact3</module>
       </modules>
+    </profile>
+    <profile>
+      <id>eclipse-sign</id>
+      <activation>
+        <property>
+          <name>eclipse-sign</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eclipse.tycho.extras</groupId>
+            <artifactId>tycho-pack200a-plugin</artifactId>
+            <version>${tycho-version}</version>
+            <executions>
+              <execution>
+                <id>pack200-normalize</id>
+                <goals>
+                  <goal>normalize</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.eclipse.cbi.maven.plugins</groupId>
+            <artifactId>eclipse-jarsigner-plugin</artifactId>
+	    <version>${cbi-plugins.version}</version>
+            <executions>
+              <execution>
+                <id>sign</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.eclipse.tycho.extras</groupId>
+            <artifactId>tycho-pack200b-plugin</artifactId>
+            <version>${tycho-version}</version>
+            <executions>
+              <execution>
+                <id>pack200-pack</id>
+                <goals>
+                  <goal>pack</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <profile>
       <id>8u00</id>
@@ -1863,6 +1893,13 @@
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+        <id>cbi-releases</id>
+        <url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
+        <snapshots>
+            <enabled>false</enabled>
+        </snapshots>
     </pluginRepository>
   </pluginRepositories>
 

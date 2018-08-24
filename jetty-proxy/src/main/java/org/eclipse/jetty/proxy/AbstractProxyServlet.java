@@ -695,11 +695,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
      */
     protected static class TransparentDelegate
     {
-        private final ProxyServlet proxyServlet;
+        private final AbstractProxyServlet proxyServlet;
         private String _proxyTo;
         private String _prefix;
 
-        protected TransparentDelegate(ProxyServlet proxyServlet)
+        protected TransparentDelegate(AbstractProxyServlet proxyServlet)
         {
             this.proxyServlet = proxyServlet;
         }

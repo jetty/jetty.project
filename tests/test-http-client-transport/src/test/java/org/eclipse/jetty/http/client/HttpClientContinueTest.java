@@ -50,7 +50,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -82,7 +81,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and copy the content back
@@ -116,7 +115,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and copy the content back
@@ -170,7 +169,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.sendError(error);
@@ -209,7 +208,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 if (request.getRequestURI().endsWith("/done"))
@@ -257,7 +256,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 if (request.getRequestURI().endsWith("/done"))
@@ -297,7 +296,6 @@ public class HttpClientContinueTest extends AbstractTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Slow
     @Test
     public void test_Expect100Continue_WithContent_WithResponseFailure_Before100Continue() throws Exception
     {
@@ -305,7 +303,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 baseRequest.setHandled(true);
                 try
@@ -341,7 +339,6 @@ public class HttpClientContinueTest extends AbstractTest
         Assert.assertTrue(latch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
-    @Slow
     @Test
     public void test_Expect100Continue_WithContent_WithResponseFailure_After100Continue() throws Exception
     {
@@ -393,7 +390,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and consume the content
@@ -445,14 +442,13 @@ public class HttpClientContinueTest extends AbstractTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Slow
     @Test
     public void test_Expect100Continue_WithDeferredContent_Respond100Continue() throws Exception
     {
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
@@ -493,14 +489,13 @@ public class HttpClientContinueTest extends AbstractTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Slow
     @Test
     public void test_Expect100Continue_WithInitialAndDeferredContent_Respond100Continue() throws Exception
     {
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
@@ -543,7 +538,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
@@ -582,7 +577,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
@@ -662,18 +657,7 @@ public class HttpClientContinueTest extends AbstractTest
             try (Socket socket = server.accept())
             {
                 // Read the request headers.
-                InputStream input = socket.getInputStream();
-                int crlfs = 0;
-                while (true)
-                {
-                    int read = input.read();
-                    if (read == '\r' || read == '\n')
-                        ++crlfs;
-                    else
-                        crlfs = 0;
-                    if (crlfs == 4)
-                        break;
-                }
+                readRequestHeaders(socket.getInputStream());
 
                 OutputStream output = socket.getOutputStream();
                 String responses = "" +
@@ -708,7 +692,7 @@ public class HttpClientContinueTest extends AbstractTest
         start(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 jettyRequest.setHandled(true);
                 // Force a 100 Continue response.
@@ -727,5 +711,75 @@ public class HttpClientContinueTest extends AbstractTest
 
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         Assert.assertArrayEquals(bytes, response.getContent());
+    }
+
+    @Test
+    public void test_NoExpect_100Continue_ThenRedirect_Then100Continue_ThenResponse() throws Exception
+    {
+        Assume.assumeThat(transport, Matchers.is(Transport.HTTP));
+
+        startClient();
+        client.setMaxConnectionsPerDestination(1);
+
+        try (ServerSocket server = new ServerSocket())
+        {
+            server.bind(new InetSocketAddress("localhost", 0));
+
+            // No Expect header, no content.
+            CountDownLatch latch = new CountDownLatch(1);
+            client.newRequest("localhost", server.getLocalPort())
+                    .send(result ->
+                    {
+                        if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                            latch.countDown();
+                    });
+
+            try (Socket socket = server.accept())
+            {
+                InputStream input = socket.getInputStream();
+                OutputStream output = socket.getOutputStream();
+
+                readRequestHeaders(input);
+                String response1 = "" +
+                        "HTTP/1.1 100 Continue\r\n" +
+                        "\r\n" +
+                        "HTTP/1.1 303 See Other\r\n" +
+                        "Location: /redirect\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
+                output.write(response1.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                readRequestHeaders(input);
+                String response2 = "" +
+                        "HTTP/1.1 100 Continue\r\n" +
+                        "\r\n" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "Connection: close\r\n" +
+                        "\r\n";
+                output.write(response2.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+            }
+
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
+    }
+
+    private void readRequestHeaders(InputStream input) throws IOException
+    {
+        int crlfs = 0;
+        while (true)
+        {
+            int read = input.read();
+            if (read < 0)
+                break;
+            if (read == '\r' || read == '\n')
+                ++crlfs;
+            else
+                crlfs = 0;
+            if (crlfs == 4)
+                break;
+        }
     }
 }

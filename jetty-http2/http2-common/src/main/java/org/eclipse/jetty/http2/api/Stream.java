@@ -197,6 +197,11 @@ public interface Stream
          */
         public boolean onIdleTimeout(Stream stream, Throwable x);
 
+        public default void onFailure(Stream stream, int error, String reason, Callback callback)
+        {
+            callback.succeeded();
+        }
+
         /**
          * <p>Empty implementation of {@link Listener}</p>
          */

@@ -51,16 +51,13 @@ etc/jetty.xml
 # jetty.httpConfig.sendDateHeader=false
 
 ## Max per-connection header cache size (in nodes)
-# jetty.httpConfig.headerCacheSize=512
+# jetty.httpConfig.headerCacheSize=4096
 
 ## Whether, for requests with content, delay dispatch until some content has arrived
 # jetty.httpConfig.delayDispatchUntilContent=true
 
 ## Maximum number of error dispatches to prevent looping
 # jetty.httpConfig.maxErrorDispatches=10
-
-## Maximum time to block in total for a blocking IO operation (default -1 is to use idleTimeout on progress)
-# jetty.httpConfig.blockingTimeout=-1
 
 ## Cookie compliance mode of: RFC2965, RFC6265
 # jetty.httpConfig.cookieCompliance=RFC6265

@@ -40,6 +40,6 @@ public class HelloServlet
     {
         String who = req.getParameter( "name" );
 
-        resp.getWriter().write( "hello " + (who == null ? "unknown" : who) );
+        resp.getWriter().write( "Hello " + (who == null ? "unknown" : who) );
     }
 }

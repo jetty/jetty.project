@@ -20,12 +20,14 @@ package org.eclipse.jetty.client;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.Authentication.HeaderInfo;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -42,11 +45,11 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
-    private static final Pattern AUTHENTICATE_PATTERN = Pattern.compile("([^\\s]+)\\s+(.*,\\s*)?realm=\"([^\"]*)\"\\s*,?\\s*(.*)", Pattern.CASE_INSENSITIVE);
-
     private final HttpClient client;
     private final int maxContentLength;
     private final ResponseNotifier notifier;
+
+    private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<token68>[a-zA-Z0-9\\-._~+\\/]+=*)|(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:(?<paramValue>.*)))");
 
     protected AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
     {
@@ -74,6 +77,51 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         // Return new instances every time to keep track of the response content
         return new AuthenticationListener();
     }
+
+
+    protected List<HeaderInfo> getHeaderInfo(String header) throws IllegalArgumentException
+    {
+        List<HeaderInfo> headerInfos = new ArrayList<>();
+        Matcher m;
+
+        for(String value : new QuotedCSV(true, header))
+        {
+            m = CHALLENGE_PATTERN.matcher(value);
+            if (m.matches())
+            {
+                if(m.group("schemeOnly") != null)
+                {
+                    headerInfos.add(new HeaderInfo(getAuthorizationHeader(), m.group(1), new HashMap<>()));
+                    continue;
+                }
+
+                if (m.group("scheme") != null)
+                {
+                    headerInfos.add(new HeaderInfo(getAuthorizationHeader(), m.group("scheme"), new HashMap<>()));
+                }
+
+                if (headerInfos.isEmpty())
+                    throw new IllegalArgumentException("Parameters without auth-scheme");
+
+                Map<String, String> authParams = headerInfos.get(headerInfos.size() - 1).getParameters();
+                if (m.group("paramName") != null)
+                {
+                    String paramVal = QuotedCSV.unquote(m.group("paramValue"));
+                    authParams.put(m.group("paramName"), paramVal);
+                }
+                else if (m.group("token68") != null)
+                {
+                    if (!authParams.isEmpty())
+                        throw new IllegalArgumentException("token68 after auth-params");
+
+                    authParams.put("base64", m.group("token68"));
+                }
+            }
+        }
+
+        return headerInfos;
+    }
+
 
     private class AuthenticationListener extends BufferingResponseListener
     {
@@ -234,25 +282,17 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         {
             // TODO: these should be ordered by strength
             List<Authentication.HeaderInfo> result = new ArrayList<>();
-            List<String> values = Collections.list(response.getHeaders().getValues(header.asString()));
+            List<String> values = response.getHeaders().getValuesList(header);
             for (String value : values)
             {
-                Matcher matcher = AUTHENTICATE_PATTERN.matcher(value);
-                if (matcher.matches())
+                try
                 {
-                    String type = matcher.group(1);
-                    String realm = matcher.group(3);
-                    String beforeRealm = matcher.group(2);
-                    String afterRealm = matcher.group(4);
-                    
-                    String params;
-                    if (beforeRealm != null)
-                        params = beforeRealm + afterRealm;
-                    else
-                        params = afterRealm;
-                    
-                    Authentication.HeaderInfo headerInfo = new Authentication.HeaderInfo(type, realm, params, getAuthorizationHeader());
-                    result.add(headerInfo);
+                    result.addAll(getHeaderInfo(value));
+                }
+                catch(IllegalArgumentException e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Failed to parse authentication header", e);
                 }
             }
             return result;

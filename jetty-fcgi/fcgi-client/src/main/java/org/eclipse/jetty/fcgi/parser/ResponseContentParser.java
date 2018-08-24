@@ -154,7 +154,7 @@ public class ResponseContentParser extends StreamContentParser
         public int getHeaderCacheSize()
         {
             // TODO: configure this
-            return 0;
+            return 4096;
         }
 
         @Override

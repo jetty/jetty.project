@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.ListIterator;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.zip.Deflater;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -36,7 +36,9 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
+import org.eclipse.jetty.server.DeflaterPool;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -153,13 +155,17 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public static final int DEFAULT_MIN_GZIP_SIZE=16;
     public static final int COMPRESSION_LEVEL = Deflater.DEFAULT_COMPRESSION;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
+    private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding","gzip");
+    private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
+
+    private int POOL_CAPACITY = -1;
+    private DeflaterPool _deflaterPool = null;
 
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     private boolean _syncFlush = false;
     private int _inflateBufferSize = -1;
     private EnumSet<DispatcherType> _dispatchers = EnumSet.of(DispatcherType.REQUEST);
     // non-static, as other GzipHandler instances may have different configurations
-    private final ThreadLocal<Deflater> _deflater = new ThreadLocal<>();
     private final IncludeExclude<String> _agentPatterns=new IncludeExclude<>(RegexSet.class);
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
@@ -393,6 +399,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     protected void doStart() throws Exception
     {
+        _deflaterPool = newDeflaterPool(POOL_CAPACITY);
         _vary=(_agentPatterns.size()>0)?GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING_USER_AGENT:GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
         super.doStart();
     }
@@ -428,14 +435,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             LOG.debug("{} excluded not gzip accept {}",this,request);
             return null;
         }
-        
-        Deflater df = _deflater.get();
-        if (df==null)
-            df=new Deflater(COMPRESSION_LEVEL,true);
-        else
-            _deflater.set(null);
-        
-        return df;
+
+        return _deflaterPool.acquire();
     }
 
     /**
@@ -601,16 +602,31 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         // Handle request inflation
         if (_inflateBufferSize>0)
         {
-            HttpField ce = baseRequest.getHttpFields().getField(HttpHeader.CONTENT_ENCODING);
-            if (ce!=null && "gzip".equalsIgnoreCase(ce.getValue()))
+            for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext();)
             {
-                // TODO should check ce.contains and then remove just the gzip encoding
-                baseRequest.getHttpFields().remove(HttpHeader.CONTENT_ENCODING);
-                baseRequest.getHttpFields().add(new HttpField("X-Content-Encoding",ce.getValue()));
-                baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(),_inflateBufferSize));
-            }
+                HttpField field = i.next();
+                if (field.getHeader()!=HttpHeader.CONTENT_ENCODING)
+                    continue;
+
+                if (field.getValue().equalsIgnoreCase("gzip"))
+                {
+                    i.set(X_CE_GZIP);
+                    baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(),_inflateBufferSize));
+                    break;
+                }
+
+                if (COMMA_GZIP.matcher(field.getValue()).matches())
+                {
+                    String v = field.getValue();
+                    v = v.substring(0,v.lastIndexOf(','));
+                    i.set(new HttpField(HttpHeader.CONTENT_ENCODING,v));
+                    i.add(X_CE_GZIP);
+                    baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(),_inflateBufferSize));
+                    break;
+                }
+            }                
         }
-        
+
         // Are we already being gzipped?
         HttpOutput out = baseRequest.getResponse().getHttpOutput();
         HttpOutput.Interceptor interceptor = out.getInterceptor();
@@ -738,16 +754,13 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     public void recycle(Deflater deflater)
     {
-        if (_deflater.get()==null)
-        {
-            deflater.reset();
-            _deflater.set(deflater);
-        }
-        else
-            deflater.end();
+        _deflaterPool.release(deflater);
     }
 
     /**
+        if(isStarted())
+            throw new IllegalStateException(getState());
+
      * Set the excluded filter list of User-Agent patterns (replacing any previously set)
      *
      * @param patterns Regular expressions list matching user agents to exclude
@@ -899,5 +912,31 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String getExcludedMethodList()
     {
         return String.join(",", getExcludedMethods());
+    }
+
+    /**
+     * Gets the maximum number of Deflaters that the DeflaterPool can hold.
+     * @return the Deflater pool capacity
+     */
+    public int getDeflaterPoolCapacity()
+    {
+        return POOL_CAPACITY;
+    }
+
+    /**
+     * Sets the maximum number of Deflaters that the DeflaterPool can hold.
+     * @param capacity
+     */
+    public void setDeflaterPoolCapacity(int capacity)
+    {
+        if(isStarted())
+            throw new IllegalStateException(getState());
+
+        POOL_CAPACITY = capacity;
+    }
+
+    protected DeflaterPool newDeflaterPool(int capacity)
+    {
+        return new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
     }
 }

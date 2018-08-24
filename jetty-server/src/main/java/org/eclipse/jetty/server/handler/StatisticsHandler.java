@@ -20,10 +20,8 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import javax.servlet.AsyncEvent;
@@ -70,7 +68,14 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final LongAdder _responses5xx = new LongAdder();
     private final LongAdder _responsesTotalBytes = new LongAdder();
 
-    private final AtomicReference<FutureCallback> _shutdown=new AtomicReference<>();
+    private final Graceful.Shutdown _shutdown = new Graceful.Shutdown()
+    {
+        @Override
+        protected FutureCallback newShutdownCallback()
+        {
+            return new FutureCallback(_requestStats.getCurrent()==0);
+        }
+    };
     
     private final AtomicBoolean _wrapWarning = new AtomicBoolean();
     
@@ -165,17 +170,16 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         try
         {
             Handler handler = getHandler();
-            if (handler!=null && _shutdown.get()==null && isStarted())
+            if (handler!=null && !_shutdown.isShutdown() && isStarted())
                 handler.handle(path, baseRequest, request, response);
-            else if (baseRequest.isHandled())
-            {
-                if (_wrapWarning.compareAndSet(false,true))
-                    LOG.warn("Bad statistics configuration. Latencies will be incorrect in {}",this);
-            }
             else
             {
-                baseRequest.setHandled(true);
-                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+                if (!baseRequest.isHandled())
+                    baseRequest.setHandled(true);
+                else if (_wrapWarning.compareAndSet(false,true))
+                    LOG.warn("Bad statistics configuration. Latencies will be incorrect in {}",this);
+                if (!baseRequest.getResponse().isCommitted())
+                    response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
             }
         }
         finally
@@ -248,19 +252,16 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     protected void doStart() throws Exception
     {
-        _shutdown.set(null);
+        _shutdown.cancel();
         super.doStart();
         statsReset();
     }
-    
 
     @Override
     protected void doStop() throws Exception
     {
+        _shutdown.cancel();
         super.doStop();
-        FutureCallback shutdown = _shutdown.get();
-        if (shutdown!=null && !shutdown.isDone())
-            shutdown.failed(new TimeoutException());
     }
 
     /**
@@ -551,7 +552,6 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         sb.append("Max request time: ").append(getRequestTimeMax()).append("<br />\n");
         sb.append("Request time standard deviation: ").append(getRequestTimeStdDev()).append("<br />\n");
 
-
         sb.append("<h2>Dispatches:</h2>\n");
         sb.append("Total dispatched: ").append(getDispatched()).append("<br />\n");
         sb.append("Active dispatched: ").append(getDispatchedActive()).append("<br />\n");
@@ -560,7 +560,6 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         sb.append("Mean dispatched time: ").append(getDispatchedTimeMean()).append("<br />\n");
         sb.append("Max dispatched time: ").append(getDispatchedTimeMax()).append("<br />\n");
         sb.append("Dispatched time standard deviation: ").append(getDispatchedTimeStdDev()).append("<br />\n");
-
 
         sb.append("Total requests suspended: ").append(getAsyncRequests()).append("<br />\n");
         sb.append("Total requests expired: ").append(getExpires()).append("<br />\n");
@@ -575,17 +574,23 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         sb.append("Bytes sent total: ").append(getResponsesBytesTotal()).append("<br />\n");
 
         return sb.toString();
-
     }
 
     @Override
     public Future<Void> shutdown()
     {
-        FutureCallback shutdown=new FutureCallback(false);
-        _shutdown.compareAndSet(null,shutdown);
-        shutdown=_shutdown.get();
-        if (_dispatchedStats.getCurrent()==0)
-            shutdown.succeeded();
-        return shutdown;
+        return _shutdown.shutdown();
+    }
+    
+    @Override
+    public boolean isShutdown()
+    {
+        return _shutdown.isShutdown();
+    }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s,r=%d,d=%d}",getClass().getSimpleName(),hashCode(),getState(),_requestStats.getCurrent(),_dispatchedStats.getCurrent());
     }
 }

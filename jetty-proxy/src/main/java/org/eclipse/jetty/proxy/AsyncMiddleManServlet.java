@@ -234,7 +234,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
      *
      * @see org.eclipse.jetty.proxy.AbstractProxyServlet.TransparentDelegate
      */
-    public static class Transparent extends ProxyServlet
+    public static class Transparent extends AsyncMiddleManServlet
     {
         private final TransparentDelegate delegate = new TransparentDelegate(this);
 

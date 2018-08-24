@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * <li>'file:///some/location.jar' - The URI of a jar file from which 
  * the class was loaded
  * <li>'jrt:/modulename' - A Java9 module name</li>
- * <li>Any of the above patterns preceeded by '-' will exclude rather than include the match.
+ * <li>Any of the above patterns preceded by '-' will exclude rather than include the match.
  * </ul>
  * When class is initialized from a classpath pattern string, entries 
  * in this string should be separated by ':' (semicolon) or ',' (comma).

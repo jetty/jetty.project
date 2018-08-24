@@ -102,23 +102,21 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     }
 
     @Override
-    public boolean abort(HttpExchange exchange, Throwable requestFailure, Throwable responseFailure)
-    {
-        Stream stream = getStream();
-        boolean aborted = super.abort(exchange, requestFailure, responseFailure);
-        if (aborted)
-        {
-            if (stream != null)
-                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        }
-        return aborted;
-    }
-
-    @Override
     public void exchangeTerminated(HttpExchange exchange, Result result)
     {
         super.exchangeTerminated(exchange, result);
-        release();
+        if (result.isSucceeded())
+        {
+            release();
+        }
+        else
+        {
+            Stream stream = getStream();
+            if (stream != null)
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), new ReleaseCallback());
+            else
+                release();
+        }
     }
 
     @Override
@@ -128,5 +126,28 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                 super.toString(),
                 sender,
                 receiver);
+    }
+
+    private class ReleaseCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            release();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+            release();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
     }
 }

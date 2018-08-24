@@ -11,7 +11,6 @@
   <description>Jetty maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
-    <surefireVersion>2.20.1</surefireVersion>
     <it.debug>false</it.debug>
     <jetty.stopKey>FREEBEER</jetty.stopKey>
     <jetty.jvmArgs></jetty.jvmArgs>
@@ -34,6 +33,75 @@
             <goals>
               <goal>helpmojo</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-invoker-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>install</goal>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <javaHome>${java.home}</javaHome>
+          <environmentVariables>
+            <JAVA_HOME>${java.home}</JAVA_HOME>
+          </environmentVariables>
+          <debug>${it.debug}</debug>
+          <addTestClassPath>true</addTestClassPath>
+          <projectsDirectory>src/it</projectsDirectory>
+          <timeoutInSeconds>600</timeoutInSeconds>
+          <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+          <pomIncludes>
+            <pomInclude>*/pom.xml</pomInclude>
+          </pomIncludes>
+          <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
+          <settingsFile>src/it/settings.xml</settingsFile>
+          <scriptVariables>
+            <jettyStopKey>${jetty.stopKey}</jettyStopKey>
+            <jettyStopPort>${jetty.stopPort}</jettyStopPort>
+            <surefireVersion>${surefireVersion}</surefireVersion>
+          </scriptVariables>
+          <skipInvocation>${skipTests}</skipInvocation>
+          <goals>
+            <goal>clean</goal>
+          </goals>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>reserve-ports</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+            <configuration>
+              <portNames>
+                <portName>jetty.stopPort</portName>
+              </portNames>
+            </configuration>
           </execution>
         </executions>
       </plugin>
