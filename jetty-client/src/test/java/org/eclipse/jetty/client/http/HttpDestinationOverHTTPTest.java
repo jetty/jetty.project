@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -278,6 +279,31 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
         destinationAfter = client.getDestination(scheme, host, port);
         Assert.assertNotSame(destinationBefore, destinationAfter);
+    }
+
+    @Test
+    public void testDestinationIsRemovedAfterConnectionError() throws Exception
+    {
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        client.setRemoveIdleDestinations(true);
+        Assume.assumeTrue("Destinations of a fresh client must be empty", client.getDestinations().isEmpty());
+
+        server.stop();
+        Request request = client.newRequest(host, port).scheme(this.scheme);
+        try
+        {
+            request.send();
+            Assume.assumeTrue("Request to a closed port must fail", false);
+        } catch (Exception ignored) {
+        }
+
+        long deadline = System.currentTimeMillis() + 100;
+        while (!client.getDestinations().isEmpty() && System.currentTimeMillis() < deadline)
+        {
+            Thread.yield();
+        }
+        Assert.assertTrue("Destination must be removed after connection error", client.getDestinations().isEmpty());
     }
 
     private Connection timedPoll(Queue<Connection> connections, long time, TimeUnit unit) throws InterruptedException
