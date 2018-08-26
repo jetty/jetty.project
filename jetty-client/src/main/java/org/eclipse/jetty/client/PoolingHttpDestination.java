@@ -210,7 +210,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
 
         if (getHttpExchanges().isEmpty())
         {
-            removeDestinationIfIdle();
+            tryRemoveIdleDestination();
         }
         else
         {
@@ -231,12 +231,12 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     public void abort(Throwable cause)
     {
         super.abort(cause);
-        if (getHttpExchanges().isEmpty()) {
-            removeDestinationIfIdle();
-        }
+        if (getHttpExchanges().isEmpty())
+            tryRemoveIdleDestination();
     }
 
-    private void removeDestinationIfIdle() {
+    private void tryRemoveIdleDestination()
+    {
         if (getHttpClient().isRemoveIdleDestinations() && connectionPool.isEmpty())
         {
             // There is a race condition between this thread removing the destination

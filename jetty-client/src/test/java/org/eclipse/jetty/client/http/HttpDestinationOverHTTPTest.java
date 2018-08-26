@@ -39,7 +39,6 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -287,21 +286,22 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         client.setRemoveIdleDestinations(true);
-        Assume.assumeTrue("Destinations of a fresh client must be empty", client.getDestinations().isEmpty());
+        Assert.assertTrue("Destinations of a fresh client must be empty", client.getDestinations().isEmpty());
 
         server.stop();
         Request request = client.newRequest(host, port).scheme(this.scheme);
         try
         {
             request.send();
-            Assume.assumeTrue("Request to a closed port must fail", false);
-        } catch (Exception ignored) {
+            Assert.fail("Request to a closed port must fail");
+        } catch (Exception ignored)
+        {
         }
 
-        long deadline = System.currentTimeMillis() + 100;
-        while (!client.getDestinations().isEmpty() && System.currentTimeMillis() < deadline)
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(100);
+        while (!client.getDestinations().isEmpty() && System.nanoTime() < deadline)
         {
-            Thread.yield();
+            Thread.sleep(10);
         }
         Assert.assertTrue("Destination must be removed after connection error", client.getDestinations().isEmpty());
     }
