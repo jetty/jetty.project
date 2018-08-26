@@ -294,7 +294,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         {
             request.send();
             Assert.fail("Request to a closed port must fail");
-        } catch (Exception ignored)
+        } catch (Exception expected)
         {
         }
 
