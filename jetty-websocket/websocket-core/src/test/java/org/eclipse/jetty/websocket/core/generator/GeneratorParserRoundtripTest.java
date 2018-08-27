@@ -30,8 +30,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.parser.ParserCapture;
 import org.junit.Assert;
 import org.junit.Test;
@@ -55,7 +56,7 @@ public class GeneratorParserRoundtripTest
         {
             // Generate Buffer
             BufferUtil.flipToFill(out);
-            WebSocketFrame frame = new TextFrame().setPayload(message);
+            Frame frame = new Frame(OpCode.TEXT).setPayload(message);
             ByteBuffer header = gen.generateHeaderBytes(frame);
             ByteBuffer payload = frame.getPayload();
             out.put(header);
@@ -71,7 +72,7 @@ public class GeneratorParserRoundtripTest
         }
 
         // Validate
-        TextFrame txt = (TextFrame)capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         Assert.assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
     }
 
@@ -89,7 +90,7 @@ public class GeneratorParserRoundtripTest
         try
         {
             // Setup Frame
-            WebSocketFrame frame = new TextFrame().setPayload(message);
+            Frame frame = new Frame(OpCode.TEXT).setPayload(message);
 
             // Add masking
             byte mask[] = new byte[4];
@@ -112,7 +113,7 @@ public class GeneratorParserRoundtripTest
         }
 
         // Validate
-        TextFrame txt = (TextFrame)capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        Frame txt = (Frame)capture.framesQueue.poll(1, TimeUnit.SECONDS);
         Assert.assertTrue("Text.isMasked",txt.isMasked());
         Assert.assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
     }

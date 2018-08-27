@@ -32,10 +32,10 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.tests.ParserCapture;
 import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.junit.Test;
@@ -64,10 +64,10 @@ public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
         BufferUtil.put(upgradeRequestBytes, buf);
 
         // Create A few WebSocket Frames
-        List<WebSocketFrame> frames = new ArrayList<>();
-        frames.add(new TextFrame().setPayload("Hello 1"));
-        frames.add(new TextFrame().setPayload("Hello 2"));
-        frames.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> frames = new ArrayList<>();
+        frames.add(new Frame(OpCode.TEXT).setPayload("Hello 1"));
+        frames.add(new Frame(OpCode.TEXT).setPayload("Hello 2"));
+        frames.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         generator.generate(buf, frames);
 
@@ -97,7 +97,7 @@ public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
         } while (!capture.closed);
 
         // Validate echoed frames
-        WebSocketFrame incomingFrame;
+        Frame incomingFrame;
         incomingFrame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Incoming Frame[0]", incomingFrame, notNullValue());
         assertThat("Incoming Frame[0].op", incomingFrame.getOpCode(), is(OpCode.TEXT));

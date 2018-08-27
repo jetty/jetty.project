@@ -35,10 +35,10 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.jsr356.tests.DataUtils;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
@@ -94,16 +94,16 @@ public class BinaryStreamTest
     {
         byte[] data = newData(size);
         
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new BinaryFrame().setPayload(data));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.BINARY).setPayload(data));
+        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
         
         ByteBuffer expectedMessage = DataUtils.copyOf(data);
         
         try (Fuzzer session = server.newNetworkFuzzer("/echo"))
         {
             session.sendBulk(send);
-            BlockingQueue<WebSocketFrame> receivedFrames = session.getOutputFrames();
+            BlockingQueue<Frame> receivedFrames = session.getOutputFrames();
             session.expectMessage(receivedFrames, OpCode.BINARY, expectedMessage);
         }
     }
@@ -114,16 +114,16 @@ public class BinaryStreamTest
         int size = server.getServerContainer().getDefaultMaxBinaryMessageBufferSize() + 16;
         byte[] data = newData(size);
         
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new BinaryFrame().setPayload(data));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.BINARY).setPayload(data));
+        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
         
         ByteBuffer expectedMessage = DataUtils.copyOf(data);
         
         try (Fuzzer session = server.newNetworkFuzzer("/echo"))
         {
             session.sendSegmented(send, 1);
-            BlockingQueue<WebSocketFrame> receivedFrames = session.getOutputFrames();
+            BlockingQueue<Frame> receivedFrames = session.getOutputFrames();
             session.expectMessage(receivedFrames, OpCode.BINARY, expectedMessage);
         }
     }

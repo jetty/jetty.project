@@ -30,12 +30,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.DataFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
@@ -60,13 +56,13 @@ public class TextTest extends AbstractLocalServerCase
         Arrays.fill(utf,(byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
         
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(buf));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(buf));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(buf)));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -90,13 +86,13 @@ public class TextTest extends AbstractLocalServerCase
         Arrays.fill(utf,(byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(buf));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(buf));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(buf)));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -119,13 +115,13 @@ public class TextTest extends AbstractLocalServerCase
         Arrays.fill(utf,(byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(buf));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(buf));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(buf)));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -144,13 +140,13 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_4mb_Frames_16kb() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 16 * KBYTE);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(payload));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(payload));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -169,13 +165,13 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_4mb_Frames_1kb() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 1 * KBYTE);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(payload));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(payload));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -194,13 +190,13 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_4mb_Frames_1mb() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 1 * MBYTE);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(payload));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(payload));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -219,13 +215,13 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_4mb_Frames_256b() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 256);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(payload));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(payload));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -244,13 +240,13 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_4mb_Frames_256kb() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 256 * KBYTE);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(payload));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(payload));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -269,13 +265,13 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_4mb_Frames_4kb() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 4 * KBYTE);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(payload));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(payload));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -294,13 +290,13 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_4mb_Frames_4mb() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 4 * MBYTE);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(payload));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(payload));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -319,13 +315,13 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_4mb_Frames_64b() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4*MBYTE, 64);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(payload));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(payload));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -344,13 +340,13 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_4mb_Frames_64kb() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 64 * KBYTE);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(payload));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(payload));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -373,13 +369,13 @@ public class TextTest extends AbstractLocalServerCase
         Arrays.fill(utf,(byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(buf));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(buf));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(buf)));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -402,13 +398,13 @@ public class TextTest extends AbstractLocalServerCase
         Arrays.fill(utf,(byte)'y');
         String msg = StringUtil.toUTF8String(utf,0,utf.length);
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(msg));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(msg));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(msg));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(msg));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -431,13 +427,13 @@ public class TextTest extends AbstractLocalServerCase
         Arrays.fill(utf,(byte)'y');
         ByteBuffer buf = ByteBuffer.wrap(utf);
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(buf));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(buf));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(buf)));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -458,12 +454,12 @@ public class TextTest extends AbstractLocalServerCase
     {
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
 
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         fragmentText(send, invalid);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              Fuzzer session = server.newNetworkFuzzer())
@@ -493,12 +489,12 @@ public class TextTest extends AbstractLocalServerCase
             payload.put(TypeUtil.fromHexString("656469746564")); // good
             BufferUtil.flipToFlush(payload, 0);
 
-            List<WebSocketFrame> send = new ArrayList<>();
-            send.add(new TextFrame().setPayload(payload));
-            send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+            List<Frame> send = new ArrayList<>();
+            send.add(new Frame(OpCode.TEXT).setPayload(payload));
+            send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-            List<WebSocketFrame> expect = new ArrayList<>();
-            expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+            List<Frame> expect = new ArrayList<>();
+            expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
 
             try (Fuzzer session = server.newNetworkFuzzer())
             {
@@ -547,13 +543,13 @@ public class TextTest extends AbstractLocalServerCase
         byte part2[] = Hex.asByteArray("F4908080"); // invalid
         byte part3[] = StringUtil.getUtf8Bytes("edited");
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(ByteBuffer.wrap(part1)).setFin(false));
-        send.add(new ContinuationFrame().setPayload(ByteBuffer.wrap(part2)).setFin(false));
-        send.add(new ContinuationFrame().setPayload(ByteBuffer.wrap(part3)).setFin(true));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(part1)).setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload(ByteBuffer.wrap(part2)).setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload(ByteBuffer.wrap(part3)).setFin(true));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              Fuzzer session = server.newNetworkFuzzer())
@@ -586,13 +582,13 @@ public class TextTest extends AbstractLocalServerCase
         byte part2[] = Hex.asByteArray("90"); // continue code point & invalid
         byte part3[] = Hex.asByteArray("8080656469746564"); // continue code point & finish
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(ByteBuffer.wrap(part1)).setFin(false));
-        send.add(new ContinuationFrame().setPayload(ByteBuffer.wrap(part2)).setFin(false));
-        send.add(new ContinuationFrame().setPayload(ByteBuffer.wrap(part3)).setFin(true));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(part1)).setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload(ByteBuffer.wrap(part2)).setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload(ByteBuffer.wrap(part3)).setFin(true));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              Fuzzer session = server.newNetworkFuzzer())
@@ -614,12 +610,12 @@ public class TextTest extends AbstractLocalServerCase
     {
         byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(ByteBuffer.wrap(invalid)));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(invalid)));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              Fuzzer session = server.newNetworkFuzzer())
@@ -644,15 +640,15 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_ContinuationWithPayload_Continuation() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setFin(false));
-        send.add(new ContinuationFrame().setPayload("middle").setFin(false));
-        send.add(new ContinuationFrame().setFin(true));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("middle").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("middle"));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("middle"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -671,15 +667,15 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_Continuation_Continuation_AllEmpty() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setFin(false));
-        send.add(new ContinuationFrame().setFin(false));
-        send.add(new ContinuationFrame().setFin(true));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame());
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -698,13 +694,13 @@ public class TextTest extends AbstractLocalServerCase
     @Test
     public void testText_Empty() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame());
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame());
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -725,13 +721,13 @@ public class TextTest extends AbstractLocalServerCase
     {
         byte msg[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5");
 
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         fragmentText(send, msg);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(ByteBuffer.wrap(msg)));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(msg)));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -753,13 +749,13 @@ public class TextTest extends AbstractLocalServerCase
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
         byte msg[] = StringUtil.getUtf8Bytes(utf8);
 
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<Frame> send = new ArrayList<>();
         fragmentText(send, msg);
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(ByteBuffer.wrap(msg)));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(msg)));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -784,18 +780,18 @@ public class TextTest extends AbstractLocalServerCase
         ByteBuffer b1 = ByteBuffer.wrap(StringUtil.getUtf8Bytes(utf1));
         ByteBuffer b2 = ByteBuffer.wrap(StringUtil.getUtf8Bytes(utf2));
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(b1).setFin(false));
-        send.add(new ContinuationFrame().setPayload(b2).setFin(true));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(b1).setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload(b2).setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
+        List<Frame> expect = new ArrayList<>();
         ByteBuffer e1 = ByteBuffer.allocate(100);
         e1.put(StringUtil.getUtf8Bytes(utf1));
         e1.put(StringUtil.getUtf8Bytes(utf2));
         e1.flip();
-        expect.add(new TextFrame().setPayload(e1));
-        expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(new Frame(OpCode.TEXT).setPayload(e1));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -810,21 +806,21 @@ public class TextTest extends AbstractLocalServerCase
      * @param frames the frames
      * @param msg the message
      */
-    private void fragmentText(List<WebSocketFrame> frames, byte msg[])
+    private void fragmentText(List<Frame> frames, byte msg[])
     {
         int len = msg.length;
         boolean continuation = false;
         byte mini[];
         for (int i = 0; i < len; i++)
         {
-            DataFrame frame;
+            Frame frame;
             if (continuation)
             {
-                frame = new ContinuationFrame();
+                frame = new Frame(OpCode.CONTINUATION);
             }
             else
             {
-                frame = new TextFrame();
+                frame = new Frame(OpCode.TEXT);
             }
             mini = new byte[1];
             mini[0] = msg[i];

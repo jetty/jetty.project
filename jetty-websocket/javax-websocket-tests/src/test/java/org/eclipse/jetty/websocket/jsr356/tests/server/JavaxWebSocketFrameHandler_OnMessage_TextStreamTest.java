@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
@@ -38,13 +34,17 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jsr356.tests.DummyChannel;
 import org.eclipse.jetty.websocket.jsr356.tests.HandshakeRequestAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.HandshakeResponseAdapter;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends AbstractJavaxWebSocketServerFrameHandlerTest
 {
@@ -94,7 +94,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
         {
             try
             {
-                endpoint.onFrame(new TextFrame().setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
             }
             catch (Exception e)
             {
@@ -132,7 +132,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
         {
             try
             {
-                endpoint.onFrame(new TextFrame().setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
             }
             catch (Exception e)
             {

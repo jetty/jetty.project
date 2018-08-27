@@ -30,10 +30,10 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
@@ -99,13 +99,13 @@ public class IdleTimeoutTest
             // wait 1 second to allow timeout to fire off
             TimeUnit.SECONDS.sleep(1);
 
-            session.sendFrames(new TextFrame().setPayload("You shouldn't be there"));
+            session.sendFrames(new Frame(OpCode.TEXT).setPayload("You shouldn't be there"));
 
-            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
-            WebSocketFrame frame = framesQueue.poll(3, TimeUnit.SECONDS);
+            BlockingQueue<Frame> framesQueue = session.getOutputFrames();
+            Frame frame = framesQueue.poll(3, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CLOSE));
 
-            CloseStatus closeStatus = CloseFrame.toCloseStatus(frame.getPayload());
+            CloseStatus closeStatus = CloseStatus.toCloseStatus(frame.getPayload());
             assertThat("Close.statusCode", closeStatus.getCode(), is(StatusCode.SHUTDOWN.getCode()));
             assertThat("Close.reason", closeStatus.getReason(), containsString("Timeout"));
         }

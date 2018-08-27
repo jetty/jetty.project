@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -27,15 +25,15 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class IdentityExtensionTest extends AbstractExtensionTest
 {
@@ -50,12 +48,12 @@ public class IdentityExtensionTest extends AbstractExtensionTest
         Extension ext = new IdentityExtension();
         ext.setNextIncomingFrames(capture);
 
-        Frame frame = new TextFrame().setPayload("hello");
+        org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload("hello");
         ext.receiveFrame(frame, Callback.NOOP);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.TEXT, 1);
-        WebSocketFrame actual = capture.frames.poll();
+        Frame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));
@@ -80,13 +78,13 @@ public class IdentityExtensionTest extends AbstractExtensionTest
         Extension ext = new IdentityExtension();
         ext.setNextOutgoingFrames(capture);
 
-        Frame frame = new TextFrame().setPayload("hello");
+        org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload("hello");
         ext.sendFrame(frame, null, BatchMode.OFF);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.TEXT, 1);
 
-        WebSocketFrame actual = capture.frames.poll();
+        Frame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));

@@ -25,7 +25,7 @@ import javax.websocket.Decoder;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.MessageSink;
 

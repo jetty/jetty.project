@@ -21,8 +21,8 @@ package org.eclipse.jetty.websocket.core;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
@@ -74,7 +74,7 @@ public abstract class AbstractFrameTypeHandler implements FrameHandler
 
     public void onPing(Frame frame, Callback callback)
     {
-        channel.sendFrame(new PongFrame().setPayload(copyOf(frame.getPayload())), callback, BatchMode.OFF);
+        channel.sendFrame(new Frame(OpCode.PONG).setPayload(copyOf(frame.getPayload())), callback, BatchMode.OFF);
     }
 
     public void onPong(Frame frame, Callback callback)

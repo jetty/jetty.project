@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 public abstract class AbstractPartialFrameHandler extends AbstractFrameTypeHandler

@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.core;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.core.frames.Frame;
+
 public class ParserDeMasker
 {
     private byte[] maskBytes;

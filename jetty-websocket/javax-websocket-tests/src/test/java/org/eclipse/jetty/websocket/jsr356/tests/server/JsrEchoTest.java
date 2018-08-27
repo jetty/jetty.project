@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.websocket.CloseReason;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -31,9 +30,8 @@ import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.AfterClass;
@@ -200,13 +198,13 @@ public class JsrEchoTest
     {
         String requestPath = endpointClass.getAnnotation(ServerEndpoint.class).value();
         
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("Hello Echo"));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
         
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("Hello Echo"));
-        expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
         
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {

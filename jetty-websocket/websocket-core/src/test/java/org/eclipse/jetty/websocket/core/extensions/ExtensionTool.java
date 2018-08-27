@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 import java.util.Collections;
 
@@ -31,13 +27,16 @@ import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.hamcrest.Matchers;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 public class ExtensionTool
 {
@@ -92,22 +91,22 @@ public class ExtensionTool
 
         public void assertHasFrames(String... textFrames)
         {
-            Frame frames[] = new Frame[textFrames.length];
+            org.eclipse.jetty.websocket.core.frames.Frame frames[] = new org.eclipse.jetty.websocket.core.frames.Frame[textFrames.length];
             for (int i = 0; i < frames.length; i++)
             {
-                frames[i] = new TextFrame().setPayload(textFrames[i]);
+                frames[i] = new Frame(OpCode.TEXT).setPayload(textFrames[i]);
             }
             assertHasFrames(frames);
         }
 
-        public void assertHasFrames(Frame... expectedFrames)
+        public void assertHasFrames(org.eclipse.jetty.websocket.core.frames.Frame... expectedFrames)
         {
             int expectedCount = expectedFrames.length;
             assertThat("Frame Count", capture.frames.size(), is(expectedCount));
 
             for (int i = 0; i < expectedCount; i++)
             {
-                WebSocketFrame actual = capture.frames.poll();
+                Frame actual = capture.frames.poll();
 
                 String prefix = String.format("frame[%d]",i);
                 assertThat(prefix + ".opcode",actual.getOpCode(), Matchers.is(expectedFrames[i].getOpCode()));

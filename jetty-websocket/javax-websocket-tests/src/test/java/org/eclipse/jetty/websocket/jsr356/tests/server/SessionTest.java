@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
@@ -38,9 +37,8 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.After;
@@ -248,13 +246,13 @@ public class SessionTest
     private void assertResponse(String requestPath, String requestMessage,
                                 String expectedResponse) throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(requestMessage));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(requestMessage));
+        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
     
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(expectedResponse));
-        expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(expectedResponse));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
     
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {

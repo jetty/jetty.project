@@ -28,9 +28,8 @@ import java.util.ListIterator;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 public class QuotesUtil
 {
@@ -71,18 +70,18 @@ public class QuotesUtil
         return quotes;
     }
     
-    public static List<WebSocketFrame> loadAsWebSocketFrames(String filename) throws IOException
+    public static List<Frame> loadAsWebSocketFrames(String filename) throws IOException
     {
         List<String> lines = loadLines(filename);
-        List<WebSocketFrame> ret = new ArrayList<>();
+        List<Frame> ret = new ArrayList<>();
         ListIterator<String> linesIter = lines.listIterator();
         while (linesIter.hasNext())
         {
-            WebSocketFrame frame;
+            Frame frame;
             if (!linesIter.hasPrevious())
-                frame = new TextFrame();
+                frame = new Frame(OpCode.TEXT);
             else
-                frame = new ContinuationFrame();
+                frame = new Frame(OpCode.CONTINUATION);
             
             frame.setPayload(BufferUtil.toBuffer(linesIter.next() + "\n"));
             frame.setFin(!linesIter.hasNext());

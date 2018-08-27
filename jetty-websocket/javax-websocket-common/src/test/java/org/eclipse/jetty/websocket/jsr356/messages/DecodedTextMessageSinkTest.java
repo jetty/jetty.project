@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.lang.invoke.MethodHandle;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -29,15 +26,17 @@ import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class DecodedTextMessageSinkTest extends AbstractMessageSinkTest
 {
@@ -53,7 +52,7 @@ public class DecodedTextMessageSinkTest extends AbstractMessageSinkTest
         DecodedTextMessageSink sink = new DecodedTextMessageSink(session, decoder, copyHandle);
 
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
-        sink.accept(new TextFrame().setPayload("2018.02.13").setFin(true), finCallback);
+        sink.accept(new Frame(OpCode.TEXT).setPayload("2018.02.13").setFin(true), finCallback);
 
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         Date decoded = copyFuture.get(1, TimeUnit.SECONDS);
@@ -74,9 +73,9 @@ public class DecodedTextMessageSinkTest extends AbstractMessageSinkTest
         CompletableFutureCallback callback2 = new CompletableFutureCallback();
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
 
-        sink.accept(new TextFrame().setPayload("2023").setFin(false), callback1);
-        sink.accept(new ContinuationFrame().setPayload(".08").setFin(false), callback2);
-        sink.accept(new ContinuationFrame().setPayload(".22").setFin(true), finCallback);
+        sink.accept(new Frame(OpCode.TEXT).setPayload("2023").setFin(false), callback1);
+        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(".08").setFin(false), callback2);
+        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(".22").setFin(true), finCallback);
 
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         Date decoded = copyFuture.get(1, TimeUnit.SECONDS);

@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
 public class ByteBufferMessageSink extends AbstractMessageSink

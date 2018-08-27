@@ -35,7 +35,8 @@ import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.JavaxWebSocketClientContainer;
@@ -127,7 +128,7 @@ public class OnCloseTest
         frameHandler.onOpen(new DummyChannel());
 
         // Execute onClose call
-        frameHandler.onFrame(new CloseFrame().setPayload(CloseStatus.NORMAL), Callback.NOOP);
+        frameHandler.onFrame(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL), Callback.NOOP);
 
         // Test captured event
         BlockingQueue<String> events = endpoint.events;

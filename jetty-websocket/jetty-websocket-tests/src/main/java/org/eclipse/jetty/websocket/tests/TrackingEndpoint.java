@@ -34,15 +34,14 @@ import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 
 public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionImpl> implements WebSocketListener, WebSocketFrameListener
 {
     public HandshakeRequest openUpgradeRequest;
     public HandshakeResponse openUpgradeResponse;
     
-    public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
+    public BlockingQueue<Frame> framesQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> bufferQueue = new LinkedBlockingDeque<>();
     
@@ -99,14 +98,14 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionI
     }
     
     @Override
-    public void onWebSocketFrame(Frame frame)
+    public void onWebSocketFrame(org.eclipse.jetty.websocket.core.frames.Frame frame)
     {
         if (LOG.isDebugEnabled())
         {
             LOG.debug("onWSFrame({})", frame);
         }
         
-        framesQueue.offer(WebSocketFrame.copy(frame));
+        framesQueue.offer(Frame.copy(frame));
     }
     
     @Override

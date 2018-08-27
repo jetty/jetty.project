@@ -28,10 +28,8 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.PingFrame;
-import org.eclipse.jetty.websocket.core.frames.PongFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -46,27 +44,27 @@ public class GeneratorFrameFlagsTest
     private static ByteBufferPool bufferPool = new MappedByteBufferPool();
     
     @Parameters
-    public static Collection<WebSocketFrame[]> data()
+    public static Collection<Frame[]> data()
     {
-        List<WebSocketFrame[]> data = new ArrayList<>();
-        data.add(new WebSocketFrame[]{new PingFrame().setFin(false)});
-        data.add(new WebSocketFrame[]{new PingFrame().setRsv1(true)});
-        data.add(new WebSocketFrame[]{new PingFrame().setRsv2(true)});
-        data.add(new WebSocketFrame[]{new PingFrame().setRsv3(true)});
-        data.add(new WebSocketFrame[]{new PongFrame().setFin(false)});
-        data.add(new WebSocketFrame[]{new PingFrame().setRsv1(true)});
-        data.add(new WebSocketFrame[]{new PongFrame().setRsv2(true)});
-        data.add(new WebSocketFrame[]{new PongFrame().setRsv3(true)});
-        data.add(new WebSocketFrame[]{new CloseFrame().setFin(false)});
-        data.add(new WebSocketFrame[]{new CloseFrame().setRsv1(true)});
-        data.add(new WebSocketFrame[]{new CloseFrame().setRsv2(true)});
-        data.add(new WebSocketFrame[]{new CloseFrame().setRsv3(true)});
+        List<Frame[]> data = new ArrayList<>();
+        data.add(new Frame[]{new Frame(OpCode.PING).setFin(false)});
+        data.add(new Frame[]{new Frame(OpCode.PING).setRsv1(true)});
+        data.add(new Frame[]{new Frame(OpCode.PING).setRsv2(true)});
+        data.add(new Frame[]{new Frame(OpCode.PING).setRsv3(true)});
+        data.add(new Frame[]{new Frame(OpCode.PONG).setFin(false)});
+        data.add(new Frame[]{new Frame(OpCode.PING).setRsv1(true)});
+        data.add(new Frame[]{new Frame(OpCode.PONG).setRsv2(true)});
+        data.add(new Frame[]{new Frame(OpCode.PONG).setRsv3(true)});
+        data.add(new Frame[]{new Frame(OpCode.CLOSE).setFin(false)});
+        data.add(new Frame[]{new Frame(OpCode.CLOSE).setRsv1(true)});
+        data.add(new Frame[]{new Frame(OpCode.CLOSE).setRsv2(true)});
+        data.add(new Frame[]{new Frame(OpCode.CLOSE).setRsv3(true)});
         return data;
     }
     
-    private WebSocketFrame invalidFrame;
+    private Frame invalidFrame;
     
-    public GeneratorFrameFlagsTest(WebSocketFrame invalidFrame)
+    public GeneratorFrameFlagsTest(Frame invalidFrame)
     {
         this.invalidFrame = invalidFrame;
     }

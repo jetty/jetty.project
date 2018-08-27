@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.MessageSink;
 

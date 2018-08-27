@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -31,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -47,12 +44,10 @@ import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.AbstractPartialFrameHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryMessageSink;
@@ -63,6 +58,8 @@ import org.eclipse.jetty.websocket.jsr356.messages.PartialByteArrayMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.jsr356.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.jsr356.util.InvokerUtils;
+
+import static org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
 
 public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
 {
@@ -526,7 +523,7 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
         {
             try
             {
-                CloseStatus close = CloseFrame.toCloseStatus(frame.getPayload());
+                CloseStatus close = CloseStatus.toCloseStatus(frame.getPayload());
                 CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(close.getCode()), close.getReason());
                 closeHandle.invoke(closeReason);
             }
@@ -548,7 +545,7 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
             payload = ByteBuffer.allocate(frame.getPayloadLength());
             BufferUtil.put(frame.getPayload(), payload);
         }
-        channel.sendFrame(new PongFrame().setPayload(payload), Callback.NOOP, BatchMode.OFF);
+        channel.sendFrame(new Frame(OpCode.PONG).setPayload(payload), Callback.NOOP, BatchMode.OFF);
         callback.succeeded();
     }
 

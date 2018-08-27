@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerContainer;
@@ -34,10 +33,8 @@ import javax.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.DataUtils;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
@@ -95,14 +92,14 @@ public class TextStreamTest
     {
         byte[] data = newData(size);
     
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(ByteBuffer.wrap(data)));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(data)));
+        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
 
         ByteBuffer expectedMessage = DataUtils.copyOf(data);
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(expectedMessage));
-        expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(expectedMessage));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
     
         try (Fuzzer fuzzer = server.newNetworkFuzzer("/echo"))
         {
@@ -117,9 +114,9 @@ public class TextStreamTest
         int size = container.getDefaultMaxTextMessageBufferSize() + 16;
         byte[] data = newData(size);
         
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(ByteBuffer.wrap(data)));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(data)));
+        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
 
         // make copy of raw data (to avoid client masking during send)
         byte[] expectedData = new byte[data.length];
@@ -128,10 +125,10 @@ public class TextStreamTest
         // Frames expected are influenced by container.getDefaultMaxTextMessageBufferSize setting
         ByteBuffer frame1 = ByteBuffer.wrap(expectedData, 0, container.getDefaultMaxTextMessageBufferSize());
         ByteBuffer frame2 = ByteBuffer.wrap(expectedData, container.getDefaultMaxTextMessageBufferSize(), size - container.getDefaultMaxTextMessageBufferSize());
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(frame1).setFin(false));
-        expect.add(new ContinuationFrame().setPayload(frame2).setFin(true));
-        expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(frame1).setFin(false));
+        expect.add(new Frame(OpCode.CONTINUATION).setPayload(frame2).setFin(true));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
 
         try (Fuzzer fuzzer = server.newNetworkFuzzer("/echo"))
         {

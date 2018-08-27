@@ -26,9 +26,8 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.SuspendToken;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -115,15 +114,15 @@ public class SuspendResumeTest
     @Test(timeout = 10000)
     public void testSuspendResume_Bulk() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("echo1"));
-        send.add(new TextFrame().setPayload("echo2"));
-        send.add(new CloseFrame());
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("echo1"));
+        send.add(new Frame(OpCode.TEXT).setPayload("echo2"));
+        send.add(new Frame(OpCode.CLOSE));
         
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("echo1"));
-        expect.add(new TextFrame().setPayload("echo2"));
-        expect.add(new CloseFrame());
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("echo1"));
+        expect.add(new Frame(OpCode.TEXT).setPayload("echo2"));
+        expect.add(new Frame(OpCode.CLOSE));
         
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -135,15 +134,15 @@ public class SuspendResumeTest
     @Test(timeout = 10000)
     public void testSuspendResume_SmallBuffers() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("echo1"));
-        send.add(new TextFrame().setPayload("echo2"));
-        send.add(new CloseFrame());
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("echo1"));
+        send.add(new Frame(OpCode.TEXT).setPayload("echo2"));
+        send.add(new Frame(OpCode.CLOSE));
         
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("echo1"));
-        expect.add(new TextFrame().setPayload("echo2"));
-        expect.add(new CloseFrame());
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("echo1"));
+        expect.add(new Frame(OpCode.TEXT).setPayload("echo2"));
+        expect.add(new Frame(OpCode.CLOSE));
         
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -155,15 +154,15 @@ public class SuspendResumeTest
     @Test(timeout = 10000)
     public void testSuspendResume_AsFrames() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("echo1"));
-        send.add(new TextFrame().setPayload("echo2"));
-        send.add(new CloseFrame());
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("echo1"));
+        send.add(new Frame(OpCode.TEXT).setPayload("echo2"));
+        send.add(new Frame(OpCode.CLOSE));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("echo1"));
-        expect.add(new TextFrame().setPayload("echo2"));
-        expect.add(new CloseFrame());
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("echo1"));
+        expect.add(new Frame(OpCode.TEXT).setPayload("echo2"));
+        expect.add(new Frame(OpCode.CLOSE));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {

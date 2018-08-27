@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.Matchers.anything;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -42,11 +38,8 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
@@ -63,6 +56,10 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
@@ -137,22 +134,22 @@ public class WebSocketServletRFCTest
             Arrays.fill(buf2, (byte) 0xBB);
             Arrays.fill(buf3, (byte) 0xCC);
 
-            WebSocketFrame bin;
+            Frame bin;
 
-            bin = new BinaryFrame().setPayload(buf1).setFin(false);
+            bin = new Frame(OpCode.BINARY).setPayload(buf1).setFin(false);
             channel.sendFrame(bin, Callback.NOOP, BatchMode.OFF); // write buf1 (fin=false)
 
-            bin = new ContinuationFrame().setPayload(buf2).setFin(false);
+            bin = new Frame(OpCode.CONTINUATION).setPayload(buf2).setFin(false);
             channel.sendFrame(bin, Callback.NOOP, BatchMode.OFF); // write buf2 (fin=false)
 
-            bin = new ContinuationFrame().setPayload(buf3).setFin(true);
+            bin = new Frame(OpCode.CONTINUATION).setPayload(buf3).setFin(true);
             channel.sendFrame(bin, Callback.NOOP, BatchMode.OFF); // write buf3 (fin=true)
 
             // Read frame echo'd back (hopefully a single binary frame)
-            WebSocketFrame incomingFrame = clientTracking.framesQueue.poll(5, TimeUnit.SECONDS);
+            Frame incomingFrame = clientTracking.framesQueue.poll(5, TimeUnit.SECONDS);
 
             int expectedSize = buf1.length + buf2.length + buf3.length;
-            assertThat("BinaryFrame.payloadLength", incomingFrame.getPayloadLength(), is(expectedSize));
+            assertThat("Frame.payloadLength", incomingFrame.getPayloadLength(), is(expectedSize));
 
             int aaCount = 0;
             int bbCount = 0;
@@ -217,7 +214,7 @@ public class WebSocketServletRFCTest
 
         try (StacklessLogging ignored = new StacklessLogging(RFC6455Socket.class))
         {
-            channel.sendFrame(new TextFrame().setPayload("CRASH"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("CRASH"), Callback.NOOP, BatchMode.OFF);
 
             clientTracking.awaitClosedEvent("Client");
             clientTracking.assertCloseStatus("Client", StatusCode.SERVER_ERROR, anything());
@@ -287,10 +284,10 @@ public class WebSocketServletRFCTest
         {
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
-            channel.sendFrame(new TextFrame().setPayload(msg), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload(msg), Callback.NOOP, BatchMode.OFF);
 
             // Read frame (hopefully text frame)
-            WebSocketFrame frame = clientTracking.framesQueue.poll(5, TimeUnit.SECONDS);
+            Frame frame = clientTracking.framesQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             String incomingMessage = frame.getPayloadAsUTF8();
             assertThat("Incoming Message", incomingMessage, is(msg));
@@ -325,7 +322,7 @@ public class WebSocketServletRFCTest
 
         try (StacklessLogging ignored = new StacklessLogging(RFC6455Socket.class))
         {
-            WebSocketFrame txt = new TextFrame().setPayload(ByteBuffer.wrap(buf));
+            Frame txt = new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(buf));
 
             channel.sendFrame(txt, Callback.NOOP, BatchMode.OFF);
 

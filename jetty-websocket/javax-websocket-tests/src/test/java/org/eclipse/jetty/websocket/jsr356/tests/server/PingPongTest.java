@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
@@ -52,7 +48,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.frames.PongFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.tests.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
@@ -60,6 +57,9 @@ import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracke
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 public class PingPongTest
 {
@@ -207,7 +207,7 @@ public class PingPongTest
     public void testPongEndpoint() throws Exception
     {
         assertEcho("/app/pong", (channel) -> {
-            channel.sendFrame(new PongFrame().setPayload("hello"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, BatchMode.OFF);
         }, "PongMessageEndpoint.onMessage(PongMessage):[/pong]:hello");
     }
 
@@ -215,7 +215,7 @@ public class PingPongTest
     public void testPongSocket() throws Exception
     {
         assertEcho("/app/pong-socket", (channel) -> {
-            channel.sendFrame(new PongFrame().setPayload("hello"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, BatchMode.OFF);
         }, "PongSocket.onPong(PongMessage)[/pong-socket]:hello");
     }
 }

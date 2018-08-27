@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.MessageSink;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 
 /**
  * Support class for reading a WebSocket BINARY message via a InputStream.

@@ -18,30 +18,28 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.quotes;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.OnMessage;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests a {@link javax.websocket.Decoder.TextStream} automatic decoding to a Socket onMessage parameter
@@ -91,15 +89,15 @@ public class QuotesDecoderTextStreamTest
     @Test
     public void testQuoteEchoString_Bulk() throws Exception
     {
-        List<WebSocketFrame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
+        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
         
         try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {
             session.sendBulk(send);
             
-            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
-            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            BlockingQueue<Frame> framesQueue = session.getOutputFrames();
+            Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
                     containsString("Author: Benjamin Franklin"),
@@ -111,15 +109,15 @@ public class QuotesDecoderTextStreamTest
     @Test
     public void testQuoteEchoString_SmallSegments() throws Exception
     {
-        List<WebSocketFrame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
+        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
         
         try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {
             session.sendSegmented(send, 3);
             
-            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
-            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            BlockingQueue<Frame> framesQueue = session.getOutputFrames();
+            Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
                     containsString("Author: Benjamin Franklin"),
@@ -131,15 +129,15 @@ public class QuotesDecoderTextStreamTest
     @Test
     public void testQuoteEchoString_FrameWise() throws Exception
     {
-        List<WebSocketFrame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
+        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
         
         try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {
             session.sendFrames(send);
             
-            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
-            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            BlockingQueue<Frame> framesQueue = session.getOutputFrames();
+            Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
                     containsString("Author: Benjamin Franklin"),

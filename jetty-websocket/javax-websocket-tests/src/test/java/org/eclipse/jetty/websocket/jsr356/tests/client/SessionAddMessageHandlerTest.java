@@ -18,20 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import static org.eclipse.jetty.websocket.jsr356.tests.SessionMatchers.isMessageHandlerType;
-import static org.eclipse.jetty.websocket.jsr356.tests.SessionMatchers.isMessageHandlerTypeRegistered;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.MessageHandler;
@@ -40,9 +30,8 @@ import javax.websocket.Session;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketFrameHandlerFactory;
@@ -61,6 +50,15 @@ import org.eclipse.jetty.websocket.jsr356.tests.handlers.StringWholeHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.eclipse.jetty.websocket.jsr356.tests.SessionMatchers.isMessageHandlerType;
+import static org.eclipse.jetty.websocket.jsr356.tests.SessionMatchers.isMessageHandlerTypeRegistered;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 
 public class SessionAddMessageHandlerTest
 {
@@ -244,8 +242,8 @@ public class SessionAddMessageHandlerTest
         assertThat("session", session, isMessageHandlerTypeRegistered(MessageType.TEXT));
         assertThat("session", session, not(isMessageHandlerTypeRegistered(MessageType.PONG)));
 
-        frameHandler.onFrame(new TextFrame().setPayload("G'day").setFin(true), Callback.NOOP);
-        frameHandler.onFrame(new TextFrame().setPayload("Hello World").setFin(true), Callback.NOOP);
+        frameHandler.onFrame(new Frame(OpCode.TEXT).setPayload("G'day").setFin(true), Callback.NOOP);
+        frameHandler.onFrame(new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
 
         assertThat("Received msgs", received.size(), is(2));
         assertThat("Received Message[0]", received.get(0), is("G'day"));
@@ -275,8 +273,8 @@ public class SessionAddMessageHandlerTest
         assertThat("session", session, not(isMessageHandlerTypeRegistered(MessageType.TEXT)));
         assertThat("session", session, not(isMessageHandlerTypeRegistered(MessageType.PONG)));
 
-        frameHandler.onFrame(new BinaryFrame().setPayload("G'day").setFin(false), Callback.NOOP);
-        frameHandler.onFrame(new ContinuationFrame().setPayload(" World").setFin(true), Callback.NOOP);
+        frameHandler.onFrame(new Frame(OpCode.BINARY).setPayload("G'day").setFin(false), Callback.NOOP);
+        frameHandler.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" World").setFin(true), Callback.NOOP);
 
         assertThat("Received partial", received.size(), is(2));
         assertThat("Received Message[0].buffer", BufferUtil.toUTF8String((ByteBuffer) received.get(0)[0]), is("G'day"));

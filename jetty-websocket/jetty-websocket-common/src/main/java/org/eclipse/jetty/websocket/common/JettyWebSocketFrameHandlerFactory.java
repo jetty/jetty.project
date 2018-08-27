@@ -55,10 +55,10 @@ import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
 import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 
 /**
  * Factory for websocket-core {@link FrameHandler} implementations suitable for

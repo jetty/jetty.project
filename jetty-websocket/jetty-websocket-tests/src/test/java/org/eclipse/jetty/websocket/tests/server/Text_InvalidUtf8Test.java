@@ -26,9 +26,8 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
 import org.junit.Test;
@@ -152,12 +151,12 @@ public class Text_InvalidUtf8Test extends AbstractLocalServerCase
     @Test
     public void assertBadTextPayload() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(ByteBuffer.wrap(invalid)));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(invalid)));
+        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              Fuzzer session = server.newNetworkFuzzer())

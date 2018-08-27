@@ -25,12 +25,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 
 /**
  * Interface for local WebSocket Endpoint Frame handling.
  *
  * <p>
- * This is the receiver of Parsed WebSocketFrames.
+ * This is the receiver of Parsed Frames.
  * </p>
  */
 public interface FrameHandler
@@ -79,7 +80,7 @@ public interface FrameHandler
     void onError(Throwable cause) throws Exception;
 
     /**
-     * Represents the outgoing WebSocketFrames.
+     * Represents the outgoing Frames.
      */
     interface Channel extends OutgoingFrames // TODO: want AutoCloseable (easier testing)
     {

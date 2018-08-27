@@ -35,13 +35,12 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
@@ -88,11 +87,11 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
 
     @SuppressWarnings("Duplicates")
     @Override
-    public ByteBuffer asNetworkBuffer(List<WebSocketFrame> frames)
+    public ByteBuffer asNetworkBuffer(List<Frame> frames)
     {
         int bufferLength = frames.stream().mapToInt((f) -> f.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
         ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             generator.generate(buffer, f);
         }
@@ -113,7 +112,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     }
 
     @Override
-    public void expect(List<WebSocketFrame> expected) throws InterruptedException
+    public void expect(List<Frame> expected) throws InterruptedException
     {
         // TODO Wait for server to close?
         // frameCapture.waitUntilClosed();
@@ -123,7 +122,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     }
 
     @Override
-    public BlockingQueue<WebSocketFrame> getOutputFrames()
+    public BlockingQueue<Frame> getOutputFrames()
     {
         return frameCapture.receivedFrames;
     }
@@ -145,15 +144,15 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     }
 
     @Override
-    public void sendBulk(List<WebSocketFrame> frames) throws IOException
+    public void sendBulk(List<Frame> frames) throws IOException
     {
         frameCapture.writeRaw(asNetworkBuffer(frames));
     }
 
     @Override
-    public void sendFrames(List<WebSocketFrame> frames) throws IOException
+    public void sendFrames(List<Frame> frames) throws IOException
     {
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             try(SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
@@ -163,9 +162,9 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     }
 
     @Override
-    public void sendFrames(WebSocketFrame... frames) throws IOException
+    public void sendFrames(Frame... frames) throws IOException
     {
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             try(SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
             {
@@ -175,7 +174,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     }
 
     @Override
-    public void sendSegmented(List<WebSocketFrame> frames, int segmentSize) throws IOException
+    public void sendSegmented(List<Frame> frames, int segmentSize) throws IOException
     {
         ByteBuffer buffer = asNetworkBuffer(frames);
 
@@ -224,7 +223,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
 
     public static class FrameCapture implements FrameHandler
     {
-        private final BlockingQueue<WebSocketFrame> receivedFrames = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Frame> receivedFrames = new LinkedBlockingQueue<>();
         private final EndPoint endPoint;
         private final SharedBlockingCallback blockingCallback = new SharedBlockingCallback();
         private Channel channel;
@@ -245,9 +244,9 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         }
 
         @Override
-        public void onFrame(Frame frame, Callback callback) throws Exception
+        public void onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback) throws Exception
         {
-            receivedFrames.offer(WebSocketFrame.copy(frame));
+            receivedFrames.offer(Frame.copy(frame));
             callback.succeeded();
         }
 

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -31,14 +29,14 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.core.LeakTrackingBufferPoolRule;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import static org.hamcrest.Matchers.is;
 
 public class MessageInputStreamTest
 {
@@ -54,7 +52,7 @@ public class MessageInputStreamTest
         try (MessageInputStream stream = new MessageInputStream())
         {
             // Append a single message (simple, short)
-            TextFrame frame = new TextFrame();
+            Frame frame = new Frame(OpCode.TEXT);
             frame.setPayload("Hello World");
             frame.setFin(true);
             stream.accept(frame, Callback.NOOP);
@@ -87,11 +85,11 @@ public class MessageInputStreamTest
                     {
                         startLatch.countDown();
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(new BinaryFrame().setPayload("Saved").setFin(false), Callback.NOOP);
+                        stream.accept(new Frame(OpCode.BINARY).setPayload("Saved").setFin(false), Callback.NOOP);
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(new ContinuationFrame().setPayload(" by ").setFin(false), Callback.NOOP);
+                        stream.accept(new Frame(OpCode.CONTINUATION).setPayload(" by ").setFin(false), Callback.NOOP);
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(new ContinuationFrame().setPayload("Zero").setFin(true), Callback.NOOP);
+                        stream.accept(new Frame(OpCode.CONTINUATION).setPayload("Zero").setFin(true), Callback.NOOP);
                     }
                     catch (InterruptedException e)
                     {
@@ -130,7 +128,7 @@ public class MessageInputStreamTest
                     {
                         // wait for a little bit before populating buffers
                         TimeUnit.MILLISECONDS.sleep(400);
-                        stream.accept(new BinaryFrame().setPayload("I will conquer").setFin(true), Callback.NOOP);
+                        stream.accept(new Frame(OpCode.BINARY).setPayload("I will conquer").setFin(true), Callback.NOOP);
                     }
                     catch (InterruptedException e)
                     {
@@ -187,10 +185,10 @@ public class MessageInputStreamTest
         try (MessageInputStream stream = new MessageInputStream())
         {
             // Append parts of message
-            WebSocketFrame msg1 = new BinaryFrame().setPayload("Hello ").setFin(false);
+            Frame msg1 = new Frame(OpCode.BINARY).setPayload("Hello ").setFin(false);
             // what is being tested (an empty payload)
-            WebSocketFrame msg2 = new ContinuationFrame().setPayload(new byte[0]).setFin(false);
-            WebSocketFrame msg3 = new ContinuationFrame().setPayload("World").setFin(true);
+            Frame msg2 = new Frame(OpCode.CONTINUATION).setPayload(new byte[0]).setFin(false);
+            Frame msg3 = new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true);
             
             stream.accept(msg1, Callback.NOOP);
             stream.accept(msg2, Callback.NOOP);
@@ -211,11 +209,11 @@ public class MessageInputStreamTest
         try (MessageInputStream stream = new MessageInputStream())
         {
             // Append parts of message
-            WebSocketFrame msg1 = new BinaryFrame().setPayload("Hello ").setFin(false);
+            Frame msg1 = new Frame(OpCode.BINARY).setPayload("Hello ").setFin(false);
             // what is being tested (a null payload)
             ByteBuffer nilPayload = null;
-            WebSocketFrame msg2 = new ContinuationFrame().setPayload(nilPayload).setFin(false);
-            WebSocketFrame msg3 = new ContinuationFrame().setPayload("World").setFin(true);
+            Frame msg2 = new Frame(OpCode.CONTINUATION).setPayload(nilPayload).setFin(false);
+            Frame msg3 = new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true);
             
             stream.accept(msg1, Callback.NOOP);
             stream.accept(msg2, Callback.NOOP);

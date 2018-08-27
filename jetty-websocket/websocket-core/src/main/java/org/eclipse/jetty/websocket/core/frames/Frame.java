@@ -23,12 +23,13 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.BadPayloadException;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 
 /**
  * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
- * 
+ *
  * <pre>
  *    0                   1                   2                   3
  *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -50,43 +51,87 @@ import org.eclipse.jetty.websocket.core.ProtocolException;
  *   +---------------------------------------------------------------+
  * </pre>
  */
-public class WebSocketFrame implements Frame
+public class Frame
 {
-
-    public static <F extends Frame> F copyWithoutPayload(F original)
+    public enum Type
     {
-        WebSocketFrame copy;
-        switch (original.getOpCode())
+        CONTINUATION((byte)0x00),
+        TEXT((byte)0x01),
+        BINARY((byte)0x02),
+        CLOSE((byte)0x08),
+        PING((byte)0x09),
+        PONG((byte)0x0A);
+
+        public static Type from(byte op)
         {
-            case OpCode.BINARY:
-                copy = new BinaryFrame();
-                break;
-            case OpCode.TEXT:
-                copy = new TextFrame();
-                break;
-            case OpCode.CLOSE:
-                copy = new CloseFrame();
-                break;
-            case OpCode.CONTINUATION:
-                copy = new ContinuationFrame();
-                break;
-            case OpCode.PING:
-                copy = new PingFrame();
-                break;
-            case OpCode.PONG:
-                copy = new PongFrame();
-                break;
-            default:
-                throw new IllegalArgumentException("Cannot copy frame with opcode " + original.getOpCode() + " - " + original);
+            for (Type type : values())
+            {
+                if (type.opcode == op)
+                {
+                    return type;
+                }
+            }
+            throw new IllegalArgumentException("OpCode " + op + " is not a valid Frame.Type");
         }
 
-        copy.copyHeaders(original);
-        return (F)copy;
+        private byte opcode;
+
+        Type(byte code)
+        {
+            this.opcode = code;
+        }
+
+        public byte getOpCode()
+        {
+            return opcode;
+        }
+
+        public boolean isControl()
+        {
+            return (opcode >= CLOSE.getOpCode());
+        }
+
+        public boolean isData()
+        {
+            return (opcode == TEXT.getOpCode()) || (opcode == BINARY.getOpCode());
+        }
+
+        public boolean isContinuation()
+        {
+            return opcode == CONTINUATION.getOpCode();
+        }
+
+        @Override
+        public String toString()
+        {
+            return this.name();
+        }
     }
 
-    public static WebSocketFrame copy(Frame original)
+    public boolean isControlFrame()
     {
-        WebSocketFrame copy = (WebSocketFrame)copyWithoutPayload(original);
+        return getType().isControl();
+    }
+
+    public boolean isDataFrame()
+    {
+        return !isControlFrame();
+    }
+
+
+
+
+
+    public static Frame copyWithoutPayload(Frame original)
+    {
+        Frame copy = new Frame(original.getOpCode());
+        copy.copyHeaders(original);
+        return copy;
+    }
+
+    public static Frame copy(Frame original)
+    {
+        Frame copy = copyWithoutPayload(original);
         ByteBuffer payload = original.getPayload();
         if (payload != null)
         {
@@ -97,9 +142,12 @@ public class WebSocketFrame implements Frame
         return copy;
     }
 
+    /** Maximum size of Control frame, per RFC 6455 */
+    public static final int MAX_CONTROL_PAYLOAD = 125;
+
     /**
      * Combined FIN + RSV1 + RSV2 + RSV3 + OpCode byte.
-     * 
+     *
      * <pre>
      *   1000_0000 (0x80) = fin
      *   0100_0000 (0x40) = rsv1
@@ -123,7 +171,7 @@ public class WebSocketFrame implements Frame
      * Construct form opcode
      * @param opcode the opcode the frame is based on
      */
-    public WebSocketFrame(byte opcode)
+    public Frame(byte opcode)
     {
         finRsvOp = (byte)0x80; // FIN (!RSV, opcode 0)
         masked = false;
@@ -132,25 +180,25 @@ public class WebSocketFrame implements Frame
         this.finRsvOp = (byte)((finRsvOp & 0xF0) | (opcode & 0x0F));
     }
 
-    public WebSocketFrame(byte opCode, ByteBuffer payload)
+    public Frame(byte opCode, ByteBuffer payload)
     {
         this(opCode);
         setPayload(payload);
     }
 
-    public WebSocketFrame(byte opCode, String payload)
+    public Frame(byte opCode, String payload)
     {
         this(opCode);
         setPayload(payload);
     }
 
-    public WebSocketFrame(byte opCode, boolean fin, ByteBuffer payload)
+    public Frame(byte opCode, boolean fin, ByteBuffer payload)
     {
         this(opCode, payload);
         setFin(fin);
     }
 
-    public WebSocketFrame(byte opCode, boolean fin, String payload)
+    public Frame(byte opCode, boolean fin, String payload)
     {
         this(opCode, payload);
         setFin(fin);
@@ -161,10 +209,10 @@ public class WebSocketFrame implements Frame
     {
         if (isControlFrame())
         {
-            if (getPayloadLength() > ControlFrame.MAX_CONTROL_PAYLOAD)
+            if (getPayloadLength() > MAX_CONTROL_PAYLOAD)
             {
                 throw new ProtocolException("Desired payload length [" + getPayloadLength() + "] exceeds maximum control payload length ["
-                        + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
+                        + MAX_CONTROL_PAYLOAD + "]");
             }
 
             if ((finRsvOp & 0x80) == 0)
@@ -221,7 +269,7 @@ public class WebSocketFrame implements Frame
         {
             return false;
         }
-        WebSocketFrame other = (WebSocketFrame)obj;
+        Frame other = (Frame)obj;
         if (payload == null)
         {
             if (other.payload != null)
@@ -237,24 +285,22 @@ public class WebSocketFrame implements Frame
         {
             return false;
         }
-        if (!Arrays.equals(mask,other.mask))
+        if (masked != other.masked)
         {
             return false;
         }
-        if (masked != other.masked)
+        if (!Arrays.equals(mask,other.mask))
         {
             return false;
         }
         return true;
     }
 
-    @Override
     public byte[] getMask()
     {
         return mask;
     }
 
-    @Override
     public final byte getOpCode()
     {
         return (byte)(finRsvOp & 0x0F);
@@ -263,7 +309,6 @@ public class WebSocketFrame implements Frame
     /**
      * Get the payload ByteBuffer. possible null.
      */
-    @Override
     public ByteBuffer getPayload()
     {
         return payload;
@@ -277,7 +322,6 @@ public class WebSocketFrame implements Frame
         return BufferUtil.toUTF8String(payload);
     }
 
-    @Override
     public int getPayloadLength()
     {
         if (payload == null)
@@ -287,7 +331,6 @@ public class WebSocketFrame implements Frame
         return payload.remaining();
     }
 
-    @Override
     public Type getType()
     {
         return Type.from(getOpCode());
@@ -304,47 +347,31 @@ public class WebSocketFrame implements Frame
         return result;
     }
 
-    @Override
     public boolean hasPayload()
     {
         return ((payload != null) && payload.hasRemaining());
     }
 
-    @Override
     public boolean isFin()
     {
         return (byte)(finRsvOp & 0x80) != 0;
     }
-    
-    /**
-     * @deprecated use {@link #isFin()} instead
-     */
-    @Override
-    @Deprecated
-    public boolean isLast()
-    {
-        return isFin();
-    }
 
-    @Override
     public boolean isMasked()
     {
         return masked;
     }
 
-    @Override
     public boolean isRsv1()
     {
         return (byte)(finRsvOp & 0x40) != 0;
     }
 
-    @Override
     public boolean isRsv2()
     {
         return (byte)(finRsvOp & 0x20) != 0;
     }
 
-    @Override
     public boolean isRsv3()
     {
         return (byte)(finRsvOp & 0x10) != 0;
@@ -358,7 +385,7 @@ public class WebSocketFrame implements Frame
         mask = null;
     }
 
-    public WebSocketFrame setFin(boolean fin)
+    public Frame setFin(boolean fin)
     {
         // set bit 1
         this.finRsvOp = (byte)((finRsvOp & 0x7F) | (fin?0x80:0x00));
@@ -378,7 +405,7 @@ public class WebSocketFrame implements Frame
         return this;
     }
 
-    protected WebSocketFrame setOpCode(byte op)
+    protected Frame setOpCode(byte op)
     {
         this.finRsvOp = (byte)((finRsvOp & 0xF0) | (op & 0x0F));
         return this;
@@ -390,38 +417,88 @@ public class WebSocketFrame implements Frame
      * The provided buffer will be used as is, no copying of bytes performed.
      * <p>
      * The provided buffer should be flipped and ready to READ from.
-     * 
-     * @param buf
-     *            the bytebuffer to set
+     * @param buf the bytebuffer to set
      * @return the frame itself
      */
-    public WebSocketFrame setPayload(ByteBuffer buf)
+    public Frame setPayload(ByteBuffer buf)
     {
+        if(isControlFrame())
+        {
+            // RFC-6455 Spec Required Control Frame validation.
+            if (buf != null && buf.remaining() > MAX_CONTROL_PAYLOAD)
+                throw new ProtocolException("Control Payloads can not exceed " + MAX_CONTROL_PAYLOAD + " bytes in length.");
+
+            if(getOpCode() == OpCode.CLOSE)
+                CloseStatus.verifyPayload(buf);
+        }
+
         payload = buf;
         return this;
     }
 
-    public WebSocketFrame setPayload(String str)
+    public Frame setPayload(String str)
     {
         setPayload(ByteBuffer.wrap(StringUtil.getUtf8Bytes(str)));
         return this;
     }
 
-    public WebSocketFrame setRsv1(boolean rsv1)
+    public Frame setPayload(byte[] buf)
+    {
+        setPayload(ByteBuffer.wrap(buf));
+        return this;
+    }
+
+    public Frame setPayload(CloseStatus closeStatus)
+    {
+        //TODO this does double verification of the payload
+        setPayload(closeStatus.asPayloadBuffer());
+        return this;
+    }
+
+    public Frame setPayload(int closeStatus)
+    {
+        setPayload(new CloseStatus(closeStatus));
+        return this;
+    }
+
+    public Frame setPayload(int closeStatus, String reason)
+    {
+        setPayload(new CloseStatus(closeStatus, reason));
+        return this;
+    }
+
+
+    /**
+     * Parse the Payload Buffer into a CloseStatus object
+     *
+     * @return the close status
+     * @throws BadPayloadException if the reason phrase is not valid UTF-8
+     * @throws ProtocolException if the payload is an invalid length for CLOSE frames
+     */
+    public CloseStatus getCloseStatus()
+    {
+        if(getOpCode() != OpCode.CLOSE)
+            throw new IllegalStateException("Close status only valid on Close Frame");
+
+        return CloseStatus.toCloseStatus(getPayload());
+    }
+
+
+    public Frame setRsv1(boolean rsv1)
     {
         // set bit 2
         this.finRsvOp = (byte)((finRsvOp & 0xBF) | (rsv1?0x40:0x00));
         return this;
     }
 
-    public WebSocketFrame setRsv2(boolean rsv2)
+    public Frame setRsv2(boolean rsv2)
     {
         // set bit 3
         this.finRsvOp = (byte)((finRsvOp & 0xDF) | (rsv2?0x20:0x00));
         return this;
     }
 
-    public WebSocketFrame setRsv3(boolean rsv3)
+    public Frame setRsv3(boolean rsv3)
     {
         // set bit 4
         this.finRsvOp = (byte)((finRsvOp & 0xEF) | (rsv3?0x10:0x00));

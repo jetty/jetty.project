@@ -18,19 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
-import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
@@ -43,13 +38,17 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.tests.WSEventTracker;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Example of an {@link javax.websocket.Endpoint} extended echo server added programmatically via the
@@ -137,7 +136,7 @@ public class EndpointViaConfigTest
                 FrameHandler.Channel channel = clientConnectFuture.get(5, TimeUnit.SECONDS);
                 try
                 {
-                    channel.sendFrame(new TextFrame().setPayload("Hello World"), Callback.NOOP, BatchMode.OFF);
+                    channel.sendFrame(new Frame(OpCode.TEXT).setPayload("Hello World"), Callback.NOOP, BatchMode.OFF);
 
                     String incomingMessage = clientSocket.messageQueue.poll(1, TimeUnit.SECONDS);
                     assertThat("Expected message", incomingMessage, is("Hello World"));

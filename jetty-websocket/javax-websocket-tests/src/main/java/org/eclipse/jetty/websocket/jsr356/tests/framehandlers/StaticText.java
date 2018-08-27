@@ -20,7 +20,8 @@ package org.eclipse.jetty.websocket.jsr356.tests.framehandlers;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.AbstractWholeMessageHandler;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class StaticText extends AbstractWholeMessageHandler
@@ -36,6 +37,6 @@ public class StaticText extends AbstractWholeMessageHandler
     public void onWholeText(String wholeMessage, Callback callback)
     {
         super.onWholeText(wholeMessage, callback);
-        channel.sendFrame(new TextFrame().setPayload(staticMessage), callback, BatchMode.OFF);
+        channel.sendFrame(new Frame(OpCode.TEXT).setPayload(staticMessage), callback, BatchMode.OFF);
     }
 }

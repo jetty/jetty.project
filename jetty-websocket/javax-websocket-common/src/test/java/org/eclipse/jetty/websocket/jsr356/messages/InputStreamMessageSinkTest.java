@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,10 +32,14 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
 import org.junit.Test;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
 {
@@ -52,7 +52,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
 
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
         ByteBuffer data = BufferUtil.toBuffer("Hello World", UTF_8);
-        sink.accept(new BinaryFrame().setPayload(data), finCallback);
+        sink.accept(new Frame(OpCode.BINARY).setPayload(data), finCallback);
 
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
@@ -69,7 +69,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
 
         CompletableFutureCallback fin1Callback = new CompletableFutureCallback();
         ByteBuffer data1 = BufferUtil.toBuffer("Hello World", UTF_8);
-        sink.accept(new BinaryFrame().setPayload(data1).setFin(true), fin1Callback);
+        sink.accept(new Frame(OpCode.BINARY).setPayload(data1).setFin(true), fin1Callback);
 
         fin1Callback.get(1, TimeUnit.SECONDS); // wait for callback (can't sent next message until this callback finishes)
         ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
@@ -78,7 +78,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
 
         CompletableFutureCallback fin2Callback = new CompletableFutureCallback();
         ByteBuffer data2 = BufferUtil.toBuffer("Greetings Earthling", UTF_8);
-        sink.accept(new BinaryFrame().setPayload(data2).setFin(true), fin2Callback);
+        sink.accept(new Frame(OpCode.BINARY).setPayload(data2).setFin(true), fin2Callback);
 
         fin2Callback.get(1, TimeUnit.SECONDS); // wait for callback
         byteStream = copy.poll(1, TimeUnit.SECONDS);
@@ -97,9 +97,9 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
         CompletableFutureCallback callback2 = new CompletableFutureCallback();
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
 
-        sink.accept(new BinaryFrame().setPayload("Hello").setFin(false), callback1);
-        sink.accept(new ContinuationFrame().setPayload(", ").setFin(false), callback2);
-        sink.accept(new ContinuationFrame().setPayload("World").setFin(true), finCallback);
+        sink.accept(new Frame(OpCode.BINARY).setPayload("Hello").setFin(false), callback1);
+        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);
+        sink.accept(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), finCallback);
 
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);
@@ -122,10 +122,10 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
         CompletableFutureCallback callback3 = new CompletableFutureCallback();
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
 
-        sink.accept(new BinaryFrame().setPayload("Greetings").setFin(false), callback1);
-        sink.accept(new ContinuationFrame().setPayload(", ").setFin(false), callback2);
-        sink.accept(new ContinuationFrame().setPayload("Earthling").setFin(false), callback3);
-        sink.accept(new ContinuationFrame().setPayload(new byte[0]).setFin(true), finCallback);
+        sink.accept(new Frame(OpCode.BINARY).setPayload("Greetings").setFin(false), callback1);
+        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);
+        sink.accept(new Frame(OpCode.CONTINUATION).setPayload("Earthling").setFin(false), callback3);
+        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(new byte[0]).setFin(true), finCallback);
 
         finCallback.get(5, TimeUnit.SECONDS); // wait for callback
         ByteArrayOutputStream byteStream = copy.poll(1, TimeUnit.SECONDS);

@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSinkImpl;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class ByteBufferMessageSink extends MessageSinkImpl

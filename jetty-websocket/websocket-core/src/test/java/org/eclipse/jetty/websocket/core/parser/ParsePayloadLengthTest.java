@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.RawFrameBuilder;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -98,7 +98,7 @@ public class ParsePayloadLengthTest
         parser.parse(raw);
 
         // validate frame
-        WebSocketFrame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame opcode", frame.getOpCode(), is(OpCode.TEXT));
         assertThat("Frame payloadLength", frame.getPayloadLength(), is(size));
         if (size > 0)

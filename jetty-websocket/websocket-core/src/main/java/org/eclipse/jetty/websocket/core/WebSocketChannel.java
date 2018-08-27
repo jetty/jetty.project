@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.FrameFlusher;
@@ -129,7 +129,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     @Override
     public void close(Callback callback)
     {
-        sendFrame(new CloseFrame(), callback, BatchMode.OFF);
+        sendFrame(new Frame(OpCode.CLOSE), callback, BatchMode.OFF);
     }
 
     /**
@@ -145,7 +145,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
         // TODO guard for multiple closes?
         // TODO truncate extra large reason phrases to fit within limits?
 
-        sendFrame(new CloseFrame().setPayload(statusCode, reason), callback, BatchMode.OFF);
+        sendFrame(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(statusCode, reason)), callback, BatchMode.OFF);
     }
 
     public WebSocketPolicy getPolicy()
@@ -292,9 +292,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     @Override
     public void sendFrame(Frame frame, Callback callback, BatchMode batchMode) 
     {
-        if (frame instanceof CloseFrame)
+        if (frame.getOpCode() == OpCode.CLOSE)
         {
-            if (state.onCloseOut(((CloseFrame)frame).getCloseStatus()))
+            if (state.onCloseOut(frame.getCloseStatus()))
             {
                 callback = new Callback.Nested(callback)
                 {
@@ -366,7 +366,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
                     // Handle inbound close
                     if (frame.getOpCode() == OpCode.CLOSE)
                     {
-                        if (state.onCloseIn(((CloseFrame)frame).getCloseStatus()))
+                        if (state.onCloseIn(frame.getCloseStatus()))
                         {
                             handler.onFrame(frame, callback); // handler should know about received frame
                             handler.onClosed(state.getCloseStatus());
@@ -374,8 +374,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
                             return;
                         }
 
-                        CloseFrame closeframe = (CloseFrame)frame;
-                        CloseStatus closeStatus = closeframe.getCloseStatus();
+                        CloseStatus closeStatus = frame.getCloseStatus();
                         callback = new Callback.Nested(callback)
                         {
                             @Override

@@ -22,12 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.PingFrame;
-import org.eclipse.jetty.websocket.core.frames.PongFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.junit.Test;
 
 /**
@@ -46,13 +42,13 @@ public class ContinuationTest
     @Test
     public void testFragmented_Continuation_MissingFin() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
-        send.add(new TextFrame().setPayload("hello, world"));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -72,13 +68,13 @@ public class ContinuationTest
     @Test
     public void testFragmented_Continuation_MissingFin_FrameWise() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
-        send.add(new TextFrame().setPayload("hello, world"));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -98,13 +94,13 @@ public class ContinuationTest
     @Test
     public void testFragmented_Continuation_MissingFin_Slowly() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
-        send.add(new TextFrame().setPayload("hello, world"));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("sorry").setFin(false));
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -124,13 +120,13 @@ public class ContinuationTest
     @Test
     public void testFragmented_Continuation_NoPrior() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new ContinuationFrame().setPayload("sorry").setFin(true));
-        send.add(new TextFrame().setPayload("hello, world"));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -150,16 +146,16 @@ public class ContinuationTest
     @Test
     public void testFragmented_Continuation_NoPrior_Alt() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("fragment1").setFin(false));
-        send.add(new ContinuationFrame().setPayload("fragment2").setFin(true));
-        send.add(new ContinuationFrame().setPayload("fragment3").setFin(false)); // bad frame
-        send.add(new TextFrame().setPayload("fragment4").setFin(true));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("fragment1").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment2").setFin(true));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment3").setFin(false)); // bad frame
+        send.add(new Frame(OpCode.TEXT).setPayload("fragment4").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("fragment1fragment2"));
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("fragment1fragment2"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -179,13 +175,13 @@ public class ContinuationTest
     @Test
     public void testFragmented_Continuation_NoPrior_FrameWise() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new ContinuationFrame().setPayload("sorry").setFin(true));
-        send.add(new TextFrame().setPayload("hello, world"));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -205,17 +201,17 @@ public class ContinuationTest
     @Test
     public void testFragmented_Continuation_NoPrior_NothingToContinue() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new ContinuationFrame().setPayload("fragment1").setFin(true)); // nothing to continue
-        send.add(new TextFrame().setPayload("fragment2").setFin(false));
-        send.add(new ContinuationFrame().setPayload("fragment3").setFin(true));
-        send.add(new ContinuationFrame().setPayload("fragment4").setFin(true)); // nothing to continue
-        send.add(new TextFrame().setPayload("fragment5").setFin(false));
-        send.add(new ContinuationFrame().setPayload("fragment6").setFin(true));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment1").setFin(true)); // nothing to continue
+        send.add(new Frame(OpCode.TEXT).setPayload("fragment2").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment3").setFin(true));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment4").setFin(true)); // nothing to continue
+        send.add(new Frame(OpCode.TEXT).setPayload("fragment5").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment6").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -235,13 +231,13 @@ public class ContinuationTest
     @Test
     public void testFragmented_Continuation_NoPrior_Slowly() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new ContinuationFrame().setPayload("sorry").setFin(true));
-        send.add(new TextFrame().setPayload("hello, world"));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("sorry").setFin(true));
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -261,17 +257,17 @@ public class ContinuationTest
     @Test
     public void testFragmented_Continuation_NoPrior_Twice() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new ContinuationFrame().setPayload("fragment1").setFin(false)); // bad frame
-        send.add(new TextFrame().setPayload("fragment2").setFin(false));
-        send.add(new ContinuationFrame().setPayload("fragment3").setFin(true));
-        send.add(new ContinuationFrame().setPayload("fragment4").setFin(false)); // bad frame
-        send.add(new TextFrame().setPayload("fragment5").setFin(false));
-        send.add(new ContinuationFrame().setPayload("fragment6").setFin(true));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment1").setFin(false)); // bad frame
+        send.add(new Frame(OpCode.TEXT).setPayload("fragment2").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment3").setFin(true));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment4").setFin(false)); // bad frame
+        send.add(new Frame(OpCode.TEXT).setPayload("fragment5").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment6").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -291,13 +287,13 @@ public class ContinuationTest
     @Test
     public void testFragmented_MissingContinuation() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("fragment1").setFin(false));
-        send.add(new TextFrame().setPayload("fragment2").setFin(true)); // bad frame, must be continuation
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("fragment1").setFin(false));
+        send.add(new Frame(OpCode.TEXT).setPayload("fragment2").setFin(true)); // bad frame, must be continuation
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -317,13 +313,13 @@ public class ContinuationTest
     @Test
     public void testFragmented_Ping() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new PingFrame().setPayload("hello, ").setFin(false));
-        send.add(new ContinuationFrame().setPayload("world"));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.PING).setPayload("hello, ").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("world"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -343,13 +339,13 @@ public class ContinuationTest
     @Test
     public void testFragmented_Pong() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new PongFrame().setPayload("hello, ").setFin(false));
-        send.add(new ContinuationFrame().setPayload("world"));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.PONG).setPayload("hello, ").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("world"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.PROTOCOL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.PROTOCOL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -369,14 +365,14 @@ public class ContinuationTest
     @Test
     public void testFragmented_TextContinuation() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("hello, ").setFin(false));
-        send.add(new ContinuationFrame().setPayload("world").setFin(true));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("hello, world"));
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -396,14 +392,14 @@ public class ContinuationTest
     @Test
     public void testFragmented_TextContinuation_FrameWise() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("hello, ").setFin(false));
-        send.add(new ContinuationFrame().setPayload("world").setFin(true));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("hello, world"));
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -424,21 +420,21 @@ public class ContinuationTest
     @Slow
     public void testFragmented_TextContinuation_PingInterleaved() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("f1").setFin(false));
-        send.add(new ContinuationFrame().setPayload(",f2").setFin(false));
-        send.add(new PingFrame().setPayload("pong-1"));
-        send.add(new ContinuationFrame().setPayload(",f3").setFin(false));
-        send.add(new ContinuationFrame().setPayload(",f4").setFin(false));
-        send.add(new PingFrame().setPayload("pong-2"));
-        send.add(new ContinuationFrame().setPayload(",f5").setFin(true));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("f1").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload(",f2").setFin(false));
+        send.add(new Frame(OpCode.PING).setPayload("pong-1"));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload(",f3").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload(",f4").setFin(false));
+        send.add(new Frame(OpCode.PING).setPayload("pong-2"));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new PongFrame().setPayload("pong-1"));
-        expect.add(new PongFrame().setPayload("pong-2"));
-        expect.add(new TextFrame().setPayload("f1,f2,f3,f4,f5"));
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.PONG).setPayload("pong-1"));
+        expect.add(new Frame(OpCode.PONG).setPayload("pong-2"));
+        expect.add(new Frame(OpCode.TEXT).setPayload("f1,f2,f3,f4,f5"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -458,14 +454,14 @@ public class ContinuationTest
     @Test
     public void testFragmented_TextContinuation_Slowly() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("hello, ").setFin(false));
-        send.add(new ContinuationFrame().setPayload("world").setFin(true));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("hello, world"));
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -485,16 +481,16 @@ public class ContinuationTest
     @Test
     public void testFragmented_TextPingContinuation() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("hello, ").setFin(false));
-        send.add(new PingFrame().setPayload("ping"));
-        send.add(new ContinuationFrame().setPayload("world").setFin(true));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new Frame(OpCode.PING).setPayload("ping"));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new PongFrame().setPayload("ping"));
-        expect.add(new TextFrame().setPayload("hello, world"));
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.PONG).setPayload("ping"));
+        expect.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -514,16 +510,16 @@ public class ContinuationTest
     @Test
     public void testFragmented_TextPingContinuation_FrameWise() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("hello, ").setFin(false));
-        send.add(new PingFrame().setPayload("ping"));
-        send.add(new ContinuationFrame().setPayload("world").setFin(true));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new Frame(OpCode.PING).setPayload("ping"));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new PongFrame().setPayload("ping"));
-        expect.add(new TextFrame().setPayload("hello, world"));
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.PONG).setPayload("ping"));
+        expect.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {
@@ -543,16 +539,16 @@ public class ContinuationTest
     @Test
     public void testFragmented_TextPingContinuation_Slowly() throws Exception
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("hello, ").setFin(false));
-        send.add(new PingFrame().setPayload("ping"));
-        send.add(new ContinuationFrame().setPayload("world").setFin(true));
-        send.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("hello, ").setFin(false));
+        send.add(new Frame(OpCode.PING).setPayload("ping"));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("world").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new PongFrame().setPayload("ping"));
-        expect.add(new TextFrame().setPayload("hello, world"));
-        expect.add(new CloseFrame().setPayload(WebSocketConstants.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.PONG).setPayload("ping"));
+        expect.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL));
 
         try (CoreFuzzer session = new CoreFuzzer())
         {

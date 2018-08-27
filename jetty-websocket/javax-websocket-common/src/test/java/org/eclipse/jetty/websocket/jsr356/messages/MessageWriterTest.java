@@ -29,9 +29,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.DummyChannel;
 import org.junit.Test;
@@ -49,7 +48,7 @@ public class MessageWriterTest
             writer.write(cbuf);
         }
 
-        WebSocketFrame frame = capture.frames.poll(1, TimeUnit.SECONDS);
+        Frame frame = capture.frames.poll(1, TimeUnit.SECONDS);
         assertThat("Frame[0].opcode", frame.getOpCode(), is(OpCode.TEXT));
         assertThat("Frame[0].payloadLength", frame.getPayloadLength(), is(512));
         assertThat("Frame[0].fin", frame.isFin(), is(true));
@@ -66,7 +65,7 @@ public class MessageWriterTest
             writer.write(cbuf);
         }
 
-        WebSocketFrame frame = capture.frames.poll(1, TimeUnit.SECONDS);
+        Frame frame = capture.frames.poll(1, TimeUnit.SECONDS);
         assertThat("Frame[0].opcode", frame.getOpCode(), is(OpCode.TEXT));
         assertThat("Frame[0].payloadLength", frame.getPayloadLength(), is(1024));
         assertThat("Frame[0].fin", frame.isFin(), is(false));
@@ -99,7 +98,7 @@ public class MessageWriterTest
             }
         }
 
-        WebSocketFrame frame;
+        Frame frame;
 
         int remaining = testSize;
         byte expectedOpCode = OpCode.TEXT;
@@ -143,12 +142,12 @@ public class MessageWriterTest
 
     public static class FrameCapture extends DummyChannel
     {
-        public BlockingQueue<WebSocketFrame> frames = new LinkedBlockingQueue<>();
+        public BlockingQueue<Frame> frames = new LinkedBlockingQueue<>();
 
         @Override
-        public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+        public void sendFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback, BatchMode batchMode)
         {
-            frames.offer(WebSocketFrame.copy(frame));
+            frames.offer(Frame.copy(frame));
             callback.succeeded();
         }
     }
@@ -160,7 +159,7 @@ public class MessageWriterTest
         private Utf8StringBuilder activeMessage;
 
         @Override
-        public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+        public void sendFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback, BatchMode batchMode)
         {
             if (frame.getOpCode() == OpCode.TEXT)
                 activeMessage = new Utf8StringBuilder();

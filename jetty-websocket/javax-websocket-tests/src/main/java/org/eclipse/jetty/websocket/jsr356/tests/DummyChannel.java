@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;

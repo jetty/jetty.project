@@ -18,22 +18,22 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
@@ -75,7 +75,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
         {
             try
             {
-                endpoint.onFrame(new TextFrame().setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
             }
             catch (Exception e)
             {

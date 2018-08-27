@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -28,15 +26,11 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.DataFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.PingFrame;
-import org.eclipse.jetty.websocket.core.frames.PongFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket.api.RemoteEndpoint
 {
@@ -90,7 +84,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         return channel;
     }
 
-    private void sendBlocking(WebSocketFrame frame) throws IOException
+    private void sendBlocking(Frame frame) throws IOException
     {
         try (SharedBlockingCallback.Blocker b = blocker.acquire())
         {
@@ -102,7 +96,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendBinary(ByteBuffer data) throws IOException
     {
-        sendBlocking(new BinaryFrame().setPayload(data));
+        sendBlocking(new Frame(OpCode.BINARY).setPayload(data));
     }
 
     @Override
@@ -128,39 +122,39 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendPing(ByteBuffer applicationData) throws IOException
     {
-        channel.sendFrame(new PingFrame().setPayload(applicationData), Callback.NOOP, BatchMode.OFF);
+        channel.sendFrame(new Frame(OpCode.PING).setPayload(applicationData), Callback.NOOP, BatchMode.OFF);
     }
 
     @Override
     public void sendPong(ByteBuffer applicationData) throws IOException
     {
-        channel.sendFrame(new PongFrame().setPayload(applicationData), Callback.NOOP, BatchMode.OFF);
+        channel.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData), Callback.NOOP, BatchMode.OFF);
     }
 
     @Override
     public void sendText(String text) throws IOException
     {
-        sendBlocking(new TextFrame().setPayload(text));
+        sendBlocking(new Frame(OpCode.TEXT).setPayload(text));
     }
 
     @Override
     public void sendBinary(ByteBuffer data, Callback callback)
     {
-        channel.sendFrame(new BinaryFrame().setPayload(data), callback, BatchMode.OFF);
+        channel.sendFrame(new Frame(OpCode.BINARY).setPayload(data), callback, BatchMode.OFF);
     }
 
     @Override
     public void sendPartialBinary(ByteBuffer fragment, boolean isLast, Callback callback)
     {
-        DataFrame frame;
+        Frame frame;
         switch (messageType)
         {
             case -1: // new message
-                frame = new BinaryFrame();
+                frame = new Frame(OpCode.BINARY);
                 messageType = OpCode.BINARY;
                 break;
             case OpCode.BINARY:
-                frame = new ContinuationFrame();
+                frame = new Frame(OpCode.CONTINUATION);
                 break;
             default:
                 callback.failed(new ProtocolException("Attempt to send Partial Binary during active opcode " + messageType));
@@ -181,15 +175,15 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendPartialText(String fragment, boolean isLast, Callback callback)
     {
-        DataFrame frame;
+        Frame frame;
         switch (messageType)
         {
             case -1: // new message
-                frame = new BinaryFrame();
+                frame = new Frame(OpCode.BINARY);
                 messageType = OpCode.TEXT;
                 break;
             case OpCode.TEXT:
-                frame = new ContinuationFrame();
+                frame = new Frame(OpCode.CONTINUATION);
                 break;
             default:
                 callback.failed(new ProtocolException("Attempt to send Partial Text during active opcode " + messageType));
@@ -210,6 +204,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendText(String text, Callback callback)
     {
-        channel.sendFrame(new TextFrame().setPayload(text), callback, BatchMode.OFF);
+        channel.sendFrame(new Frame(OpCode.TEXT).setPayload(text), callback, BatchMode.OFF);
     }
 }

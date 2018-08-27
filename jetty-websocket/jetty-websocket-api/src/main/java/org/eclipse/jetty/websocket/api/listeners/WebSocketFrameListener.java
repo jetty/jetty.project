@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.api.listeners;
 
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 
 /**
  * WebSocket Frame Listener interface for incoming WebSocket frames.

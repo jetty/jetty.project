@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
@@ -32,10 +29,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class ReaderMessageSinkTest extends AbstractMessageSinkTest
 {
@@ -48,7 +48,7 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         ReaderMessageSink sink = new ReaderMessageSink(session, copyHandle);
     
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
-        sink.accept(new TextFrame().setPayload("Hello World"), finCallback);
+        sink.accept(new Frame(OpCode.TEXT).setPayload("Hello World"), finCallback);
         
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         StringWriter writer = copyFuture.get(1, TimeUnit.SECONDS);
@@ -68,9 +68,9 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         CompletableFutureCallback callback2 = new CompletableFutureCallback();
         CompletableFutureCallback finCallback = new CompletableFutureCallback();
         
-        sink.accept(new TextFrame().setPayload("Hello").setFin(false), callback1);
-        sink.accept(new ContinuationFrame().setPayload(", ").setFin(false), callback2);
-        sink.accept(new ContinuationFrame().setPayload("World").setFin(true), finCallback);
+        sink.accept(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), callback1);
+        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);
+        sink.accept(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), finCallback);
         
         finCallback.get(1, TimeUnit.SECONDS); // wait for fin callback
         StringWriter writer = copyFuture.get(1, TimeUnit.SECONDS);

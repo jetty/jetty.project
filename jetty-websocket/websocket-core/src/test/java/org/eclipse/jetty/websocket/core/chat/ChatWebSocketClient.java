@@ -33,13 +33,12 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
@@ -206,7 +205,7 @@ public class ChatWebSocketClient implements FrameHandler
         }
 
         LOG.info("sending {}...",line);
-        TextFrame frame = new TextFrame();
+        Frame frame = new Frame(OpCode.TEXT);
         frame.setFin(true);
         frame.setPayload(name + ": " + line);
 

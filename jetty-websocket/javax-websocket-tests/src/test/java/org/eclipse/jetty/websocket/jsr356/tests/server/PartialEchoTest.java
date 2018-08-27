@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.tests.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -33,10 +32,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
@@ -137,15 +134,15 @@ public class PartialEchoTest
     {
         String requestPath = "/echo/partial/text";
         
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("Hello").setFin(false));
-        send.add(new ContinuationFrame().setPayload(", ").setFin(false));
-        send.add(new ContinuationFrame().setPayload("World").setFin(true));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
 
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("('Hello',false)(', ',false)('World',true)"));
-        expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("('Hello',false)(', ',false)('World',true)"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
@@ -159,15 +156,15 @@ public class PartialEchoTest
     {
         String requestPath = "/echo/partial/text-session";
         
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("Hello").setFin(false));
-        send.add(new ContinuationFrame().setPayload(", ").setFin(false));
-        send.add(new ContinuationFrame().setPayload("World").setFin(true));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false));
+        send.add(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true));
+        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
         
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("('Hello',false)(', ',false)('World',true)"));
-        expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("('Hello',false)(', ',false)('World',true)"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {

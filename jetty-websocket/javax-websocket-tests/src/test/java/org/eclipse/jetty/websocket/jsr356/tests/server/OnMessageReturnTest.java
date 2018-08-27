@@ -18,14 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.CloseReason;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -37,12 +33,16 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class OnMessageReturnTest
 {
@@ -112,7 +112,7 @@ public class OnMessageReturnTest
                 try
                 {
                     // Send message
-                    channel.sendFrame(new TextFrame().setPayload("Hello World"), Callback.NOOP, BatchMode.OFF);
+                    channel.sendFrame(new Frame(OpCode.TEXT).setPayload("Hello World"), Callback.NOOP, BatchMode.OFF);
 
                     // Confirm response
                     String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);

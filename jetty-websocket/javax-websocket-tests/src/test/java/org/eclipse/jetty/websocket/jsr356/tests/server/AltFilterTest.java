@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,14 +25,17 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.echo.BasicEchoSocket;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 /**
  * Testing the use of an alternate {@link org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter}
@@ -68,13 +67,13 @@ public class AltFilterTest
             FilterHolder filterSCI = webapp.getServletHandler().getFilter("Jetty_WebSocketUpgradeFilter");
             assertThat("Filter[Jetty_WebSocketUpgradeFilter]", filterSCI, nullValue());
 
-            List<WebSocketFrame> send = new ArrayList<>();
-            send.add(new TextFrame().setPayload("Hello Echo"));
-            send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+            List<Frame> send = new ArrayList<>();
+            send.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
+            send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
     
-            List<WebSocketFrame> expect = new ArrayList<>();
-            expect.add(new TextFrame().setPayload("Hello Echo"));
-            expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+            List<Frame> expect = new ArrayList<>();
+            expect.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
+            expect.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
             
             try(Fuzzer session = wsb.newNetworkFuzzer("/app/echo;jsession=xyz"))
             {

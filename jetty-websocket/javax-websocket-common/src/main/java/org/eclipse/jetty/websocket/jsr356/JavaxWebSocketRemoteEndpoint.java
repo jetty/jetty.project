@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.SendHandler;
@@ -31,16 +30,11 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.DataFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.PingFrame;
-import org.eclipse.jetty.websocket.core.frames.PongFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
@@ -108,7 +102,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     @Override
     public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
-        if (frame instanceof DataFrame)
+        if (frame.isDataFrame())
         {
             try
             {
@@ -175,7 +169,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
             {
                 Encoder.Text text = (Encoder.Text) encoder;
                 String msg = text.encode(data);
-                sendFrame(new TextFrame().setPayload(msg), callback, batchMode);
+                sendFrame(new Frame(OpCode.TEXT).setPayload(msg), callback, batchMode);
                 return;
             }
 
@@ -194,7 +188,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
             {
                 Encoder.Binary ebin = (Encoder.Binary) encoder;
                 ByteBuffer buf = ebin.encode(data);
-                sendFrame(new BinaryFrame().setPayload(buf), callback, batchMode);
+                sendFrame(new Frame(OpCode.BINARY).setPayload(buf), callback, batchMode);
                 return;
             }
 
@@ -232,7 +226,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         }
         // TODO: is this supposed to be a blocking call?
         // TODO: what to do on excessively large payloads (error and close connection per RFC6455, or truncate?)
-        sendFrame(new PingFrame().setPayload(data), Callback.NOOP, batchMode);
+        sendFrame(new Frame(OpCode.PING).setPayload(data), Callback.NOOP, batchMode);
     }
 
     @Override
@@ -244,7 +238,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         }
         // TODO: is this supposed to be a blocking call?
         // TODO: what to do on excessively large payloads (error and close connection per RFC6455, or truncate?)
-        sendFrame(new PongFrame().setPayload(data), Callback.NOOP, batchMode);
+        sendFrame(new Frame(OpCode.PONG).setPayload(data), Callback.NOOP, batchMode);
     }
 
     protected void assertMessageNotNull(Object data)

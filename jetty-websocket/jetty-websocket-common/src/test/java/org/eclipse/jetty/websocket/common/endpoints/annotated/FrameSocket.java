@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.common.endpoints.annotated;
 
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 
 @WebSocket
 public class FrameSocket

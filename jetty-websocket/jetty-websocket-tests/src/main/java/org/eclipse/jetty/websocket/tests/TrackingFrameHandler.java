@@ -34,9 +34,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 
@@ -50,7 +49,7 @@ public class TrackingFrameHandler implements FrameHandler
     public AtomicReference<CloseStatus> closeStatus = new AtomicReference<>();
     public AtomicReference<Throwable> closeStack = new AtomicReference<>();
     public AtomicReference<Throwable> error = new AtomicReference<>();
-    public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
+    public BlockingQueue<Frame> framesQueue = new LinkedBlockingDeque<>();
 
     public TrackingFrameHandler(String id)
     {
@@ -94,9 +93,9 @@ public class TrackingFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onFrame(Frame frame, Callback callback) throws Exception
+    public void onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback) throws Exception
     {
-        framesQueue.offer(WebSocketFrame.copy(frame));
+        framesQueue.offer(Frame.copy(frame));
         callback.succeeded();
     }
 

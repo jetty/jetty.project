@@ -32,14 +32,14 @@ import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.hamcrest.Matchers;
 
 public interface Fuzzer extends AutoCloseable
 {
-    ByteBuffer asNetworkBuffer(List<WebSocketFrame> frames);
+    ByteBuffer asNetworkBuffer(List<Frame> frames);
 
     /**
      * For some Fuzzers implementations, this triggers a send EOF.
@@ -54,7 +54,7 @@ public interface Fuzzer extends AutoCloseable
      * @param frames the expected frames
      * @throws InterruptedException
      */
-    void expect(List<WebSocketFrame> frames) throws InterruptedException;
+    void expect(List<Frame> frames) throws InterruptedException;
 
     /**
      * Assert that the following frames contains the expected whole message.
@@ -64,9 +64,9 @@ public interface Fuzzer extends AutoCloseable
      * @param expectedMessage the expected message
      * @throws InterruptedException
      */
-    void expectMessage(BlockingQueue<WebSocketFrame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage) throws InterruptedException;
+    void expectMessage(BlockingQueue<Frame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage) throws InterruptedException;
 
-    BlockingQueue<WebSocketFrame> getOutputFrames();
+    BlockingQueue<Frame> getOutputFrames();
 
     /**
      * Send raw bytes
@@ -90,7 +90,7 @@ public interface Fuzzer extends AutoCloseable
      *
      * @param frames the list of frames to send
      */
-    void sendBulk(List<WebSocketFrame> frames) throws IOException;
+    void sendBulk(List<Frame> frames) throws IOException;
 
     /**
      * Generate a ByteBuffer for each frame, and send each as
@@ -98,7 +98,7 @@ public interface Fuzzer extends AutoCloseable
      *
      * @param frames the list of frames to send
      */
-    void sendFrames(List<WebSocketFrame> frames) throws IOException;
+    void sendFrames(List<Frame> frames) throws IOException;
 
     /**
      * Generate a ByteBuffer for each frame, and send each as
@@ -106,7 +106,7 @@ public interface Fuzzer extends AutoCloseable
      *
      * @param frames the list of frames to send
      */
-    void sendFrames(WebSocketFrame... frames) throws IOException;
+    void sendFrames(Frame... frames) throws IOException;
 
     /**
      * Generate a single ByteBuffer representing the entire list
@@ -116,7 +116,7 @@ public interface Fuzzer extends AutoCloseable
      * @param frames the list of frames to send
      * @param segmentSize the size of each segment to send
      */
-    void sendSegmented(List<WebSocketFrame> frames, int segmentSize) throws IOException;
+    void sendSegmented(List<Frame> frames, int segmentSize) throws IOException;
 
     abstract class Adapter
     {
@@ -127,11 +127,11 @@ public interface Fuzzer extends AutoCloseable
             LOG = Log.getLogger(this.getClass());
         }
 
-        public void expectMessage(BlockingQueue<WebSocketFrame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage) throws InterruptedException
+        public void expectMessage(BlockingQueue<Frame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage) throws InterruptedException
         {
             ByteBuffer actualPayload = ByteBuffer.allocate(expectedMessage.remaining());
 
-            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Initial Frame.opCode", frame.getOpCode(), is(expectedDataOp));
 
             actualPayload.put(frame.getPayload());
@@ -146,7 +146,7 @@ public interface Fuzzer extends AutoCloseable
         }
 
         @SuppressWarnings("Duplicates")
-        public void assertExpected(BlockingQueue<WebSocketFrame> framesQueue, List<WebSocketFrame> expect) throws InterruptedException
+        public void assertExpected(BlockingQueue<Frame> framesQueue, List<Frame> expect) throws InterruptedException
         {
             int expectedCount = expect.size();
 
@@ -155,14 +155,14 @@ public interface Fuzzer extends AutoCloseable
             {
                 prefix = "Frame[" + i + "]";
 
-                WebSocketFrame expected = expect.get(i);
-                WebSocketFrame actual = framesQueue.poll(3, TimeUnit.SECONDS);
+                Frame expected = expect.get(i);
+                Frame actual = framesQueue.poll(3, TimeUnit.SECONDS);
                 assertThat(prefix + ".poll", actual, notNullValue());
 
                 if(LOG.isDebugEnabled())
                 {
                     if (actual.getOpCode() == OpCode.CLOSE)
-                        LOG.debug("{} CloseFrame: {}", prefix, CloseFrame.toCloseStatus(actual.getPayload()));
+                        LOG.debug("{} CloseFrame: {}", prefix, CloseStatus.toCloseStatus(actual.getPayload()));
                     else
                         LOG.debug("{} {}", prefix, actual);
                 }
@@ -171,8 +171,8 @@ public interface Fuzzer extends AutoCloseable
                 prefix += "(op=" + actual.getOpCode() + "," + (actual.isFin() ? "" : "!") + "fin)";
                 if (expected.getOpCode() == OpCode.CLOSE)
                 {
-                    CloseStatus expectedClose = CloseFrame.toCloseStatus(expected.getPayload());
-                    CloseStatus actualClose = CloseFrame.toCloseStatus(actual.getPayload());
+                    CloseStatus expectedClose = CloseStatus.toCloseStatus(expected.getPayload());
+                    CloseStatus actualClose = CloseStatus.toCloseStatus(actual.getPayload());
                     assertThat(prefix + ".code", actualClose.getCode(), Matchers.is(expectedClose.getCode()));
                 }
                 else if (expected.hasPayload())

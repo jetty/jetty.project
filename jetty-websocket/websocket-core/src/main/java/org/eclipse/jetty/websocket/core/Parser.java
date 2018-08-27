@@ -26,15 +26,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.extensions.Extension;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.ControlFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.PingFrame;
-import org.eclipse.jetty.websocket.core.frames.PongFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -49,7 +42,7 @@ public class Parser
          * @param frame the frame
          * @return true to continue parsing, false to stop parsing
          */
-        boolean onFrame(Frame frame);
+        boolean onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame);
     }
     
     private enum State
@@ -71,7 +64,7 @@ public class Parser
     private State state = State.START;
     private int cursor = 0;
     // Frame
-    private WebSocketFrame frame;
+    private Frame frame;
     private boolean priorDataFrame;
     // payload specific
     private ByteBuffer payload;
@@ -109,10 +102,10 @@ public class Parser
             throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
         }
     
-        if (frame.isControlFrame() && len > ControlFrame.MAX_CONTROL_PAYLOAD)
+        if (frame.isControlFrame() && len > Frame.MAX_CONTROL_PAYLOAD)
         {
             throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
-                    + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
+                    + Frame.MAX_CONTROL_PAYLOAD + "]");
         }
     }
 
@@ -253,7 +246,7 @@ public class Parser
         }
     }
     
-    public void release(Frame frame)
+    public void release(org.eclipse.jetty.websocket.core.frames.Frame frame)
     {
         if (frame.hasPayload())
         {
@@ -307,7 +300,7 @@ public class Parser
                     switch(opcode)
                     {
                         case OpCode.TEXT:
-                            frame = new TextFrame();
+                            frame = new Frame(OpCode.TEXT);
                             // data validation
                             if (priorDataFrame)
                             {
@@ -315,7 +308,7 @@ public class Parser
                             }
                             break;
                         case OpCode.BINARY:
-                            frame = new BinaryFrame();
+                            frame = new Frame(OpCode.BINARY);
                             // data validation
                             if (priorDataFrame)
                             {
@@ -323,7 +316,7 @@ public class Parser
                             }
                             break;
                         case OpCode.CONTINUATION:
-                            frame = new ContinuationFrame();
+                            frame = new Frame(OpCode.CONTINUATION);
                             // continuation validation
                             if (!priorDataFrame)
                             {
@@ -332,7 +325,7 @@ public class Parser
                             // Be careful to use the original opcode
                             break;
                         case OpCode.CLOSE:
-                            frame = new CloseFrame();
+                            frame = new Frame(OpCode.CLOSE);
                             // control frame validation
                             if (!fin)
                             {
@@ -340,7 +333,7 @@ public class Parser
                             }
                             break;
                         case OpCode.PING:
-                            frame = new PingFrame();
+                            frame = new Frame(OpCode.PING);
                             // control frame validation
                             if (!fin)
                             {
@@ -348,7 +341,7 @@ public class Parser
                             }
                             break;
                         case OpCode.PONG:
-                            frame = new PongFrame();
+                            frame = new Frame(OpCode.PONG);
                             // control frame validation
                             if (!fin)
                             {

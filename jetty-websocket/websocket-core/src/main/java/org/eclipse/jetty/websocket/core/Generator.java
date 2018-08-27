@@ -24,7 +24,7 @@ import java.util.List;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.extensions.Extension;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 /**
@@ -176,7 +176,7 @@ public class Generator
              */
             if (frame.getOpCode() == OpCode.CLOSE)
             {
-                CloseFrame.toCloseStatus(frame.getPayload());
+                CloseStatus.toCloseStatus(frame.getPayload());
             }
         }
     }

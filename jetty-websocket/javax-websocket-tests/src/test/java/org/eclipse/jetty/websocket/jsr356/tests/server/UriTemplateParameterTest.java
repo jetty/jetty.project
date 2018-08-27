@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.tests.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.server.PathParam;
@@ -30,9 +29,8 @@ import javax.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.AfterClass;
@@ -80,13 +78,13 @@ public class UriTemplateParameterTest
     {
         String requestPath = "/echo/params/1234/5678";
     
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("9999"));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("9999"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
     
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("9,999|1,234|5,678"));
-        expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("9,999|1,234|5,678"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
     
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {

@@ -43,7 +43,8 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.AbstractWholeMessageHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
@@ -184,7 +185,7 @@ public class DecoderReaderManySmallTest
 
                 for (int id = from; id < to; id++)
                 {
-                    channel.sendFrame(new TextFrame().setPayload(Integer.toString(id)), Callback.NOOP, BatchMode.OFF);
+                    channel.sendFrame(new Frame(OpCode.TEXT).setPayload(Integer.toString(id)), Callback.NOOP, BatchMode.OFF);
                 }
             }
         }

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.ByteBuffer;
@@ -33,10 +31,11 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.DataFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Support for writing a single WebSocket TEXT message via a {@link Writer}
@@ -54,7 +53,7 @@ public class MessageWriter extends Writer
     private final FrameHandler.Channel channel;
     private final SharedBlockingCallback blocker;
     private long frameCount;
-    private DataFrame frame;
+    private Frame frame;
     private CharBuffer buffer;
     private Callback callback;
     private boolean closed;
@@ -64,7 +63,7 @@ public class MessageWriter extends Writer
         this.channel = channel;
         this.blocker = new SharedBlockingCallback();
         this.buffer = CharBuffer.allocate(bufferSize);
-        this.frame = new TextFrame();
+        this.frame = new Frame(OpCode.TEXT);
     }
 
     @Override
@@ -157,7 +156,7 @@ public class MessageWriter extends Writer
 
             ++frameCount;
             // Any flush after the first will be a CONTINUATION frame.
-            frame = new ContinuationFrame();
+            frame = new Frame(OpCode.CONTINUATION);
         }
     }
 

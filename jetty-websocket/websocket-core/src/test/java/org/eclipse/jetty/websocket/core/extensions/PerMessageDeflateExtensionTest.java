@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -31,20 +28,19 @@ import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.compress.CompressExtension;
 import org.eclipse.jetty.websocket.core.extensions.compress.PerMessageDeflateExtension;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.PingFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Client side behavioral tests for permessage-deflate extension.
@@ -110,8 +106,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
                 "0x80 0x04 0xc9 0xc9 0x07 0x00");
 
         tester.assertHasFrames(
-                new TextFrame().setPayload("He").setFin(false),
-                new ContinuationFrame().setPayload("llo").setFin(true));
+                new Frame(OpCode.TEXT).setPayload("He").setFin(false),
+                new Frame(OpCode.CONTINUATION).setPayload("llo").setFin(true));
     }
 
     /**
@@ -239,12 +235,12 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         ext.setNextIncomingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = new PingFrame().setPayload(payload);
+        org.eclipse.jetty.websocket.core.frames.Frame ping = new Frame(OpCode.PING).setPayload(payload);
         ext.receiveFrame(ping, Callback.NOOP);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);
-        WebSocketFrame actual = capture.frames.poll();
+        Frame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));
@@ -284,7 +280,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         // leave frames as-is, no compression, and pass into extension
         for (String q : quote)
         {
-            WebSocketFrame frame = new TextFrame().setPayload(q);
+            Frame frame = new Frame(OpCode.TEXT).setPayload(q);
             frame.setRsv1(false); // indication to extension that frame is not compressed (ie: a normal frame)
             ext.receiveFrame(frame, Callback.NOOP);
         }
@@ -295,7 +291,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         String prefix;
         int i = 0;
-        for (WebSocketFrame actual : capture.frames)
+        for (Frame actual : capture.frames)
         {
             prefix = "Frame[" + i + "]";
 
@@ -332,14 +328,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = new PingFrame().setPayload(payload);
+        org.eclipse.jetty.websocket.core.frames.Frame ping = new Frame(OpCode.PING).setPayload(payload);
 
         ext.sendFrame(ping, null, BatchMode.OFF);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);
 
-        WebSocketFrame actual = capture.frames.poll();
+        Frame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));

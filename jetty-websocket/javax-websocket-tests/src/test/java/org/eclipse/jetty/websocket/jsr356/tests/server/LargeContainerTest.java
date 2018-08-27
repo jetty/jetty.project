@@ -18,15 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.OnMessage;
@@ -38,12 +34,16 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameHandlerTracker;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Test Echo of Large messages, targeting the {@link javax.websocket.WebSocketContainer#setDefaultMaxTextMessageBufferSize(int)} functionality
@@ -114,7 +114,7 @@ public class LargeContainerTest
                     byte txt[] = new byte[100 * 1024];
                     Arrays.fill(txt, (byte) 'o');
                     String msg = new String(txt, StandardCharsets.UTF_8);
-                    channel.sendFrame(new TextFrame().setPayload(msg), Callback.NOOP, BatchMode.OFF);
+                    channel.sendFrame(new Frame(OpCode.TEXT).setPayload(msg), Callback.NOOP, BatchMode.OFF);
 
                     // Confirm echo
                     String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);

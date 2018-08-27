@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -33,12 +30,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.DataFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.UnitGenerator;
@@ -47,6 +40,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Testing against local websocket server using {@link org.eclipse.jetty.server.LocalConnector}
@@ -90,16 +86,16 @@ public abstract class AbstractLocalServerCase
         server.stop();
     }
     
-    public DataFrame toDataFrame(byte op)
+    public Frame toDataFrame(byte op)
     {
         switch (op)
         {
             case OpCode.BINARY:
-                return new BinaryFrame();
+                return new Frame(OpCode.BINARY);
             case OpCode.TEXT:
-                return new TextFrame();
+                return new Frame(OpCode.TEXT);
             case OpCode.CONTINUATION:
-                return new ContinuationFrame();
+                return new Frame(OpCode.CONTINUATION);
             default:
                 throw new IllegalArgumentException("Not a data frame: " + op);
         }
@@ -114,7 +110,7 @@ public abstract class AbstractLocalServerCase
      * @param frameSize the individual frame size to utilize
      * @return the overall message payload (useful for expectation checks)
      */
-    public ByteBuffer newMultiFrameMessage(List<WebSocketFrame> send, byte opcode, int overallSize, int frameSize)
+    public ByteBuffer newMultiFrameMessage(List<Frame> send, byte opcode, int overallSize, int frameSize)
     {
         byte msg[] = new byte[overallSize];
         Arrays.fill(msg, (byte) 'M');

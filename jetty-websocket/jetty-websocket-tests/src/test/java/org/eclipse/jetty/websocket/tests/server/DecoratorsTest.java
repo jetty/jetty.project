@@ -39,10 +39,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -221,13 +221,13 @@ public class DecoratorsTest
         try (Fuzzer session = server.newNetworkFuzzer("/"))
         {
             session.sendFrames(
-                    new TextFrame().setPayload("info"),
-                    new CloseFrame().setPayload(StatusCode.NORMAL.getCode())
+                    new Frame(OpCode.TEXT).setPayload("info"),
+                    new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode())
             );
         
-            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
+            BlockingQueue<Frame> framesQueue = session.getOutputFrames();
         
-            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
         
             String payload = frame.getPayloadAsUTF8();

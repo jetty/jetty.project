@@ -22,8 +22,8 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.AbstractWholeMessageHandler;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class WholeMessageEcho extends AbstractWholeMessageHandler
@@ -32,13 +32,13 @@ public class WholeMessageEcho extends AbstractWholeMessageHandler
     public void onWholeBinary(ByteBuffer wholeMessage, Callback callback)
     {
         super.onWholeBinary(wholeMessage, callback);
-        channel.sendFrame(new BinaryFrame().setPayload(wholeMessage), callback, BatchMode.OFF);
+        channel.sendFrame(new Frame(OpCode.BINARY).setPayload(wholeMessage), callback, BatchMode.OFF);
     }
 
     @Override
     public void onWholeText(String wholeMessage, Callback callback)
     {
         super.onWholeText(wholeMessage, callback);
-        channel.sendFrame(new TextFrame().setPayload(wholeMessage), callback, BatchMode.OFF);
+        channel.sendFrame(new Frame(OpCode.TEXT).setPayload(wholeMessage), callback, BatchMode.OFF);
     }
 }

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -30,18 +28,16 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.PingFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class FragmentExtensionTest extends AbstractExtensionTest
 {
@@ -70,7 +66,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         // Manually create frame and pass into extension
         for (String q : quote)
         {
-            Frame frame = new TextFrame().setPayload(q);
+            org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload(q);
             ext.receiveFrame(frame, Callback.NOOP);
         }
 
@@ -79,7 +75,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         String prefix;
         int i = 0;
-        for (WebSocketFrame actual : capture.frames)
+        for (Frame actual : capture.frames)
         {
             prefix = "Frame[" + i + "]";
 
@@ -113,12 +109,12 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         ext.setNextIncomingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = new PingFrame().setPayload(payload);
+        org.eclipse.jetty.websocket.core.frames.Frame ping = new Frame(OpCode.PING).setPayload(payload);
         ext.receiveFrame(ping, Callback.NOOP);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);
-        WebSocketFrame actual = capture.frames.poll();
+        Frame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));
@@ -157,20 +153,20 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            Frame frame = new TextFrame().setPayload(section);
+            org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload(section);
             ext.sendFrame(frame, null, BatchMode.OFF);
         }
 
         // Expected Frames
-        List<WebSocketFrame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new TextFrame().setPayload("No amount of experim").setFin(false));
-        expectedFrames.add(new ContinuationFrame().setPayload("entation can ever pr").setFin(false));
-        expectedFrames.add(new ContinuationFrame().setPayload("ove me right;").setFin(true));
+        List<Frame> expectedFrames = new ArrayList<>();
+        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("No amount of experim").setFin(false));
+        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("entation can ever pr").setFin(false));
+        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("ove me right;").setFin(true));
 
-        expectedFrames.add(new TextFrame().setPayload("a single experiment ").setFin(false));
-        expectedFrames.add(new ContinuationFrame().setPayload("can prove me wrong.").setFin(true));
+        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("a single experiment ").setFin(false));
+        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("can prove me wrong.").setFin(true));
 
-        expectedFrames.add(new TextFrame().setPayload("-- Albert Einstein").setFin(true));
+        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("-- Albert Einstein").setFin(true));
 
         // capture.dump();
 
@@ -178,12 +174,12 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         capture.assertFrameCount(len);
 
         String prefix;
-        LinkedList<WebSocketFrame> frames = new LinkedList<>(capture.frames);
+        LinkedList<Frame> frames = new LinkedList<>(capture.frames);
         for (int i = 0; i < len; i++)
         {
             prefix = "Frame[" + i + "]";
-            WebSocketFrame actualFrame = frames.get(i);
-            WebSocketFrame expectedFrame = expectedFrames.get(i);
+            Frame actualFrame = frames.get(i);
+            Frame expectedFrame = expectedFrames.get(i);
 
             // System.out.printf("actual: %s%n",actualFrame);
             // System.out.printf("expect: %s%n",expectedFrame);
@@ -230,15 +226,15 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            Frame frame = new TextFrame().setPayload(section);
+            org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload(section);
             ext.sendFrame(frame, null, BatchMode.OFF);
         }
 
         // Expected Frames
-        List<WebSocketFrame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new TextFrame().setPayload("No amount of experimentation can ever prove me right;"));
-        expectedFrames.add(new TextFrame().setPayload("a single experiment can prove me wrong."));
-        expectedFrames.add(new TextFrame().setPayload("-- Albert Einstein"));
+        List<Frame> expectedFrames = new ArrayList<>();
+        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("No amount of experimentation can ever prove me right;"));
+        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("a single experiment can prove me wrong."));
+        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("-- Albert Einstein"));
 
         // capture.dump();
 
@@ -246,12 +242,12 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         capture.assertFrameCount(len);
 
         String prefix;
-        LinkedList<WebSocketFrame> frames = new LinkedList<>(capture.frames);
+        LinkedList<Frame> frames = new LinkedList<>(capture.frames);
         for (int i = 0; i < len; i++)
         {
             prefix = "Frame[" + i + "]";
-            WebSocketFrame actualFrame = frames.get(i);
-            WebSocketFrame expectedFrame = expectedFrames.get(i);
+            Frame actualFrame = frames.get(i);
+            Frame expectedFrame = expectedFrames.get(i);
 
             // Validate Frame
             Assert.assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
@@ -287,13 +283,13 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = new PingFrame().setPayload(payload);
+        org.eclipse.jetty.websocket.core.frames.Frame ping = new Frame(OpCode.PING).setPayload(payload);
 
         ext.sendFrame(ping, null, BatchMode.OFF);
 
         capture.assertFrameCount(1);
 
-        WebSocketFrame actual = capture.frames.poll();
+        Frame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));

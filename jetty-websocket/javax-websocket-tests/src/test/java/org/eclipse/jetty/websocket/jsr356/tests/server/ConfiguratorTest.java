@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
@@ -40,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -60,7 +56,8 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.util.HeaderUtil;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketCreator;
@@ -75,6 +72,9 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class ConfiguratorTest
 {
@@ -444,7 +444,7 @@ public class ConfiguratorTest
         FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new TextFrame().setPayload(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS), Callback.NOOP, BatchMode.OFF);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Request Header [" + WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS + "]: \"identity\""));
@@ -468,7 +468,7 @@ public class ConfiguratorTest
         FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new TextFrame().setPayload("NegoExts"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("NegoExts"), Callback.NOOP, BatchMode.OFF);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("negotiatedExtensions=[]"));
@@ -492,7 +492,7 @@ public class ConfiguratorTest
         FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new TextFrame().setPayload("X-Dummy"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("X-Dummy"), Callback.NOOP, BatchMode.OFF);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Request Header [X-Dummy]: \"Bogus\""));
@@ -517,7 +517,7 @@ public class ConfiguratorTest
         try
         {
             // first request has this UserProperty
-            channel.sendFrame(new TextFrame().setPayload("apple"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, BatchMode.OFF);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = \"fruit from tree\""));
@@ -536,9 +536,9 @@ public class ConfiguratorTest
         try
         {
             // as this is second request, this should be null
-            channel.sendFrame(new TextFrame().setPayload("apple"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, BatchMode.OFF);
             // second request has this UserProperty
-            channel.sendFrame(new TextFrame().setPayload("blueberry"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("blueberry"), Callback.NOOP, BatchMode.OFF);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = <null>"));
@@ -566,7 +566,7 @@ public class ConfiguratorTest
             SocketAddress expectedLocal = channel.getLocalAddress();
             SocketAddress expectedRemote = channel.getRemoteAddress();
 
-            channel.sendFrame(new TextFrame().setPayload("addr"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("addr"), Callback.NOOP, BatchMode.OFF);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
 
@@ -669,7 +669,7 @@ public class ConfiguratorTest
         FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new TextFrame().setPayload("getProtocols"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("getProtocols"), Callback.NOOP, BatchMode.OFF);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming message", incomingMessage, responseMatcher);
@@ -696,7 +696,7 @@ public class ConfiguratorTest
         FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new TextFrame().setPayload("2016-06-20T14:27:44"), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload("2016-06-20T14:27:44"), Callback.NOOP, BatchMode.OFF);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming message", incomingMessage, is("cal=2016.06.20 AD at 14:27:44 +0000"));

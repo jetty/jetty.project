@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -41,23 +36,25 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.compress.DeflateFrameExtension;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.CapturedHexPayloads;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.io.OutgoingNetworkBytesCapture;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
@@ -92,7 +89,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         assertThat("Incoming Frame Count", capture.frames.size(), is(len));
 
         int i = 0;
-        for (WebSocketFrame actual : capture.frames)
+        for (Frame actual : capture.frames)
         {
             String prefix = "Frame[" + i + "]";
             assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
@@ -125,7 +122,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
 
-        Frame frame = new TextFrame().setPayload(text);
+        org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload(text);
         ext.sendFrame(frame, null, BatchMode.OFF);
 
         capture.assertBytes(0, expectedHex);
@@ -233,9 +230,9 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         init(ext);
         ext.setNextOutgoingFrames(capture);
 
-        ext.sendFrame(new TextFrame().setPayload("time:"), null, BatchMode.OFF);
-        ext.sendFrame(new TextFrame().setPayload("time:"), null, BatchMode.OFF);
-        ext.sendFrame(new TextFrame().setPayload("time:"), null, BatchMode.OFF);
+        ext.sendFrame(new Frame(OpCode.TEXT).setPayload("time:"), null, BatchMode.OFF);
+        ext.sendFrame(new Frame(OpCode.TEXT).setPayload("time:"), null, BatchMode.OFF);
+        ext.sendFrame(new Frame(OpCode.TEXT).setPayload("time:"), null, BatchMode.OFF);
 
         List<String> actual = capture.getCaptured();
 
@@ -307,8 +304,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
 
-        ext.sendFrame(new TextFrame().setPayload("Hello"), null, BatchMode.OFF);
-        ext.sendFrame(new TextFrame().setPayload("There"), null, BatchMode.OFF);
+        ext.sendFrame(new Frame(OpCode.TEXT).setPayload("Hello"), null, BatchMode.OFF);
+        ext.sendFrame(new Frame(OpCode.TEXT).setPayload("There"), null, BatchMode.OFF);
 
         capture.assertBytes(0, "c107f248cdc9c90700");
     }
@@ -403,7 +400,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         clientExtension.setNextOutgoingFrames(new OutgoingFrames()
         {
             @Override
-            public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+            public void sendFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback, BatchMode batchMode)
             {
                 LOG.debug("outgoingFrame({})", frame);
                 serverExtension.receiveFrame(frame, callback);
@@ -415,7 +412,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         serverExtension.setNextIncomingFrames(new IncomingFrames()
         {
             @Override
-            public void receiveFrame(Frame frame, Callback callback)
+            public void receiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
             {
                 LOG.debug("incomingFrame({})", frame);
                 try
@@ -429,7 +426,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
             }
         });
 
-        BinaryFrame frame = new BinaryFrame();
+        Frame frame = new Frame(OpCode.BINARY);
         frame.setPayload(input);
         frame.setFin(true);
         clientExtension.sendFrame(frame, null, BatchMode.OFF);

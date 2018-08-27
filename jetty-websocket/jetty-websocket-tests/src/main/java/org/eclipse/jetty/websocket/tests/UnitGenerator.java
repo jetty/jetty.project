@@ -23,11 +23,10 @@ import java.util.List;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 
 /**
  * Extension of the default WebSocket Generator for unit testing purposes
@@ -50,10 +49,10 @@ public class UnitGenerator extends Generator
         applyMask = (getBehavior() == WebSocketBehavior.CLIENT);
     }
     
-    public ByteBuffer asBuffer(List<WebSocketFrame> frames)
+    public ByteBuffer asBuffer(List<Frame> frames)
     {
         int bufferLength = 0;
-        for (Frame f : frames)
+        for (org.eclipse.jetty.websocket.core.frames.Frame f : frames)
         {
             bufferLength += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
         }
@@ -64,10 +63,10 @@ public class UnitGenerator extends Generator
         return buffer;
     }
     
-    public ByteBuffer asBuffer(WebSocketFrame... frames)
+    public ByteBuffer asBuffer(Frame... frames)
     {
         int bufferLength = 0;
-        for (Frame f : frames)
+        for (org.eclipse.jetty.websocket.core.frames.Frame f : frames)
         {
             bufferLength += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
         }
@@ -78,10 +77,10 @@ public class UnitGenerator extends Generator
         return buffer;
     }
     
-    public void generate(ByteBuffer buffer, List<WebSocketFrame> frames)
+    public void generate(ByteBuffer buffer, List<Frame> frames)
     {
         // Generate frames
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             if (applyMask)
                 f.setMask(MASK);
@@ -90,10 +89,10 @@ public class UnitGenerator extends Generator
         }
     }
     
-    public void generate(ByteBuffer buffer, WebSocketFrame... frames)
+    public void generate(ByteBuffer buffer, Frame... frames)
     {
         // Generate frames
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             if (applyMask)
                 f.setMask(MASK);
@@ -102,7 +101,7 @@ public class UnitGenerator extends Generator
         }
     }
     
-    public ByteBuffer generate(WebSocketFrame frame)
+    public ByteBuffer generate(Frame frame)
     {
         int bufferLength = frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
         ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
@@ -113,7 +112,7 @@ public class UnitGenerator extends Generator
         return buffer;
     }
     
-    public void generate(ByteBuffer buffer, WebSocketFrame frame)
+    public void generate(ByteBuffer buffer, Frame frame)
     {
         if (applyMask)
             frame.setMask(MASK);

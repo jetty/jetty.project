@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
@@ -31,16 +28,18 @@ import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
 {
@@ -61,7 +60,7 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
         data.put((byte) 12);
         data.put((byte) 31);
         data.flip();
-        sink.accept(new BinaryFrame().setPayload(data).setFin(true), finCallback);
+        sink.accept(new Frame(OpCode.BINARY).setPayload(data).setFin(true), finCallback);
 
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         Calendar decoded = copyFuture.get(1, TimeUnit.SECONDS);
@@ -94,9 +93,9 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
         data3.put((byte) 1);
         data3.flip();
 
-        sink.accept(new BinaryFrame().setPayload(data1).setFin(false), callback1);
-        sink.accept(new ContinuationFrame().setPayload(data2).setFin(false), callback2);
-        sink.accept(new ContinuationFrame().setPayload(data3).setFin(true), finCallback);
+        sink.accept(new Frame(OpCode.BINARY).setPayload(data1).setFin(false), callback1);
+        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(data2).setFin(false), callback2);
+        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(data3).setFin(true), finCallback);
 
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         Calendar decoded = copyFuture.get(1, TimeUnit.SECONDS);

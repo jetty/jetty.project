@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.hamcrest.Matchers;
 import org.junit.Test;
@@ -43,7 +43,7 @@ public class CloseStatusTest
         assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NO_CODE));
         assertThat("close.reason",close.getReason(),nullValue());
 
-        CloseFrame frame = new CloseFrame().setPayload(close);
+        Frame frame = new Frame(OpCode.CLOSE).setPayload(close);
         assertThat("close frame op code",frame.getOpCode(), Matchers.is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload",frame.hasPayload(),is(false));
@@ -60,7 +60,7 @@ public class CloseStatusTest
         assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NO_CODE));
         assertThat("close.reason",close.getReason(),nullValue());
 
-        CloseFrame frame = new CloseFrame().setPayload(close);
+        Frame frame = new Frame(OpCode.CLOSE).setPayload(close);
         assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload",frame.hasPayload(),is(false));
@@ -77,7 +77,7 @@ public class CloseStatusTest
         assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NO_CLOSE));
         assertThat("close.reason",close.getReason(),nullValue());
 
-        CloseFrame frame = new CloseFrame().setPayload(close);
+        Frame frame = new Frame(OpCode.CLOSE).setPayload(close);
         assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload",frame.hasPayload(),is(false));
@@ -94,7 +94,7 @@ public class CloseStatusTest
         assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.FAILED_TLS_HANDSHAKE));
         assertThat("close.reason",close.getReason(),nullValue());
 
-        CloseFrame frame = new CloseFrame().setPayload(close);
+        Frame frame = new Frame(OpCode.CLOSE).setPayload(close);
         assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload",frame.hasPayload(),is(false));
@@ -111,7 +111,7 @@ public class CloseStatusTest
         assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NORMAL));
         assertThat("close.reason",close.getReason(),nullValue());
 
-        CloseFrame frame = new CloseFrame().setPayload(close);
+        Frame frame = new Frame(OpCode.CLOSE).setPayload(close);
         assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
         assertThat("close frame payload length",frame.getPayloadLength(),is(2));
     }
@@ -145,7 +145,7 @@ public class CloseStatusTest
     {
         ByteBuffer payload = asByteBuffer(WebSocketConstants.NORMAL,null);
         assertThat("payload length", payload.remaining(), is(2));
-        CloseFrame frame = new CloseFrame();
+        Frame frame = new Frame(OpCode.CLOSE);
         frame.setPayload(payload);
         
         // create from frame
@@ -154,7 +154,7 @@ public class CloseStatusTest
         assertThat("close.reason",close.getReason(),nullValue());
 
         // and back again
-        frame = new CloseFrame().setPayload(close);
+        frame = new Frame(OpCode.CLOSE).setPayload(close);
         assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
         assertThat("close frame payload length",frame.getPayloadLength(),is(2));
     }

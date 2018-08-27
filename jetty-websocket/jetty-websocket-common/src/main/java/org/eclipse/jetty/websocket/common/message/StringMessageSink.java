@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.MessageSinkImpl;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class StringMessageSink extends MessageSinkImpl

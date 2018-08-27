@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.parser;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,12 +30,16 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.RawFrameBuilder;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 /**
  * Test behavior of Parser when encountering good / valid close status codes (per RFC6455)
@@ -99,9 +98,9 @@ public class ParserGoodCloseStatusCodesTest
         // parse buffer
         BufferUtil.flipToFlush(raw, 0);
         parser.parse(raw);
-        WebSocketFrame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame opcode", frame.getOpCode(), is(OpCode.CLOSE));
-        CloseStatus closeStatus = CloseFrame.toCloseStatus(frame.getPayload());
+        CloseStatus closeStatus = CloseStatus.toCloseStatus(frame.getPayload());
         assertThat("CloseStatus.code", closeStatus.getCode(), is(closeCode));
         assertThat("CloseStatus.reason", closeStatus.getReason(), nullValue());
     }
@@ -124,9 +123,9 @@ public class ParserGoodCloseStatusCodesTest
         // parse buffer
         BufferUtil.flipToFlush(raw, 0);
         parser.parse(raw);
-        WebSocketFrame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame opcode", frame.getOpCode(), is(OpCode.CLOSE));
-        CloseStatus closeStatus = CloseFrame.toCloseStatus(frame.getPayload());
+        CloseStatus closeStatus = CloseStatus.toCloseStatus(frame.getPayload());
         assertThat("CloseStatus.code", closeStatus.getCode(), is(closeCode));
         assertThat("CloseStatus.reason", closeStatus.getReason(), is("hello"));
     }

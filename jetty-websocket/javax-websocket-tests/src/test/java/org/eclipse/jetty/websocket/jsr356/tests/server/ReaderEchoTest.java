@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.server.PathParam;
@@ -32,9 +31,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.AfterClass;
@@ -105,13 +103,13 @@ public class ReaderEchoTest
     {
         String requestPath = "/echo/reader";
         
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("Hello World"));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("Hello World"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
         
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("Hello World"));
-        expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("Hello World"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
@@ -125,13 +123,13 @@ public class ReaderEchoTest
     {
         String requestPath = "/echo/reader-param/Every%20Person";
         
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("Hello World"));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("Hello World"));
+        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
         
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("Hello World|Every Person"));
-        expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("Hello World|Every Person"));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {

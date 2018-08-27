@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.parser;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,19 +27,20 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.PingFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 
 /**
  * Test various RSV violations
@@ -56,7 +54,7 @@ public class ParserReservedBitTest
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
     private boolean validatingGenerator = false;
 
-    private void expectProtocolException(List<WebSocketFrame> frames)
+    private void expectProtocolException(List<Frame> frames)
     {
         ParserCapture parserCapture = new ParserCapture();
         Parser parser = new Parser(policy, bufferPool, parserCapture);
@@ -89,8 +87,8 @@ public class ParserReservedBitTest
     @Test
     public void testCase3_1()
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("small").setRsv1(true)); // intentionally bad
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("small").setRsv1(true)); // intentionally bad
 
         expectProtocolException(send);
     }
@@ -106,10 +104,10 @@ public class ParserReservedBitTest
     @Test
     public void testCase3_2()
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("small"));
-        send.add(new TextFrame().setPayload("small").setRsv2(true)); // intentionally bad
-        send.add(new PingFrame().setPayload("ping"));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("small"));
+        send.add(new Frame(OpCode.TEXT).setPayload("small").setRsv2(true)); // intentionally bad
+        send.add(new Frame(OpCode.PING).setPayload("ping"));
 
         expectProtocolException(send);
     }
@@ -125,10 +123,10 @@ public class ParserReservedBitTest
     @Test
     public void testCase3_3()
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("small"));
-        send.add(new TextFrame().setPayload("small").setRsv1(true).setRsv2(true)); // intentionally bad
-        send.add(new PingFrame().setPayload("ping"));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("small"));
+        send.add(new Frame(OpCode.TEXT).setPayload("small").setRsv1(true).setRsv2(true)); // intentionally bad
+        send.add(new Frame(OpCode.PING).setPayload("ping"));
 
         expectProtocolException(send);
     }
@@ -144,10 +142,10 @@ public class ParserReservedBitTest
     @Test
     public void testCase3_4()
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("small"));
-        send.add(new TextFrame().setPayload("small").setRsv3(true)); // intentionally bad
-        send.add(new PingFrame().setPayload("ping"));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("small"));
+        send.add(new Frame(OpCode.TEXT).setPayload("small").setRsv3(true)); // intentionally bad
+        send.add(new Frame(OpCode.PING).setPayload("ping"));
 
         expectProtocolException(send);
     }
@@ -166,8 +164,8 @@ public class ParserReservedBitTest
         byte payload[] = new byte[8];
         Arrays.fill(payload, (byte) 0xFF);
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new BinaryFrame().setPayload(payload).setRsv3(true).setRsv1(true)); // intentionally bad
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.BINARY).setPayload(payload).setRsv3(true).setRsv1(true)); // intentionally bad
 
         expectProtocolException(send);
     }
@@ -186,8 +184,8 @@ public class ParserReservedBitTest
         byte payload[] = new byte[8];
         Arrays.fill(payload, (byte) 0xFF);
 
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new PingFrame().setPayload(payload).setRsv3(true).setRsv2(true)); // intentionally bad
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.PING).setPayload(payload).setRsv3(true).setRsv2(true)); // intentionally bad
 
         expectProtocolException(send);
     }
@@ -203,8 +201,8 @@ public class ParserReservedBitTest
     @Test
     public void testCase3_7()
     {
-        List<WebSocketFrame> send = new ArrayList<>();
-        WebSocketFrame frame = new CloseFrame().setPayload(1000);
+        List<Frame> send = new ArrayList<>();
+        Frame frame = new Frame(OpCode.CLOSE).setPayload(new CloseStatus(1000));
         frame.setRsv1(true);
         frame.setRsv2(true);
         frame.setRsv3(true);

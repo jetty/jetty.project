@@ -21,9 +21,8 @@ package org.eclipse.jetty.websocket.tests.server;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.junit.AfterClass;
@@ -55,19 +54,19 @@ public class WebSocketServerSessionTest
     {
         String requestPath = "/test?snack=cashews&amount=handful&brand=off";
         
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload("getParameterMap|snack"));
-        send.add(new TextFrame().setPayload("getParameterMap|amount"));
-        send.add(new TextFrame().setPayload("getParameterMap|brand"));
-        send.add(new TextFrame().setPayload("getParameterMap|cost"));
-        send.add(new CloseFrame());
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload("getParameterMap|snack"));
+        send.add(new Frame(OpCode.TEXT).setPayload("getParameterMap|amount"));
+        send.add(new Frame(OpCode.TEXT).setPayload("getParameterMap|brand"));
+        send.add(new Frame(OpCode.TEXT).setPayload("getParameterMap|cost"));
+        send.add(new Frame(OpCode.CLOSE));
         
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload("[cashews]"));
-        expect.add(new TextFrame().setPayload("[handful]"));
-        expect.add(new TextFrame().setPayload("[off]"));
-        expect.add(new TextFrame().setPayload("<null>"));
-        send.add(new CloseFrame());
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload("[cashews]"));
+        expect.add(new Frame(OpCode.TEXT).setPayload("[handful]"));
+        expect.add(new Frame(OpCode.TEXT).setPayload("[off]"));
+        expect.add(new Frame(OpCode.TEXT).setPayload("<null>"));
+        send.add(new Frame(OpCode.CLOSE));
         
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {

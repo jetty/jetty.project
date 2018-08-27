@@ -22,14 +22,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.junit.AfterClass;
@@ -96,38 +94,38 @@ public class SessionTrackingTest
                     sendTextFrameToAll("openSessions|in-3", session1, session2, session3);
                     sendTextFrameToAll("openSessions|lvl-3", session1, session2, session3);
                     
-                    session3.sendFrames(new CloseFrame());
+                    session3.sendFrames(new Frame(OpCode.CLOSE));
                     
-                    List<WebSocketFrame> expect3 = new ArrayList<>();
-                    expect3.add(new TextFrame().setPayload("openSessions(@in-3).size=3"));
-                    expect3.add(new TextFrame().setPayload("openSessions(@lvl-3).size=3"));
-                    expect3.add(new CloseFrame());
+                    List<Frame> expect3 = new ArrayList<>();
+                    expect3.add(new Frame(OpCode.TEXT).setPayload("openSessions(@in-3).size=3"));
+                    expect3.add(new Frame(OpCode.TEXT).setPayload("openSessions(@lvl-3).size=3"));
+                    expect3.add(new Frame(OpCode.CLOSE));
                     session3.expect(expect3);
                 }
     
                 sendTextFrameToAll("openSessions|lvl-2", session1, session2);
-                session2.sendFrames(new CloseFrame());
+                session2.sendFrames(new Frame(OpCode.CLOSE));
                 
-                List<WebSocketFrame> expect2 = new ArrayList<>();
-                expect2.add(new TextFrame().setPayload("openSessions(@in-2).size=2"));
-                expect2.add(new TextFrame().setPayload("openSessions(@in-3).size=3"));
-                expect2.add(new TextFrame().setPayload("openSessions(@lvl-3).size=3"));
-                expect2.add(new TextFrame().setPayload("openSessions(@lvl-2).size=2"));
-                expect2.add(new CloseFrame());
+                List<Frame> expect2 = new ArrayList<>();
+                expect2.add(new Frame(OpCode.TEXT).setPayload("openSessions(@in-2).size=2"));
+                expect2.add(new Frame(OpCode.TEXT).setPayload("openSessions(@in-3).size=3"));
+                expect2.add(new Frame(OpCode.TEXT).setPayload("openSessions(@lvl-3).size=3"));
+                expect2.add(new Frame(OpCode.TEXT).setPayload("openSessions(@lvl-2).size=2"));
+                expect2.add(new Frame(OpCode.CLOSE));
                 session2.expect(expect2);
             }
     
             sendTextFrameToAll("openSessions|lvl-1", session1);
-            session1.sendFrames(new CloseFrame());
+            session1.sendFrames(new Frame(OpCode.CLOSE));
             
-            List<WebSocketFrame> expect1 = new ArrayList<>();
-            expect1.add(new TextFrame().setPayload("openSessions(@in-1).size=1"));
-            expect1.add(new TextFrame().setPayload("openSessions(@in-2).size=2"));
-            expect1.add(new TextFrame().setPayload("openSessions(@in-3).size=3"));
-            expect1.add(new TextFrame().setPayload("openSessions(@lvl-3).size=3"));
-            expect1.add(new TextFrame().setPayload("openSessions(@lvl-2).size=2"));
-            expect1.add(new TextFrame().setPayload("openSessions(@lvl-1).size=1"));
-            expect1.add(new CloseFrame());
+            List<Frame> expect1 = new ArrayList<>();
+            expect1.add(new Frame(OpCode.TEXT).setPayload("openSessions(@in-1).size=1"));
+            expect1.add(new Frame(OpCode.TEXT).setPayload("openSessions(@in-2).size=2"));
+            expect1.add(new Frame(OpCode.TEXT).setPayload("openSessions(@in-3).size=3"));
+            expect1.add(new Frame(OpCode.TEXT).setPayload("openSessions(@lvl-3).size=3"));
+            expect1.add(new Frame(OpCode.TEXT).setPayload("openSessions(@lvl-2).size=2"));
+            expect1.add(new Frame(OpCode.TEXT).setPayload("openSessions(@lvl-1).size=1"));
+            expect1.add(new Frame(OpCode.CLOSE));
             session1.expect(expect1);
         }
     }
@@ -136,7 +134,7 @@ public class SessionTrackingTest
     {
         for (Fuzzer session : sessions)
         {
-            session.sendFrames(new TextFrame().setPayload(msg));
+            session.sendFrames(new Frame(OpCode.TEXT).setPayload(msg));
         }
     }
 }

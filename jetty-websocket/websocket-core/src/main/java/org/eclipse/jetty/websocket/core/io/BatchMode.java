@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.core.io;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 
 /**

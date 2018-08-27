@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
-import junit.framework.AssertionFailedError;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -37,6 +29,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import junit.framework.AssertionFailedError;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -52,16 +45,18 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.PongFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * Creates a framework of 2 WebSocket Core instances to help test behaviors within core.
@@ -125,7 +120,7 @@ public class CoreFuzzer implements AutoCloseable
         this.clientParser = new Parser(clientPolicy, bufferPool, frameCapture);
     }
 
-    public void assertExpected(BlockingQueue<WebSocketFrame> framesQueue, List<WebSocketFrame> expect) throws InterruptedException
+    public void assertExpected(BlockingQueue<Frame> framesQueue, List<Frame> expect) throws InterruptedException
     {
         int expectedCount = expect.size();
 
@@ -134,19 +129,19 @@ public class CoreFuzzer implements AutoCloseable
         {
             prefix = "Frame[" + i + "]";
 
-            WebSocketFrame expected = expect.get(i);
+            Frame expected = expect.get(i);
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("assertExpected() - {} poll", prefix);
             }
 
-            WebSocketFrame actual = framesQueue.poll(3, TimeUnit.SECONDS);
+            Frame actual = framesQueue.poll(3, TimeUnit.SECONDS);
             assertThat(prefix + ".poll", actual, notNullValue());
 
             if (LOG.isDebugEnabled())
             {
                 if (actual.getOpCode() == OpCode.CLOSE)
-                    LOG.debug("{} CloseFrame: {}", prefix, CloseFrame.toCloseStatus(actual.getPayload()));
+                    LOG.debug("{} CloseFrame: {}", prefix, CloseStatus.toCloseStatus(actual.getPayload()));
                 else
                     LOG.debug("{} {}", prefix, actual);
             }
@@ -155,8 +150,8 @@ public class CoreFuzzer implements AutoCloseable
             prefix += "(op=" + actual.getOpCode() + "," + (actual.isFin() ? "" : "!") + "fin)";
             if (expected.getOpCode() == OpCode.CLOSE)
             {
-                CloseStatus expectedClose = CloseFrame.toCloseStatus(expected.getPayload());
-                CloseStatus actualClose = CloseFrame.toCloseStatus(actual.getPayload());
+                CloseStatus expectedClose = CloseStatus.toCloseStatus(expected.getPayload());
+                CloseStatus actualClose = CloseStatus.toCloseStatus(actual.getPayload());
                 assertThat(prefix + ".code", actualClose.getCode(), Matchers.is(expectedClose.getCode()));
             }
             else if (expected.hasPayload())
@@ -192,7 +187,7 @@ public class CoreFuzzer implements AutoCloseable
      *
      * @param expected the expected frames
      */
-    public void expect(List<WebSocketFrame> expected) throws InterruptedException
+    public void expect(List<Frame> expected) throws InterruptedException
     {
         // TODO: this needed? frameCapture.waitUntilClosed();
         ByteBuffer output = this.remoteEndPoint.takeOutput();
@@ -229,7 +224,7 @@ public class CoreFuzzer implements AutoCloseable
      *
      * @param frames the list of frames to send
      */
-    public void sendBulk(List<WebSocketFrame> frames) throws IOException
+    public void sendBulk(List<Frame> frames) throws IOException
     {
         sendBuffer(fuzzGenerator.asBuffer(frames));
     }
@@ -240,9 +235,9 @@ public class CoreFuzzer implements AutoCloseable
      *
      * @param frames the list of frames to send
      */
-    public void sendFrames(List<WebSocketFrame> frames) throws IOException
+    public void sendFrames(List<Frame> frames) throws IOException
     {
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             sendBuffer(fuzzGenerator.generate(f));
         }
@@ -256,7 +251,7 @@ public class CoreFuzzer implements AutoCloseable
      * @param frames the list of frames to send
      * @param segmentSize the size of each segment to send
      */
-    public void sendSegmented(List<WebSocketFrame> frames, int segmentSize) throws IOException
+    public void sendSegmented(List<Frame> frames, int segmentSize) throws IOException
     {
         ByteBuffer buffer = fuzzGenerator.asBuffer(frames);
 
@@ -296,7 +291,7 @@ public class CoreFuzzer implements AutoCloseable
             applyMask = (getBehavior() == WebSocketBehavior.CLIENT);
         }
 
-        public ByteBuffer asBuffer(List<WebSocketFrame> frames)
+        public ByteBuffer asBuffer(List<Frame> frames)
         {
             int bufferLength = frames.stream().mapToInt((f) -> f.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
             ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
@@ -305,7 +300,7 @@ public class CoreFuzzer implements AutoCloseable
             return buffer;
         }
 
-        public ByteBuffer asBuffer(WebSocketFrame... frames)
+        public ByteBuffer asBuffer(Frame... frames)
         {
             int bufferLength = Stream.of(frames).mapToInt((f) -> f.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
             ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
@@ -315,10 +310,10 @@ public class CoreFuzzer implements AutoCloseable
             return buffer;
         }
 
-        public void generate(ByteBuffer buffer, List<WebSocketFrame> frames)
+        public void generate(ByteBuffer buffer, List<Frame> frames)
         {
             // Generate frames
-            for (WebSocketFrame f : frames)
+            for (Frame f : frames)
             {
                 if (applyMask)
                     f.setMask(MASK);
@@ -327,10 +322,10 @@ public class CoreFuzzer implements AutoCloseable
             }
         }
 
-        public void generate(ByteBuffer buffer, WebSocketFrame... frames)
+        public void generate(ByteBuffer buffer, Frame... frames)
         {
             // Generate frames
-            for (WebSocketFrame f : frames)
+            for (Frame f : frames)
             {
                 if (applyMask)
                     f.setMask(MASK);
@@ -339,7 +334,7 @@ public class CoreFuzzer implements AutoCloseable
             }
         }
 
-        public ByteBuffer generate(WebSocketFrame frame)
+        public ByteBuffer generate(Frame frame)
         {
             int bufferLength = frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
             ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
@@ -350,7 +345,7 @@ public class CoreFuzzer implements AutoCloseable
             return buffer;
         }
 
-        public void generate(ByteBuffer buffer, WebSocketFrame frame)
+        public void generate(ByteBuffer buffer, Frame frame)
         {
             if (applyMask)
                 frame.setMask(MASK);
@@ -382,13 +377,13 @@ public class CoreFuzzer implements AutoCloseable
         }
 
         @Override
-        public void onPing(Frame frame, Callback callback)
+        public void onPing(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
         {
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("onPing(): {}", frame);
             }
-            sendBlocking(new PongFrame().setPayload(frame.getPayload()));
+            sendBlocking(new Frame(OpCode.PONG).setPayload(frame.getPayload()));
             callback.succeeded();
         }
 
@@ -399,7 +394,7 @@ public class CoreFuzzer implements AutoCloseable
             {
                 LOG.debug("onWholeBinary(): {}", BufferUtil.toDetailString(wholeMessage));
             }
-            sendBlocking(new BinaryFrame().setPayload(copyOf(wholeMessage)));
+            sendBlocking(new Frame(OpCode.BINARY).setPayload(copyOf(wholeMessage)));
             callback.succeeded();
         }
 
@@ -410,11 +405,11 @@ public class CoreFuzzer implements AutoCloseable
             {
                 LOG.debug("onWholeText(): {}", BufferUtil.toDetailString(BufferUtil.toBuffer(wholeMessage, UTF_8)));
             }
-            sendBlocking(new TextFrame().setPayload(wholeMessage));
+            sendBlocking(new Frame(OpCode.TEXT).setPayload(wholeMessage));
             callback.succeeded();
         }
 
-        private void sendBlocking(WebSocketFrame frame)
+        private void sendBlocking(Frame frame)
         {
             try (SharedBlockingCallback.Blocker blocker = sendBlocker.acquire())
             {
@@ -430,11 +425,11 @@ public class CoreFuzzer implements AutoCloseable
     public static class FrameCapture implements Parser.Handler
     {
         private final static Logger LOG = Log.getLogger(FrameCapture.class);
-        private final BlockingQueue<WebSocketFrame> receivedFrames = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Frame> receivedFrames = new LinkedBlockingQueue<>();
         private final CountDownLatch closedLatch = new CountDownLatch(1);
 
         @Override
-        public boolean onFrame(Frame frame)
+        public boolean onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame)
         {
             if (LOG.isDebugEnabled())
             {
@@ -447,7 +442,7 @@ public class CoreFuzzer implements AutoCloseable
                 closedLatch.countDown();
             }
 
-            receivedFrames.offer(WebSocketFrame.copy(frame));
+            receivedFrames.offer(Frame.copy(frame));
 
             return true;
         }

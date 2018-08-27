@@ -29,9 +29,8 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.DataFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
@@ -46,7 +45,7 @@ public class MessageOutputStream extends OutputStream
     private final SharedBlockingCallback blocker;
     private long frameCount;
     private long bytesSent;
-    private DataFrame frame;
+    private Frame frame;
     private ByteBuffer buffer; // Kept in fill mode
     private Callback callback;
     private boolean closed;
@@ -58,7 +57,7 @@ public class MessageOutputStream extends OutputStream
         this.blocker = new SharedBlockingCallback();
         this.buffer = bufferPool.acquire(bufferSize, true);
         BufferUtil.flipToFill(buffer);
-        this.frame = new BinaryFrame();
+        this.frame = new Frame(OpCode.BINARY);
     }
 
     @Override
@@ -151,7 +150,7 @@ public class MessageOutputStream extends OutputStream
 
             ++frameCount;
             // Any flush after the first will be a CONTINUATION frame.
-            frame = new ContinuationFrame();
+            frame = new Frame(OpCode.CONTINUATION);
         }
     }
 

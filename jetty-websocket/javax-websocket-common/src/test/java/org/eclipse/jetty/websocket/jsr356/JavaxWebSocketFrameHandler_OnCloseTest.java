@@ -31,7 +31,8 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.hamcrest.Matcher;
 import org.junit.Test;
@@ -46,7 +47,7 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
 
         // These invocations are the same for all tests
         localEndpoint.onOpen(channel);
-        CloseFrame closeFrame = new CloseFrame().setPayload(WebSocketConstants.NORMAL, "Normal");
+        Frame closeFrame = new Frame(OpCode.CLOSE).setPayload(WebSocketConstants.NORMAL, "Normal");
         localEndpoint.onFrame(closeFrame, Callback.NOOP);
         
         String event = socket.events.poll(1, TimeUnit.SECONDS);

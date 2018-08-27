@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.core.extensions;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 @ManagedObject("Identity Extension")

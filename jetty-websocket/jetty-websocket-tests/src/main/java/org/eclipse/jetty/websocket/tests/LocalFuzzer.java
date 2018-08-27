@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 
 public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
@@ -81,11 +81,11 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         }
     }
 
-    public void expectMessage(BlockingQueue<WebSocketFrame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage) throws InterruptedException
+    public void expectMessage(BlockingQueue<Frame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage) throws InterruptedException
     {
         ByteBuffer actualPayload = ByteBuffer.allocate(expectedMessage.remaining());
 
-        WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+        Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Initial Frame.opCode", frame.getOpCode(), is(expectedDataOp));
 
         actualPayload.put(frame.getPayload());
@@ -99,17 +99,17 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         ByteBufferAssert.assertEquals("Actual Message Payload", actualPayload, expectedMessage);
     }
 
-    public ByteBuffer asNetworkBuffer(List<WebSocketFrame> frames)
+    public ByteBuffer asNetworkBuffer(List<Frame> frames)
     {
         int bufferLength = 0;
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             bufferLength += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
         }
 
         ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
 
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             generator.generate(buffer, f);
         }
@@ -132,7 +132,7 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
     }
 
     @Override
-    public void expect(List<WebSocketFrame> expected) throws InterruptedException
+    public void expect(List<Frame> expected) throws InterruptedException
     {
         // Get incoming frames
         // Wait for server to close
@@ -149,7 +149,7 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         assertExpected(capture.framesQueue, expected);
     }
 
-    public BlockingQueue<WebSocketFrame> getOutputFrames()
+    public BlockingQueue<Frame> getOutputFrames()
     {
         // Get incoming frames
         // Wait for server to close
@@ -196,10 +196,10 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
      * @param frames the list of frames to send
      */
     @Override
-    public void sendBulk(List<WebSocketFrame> frames)
+    public void sendBulk(List<Frame> frames)
     {
         int bufferLength = 0;
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             bufferLength += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
         }
@@ -207,7 +207,7 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         ByteBuffer outgoing = ByteBuffer.allocate(bufferLength);
 
         boolean eof = false;
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             generator.generate(outgoing, f);
             if (f.getOpCode() == OpCode.CLOSE)
@@ -226,10 +226,10 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
      * @param frames the list of frames to send
      */
     @Override
-    public void sendFrames(List<WebSocketFrame> frames)
+    public void sendFrames(List<Frame> frames)
     {
         boolean eof = false;
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             ByteBuffer buffer = generator.generate(f);
             endPoint.addInput(buffer);
@@ -247,10 +247,10 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
      *
      * @param frames the list of frames to send
      */
-    public void sendFrames(WebSocketFrame... frames)
+    public void sendFrames(Frame... frames)
     {
         boolean eof = false;
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             ByteBuffer buffer = generator.generate(f);
             endPoint.addInput(buffer);
@@ -268,10 +268,10 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
      *
      * @param frames the list of frames to send
      */
-    public void sendSegmented(List<WebSocketFrame> frames, int segmentSize)
+    public void sendSegmented(List<Frame> frames, int segmentSize)
     {
         int bufferLength = 0;
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             bufferLength += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
         }
@@ -279,7 +279,7 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         ByteBuffer outgoing = ByteBuffer.allocate(bufferLength);
         
         boolean eof = false;
-        for (WebSocketFrame f : frames)
+        for (Frame f : frames)
         {
             generator.generate(outgoing, f);
             if (f.getOpCode() == OpCode.CLOSE)

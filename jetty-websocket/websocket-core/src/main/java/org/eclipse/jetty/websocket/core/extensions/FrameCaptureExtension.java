@@ -35,10 +35,9 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class FrameCaptureExtension extends AbstractExtension
@@ -65,7 +64,7 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void receiveFrame(Frame frame, Callback callback)
+    public void receiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
     {
         saveFrame(frame,false);
         try
@@ -81,7 +80,7 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback, BatchMode batchMode)
     {
         saveFrame(frame,true);
         try
@@ -96,7 +95,7 @@ public class FrameCaptureExtension extends AbstractExtension
         }
     }
 
-    private void saveFrame(Frame frame, boolean outgoing)
+    private void saveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, boolean outgoing)
     {
         if (outputDir == null || generator == null)
         {
@@ -115,7 +114,7 @@ public class FrameCaptureExtension extends AbstractExtension
 
         try
         {
-            WebSocketFrame f = WebSocketFrame.copy(frame);
+            Frame f = Frame.copy(frame);
             f.setMasked(false);
             generator.generateHeaderBytes(f,buf);
             channel.write(buf);

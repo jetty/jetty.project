@@ -27,9 +27,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.frames.DataFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
@@ -74,8 +73,6 @@ public class PerMessageDeflateExtension extends CompressExtension
             return;
         }
 
-        DataFrame dataFrame = (DataFrame)frame;
-
         ByteAccumulator accumulator = new ByteAccumulator(getPolicy().getMaxAllowedFrameSize());
         
         try 
@@ -87,7 +84,7 @@ public class PerMessageDeflateExtension extends CompressExtension
                 decompress(accumulator, TAIL_BYTES_BUF.slice());
             }
             
-            forwardIncoming(dataFrame, callback, accumulator);
+            forwardIncoming(frame, callback, accumulator);
         }
         catch (DataFormatException e)
         {

@@ -33,14 +33,13 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 public class FrameFlusher extends IteratingCallback
 {
-    public static final BinaryFrame FLUSH_FRAME = new BinaryFrame();
+    public static final Frame FLUSH_FRAME = new Frame(OpCode.BINARY);
     private static final Logger LOG = Log.getLogger(FrameFlusher.class);
 
     private final ByteBufferPool bufferPool;

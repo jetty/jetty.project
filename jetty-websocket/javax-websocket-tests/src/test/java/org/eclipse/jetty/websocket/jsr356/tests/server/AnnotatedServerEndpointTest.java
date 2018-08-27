@@ -27,9 +27,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.UpgradeUtils;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
@@ -76,13 +75,13 @@ public class AnnotatedServerEndpointTest
         Map<String, String> upgradeRequest = UpgradeUtils.newDefaultUpgradeRequestHeaders();
         upgradeRequest.put(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, "echo");
         
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(message));
-        send.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> send = new ArrayList<>();
+        send.add(new Frame(OpCode.TEXT).setPayload(message));
+        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
         
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(expectedText));
-        expect.add(new CloseFrame().setPayload(CloseStatus.NORMAL));
+        List<Frame> expect = new ArrayList<>();
+        expect.add(new Frame(OpCode.TEXT).setPayload(expectedText));
+        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer("/app/echo", upgradeRequest))
         {

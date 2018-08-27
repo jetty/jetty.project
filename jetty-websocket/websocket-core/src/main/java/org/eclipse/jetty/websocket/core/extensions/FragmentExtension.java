@@ -27,8 +27,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.frames.DataFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
@@ -148,7 +147,7 @@ public class FragmentExtension extends AbstractExtension
             finished = length == remaining;
 
             boolean continuation = frame.getType().isContinuation() || !first;
-            DataFrame fragment = new DataFrame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
+            Frame fragment = new Frame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
             boolean fin = frame.isFin() && finished;
             fragment.setFin(fin);
 

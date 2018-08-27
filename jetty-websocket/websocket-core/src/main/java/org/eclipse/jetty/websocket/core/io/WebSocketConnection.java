@@ -37,7 +37,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.Parser;
@@ -45,7 +44,7 @@ import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
@@ -192,7 +191,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     }
 
     @Override
-    public boolean onFrame(Frame frame)
+    public boolean onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame)
     {
         AtomicBoolean result = new AtomicBoolean(false);
 
@@ -528,11 +527,11 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     }
 
     @Override
-    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback, BatchMode batchMode)
     {
         if (getPolicy().getBehavior()==WebSocketBehavior.CLIENT)
         {
-            WebSocketFrame wsf = (WebSocketFrame)frame;
+            Frame wsf = (Frame)frame;
             wsf.setMasked(true);
             byte[] mask = new byte[4];
             random.nextBytes(mask);

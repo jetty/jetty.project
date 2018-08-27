@@ -25,9 +25,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
@@ -123,7 +122,7 @@ public class AbstractTestFrameHandler implements FrameHandler
 
         try
         {
-            channel.sendFrame(new PongFrame().setPayload(pongBuf),callback,BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.PONG).setPayload(pongBuf),callback,BatchMode.OFF);
         }
         catch (Throwable t)
         {
@@ -297,7 +296,7 @@ public class AbstractTestFrameHandler implements FrameHandler
         String reason=null;
 
 
-        int code = frame.hasPayload() ? CloseFrame.toCloseStatus(frame.getPayload()).getCode() : -1;
+        int code = frame.hasPayload() ? CloseStatus.toCloseStatus(frame.getPayload()).getCode() : -1;
         
         switch(code)
         {

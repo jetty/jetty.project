@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.client;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -32,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
@@ -48,10 +42,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractWholeMessageHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.core.frames.DataFrame;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.jsr356.tests.CoreServer;
@@ -62,6 +54,11 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * This class tests receiving of messages by different types of {@link MessageHandler}
@@ -263,12 +260,12 @@ public class MessageReceivingTest
             for (int i = 0; i < parts.length; i++)
             {
                 if (i > 0)
-                    channel.sendFrame(new ContinuationFrame().setPayload(" ").setFin(false), Callback.NOOP, BatchMode.ON);
+                    channel.sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, BatchMode.ON);
                 boolean last = (i >= (parts.length - 1));
                 BatchMode bm = last ? BatchMode.OFF : BatchMode.ON;
-                DataFrame frame;
-                if (i == 0) frame = new TextFrame();
-                else frame = new ContinuationFrame();
+                Frame frame;
+                if (i == 0) frame = new Frame(OpCode.TEXT);
+                else frame = new Frame(OpCode.CONTINUATION);
                 frame.setPayload(BufferUtil.toBuffer(parts[i], UTF_8));
                 frame.setFin(last);
                 channel.sendFrame(frame, Callback.NOOP, bm);
@@ -296,9 +293,9 @@ public class MessageReceivingTest
                 int remaining = segment.remaining();
                 segment.limit(segment.position() + Math.min(remaining, segmentSize));
                 boolean last = (i >= (segmentCount - 1));
-                DataFrame frame;
-                if (i == 0) frame = new BinaryFrame();
-                else frame = new ContinuationFrame();
+                Frame frame;
+                if (i == 0) frame = new Frame(OpCode.BINARY);
+                else frame = new Frame(OpCode.CONTINUATION);
                 frame.setPayload(segment);
                 frame.setFin(last);
                 if (LOG.isDebugEnabled())
@@ -320,7 +317,7 @@ public class MessageReceivingTest
             {
                 LOG.debug("{}.onWholeBinary({})", EchoWholeMessageFrameHandler.class.getSimpleName(), BufferUtil.toDetailString(wholeMessage));
             }
-            channel.sendFrame(new BinaryFrame().setPayload(wholeMessage), callback, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.BINARY).setPayload(wholeMessage), callback, BatchMode.OFF);
         }
 
         @Override
@@ -331,7 +328,7 @@ public class MessageReceivingTest
                 LOG.debug("{}.onWholeText({})", EchoWholeMessageFrameHandler.class.getSimpleName(), TextUtil.hint(wholeMessage));
             }
 
-            channel.sendFrame(new TextFrame().setPayload(wholeMessage), callback, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload(wholeMessage), callback, BatchMode.OFF);
         }
     }
 
