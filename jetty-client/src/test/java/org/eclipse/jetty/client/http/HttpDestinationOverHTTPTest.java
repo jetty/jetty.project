@@ -280,6 +280,33 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         Assert.assertNotSame(destinationBefore, destinationAfter);
     }
 
+    @Test
+    public void testDestinationIsRemovedAfterConnectionError() throws Exception
+    {
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        client.setRemoveIdleDestinations(true);
+        Assert.assertTrue("Destinations of a fresh client must be empty", client.getDestinations().isEmpty());
+
+        server.stop();
+        Request request = client.newRequest(host, port).scheme(this.scheme);
+        try
+        {
+            request.send();
+            Assert.fail("Request to a closed port must fail");
+        }
+        catch (Exception expected)
+        {
+        }
+
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
+        while (!client.getDestinations().isEmpty() && System.nanoTime() < deadline)
+        {
+            Thread.sleep(10);
+        }
+        Assert.assertTrue("Destination must be removed after connection error", client.getDestinations().isEmpty());
+    }
+
     private Connection timedPoll(Queue<Connection> connections, long time, TimeUnit unit) throws InterruptedException
     {
         long start = System.nanoTime();
