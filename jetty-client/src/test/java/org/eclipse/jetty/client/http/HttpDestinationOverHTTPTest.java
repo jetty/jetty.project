@@ -298,7 +298,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         {
         }
 
-        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(100);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
         while (!client.getDestinations().isEmpty() && System.nanoTime() < deadline)
         {
             Thread.sleep(10);
