@@ -450,8 +450,10 @@ public class Frame
 
     public Frame setPayload(CloseStatus closeStatus)
     {
-        //TODO this does double verification of the payload
-        setPayload(closeStatus.asPayloadBuffer());
+        // TODO isTransmittableStatusCode() is being checked on CloseStatus.asPayloadBuffer() as well
+        if(CloseStatus.isTransmittableStatusCode(closeStatus.getCode()))
+            setPayload(closeStatus.asPayloadBuffer());
+
         return this;
     }
 
