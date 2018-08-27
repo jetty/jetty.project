@@ -224,13 +224,26 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     protected void doStart() throws Exception
     {
         super.doStart();
-        synchronized (this)
-        {
-            load();
-        }
+        load();
     }
 
-    private void load() throws Exception
+    private synchronized void reload()
+    {
+        if (isRunning())
+        {
+            try
+            {
+                unload();
+                load();
+            }
+            catch(Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+    
+    private synchronized void load() throws Exception
     {
         SSLContext context = _setContext;
         KeyStore keyStore = _setKeyStore;
@@ -461,6 +474,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         _excludeProtocols.clear();
         _excludeProtocols.addAll(Arrays.asList(protocols));
+        reload();
     }
 
     /**
@@ -469,6 +483,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void addExcludeProtocols(String... protocol)
     {
         _excludeProtocols.addAll(Arrays.asList(protocol));
+        reload();
     }
 
     /**
@@ -489,6 +504,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         _includeProtocols.clear();
         _includeProtocols.addAll(Arrays.asList(protocols));
+        reload();
     }
 
     /**
@@ -511,6 +527,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         _excludeCipherSuites.clear();
         _excludeCipherSuites.addAll(Arrays.asList(cipherSuites));
+        reload();
     }
 
     /**
@@ -519,6 +536,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void addExcludeCipherSuites(String... cipher)
     {
         _excludeCipherSuites.addAll(Arrays.asList(cipher));
+        reload();
     }
 
     /**
@@ -541,6 +559,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         _includeCipherSuites.clear();
         _includeCipherSuites.addAll(Arrays.asList(cipherSuites));
+        reload();
     }
 
     @ManagedAttribute("Whether to respect the cipher suites order")
@@ -552,6 +571,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setUseCipherSuitesOrder(boolean useCipherSuitesOrder)
     {
         _useCipherSuitesOrder = useCipherSuitesOrder;
+        reload();
     }
 
     /**
@@ -576,6 +596,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             throw new IllegalArgumentException(e);
         }
+        reload();
     }
 
     /**
@@ -593,6 +614,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setKeyStoreProvider(String keyStoreProvider)
     {
         _keyStoreProvider = keyStoreProvider;
+        reload();
     }
 
     /**
@@ -610,6 +632,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setKeyStoreType(String keyStoreType)
     {
         _keyStoreType = keyStoreType;
+        reload();
     }
 
     /**
@@ -633,6 +656,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setCertAlias(String certAlias)
     {
         _certAlias = certAlias;
+        reload();
     }
 
     @ManagedAttribute("The trustStore path")
@@ -654,6 +678,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             throw new IllegalArgumentException(e);
         }
+        reload();
     }
 
     /**
@@ -671,6 +696,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setTrustStoreProvider(String trustStoreProvider)
     {
         _trustStoreProvider = trustStoreProvider;
+        reload();
     }
 
     /**
@@ -688,6 +714,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setTrustStoreType(String trustStoreType)
     {
         _trustStoreType = trustStoreType;
+        reload();
     }
 
     /**
@@ -743,6 +770,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setValidateCerts(boolean validateCerts)
     {
         _validateCerts = validateCerts;
+        reload();
     }
 
     /**
@@ -760,6 +788,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setValidatePeerCerts(boolean validatePeerCerts)
     {
         _validatePeerCerts = validatePeerCerts;
+        reload();
     }
 
     /**
@@ -782,6 +811,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             _keyStorePassword = newPassword(password);
         }
+        reload();
     }
 
     /**
@@ -803,6 +833,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             _keyManagerPassword = newPassword(password);
         }
+        reload();
     }
 
     /**
@@ -825,6 +856,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             _trustStorePassword = newPassword(password);
         }
+        reload();
     }
 
     /**
@@ -844,6 +876,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setProvider(String provider)
     {
         _sslProvider = provider;
+        reload();
     }
 
     /**
@@ -863,6 +896,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setProtocol(String protocol)
     {
         _sslProtocol = protocol;
+        reload();
     }
 
     /**
@@ -884,6 +918,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setSecureRandomAlgorithm(String algorithm)
     {
         _secureRandomAlgorithm = algorithm;
+        reload();
     }
 
     /**
@@ -901,6 +936,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setKeyManagerFactoryAlgorithm(String algorithm)
     {
         _keyManagerFactoryAlgorithm = algorithm;
+        reload();
     }
 
     /**
@@ -929,6 +965,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         _trustAll = trustAll;
         if (trustAll)
             setEndpointIdentificationAlgorithm(null);
+        reload();
     }
 
     /**
@@ -938,6 +975,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setTrustManagerFactoryAlgorithm(String algorithm)
     {
         _trustManagerFactoryAlgorithm = algorithm;
+        reload();
     }
 
     /**
@@ -955,6 +993,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setRenegotiationAllowed(boolean renegotiationAllowed)
     {
         _renegotiationAllowed = renegotiationAllowed;
+        reload();
     }
 
     /**
@@ -975,6 +1014,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setRenegotiationLimit(int renegotiationLimit)
     {
         _renegotiationLimit = renegotiationLimit;
+        reload();
     }
     
     /**
@@ -992,6 +1032,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setCrlPath(String crlPath)
     {
         _crlPath = crlPath;
+        reload();
     }
 
     /**
@@ -1011,6 +1052,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setMaxCertPathLength(int maxCertPathLength)
     {
         _maxCertPathLength = maxCertPathLength;
+        reload();
     }
 
     /**
@@ -1033,6 +1075,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setSslContext(SSLContext sslContext)
     {
         _setContext = sslContext;
+        reload();
     }
 
     /**
@@ -1052,6 +1095,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setEndpointIdentificationAlgorithm(String endpointIdentificationAlgorithm)
     {
         _endpointIdentificationAlgorithm = endpointIdentificationAlgorithm;
+        reload();
     }
 
     public PKIXCertPathChecker getPkixCertPathChecker()
@@ -1062,6 +1106,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setPkixCertPathChecker(PKIXCertPathChecker pkixCertPatchChecker)
     {
         _pkixCertPathChecker = pkixCertPatchChecker;
+        reload();
     }
 
     /**
@@ -1350,6 +1395,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setEnableCRLDP(boolean enableCRLDP)
     {
         _enableCRLDP = enableCRLDP;
+        reload();
     }
 
     /**
@@ -1369,6 +1415,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setEnableOCSP(boolean enableOCSP)
     {
         _enableOCSP = enableOCSP;
+        reload();
     }
 
     /**
@@ -1398,6 +1445,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setKeyStore(KeyStore keyStore)
     {
         _setKeyStore = keyStore;
+        reload();
     }
 
     public KeyStore getKeyStore()
@@ -1419,6 +1467,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setTrustStore(KeyStore trustStore)
     {
         _setTrustStore = trustStore;
+        reload();
     }
 
     public KeyStore getTrustStore()
@@ -1440,6 +1489,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setKeyStoreResource(Resource resource)
     {
         _keyStoreResource = resource;
+        reload();
     }
 
     public Resource getKeyStoreResource()
@@ -1455,6 +1505,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setTrustStoreResource(Resource resource)
     {
         _trustStoreResource = resource;
+        reload();
     }
 
     public Resource getTrustStoreResource()
@@ -1484,6 +1535,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setSessionCachingEnabled(boolean enableSessionCaching)
     {
         _sessionCachingEnabled = enableSessionCaching;
+        reload();
     }
 
     /**
@@ -1509,6 +1561,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setSslSessionCacheSize(int sslSessionCacheSize)
     {
         _sslSessionCacheSize = sslSessionCacheSize;
+        reload();
     }
 
     /**
@@ -1533,6 +1586,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setSslSessionTimeout(int sslSessionTimeout)
     {
         _sslSessionTimeout = sslSessionTimeout;
+        reload();
     }
 
     /**
