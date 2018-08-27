@@ -79,8 +79,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 public class SslConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(SslConnection.class);
-
-    // TODO reduce the about of debug
+    private static final String TLS_1_3 = "TLSv1.3";
     
     private enum Handshake
     {
@@ -1059,8 +1058,8 @@ public class SslConnection extends AbstractConnection
         {
             try
             {
+                boolean close;
                 boolean flush = false;
-                boolean close = false;
                 synchronized(_decryptedEndPoint)
                 {
                     boolean ishut = getEndPoint().isInputShutdown();
@@ -1206,7 +1205,7 @@ public class SslConnection extends AbstractConnection
         {
             if (_handshake.get() == Handshake.INITIAL)
                 return false;
-            if (isTLS13Plus())
+            if (isTLS13())
                 return false;
             if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NOT_HANDSHAKING)
                 return false;
@@ -1234,10 +1233,10 @@ public class SslConnection extends AbstractConnection
             return true;
         }
 
-        private boolean isTLS13Plus()
+        private boolean isTLS13()
         {
             String protocol = _sslEngine.getSession().getProtocol();
-            return "TLSv1.3".equals(protocol);
+            return TLS_1_3.equals(protocol);
         }
 
         @Override
