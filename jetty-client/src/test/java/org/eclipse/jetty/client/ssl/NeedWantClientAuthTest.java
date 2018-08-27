@@ -22,6 +22,7 @@ import java.security.cert.Certificate;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 
@@ -192,7 +193,7 @@ public class NeedWantClientAuthTest
                     if (result.isFailed())
                     {
                         Throwable failure = result.getFailure();
-                        if (failure instanceof SSLHandshakeException)
+                        if (failure instanceof SSLException)
                             latch.countDown();
                     }
                 });
