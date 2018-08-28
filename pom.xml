@@ -1030,6 +1030,11 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
         <version>0.18</version>
