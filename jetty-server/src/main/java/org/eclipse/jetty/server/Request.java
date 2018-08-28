@@ -2436,8 +2436,6 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public void mergeQueryParameters(String oldQuery,String newQuery, boolean updateQueryString)
     {
-        // TODO  This is seriously ugly
-
         MultiMap<String> newQueryParams = null;
         // Have to assume ENCODING because we can't know otherwise.
         if (newQuery!=null)
@@ -2450,7 +2448,14 @@ public class Request implements HttpServletRequest
         if (oldQueryParams == null && oldQuery != null)
         {
             oldQueryParams = new MultiMap<>();
-            UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryEncoding());
+            try
+            {
+                UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryEncoding()); 
+            }
+            catch(Throwable th)
+            {
+                throw new BadMessageException(400,"Bad query encoding",th);
+            }
         }
 
         MultiMap<String> mergedQueryParams;

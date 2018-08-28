@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -59,6 +60,8 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -157,6 +160,42 @@ public class DispatcherTest
         assertEquals(expected, responses);
     }
 
+    @Test
+    public void testForwardWithBadParams() throws Exception
+    {
+        try(StacklessLogging nostack = new StacklessLogging(ServletHandler.class))
+        {
+            Log.getLogger(ServletHandler.class).info("Expect Not valid UTF8 warnings...");
+            _contextHandler.addServlet(AlwaysForwardServlet.class, "/forward/*");
+            _contextHandler.addServlet(EchoServlet.class, "/echo/*");
+
+            String response;
+
+            response = _connector.getResponse("GET /context/forward/?echo=allgood HTTP/1.0\n\n");
+            assertThat(response,containsString(" 200 OK"));
+            assertThat(response,containsString("allgood"));
+            
+            response = _connector.getResponse("GET /context/forward/params?echo=allgood HTTP/1.0\n\n");
+            assertThat(response,containsString(" 200 OK"));
+            assertThat(response,containsString("allgood"));
+            assertThat(response,containsString("forward"));
+            
+            response = _connector.getResponse("GET /context/forward/badparams?echo=badparams HTTP/1.0\n\n");
+            assertThat(response,containsString(" 500 "));
+
+            response = _connector.getResponse("GET /context/forward/?echo=badclient&bad=%88%A4 HTTP/1.0\n\n");
+            assertThat(response,containsString(" 400 "));
+
+            response = _connector.getResponse("GET /context/forward/params?echo=badclient&bad=%88%A4 HTTP/1.0\n\n");
+            assertThat(response,containsString(" 400 "));
+
+            response = _connector.getResponse("GET /context/forward/badparams?echo=badclientandparam&bad=%88%A4 HTTP/1.0\n\n");
+            assertThat(response,containsString(" 500 "));
+        }
+    }
+
+    
+    
     @Test
     public void testInclude() throws Exception
     {
@@ -358,6 +397,20 @@ public class DispatcherTest
             dispatcher.forward(request, response);
         }
     }
+    
+    public static class AlwaysForwardServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if ("/params".equals(request.getPathInfo()))
+                getServletContext().getRequestDispatcher("/echo?echo=forward").forward(request, response);
+            else if ("/badparams".equals(request.getPathInfo()))
+                getServletContext().getRequestDispatcher("/echo?echo=forward&fbad=%88%A4").forward(request, response);
+            else
+                getServletContext().getRequestDispatcher("/echo").forward(request, response);
+        }
+    }
 
     
     public static class ForwardNonUTF8Servlet extends HttpServlet implements Servlet
@@ -484,15 +537,20 @@ public class DispatcherTest
         @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
-            String echoText = req.getParameter("echo");
+            String[] echoText = req.getParameterValues("echo");
 
-            if ( echoText == null )
+            if ( echoText == null || echoText.length==0)
             {
                 throw new ServletException("echo is a required parameter");
             }
+            else if (echoText.length==1)
+            {
+                res.getWriter().print(echoText[0]);
+            }
             else
             {
-                res.getWriter().print(echoText);
+                for (String text:echoText)
+                    res.getWriter().print(text);
             }
         }
     }

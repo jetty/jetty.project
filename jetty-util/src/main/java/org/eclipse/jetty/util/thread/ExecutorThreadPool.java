@@ -95,7 +95,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
         _group = group;
         _minThreads = minThreads;
         _reservedThreads = reservedThreads;
-        _budget = new ThreadPoolBudget(this,minThreads);
+        _budget = new ThreadPoolBudget(this);
     }
 
     /**
@@ -140,6 +140,8 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     @Override
     public void setMaxThreads(int threads)
     {
+        if (_budget!=null)
+            _budget.check(threads);
         _executor.setCorePoolSize(threads);
         _executor.setMaximumPoolSize(threads);
     }
