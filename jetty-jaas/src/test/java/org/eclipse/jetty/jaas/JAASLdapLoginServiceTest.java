@@ -137,7 +137,6 @@ public class JAASLdapLoginServiceTest
     @Test
     public void testLdapUserIdentity() throws Exception
     {
-        //Test with the DefaultCallbackHandler
         JAASLoginService ls = new JAASLoginService("foo");
         ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
@@ -159,7 +158,6 @@ public class JAASLdapLoginServiceTest
     @Test
     public void testLdapUserIdentityBindingLogin() throws Exception
     {
-        //Test with the DefaultCallbackHandler
         JAASLoginService ls = new JAASLoginService("foo");
         ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
