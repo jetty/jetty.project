@@ -52,11 +52,9 @@ resources could be found. If `false`, then a welcome file must exist on disk. If
 servlet matches are supported without an existing file. Default is `true`. This must be `false` if you want directory listings,
 but have index.jsp in your welcome file list.
 precompressed::
-If set to a comma separated list of encoding types (that may be listed in a requests Accept-Encoding header) to file
-extension mappings to look for and serve. For example:
-`br=.br,gzip=.gz,bzip2=.bz`.
-If set to a boolean `true`, then a default set of compressed formats
-will be used, otherwise no precompressed formats supported.
+If set to a comma separated list of encoding types (that may be listed in a requests Accept-Encoding header) to file extension mappings to look for and serve. 
+For example: `br=.br,gzip=.gz,bzip2=.bz`.
+If set to a boolean `true`, then a default set of compressed formats will be used, otherwise no precompressed formats supported.
 gzip::
 Deprecated. Use `precompressed` instead. If set to `true`, then static content is served as gzip content encoded if a matching resource is found ending with ".gz".
 resourceBase::
