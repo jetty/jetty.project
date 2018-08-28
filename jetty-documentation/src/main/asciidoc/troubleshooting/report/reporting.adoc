@@ -18,7 +18,14 @@
 
 [[troubleshooting-report]]
 
-=== Reporting Issues In Jetty
+=== Preparing an Issue Report
+
+After link:#troubleshooting-diagnose[diagnosing] an issue and link:#troubleshooting-analyze[analyzing] it, you may already have a pretty good idea of how to resolve it.
+If you do not there are plenty of resources you can turn to for help.
+Before you do, however, it is strongly recommended that you take the time to write up a detailed report of the issue.
+In a time-sensitive situation this may seem time consuming, but good, well-constructed reports are extremely important for those helping you.
+
+==== What to Include
 
 General good practices when reporting problems::
 * Report version, repeatability, etc.

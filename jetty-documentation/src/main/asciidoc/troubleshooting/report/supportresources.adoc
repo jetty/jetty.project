@@ -16,15 +16,4 @@
 //  ========================================================================
 //
 
-[[troubleshooting-diagnose]]
-
-=== Diagnosing Issues In Jetty
-
-How to check the server if you think there is a problem::
-* checking CPU
-* checking FDs
-* hitting static resources
-* making new connections
-* creating new sessions
-* getting thread dump(s)  -- DONE
-* getting server dump(s) -- DONE
+[[troubleshooting-support-resources]]
