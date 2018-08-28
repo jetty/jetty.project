@@ -210,16 +210,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
 
         if (getHttpExchanges().isEmpty())
         {
-            if (getHttpClient().isRemoveIdleDestinations() && connectionPool.isEmpty())
-            {
-                // There is a race condition between this thread removing the destination
-                // and another thread queueing a request to this same destination.
-                // If this destination is removed, but the request queued, a new connection
-                // will be opened, the exchange will be executed and eventually the connection
-                // will idle timeout and be closed. Meanwhile a new destination will be created
-                // in HttpClient and will be used for other requests.
-                getHttpClient().removeDestination(this);
-            }
+            tryRemoveIdleDestination();
         }
         else
         {
@@ -235,6 +226,27 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     {
         super.close();
         connectionPool.close();
+    }
+
+    public void abort(Throwable cause)
+    {
+        super.abort(cause);
+        if (getHttpExchanges().isEmpty())
+            tryRemoveIdleDestination();
+    }
+
+    private void tryRemoveIdleDestination()
+    {
+        if (getHttpClient().isRemoveIdleDestinations() && connectionPool.isEmpty())
+        {
+            // There is a race condition between this thread removing the destination
+            // and another thread queueing a request to this same destination.
+            // If this destination is removed, but the request queued, a new connection
+            // will be opened, the exchange will be executed and eventually the connection
+            // will idle timeout and be closed. Meanwhile a new destination will be created
+            // in HttpClient and will be used for other requests.
+            getHttpClient().removeDestination(this);
+        }
     }
 
     @Override
