@@ -42,9 +42,12 @@ import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,17 +62,20 @@ public class SslBytesClientTest extends SslBytesTest
     @Before
     public void init() throws Exception
     {
+        // This whole test is very specific to how TLS < 1.3 works.
+        Assume.assumeThat(JavaVersion.VERSION.getPlatform(), Matchers.lessThan(11));
+
         threadPool = Executors.newCachedThreadPool();
 
-        client = new HttpClient(new SslContextFactory(true));
+        sslContextFactory = new SslContextFactory(true);
+        client = new HttpClient(sslContextFactory);
         client.setMaxConnectionsPerDestination(1);
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
-        sslContextFactory = client.getSslContextFactory();
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         client.start();
 
-        SSLContext sslContext = sslContextFactory.getSslContext();
+        SSLContext sslContext = this.sslContextFactory.getSslContext();
         acceptor = (SSLServerSocket)sslContext.getServerSocketFactory().createServerSocket(0);
 
         int serverPort = acceptor.getLocalPort();

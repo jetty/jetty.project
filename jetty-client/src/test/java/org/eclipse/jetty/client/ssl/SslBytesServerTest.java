@@ -67,6 +67,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -94,6 +95,9 @@ public class SslBytesServerTest extends SslBytesTest
     @Before
     public void init() throws Exception
     {
+        // This whole test is very specific to how TLS < 1.3 works.
+        Assume.assumeThat(JavaVersion.VERSION.getPlatform(), Matchers.lessThan(11));
+
         threadPool = Executors.newCachedThreadPool();
         server = new Server();
 

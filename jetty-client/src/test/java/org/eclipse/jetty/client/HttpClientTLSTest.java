@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -43,12 +44,14 @@ import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class HttpClientTLSTest
@@ -245,6 +248,10 @@ public class HttpClientTLSTest
     @Test
     public void testMismatchBetweenTLSProtocolAndTLSCiphersOnClient() throws Exception
     {
+        // In JDK 11, a mismatch on the client does not generate any bytes towards
+        // the server, while in TLS 1.2 the client sends to the server the close_notify.
+        Assume.assumeThat(JavaVersion.VERSION.getPlatform(), Matchers.lessThan(11));
+
         SslContextFactory serverTLSFactory = createSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
@@ -330,6 +337,9 @@ public class HttpClientTLSTest
     @Test
     public void testHandshakeSucceededWithSessionResumption() throws Exception
     {
+        // Excluded because of a bug in JDK 11+27 where session resumption does not work.
+        Assume.assumeThat(JavaVersion.VERSION.getPlatform(), Matchers.lessThan(11));
+
         SslContextFactory serverTLSFactory = createSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
@@ -407,6 +417,9 @@ public class HttpClientTLSTest
     @Test
     public void testClientRawCloseDoesNotInvalidateSession() throws Exception
     {
+        // Excluded because of a bug in JDK 11+27 where session resumption does not work.
+        Assume.assumeThat(JavaVersion.VERSION.getPlatform(), Matchers.lessThan(11));
+
         SslContextFactory serverTLSFactory = createSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
@@ -426,6 +439,17 @@ public class HttpClientTLSTest
         });
         sslSocket.startHandshake();
         Assert.assertTrue(handshakeLatch1.await(5, TimeUnit.SECONDS));
+
+        // In TLS 1.3 the server sends a NewSessionTicket post-handshake message
+        // to enable session resumption and without a read, the message is not processed.
+        try
+        {
+            sslSocket.setSoTimeout(1000);
+            sslSocket.getInputStream().read();
+        }
+        catch (SocketTimeoutException expected)
+        {
+        }
 
         // The client closes abruptly.
         socket.close();
