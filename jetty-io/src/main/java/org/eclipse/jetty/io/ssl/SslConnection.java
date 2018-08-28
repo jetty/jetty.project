@@ -596,13 +596,9 @@ public class SslConnection extends AbstractConnection
                                 {
                                     if (unwrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
                                         handshakeSucceeded();
-
-                                    if (isRenegotiating())
-                                    {
-                                        // Check whether re-negotiation is allowed
-                                        if (!allowRenegotiate())
-                                            return filled = -1;
-                                    }
+                                        
+                                    if (isRenegotiating() && !allowRenegotiate())
+                                        return filled = -1;
 
                                     // If bytes were produced, don't bother with the handshake status;
                                     // pass the decrypted data to the application, which will perform
@@ -913,15 +909,12 @@ public class SslConnection extends AbstractConnection
                                     if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
                                         handshakeSucceeded();
 
-                                    if (isRenegotiating())
+                                    if (isRenegotiating() && !allowRenegotiate())
                                     {
-                                        if (!allowRenegotiate())
-                                        {
-                                            getEndPoint().shutdownOutput();
-                                            if (allConsumed && BufferUtil.isEmpty(_encryptedOutput))
-                                                return result = true;
-                                            throw new IOException("Broken pipe");
-                                        }
+                                        getEndPoint().shutdownOutput();
+                                        if (allConsumed && BufferUtil.isEmpty(_encryptedOutput))
+                                            return result = true;
+                                        throw new IOException("Broken pipe");
                                     }
 
                                     if (!flushed)
