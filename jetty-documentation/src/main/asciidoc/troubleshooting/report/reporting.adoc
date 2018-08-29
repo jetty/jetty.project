@@ -23,13 +23,43 @@
 After link:#troubleshooting-diagnose[diagnosing] an issue and link:#troubleshooting-analyze[analyzing] it, you may already have a pretty good idea of how to resolve it.
 If you do not there are plenty of resources you can turn to for help.
 Before you do, however, it is strongly recommended that you take the time to write up a detailed report of the issue.
-In a time-sensitive situation this may seem time consuming, but good, well-constructed reports are extremely important for those helping you.
+While this may seem time consuming good, well-constructed reports are extremely important for those helping you.
 
 ==== What to Include
 
+===== Jetty Version
+
+Knowing the exact version of Jetty you are running on is key to helping solve your issue.
+Be specific - reporting an issue and simply reporting the version Jetty 8 or Jetty 9 isn't particularly helpful when you consider Jetty 8 had two major version releases (8.0 and 8.1) both with several versions each; Jetty 9 has had four so far, some with more than 20 releases each!
+Many versions of Jetty evolve over the course of years and will include many changes from one release to another.
+
+When you report the version it should include as much detail as possible::
+* *Good:* Jetty 9.4
+* *Better:* Jetty 9.4.10
+* *Best:* Jetty 9.4.10.v20180503
+
+Version numbers are added to the naming of all tars, jars, and zip files distributed by the Jetty team.
+If you are working with the Jetty distribution, you can quickly check the version of by running the server with the `--version` argument.
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ${JETTY.HOME}/start.jar --version
+----
+
+===== When The Issue Occurred
+
+Believe it or not, sometimes it is very helpful to know what time the issue manifested itself.
+Both the sever time and time zone where the server is located can be extremely helpful in diagnosing issues.
+
+===== Server Status
+
+It is easy enough to report that the sever has crashed, but that offers very in little in the way of practical information.
+
+
+
 General good practices when reporting problems::
-* Report version, repeatability, etc.
-* Determine and report the time and timezone of the incident
+* Report version, repeatability, etc. --- DONE
+* Determine and report the time and timezone of the incident ---- DONE
 * For all log/debug reports provided, give a description of when they were taken and the state of the server.
 * Practice these steps on a good working server and save the results for comparison.
 ** Have known health check URIs that you can hit etc.
