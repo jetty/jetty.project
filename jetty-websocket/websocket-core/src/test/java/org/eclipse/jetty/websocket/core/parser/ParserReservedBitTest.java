@@ -202,7 +202,7 @@ public class ParserReservedBitTest
     public void testCase3_7()
     {
         List<Frame> send = new ArrayList<>();
-        Frame frame = new Frame(OpCode.CLOSE).setPayload(new CloseStatus(1000));
+        Frame frame = CloseStatus.toFrame(1000);
         frame.setRsv1(true);
         frame.setRsv2(true);
         frame.setRsv3(true);

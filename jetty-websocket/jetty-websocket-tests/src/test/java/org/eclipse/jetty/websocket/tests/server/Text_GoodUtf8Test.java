@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.tests.DataUtils;
@@ -129,11 +130,11 @@ public class Text_GoodUtf8Test extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(msg));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
         
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(msg)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try (Fuzzer session = server.newNetworkFuzzer())
         {

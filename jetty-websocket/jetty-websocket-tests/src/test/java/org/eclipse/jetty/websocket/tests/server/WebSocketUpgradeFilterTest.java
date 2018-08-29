@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -30,16 +26,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 public abstract class WebSocketUpgradeFilterTest
 {
@@ -76,7 +75,7 @@ public abstract class WebSocketUpgradeFilterTest
         {
             session.sendFrames(
                     new Frame(OpCode.TEXT).setPayload("hello"),
-                    new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode())
+                    CloseStatus.toFrame(StatusCode.NORMAL.getCode())
             );
             
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
@@ -97,7 +96,7 @@ public abstract class WebSocketUpgradeFilterTest
         {
             session.sendFrames(
                     new Frame(OpCode.TEXT).setPayload("hello 1"),
-                    new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode())
+                    CloseStatus.toFrame(StatusCode.NORMAL.getCode())
             );
             
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
@@ -119,7 +118,7 @@ public abstract class WebSocketUpgradeFilterTest
         {
             session.sendFrames(
                     new Frame(OpCode.TEXT).setPayload("hello 2"),
-                    new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode())
+                    CloseStatus.toFrame(StatusCode.NORMAL.getCode())
             );
             
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();

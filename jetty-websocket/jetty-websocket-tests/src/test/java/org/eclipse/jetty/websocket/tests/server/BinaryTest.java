@@ -24,10 +24,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.junit.Test;
@@ -53,11 +52,11 @@ public class BinaryTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload(buf));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(DataUtils.copyOf(buf)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -82,11 +81,11 @@ public class BinaryTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload(buf));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(DataUtils.copyOf(buf)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -111,11 +110,11 @@ public class BinaryTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload(buf));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(DataUtils.copyOf(buf)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -136,11 +135,11 @@ public class BinaryTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.BINARY, 4 * MBYTE, 16 * KBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -161,11 +160,11 @@ public class BinaryTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.BINARY, 4 * MBYTE, 1 * KBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -186,11 +185,11 @@ public class BinaryTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.BINARY, 4 * MBYTE, 1 * MBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -211,11 +210,11 @@ public class BinaryTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.BINARY, 4 * MBYTE, 256);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -236,11 +235,11 @@ public class BinaryTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.BINARY, 4 * MBYTE, 256 * KBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -261,11 +260,11 @@ public class BinaryTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.BINARY, 4 * MBYTE, 4 * KBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -286,11 +285,11 @@ public class BinaryTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.BINARY, 4 * MBYTE, 4 * MBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -311,11 +310,11 @@ public class BinaryTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.BINARY, 4 * MBYTE, 64);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -336,11 +335,11 @@ public class BinaryTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.BINARY, 4 * MBYTE, 64 * KBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -365,11 +364,11 @@ public class BinaryTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload(buf));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(DataUtils.copyOf(buf)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -393,11 +392,11 @@ public class BinaryTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload(data));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(DataUtils.copyOf(data)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -422,11 +421,11 @@ public class BinaryTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload(buf));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(DataUtils.copyOf(buf)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {

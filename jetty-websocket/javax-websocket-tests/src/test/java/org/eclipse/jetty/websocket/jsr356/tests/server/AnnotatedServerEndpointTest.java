@@ -77,11 +77,11 @@ public class AnnotatedServerEndpointTest
         
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(message));
-        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(expectedText));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer("/app/echo", upgradeRequest))
         {

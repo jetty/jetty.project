@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests.server;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -30,8 +26,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
 import org.eclipse.jetty.websocket.jsr356.tests.WSServer;
 import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.IdleTimeoutOnOpenEndpoint;
@@ -39,6 +33,10 @@ import org.eclipse.jetty.websocket.jsr356.tests.server.sockets.IdleTimeoutOnOpen
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 public class IdleTimeoutTest
 {
@@ -81,7 +79,7 @@ public class IdleTimeoutTest
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
             Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CLOSE));
-            CloseStatus closeStatus = CloseStatus.toCloseStatus(frame.getPayload());
+            CloseStatus closeStatus = new CloseStatus(frame.getPayload());
             assertThat("Close.statusCode", closeStatus.getCode(), is(CloseStatus.SHUTDOWN));
             assertThat("Close.reason", closeStatus.getReason(), containsString("Timeout"));
         }

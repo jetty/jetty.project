@@ -20,94 +20,101 @@ package org.eclipse.jetty.websocket.core.frames;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.core.CloseStatus;
-
 /**
  * Immutable, Read-only, Frame implementation.
  */
-public class ReadOnlyFrame extends Frame
+public class ReadOnlyFrame extends DelegateFrame
 {
 
     public ReadOnlyFrame(Frame frame)
     {
-        super(frame.getOpCode());
-
-        copyHeaders(frame);
-        ByteBuffer payload = frame.getPayload();
-        if (payload != null)
-        {
-            ByteBuffer payloadCopy = ByteBuffer.allocate(payload.remaining());
-            payloadCopy.put(payload.slice()).flip();
-            frame.setPayload(payloadCopy);
-        }
+        super(frame);
     }
 
-    //TODO should these throw exceptions
+    @Override
+    public ByteBuffer getPayload()
+    {
+        ByteBuffer buffer = super.getPayload();
+        if(buffer == null)
+            return null;
+        
+        return buffer.asReadOnlyBuffer();
+    }
 
     @Override
     protected void copyHeaders(Frame frame)
-    {}
+    {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public void reset()
-    {}
+    {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public Frame setFin(boolean fin)
     {
-        return this;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Frame setMask(byte[] maskingKey)
     {
-        return this;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Frame setMasked(boolean mask)
     {
-        return this;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     protected Frame setOpCode(byte op)
     {
-        return this;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Frame setPayload(ByteBuffer buf)
     {
-        return this;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Frame setPayload(String str)
     {
-        return this;
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public Frame setPayload(CloseStatus closeStatus)
+    public Frame setPayload(byte[] buf)
     {
-        return this;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Frame setRsv1(boolean rsv1)
     {
-        return this;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Frame setRsv2(boolean rsv2)
     {
-        return this;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Frame setRsv3(boolean rsv3)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Frame asReadOnly()
     {
         return this;
     }

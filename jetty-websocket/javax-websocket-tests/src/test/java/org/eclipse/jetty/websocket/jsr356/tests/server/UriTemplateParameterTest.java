@@ -80,11 +80,11 @@ public class UriTemplateParameterTest
     
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("9999"));
-        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
     
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("9,999|1,234|5,678"));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
+        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
     
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {

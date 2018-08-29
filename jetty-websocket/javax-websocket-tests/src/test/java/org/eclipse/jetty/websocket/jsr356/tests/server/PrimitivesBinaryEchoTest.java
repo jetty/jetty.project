@@ -141,11 +141,11 @@ public class PrimitivesBinaryEchoTest
         
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.BINARY).setPayload(Hex.asByteBuffer(sendHex)));
-        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.BINARY).setPayload(Hex.asByteBuffer(expectHex)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {

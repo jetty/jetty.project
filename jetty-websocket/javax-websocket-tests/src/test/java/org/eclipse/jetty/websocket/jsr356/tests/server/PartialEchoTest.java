@@ -138,11 +138,11 @@ public class PartialEchoTest
         send.add(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true));
-        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("('Hello',false)(', ',false)('World',true)"));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {
@@ -160,11 +160,11 @@ public class PartialEchoTest
         send.add(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true));
-        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("('Hello',false)(', ',false)('World',true)"));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {

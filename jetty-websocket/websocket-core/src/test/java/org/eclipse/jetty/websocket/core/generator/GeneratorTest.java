@@ -41,7 +41,6 @@ import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.parser.ParserCapture;
 import org.hamcrest.Matchers;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -356,26 +355,8 @@ public class GeneratorTest
     @Test
     public void testGenerate_Close_1BytePayload()
     {
-        Frame closeFrame = new Frame(OpCode.CLOSE);
         expectedException.expect(ProtocolException.class);
-        // Frame.setPayload() triggers ProtocolException
-        closeFrame.setPayload(Hex.asByteBuffer("00"));
-    }
-
-    /**
-     * From Autobahn WebSocket Client Testcase 7.3.2
-     */
-    @Ignore
-    @Test
-    // TODO (exception is thrown in setPayload as tested above, is this test now obsolete?)
-    public void testGenerate_Close_1BytePayload_Anonymous()
-    {
-        Frame frame = new Frame(OpCode.CLOSE);
-        frame.setPayload(Hex.asByteBuffer("00"));
-
-        expectedException.expect(ProtocolException.class);
-        // Generator.generate() triggers ProtocolException
-        unitGenerator.generate(frame);
+        new CloseStatus(Hex.asByteBuffer("00"));
     }
 
     @Test
@@ -383,7 +364,7 @@ public class GeneratorTest
     {
         CloseStatus close = new CloseStatus(WebSocketConstants.NORMAL);
         // 2 byte payload (2 bytes for status code)
-        assertGeneratedBytes("880203E8", new Frame(OpCode.CLOSE).setPayload(close));
+        assertGeneratedBytes("880203E8", close.toFrame());
     }
 
     @Test
@@ -391,7 +372,7 @@ public class GeneratorTest
     {
         CloseStatus close = new CloseStatus(WebSocketConstants.NORMAL, "OK");
         // 4 byte payload (2 bytes for status code, 2 more for "OK")
-        assertGeneratedBytes("880403E84F4B", new Frame(OpCode.CLOSE).setPayload(close));
+        assertGeneratedBytes("880403E84F4B", close.toFrame());
     }
 
     /**
@@ -439,7 +420,7 @@ public class GeneratorTest
     {
         CloseStatus close = new CloseStatus(1000);
 
-        ByteBuffer actual = unitGenerator.generate(new Frame(OpCode.CLOSE).setPayload(close));
+        ByteBuffer actual = unitGenerator.generate(close.toFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -465,7 +446,7 @@ public class GeneratorTest
 
         CloseStatus close = new CloseStatus(1000, message.toString());
 
-        ByteBuffer actual = unitGenerator.generate(new Frame(OpCode.CLOSE).setPayload(close));
+        ByteBuffer actual = unitGenerator.generate(close.toFrame());
         ByteBuffer expected = ByteBuffer.allocate(132);
 
         byte messageBytes[] = message.toString().getBytes(StandardCharsets.UTF_8);
@@ -496,7 +477,7 @@ public class GeneratorTest
 
         CloseStatus close = new CloseStatus(1000, message);
 
-        ByteBuffer actual = unitGenerator.generate(new Frame(OpCode.CLOSE).setPayload(close));
+        ByteBuffer actual = unitGenerator.generate(close.toFrame());
 
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -528,7 +509,7 @@ public class GeneratorTest
         {
             frames[i] = new Frame(OpCode.PING).setPayload(String.format("ping-%d", i));
         }
-        frames[pingCount] = new Frame(OpCode.CLOSE).setPayload(new CloseStatus(WebSocketConstants.NORMAL));
+        frames[pingCount] = CloseStatus.toFrame(WebSocketConstants.NORMAL);
 
         // Mask All Frames
         byte maskingKey[] = Hex.asByteArray("11223344");

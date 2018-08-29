@@ -23,8 +23,6 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.BadPayloadException;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 
 /**
@@ -205,6 +203,12 @@ public class Frame
     }
 
 
+    protected Frame()
+    {
+        this(OpCode.UNDEFINED);
+    }
+
+
     public void assertValid()
     {
         if (isControlFrame())
@@ -301,7 +305,7 @@ public class Frame
         return mask;
     }
 
-    public final byte getOpCode()
+    public byte getOpCode()
     {
         return (byte)(finRsvOp & 0x0F);
     }
@@ -427,9 +431,6 @@ public class Frame
             // RFC-6455 Spec Required Control Frame validation.
             if (buf != null && buf.remaining() > MAX_CONTROL_PAYLOAD)
                 throw new ProtocolException("Control Payloads can not exceed " + MAX_CONTROL_PAYLOAD + " bytes in length.");
-
-            if(getOpCode() == OpCode.CLOSE)
-                CloseStatus.verifyPayload(buf);
         }
 
         payload = buf;
@@ -447,44 +448,6 @@ public class Frame
         setPayload(ByteBuffer.wrap(buf));
         return this;
     }
-
-    public Frame setPayload(CloseStatus closeStatus)
-    {
-        // TODO isTransmittableStatusCode() is being checked on CloseStatus.asPayloadBuffer() as well
-        if(CloseStatus.isTransmittableStatusCode(closeStatus.getCode()))
-            setPayload(closeStatus.asPayloadBuffer());
-
-        return this;
-    }
-
-    public Frame setPayload(int closeStatus)
-    {
-        setPayload(new CloseStatus(closeStatus));
-        return this;
-    }
-
-    public Frame setPayload(int closeStatus, String reason)
-    {
-        setPayload(new CloseStatus(closeStatus, reason));
-        return this;
-    }
-
-
-    /**
-     * Parse the Payload Buffer into a CloseStatus object
-     *
-     * @return the close status
-     * @throws BadPayloadException if the reason phrase is not valid UTF-8
-     * @throws ProtocolException if the payload is an invalid length for CLOSE frames
-     */
-    public CloseStatus getCloseStatus()
-    {
-        if(getOpCode() != OpCode.CLOSE)
-            throw new IllegalStateException("Close status only valid on Close Frame");
-
-        return CloseStatus.toCloseStatus(getPayload());
-    }
-
 
     public Frame setRsv1(boolean rsv1)
     {
@@ -505,6 +468,11 @@ public class Frame
         // set bit 4
         this.finRsvOp = (byte)((finRsvOp & 0xEF) | (rsv3?0x10:0x00));
         return this;
+    }
+
+    public Frame asReadOnly()
+    {
+        return new ReadOnlyFrame(this);
     }
 
     @Override

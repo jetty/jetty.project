@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.tests.Fuzzer;
@@ -38,11 +39,11 @@ public class FirefoxTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(msg));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(msg));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         Map<String,String> upgradeHeaders = UpgradeUtils.newDefaultUpgradeRequestHeaders();
         // REGRESSION TEST - Odd Connection Header value seen in Firefox

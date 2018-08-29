@@ -90,7 +90,7 @@ public class QuotesDecoderTextStreamTest
     public void testQuoteEchoString_Bulk() throws Exception
     {
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
-        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {
@@ -110,7 +110,7 @@ public class QuotesDecoderTextStreamTest
     public void testQuoteEchoString_SmallSegments() throws Exception
     {
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
-        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {
@@ -130,7 +130,7 @@ public class QuotesDecoderTextStreamTest
     public void testQuoteEchoString_FrameWise() throws Exception
     {
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
-        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer("/quotes/echo/string"))
         {

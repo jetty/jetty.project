@@ -296,7 +296,7 @@ public class AbstractTestFrameHandler implements FrameHandler
         String reason=null;
 
 
-        int code = frame.hasPayload() ? CloseStatus.toCloseStatus(frame.getPayload()).getCode() : -1;
+        int code = frame.hasPayload() ? new CloseStatus(frame.getPayload()).getCode() : -1;
         
         switch(code)
         {

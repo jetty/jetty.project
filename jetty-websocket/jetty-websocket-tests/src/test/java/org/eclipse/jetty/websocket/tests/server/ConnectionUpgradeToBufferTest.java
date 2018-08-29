@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -31,14 +27,17 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.tests.ParserCapture;
 import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 /**
  * Test simulating a client that talks too quickly.
@@ -67,7 +66,7 @@ public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
         List<Frame> frames = new ArrayList<>();
         frames.add(new Frame(OpCode.TEXT).setPayload("Hello 1"));
         frames.add(new Frame(OpCode.TEXT).setPayload("Hello 2"));
-        frames.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        frames.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         generator.generate(buf, frames);
 

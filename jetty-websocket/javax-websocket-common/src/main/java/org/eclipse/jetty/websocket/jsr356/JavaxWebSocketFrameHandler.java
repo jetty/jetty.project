@@ -523,7 +523,7 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
         {
             try
             {
-                CloseStatus close = CloseStatus.toCloseStatus(frame.getPayload());
+                CloseStatus close = new CloseStatus(frame.getPayload());
                 CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(close.getCode()), close.getReason());
                 closeHandle.invoke(closeReason);
             }

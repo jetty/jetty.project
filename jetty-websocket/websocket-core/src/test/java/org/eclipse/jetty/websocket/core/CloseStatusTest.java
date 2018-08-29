@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -30,6 +28,14 @@ import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.hamcrest.Matchers;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 public class CloseStatusTest
 {
@@ -43,7 +49,7 @@ public class CloseStatusTest
         assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NO_CODE));
         assertThat("close.reason",close.getReason(),nullValue());
 
-        Frame frame = new Frame(OpCode.CLOSE).setPayload(close);
+        Frame frame = close.toFrame();
         assertThat("close frame op code",frame.getOpCode(), Matchers.is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload",frame.hasPayload(),is(false));
@@ -60,7 +66,7 @@ public class CloseStatusTest
         assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NO_CODE));
         assertThat("close.reason",close.getReason(),nullValue());
 
-        Frame frame = new Frame(OpCode.CLOSE).setPayload(close);
+        Frame frame = close.toFrame();
         assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload",frame.hasPayload(),is(false));
@@ -77,7 +83,7 @@ public class CloseStatusTest
         assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NO_CLOSE));
         assertThat("close.reason",close.getReason(),nullValue());
 
-        Frame frame = new Frame(OpCode.CLOSE).setPayload(close);
+        Frame frame = close.toFrame();
         assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload",frame.hasPayload(),is(false));
@@ -94,7 +100,7 @@ public class CloseStatusTest
         assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.FAILED_TLS_HANDSHAKE));
         assertThat("close.reason",close.getReason(),nullValue());
 
-        Frame frame = new Frame(OpCode.CLOSE).setPayload(close);
+        Frame frame = close.toFrame();
         assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload",frame.hasPayload(),is(false));
@@ -111,7 +117,7 @@ public class CloseStatusTest
         assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NORMAL));
         assertThat("close.reason",close.getReason(),nullValue());
 
-        Frame frame = new Frame(OpCode.CLOSE).setPayload(close);
+        Frame frame = close.toFrame();
         assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
         assertThat("close frame payload length",frame.getPayloadLength(),is(2));
     }
@@ -149,13 +155,35 @@ public class CloseStatusTest
         frame.setPayload(payload);
         
         // create from frame
-        CloseStatus close = frame.getCloseStatus();
+        CloseStatus close = new CloseStatus(frame.getPayload());
         assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NORMAL));
         assertThat("close.reason",close.getReason(),nullValue());
 
         // and back again
-        frame = new Frame(OpCode.CLOSE).setPayload(close);
+        frame = close.toFrame();
         assertThat("close frame op code",frame.getOpCode(),is(OpCode.CLOSE));
         assertThat("close frame payload length",frame.getPayloadLength(),is(2));
+    }
+
+
+
+
+    @Test
+    public void testLongCloseReason()
+    {
+        int code = CloseStatus.NORMAL;
+        String reason = "___The WebSocket Connection Close Reason_ is defined as" +
+                "   the UTF-8-encoded data following the status code (Section 7.4)";
+
+        String utf4Bytes = "\uD801\uDC00";
+
+        assertThat(reason.getBytes().length, lessThan(CloseStatus.MAX_REASON_PHRASE));
+        assertThat((reason+utf4Bytes).getBytes().length, greaterThan(CloseStatus.MAX_REASON_PHRASE));
+
+        ByteBuffer bb = CloseStatus.asPayloadBuffer(code, reason+utf4Bytes);
+        assertThat(bb.limit(), lessThanOrEqualTo(Frame.MAX_CONTROL_PAYLOAD));
+
+        byte[] output = Arrays.copyOfRange(bb.array(), 2, bb.limit());
+        assertThat(output, equalTo(reason.getBytes(StandardCharsets.UTF_8)));
     }
 }

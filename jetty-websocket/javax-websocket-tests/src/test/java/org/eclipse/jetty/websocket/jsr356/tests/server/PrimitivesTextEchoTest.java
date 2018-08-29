@@ -392,11 +392,11 @@ public class PrimitivesTextEchoTest
         
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(sendText));
-        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(expectText));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
         
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {

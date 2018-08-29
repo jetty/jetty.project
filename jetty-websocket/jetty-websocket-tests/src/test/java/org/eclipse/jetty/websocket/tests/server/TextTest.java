@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.tests.DataUtils;
@@ -58,11 +59,11 @@ public class TextTest extends AbstractLocalServerCase
         
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(buf));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
         
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(buf)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -88,11 +89,11 @@ public class TextTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(buf));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(buf)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -117,11 +118,11 @@ public class TextTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(buf));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(buf)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -142,11 +143,11 @@ public class TextTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 16 * KBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -167,11 +168,11 @@ public class TextTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 1 * KBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -192,11 +193,11 @@ public class TextTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 1 * MBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -217,11 +218,11 @@ public class TextTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 256);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -242,11 +243,11 @@ public class TextTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 256 * KBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -267,11 +268,11 @@ public class TextTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 4 * KBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -292,11 +293,11 @@ public class TextTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 4 * MBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -317,11 +318,11 @@ public class TextTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4*MBYTE, 64);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -342,11 +343,11 @@ public class TextTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         ByteBuffer payload = newMultiFrameMessage(send, OpCode.TEXT, 4 * MBYTE, 64 * KBYTE);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(payload));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -371,11 +372,11 @@ public class TextTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(buf));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(buf)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -400,11 +401,11 @@ public class TextTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(msg));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(msg));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -429,11 +430,11 @@ public class TextTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(buf));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(buf)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try(Fuzzer session = server.newNetworkFuzzer())
         {
@@ -456,10 +457,10 @@ public class TextTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         fragmentText(send, invalid);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.BAD_PAYLOAD.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              Fuzzer session = server.newNetworkFuzzer())
@@ -491,10 +492,10 @@ public class TextTest extends AbstractLocalServerCase
 
             List<Frame> send = new ArrayList<>();
             send.add(new Frame(OpCode.TEXT).setPayload(payload));
-            send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+            send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
             List<Frame> expect = new ArrayList<>();
-            expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+            expect.add(CloseStatus.toFrame(StatusCode.BAD_PAYLOAD.getCode()));
 
             try (Fuzzer session = server.newNetworkFuzzer())
             {
@@ -549,7 +550,7 @@ public class TextTest extends AbstractLocalServerCase
         send.add(new Frame(OpCode.CONTINUATION).setPayload(ByteBuffer.wrap(part3)).setFin(true));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.BAD_PAYLOAD.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              Fuzzer session = server.newNetworkFuzzer())
@@ -588,7 +589,7 @@ public class TextTest extends AbstractLocalServerCase
         send.add(new Frame(OpCode.CONTINUATION).setPayload(ByteBuffer.wrap(part3)).setFin(true));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.BAD_PAYLOAD.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              Fuzzer session = server.newNetworkFuzzer())
@@ -612,10 +613,10 @@ public class TextTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(invalid)));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.BAD_PAYLOAD.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              Fuzzer session = server.newNetworkFuzzer())
@@ -644,11 +645,11 @@ public class TextTest extends AbstractLocalServerCase
         send.add(new Frame(OpCode.TEXT).setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setPayload("middle").setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setFin(true));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("middle"));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -671,11 +672,11 @@ public class TextTest extends AbstractLocalServerCase
         send.add(new Frame(OpCode.TEXT).setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setFin(true));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -696,11 +697,11 @@ public class TextTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -723,11 +724,11 @@ public class TextTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         fragmentText(send, msg);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(msg)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -751,11 +752,11 @@ public class TextTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         fragmentText(send, msg);
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(msg)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -783,7 +784,7 @@ public class TextTest extends AbstractLocalServerCase
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(b1).setFin(false));
         send.add(new Frame(OpCode.CONTINUATION).setPayload(b2).setFin(true));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         ByteBuffer e1 = ByteBuffer.allocate(100);
@@ -791,7 +792,7 @@ public class TextTest extends AbstractLocalServerCase
         e1.put(StringUtil.getUtf8Bytes(utf2));
         e1.flip();
         expect.add(new Frame(OpCode.TEXT).setPayload(e1));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         try (Fuzzer session = server.newNetworkFuzzer())
         {

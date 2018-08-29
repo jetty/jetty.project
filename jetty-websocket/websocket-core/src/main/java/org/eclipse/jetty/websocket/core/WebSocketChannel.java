@@ -144,8 +144,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     {
         // TODO guard for multiple closes?
         // TODO truncate extra large reason phrases to fit within limits?
-
-        sendFrame(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(statusCode, reason)), callback, BatchMode.OFF);
+        sendFrame(CloseStatus.toFrame(statusCode, reason), callback, BatchMode.OFF);
     }
 
     public WebSocketPolicy getPolicy()
@@ -294,7 +293,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     {
         if (frame.getOpCode() == OpCode.CLOSE)
         {
-            if (state.onCloseOut(frame.getCloseStatus()))
+            CloseStatus closeStatus = new CloseStatus(frame.getPayload());
+            if (state.onCloseOut(closeStatus))
             {
                 callback = new Callback.Nested(callback)
                 {
@@ -366,7 +366,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
                     // Handle inbound close
                     if (frame.getOpCode() == OpCode.CLOSE)
                     {
-                        if (state.onCloseIn(frame.getCloseStatus()))
+                        CloseStatus closeStatus = new CloseStatus(frame.getPayload());
+                        if (state.onCloseIn(closeStatus))
                         {
                             handler.onFrame(frame, callback); // handler should know about received frame
                             handler.onClosed(state.getCloseStatus());
@@ -374,7 +375,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
                             return;
                         }
 
-                        CloseStatus closeStatus = frame.getCloseStatus();
                         callback = new Callback.Nested(callback)
                         {
                             @Override

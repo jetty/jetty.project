@@ -249,7 +249,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             try
             {
-                CloseStatus close = CloseStatus.toCloseStatus(frame.getPayload());
+                CloseStatus close = new CloseStatus(frame.getPayload());
                 closeHandle.invoke(close.getCode(), close.getReason());
             }
             catch (Throwable cause)

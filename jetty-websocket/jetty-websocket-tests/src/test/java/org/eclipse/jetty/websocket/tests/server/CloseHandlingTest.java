@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
@@ -59,7 +60,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         send.add(new Frame(OpCode.CLOSE).setPayload(buf));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.PROTOCOL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              Fuzzer session = server.newNetworkFuzzer())
@@ -91,7 +92,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         send.add(new BadFrame(OpCode.CLOSE).setPayload(payload)); // intentionally bad payload
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.BAD_PAYLOAD.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.BAD_PAYLOAD.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              Fuzzer session = server.newNetworkFuzzer())
@@ -139,10 +140,10 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         String reason = StringUtil.toUTF8String(utf,0,utf.length);
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode(),reason));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode(),reason));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode(),reason));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode(),reason));
     
         try (StacklessLogging ignored = new StacklessLogging(WebSocketConnection.class);
              Fuzzer session = server.newNetworkFuzzer())
@@ -164,11 +165,11 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("Hello World"));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload("Hello World"));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -188,11 +189,11 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     public void testClose_Ping() throws Exception
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
         send.add(new Frame(OpCode.PING).setPayload("out of band ping"));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -212,10 +213,10 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     public void testClose_StatusCode() throws Exception
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -235,10 +236,10 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     public void testClose_StatusCode_Reason() throws Exception
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode(),"Hic"));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode(),"Hic"));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode(),"Hic"));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode(),"Hic"));
     
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -258,11 +259,11 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     public void testClose_Text() throws Exception
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
         send.add(new Frame(OpCode.TEXT).setPayload("out of band text"));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -282,11 +283,11 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     public void testClose_Twice() throws Exception
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
         send.add(new Frame(OpCode.CLOSE));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -307,11 +308,11 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("an").setFin(false));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
         send.add(new Frame(OpCode.CONTINUATION).setPayload("ticipation").setFin(true));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try (Fuzzer session = server.newNetworkFuzzer())
         {
@@ -336,12 +337,12 @@ public class CloseHandlingTest extends AbstractLocalServerCase
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(buf));
-        send.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        send.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
         send.add(new Frame(OpCode.PING).setPayload("out of band"));
 
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(DataUtils.copyOf(buf)));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(StatusCode.NORMAL.getCode()));
+        expect.add(CloseStatus.toFrame(StatusCode.NORMAL.getCode()));
     
         try (Fuzzer session = server.newNetworkFuzzer())
         {

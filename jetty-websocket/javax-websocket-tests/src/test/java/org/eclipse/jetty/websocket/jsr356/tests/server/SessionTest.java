@@ -248,11 +248,11 @@ public class SessionTest
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(requestMessage));
-        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
     
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(expectedResponse));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
     
         try (Fuzzer session = server.newNetworkFuzzer(requestPath))
         {

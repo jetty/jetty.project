@@ -100,7 +100,7 @@ public class ParserGoodCloseStatusCodesTest
         parser.parse(raw);
         Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame opcode", frame.getOpCode(), is(OpCode.CLOSE));
-        CloseStatus closeStatus = CloseStatus.toCloseStatus(frame.getPayload());
+        CloseStatus closeStatus = new CloseStatus(frame.getPayload());
         assertThat("CloseStatus.code", closeStatus.getCode(), is(closeCode));
         assertThat("CloseStatus.reason", closeStatus.getReason(), nullValue());
     }
@@ -125,7 +125,7 @@ public class ParserGoodCloseStatusCodesTest
         parser.parse(raw);
         Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame opcode", frame.getOpCode(), is(OpCode.CLOSE));
-        CloseStatus closeStatus = CloseStatus.toCloseStatus(frame.getPayload());
+        CloseStatus closeStatus = new CloseStatus(frame.getPayload());
         assertThat("CloseStatus.code", closeStatus.getCode(), is(closeCode));
         assertThat("CloseStatus.reason", closeStatus.getReason(), is("hello"));
     }

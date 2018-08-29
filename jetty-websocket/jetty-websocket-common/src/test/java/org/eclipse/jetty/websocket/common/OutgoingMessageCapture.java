@@ -33,7 +33,6 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.Frame;
@@ -78,7 +77,7 @@ public class OutgoingMessageCapture extends DummyChannel implements FrameHandler
         {
             case OpCode.CLOSE:
             {
-                CloseStatus closeStatus = CloseStatus.toCloseStatus(frame.getPayload());
+                CloseStatus closeStatus = new CloseStatus(frame.getPayload());
                 String event = String.format("CLOSE:%s:%s", StatusCode.asName(closeStatus.getCode()), closeStatus.getReason());
                 LOG.debug(event);
                 events.offer(event);

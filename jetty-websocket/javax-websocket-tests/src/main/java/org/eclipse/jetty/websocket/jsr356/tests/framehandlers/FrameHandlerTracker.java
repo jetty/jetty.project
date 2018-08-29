@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.AbstractWholeMessageHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.Frame;
 
 public class FrameHandlerTracker extends AbstractWholeMessageHandler
 {
@@ -56,7 +55,7 @@ public class FrameHandlerTracker extends AbstractWholeMessageHandler
     public void onClose(Frame frame, Callback callback)
     {
         super.onClose(frame, callback);
-        closeDetail.compareAndSet(null, CloseStatus.toCloseStatus(frame.getPayload()));
+        closeDetail.compareAndSet(null, new CloseStatus(frame.getPayload()));
         closeLatch.countDown();
     }
 

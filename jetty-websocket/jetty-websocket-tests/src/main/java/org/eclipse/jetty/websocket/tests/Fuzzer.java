@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -34,8 +30,11 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.hamcrest.Matchers;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 public interface Fuzzer extends AutoCloseable
 {
@@ -139,7 +138,7 @@ public interface Fuzzer extends AutoCloseable
                 if(LOG.isDebugEnabled())
                 {
                     if (actual.getOpCode() == OpCode.CLOSE)
-                        LOG.debug("{} CloseFrame: {}", prefix, CloseStatus.toCloseStatus(actual.getPayload()));
+                        LOG.debug("{} CloseFrame: {}", prefix, new CloseStatus(actual.getPayload()));
                     else
                         LOG.debug("{} {}", prefix, actual);
                 }
@@ -148,8 +147,8 @@ public interface Fuzzer extends AutoCloseable
                 prefix += "(op=" + actual.getOpCode() + "," + (actual.isFin() ? "" : "!") + "fin)";
                 if (expected.getOpCode() == OpCode.CLOSE)
                 {
-                    CloseStatus expectedClose = CloseStatus.toCloseStatus(expected.getPayload());
-                    CloseStatus actualClose = CloseStatus.toCloseStatus(actual.getPayload());
+                    CloseStatus expectedClose = new CloseStatus(expected.getPayload());
+                    CloseStatus actualClose = new CloseStatus(actual.getPayload());
                     assertThat(prefix + ".code", actualClose.getCode(), Matchers.is(expectedClose.getCode()));
                 }
                 else if (expected.hasPayload())

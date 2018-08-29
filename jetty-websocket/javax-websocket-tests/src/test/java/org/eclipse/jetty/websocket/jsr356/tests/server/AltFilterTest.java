@@ -69,11 +69,11 @@ public class AltFilterTest
 
             List<Frame> send = new ArrayList<>();
             send.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
-            send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
+            send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
     
             List<Frame> expect = new ArrayList<>();
             expect.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
-            expect.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(CloseStatus.NORMAL)));
+            expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
             
             try(Fuzzer session = wsb.newNetworkFuzzer("/app/echo;jsession=xyz"))
             {

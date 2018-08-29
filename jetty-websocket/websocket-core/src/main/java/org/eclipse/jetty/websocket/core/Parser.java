@@ -592,6 +592,10 @@ public class Parser
             if (payload.position() == payloadLength)
             {
                 BufferUtil.flipToFlush(payload, 0);
+
+                if(frame.getOpCode() == OpCode.CLOSE)
+                    new CloseStatus(payload); // verifies frame TODO remember CloseStatus?
+
                 frame.setPayload(payload);
                 // notify that frame is complete
                 return true;

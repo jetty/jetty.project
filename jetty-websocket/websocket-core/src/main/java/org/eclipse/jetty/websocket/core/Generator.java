@@ -176,7 +176,7 @@ public class Generator
              */
             if (frame.getOpCode() == OpCode.CLOSE)
             {
-                CloseStatus.toCloseStatus(frame.getPayload());
+                new CloseStatus(frame.getPayload());
             }
         }
     }

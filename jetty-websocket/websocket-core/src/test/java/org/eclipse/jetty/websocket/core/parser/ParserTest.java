@@ -467,7 +467,7 @@ public class ParserTest
         send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment2").setFin(true));
         send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment3").setFin(false)); // bad frame
         send.add(new Frame(OpCode.TEXT).setPayload("fragment4").setFin(true));
-        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(WebSocketConstants.NORMAL)));
+        send.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
     
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(policy).asBuffer(send);
@@ -515,7 +515,7 @@ public class ParserTest
             send.add(frame);
             continuation = true;
         }
-        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(WebSocketConstants.NORMAL)));
+        send.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
     
         WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
@@ -545,7 +545,7 @@ public class ParserTest
         send.add(new Frame(OpCode.CONTINUATION).setPayload(",f4").setFin(false));
         send.add(new Frame(OpCode.PING).setPayload("ping-2"));
         send.add(new Frame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
-        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(WebSocketConstants.NORMAL)));
+        send.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
     
         WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
@@ -838,7 +838,7 @@ public class ParserTest
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.PONG).setPayload("ping"));
         send.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
-        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(WebSocketConstants.NORMAL)));
+        send.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
 
         WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
@@ -1338,7 +1338,7 @@ public class ParserTest
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("fragment1").setFin(false));
         send.add(new Frame(OpCode.TEXT).setPayload("fragment2").setFin(true)); // bad frame, must be continuation
-        send.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(WebSocketConstants.NORMAL)));
+        send.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(policy).asBuffer(send);
@@ -1438,7 +1438,7 @@ public class ParserTest
         text.setPayload(ByteBuffer.wrap(payload));
         text.setMask(Hex.asByteArray("11223344"));
         frames.add(text);
-        frames.add(new Frame(OpCode.CLOSE).setPayload(new CloseStatus(WebSocketConstants.NORMAL)));
+        frames.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
     
         WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         WebSocketPolicy clientPolicy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
@@ -1601,6 +1601,6 @@ public class ParserTest
         capture.assertHasFrame(OpCode.CLOSE,1);
         Frame frame = capture.framesQueue.peek();
         Assert.assertThat("CloseFrame",frame.getOpCode(),is(OpCode.CLOSE));
-        Assert.assertThat(frame.getCloseStatus().getCode(),is(1014));
+        Assert.assertThat(new CloseStatus(frame.getPayload()).getCode(),is(1014));
     }
 }

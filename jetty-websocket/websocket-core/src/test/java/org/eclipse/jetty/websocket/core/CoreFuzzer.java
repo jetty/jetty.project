@@ -141,7 +141,7 @@ public class CoreFuzzer implements AutoCloseable
             if (LOG.isDebugEnabled())
             {
                 if (actual.getOpCode() == OpCode.CLOSE)
-                    LOG.debug("{} CloseFrame: {}", prefix, CloseStatus.toCloseStatus(actual.getPayload()));
+                    LOG.debug("{} CloseFrame: {}", prefix, new CloseStatus(actual.getPayload()));
                 else
                     LOG.debug("{} {}", prefix, actual);
             }
@@ -150,8 +150,8 @@ public class CoreFuzzer implements AutoCloseable
             prefix += "(op=" + actual.getOpCode() + "," + (actual.isFin() ? "" : "!") + "fin)";
             if (expected.getOpCode() == OpCode.CLOSE)
             {
-                CloseStatus expectedClose = CloseStatus.toCloseStatus(expected.getPayload());
-                CloseStatus actualClose = CloseStatus.toCloseStatus(actual.getPayload());
+                CloseStatus expectedClose = new CloseStatus(expected.getPayload());
+                CloseStatus actualClose = new CloseStatus(actual.getPayload());
                 assertThat(prefix + ".code", actualClose.getCode(), Matchers.is(expectedClose.getCode()));
             }
             else if (expected.hasPayload())

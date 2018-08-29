@@ -94,12 +94,12 @@ public class TextStreamTest
     
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(data)));
-        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         ByteBuffer expectedMessage = DataUtils.copyOf(data);
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(expectedMessage));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
     
         try (Fuzzer fuzzer = server.newNetworkFuzzer("/echo"))
         {
@@ -116,7 +116,7 @@ public class TextStreamTest
         
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(data)));
-        send.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         // make copy of raw data (to avoid client masking during send)
         byte[] expectedData = new byte[data.length];
@@ -128,7 +128,7 @@ public class TextStreamTest
         List<Frame> expect = new ArrayList<>();
         expect.add(new Frame(OpCode.TEXT).setPayload(frame1).setFin(false));
         expect.add(new Frame(OpCode.CONTINUATION).setPayload(frame2).setFin(true));
-        expect.add(new Frame(OpCode.CLOSE).setPayload(CloseStatus.NORMAL));
+        expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         try (Fuzzer fuzzer = server.newNetworkFuzzer("/echo"))
         {

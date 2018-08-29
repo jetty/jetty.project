@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.frames;
 
-import static org.hamcrest.Matchers.is;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.toolchain.test.Hex;
@@ -33,6 +31,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class WebSocketFrameTest
 {
@@ -85,7 +85,7 @@ public class WebSocketFrameTest
     @Test
     public void testStrictValidClose()
     {
-        Frame frame = new Frame(OpCode.CLOSE).setPayload(new CloseStatus(WebSocketConstants.NORMAL));
+        Frame frame = CloseStatus.toFrame(WebSocketConstants.NORMAL);
         ByteBuffer actual = generateWholeFrame(strictGenerator,frame);
         String expected = "880203E8";
         assertFrameHex("Strict Valid Close Frame",expected,actual);
