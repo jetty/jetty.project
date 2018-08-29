@@ -59,10 +59,12 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -74,12 +76,12 @@ import static org.junit.Assert.assertThat;
 @RunWith(Parameterized.class)
 public class HttpInputIntegrationTest
 {
-    
+
     enum Mode { BLOCKING, ASYNC_DISPATCHED, ASYNC_OTHER_DISPATCHED, ASYNC_OTHER_WAIT }
     public final static String EOF = "__EOF__";
     public final static String DELAY = "__DELAY__";
     public final static String ABORT = "__ABORT__";
-    
+
     private static Server __server;
     private static HttpConfiguration __config;
     private static HttpConfiguration __sslConfig;
@@ -342,10 +344,13 @@ public class HttpInputIntegrationTest
         assertThat(response,Matchers.containsString("read="+_read));
         assertThat(response,Matchers.containsString("sum="+sum));
     }
-    
+
     @Test
     public void testStress() throws Exception
     {
+        // JDK 11's SSLSocket is not reliable enough to run this test.
+        Assume.assumeThat(JavaVersion.VERSION.getPlatform(), Matchers.lessThan(11));
+
         System.err.printf("[%d] STRESS c=%s, m=%s, delayDispatch=%b delayInFrame=%s content-length:%d expect=%d read=%d content:%s%n",_id,_client.getSimpleName(),_mode,__config.isDelayDispatchUntilContent(),_delay,_length,_status,_read,_send);
 
         int sum=0;
