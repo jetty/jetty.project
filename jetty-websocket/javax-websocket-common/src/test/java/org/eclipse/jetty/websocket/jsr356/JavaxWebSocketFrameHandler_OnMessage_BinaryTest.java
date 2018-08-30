@@ -52,7 +52,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJav
         
         // This invocation is the same for all tests
         ByteBuffer byteBuffer = ByteBuffer.wrap("Hello World".getBytes(StandardCharsets.UTF_8));
-        localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload(byteBuffer).setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.BINARY).setPayload(byteBuffer).setFin(true), Callback.NOOP);
         String event = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("Event", event, eventMatcher);
     }

@@ -80,7 +80,7 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
     }
 
     private static final Logger LOG = Log.getLogger(WebSocketCoreClientUpgradeRequest.class);
-    protected final CompletableFuture<FrameHandler.Channel> fut;
+    protected final CompletableFuture<FrameHandler.CoreSession> fut;
     private final WebSocketCoreClient wsClient;
     private List<UpgradeListener> upgradeListeners = new ArrayList<>();
     /** Offered Extensions */
@@ -177,7 +177,7 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
         super.send(listener);
     }
 
-    public CompletableFuture<FrameHandler.Channel> sendAsync()
+    public CompletableFuture<FrameHandler.CoreSession> sendAsync()
     {
         send(this);
         return fut;

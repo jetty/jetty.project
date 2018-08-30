@@ -125,7 +125,7 @@ public class OnCloseTest
         frameHandler.onOpen(new DummyChannel());
 
         // Execute onClose call
-        frameHandler.onFrame(CloseStatus.toFrame(CloseStatus.NORMAL), Callback.NOOP);
+        frameHandler.onReceiveFrame(CloseStatus.toFrame(CloseStatus.NORMAL), Callback.NOOP);
 
         // Test captured event
         BlockingQueue<String> events = endpoint.events;

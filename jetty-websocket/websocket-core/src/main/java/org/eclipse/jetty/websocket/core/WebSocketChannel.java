@@ -23,12 +23,14 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -47,7 +49,7 @@ import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
  * The Core WebSocket Session.
  *
  */
-public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, Dumpable
+public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSession, Dumpable
 {
     private Logger LOG = Log.getLogger(this.getClass());
 
@@ -56,6 +58,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     private final FrameHandler handler;
     private final ExtensionStack extensionStack;
     private final String subprotocol;
+    private final AttributesMap attributes = new AttributesMap();
+
     
     private WebSocketConnection connection;
 
@@ -143,7 +147,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     public void close(int statusCode, String reason, Callback callback)
     {
         // TODO guard for multiple closes?
-        // TODO truncate extra large reason phrases to fit within limits?
         sendFrame(CloseStatus.toFrame(statusCode, reason), callback, BatchMode.OFF);
     }
 
@@ -283,9 +286,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     }
 
     @Override
-    public void receiveFrame(Frame frame, Callback callback)
+    public void onReceiveFrame(Frame frame, Callback callback)
     {
-        extensionStack.receiveFrame(frame, callback);
+        extensionStack.onReceiveFrame(frame, callback);
     }
 
     @Override
@@ -350,7 +353,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     private class IncomingState extends OpCode.Sequence implements IncomingFrames
     {
         @Override
-        public void receiveFrame(Frame frame, Callback callback)
+        public void onReceiveFrame(Frame frame, Callback callback)
         {
             try
             {
@@ -369,7 +372,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
                         CloseStatus closeStatus = new CloseStatus(frame.getPayload());
                         if (state.onCloseIn(closeStatus))
                         {
-                            handler.onFrame(frame, callback); // handler should know about received frame
+                            handler.onReceiveFrame(frame, callback); // handler should know about received frame
                             handler.onClosed(state.getCloseStatus());
                             connection.close();
                             return;
@@ -395,7 +398,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
                     }
                     
                     // Handle the frame
-                    handler.onFrame(frame, callback);
+                    handler.onReceiveFrame(frame, callback);
                 }
                 else
                 {
@@ -450,5 +453,35 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
     {
         return policy.getBehavior();
     }
+    
+    @Override
+    public void removeAttribute(String name)
+    {
+        attributes.removeAttribute(name);
+    }
 
+    @Override
+    public void setAttribute(String name, Object attribute)
+    {
+        attributes.setAttribute(name,attribute);
+    }
+
+    @Override
+    public Object getAttribute(String name)
+    {
+        return attributes.getAttribute(name);
+    }
+
+    @Override
+    public Enumeration<String> getAttributeNames()
+    {
+        return attributes.getAttributeNames();
+    }
+
+    @Override
+    public void clearAttributes()
+    {
+        attributes.clearAttributes();
+    }
+    
 }

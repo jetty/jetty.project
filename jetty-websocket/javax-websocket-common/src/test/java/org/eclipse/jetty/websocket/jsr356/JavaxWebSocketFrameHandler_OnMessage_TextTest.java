@@ -48,7 +48,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavax
         localEndpoint.onOpen(channel);
         
         ByteBuffer payload = BufferUtil.toBuffer(msg, StandardCharsets.UTF_8);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload(payload).setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload(payload).setFin(true), Callback.NOOP);
     }
 
     private void assertOnMessageInvocation(TrackingSocket socket, Matcher<String> eventMatcher) throws Exception

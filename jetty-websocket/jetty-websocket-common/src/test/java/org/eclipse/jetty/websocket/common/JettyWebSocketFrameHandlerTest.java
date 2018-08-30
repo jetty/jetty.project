@@ -77,7 +77,7 @@ public class JettyWebSocketFrameHandlerTest
 
     private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
     private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-    private FrameHandler.Channel channel = new DummyChannel();
+    private FrameHandler.CoreSession channel = new DummyChannel();
 
     private JettyWebSocketFrameHandler newLocalFrameHandler(Object wsEndpoint)
     {
@@ -118,8 +118,8 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(channel);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello?").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hello?").setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
 
         // Validate Events
         socket.events.assertEvents(
@@ -160,8 +160,8 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(channel);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello Text Stream").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hello Text Stream").setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
 
         // Await completion (of threads)
         socket.streamLatch.await(2, TimeUnit.SECONDS);
@@ -179,11 +179,11 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(channel);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hel").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("lo ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Wor").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("ld").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hel").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("lo ").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("Wor").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("ld").setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
 
         // Await completion (of threads)
         socket.streamLatch.await(2, TimeUnit.SECONDS);
@@ -201,13 +201,13 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(channel);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode()), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode()), Callback.NOOP);
 
         // Validate Events
         socket.events.assertEvents(
@@ -231,13 +231,13 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(channel);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
 
         // Validate Events
         socket.events.assertEvents(
@@ -257,8 +257,8 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(channel);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
         localEndpoint.onError(new RuntimeException("Nothing to see here"));
 
         // Validate Events
@@ -277,13 +277,13 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(channel);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
 
         // Validate Events
         socket.events.assertEvents(
@@ -307,15 +307,15 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(channel);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.PING).setPayload("You there?"), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.PONG).setPayload("You there?"), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.PING).setPayload("You there?"), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.PONG).setPayload("You there?"), Callback.NOOP);
+        localEndpoint.onReceiveFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
+        localEndpoint.onReceiveFrame(CloseStatus.toFrame(StatusCode.NORMAL.getCode(), "Normal"), Callback.NOOP);
 
         // Validate Events
         socket.events.assertEvents(

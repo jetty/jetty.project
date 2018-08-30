@@ -49,7 +49,7 @@ public class FragmentExtension extends AbstractExtension
     }
 
     @Override
-    public void receiveFrame(Frame frame, Callback callback)
+    public void onReceiveFrame(Frame frame, Callback callback)
     {
         nextIncomingFrame(frame, callback);
     }

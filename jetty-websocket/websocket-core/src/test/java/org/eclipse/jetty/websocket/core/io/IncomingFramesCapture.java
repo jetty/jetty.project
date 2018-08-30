@@ -33,7 +33,7 @@ public class IncomingFramesCapture implements IncomingFrames
     public BlockingQueue<Frame> frames = new LinkedBlockingDeque<>();
     
     @Override
-    public void receiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
+    public void onReceiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
     {
         Frame copy = Frame.copy(frame);
         frames.offer(copy);

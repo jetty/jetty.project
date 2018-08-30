@@ -79,7 +79,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
         Parser parser = new Parser(policy, bufferPool, (frame) ->
         {
-            ext.receiveFrame(frame, Callback.NOOP);
+            ext.onReceiveFrame(frame, Callback.NOOP);
             return true;
         });
         parser.configureFromExtensions(Collections.singletonList(ext));
@@ -403,7 +403,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
             public void sendFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback, BatchMode batchMode)
             {
                 LOG.debug("outgoingFrame({})", frame);
-                serverExtension.receiveFrame(frame, callback);
+                serverExtension.onReceiveFrame(frame, callback);
                 callback.succeeded();
             }
         });
@@ -412,7 +412,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         serverExtension.setNextIncomingFrames(new IncomingFrames()
         {
             @Override
-            public void receiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
+            public void onReceiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
             {
                 LOG.debug("incomingFrame({})", frame);
                 try

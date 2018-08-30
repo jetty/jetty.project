@@ -55,9 +55,9 @@ public class WebSocketTest
         TestFrameHandler clientHandler = new TestFrameHandler()
         {
             @Override
-            public void onFrame(Frame frame, Callback callback) throws Exception
+            public void onReceiveFrame(Frame frame, Callback callback)
             {
-                super.onFrame(frame, callback);
+                super.onReceiveFrame(frame, callback);
                 if(frame.getOpCode() == OpCode.CLOSE)
                     getChannel().abort();
             }
@@ -108,7 +108,7 @@ public class WebSocketTest
             };
             request.setSubProtocols("test");
             this.client.start();
-            Future<FrameHandler.Channel> response = client.connect(request);
+            Future<FrameHandler.CoreSession> response = client.connect(request);
             response.get(5, TimeUnit.SECONDS);
         }
 
@@ -138,22 +138,22 @@ public class WebSocketTest
     static class TestFrameHandler implements FrameHandler
     {
         private static Logger LOG = Log.getLogger(TestFrameHandler.class);
-        private Channel channel;
+        private CoreSession channel;
 
-        public Channel getChannel()
+        public CoreSession getChannel()
         {
             return channel;
         }
 
         @Override
-        public void onOpen(Channel channel) throws Exception
+        public void onOpen(CoreSession coreSession) throws Exception
         {
-            LOG.info("onOpen {}", channel);
-            this.channel = channel;
+            LOG.info("onOpen {}", coreSession);
+            this.channel = coreSession;
         }
 
         @Override
-        public void onFrame(Frame frame, Callback callback) throws Exception
+        public void onReceiveFrame(Frame frame, Callback callback)
         {
             LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
             callback.succeeded();

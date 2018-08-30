@@ -40,7 +40,7 @@ public class MessageOutputStream extends OutputStream
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStream.class);
 
-    private final FrameHandler.Channel channel;
+    private final FrameHandler.CoreSession channel;
     private final ByteBufferPool bufferPool;
     private final SharedBlockingCallback blocker;
     private long frameCount;
@@ -50,7 +50,7 @@ public class MessageOutputStream extends OutputStream
     private Callback callback;
     private boolean closed;
 
-    public MessageOutputStream(FrameHandler.Channel channel, int bufferSize, ByteBufferPool bufferPool)
+    public MessageOutputStream(FrameHandler.CoreSession channel, int bufferSize, ByteBufferPool bufferPool)
     {
         this.channel = channel;
         this.bufferPool = bufferPool;

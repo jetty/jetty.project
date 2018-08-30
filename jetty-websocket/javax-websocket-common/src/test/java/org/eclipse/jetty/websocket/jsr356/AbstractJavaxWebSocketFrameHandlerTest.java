@@ -60,7 +60,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
     protected AvailableDecoders decoders;
     protected Map<String, String> uriParams = new HashMap<>();
     protected EndpointConfig endpointConfig;
-    protected FrameHandler.Channel channel = new DummyChannel();
+    protected FrameHandler.CoreSession channel = new DummyChannel();
     
     public AbstractJavaxWebSocketFrameHandlerTest()
     {

@@ -64,7 +64,7 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void receiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
+    public void onReceiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
     {
         saveFrame(frame,false);
         try

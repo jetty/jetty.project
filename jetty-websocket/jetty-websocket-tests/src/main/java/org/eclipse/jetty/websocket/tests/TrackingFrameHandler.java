@@ -87,13 +87,13 @@ public class TrackingFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onOpen(Channel channel) throws Exception
+    public void onOpen(CoreSession coreSession) throws Exception
     {
         openLatch.countDown();
     }
 
     @Override
-    public void onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback) throws Exception
+    public void onReceiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
     {
         framesQueue.offer(Frame.copy(frame));
         callback.succeeded();

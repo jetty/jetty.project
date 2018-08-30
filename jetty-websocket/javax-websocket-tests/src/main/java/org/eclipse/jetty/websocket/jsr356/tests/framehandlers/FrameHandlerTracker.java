@@ -45,9 +45,9 @@ public class FrameHandlerTracker extends AbstractWholeMessageHandler
     }
 
     @Override
-    public void onOpen(Channel channel) throws Exception
+    public void onOpen(CoreSession coreSession) throws Exception
     {
-        super.onOpen(channel);
+        super.onOpen(coreSession);
         openLatch.countDown();
     }
 

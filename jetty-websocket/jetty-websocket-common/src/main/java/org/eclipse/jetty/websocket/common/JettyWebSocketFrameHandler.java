@@ -140,7 +140,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onFrame(Frame frame, Callback callback) throws Exception
+    public void onReceiveFrame(Frame frame, Callback callback)
     {
         // Send to raw frame handling on user side (eg: WebSocketFrameListener)
         if (frameHandle != null)
@@ -179,9 +179,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onOpen(Channel channel) throws Exception
+    public void onOpen(CoreSession coreSession) throws Exception
     {
-        JettyWebSocketRemoteEndpoint remote = new JettyWebSocketRemoteEndpoint(channel);
+        JettyWebSocketRemoteEndpoint remote = new JettyWebSocketRemoteEndpoint(coreSession);
         session = new WebSocketSessionImpl(container, policy, remote, handshakeRequest, handshakeResponse);
 
         frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);

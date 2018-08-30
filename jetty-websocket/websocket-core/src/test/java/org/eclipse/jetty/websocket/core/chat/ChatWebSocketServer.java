@@ -85,27 +85,27 @@ public class ChatWebSocketServer implements FrameHandler
 
     private static Logger LOG = Log.getLogger(ChatWebSocketServer.class);
 
-    private Channel channel;
-    private Set<Channel> channelSet;
+    private CoreSession channel;
+    private Set<CoreSession> channelSet;
 
-    public ChatWebSocketServer(Set<Channel> channels)
+    public ChatWebSocketServer(Set<CoreSession> channels)
     {
         channelSet = channels;
     }
 
     @Override
-    public void onOpen(Channel channel) throws Exception
+    public void onOpen(CoreSession coreSession) throws Exception
     {
-        LOG.info("onOpen {}",channel);
-        this.channel = channel;
-        this.channelSet.add(channel);
+        LOG.info("onOpen {}",coreSession);
+        this.channel = coreSession;
+        this.channelSet.add(coreSession);
     }
 
     @Override
-    public void onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback) throws Exception
+    public void onReceiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
     {
         String message = BufferUtil.toString(frame.getPayload());
-        for (Channel channel : channelSet)
+        for (CoreSession channel : channelSet)
         {
             LOG.info("Sending Message: " + message);
             channel.sendFrame(new Frame(OpCode.TEXT).setPayload(message), Callback.NOOP, BatchMode.AUTO);

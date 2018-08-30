@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 
 public class CoreUtils
 {
-    public static void close(FrameHandler.Channel channel, long timeout, TimeUnit timeoutUnit) throws InterruptedException, ExecutionException, TimeoutException
+    public static void close(FrameHandler.CoreSession channel, long timeout, TimeUnit timeoutUnit) throws InterruptedException, ExecutionException, TimeoutException
     {
         if(channel == null)
             return;

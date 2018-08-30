@@ -207,9 +207,9 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     }
 
     @Override
-    public void onOpen(Channel channel) throws Exception
+    public void onOpen(CoreSession coreSession) throws Exception
     {
-        session = new JavaxWebSocketSession(container, channel, this, handshakeRequest, handshakeResponse, id, endpointConfig);
+        session = new JavaxWebSocketSession(container, coreSession, this, handshakeRequest, handshakeResponse, id, endpointConfig);
 
         openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
         closeHandle = InvokerUtils.bindTo(closeHandle, session);

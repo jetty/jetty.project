@@ -27,9 +27,9 @@ public abstract class AbstractPartialFrameHandler extends AbstractFrameTypeHandl
     protected byte dataType = -1;
 
     @Override
-    public final /* prevent override */ void onFrame(Frame frame, Callback callback) throws Exception
+    public final /* prevent override */ void onReceiveFrame(Frame frame, Callback callback)
     {
-        super.onFrame(frame, callback);
+        super.onReceiveFrame(frame, callback);
         if (frame.isFin() && !frame.isControlFrame())
             dataType = -1;
     }

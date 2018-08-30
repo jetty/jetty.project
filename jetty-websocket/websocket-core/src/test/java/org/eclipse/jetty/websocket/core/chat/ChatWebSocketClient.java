@@ -87,7 +87,7 @@ public class ChatWebSocketClient implements FrameHandler
 
     private URI baseWebsocketUri;
     private WebSocketCoreClient client;
-    private Channel channel;
+    private CoreSession channel;
     private String name;
 
     public ChatWebSocketClient(String hostname, int port, String userAgent) throws Exception
@@ -113,21 +113,21 @@ public class ChatWebSocketClient implements FrameHandler
         };
         request.setSubProtocols("chat");
         
-        Future<FrameHandler.Channel> response = client.connect(request);
+        Future<FrameHandler.CoreSession> response = client.connect(request);
 
         response.get(5, TimeUnit.SECONDS);
                 
     }
 
     @Override
-    public void onOpen(Channel channel) throws Exception
+    public void onOpen(CoreSession coreSession) throws Exception
     {
-        LOG.info("onOpen {}",channel);
-        this.channel = channel;
+        LOG.info("onOpen {}",coreSession);
+        this.channel = coreSession;
     }
 
     @Override
-    public void onFrame(Frame frame, Callback callback) throws Exception
+    public void onReceiveFrame(Frame frame, Callback callback)
     {
         System.out.println(BufferUtil.toString(frame.getPayload()));
         callback.succeeded();

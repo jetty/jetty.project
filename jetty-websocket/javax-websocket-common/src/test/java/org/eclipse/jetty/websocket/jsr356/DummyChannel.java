@@ -19,9 +19,11 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.net.SocketAddress;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -29,8 +31,10 @@ import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
-public class DummyChannel implements FrameHandler.Channel
+public class DummyChannel implements FrameHandler.CoreSession
 {
+    AttributesMap attributes = new AttributesMap();
+    
     @Override
     public String getSubprotocol()
     {
@@ -102,4 +106,35 @@ public class DummyChannel implements FrameHandler.Channel
     public void close(int statusCode, String reason, Callback callback)
     {
     }
+
+    @Override
+    public void removeAttribute(String name)
+    {
+        attributes.removeAttribute(name);
+    }
+
+    @Override
+    public void setAttribute(String name, Object attribute)
+    {
+        attributes.setAttribute(name,attribute);
+    }
+
+    @Override
+    public Object getAttribute(String name)
+    {
+        return attributes.getAttribute(name);
+    }
+
+    @Override
+    public Enumeration<String> getAttributeNames()
+    {
+        return attributes.getAttributeNames();
+    }
+
+    @Override
+    public void clearAttributes()
+    {
+        attributes.clearAttributes();
+    }
+
 }

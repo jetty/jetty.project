@@ -104,10 +104,10 @@ public class LargeContainerTest
                 client.start();
 
                 FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-                Future<FrameHandler.Channel> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echo/large"));
+                Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echo/large"));
 
                 // wait for connect
-                FrameHandler.Channel channel = clientConnectFuture.get(5, TimeUnit.SECONDS);
+                FrameHandler.CoreSession channel = clientConnectFuture.get(5, TimeUnit.SECONDS);
                 try
                 {
                     // The message size should be bigger than default, but smaller than the limit that LargeEchoSocket specifies

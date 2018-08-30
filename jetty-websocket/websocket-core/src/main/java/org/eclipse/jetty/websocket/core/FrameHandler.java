@@ -23,6 +23,7 @@ import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.frames.Frame;
@@ -34,7 +35,7 @@ import org.eclipse.jetty.websocket.core.frames.Frame;
  * This is the receiver of Parsed Frames.
  * </p>
  */
-public interface FrameHandler
+public interface FrameHandler extends IncomingFrames
 {
     // TODO: have conversation about "throws Exception" vs "throws WebSocketException" vs "throws Throwable" in below signatures.
 
@@ -45,19 +46,18 @@ public interface FrameHandler
      *     FrameHandler can write during this call, but will not receive frames until
      *     the onOpen() completes.
      * </p>
-     * @param channel the channel associated with this connection.
+     * @param coreSession the channel associated with this connection.
      * @throws Exception if unable to open. TODO: will close the connection (optionally choosing close status code based on WebSocketException type)?
      */
-    void onOpen(Channel channel) throws Exception;
+    void onOpen(CoreSession coreSession) throws Exception;
 
     /**
      * Receiver of all DATA Frames (Text, Binary, Continuation), and all CONTROL Frames (Ping, Pong, Close)
 
      * @param frame the raw frame
      * @param callback the callback to indicate success in processing frame (or failure)
-     * @throws Exception if unable to process the frame.  TODO: will close the connection (optionally choosing close status code based on WebSocketException type)?
      */
-    void onFrame(Frame frame, Callback callback) throws Exception;
+    void onReceiveFrame(Frame frame, Callback callback);
 
     /**
      * This is the Close Handshake Complete event.
@@ -82,7 +82,7 @@ public interface FrameHandler
     /**
      * Represents the outgoing Frames.
      */
-    interface Channel extends OutgoingFrames // TODO: want AutoCloseable (easier testing)
+    interface CoreSession extends OutgoingFrames, Attributes // TODO: want AutoCloseable (easier testing)
     {
         /**
          * TODO: might be redundant (evaluate API usage, possible to access from HandshakeResponse concepts)
@@ -122,6 +122,9 @@ public interface FrameHandler
          */
         void abort();
         
+        /**
+         * @return Client or Server behaviour
+         */
         WebSocketBehavior getBehavior();
 
         /**
@@ -148,6 +151,9 @@ public interface FrameHandler
          */
         SocketAddress getRemoteAddress();
 
+        /**
+         * @return True if the websocket is open outbound
+         */
         boolean isOpen();
 
         // TODO: possible configurable for AsyncSendTimeout (JSR356-ism for async write)
@@ -198,6 +204,5 @@ public interface FrameHandler
         void close(int statusCode, String reason, Callback callback);
     }
 
-    // FIXED: Want access to common ByteBufferPool - negotiator has getBufferPool() now
     // TODO: Want access to common Executor used by core for reuse in APIs (either read-only, or pushed into core) - connection has Executor now
 }

@@ -197,7 +197,7 @@ public class AutobahnWebSocketClient
     {
         URI wsUri = baseWebsocketUri.resolve("/getCaseCount");
         GetCaseCountHandler onCaseCount = new GetCaseCountHandler();
-        Future<FrameHandler.Channel> response = client.connect(onCaseCount, wsUri);
+        Future<FrameHandler.CoreSession> response = client.connect(onCaseCount, wsUri);
 
         if (waitForUpgrade(wsUri, response))
         {
@@ -216,7 +216,7 @@ public class AutobahnWebSocketClient
         log.debug("next uri - {}", wsUri);
         EchoHandler onEchoMessage = new EchoHandler(caseNumber);
 
-        Future<FrameHandler.Channel> response = client.connect(onEchoMessage, wsUri);
+        Future<FrameHandler.CoreSession> response = client.connect(onEchoMessage, wsUri);
 
         if (waitForUpgrade(wsUri, response))
         {
@@ -240,7 +240,7 @@ public class AutobahnWebSocketClient
     {
         URI wsUri = baseWebsocketUri.resolve("/updateReports?agent=" + UrlEncoded.encodeString(userAgent));
         UpdateReportsHandler onUpdateReports = new UpdateReportsHandler();
-        Future<FrameHandler.Channel> response = client.connect(onUpdateReports, wsUri);
+        Future<FrameHandler.CoreSession> response = client.connect(onUpdateReports, wsUri);
         response.get(5, TimeUnit.SECONDS);
         onUpdateReports.awaitClose();
     }
@@ -250,7 +250,7 @@ public class AutobahnWebSocketClient
         log.info(String.format(format, args));
     }
 
-    private boolean waitForUpgrade(URI wsUri, Future<FrameHandler.Channel> response) throws InterruptedException
+    private boolean waitForUpgrade(URI wsUri, Future<FrameHandler.CoreSession> response) throws InterruptedException
     {
         try
         {

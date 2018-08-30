@@ -49,7 +49,7 @@ public abstract class AbstractClientSessionTest
         HandshakeResponse handshakeResponse = new HandshakeResponseAdapter();
         JavaxWebSocketFrameHandler frameHandler =
                 container.newFrameHandler(websocketPojo, container.getPolicy(), handshakeRequest, handshakeResponse, null);
-        FrameHandler.Channel channel = new DummyChannel();
+        FrameHandler.CoreSession channel = new DummyChannel();
         String id = "dummy";
         EndpointConfig endpointConfig = null;
         session = new JavaxWebSocketSession(container,

@@ -236,7 +236,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         String payload = "Are you there?";
         org.eclipse.jetty.websocket.core.frames.Frame ping = new Frame(OpCode.PING).setPayload(payload);
-        ext.receiveFrame(ping, Callback.NOOP);
+        ext.onReceiveFrame(ping, Callback.NOOP);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);
@@ -282,7 +282,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         {
             Frame frame = new Frame(OpCode.TEXT).setPayload(q);
             frame.setRsv1(false); // indication to extension that frame is not compressed (ie: a normal frame)
-            ext.receiveFrame(frame, Callback.NOOP);
+            ext.onReceiveFrame(frame, Callback.NOOP);
         }
 
         int len = quote.size();

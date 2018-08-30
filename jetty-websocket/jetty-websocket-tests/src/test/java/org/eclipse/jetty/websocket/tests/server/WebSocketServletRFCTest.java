@@ -118,9 +118,9 @@ public class WebSocketServletRFCTest
 
         URI wsUri = server.getWsUri();
 
-        Future<FrameHandler.Channel> clientConnectFuture = client.connect(clientTracking, wsUri);
+        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientTracking, wsUri);
 
-        FrameHandler.Channel channel = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         try
         {
 
@@ -208,9 +208,9 @@ public class WebSocketServletRFCTest
         URI wsUri = server.getWsUri();
 
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientTracking);
-        Future<FrameHandler.Channel> channelFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> channelFuture = client.connect(upgradeRequest);
 
-        FrameHandler.Channel channel = channelFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = channelFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
         try (StacklessLogging ignored = new StacklessLogging(RFC6455Socket.class))
         {
@@ -245,9 +245,9 @@ public class WebSocketServletRFCTest
         upgradeRequest.header("sec-websocket-origin", wsUri.toASCIIString());
         upgradeRequest.header("sec-websocket-version", "13");
 
-        Future<FrameHandler.Channel> channelFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> channelFuture = client.connect(upgradeRequest);
 
-        FrameHandler.Channel channel = channelFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = channelFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         confirmEcho(channel, clientTracking);
     }
 
@@ -272,13 +272,13 @@ public class WebSocketServletRFCTest
         upgradeRequest.header("SEC-WEBSOCKET-ORIGIN", wsUri.toASCIIString());
         upgradeRequest.header("SEC-WEBSOCKET-VERSION", "13");
 
-        Future<FrameHandler.Channel> channelFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> channelFuture = client.connect(upgradeRequest);
 
-        FrameHandler.Channel channel = channelFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = channelFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         confirmEcho(channel, clientTracking);
     }
 
-    protected void confirmEcho(FrameHandler.Channel channel, TrackingFrameHandler clientTracking) throws InterruptedException, ExecutionException, TimeoutException
+    protected void confirmEcho(FrameHandler.CoreSession channel, TrackingFrameHandler clientTracking) throws InterruptedException, ExecutionException, TimeoutException
     {
         try
         {
@@ -314,9 +314,9 @@ public class WebSocketServletRFCTest
             }
         };
 
-        Future<FrameHandler.Channel> channelFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> channelFuture = client.connect(upgradeRequest);
 
-        FrameHandler.Channel channel = channelFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = channelFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
         byte buf[] = new byte[]{(byte) 0xC2, (byte) 0xC3};
 

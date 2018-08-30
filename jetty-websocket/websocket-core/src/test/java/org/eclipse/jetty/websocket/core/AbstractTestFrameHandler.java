@@ -42,17 +42,17 @@ public class AbstractTestFrameHandler implements FrameHandler
     private Frame.Type partial;
     private Utf8StringBuilder utf8;
     private ByteBuffer byteBuffer;
-    private FrameHandler.Channel channel;
+    private FrameHandler.CoreSession channel;
     
-    public FrameHandler.Channel getChannel()
+    public FrameHandler.CoreSession getChannel()
     {
         return channel;
     }
     
     @Override
-    public void onOpen(Channel channel)
+    public void onOpen(CoreSession coreSession)
     {
-        this.channel = channel;
+        this.channel = coreSession;
         onOpen();
     }
     
@@ -62,7 +62,7 @@ public class AbstractTestFrameHandler implements FrameHandler
     
 
     @Override
-    public void onFrame(Frame frame, Callback callback)
+    public void onReceiveFrame(Frame frame, Callback callback)
     {
         byte opcode = frame.getOpCode();
         if (LOG.isDebugEnabled())

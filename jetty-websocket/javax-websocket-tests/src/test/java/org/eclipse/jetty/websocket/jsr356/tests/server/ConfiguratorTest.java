@@ -439,9 +439,9 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
         upgradeRequest.addExtensions("identity");
-        Future<FrameHandler.Channel> clientConnectFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             channel.sendFrame(new Frame(OpCode.TEXT).setPayload(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS), Callback.NOOP, BatchMode.OFF);
@@ -463,9 +463,9 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
         upgradeRequest.addExtensions("identity");
-        Future<FrameHandler.Channel> clientConnectFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             channel.sendFrame(new Frame(OpCode.TEXT).setPayload("NegoExts"), Callback.NOOP, BatchMode.OFF);
@@ -487,9 +487,9 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
         upgradeRequest.header("X-Dummy", "Bogus");
-        Future<FrameHandler.Channel> clientConnectFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             channel.sendFrame(new Frame(OpCode.TEXT).setPayload("X-Dummy"), Callback.NOOP, BatchMode.OFF);
@@ -511,9 +511,9 @@ public class ConfiguratorTest
         // First Request
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
-        Future<FrameHandler.Channel> clientConnectFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             // first request has this UserProperty
@@ -558,9 +558,9 @@ public class ConfiguratorTest
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
-        Future<FrameHandler.Channel> clientConnectFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             SocketAddress expectedLocal = channel.getLocalAddress();
@@ -600,7 +600,7 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("status");
-        Future<FrameHandler.Channel> clientConnectFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [\"status\"]"));
     }
@@ -619,7 +619,7 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("echo", "chat", "status");
-        Future<FrameHandler.Channel> clientConnectFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
     }
@@ -638,7 +638,7 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
         upgradeRequest.header("sec-websocket-protocol", "echo, chat, status");
-        Future<FrameHandler.Channel> clientConnectFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
     }
@@ -658,15 +658,15 @@ public class ConfiguratorTest
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
         // header name is not to spec (case wise)
         upgradeRequest.header("Sec-Websocket-Protocol", "echo, chat, status");
-        Future<FrameHandler.Channel> clientConnectFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [\"echo\",\"chat\",\"status\"]"));
     }
 
-    protected void assertProtocols(FrameHandlerTracker clientSocket, Future<FrameHandler.Channel> clientConnectFuture, Matcher<String> responseMatcher)
+    protected void assertProtocols(FrameHandlerTracker clientSocket, Future<FrameHandler.CoreSession> clientConnectFuture, Matcher<String> responseMatcher)
             throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException
     {
-        FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             channel.sendFrame(new Frame(OpCode.TEXT).setPayload("getProtocols"), Callback.NOOP, BatchMode.OFF);
@@ -691,9 +691,9 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         WebSocketCoreClientUpgradeRequest upgradeRequest = new WebSocketCoreClientUpgradeRequest.Static(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("gmt");
-        Future<FrameHandler.Channel> clientConnectFuture = client.connect(upgradeRequest);
+        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.Channel channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             channel.sendFrame(new Frame(OpCode.TEXT).setPayload("2016-06-20T14:27:44"), Callback.NOOP, BatchMode.OFF);

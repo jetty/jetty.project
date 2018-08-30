@@ -78,7 +78,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         this.objectFactory = new DecoratedObjectFactory();
     }
 
-    public CompletableFuture<FrameHandler.Channel> connect(FrameHandler frameHandler, URI wsUri) throws IOException
+    public CompletableFuture<FrameHandler.CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
     {
         WebSocketCoreClientUpgradeRequest request = new WebSocketCoreClientUpgradeRequest(this, wsUri) {
             @Override
@@ -90,7 +90,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         return connect(request);
     }
 
-    public CompletableFuture<FrameHandler.Channel> connect(WebSocketCoreClientUpgradeRequest request) throws IOException
+    public CompletableFuture<FrameHandler.CoreSession> connect(WebSocketCoreClientUpgradeRequest request) throws IOException
     {
         if (!isStarted())
         {

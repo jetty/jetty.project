@@ -100,11 +100,11 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     }
 
     @Override
-    public void receiveFrame(Frame frame, Callback callback)
+    public void onReceiveFrame(Frame frame, Callback callback)
     {
         if (incoming==null)
             throw new IllegalStateException();
-        incoming.receiveFrame(frame, callback);
+        incoming.onReceiveFrame(frame, callback);
     }
 
     /**

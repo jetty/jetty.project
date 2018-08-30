@@ -64,7 +64,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
 
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
     private final JavaxWebSocketContainer container;
-    private final FrameHandler.Channel channel;
+    private final FrameHandler.CoreSession channel;
     private final HandshakeRequest handshakeRequest;
     private final HandshakeResponse upgradeResponse;
     private final JavaxWebSocketFrameHandler frameHandler;
@@ -81,7 +81,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     private JavaxWebSocketBasicRemote basicRemote;
 
     public JavaxWebSocketSession(JavaxWebSocketContainer container,
-                                 FrameHandler.Channel channel,
+                                 FrameHandler.CoreSession channel,
                                  JavaxWebSocketFrameHandler frameHandler,
                                  HandshakeRequest handshakeRequest,
                                  HandshakeResponse handshakeResponse,

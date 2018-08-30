@@ -34,11 +34,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket.api.RemoteEndpoint
 {
-    private final FrameHandler.Channel channel;
+    private final FrameHandler.CoreSession channel;
     private byte messageType = -1;
     private final SharedBlockingCallback blocker = new SharedBlockingCallback();
 
-    public JettyWebSocketRemoteEndpoint(FrameHandler.Channel channel)
+    public JettyWebSocketRemoteEndpoint(FrameHandler.CoreSession channel)
     {
         this.channel = channel;
     }
@@ -79,7 +79,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         }
     }
 
-    protected FrameHandler.Channel getChannel()
+    protected FrameHandler.CoreSession getChannel()
     {
         return channel;
     }

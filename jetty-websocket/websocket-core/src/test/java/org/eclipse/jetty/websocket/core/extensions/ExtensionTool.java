@@ -58,7 +58,7 @@ public class ExtensionTool
             this.capture = new IncomingFramesCapture();
             this.parser = new Parser(policy, new MappedByteBufferPool(), frame ->
             {
-                ext.receiveFrame(frame, Callback.NOOP);
+                ext.onReceiveFrame(frame, Callback.NOOP);
                 return true;
             });
         }

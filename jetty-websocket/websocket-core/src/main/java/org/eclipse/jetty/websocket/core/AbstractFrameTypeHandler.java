@@ -30,18 +30,18 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
  */
 public abstract class AbstractFrameTypeHandler implements FrameHandler
 {
-    protected Channel channel;
+    protected CoreSession channel;
     protected Throwable errorCause;
     protected CloseStatus closeStatus;
 
     @Override
-    public void onOpen(Channel channel) throws Exception
+    public void onOpen(CoreSession coreSession) throws Exception
     {
-        this.channel = channel;
+        this.channel = coreSession;
     }
 
     @Override
-    public void onFrame(Frame frame, Callback callback) throws Exception
+    public void onReceiveFrame(Frame frame, Callback callback)
     {
         switch (frame.getOpCode())
         {

@@ -50,7 +50,7 @@ public class MessageWriter extends Writer
             .onUnmappableCharacter(CodingErrorAction.REPORT)
             .onMalformedInput(CodingErrorAction.REPORT);
 
-    private final FrameHandler.Channel channel;
+    private final FrameHandler.CoreSession channel;
     private final SharedBlockingCallback blocker;
     private long frameCount;
     private Frame frame;
@@ -58,7 +58,7 @@ public class MessageWriter extends Writer
     private Callback callback;
     private boolean closed;
 
-    public MessageWriter(FrameHandler.Channel channel, int bufferSize)
+    public MessageWriter(FrameHandler.CoreSession channel, int bufferSize)
     {
         this.channel = channel;
         this.blocker = new SharedBlockingCallback();

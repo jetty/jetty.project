@@ -127,7 +127,7 @@ public abstract class AbstractExtension implements Extension
     protected void nextIncomingFrame(Frame frame, Callback callback)
     {
         log.debug("nextIncomingFrame({})",frame);
-        this.nextIncoming.receiveFrame(frame, callback);
+        this.nextIncoming.onReceiveFrame(frame, callback);
     }
 
     protected void nextOutgoingFrame(Frame frame, Callback callback, BatchMode batchMode)

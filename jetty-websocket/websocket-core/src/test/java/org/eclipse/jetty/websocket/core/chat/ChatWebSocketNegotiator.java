@@ -38,7 +38,7 @@ class ChatWebSocketNegotiator implements WebSocketNegotiator
     final WebSocketExtensionRegistry extensionRegistry;
     final ByteBufferPool bufferPool;
 
-    Set<FrameHandler.Channel> channelSet = Collections.synchronizedSet(new HashSet());
+    Set<FrameHandler.CoreSession> channelSet = Collections.synchronizedSet(new HashSet());
 
     public ChatWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool)
     {

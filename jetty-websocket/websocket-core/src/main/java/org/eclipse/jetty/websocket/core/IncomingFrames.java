@@ -36,8 +36,5 @@ public interface IncomingFrames
      * @param frame the frame to process
      * @param callback the read completion
      */
-    // TODO: rename back to not break existing Custom Extensions
-    // TODO: alternate approach is to leave this for Extensions only to use, not using it websocket-core itself
-    // TODO: a websocket-extensions-api module for a stable API would make sense then.
-    void receiveFrame(Frame frame, Callback callback);
+    void onReceiveFrame(Frame frame, Callback callback);
 }

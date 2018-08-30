@@ -44,11 +44,11 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     private static final Logger LOG = Log.getLogger(JavaxWebSocketRemoteEndpoint.class);
 
     protected final JavaxWebSocketSession session;
-    private final FrameHandler.Channel channel;
+    private final FrameHandler.CoreSession channel;
     protected BatchMode batchMode = BatchMode.OFF; // TODO: should this be defaulted to AUTO instead?
     protected byte messageType = -1;
 
-    protected JavaxWebSocketRemoteEndpoint(JavaxWebSocketSession session, FrameHandler.Channel channel)
+    protected JavaxWebSocketRemoteEndpoint(JavaxWebSocketSession session, FrameHandler.CoreSession channel)
     {
         this.session = session;
         this.channel = channel;

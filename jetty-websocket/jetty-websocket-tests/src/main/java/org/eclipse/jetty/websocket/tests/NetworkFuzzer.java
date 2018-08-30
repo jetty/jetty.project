@@ -96,7 +96,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         this.rawClient.start();
         this.generator = new UnitGenerator(rawClient.getPolicy());
 
-        CompletableFuture<FrameHandler.Channel> futureHandler = this.rawClient.connect(upgradeRequest);
+        CompletableFuture<FrameHandler.CoreSession> futureHandler = this.rawClient.connect(upgradeRequest);
         CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(futureOnCapture, (channel, capture) -> capture);
         this.frameCapture = futureCapture.get(10, TimeUnit.SECONDS);
     }
@@ -247,7 +247,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         private final EndPoint endPoint;
         private final SharedBlockingCallback blockingCallback = new SharedBlockingCallback();
         private final CountDownLatch closedLatch = new CountDownLatch(1);
-        private Channel channel;
+        private CoreSession channel;
 
         public FrameCapture(EndPoint endPoint)
         {
@@ -275,7 +275,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         }
 
         @Override
-        public void onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback) throws Exception
+        public void onReceiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
         {
             if (LOG.isDebugEnabled())
             {
@@ -287,13 +287,13 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         }
 
         @Override
-        public void onOpen(Channel channel) throws Exception
+        public void onOpen(CoreSession coreSession) throws Exception
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("onOpen(): {}", channel);
+                LOG.debug("onOpen(): {}", coreSession);
             }
-            this.channel = channel;
+            this.channel = coreSession;
         }
 
         public void waitUntilClosed()

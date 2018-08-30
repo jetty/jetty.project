@@ -105,10 +105,10 @@ public class OnMessageReturnTest
                 client.start();
 
                 FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-                Future<FrameHandler.Channel> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echoreturn"));
+                Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echoreturn"));
 
                 // wait for connect
-                FrameHandler.Channel channel = clientConnectFuture.get(5, TimeUnit.SECONDS);
+                FrameHandler.CoreSession channel = clientConnectFuture.get(5, TimeUnit.SECONDS);
                 try
                 {
                     // Send message

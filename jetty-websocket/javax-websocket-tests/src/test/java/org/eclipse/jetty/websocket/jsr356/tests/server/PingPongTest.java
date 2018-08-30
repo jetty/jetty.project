@@ -177,14 +177,14 @@ public class PingPongTest
         server.stop();
     }
 
-    private void assertEcho(String endpointPath, Consumer<FrameHandler.Channel> sendAction, String... expectedMsgs) throws Exception
+    private void assertEcho(String endpointPath, Consumer<FrameHandler.CoreSession> sendAction, String... expectedMsgs) throws Exception
     {
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         URI toUri = server.getWsUri().resolve(endpointPath);
 
         // Connect
-        Future<FrameHandler.Channel> futureChannel = client.connect(clientSocket, toUri);
-        FrameHandler.Channel channel = futureChannel.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        Future<FrameHandler.CoreSession> futureChannel = client.connect(clientSocket, toUri);
+        FrameHandler.CoreSession channel = futureChannel.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             // Apply send action

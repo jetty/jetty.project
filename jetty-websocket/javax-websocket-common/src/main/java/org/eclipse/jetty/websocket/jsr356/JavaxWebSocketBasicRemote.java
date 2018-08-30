@@ -41,7 +41,7 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
 {
     private static final Logger LOG = Log.getLogger(JavaxWebSocketBasicRemote.class);
 
-    protected JavaxWebSocketBasicRemote(JavaxWebSocketSession session, FrameHandler.Channel channel)
+    protected JavaxWebSocketBasicRemote(JavaxWebSocketSession session, FrameHandler.CoreSession channel)
     {
         super(session, channel);
     }

@@ -41,7 +41,7 @@ public class IdentityExtension extends AbstractExtension
     }
 
     @Override
-    public void receiveFrame(Frame frame, Callback callback)
+    public void onReceiveFrame(Frame frame, Callback callback)
     {
         // pass through
         nextIncomingFrame(frame, callback);

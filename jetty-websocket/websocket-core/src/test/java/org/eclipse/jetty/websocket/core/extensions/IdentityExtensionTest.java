@@ -49,7 +49,7 @@ public class IdentityExtensionTest extends AbstractExtensionTest
         ext.setNextIncomingFrames(capture);
 
         org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload("hello");
-        ext.receiveFrame(frame, Callback.NOOP);
+        ext.onReceiveFrame(frame, Callback.NOOP);
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.TEXT, 1);

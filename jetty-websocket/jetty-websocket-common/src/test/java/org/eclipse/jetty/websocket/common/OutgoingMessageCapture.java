@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
-public class OutgoingMessageCapture extends DummyChannel implements FrameHandler.Channel
+public class OutgoingMessageCapture extends DummyChannel implements FrameHandler.CoreSession
 {
     private static final Logger LOG = Log.getLogger(OutgoingMessageCapture.class);
 

@@ -198,7 +198,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
 
-        channel.receiveFrame(frame, new Callback()
+        channel.onReceiveFrame(frame, new Callback()
         {
             @Override
             public void succeeded()
