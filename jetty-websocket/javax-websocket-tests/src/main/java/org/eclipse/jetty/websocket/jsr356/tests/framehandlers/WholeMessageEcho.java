@@ -32,13 +32,13 @@ public class WholeMessageEcho extends AbstractWholeMessageHandler
     public void onWholeBinary(ByteBuffer wholeMessage, Callback callback)
     {
         super.onWholeBinary(wholeMessage, callback);
-        channel.sendFrame(new Frame(OpCode.BINARY).setPayload(wholeMessage), callback, BatchMode.OFF);
+        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(wholeMessage), callback, BatchMode.OFF);
     }
 
     @Override
     public void onWholeText(String wholeMessage, Callback callback)
     {
         super.onWholeText(wholeMessage, callback);
-        channel.sendFrame(new Frame(OpCode.TEXT).setPayload(wholeMessage), callback, BatchMode.OFF);
+        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(wholeMessage), callback, BatchMode.OFF);
     }
 }

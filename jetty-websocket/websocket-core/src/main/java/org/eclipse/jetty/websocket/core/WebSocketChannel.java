@@ -52,6 +52,7 @@ import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSession, Dumpable
 {
     private Logger LOG = Log.getLogger(this.getClass());
+    private final static CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
 
     private final WebSocketChannelState state = new WebSocketChannelState();
     private final WebSocketPolicy policy;
@@ -133,7 +134,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void close(Callback callback)
     {
-        sendFrame(new Frame(OpCode.CLOSE), callback, BatchMode.OFF);
+        close(NO_CODE, callback, BatchMode.OFF);
     }
 
     /**
@@ -146,10 +147,51 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void close(int statusCode, String reason, Callback callback)
     {
-        // TODO guard for multiple closes?
-        sendFrame(CloseStatus.toFrame(statusCode, reason), callback, BatchMode.OFF);
+        close(new CloseStatus(statusCode, reason), callback, BatchMode.OFF);
     }
 
+    private void close(CloseStatus closeStatus, Callback callback, BatchMode batchMode)
+    {        
+        // TODO guard for multiple closes?
+        if (state.onCloseOut(closeStatus))
+        {
+            callback = new Callback.Nested(callback)
+            {
+                @Override
+                public void completed()
+                {
+                    try
+                    {
+                        handler.onClosed(state.getCloseStatus());
+                    }
+                    catch(Throwable e)
+                    {
+                        try
+                        {
+                            handler.onError(e);
+                        }
+                        catch(Throwable e2)
+                        {
+                            e.addSuppressed(e2);
+                            LOG.warn(e);
+                        }
+                    }
+                    finally
+                    {
+                        connection.close();
+                    }
+                }
+            };
+        }
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("close({}, {}, {})", closeStatus, callback, batchMode);
+        }
+
+        extensionStack.sendFrame(closeStatus.toFrame(),callback,batchMode);
+    }
+    
     public WebSocketPolicy getPolicy()
     {
         return policy;
@@ -294,47 +336,15 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void sendFrame(Frame frame, Callback callback, BatchMode batchMode) 
     {
-        if (frame.getOpCode() == OpCode.CLOSE)
-        {
-            CloseStatus closeStatus = new CloseStatus(frame.getPayload());
-            if (state.onCloseOut(closeStatus))
-            {
-                callback = new Callback.Nested(callback)
-                {
-                    @Override
-                    public void completed()
-                    {
-                        try
-                        {
-                            handler.onClosed(state.getCloseStatus());
-                        }
-                        catch(Throwable e)
-                        {
-                            try
-                            {
-                                handler.onError(e);
-                            }
-                            catch(Throwable e2)
-                            {
-                                e.addSuppressed(e2);
-                                LOG.warn(e);
-                            }
-                        }
-                        finally
-                        {
-                            connection.close();
-                        }
-                    }
-                };
-            }
-        }
-
         if (LOG.isDebugEnabled())
         {
             LOG.debug("sendFrame({}, {}, {})", frame, callback, batchMode);
         }
 
-        extensionStack.sendFrame(frame,callback,batchMode);
+        if (frame.getOpCode() == OpCode.CLOSE)
+            close(new CloseStatus(frame.getPayload()),callback, batchMode);
+        else
+            extensionStack.sendFrame(frame,callback,batchMode);
     }
 
 

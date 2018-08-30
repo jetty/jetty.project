@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.FrameHandler.CoreSession;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
@@ -33,14 +32,14 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
  */
 public abstract class AbstractFrameTypeHandler implements FrameHandler
 {
-    protected CoreSession channel;
+    protected CoreSession coreSession;
     protected Throwable errorCause;
     protected CloseStatus closeStatus;
 
     @Override
     public void onOpen(CoreSession coreSession) throws Exception
     {
-        this.channel = coreSession;
+        this.coreSession = coreSession;
     }
 
     @Override
@@ -77,7 +76,7 @@ public abstract class AbstractFrameTypeHandler implements FrameHandler
 
     public void onPing(Frame frame, Callback callback)
     {
-        channel.sendFrame(new Frame(OpCode.PONG).setPayload(copyOf(frame.getPayload())), callback, BatchMode.OFF);
+        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(copyOf(frame.getPayload())), callback, BatchMode.OFF);
     }
 
     public void onPong(Frame frame, Callback callback)

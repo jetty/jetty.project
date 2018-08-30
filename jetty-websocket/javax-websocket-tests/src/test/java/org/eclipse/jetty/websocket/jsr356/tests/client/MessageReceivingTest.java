@@ -260,7 +260,7 @@ public class MessageReceivingTest
             for (int i = 0; i < parts.length; i++)
             {
                 if (i > 0)
-                    channel.sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, BatchMode.ON);
+                    coreSession.sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, BatchMode.ON);
                 boolean last = (i >= (parts.length - 1));
                 BatchMode bm = last ? BatchMode.OFF : BatchMode.ON;
                 Frame frame;
@@ -268,7 +268,7 @@ public class MessageReceivingTest
                 else frame = new Frame(OpCode.CONTINUATION);
                 frame.setPayload(BufferUtil.toBuffer(parts[i], UTF_8));
                 frame.setFin(last);
-                channel.sendFrame(frame, Callback.NOOP, bm);
+                coreSession.sendFrame(frame, Callback.NOOP, bm);
             }
             callback.succeeded();
         }
@@ -302,7 +302,7 @@ public class MessageReceivingTest
                 {
                     LOG.debug("segment[{}]: {}", i, frame);
                 }
-                channel.sendFrame(frame, Callback.NOOP, BatchMode.OFF);
+                coreSession.sendFrame(frame, Callback.NOOP, BatchMode.OFF);
             }
             callback.succeeded();
         }
@@ -317,7 +317,7 @@ public class MessageReceivingTest
             {
                 LOG.debug("{}.onWholeBinary({})", EchoWholeMessageFrameHandler.class.getSimpleName(), BufferUtil.toDetailString(wholeMessage));
             }
-            channel.sendFrame(new Frame(OpCode.BINARY).setPayload(wholeMessage), callback, BatchMode.OFF);
+            coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(wholeMessage), callback, BatchMode.OFF);
         }
 
         @Override
@@ -328,7 +328,7 @@ public class MessageReceivingTest
                 LOG.debug("{}.onWholeText({})", EchoWholeMessageFrameHandler.class.getSimpleName(), TextUtil.hint(wholeMessage));
             }
 
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload(wholeMessage), callback, BatchMode.OFF);
+            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(wholeMessage), callback, BatchMode.OFF);
         }
     }
 

@@ -28,18 +28,18 @@ public class FrameEcho extends AbstractFrameTypeHandler
     @Override
     public void onText(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
     {
-        channel.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
+        coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
     }
 
     @Override
     public void onBinary(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
     {
-        channel.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
+        coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
     }
 
     @Override
     public void onContinuation(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
     {
-        channel.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
+        coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
     }
 }

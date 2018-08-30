@@ -185,7 +185,7 @@ public class DecoderReaderManySmallTest
 
                 for (int id = from; id < to; id++)
                 {
-                    channel.sendFrame(new Frame(OpCode.TEXT).setPayload(Integer.toString(id)), Callback.NOOP, BatchMode.OFF);
+                    coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(Integer.toString(id)), Callback.NOOP, BatchMode.OFF);
                 }
             }
         }

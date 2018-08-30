@@ -37,6 +37,6 @@ public class StaticText extends AbstractWholeMessageHandler
     public void onWholeText(String wholeMessage, Callback callback)
     {
         super.onWholeText(wholeMessage, callback);
-        channel.sendFrame(new Frame(OpCode.TEXT).setPayload(staticMessage), callback, BatchMode.OFF);
+        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(staticMessage), callback, BatchMode.OFF);
     }
 }

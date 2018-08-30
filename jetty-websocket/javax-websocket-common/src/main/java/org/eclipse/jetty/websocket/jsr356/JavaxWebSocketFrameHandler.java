@@ -545,7 +545,7 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
             payload = ByteBuffer.allocate(frame.getPayloadLength());
             BufferUtil.put(frame.getPayload(), payload);
         }
-        channel.sendFrame(new Frame(OpCode.PONG).setPayload(payload), Callback.NOOP, BatchMode.OFF);
+        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(payload), Callback.NOOP, BatchMode.OFF);
         callback.succeeded();
     }
 
