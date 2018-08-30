@@ -459,7 +459,7 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             if (_debug)
             {
-                e.printStackTrace();
+                LOG.info( e );
             }
             throw new LoginException("IO Error performing login.");
         }
@@ -467,7 +467,7 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             if (_debug)
             {
-                e.printStackTrace();
+                LOG.info( e );
             }
             throw new LoginException("Error obtaining user info.");
         }
