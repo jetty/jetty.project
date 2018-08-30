@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[optimizing]]
+[[troubleshooting-report]]
 == Reporting Issues In Jetty
 
 include::reporting.adoc[]

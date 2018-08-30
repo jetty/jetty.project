@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[troubleshooting-diagnose]]
+[[troubleshooting-diagnosing]]
 
 === Diagnosing Issues In Jetty
 
@@ -24,7 +24,8 @@ How to check the server if you think there is a problem::
 * checking CPU
 * checking FDs
 * hitting static resources
+** Have known health check URIs that you can hit etc.
 * making new connections
 * creating new sessions
-* getting thread dump(s)  -- DONE
-* getting server dump(s) -- DONE
+* getting thread dump(s)  -- DONE - see dump-tool.adoc
+* getting server dump(s) -- DONE - see dump-tool.adoc

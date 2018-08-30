@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[troubleshooting-analyze]]
+[[troubleshooting-analyzing]]
 
 === Analyzing Issues In Jetty
 

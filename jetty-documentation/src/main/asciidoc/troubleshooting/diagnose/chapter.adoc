@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[optimizing]]
+[[troubleshooting-diagnose]]
 == Diagnose
 
 include::diagnose.adoc[]

@@ -1,0 +1,71 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+[[troubleshooting-support-resources]]
+
+=== Where to Find Help 
+
+One of the best things about Eclipse Jetty is its community.
+Because Jetty is one of the largest and most widely-used servers on the market means there are people from all over the world willing to help.
+On top of that, the team behind the Jetty Project, link:https://webtide.com/[Webtide], includes some of the foremost experts on webserver technology.
+
+[[troubleshooting-jetty-mailing-lists]]
+==== The Jetty Mailing Lists
+
+There are a number of mailing lists in the Jetty Community, which are listed below.
+If you have a question about the use or development of Jetty, these are your go-to resources.
+
+Have you read the documentation, but have a question about how to configure something for your use case?
+Try Jetty-Users.
+Working on an instance of embedded Jetty but can't wrap your head around forwarding HTTPS connections or configuring SSL correctly?
+Try Jetty-Dev.
+
+If you are just simply interested in staying on top of the latest releases from the Jetty team, sign up for the Jetty-Announce mailing list.
+
+* Jetty Developers List
+** Join - https://dev.eclipse.org/mailman/listinfo/jetty-dev
+** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-dev/
+* Jetty Users List
+** Join - https://dev.eclipse.org/mailman/listinfo/jetty-users
+** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-users/
+* Jetty Announcements List
+** Join - https://dev.eclipse.org/mailman/listinfo/jetty-announce
+** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-announce/
+
+[[troubleshooting-stackoverflow]]
+==== Jetty on StackOverflow
+
+Another excellent resource for finding help with Jetty and related technologies is link:https://stackoverflow.com/[StackOverflow].
+StackOverflow is a huge community with several hundred thousand active members dedicated to answering software and technology-related questions and issues.
+There is a dedicated link:https://stackoverflow.com/questions/tagged/jetty[Jetty tag on StackOverflow] where users are able to post questions and receive feedback from both members of the community as well as Jetty developers themselves.
+
+StackOverflow has a high standard for questions and answers.
+Before asking for help, make sure to sure the site to see if the question has been answered before.
+If it hasn't, take the time to compose a well thought out description of your issue and question.
+Include all the information discussed in our section on link:#troubleshooting-report[Reporting Issues.]
+Make sure to state what the problem is, what you have done, and what the expected outcome of what you are attempting is.
+
+[[troubleshooting-jetty-github]]
+==== Jetty on GitHub
+
+The canonical repository of Jetty is located on link:https://github.com/[GitHub.]
+The link:https://github.com/eclipse/jetty.project[Jetty Project repository] includes all of the source code for Jetty, as well as the ability to reach out to the development team about issues.
+You can also find forked repositories that contain examples put together by other members of the community or by the link:https://github.com/jetty-project/embedded-jetty-cookbook[developers themselves].
+
+When reporting an issue on GitHub, make sure to follow all the advice from the section on constructing a link:#troubleshooting-report[good issue report].
+Remember, issues reported on the Jetty GitHub page should center around the Jetty server/client itself; if another technology or software is at fault, there is little the Jetty developers can do to help.

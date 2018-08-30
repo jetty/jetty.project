@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[troubleshooting-report]]
+[[troubleshooting-reporting]]
 
 === Preparing an Issue Report
 
@@ -46,20 +46,38 @@ If you are working with the Jetty distribution, you can quickly check the versio
 $ java -jar ${JETTY.HOME}/start.jar --version
 ----
 
+____
+[NOTE]
+When reporting the Jetty version, it is also very helpful to include the Java version you are using as well.
+Again, be specific - reporting Java 9 is helpful, but Java 9.0.4 is even more so.
+____
+
 ===== When The Issue Occurred
 
 Believe it or not, sometimes it is very helpful to know what time the issue manifested itself.
-Both the sever time and time zone where the server is located can be extremely helpful in diagnosing issues.
+Both the sever time and/or time zone where the server is located can be helpful in diagnosing issues.
 
 ===== Server Status
 
 It is easy enough to report that the sever has crashed, but that offers very in little in the way of practical information.
+Stack traces are an invaluable resource (and definitely include these in their entirety), but so too is knowing how the server was running otherwise.
+Some things to consider include:
 
+* What was the CPU and RAM usage of the server at the time of the crash?
+* How many clients were connected, and what did the number of requests look like?
+* *MORE?*
 
+===== Reproducing the Issue
 
-General good practices when reporting problems::
-* Report version, repeatability, etc. --- DONE
-* Determine and report the time and timezone of the incident ---- DONE
-* For all log/debug reports provided, give a description of when they were taken and the state of the server.
-* Practice these steps on a good working server and save the results for comparison.
-** Have known health check URIs that you can hit etc.
+Paramount to any issue/bug report are steps for reproduction.
+Simply put, if you cannot reproduce the issue, it is unlikely whomever you are asking for help will be able to either.
+Further, reproduction steps should be clear, and include as much relevant information as possible.
+
+Reproduction steps should not only include what happened in the moments up to the issue/crash, but also any related configuration that may have precipitated it.
+For example, if everything was running correctly and you happened to make changes to the allowed SSL Ciphers, you would need to detail exactly what you changed in your issue report.
+Further, when it is possible, try starting a fresh server instance up and applying the same changes, following the same steps, and recording the results.
+Does this instance also crash?
+If so, do you receive the same error?
+
+When possible, it is recommended to share a sample project or code snippet that reproduces the issue.
+link:https://github.com/[GitHub], which is discussed in the section on link:#troubleshooting-support-resources[Where to Find Help], is a free and easy way to upload entire projects that you can share with others for assistance.

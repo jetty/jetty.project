@@ -37,9 +37,6 @@ We have a number of options for people that wish to subscribe to our mailing lis
 * Jetty Announcements List
 ** Join - https://dev.eclipse.org/mailman/listinfo/jetty-announce
 ** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-announce/
-* Jetty Commit List
-** Join - https://dev.eclipse.org/mailman/listinfo/jetty-commit
-** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-commit/
 
 [[community-irc]]
 ==== Internet Relay Chat - IRC

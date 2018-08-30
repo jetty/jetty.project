@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[optimizing]]
+[[troubleshooting-analyze]]
 == Analyze
 
 include::analyze.adoc[]

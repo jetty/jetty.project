@@ -23,3 +23,4 @@
 include::diagnose/chapter.adoc[]
 include::analyze/chapter.adoc[]
 include::report/chapter.adoc[]
+include::common-problems/chapter.adoc[]
