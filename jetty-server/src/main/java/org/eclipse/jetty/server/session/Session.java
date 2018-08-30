@@ -817,15 +817,21 @@ public class Session implements SessionHandler.SessionIf
             id = _sessionData.getId(); //grab the values as they are now
             extendedId = getExtendedId();
         }
-        
-        String newId = _handler._sessionIdManager.renewSessionId(id, extendedId, request); 
-        try (Lock lock = _lock.lock())
+
+        //this shouldn't be necessary to do here EXCEPT that when a null session cache is
+        //used, a new Session object will be created during the call to renew, so this
+        //Session object will not have been modified.
+        String newId = _handler._sessionIdManager.renewSessionId(id, extendedId, request);
+        if (newId != id)
         {
-            checkValidForWrite(); 
-            _sessionData.setId(newId);
-            setExtendedId(_handler._sessionIdManager.getExtendedId(newId, request));
+            try (Lock lock = _lock.lock())
+            {
+                checkValidForWrite(); 
+                _sessionData.setId(newId);
+                setExtendedId(_handler._sessionIdManager.getExtendedId(newId, request));
+            }
+            setIdChanged(true);
         }
-        setIdChanged(true);
     }
        
    
@@ -849,16 +855,30 @@ public class Session implements SessionHandler.SessionIf
         {
             //if the session was not already invalid, or in process of being invalidated, do invalidate
             if (result)
-            {
-                //tell id mgr to remove session from all contexts
-                _handler.getSessionIdManager().invalidateAll(_sessionData.getId());
+            { 
+                try
+                {
+                    _handler.callSessionListeners(this);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Session listener threw exception", e);
+                }
+
+                //call the attribute removed listeners and finally mark it as invalid
+                finishInvalidate();
             }
+
+            //tell id mgr to remove sessions with same id from all contexts
+            _handler.getSessionIdManager().invalidateAll(_sessionData.getId());
         }
         catch (Exception e)
         {
             LOG.warn(e);
         }
     }
+    
+  
 
     /* ------------------------------------------------------------- */
     /** Grab the lock on the session
@@ -950,7 +970,14 @@ public class Session implements SessionHandler.SessionIf
                             Object  old=_sessionData.setAttribute(key,null);
                             if (old == null)
                                 return; //if same as remove attribute but attribute was already removed, no change
-                            callSessionAttributeListeners(key, null, old);
+                            try
+                            {
+                                callSessionAttributeListeners(key, null, old);
+                            }
+                            catch (Exception e)
+                            {
+                                LOG.warn("Session attribute listener threw exception", e);
+                            }
                         }
 
                     }
@@ -959,6 +986,7 @@ public class Session implements SessionHandler.SessionIf
             }
             finally
             {
+                _handler.recordSessionTime(this);
                 // mark as invalid
                 _state = State.INVALID;
             }

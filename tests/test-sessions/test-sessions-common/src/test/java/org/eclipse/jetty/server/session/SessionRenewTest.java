@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -69,6 +70,23 @@ public class SessionRenewTest
         doTest(new RenewalVerifier());
     }
     
+    /**
+     * Tests renewing a session id when sessions are not being cached.
+     * @throws Exception
+     */
+    @Test
+    public void testSessionRenewalReferenceTrackingSessionCache() throws Exception
+    {
+        SessionCacheFactory cacheFactory = new ReferenceTrackingSessionCacheFactory();
+        SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
+        
+        //make the server with a ReferenceTrackingSessionCache
+        _server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        doTest(new RenewalVerifier());
+    }
+   
+    
+    
     
     /**
      * Test renewing session id when sessions are cached
@@ -97,6 +115,7 @@ public class SessionRenewTest
             
         });
     }
+    
     
 
     /**
@@ -142,6 +161,7 @@ public class SessionRenewTest
             assertNotNull(renewSessionCookie);
             assertNotSame(sessionCookie, renewSessionCookie);
             assertTrue(testListener.isCalled());
+            assertEquals(1, testListener.getCalls());
 
             if (verifier != null)
                 verifier.verify(context, TestServer.extractSessionId(sessionCookie), TestServer.extractSessionId(renewSessionCookie));
@@ -178,19 +198,25 @@ public class SessionRenewTest
 
     public static class TestHttpSessionIdListener implements HttpSessionIdListener
     {
-        boolean called = false;
+        AtomicInteger _calls = new AtomicInteger(0);
         
         @Override
         public void sessionIdChanged(HttpSessionEvent event, String oldSessionId)
         {
             assertNotNull(event.getSession());
             assertNotSame(oldSessionId, event.getSession().getId());
-            called = true;
+            _calls.incrementAndGet();
         }
         
         public boolean isCalled()
         {
-            return called;
+            return _calls.get() > 0;
+        }
+        
+        
+        public int getCalls()
+        {
+            return _calls.get();
         }
     }
 

@@ -800,7 +800,7 @@ public class SessionHandler extends ScopedHandler
             _sessionCache.put(id, session);
             _sessionsCreatedStats.increment();  
             
-            if (request.isSecure())
+            if (request != null && request.isSecure())
                 session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
             
             if (_sessionListeners!=null)
@@ -1032,50 +1032,51 @@ public class SessionHandler extends ScopedHandler
         _nodeIdInSessionId=nodeIdInSessionId;
     }
 
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * Remove session from manager
-     * @param id The session to remove
-     * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
-     * {@link SessionIdManager#expireAll(String)} should be called.
-     * @return if the session was removed 
+    
+    
+    /**
+     * Call the session lifecycle listeners
+     * @param session the session on which to call the lifecycle listeners
      */
-    public Session removeSession(String id, boolean invalidate)
+    protected void callSessionListeners (Session session)
     {
-        try
+        if (session == null)
+            return;
+        
+        if (_sessionListeners!=null)
         {
-            //Remove the Session object from the session store and any backing data store
-            Session session = _sessionCache.delete(id);
-            if (session != null)
+            HttpSessionEvent event=new HttpSessionEvent(session);      
+            for (int i = _sessionListeners.size()-1; i>=0; i--)
             {
-                if (invalidate)
-                {
-                    session.beginInvalidate();
-                    
-                    if (_sessionListeners!=null)
-                    {
-                        HttpSessionEvent event=new HttpSessionEvent(session);      
-                        for (int i = _sessionListeners.size()-1; i>=0; i--)
-                        {
-                            _sessionListeners.get(i).sessionDestroyed(event);
-                        }
-                    }
-                }
+                _sessionListeners.get(i).sessionDestroyed(event);
             }
-            //TODO if session object is not known to this node, how to get rid of it if no other
-            //node knows about it?
-
-            return session;
-        }
-        catch (Exception e)
-        {
-            LOG.warn(e);
-            return null;
         }
     }
     
     
+    protected void callSessionIdListeners (Session session, String oldId)
+    {
+        //inform the listeners
+        if (!_sessionIdListeners.isEmpty())
+        {
+            HttpSessionEvent event = new HttpSessionEvent(session);
+            for (HttpSessionIdListener l:_sessionIdListeners)
+            {
+                l.sessionIdChanged(event, oldId);
+            }
+        }
+    }
+    
+    /**
+     * Record length of time session has been active. Called when the
+     * session is about to be invalidated.
+     * 
+     * @param session the session whose time to record
+     */
+    protected void recordSessionTime (Session session)
+    {
+        _sessionTimeStats.record(round((System.currentTimeMillis() - session.getSessionData().getCreated())/1000.0));
+    }
    
 
     /* ------------------------------------------------------------ */
@@ -1190,24 +1191,15 @@ public class SessionHandler extends ScopedHandler
     {
         try
         {
-            Session session = _sessionCache.renewSessionId (oldId, newId); //swap the id over
+            Session session = _sessionCache.renewSessionId (oldId, newId, oldExtendedId, newExtendedId); //swap the id over
             if (session == null)
             {
                 //session doesn't exist on this context
                 return;
             }
-            
-            session.setExtendedId(newExtendedId); //remember the extended id
 
-            //inform the listeners
-            if (!_sessionIdListeners.isEmpty())
-            {
-                HttpSessionEvent event = new HttpSessionEvent(session);
-                for (HttpSessionIdListener l:_sessionIdListeners)
-                {
-                    l.sessionIdChanged(event, oldId);
-                }
-            }
+            //call the SessionIdListeners with the change
+            callSessionIdListeners(session, oldId);
         }
         catch (Exception e)
         {
@@ -1215,7 +1207,6 @@ public class SessionHandler extends ScopedHandler
         }
     }
     
-   
     
     /* ------------------------------------------------------------ */
     /**
@@ -1229,14 +1220,33 @@ public class SessionHandler extends ScopedHandler
             return;
 
         try
-        {
-            //remove the session and call the destroy listeners
-            Session session = removeSession(id, true);
-
+        {            
+            //Remove the Session object from the session store and any backing data store
+            Session session = _sessionCache.delete(id);
             if (session != null)
             {
-                _sessionTimeStats.record(round((System.currentTimeMillis() - session.getSessionData().getCreated())/1000.0));
-                session.finishInvalidate();   
+                //start invalidating if it is not already begun, and call the listeners
+                try
+                {
+                    if (session.beginInvalidate())
+                    {
+                        try
+                        {
+                            callSessionListeners(session);
+                        }
+                        catch (Exception e)
+                        {
+                            LOG.warn("Session listener threw exception", e);
+                        }
+                        //call the attribute removed listeners and finally mark it as invalid
+                        session.finishInvalidate();
+                    }
+                }
+                catch (IllegalStateException e)
+                {
+                    if (LOG.isDebugEnabled()) LOG.debug("Session {} already invalid", session);
+                    LOG.ignore(e);
+                }
             }
         }
         catch (Exception e)
