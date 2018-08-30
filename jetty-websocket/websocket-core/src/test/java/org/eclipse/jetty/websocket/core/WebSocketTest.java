@@ -3,6 +3,8 @@ package org.eclipse.jetty.websocket.core;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -17,6 +19,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -32,9 +35,13 @@ import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
-import org.junit.Assert;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class WebSocketTest
 {
@@ -57,9 +64,16 @@ public class WebSocketTest
             @Override
             public void onReceiveFrame(Frame frame, Callback callback)
             {
-                super.onReceiveFrame(frame, callback);
+                super.LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 if(frame.getOpCode() == OpCode.CLOSE)
+                {
+                    super.LOG.info("channel aborted");
                     getChannel().abort();
+                }
+                else
+                {
+                    callback.succeeded();
+                }
             }
         };
 
@@ -69,14 +83,51 @@ public class WebSocketTest
         server.start();
         client.start();
 
-        client.sendText("hello world");
-        client.close();
+        server.sendText("hello world");
+        Thread.sleep(100);
+        server.close();
 
         Thread.sleep(100);
+        client.sendText("yolo");
 
-        Assert.assertFalse(client.isOpen());
+        Thread.sleep(1000);
+
+        //Assert.assertFalse(server.isOpen());
+        //Assert.assertFalse(client.isOpen());
     }
 
+
+
+    @Test
+    public void testClientSocketClosed() throws Exception
+    {
+        int port = 8080;
+
+        TestFrameHandler serverHandler = new TestFrameHandler();
+        TestFrameHandler clientHandler = new TestFrameHandler();
+
+        server = new WebSocketServer(port, serverHandler);
+        client = new WebSocketClient("localhost", port, clientHandler);
+
+        server.start();
+        client.start();
+
+        String message = "hello world";
+        client.sendText(message);
+        Frame recv = server.getFrames().poll(2, TimeUnit.SECONDS);
+        assertNotNull(recv);
+        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+
+        ((WebSocketChannel)client.handler.channel).getConnection().getEndPoint().close();
+
+        assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+//        message = "E";
+//        client.sendText(message);
+//        recv = server.getFrames().poll(2, TimeUnit.SECONDS);
+//        assertNotNull(recv);
+//        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+    }
 
     static class WebSocketClient
     {
@@ -123,6 +174,11 @@ public class WebSocketTest
             handler.getChannel().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
         }
 
+        public BlockingQueue<Frame> getFrames()
+        {
+            return handler.getFrames();
+        }
+
         public void close()
         {
             handler.getChannel().close(CloseStatus.NORMAL, "WebSocketClient Initiated Close", Callback.NOOP);
@@ -140,9 +196,17 @@ public class WebSocketTest
         private static Logger LOG = Log.getLogger(TestFrameHandler.class);
         private CoreSession channel;
 
+        private BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
+        private CountDownLatch closed = new CountDownLatch(1);
+
         public CoreSession getChannel()
         {
             return channel;
+        }
+
+        public BlockingQueue<Frame> getFrames()
+        {
+            return receivedFrames;
         }
 
         @Override
@@ -156,6 +220,7 @@ public class WebSocketTest
         public void onReceiveFrame(Frame frame, Callback callback)
         {
             LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+            receivedFrames.offer(Frame.copy(frame)); //needs to copy because frame is no longer valid after callback.succeeded();
             callback.succeeded();
         }
 
@@ -163,6 +228,7 @@ public class WebSocketTest
         public void onClosed(CloseStatus closeStatus) throws Exception
         {
             LOG.info("onClosed {}",closeStatus);
+            closed.countDown();
         }
 
         @Override
@@ -178,7 +244,7 @@ public class WebSocketTest
     {
         private static Logger LOG = Log.getLogger(WebSocketServer.class);
         private final Server server;
-        private final TestFrameHandler frameHandler;
+        private final TestFrameHandler handler;
 
 
         public void start() throws Exception
@@ -188,7 +254,7 @@ public class WebSocketTest
 
         public WebSocketServer(int port, TestFrameHandler frameHandler)
         {
-            this.frameHandler = frameHandler;
+            this.handler = frameHandler;
             server = new Server();
             ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
 
@@ -202,9 +268,9 @@ public class WebSocketTest
             server.setHandler(context);
             WebSocketNegotiator negotiator =  new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool(), port, frameHandler);
 
-            WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler(negotiator);
-            context.setHandler(handler);
-            handler.setHandler(new AbstractHandler()
+            WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(negotiator);
+            context.setHandler(upgradeHandler);
+            upgradeHandler.setHandler(new AbstractHandler()
             {
                 @Override
                 public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -217,10 +283,31 @@ public class WebSocketTest
             });
         }
 
+        public void sendText(String line)
+        {
+            LOG.info("sending {}...", line);
+            Frame frame = new Frame(OpCode.TEXT);
+            frame.setFin(true);
+            frame.setPayload(line);
+
+            handler.getChannel().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+        }
+
+        public BlockingQueue<Frame> getFrames()
+        {
+            return handler.getFrames();
+        }
+
         public void close()
         {
-            frameHandler.getChannel().close(CloseStatus.NORMAL, "WebSocketServer Initiated Close", Callback.NOOP);
+            handler.getChannel().close(CloseStatus.NORMAL, "WebSocketServer Initiated Close", Callback.NOOP);
         }
+
+        public boolean isOpen()
+        {
+            return handler.getChannel().isOpen();
+        }
+
     }
 
 

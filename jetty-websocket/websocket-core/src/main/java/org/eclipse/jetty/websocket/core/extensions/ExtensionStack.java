@@ -355,6 +355,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         protected void onCompleteSuccess()
         {
             // This IteratingCallback never completes.
+            throw new IllegalStateException("This IteratingCallback should never complete.");
         }
         
         @Override
@@ -363,6 +364,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             // This IteratingCallback never fails.
             // The callback are those provided by WriteCallback (implemented
             // below) and even in case of writeFailed() we call succeeded().
+            throw new IllegalStateException("This IteratingCallback should never fail.");
         }
 
         @Override
