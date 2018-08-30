@@ -425,7 +425,8 @@ public class LdapLoginModule extends AbstractLoginModule
             if (_forceBindingLogin)
             {
                 authed = bindingLogin(webUserName, webCredential);
-            } else
+            }
+            else
             {
                 // This sets read and the credential
                 UserInfo userInfo = getUserInfo(webUserName);
