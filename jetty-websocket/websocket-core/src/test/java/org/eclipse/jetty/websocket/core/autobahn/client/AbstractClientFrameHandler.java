@@ -39,7 +39,7 @@ public abstract class AbstractClientFrameHandler extends AbstractTestFrameHandle
     @Override
     public void onOpen()
     {
-        LOG.info("onOpen({})",getChannel());
+        LOG.info("onOpen({})",getCoreSession());
     }
 
     @Override

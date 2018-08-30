@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
 
@@ -26,62 +26,33 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 
-public abstract class AbstractWholeMessageHandler extends AbstractPartialFrameHandler
+public abstract class AbstractPartialMessageHandler extends AbstractPartialFrameHandler
 {
-    private ByteBuffer binaryMessage;
     private Utf8StringBuilder textMessage = new Utf8StringBuilder();
 
-    public void onWholeText(String wholeMessage, Callback callback)
-    {
-        callback.succeeded();
-    }
+    public abstract void onPartialText(String partialMessage, boolean isFin, Callback callback);
 
-    public void onWholeBinary(ByteBuffer wholeMessage, Callback callback)
-    {
-        callback.succeeded();
-    }
+    public abstract void onPartialBinary(ByteBuffer partialMessage, boolean isFin, Callback callback);
 
     @Override
     public void onText(Frame frame, Callback callback)
     {
         super.onText(frame, callback);
-
         // handle below here
         if (frame.getOpCode() == OpCode.TEXT)
             textMessage.reset();
-
-        if(frame.hasPayload())
-            textMessage.append(frame.getPayload());
-
-        if (frame.isFin())
-            onWholeText(textMessage.toString(), callback);
-        else
-            callback.succeeded();
+        textMessage.append(frame.getPayload());
+        onPartialText(textMessage.takePartialString(), frame.isFin(), callback);
     }
 
     @Override
     public void onBinary(Frame frame, Callback callback)
     {
         super.onBinary(frame, callback);
-
         // handle below here
-        if (frame.getOpCode() == OpCode.BINARY)
-        {
-            binaryMessage = ByteBuffer.allocate(frame.getPayloadLength());
-        }
-
-        if (frame.hasPayload())
-        {
-            BufferUtil.ensureCapacity(binaryMessage, binaryMessage.remaining() + frame.getPayloadLength());
-            binaryMessage.put(frame.getPayload());
-        }
-
-        if (frame.isFin())
-        {
-            BufferUtil.flipToFlush(binaryMessage, 0);
-            onWholeBinary(binaryMessage, callback);
-        }
-        else
-            callback.succeeded();
+        ByteBuffer payload = frame.getPayload();
+        if (payload == null)
+            payload = BufferUtil.EMPTY_BUFFER;
+        onPartialBinary(payload, frame.isFin(), callback);
     }
 }

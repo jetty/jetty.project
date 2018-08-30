@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.tests.framehandlers;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.AbstractFrameTypeHandler;
+import org.eclipse.jetty.websocket.common.AbstractFrameTypeHandler;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 

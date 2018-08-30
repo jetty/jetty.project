@@ -16,43 +16,49 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.common;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 
-public abstract class AbstractPartialMessageHandler extends AbstractPartialFrameHandler
+public abstract class AbstractPartialFrameHandler extends AbstractFrameTypeHandler
 {
-    private Utf8StringBuilder textMessage = new Utf8StringBuilder();
-
-    public abstract void onPartialText(String partialMessage, boolean isFin, Callback callback);
-
-    public abstract void onPartialBinary(ByteBuffer partialMessage, boolean isFin, Callback callback);
+    protected byte dataType = -1;
 
     @Override
+    public final /* prevent override */ void onReceiveFrame(Frame frame, Callback callback)
+    {
+        super.onReceiveFrame(frame, callback);
+        if (frame.isFin() && !frame.isControlFrame())
+            dataType = -1;
+    }
+
     public void onText(Frame frame, Callback callback)
     {
-        super.onText(frame, callback);
-        // handle below here
-        if (frame.getOpCode() == OpCode.TEXT)
-            textMessage.reset();
-        textMessage.append(frame.getPayload());
-        onPartialText(textMessage.takePartialString(), frame.isFin(), callback);
+        dataType = OpCode.TEXT;
     }
 
     @Override
     public void onBinary(Frame frame, Callback callback)
     {
-        super.onBinary(frame, callback);
-        // handle below here
-        ByteBuffer payload = frame.getPayload();
-        if (payload == null)
-            payload = BufferUtil.EMPTY_BUFFER;
-        onPartialBinary(payload, frame.isFin(), callback);
+        dataType = OpCode.BINARY;
+    }
+
+    @Override
+    public final /* prevent override */ void onContinuation(Frame frame, Callback callback)
+    {
+        switch (dataType)
+        {
+            case OpCode.TEXT:
+                onText(frame, callback);
+                break;
+            case OpCode.BINARY:
+                onBinary(frame, callback);
+                break;
+            default:
+                throw new ProtocolException("Unable to process continuation during dataType " + dataType);
+        }
     }
 }

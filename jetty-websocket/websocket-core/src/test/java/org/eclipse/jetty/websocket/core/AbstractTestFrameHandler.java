@@ -44,7 +44,7 @@ public class AbstractTestFrameHandler implements FrameHandler
     private ByteBuffer byteBuffer;
     private FrameHandler.CoreSession channel;
     
-    public FrameHandler.CoreSession getChannel()
+    public FrameHandler.CoreSession getCoreSession()
     {
         return channel;
     }

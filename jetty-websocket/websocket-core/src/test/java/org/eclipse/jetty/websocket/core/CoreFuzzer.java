@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -29,16 +34,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import junit.framework.AssertionFailedError;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -52,11 +55,7 @@ import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import junit.framework.AssertionFailedError;
 
 /**
  * Creates a framework of 2 WebSocket Core instances to help test behaviors within core.
@@ -278,7 +277,6 @@ public class CoreFuzzer implements AutoCloseable
     /**
      * Generator suitable for generating non-valid content.
      */
-    @SuppressWarnings("Duplicates")
     public static class FuzzGenerator extends Generator
     {
         // Client side framing mask
@@ -352,73 +350,27 @@ public class CoreFuzzer implements AutoCloseable
             generateWholeFrame(frame, buffer);
         }
     }
+    
 
-    public static class RemoteWholeEchoHandler extends AbstractWholeMessageHandler
+    public static class RemoteWholeEchoHandler extends AbstractTestFrameHandler
     {
-        private final static Logger LOG = Log.getLogger(RemoteWholeEchoHandler.class);
-        private final SharedBlockingCallback sendBlocker = new SharedBlockingCallback();
 
         @Override
-        public void onClosed(CloseStatus closeStatus)
+        protected void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
         {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("onClosed(): {}", closeStatus);
-            }
+            if (fin)
+                getCoreSession().sendFrame(new Frame(OpCode.TEXT).setPayload(utf8.toString()),callback,BatchMode.OFF);
+            else
+                callback.succeeded();
         }
 
         @Override
-        public void onError(Throwable cause)
+        protected void onBinary(ByteBuffer payload, Callback callback, boolean fin)
         {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.warn("onError()", cause);
-            }
-        }
-
-        @Override
-        public void onPing(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("onPing(): {}", frame);
-            }
-            sendBlocking(new Frame(OpCode.PONG).setPayload(frame.getPayload()));
-            callback.succeeded();
-        }
-
-        @Override
-        public void onWholeBinary(ByteBuffer wholeMessage, Callback callback)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("onWholeBinary(): {}", BufferUtil.toDetailString(wholeMessage));
-            }
-            sendBlocking(new Frame(OpCode.BINARY).setPayload(copyOf(wholeMessage)));
-            callback.succeeded();
-        }
-
-        @Override
-        public void onWholeText(String wholeMessage, Callback callback)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("onWholeText(): {}", BufferUtil.toDetailString(BufferUtil.toBuffer(wholeMessage, UTF_8)));
-            }
-            sendBlocking(new Frame(OpCode.TEXT).setPayload(wholeMessage));
-            callback.succeeded();
-        }
-
-        private void sendBlocking(Frame frame)
-        {
-            try (SharedBlockingCallback.Blocker blocker = sendBlocker.acquire())
-            {
-                channel.sendFrame(frame, blocker, BatchMode.OFF);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeIOException("Unable to send frame: " + frame, e);
-            }
+            if (fin)
+                getCoreSession().sendFrame(new Frame(OpCode.BINARY).setPayload(BufferUtil.toArray(payload)),callback,BatchMode.OFF);
+            else
+                callback.succeeded();
         }
     }
 

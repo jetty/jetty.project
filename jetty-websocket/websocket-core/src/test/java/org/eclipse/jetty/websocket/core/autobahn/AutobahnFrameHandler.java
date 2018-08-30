@@ -41,7 +41,7 @@ class AutobahnFrameHandler extends AbstractTestFrameHandler
     @Override
     public void onOpen()
     {        
-        LOG.info("onOpen {}", getChannel());
+        LOG.info("onOpen {}", getCoreSession());
         
         if (!open.compareAndSet(false,true))
             throw new IllegalStateException();        
@@ -52,10 +52,10 @@ class AutobahnFrameHandler extends AbstractTestFrameHandler
     @Override
     public void onText(Utf8StringBuilder utf8, Callback callback, boolean fin)
     {
-        LOG.debug("onText {} {} {} {}", count++, utf8.length(),fin, getChannel());
+        LOG.debug("onText {} {} {} {}", count++, utf8.length(),fin, getCoreSession());
         if (fin)
         {
-            getChannel().sendFrame(new Frame(OpCode.TEXT).setPayload(utf8.toString()),
+            getCoreSession().sendFrame(new Frame(OpCode.TEXT).setPayload(utf8.toString()),
                     callback,
                     BatchMode.OFF);
         }
@@ -68,13 +68,13 @@ class AutobahnFrameHandler extends AbstractTestFrameHandler
     @Override
     public void onBinary(ByteBuffer payload, Callback callback, boolean fin)
     {        
-        LOG.debug("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getChannel());
+        LOG.debug("onBinary {} {} {}", payload==null?-1:payload.remaining(),fin,getCoreSession());
         if (fin)
         {       
             Frame echo = new Frame(OpCode.BINARY);
             if (payload!=null)
                 echo.setPayload(payload);
-            getChannel().sendFrame(echo,callback,BatchMode.OFF);
+            getCoreSession().sendFrame(echo,callback,BatchMode.OFF);
         }
         else
         {
