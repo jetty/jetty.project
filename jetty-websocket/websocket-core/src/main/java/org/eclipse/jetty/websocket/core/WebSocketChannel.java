@@ -360,7 +360,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Channel, D
 
                 String failure = check(frame.getOpCode(),frame.isFin());
                 if (failure!=null)
-                    callback.failed(new IllegalStateException(failure));
+                    callback.failed(new IllegalStateException(failure)); //TODO protocol error?
                 else if (state.isInOpen())
                 {   
                     // Handle inbound close
