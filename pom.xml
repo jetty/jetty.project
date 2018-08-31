@@ -1255,7 +1255,8 @@
     <!--
       Usage:
       Javadoc aggregation for Jetty website
-      > mvn -Paggregate-site clean install javadoc:aggregate -Dtest=foo
+      > mvn clean install -Dtest=foo
+      > mvn -Paggregate-site javadoc:aggregate -Dtest=foo
      -->
     <profile>
       <id>aggregate-site</id>
