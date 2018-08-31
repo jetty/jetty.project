@@ -174,7 +174,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onClose() of physical connection");
-
+        
         // TODO review all close paths
         flusher.terminate(new IOException("Closed"),true);
         super.onClose();

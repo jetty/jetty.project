@@ -45,6 +45,8 @@ import static org.junit.Assert.assertTrue;
 
 public class WebSocketTest
 {
+    private static Logger LOG = Log.getLogger(WebSocketTest.class);
+    
     private WebSocketServer server;
     private WebSocketClient client;
 
@@ -64,10 +66,10 @@ public class WebSocketTest
             @Override
             public void onReceiveFrame(Frame frame, Callback callback)
             {
-                super.LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+                LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 if(frame.getOpCode() == OpCode.CLOSE)
                 {
-                    super.LOG.info("channel aborted");
+                    LOG.info("channel aborted");
                     getChannel().abort();
                 }
                 else
@@ -193,7 +195,6 @@ public class WebSocketTest
 
     static class TestFrameHandler implements FrameHandler
     {
-        private static Logger LOG = Log.getLogger(TestFrameHandler.class);
         private CoreSession channel;
 
         private BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
