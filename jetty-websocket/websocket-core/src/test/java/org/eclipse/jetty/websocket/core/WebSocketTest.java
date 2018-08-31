@@ -54,7 +54,7 @@ public class WebSocketTest
     }
 
     @Test
-    public void testClientConnectionFailure() throws Exception
+    public void testClientSocketClosedInCloseHandshake() throws Exception
     {
         int port = 8080;
 
@@ -83,17 +83,15 @@ public class WebSocketTest
         server.start();
         client.start();
 
-        server.sendText("hello world");
-        Thread.sleep(100);
+        String message = "hello world";
+        server.sendText(message);
+        Frame recv = client.getFrames().poll(2, TimeUnit.SECONDS);
+        assertNotNull(recv);
+        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+
         server.close();
 
-        Thread.sleep(100);
         client.sendText("yolo");
-
-        Thread.sleep(1000);
-
-        //Assert.assertFalse(server.isOpen());
-        //Assert.assertFalse(client.isOpen());
     }
 
 
