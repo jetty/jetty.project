@@ -141,6 +141,14 @@ public class WebSocketChannelState
         }
     }
 
+    public boolean onClosed(Throwable cause)
+    {
+        State s = state.get();
+        if (!s.outOpen && !s.inOpen)
+            return false;
 
+        state.set(new State("CLOSED",false,false, new CloseStatus(CloseStatus.NO_CLOSE, cause.toString())));
+        return true;
+    }
 
 }

@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.websocket.core;
 
 import java.io.IOException;
@@ -56,7 +74,7 @@ public class WebSocketTest
     }
 
     @Test
-    public void testClientConnectionFailure() throws Exception
+    public void testClientSocketClosedInCloseHandshake() throws Exception
     {
         int port = 8080;
 
@@ -85,17 +103,15 @@ public class WebSocketTest
         server.start();
         client.start();
 
-        server.sendText("hello world");
-        Thread.sleep(100);
+        String message = "hello world";
+        server.sendText(message);
+        Frame recv = client.getFrames().poll(2, TimeUnit.SECONDS);
+        assertNotNull(recv);
+        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+
         server.close();
 
-        Thread.sleep(100);
         client.sendText("yolo");
-
-        Thread.sleep(1000);
-
-        //Assert.assertFalse(server.isOpen());
-        //Assert.assertFalse(client.isOpen());
     }
 
 
