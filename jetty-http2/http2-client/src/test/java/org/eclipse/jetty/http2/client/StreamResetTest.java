@@ -689,4 +689,50 @@ public class StreamResetTest extends AbstractTest
 
         Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testResetBeforeBlockingRead() throws Exception
+    {
+        CountDownLatch requestLatch = new CountDownLatch(1);
+        CountDownLatch readLatch = new CountDownLatch(1);
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                try
+                {
+                    requestLatch.countDown();
+                    readLatch.await();
+                    // Attempt to read after reset must throw.
+                    request.getInputStream().read();
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
+                catch (IOException expected)
+                {
+                    failureLatch.countDown();
+                }
+            }
+        });
+        Session client = newClient(new Session.Listener.Adapter());
+        MetaData.Request request = newRequest("GET", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(request, null, false);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        client.newStream(frame, promise, new Stream.Listener.Adapter());
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        ByteBuffer content = ByteBuffer.wrap(new byte[1024]);
+        stream.data(new DataFrame(stream.getId(), content, true), Callback.NOOP);
+        Assert.assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        // Wait for the reset to arrive to the server and be processed.
+        Thread.sleep(1000);
+        // Try to read on server.
+        readLatch.countDown();
+        // Read on server should fail.
+        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+    }
 }

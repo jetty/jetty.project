@@ -242,20 +242,25 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (LOG.isDebugEnabled())
                 LOG.debug("{} consumed {}", this, content);
 
-            if (content == EOF_CONTENT)
+            if (!isError())
             {
-                if (_listener == null)
-                    _state = EOF;
-                else
+                if (content == EOF_CONTENT)
                 {
-                    _state = AEOF;
-                    boolean woken = _channelState.onReadReady(); // force callback?
-                    if (woken)
-                        wake();
+                    if (_listener == null)
+                        _state = EOF;
+                    else
+                    {
+                        _state = AEOF;
+                        boolean woken = _channelState.onReadReady(); // force callback?
+                        if (woken)
+                            wake();
+                    }
+                }
+                else if (content == EARLY_EOF_CONTENT)
+                {
+                    _state = EARLY_EOF;
                 }
             }
-            else if (content == EARLY_EOF_CONTENT)
-                _state = EARLY_EOF;
 
             content = _inputQ.peek();
         }
