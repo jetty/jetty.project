@@ -29,7 +29,7 @@
         <executions>
           <execution>
             <id>copy-base-assembly-tree</id>
-            <phase>process-resources</phase>
+            <phase>package</phase>
             <goals>
               <goal>copy-resources</goal>
             </goals>
@@ -47,12 +47,41 @@
         </executions>
       </plugin>
       <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <!--
+          The jetty-home artifact is the starting point for the jetty-distribution
+          and must happen early in the build process
+          -->
+          <execution>
+            <id>unpack-jetty-home</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-home</artifactId>
+                  <version>${project.version}</version>
+                  <type>zip</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${home-directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+              <excludes>META-INF/**</excludes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
             <id>populate distribution from home</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>run</goal>
             </goals>
@@ -66,7 +95,7 @@
           </execution>
           <execution>
             <id>set jetty.sh</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>run</goal>
             </goals>
@@ -78,7 +107,7 @@
           </execution>
           <execution>
             <id>removeKeystore</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>run</goal>
             </goals>
@@ -95,7 +124,7 @@
         <artifactId>maven-remote-resources-plugin</artifactId>
         <executions>
           <execution>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>process</goal>
             </goals>
@@ -115,9 +144,10 @@
           The jetty-home artifact is the starting point for the jetty-distribution
           and must happen early in the build process
           -->
+          <!--
           <execution>
             <id>unpack-jetty-home</id>
-            <phase>generate-resources</phase>
+            <phase>package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -135,10 +165,10 @@
               <excludes>META-INF/**</excludes>
             </configuration>
           </execution>
-
+-->
           <execution>
             <id>copy</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy</goal>
             </goals>
@@ -210,7 +240,7 @@
 
           <execution>
             <id>unpack-test-webapp-config</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -232,7 +262,7 @@
 
           <execution>
             <id>unpack-test-jaas-config</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -254,7 +284,7 @@
 
           <execution>
             <id>unpack-test-jndi-config</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -276,7 +306,7 @@
 
           <execution>
             <id>unpack-test-spec-config</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -297,7 +327,7 @@
           </execution>
           <execution>
             <id>unpack-documentation</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -326,7 +356,7 @@
           -->
           <execution>
             <id>setup home</id>
-            <phase>process-classes</phase>
+            <phase>package</phase>
             <configuration>
               <mainClass>org.eclipse.jetty.start.Main</mainClass>
               <arguments>
@@ -344,7 +374,7 @@
           -->
           <execution>
             <id>setup demo-base-startd</id>
-            <phase>process-classes</phase>
+            <phase>package</phase>
             <configuration>
               <mainClass>org.eclipse.jetty.start.Main</mainClass>
               <arguments>
