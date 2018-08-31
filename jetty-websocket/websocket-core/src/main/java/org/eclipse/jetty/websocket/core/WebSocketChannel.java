@@ -197,6 +197,35 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         return policy;
     }
 
+
+    public void onClosed(Throwable cause)
+    {
+        if (state.onClosed(cause))
+        {
+            // Forward Errors to Local WebSocket EndPoint
+            try
+            {
+                handler.onError(cause);
+            }
+            catch(Throwable e)
+            {
+                cause.addSuppressed(e);
+                LOG.warn(cause);
+            }
+
+            try
+            {
+                handler.onClosed(new CloseStatus(CloseStatus.NO_CLOSE, cause.toString()));
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+        }
+
+    }
+
+
     /**
      * Process an Error event seen by the Session and/or Connection
      *
@@ -215,6 +244,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             LOG.warn(cause);
         }
 
+        //TODO review everything below
         if (cause instanceof Utf8Appendable.NotUtf8Exception)
         {
             close(WebSocketConstants.BAD_PAYLOAD, cause.getMessage(), Callback.NOOP);
