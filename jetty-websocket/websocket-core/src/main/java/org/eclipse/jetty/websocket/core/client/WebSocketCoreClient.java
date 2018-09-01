@@ -55,7 +55,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     public WebSocketCoreClient()
     {
         this(new HttpClient(new SslContextFactory()));
-        this.httpClient.setName("WebSocketCoreClient");
+        this.httpClient.setName("WSCoreClient");
         // Internally created, let websocket client's lifecycle manage it.
         this.addManaged(httpClient);
     }

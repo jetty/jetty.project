@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
@@ -137,7 +138,10 @@ public class WebSocketTest
         assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
 
         ((WebSocketChannel)client.handler.channel).getConnection().getEndPoint().close();
-
+        Thread.sleep(100);
+        
+        
+        
         assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
 //        message = "E";
@@ -273,6 +277,7 @@ public class WebSocketTest
         {
             this.handler = frameHandler;
             server = new Server();
+            server.getBean(QueuedThreadPool.class).setName("WSCoreServer");
             ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
 
             connector.addBean(new WebSocketPolicy(WebSocketBehavior.SERVER));
