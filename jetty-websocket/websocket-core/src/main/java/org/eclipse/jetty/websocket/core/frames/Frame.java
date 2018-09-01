@@ -171,11 +171,10 @@ public class Frame
      */
     public Frame(byte opcode)
     {
-        finRsvOp = (byte)0x80; // FIN (!RSV, opcode 0)
+        finRsvOp = (byte)(0x80 | (opcode & 0x0F)); // FIN (!RSV, opcode 0)
         masked = false;
         payload = null;
         mask = null;
-        this.finRsvOp = (byte)((finRsvOp & 0xF0) | (opcode & 0x0F));
     }
 
     public Frame(byte opCode, ByteBuffer payload)

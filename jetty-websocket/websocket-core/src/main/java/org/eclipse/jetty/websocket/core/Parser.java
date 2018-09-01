@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
  */
 public class Parser
 {
+    
     public interface Handler
     {
         /**
@@ -65,7 +66,6 @@ public class Parser
     private int cursor = 0;
     // Frame
     private Frame frame;
-    private boolean priorDataFrame;
     // payload specific
     private ByteBuffer payload;
     private int payloadLength;
@@ -178,12 +178,7 @@ public class Parser
                     LOG.debug("{} Parsed Frame: {} : {}", getPolicy().getBehavior(), frame, BufferUtil.toDetailString(buffer));
     
                 assertBehavior();
-    
-                if (frame.isDataFrame())
-                {
-                    priorDataFrame = !frame.isFin();
-                }
-    
+       
                 if(!this.parserHandler.onFrame(frame))
                 {
                     // Do not parse any more
@@ -301,28 +296,12 @@ public class Parser
                     {
                         case OpCode.TEXT:
                             frame = new Frame(OpCode.TEXT);
-                            // data validation
-                            if (priorDataFrame)
-                            {
-                                throw new ProtocolException("Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION");
-                            }
                             break;
                         case OpCode.BINARY:
                             frame = new Frame(OpCode.BINARY);
-                            // data validation
-                            if (priorDataFrame)
-                            {
-                                throw new ProtocolException("Unexpected " + OpCode.name(opcode) + " frame, was expecting CONTINUATION");
-                            }
                             break;
                         case OpCode.CONTINUATION:
                             frame = new Frame(OpCode.CONTINUATION);
-                            // continuation validation
-                            if (!priorDataFrame)
-                            {
-                                throw new ProtocolException("CONTINUATION frame without prior !FIN");
-                            }
-                            // Be careful to use the original opcode
                             break;
                         case OpCode.CLOSE:
                             frame = new Frame(OpCode.CLOSE);

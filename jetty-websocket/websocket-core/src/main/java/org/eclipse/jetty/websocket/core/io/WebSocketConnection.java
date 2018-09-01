@@ -324,6 +324,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
                 if (filled < 0)
                 {
                     releaseNetworkBuffer(nBuffer);
+                    channel.onClosed(null);
                     return;
                 }
 
