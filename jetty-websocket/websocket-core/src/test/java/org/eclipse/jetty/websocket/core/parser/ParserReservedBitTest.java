@@ -56,8 +56,7 @@ public class ParserReservedBitTest
 
     private void expectProtocolException(List<Frame> frames)
     {
-        ParserCapture parserCapture = new ParserCapture();
-        Parser parser = new Parser(policy, bufferPool, parserCapture);
+        ParserCapture parserCapture = new ParserCapture(new Parser(policy, bufferPool));
 
         // generate raw bytebuffer of provided frames
         int size = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
@@ -71,8 +70,8 @@ public class ParserReservedBitTest
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             expectedException.expect(ProtocolException.class);
-            expectedException.expectMessage(allOf(containsString("RSV"),containsString("not allowed to be set")));
-            parser.parse(raw);
+            expectedException.expectMessage(allOf(containsString("RSV bits"),containsString("not in use")));
+            parserCapture.parse(raw);
         }
     }
 

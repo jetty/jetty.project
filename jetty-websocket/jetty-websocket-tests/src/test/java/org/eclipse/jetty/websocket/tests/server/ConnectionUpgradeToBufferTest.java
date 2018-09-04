@@ -77,12 +77,11 @@ public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
         ParsedResponse response = performUpgrade(endPoint, buf);
 
         // Parse received bytes
-        ParserCapture capture = new ParserCapture();
-        Parser parser = newClientParser(capture);
+        ParserCapture capture = new ParserCapture(newClientParser());
 
         if (BufferUtil.hasContent(response.remainingBuffer))
         {
-            parser.parse(response.remainingBuffer);
+            capture.parse(response.remainingBuffer);
         }
 
         // parse bytes seen till close
@@ -91,7 +90,7 @@ public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
             ByteBuffer wsIncoming = endPoint.takeOutput();
             if(wsIncoming.hasRemaining())
             {
-                parser.parse(wsIncoming);
+                capture.parse(wsIncoming);
             }
         } while (!capture.closed);
 

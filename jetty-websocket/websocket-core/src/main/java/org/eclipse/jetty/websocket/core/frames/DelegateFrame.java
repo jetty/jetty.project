@@ -41,7 +41,6 @@ public class DelegateFrame extends Frame
         return delegate.isDataFrame();
     }
 
-
     @Override
     public void assertValid()
     {

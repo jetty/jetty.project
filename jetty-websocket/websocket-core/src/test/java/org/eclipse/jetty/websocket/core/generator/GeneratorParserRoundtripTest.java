@@ -46,8 +46,7 @@ public class GeneratorParserRoundtripTest
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         Generator gen = new Generator(policy,bufferPool);
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy,bufferPool,capture);
+        ParserCapture capture = new ParserCapture(new Parser(policy,bufferPool));
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
@@ -64,7 +63,7 @@ public class GeneratorParserRoundtripTest
 
             // Parse Buffer
             BufferUtil.flipToFlush(out,0);
-            parser.parse(out);
+            capture.parse(out);
         }
         finally
         {
@@ -80,8 +79,7 @@ public class GeneratorParserRoundtripTest
     public void testParserAndGeneratorMasked() throws Exception
     {
         Generator gen = new Generator(WebSocketPolicy.newClientPolicy(),bufferPool);
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(WebSocketPolicy.newServerPolicy(),bufferPool,capture);
+        ParserCapture capture = new ParserCapture(new Parser(WebSocketPolicy.newServerPolicy(),bufferPool));
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
@@ -105,7 +103,7 @@ public class GeneratorParserRoundtripTest
 
             // Parse Buffer
             BufferUtil.flipToFlush(out,0);
-            parser.parse(out);
+            capture.parse(out);
         }
         finally
         {

@@ -251,7 +251,7 @@ public class WebSocketTest
         @Override
         public void onError(Throwable cause) throws Exception
         {
-            LOG.warn("onError",cause);
+            LOG.info("onError {} ",cause==null?null:cause.toString());
         }
     }
 

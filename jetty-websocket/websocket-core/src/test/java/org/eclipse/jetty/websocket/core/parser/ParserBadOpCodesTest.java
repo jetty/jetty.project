@@ -79,8 +79,7 @@ public class ParserBadOpCodesTest
     @Test
     public void testBadOpCode()
     {
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy, bufferPool, capture);
+        ParserCapture capture = new ParserCapture(new Parser(policy, bufferPool));
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.flipToFill(raw);
@@ -95,15 +94,14 @@ public class ParserBadOpCodesTest
         {
             expectedException.expect(ProtocolException.class);
             expectedException.expectMessage(containsString("Unknown opcode: " + opcode));
-            parser.parse(raw);
+            capture.parse(raw);
         }
     }
 
     @Test
     public void testText_BadOpCode_Ping()
     {
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy, bufferPool, capture);
+        ParserCapture capture = new ParserCapture(new Parser(policy, bufferPool));
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.flipToFill(raw);
@@ -128,7 +126,7 @@ public class ParserBadOpCodesTest
         {
             expectedException.expect(ProtocolException.class);
             expectedException.expectMessage(containsString("Unknown opcode: " + opcode));
-            parser.parse(raw);
+            capture.parse(raw);
         }
     }
 }

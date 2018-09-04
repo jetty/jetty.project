@@ -80,8 +80,8 @@ public class ParsePayloadLengthTest
     @Test
     public void testPayloadLength() throws InterruptedException
     {
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy, bufferPool, capture);
+        Parser parser = new Parser(policy, bufferPool);
+        ParserCapture capture = new ParserCapture(parser);
 
         ByteBuffer raw = BufferUtil.allocate(size + Generator.MAX_HEADER_LENGTH);
         BufferUtil.clearToFill(raw);
@@ -95,7 +95,7 @@ public class ParsePayloadLengthTest
 
         // parse buffer
         BufferUtil.flipToFlush(raw, 0);
-        parser.parse(raw);
+        capture.parse(raw);
 
         // validate frame
         Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);

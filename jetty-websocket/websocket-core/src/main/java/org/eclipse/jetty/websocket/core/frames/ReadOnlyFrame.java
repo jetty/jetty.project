@@ -23,12 +23,11 @@ import java.nio.ByteBuffer;
 /**
  * Immutable, Read-only, Frame implementation.
  */
-public class ReadOnlyFrame extends DelegateFrame
+public class ReadOnlyFrame extends Frame
 {
-
     public ReadOnlyFrame(Frame frame)
     {
-        super(frame);
+        super(frame.finRsvOp,frame.isMasked()?frame.getMask():null,frame.getPayload());
     }
 
     @Override

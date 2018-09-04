@@ -49,7 +49,7 @@ import org.eclipse.jetty.websocket.core.frames.Frame;
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
-public class WebSocketConnection extends AbstractConnection implements Parser.Handler, SuspendToken, Connection.UpgradeTo, Dumpable, OutgoingFrames
+public class WebSocketConnection extends AbstractConnection implements SuspendToken, Connection.UpgradeTo, Dumpable, OutgoingFrames
 {
     private final Logger LOG = Log.getLogger(this.getClass());
 
@@ -115,7 +115,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         this.channel = channel;
 
         this.generator = new Generator(policy, bufferPool, validating);
-        this.parser = new Parser(policy, bufferPool, this);
+        this.parser = new Parser(policy, bufferPool);
         this.suspendToken = new AtomicBoolean(false);
         this.flusher = new Flusher(policy.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(policy.getInputBufferSize());
@@ -192,8 +192,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         return true;
     }
 
-    @Override
-    public boolean onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame)
+    protected boolean onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame)
     {
         AtomicBoolean result = new AtomicBoolean(false);
 
@@ -303,18 +302,21 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
                 }
 
                 ByteBuffer nBuffer = getNetworkBuffer();
-
-                if (!parser.parse(nBuffer)) 
+                
+                // Parse and handle frames
+                while(BufferUtil.hasContent(nBuffer))
                 {
-                    return;
+                    Frame frame = parser.parse(nBuffer);
+                    if (frame==null)
+                        break;
+                    if (!onFrame(frame))
+                        return;
                 }
 
                 // The handling of a close frame may have closed the end point
                 if (getEndPoint().isInputShutdown())
                     return;
 
-                // Shouldn't reach this point if buffer has un-parsed bytes
-                assert (!nBuffer.hasRemaining());
                 int filled = getEndPoint().fill(nBuffer);
 
                 if (LOG.isDebugEnabled())

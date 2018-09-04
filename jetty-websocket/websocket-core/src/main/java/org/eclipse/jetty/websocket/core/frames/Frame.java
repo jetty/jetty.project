@@ -106,19 +106,6 @@ public class Frame
         }
     }
 
-    public boolean isControlFrame()
-    {
-        return getType().isControl();
-    }
-
-    public boolean isDataFrame()
-    {
-        return !isControlFrame();
-    }
-
-
-
-
 
     public static Frame copyWithoutPayload(Frame original)
     {
@@ -139,7 +126,7 @@ public class Frame
         }
         return copy;
     }
-
+    
     /** Maximum size of Control frame, per RFC 6455 */
     public static final int MAX_CONTROL_PAYLOAD = 125;
 
@@ -156,8 +143,8 @@ public class Frame
      */
     protected byte finRsvOp;
     protected boolean masked = false;
-
-    protected byte mask[];
+    protected byte[] mask;
+    
     /**
      * The payload data.
      * <p>
@@ -171,10 +158,7 @@ public class Frame
      */
     public Frame(byte opcode)
     {
-        finRsvOp = (byte)(0x80 | (opcode & 0x0F)); // FIN (!RSV, opcode 0)
-        masked = false;
-        payload = null;
-        mask = null;
+        this((byte)(0x80 | (opcode & 0x0F)),null,null);
     }
 
     public Frame(byte opCode, ByteBuffer payload)
@@ -201,13 +185,29 @@ public class Frame
         setFin(fin);
     }
 
-
     protected Frame()
     {
-        this(OpCode.UNDEFINED);
+        this(OpCode.UNDEFINED,null,null);
+    }
+    
+    public Frame(byte finRsvOp, byte[] mask, ByteBuffer payload)
+    {
+        this.finRsvOp = finRsvOp;
+        this.masked = mask!=null;
+        this.mask = mask;
+        this.payload = payload;
     }
 
+    public boolean isControlFrame()
+    {
+        return getType().isControl();
+    }
 
+    public boolean isDataFrame()
+    {
+        return !isControlFrame();
+    }
+    
     public void assertValid()
     {
         if (isControlFrame())
@@ -472,6 +472,11 @@ public class Frame
     public Frame asReadOnly()
     {
         return new ReadOnlyFrame(this);
+    }
+    
+    public boolean hasRsv()
+    {
+        return (finRsvOp & 0x70) !=0;
     }
 
     @Override

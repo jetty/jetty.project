@@ -87,8 +87,7 @@ public class ParserBadCloseStatusCodesTest
     @Test
     public void testBadStatusCode()
     {
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy, bufferPool, capture);
+        ParserCapture capture = new ParserCapture(new Parser(policy, bufferPool));
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);
@@ -104,15 +103,14 @@ public class ParserBadCloseStatusCodesTest
         {
             expectedException.expect(ProtocolException.class);
             expectedException.expectMessage(containsString("Invalid Close Code: " + closeCode));
-            parser.parse(raw);
+            capture.parse(raw);
         }
     }
 
     @Test
     public void testBadStatusCode_WithReasonPhrase()
     {
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy, bufferPool, capture);
+        ParserCapture capture = new ParserCapture(new Parser(policy, bufferPool));
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);
@@ -129,7 +127,7 @@ public class ParserBadCloseStatusCodesTest
         {
             expectedException.expect(ProtocolException.class);
             expectedException.expectMessage(containsString("Invalid Close Code: " + closeCode));
-            parser.parse(raw);
+            capture.parse(raw);
         }
     }
 }

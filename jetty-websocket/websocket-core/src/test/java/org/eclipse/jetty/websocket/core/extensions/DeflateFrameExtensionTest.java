@@ -77,13 +77,16 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         // Wire up stack
         ext.setNextIncomingFrames(capture);
 
-        Parser parser = new Parser(policy, bufferPool, (frame) ->
-        {
-            ext.onReceiveFrame(frame, Callback.NOOP);
-            return true;
-        });
+        Parser parser = new Parser(policy, bufferPool);
         parser.configureFromExtensions(Collections.singletonList(ext));
-        parser.parse(ByteBuffer.wrap(raw));
+        ByteBuffer buffer = ByteBuffer.wrap(raw);
+        while (BufferUtil.hasContent(buffer))
+        {
+            Frame frame = parser.parse(buffer);
+            if (frame==null)
+                break;
+            ext.onReceiveFrame(frame, Callback.NOOP);
+        }
 
         int len = expectedTextDatas.length;
         assertThat("Incoming Frame Count", capture.frames.size(), is(len));

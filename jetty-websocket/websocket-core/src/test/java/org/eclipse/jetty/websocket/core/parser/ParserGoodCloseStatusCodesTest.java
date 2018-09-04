@@ -84,8 +84,7 @@ public class ParserGoodCloseStatusCodesTest
     @Test
     public void testGoodCloseCode() throws InterruptedException
     {
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy, bufferPool, capture);
+        ParserCapture capture = new ParserCapture(new Parser(policy, bufferPool));
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);
@@ -97,7 +96,7 @@ public class ParserGoodCloseStatusCodesTest
 
         // parse buffer
         BufferUtil.flipToFlush(raw, 0);
-        parser.parse(raw);
+        capture.parse(raw);
         Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame opcode", frame.getOpCode(), is(OpCode.CLOSE));
         CloseStatus closeStatus = new CloseStatus(frame.getPayload());
@@ -108,8 +107,7 @@ public class ParserGoodCloseStatusCodesTest
     @Test
     public void testGoodCloseCode_WithReasonPhrase() throws InterruptedException
     {
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy, bufferPool, capture);
+        ParserCapture capture = new ParserCapture(new Parser(policy, bufferPool));
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);
@@ -122,7 +120,7 @@ public class ParserGoodCloseStatusCodesTest
 
         // parse buffer
         BufferUtil.flipToFlush(raw, 0);
-        parser.parse(raw);
+        capture.parse(raw);
         Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame opcode", frame.getOpCode(), is(OpCode.CLOSE));
         CloseStatus closeStatus = new CloseStatus(frame.getPayload());

@@ -215,7 +215,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
             try
             {
-                handler.onClosed(new CloseStatus(CloseStatus.NO_CLOSE, cause.toString()));
+                handler.onClosed(new CloseStatus(CloseStatus.NO_CLOSE, cause==null?null:cause.toString()));
             }
             catch (Exception e)
             {

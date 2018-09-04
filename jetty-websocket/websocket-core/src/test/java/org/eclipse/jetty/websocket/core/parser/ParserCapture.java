@@ -21,17 +21,36 @@ package org.eclipse.jetty.websocket.core.parser;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 
-public class ParserCapture implements Parser.Handler
+public class ParserCapture
 {
+    private final Parser parser;
     public BlockingQueue<Frame> framesQueue = new LinkedBlockingDeque<>();
     public boolean closed = false;
+    
+    public ParserCapture(Parser parser)
+    {
+        this.parser = parser;
+    }
+    
+    public void parse(ByteBuffer buffer)
+    {
+        while(buffer.hasRemaining())
+        {
+            Frame frame = parser.parse(buffer);
+            if (frame==null)
+                break;
+            if (!onFrame(frame))
+                break;
+        }
+    }
     
     public void assertHasFrame(byte opCode, int expectedCount)
     {
@@ -50,8 +69,7 @@ public class ParserCapture implements Parser.Handler
         return framesQueue;
     }
     
-    @Override
-    public boolean onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame)
+    public boolean onFrame(Frame frame)
     {
         framesQueue.offer(Frame.copy(frame));
         if (frame.getOpCode() == OpCode.CLOSE)

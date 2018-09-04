@@ -1231,10 +1231,9 @@ public class GeneratorTest
 
         // Parse complete buffer.
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy, new MappedByteBufferPool(), capture);
+        ParserCapture capture = new ParserCapture(new Parser(policy, new MappedByteBufferPool()));
 
-        parser.parse(completeBuffer);
+        capture.parse(completeBuffer);
 
         // Assert validity of frame
         Frame actual = capture.framesQueue.poll(1, TimeUnit.SECONDS);

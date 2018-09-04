@@ -24,6 +24,7 @@ import java.util.Collections;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
@@ -56,11 +57,7 @@ public class ExtensionTool
             assertThat("extClass", extClass, notNullValue());
     
             this.capture = new IncomingFramesCapture();
-            this.parser = new Parser(policy, new MappedByteBufferPool(), frame ->
-            {
-                ext.onReceiveFrame(frame, Callback.NOOP);
-                return true;
-            });
+            this.parser = new Parser(policy, new MappedByteBufferPool());
         }
 
         public String getRequestedExtParams()
@@ -85,7 +82,15 @@ public class ExtensionTool
             {
                 String hex = rawhex[i].replaceAll("\\s*(0x)?","");
                 net = TypeUtil.fromHexString(hex);
-                parser.parse(ByteBuffer.wrap(net));
+
+                ByteBuffer buffer = ByteBuffer.wrap(net);
+                while (BufferUtil.hasContent(buffer))
+                {
+                    Frame frame = parser.parse(buffer);
+                    if (frame==null)
+                        break;
+                    ext.onReceiveFrame(frame,Callback.NOOP);
+                }                
             }
         }
 

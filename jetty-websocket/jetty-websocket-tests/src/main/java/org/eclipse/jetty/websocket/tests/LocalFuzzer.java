@@ -142,9 +142,8 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         ByteBuffer incoming = endPoint.getOutput();
 
         // Parse those bytes into frames
-        ParserCapture capture = new ParserCapture();
-        Parser parser = provider.newClientParser(capture);
-        parser.parse(incoming);
+        ParserCapture capture = new ParserCapture(provider.newClientParser());
+        capture.parse(incoming);
 
         assertExpected(capture.framesQueue, expected);
     }
@@ -159,9 +158,8 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         ByteBuffer incoming = endPoint.getOutput();
 
         // Parse those bytes into frames
-        ParserCapture capture = new ParserCapture();
-        Parser parser = provider.newClientParser(capture);
-        parser.parse(incoming);
+        ParserCapture capture = new ParserCapture(provider.newClientParser());
+        capture.parse(incoming);
 
         return capture.framesQueue;
     }
@@ -310,7 +308,7 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
     
     public interface Provider
     {
-        Parser newClientParser(Parser.Handler parserHandler);
+        Parser newClientParser();
         
         LocalConnector.LocalEndPoint newLocalConnection();
     }

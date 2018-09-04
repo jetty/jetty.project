@@ -147,7 +147,7 @@ public class WebSocketChannelState
         if (!s.outOpen && !s.inOpen)
             return false;
 
-        state.set(new State("CLOSED",false,false, new CloseStatus(CloseStatus.NO_CLOSE, cause.toString())));
+        state.set(new State("CLOSED",false,false, new CloseStatus(CloseStatus.NO_CLOSE, cause==null?null:cause.toString())));
         return true;
     }
 

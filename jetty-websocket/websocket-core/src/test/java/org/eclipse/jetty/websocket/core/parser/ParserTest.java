@@ -62,9 +62,8 @@ public class ParserTest
     
     private ParserCapture parse(WebSocketPolicy policy, ByteBuffer buffer)
     {
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy, new MappedByteBufferPool(), capture);
-        parser.parse(buffer);
+        ParserCapture capture = new ParserCapture(new Parser(policy, new MappedByteBufferPool()));
+        capture.parse(buffer);
         return capture;
     }
     
@@ -900,8 +899,7 @@ public class ParserTest
     public void testParse_RFC6455_FragmentedUnmaskedTextMessage() throws InterruptedException
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy, new MappedByteBufferPool(), capture);
+        ParserCapture capture = new ParserCapture(new Parser(policy, new MappedByteBufferPool()));
         
         ByteBuffer buf = ByteBuffer.allocate(16);
         BufferUtil.clearToFill(buf);
@@ -913,7 +911,7 @@ public class ParserTest
         
         // Parse #1
         BufferUtil.flipToFlush(buf,0);
-        parser.parse(buf);
+        capture.parse(buf);
         
         // part 2 of 2 "lo" (A continuation frame of the prior text message)
         BufferUtil.flipToFill(buf);
@@ -922,7 +920,7 @@ public class ParserTest
         
         // Parse #2
         BufferUtil.flipToFlush(buf,0);
-        parser.parse(buf);
+        capture.parse(buf);
         
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CONTINUATION,1);
@@ -1052,9 +1050,8 @@ public class ParserTest
         buf.flip();
         
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(policy, new MappedByteBufferPool(),capture);
-        assertThat(parser.parse(buf), is(true));
+        ParserCapture capture = new ParserCapture(new Parser(policy, new MappedByteBufferPool()));
+        capture.parse(buf);
         
         capture.assertHasFrame(OpCode.BINARY,1);
         
@@ -1447,15 +1444,14 @@ public class ParserTest
         ByteBuffer networkBytes = new UnitGenerator(clientPolicy).asBuffer(frames);
 
         // Parse, in 4096 sized windows
-        ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(serverPolicy, new MappedByteBufferPool(),capture);
+        ParserCapture capture = new ParserCapture(new Parser(serverPolicy, new MappedByteBufferPool()));
 
         while (networkBytes.remaining() > 0)
         {
             ByteBuffer window = networkBytes.slice();
             int windowSize = Math.min(window.remaining(),4096);
             window.limit(windowSize);
-            assertThat(parser.parse(window), is(true));
+            capture.parse(window);
             networkBytes.position(networkBytes.position() + windowSize);
         }
 

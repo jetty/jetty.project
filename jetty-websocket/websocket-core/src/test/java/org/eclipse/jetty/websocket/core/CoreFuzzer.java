@@ -94,7 +94,6 @@ public class CoreFuzzer implements AutoCloseable
     public CoreFuzzer(FrameHandler remoteFrameHandler)
     {
         this.remoteFrameHandler = remoteFrameHandler;
-        this.frameCapture = new FrameCapture();
 
         DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
         ByteBufferPool bufferPool = new MappedByteBufferPool();
@@ -116,7 +115,8 @@ public class CoreFuzzer implements AutoCloseable
 
         WebSocketPolicy clientPolicy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         this.fuzzGenerator = new FuzzGenerator(clientPolicy, bufferPool);
-        this.clientParser = new Parser(clientPolicy, bufferPool, frameCapture);
+        this.clientParser = new Parser(clientPolicy, bufferPool);
+        this.frameCapture = new FrameCapture(this.clientParser);
     }
 
     public void assertExpected(BlockingQueue<Frame> framesQueue, List<Frame> expect) throws InterruptedException
@@ -194,7 +194,7 @@ public class CoreFuzzer implements AutoCloseable
         {
             LOG.debug("raw output from remote = {}", BufferUtil.toDetailString(output));
         }
-        this.clientParser.parse(output);
+        frameCapture.parse(output);
 
         assertExpected(frameCapture.receivedFrames, expected);
     }
@@ -374,14 +374,31 @@ public class CoreFuzzer implements AutoCloseable
         }
     }
 
-    public static class FrameCapture implements Parser.Handler
+    public static class FrameCapture
     {
         private final static Logger LOG = Log.getLogger(FrameCapture.class);
+        private final Parser parser;
         private final BlockingQueue<Frame> receivedFrames = new LinkedBlockingQueue<>();
         private final CountDownLatch closedLatch = new CountDownLatch(1);
 
-        @Override
-        public boolean onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame)
+        FrameCapture(Parser parser)
+        {
+            this.parser = parser;
+        }
+        
+        public void parse(ByteBuffer buffer)
+        {
+            while (BufferUtil.hasContent(buffer))
+            {
+                Frame frame = parser.parse(buffer);
+                if (frame==null)
+                    break;
+                if (!onFrame(frame))
+                    break;
+            }
+        }
+        
+        public boolean onFrame(Frame frame)
         {
             if (LOG.isDebugEnabled())
             {

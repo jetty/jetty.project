@@ -34,18 +34,6 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
  */
 public class Parser
 {
-    
-    public interface Handler
-    {
-        /**
-         * Notification of completely parsed frame.
-         *
-         * @param frame the frame
-         * @return true to continue parsing, false to stop parsing
-         */
-        boolean onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame);
-    }
-    
     private enum State
     {
         START,
@@ -59,7 +47,6 @@ public class Parser
     private static final Logger LOG = Log.getLogger(Parser.class);
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
-    private final Parser.Handler parserHandler;
 
     // State specific
     private State state = State.START;
@@ -83,11 +70,10 @@ public class Parser
      */
     private byte flagsInUse=0x00;
     
-    public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool, Parser.Handler parserHandler)
+    public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool)
     {
         this.bufferPool = bufferPool;
         this.policy = wspolicy;
-        this.parserHandler = parserHandler;
     }
     
     private void assertSanePayloadLength(long len)
@@ -156,43 +142,244 @@ public class Parser
      * Parse the buffer.
      *
      * @param buffer the buffer to parse from.
-     * @return true if parsing of entire buffer was successful,
-     * false if parsing was interrupted by {@link Handler}.  If false, cease parsing the remaining
-     * buffer until such time its allowed again (this is important for read backpressure scenarios)
+     * @return Frame or null if not enough data for a complete frame.
      * @throws WebSocketException if unable to parse properly
      */
-    public boolean parse(ByteBuffer buffer) throws WebSocketException
+    public Frame parse(ByteBuffer buffer) throws WebSocketException
     {
-        // quick fail, nothing left to parse
-        if (!buffer.hasRemaining())
-        {
-            return true;
-        }
-        
         try
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} Parsing {}", getPolicy().getBehavior(), BufferUtil.toDetailString(buffer));
+           
             // parse through
-            while (buffer.hasRemaining() && parseFrame(buffer))
+            while (buffer.hasRemaining())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} Parsed Frame: {} : {}", getPolicy().getBehavior(), frame, BufferUtil.toDetailString(buffer));
-    
-                assertBehavior();
-       
-                if(!this.parserHandler.onFrame(frame))
+                switch (state)
                 {
-                    // Do not parse any more
-                    if(LOG.isDebugEnabled())
-                        LOG.debug("{} Parser.BackPressure [{} bytes remaining]", getPolicy().getBehavior(), buffer.remaining());
-                    return false;
+                    case START:
+                    {
+                        frame = null;
+                        payload = null;
+
+                        // peek at byte
+                        byte b = buffer.get();
+                        boolean fin = ((b & 0x80) != 0);
+
+                        byte opcode = (byte)(b & 0x0F);
+
+                        if (!OpCode.isKnown(opcode))
+                            throw new ProtocolException("Unknown opcode: " + opcode);
+
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} OpCode {}, fin={} rsv={}{}{}",
+                                    getPolicy().getBehavior(),
+                                    OpCode.name(opcode),
+                                    fin,
+                                    (((b & 0x40) != 0)?'1':'.'),
+                                    (((b & 0x20) != 0)?'1':'.'),
+                                    (((b & 0x10) != 0)?'1':'.'));
+
+                        // base framing flags
+                        switch(opcode)
+                        {
+                            case OpCode.TEXT:
+                                frame = new Frame(OpCode.TEXT);
+                                break;
+                            case OpCode.BINARY:
+                                frame = new Frame(OpCode.BINARY);
+                                break;
+                            case OpCode.CONTINUATION:
+                                frame = new Frame(OpCode.CONTINUATION);
+                                break;
+                            case OpCode.CLOSE:
+                                frame = new Frame(OpCode.CLOSE);
+                                // control frame validation
+                                if (!fin)
+                                    throw new ProtocolException("Fragmented Close Frame [" + OpCode.name(opcode) + "]");
+                                break;
+                            case OpCode.PING:
+                                frame = new Frame(OpCode.PING);
+                                // control frame validation
+                                if (!fin)
+                                    throw new ProtocolException("Fragmented Ping Frame [" + OpCode.name(opcode) + "]");
+                                break;
+                            case OpCode.PONG:
+                                frame = new Frame(OpCode.PONG);
+                                // control frame validation
+                                if (!fin)
+                                    throw new ProtocolException("Fragmented Pong Frame [" + OpCode.name(opcode) + "]");
+                                break;
+                        }
+
+                        frame.setFin(fin);
+
+                        // Are any flags set?
+                        if ((b & 0x70) != 0)
+                        {
+                            int  not_in_use = (isRsv1InUse()?0:0x40) + (isRsv2InUse()?0:0x20) + (isRsv3InUse()?0:0x10);
+                            /*
+                             * RFC 6455 Section 5.2
+                             * 
+                             * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the
+                             * negotiated extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
+                             */
+                            if ((b & not_in_use) != 0)
+                            {
+                                String err = String.format("RSV bits %x not in use %x",b,not_in_use);
+                                if(LOG.isDebugEnabled())
+                                    LOG.debug(getPolicy().getBehavior() + " " + err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
+                                throw new ProtocolException(err);
+                            }
+                            
+                            // TODO yuck
+                            if ((b & 0x40) != 0)
+                                frame.setRsv1(true);
+                            if ((b & 0x20) != 0)
+                                frame.setRsv2(true);
+                            if ((b & 0x10) != 0)
+                                frame.setRsv3(true);
+                        }
+
+                        state = State.PAYLOAD_LEN;
+                        break;
+                    }
+
+                    case PAYLOAD_LEN:
+                    {
+                        byte b = buffer.get();
+                        frame.setMasked((b & 0x80) != 0);
+                        payloadLength = (byte)(0x7F & b);
+
+                        if (payloadLength == 127) // 0x7F
+                        {
+                            // length 8 bytes (extended payload length)
+                            payloadLength = 0;
+                            state = State.PAYLOAD_LEN_BYTES;
+                            cursor = 8;
+                            break; // continue onto next state
+                        }
+                        else if (payloadLength == 126) // 0x7E
+                        {
+                            // length 2 bytes (extended payload length)
+                            payloadLength = 0;
+                            state = State.PAYLOAD_LEN_BYTES;
+                            cursor = 2;
+                            break; // continue onto next state
+                        }
+
+                        assertSanePayloadLength(payloadLength);
+                        if (frame.isMasked())
+                        {
+                            state = State.MASK;
+                        }
+                        else
+                        {
+                            // special case for empty payloads (no more bytes left in buffer)
+                            if (payloadLength == 0)
+                            {
+                                state = State.START;
+                                assertBehavior();
+                                return frame;
+                            }
+
+                            deMasker.reset(frame);
+                            state = State.PAYLOAD;
+                        }
+
+                        break;
+                    }
+
+                    case PAYLOAD_LEN_BYTES:
+                    {
+                        byte b = buffer.get();
+                        --cursor;
+                        payloadLength |= (b & 0xFF) << (8 * cursor);
+                        if (cursor == 0)
+                        {
+                            assertSanePayloadLength(payloadLength);
+                            if (frame.isMasked())
+                            {
+                                state = State.MASK;
+                            }
+                            else
+                            {
+                                // special case for empty payloads (no more bytes left in buffer)
+                                if (payloadLength == 0)
+                                {
+                                    state = State.START;
+                                    assertBehavior();
+                                    return frame;
+                                }
+
+                                deMasker.reset(frame);
+                                state = State.PAYLOAD;
+                            }
+                        }
+                        break;
+                    }
+
+                    case MASK:
+                    {
+                        byte m[] = new byte[4];
+                        frame.setMask(m);
+                        if (buffer.remaining() >= 4)
+                        {
+                            buffer.get(m,0,4);
+                            // special case for empty payloads (no more bytes left in buffer)
+                            if (payloadLength == 0)
+                            {
+                                state = State.START;
+                                assertBehavior();
+                                return frame;
+                            }
+
+                            deMasker.reset(frame);
+                            state = State.PAYLOAD;
+                        }
+                        else
+                        {
+                            state = State.MASK_BYTES;
+                            cursor = 4;
+                        }
+                        break;
+                    }
+
+                    case MASK_BYTES:
+                    {
+                        byte b = buffer.get();
+                        frame.getMask()[4 - cursor] = b;
+                        --cursor;
+                        if (cursor == 0)
+                        {
+                            // special case for empty payloads (no more bytes left in buffer)
+                            if (payloadLength == 0)
+                            {
+                                state = State.START;
+                                assertBehavior();
+                                return frame;
+                            }
+
+                            deMasker.reset(frame);
+                            state = State.PAYLOAD;
+                        }
+                        break;
+                    }
+
+                    case PAYLOAD:
+                    {
+                        frame.assertValid();
+                        if (parsePayload(buffer))
+                        {
+                            state = State.START;
+                            // we have a frame!
+                            assertBehavior();
+                            return frame;
+                        }
+                        break;
+                    }
                 }
             }
-    
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} Parsed Complete: [{} bytes left in read buffer]", getPolicy().getBehavior(), buffer.remaining());
-            
-            // parsing is free to continue
-            return !buffer.hasRemaining();
         }
         catch (Throwable t)
         {
@@ -210,6 +397,14 @@ public class Parser
                 
             throw wse;
         }
+        finally
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} Parse exit: {} {} {}", getPolicy().getBehavior(), state, frame, BufferUtil.toDetailString(buffer));
+            
+        }
+        
+        return null;
     }
     
     private void assertBehavior()
@@ -249,279 +444,6 @@ public class Parser
         }
     }
     
-    /**
-     * Parse the base framing protocol buffer.
-     *
-     * @param buffer
-     *            the buffer to parse from.
-     * @return true if done parsing a whole frame. false if incomplete/partial parsing of frame.
-     */
-    private boolean parseFrame(ByteBuffer buffer)
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("{} Parsing {}", getPolicy().getBehavior(), BufferUtil.toDetailString(buffer));
-        }
-        
-        while (buffer.hasRemaining())
-        {
-            switch (state)
-            {
-                case START:
-                {
-                    payload = null;
-                    
-                    // peek at byte
-                    byte b = buffer.get();
-                    boolean fin = ((b & 0x80) != 0);
-                    
-                    byte opcode = (byte)(b & 0x0F);
-
-                    if (!OpCode.isKnown(opcode))
-                    {
-                        throw new ProtocolException("Unknown opcode: " + opcode);
-                    }
-                    
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} OpCode {}, fin={} rsv={}{}{}",
-                                getPolicy().getBehavior(),
-                                OpCode.name(opcode),
-                                fin,
-                                (((b & 0x40) != 0)?'1':'.'),
-                                (((b & 0x20) != 0)?'1':'.'),
-                                (((b & 0x10) != 0)?'1':'.'));
-
-                    // base framing flags
-                    switch(opcode)
-                    {
-                        case OpCode.TEXT:
-                            frame = new Frame(OpCode.TEXT);
-                            break;
-                        case OpCode.BINARY:
-                            frame = new Frame(OpCode.BINARY);
-                            break;
-                        case OpCode.CONTINUATION:
-                            frame = new Frame(OpCode.CONTINUATION);
-                            break;
-                        case OpCode.CLOSE:
-                            frame = new Frame(OpCode.CLOSE);
-                            // control frame validation
-                            if (!fin)
-                            {
-                                throw new ProtocolException("Fragmented Close Frame [" + OpCode.name(opcode) + "]");
-                            }
-                            break;
-                        case OpCode.PING:
-                            frame = new Frame(OpCode.PING);
-                            // control frame validation
-                            if (!fin)
-                            {
-                                throw new ProtocolException("Fragmented Ping Frame [" + OpCode.name(opcode) + "]");
-                            }
-                            break;
-                        case OpCode.PONG:
-                            frame = new Frame(OpCode.PONG);
-                            // control frame validation
-                            if (!fin)
-                            {
-                                throw new ProtocolException("Fragmented Pong Frame [" + OpCode.name(opcode) + "]");
-                            }
-                            break;
-                    }
-                    
-                    frame.setFin(fin);
-
-                    // Are any flags set?
-                    if ((b & 0x70) != 0)
-                    {
-                        /*
-                         * RFC 6455 Section 5.2
-                         * 
-                         * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the
-                         * negotiated extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
-                         */
-                        if ((b & 0x40) != 0)
-                        {
-                            if (isRsv1InUse())
-                                frame.setRsv1(true);
-                            else
-                            {
-                                String err = "RSV1 not allowed to be set";
-                                if(LOG.isDebugEnabled())
-                                {
-                                    LOG.debug(getPolicy().getBehavior() + " " + err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
-                                }
-                                throw new ProtocolException(err);
-                            }
-                        }
-                        if ((b & 0x20) != 0)
-                        {
-                            if (isRsv2InUse())
-                                frame.setRsv2(true);
-                            else
-                            {
-                                String err = "RSV2 not allowed to be set";
-                                if(LOG.isDebugEnabled())
-                                {
-                                    LOG.debug(getPolicy().getBehavior() + " " + err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
-                                }
-                                throw new ProtocolException(err);
-                            }
-                        }
-                        if ((b & 0x10) != 0)
-                        {
-                            if (isRsv3InUse())
-                                frame.setRsv3(true);
-                            else
-                            {
-                                String err = "RSV3 not allowed to be set";
-                                if(LOG.isDebugEnabled())
-                                {
-                                    LOG.debug(getPolicy().getBehavior() + " " + err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
-                                }
-                                throw new ProtocolException(err);
-                            }
-                        }
-                    }
-                    
-                    state = State.PAYLOAD_LEN;
-                    break;
-                }
-                
-                case PAYLOAD_LEN:
-                {
-                    byte b = buffer.get();
-                    frame.setMasked((b & 0x80) != 0);
-                    payloadLength = (byte)(0x7F & b);
-
-                    if (payloadLength == 127) // 0x7F
-                    {
-                        // length 8 bytes (extended payload length)
-                        payloadLength = 0;
-                        state = State.PAYLOAD_LEN_BYTES;
-                        cursor = 8;
-                        break; // continue onto next state
-                    }
-                    else if (payloadLength == 126) // 0x7E
-                    {
-                        // length 2 bytes (extended payload length)
-                        payloadLength = 0;
-                        state = State.PAYLOAD_LEN_BYTES;
-                        cursor = 2;
-                        break; // continue onto next state
-                    }
-
-                    assertSanePayloadLength(payloadLength);
-                    if (frame.isMasked())
-                    {
-                        state = State.MASK;
-                    }
-                    else
-                    {
-                        // special case for empty payloads (no more bytes left in buffer)
-                        if (payloadLength == 0)
-                        {
-                            state = State.START;
-                            return true;
-                        }
-
-                        deMasker.reset(frame);
-                        state = State.PAYLOAD;
-                    }
-
-                    break;
-                }
-                
-                case PAYLOAD_LEN_BYTES:
-                {
-                    byte b = buffer.get();
-                    --cursor;
-                    payloadLength |= (b & 0xFF) << (8 * cursor);
-                    if (cursor == 0)
-                    {
-                        assertSanePayloadLength(payloadLength);
-                        if (frame.isMasked())
-                        {
-                            state = State.MASK;
-                        }
-                        else
-                        {
-                            // special case for empty payloads (no more bytes left in buffer)
-                            if (payloadLength == 0)
-                            {
-                                state = State.START;
-                                return true;
-                            }
-
-                            deMasker.reset(frame);
-                            state = State.PAYLOAD;
-                        }
-                    }
-                    break;
-                }
-                
-                case MASK:
-                {
-                    byte m[] = new byte[4];
-                    frame.setMask(m);
-                    if (buffer.remaining() >= 4)
-                    {
-                        buffer.get(m,0,4);
-                        // special case for empty payloads (no more bytes left in buffer)
-                        if (payloadLength == 0)
-                        {
-                            state = State.START;
-                            return true;
-                        }
-
-                        deMasker.reset(frame);
-                        state = State.PAYLOAD;
-                    }
-                    else
-                    {
-                        state = State.MASK_BYTES;
-                        cursor = 4;
-                    }
-                    break;
-                }
-                
-                case MASK_BYTES:
-                {
-                    byte b = buffer.get();
-                    frame.getMask()[4 - cursor] = b;
-                    --cursor;
-                    if (cursor == 0)
-                    {
-                        // special case for empty payloads (no more bytes left in buffer)
-                        if (payloadLength == 0)
-                        {
-                            state = State.START;
-                            return true;
-                        }
-
-                        deMasker.reset(frame);
-                        state = State.PAYLOAD;
-                    }
-                    break;
-                }
-                
-                case PAYLOAD:
-                {
-                    frame.assertValid();
-                    if (parsePayload(buffer))
-                    {
-                        state = State.START;
-                        // we have a frame!
-                        return true;
-                    }
-                    break;
-                }
-            }
-        }
-
-        return false;
-    }
-
     /**
      * Implementation specific parsing of a payload
      * 

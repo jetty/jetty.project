@@ -147,9 +147,9 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     }
     
     @Override
-    public Parser newClientParser(Parser.Handler parserHandler)
+    public Parser newClientParser()
     {
-        return new Parser(WebSocketPolicy.newClientPolicy(), bufferPool, parserHandler);
+        return new Parser(WebSocketPolicy.newClientPolicy(), bufferPool);
     }
     
     @Override
