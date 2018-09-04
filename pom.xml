@@ -403,6 +403,11 @@
         <version>1.0.0</version>
         <configuration>
           <updatePomFile>true</updatePomFile>
+          <flattenMode>ossrh</flattenMode>
+          <pomElements>
+            <dependencyManagement>expand</dependencyManagement>
+            <issueManagement>expand</issueManagement>
+          </pomElements>
         </configuration>
         <executions>
           <execution>

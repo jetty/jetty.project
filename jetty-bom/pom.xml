@@ -29,7 +29,7 @@
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support-version>1.4</build-support-version>
-    <jetty.version>9.4.12-SNAPSHOT</jetty.version>
+    <jetty.version>9.4.13-SNAPSHOT</jetty.version>
     <revision>${jetty.version}</revision>
   </properties>
 
@@ -89,6 +89,30 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <version>1.0.1</version>
+        <configuration>
+          <updatePomFile>true</updatePomFile>
+          <flattenMode>bom</flattenMode>
+          <pomElements>
+            <dependencyManagement>expand</dependencyManagement>
+            <issueManagement>expand</issueManagement>
+          </pomElements>
+        </configuration>
+        <executions>
+          <execution>
+            <id>flatten</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>flatten</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 
   <dependencyManagement>
