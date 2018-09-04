@@ -280,7 +280,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.ignore(e);
         }
         return null;
     }
