@@ -36,6 +36,10 @@
     <mavenPluginToolsVersion>3.5.2</mavenPluginToolsVersion>
     <mavenVersion>3.5.0</mavenVersion>
     <unix.socket.tmp></unix.socket.tmp>
+
+    <distMgmtSnapRepoId>oss.sonatype.org</distMgmtSnapRepoId>
+    <distMgmtSnapRepoName>Jetty Snapshot Repository</distMgmtSnapRepoName>
+    <distMgmtSnapRepoUrl>https://oss.sonatype.org/content/repositories/jetty-snapshots/</distMgmtSnapRepoUrl>
   </properties>
 
   <licenses>
@@ -1918,9 +1922,9 @@
       <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
     <snapshotRepository>
-      <id>oss.sonatype.org</id>
-      <name>Jetty Snapshot Repository</name>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
+      <id>${distMgmtSnapRepoId}</id>
+      <name>${distMgmtSnapRepoName}</name>
+      <url>${distMgmtSnapRepoUrl}</url>
     </snapshotRepository>
     <site>
       <id>jetty.eclipse.website</id>
