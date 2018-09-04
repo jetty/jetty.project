@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.naming.AuthenticationException;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -462,6 +463,14 @@ public class LdapLoginModule extends AbstractLoginModule
                 LOG.info( e );
             }
             throw new LoginException("IO Error performing login.");
+        }
+        catch ( AuthenticationException e )
+        {
+            if (_debug)
+            {
+                LOG.info( e );
+            }
+            return false;
         }
         catch (Exception e)
         {
