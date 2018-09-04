@@ -139,7 +139,7 @@
         <executions>
           <execution>
             <id>copy</id>
-            <phase>generate-resources</phase>
+            <phase>package</phase>
             <goals>
               <goal>copy</goal>
             </goals>

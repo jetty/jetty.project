@@ -151,14 +151,10 @@
         <artifactId>jetty-ant</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-client</artifactId>
-        <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-continuation</artifactId>
+        <artifactId>jetty-client</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -175,7 +171,7 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-distribution</artifactId>
-        <version>9.4.9-SNAPSHOT</version>
+        <version>10.0.0-SNAPSHOT</version>
         <type>tar.gz</type>
       </dependency>
       <dependency>
@@ -202,7 +198,7 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-home</artifactId>
-        <version>9.4.9-SNAPSHOT</version>
+        <version>10.0.0-SNAPSHOT</version>
         <type>tar.gz</type>
       </dependency>
       <dependency>
@@ -394,7 +390,6 @@
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-common</artifactId>
         <version>10.0.0-SNAPSHOT</version>
-      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-server</artifactId>

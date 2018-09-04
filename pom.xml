@@ -206,7 +206,7 @@
             <configuration>
               <!-- list of classes that you want to see in the report.
                    Specify a narrow list of multi-module project
-                   classes you want to see here. 
+                   classes you want to see here.
                    This is useful to remove 3rd party library classes
                    from the report. -->
               <includes>
@@ -1026,6 +1026,11 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
         <version>0.18</version>
@@ -1247,7 +1252,8 @@
     <!--
       Usage:
       Javadoc aggregation for Jetty website
-      > mvn -Paggregate-site clean install javadoc:aggregate -Dtest=foo
+      > mvn clean install -Dtest=foo
+      > mvn -Paggregate-site javadoc:aggregate -Dtest=foo
      -->
     <profile>
       <id>aggregate-site</id>
@@ -1257,7 +1263,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
             <configuration>
-              <excludePackageNames>com.acme</excludePackageNames>
+              <excludePackageNames>com.acme,*.jmh</excludePackageNames>
               <links>
                 <link>http://docs.oracle.com/javase/8/docs/api/</link>
                 <link>http://docs.oracle.com/javaee/7/api</link>
@@ -1307,7 +1313,7 @@
           <plugin>
             <groupId>org.eclipse.cbi.maven.plugins</groupId>
             <artifactId>eclipse-jarsigner-plugin</artifactId>
-	    <version>${cbi-plugins.version}</version>
+	          <version>${cbi-plugins.version}</version>
             <executions>
               <execution>
                 <id>sign</id>

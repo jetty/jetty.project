@@ -304,7 +304,7 @@ public class LdapLoginModule extends AbstractLoginModule
             }
         }
 
-        LOG.debug("user cred is: " + ldapCredential);
+        if(LOG.isDebugEnabled()) LOG.debug("user cred is: " + ldapCredential);
 
         return ldapCredential;
     }
@@ -341,7 +341,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
     private List<String> getUserRolesByDn(DirContext dirContext, String userDn) throws LoginException, NamingException
     {
-        List<String> roleList = new ArrayList<String>();
+        List<String> roleList = new ArrayList<>();
 
         if (dirContext == null || _roleBaseDn == null || _roleMemberAttribute == null || _roleObjectClass == null)
         {
@@ -357,11 +357,11 @@ public class LdapLoginModule extends AbstractLoginModule
         Object[] filterArguments = {_roleObjectClass, _roleMemberAttribute, userDn};
         NamingEnumeration<SearchResult> results = dirContext.search(_roleBaseDn, filter, filterArguments, ctls);
 
-        LOG.debug("Found user roles?: " + results.hasMoreElements());
+        if(LOG.isDebugEnabled()) LOG.debug("Found user roles?: " + results.hasMoreElements());
 
         while (results.hasMoreElements())
         {
-            SearchResult result = (SearchResult)results.nextElement();
+            SearchResult result = results.nextElement();
 
             Attributes attributes = result.getAttributes();
 
@@ -425,7 +425,8 @@ public class LdapLoginModule extends AbstractLoginModule
             if (_forceBindingLogin)
             {
                 authed = bindingLogin(webUserName, webCredential);
-            } else
+            }
+            else
             {
                 // This sets read and the credential
                 UserInfo userInfo = getUserInfo(webUserName);
@@ -458,7 +459,7 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             if (_debug)
             {
-                e.printStackTrace();
+                LOG.info( e );
             }
             throw new LoginException("IO Error performing login.");
         }
@@ -466,7 +467,7 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             if (_debug)
             {
-                e.printStackTrace();
+                LOG.info( e );
             }
             throw new LoginException("Error obtaining user info.");
         }
@@ -556,7 +557,7 @@ public class LdapLoginModule extends AbstractLoginModule
             throw new LoginException("User not found.");
         }
 
-        return (SearchResult)results.nextElement();
+        return results.nextElement();
     }
 
 
