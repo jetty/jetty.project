@@ -212,7 +212,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
                 if (!result.compareAndSet(false, true))
                 {
                     // callback has been notified asynchronously
-                    fillAndParse();
+                    fillAndParse(); // TODO dispatch?
                 }
             }
 
@@ -264,7 +264,6 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     {
         if(LOG.isDebugEnabled())
             LOG.debug("onFillable()");
-        getNetworkBuffer();
         fillAndParse();
     }
 
