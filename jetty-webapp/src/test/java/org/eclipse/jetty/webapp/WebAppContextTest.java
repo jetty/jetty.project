@@ -18,14 +18,8 @@
 
 package org.eclipse.jetty.webapp;
 
-<<<<<<< HEAD
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
-=======
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
->>>>>>> a3f1592c50... Issue #2431 - Upgrade to Junit 5 (#2436)
+
 
 import java.io.File;
 import java.io.IOException;
@@ -119,7 +113,8 @@ public class WebAppContextTest
         
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        assertThat(wac.getWebAppConfigurations().stream().map(c->{return c.getClass().getName();}).collect(Collectors.toList()),Matchers.containsInAnyOrder(known_and_enabled));
+        assertThat(wac.getWebAppConfigurations().stream().map(c->{return c.getClass().getName();}).collect(Collectors.toList()),
+                   containsInAnyOrder(known_and_enabled));
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 
@@ -133,8 +128,8 @@ public class WebAppContextTest
     {
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
-        Assert.assertThat(wac.getWebAppConfigurations().stream().map(c->c.getClass().getName()).collect(Collectors.toList()),
-                Matchers.contains( 
+        assertThat(wac.getWebAppConfigurations().stream().map(c->c.getClass().getName()).collect(Collectors.toList()),
+                contains(
                         "org.eclipse.jetty.webapp.JmxConfiguration",
                         "org.eclipse.jetty.webapp.WebInfConfiguration",
                         "org.eclipse.jetty.webapp.WebXmlConfiguration",
@@ -150,14 +145,14 @@ public class WebAppContextTest
         Configuration[] configs = {new WebInfConfiguration()};
         WebAppContext wac = new WebAppContext();
         wac.setConfigurations(configs);
-        Assert.assertThat(wac.getWebAppConfigurations(),Matchers.contains(configs));
+        assertThat(wac.getWebAppConfigurations(),contains(configs));
 
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = new Server();
         server.setAttribute(Configuration.ATTR, classNames);
         wac.setServer(server);
-        Assert.assertThat(wac.getWebAppConfigurations(),Matchers.contains(configs));
+        assertThat(wac.getWebAppConfigurations(),contains(configs));
     }
 
     @Test
@@ -264,11 +259,8 @@ public class WebAppContextTest
         try
         {
             String response = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
-<<<<<<< HEAD
             assertThat(response,containsString("200 OK"));
-=======
-            assertTrue(response.indexOf("200 OK")>=0);
->>>>>>> a3f1592c50... Issue #2431 - Upgrade to Junit 5 (#2436)
+
         }
         finally
         {
