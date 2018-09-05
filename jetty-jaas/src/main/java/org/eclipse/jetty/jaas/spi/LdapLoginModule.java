@@ -501,7 +501,6 @@ public class LdapLoginModule extends AbstractLoginModule
      * @param password the password
      * @return true always
      * @throws LoginException  if unable to bind the login
-     * @throws NamingException if failure to bind login
      */
     public boolean bindingLogin(String username, Object password) throws LoginException
     {
