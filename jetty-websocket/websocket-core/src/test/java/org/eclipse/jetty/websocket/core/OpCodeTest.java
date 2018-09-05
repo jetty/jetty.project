@@ -18,25 +18,17 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.hamcrest.Matchers;
+import org.junit.Test;
+
 import static org.eclipse.jetty.websocket.core.frames.OpCode.BINARY;
 import static org.eclipse.jetty.websocket.core.frames.OpCode.CLOSE;
 import static org.eclipse.jetty.websocket.core.frames.OpCode.CONTINUATION;
 import static org.eclipse.jetty.websocket.core.frames.OpCode.PING;
 import static org.eclipse.jetty.websocket.core.frames.OpCode.PONG;
 import static org.eclipse.jetty.websocket.core.frames.OpCode.TEXT;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
-
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.hamcrest.Matchers;
-import org.junit.Test;
 
 public class OpCodeTest
 {
@@ -70,9 +62,7 @@ public class OpCodeTest
             byte o = (byte)(opcode[i] & 0x0F);
             boolean unfin = (opcode[i] & 0x80) != 0;
             
-            String failure = sequence.check(o,!unfin);
-            if (failure!=null)
-                throw new IllegalStateException(String.format("%s at %d in %s",failure,i,TypeUtil.toHexString(opcode)));
+            sequence.check(o,!unfin);
         }
     }
     
@@ -109,23 +99,27 @@ public class OpCodeTest
         testSequence(unfin(BINARY),PING,unfin(CONTINUATION),PONG,unfin(CONTINUATION),PING,CONTINUATION,CLOSE);
     }
 
-    @Test(expected=IllegalStateException.class)
+    @Test(expected=ProtocolException.class)
     public void testBadContinuationAlreadyFIN()
     {
         testSequence(TEXT,CONTINUATION,CLOSE);
     }
 
-    @Test(expected=IllegalStateException.class)
+    @Test(expected=ProtocolException.class)
     public void testBadContinuationNoCont()
     {
         testSequence(unfin(TEXT),TEXT);
     }
 
-    @Test(expected=IllegalStateException.class)
+    @Test(expected=ProtocolException.class)
     public void testFramesAfterClose()
     {
         testSequence(TEXT,CLOSE,TEXT);
     }
-    
-    
+
+    @Test(expected=ProtocolException.class)
+    public void testControlFramesAfterClose()
+    {
+        testSequence(TEXT,CLOSE,PING);
+    }
 }

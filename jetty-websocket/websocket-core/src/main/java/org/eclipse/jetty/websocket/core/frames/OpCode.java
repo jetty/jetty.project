@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.core.frames;
 
+import org.eclipse.jetty.websocket.core.ProtocolException;
+
 public final class OpCode
 {
     /**
@@ -142,39 +144,39 @@ public final class OpCode
     {
         byte state=UNDEFINED;
         
-        public String check(byte opcode, boolean fin)
+        public void check(byte opcode, boolean fin) throws ProtocolException
         {
             if (state==CLOSE)
-                return String.format("CLOSED for %s/%b",name(opcode),fin);
+                throw new ProtocolException(name(opcode) + " after CLOSE");
             
             switch (opcode)
             {
                 case UNDEFINED:
-                    return String.format("%s/%b",name(opcode),fin);
+                    throw new ProtocolException("UNDEFINED OpCode: " + name(opcode));
                     
                 case CONTINUATION:
                     if (state==UNDEFINED)
-                        return String.format("UNDEFINED %s/%b",name(opcode),fin);
+                        throw new ProtocolException("CONTINUATION after fin==true");
                     if (fin)
                         state = UNDEFINED;
-                    return null;
+                    return;
                     
                 case CLOSE:
                     state = CLOSE;
-                    return null;
+                    return;
                     
                 case PING:
                 case PONG:
-                    return null;
+                    return;
                     
                 case TEXT:
                 case BINARY:
                 default:
                     if (state!=UNDEFINED)
-                        return String.format("%s %s/%b",name(state),name(opcode),fin);
+                        throw new ProtocolException("DataFrame before fin==true");
                     if (!fin)
                         state = opcode;
-                    return null;
+                    return;
            }
         }
     }

@@ -401,10 +401,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                     LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}",
                               frame, callback, state, handler);
 
-                String failure = check(frame.getOpCode(),frame.isFin());
-                if (failure!=null)
-                    callback.failed(new ProtocolException(failure)); //TODO protocol error?
-                else if (state.isInOpen())
+                check(frame.getOpCode(),frame.isFin());
+                if (state.isInOpen())
                 {   
                     // Handle inbound close
                     if (frame.getOpCode() == OpCode.CLOSE)
@@ -459,11 +457,15 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         @Override
         public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
         {
-            String failure = check(frame.getOpCode(),frame.isFin());
-            if (failure!=null)
-                callback.failed(new ProtocolException(failure));
-            else
+            try
+            {
+                check(frame.getOpCode(),frame.isFin());
                 connection.sendFrame(frame,callback,batchMode);
+            }
+            catch (ProtocolException e)
+            {
+                callback.failed(e);
+            }
         }
     }    
     
