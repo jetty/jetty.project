@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -39,16 +41,15 @@ import org.eclipse.jetty.websocket.jsr356.handlers.ByteBufferPartialHandler;
 import org.eclipse.jetty.websocket.jsr356.handlers.LongMessageHandler;
 import org.eclipse.jetty.websocket.jsr356.handlers.StringWholeHandler;
 import org.eclipse.jetty.websocket.jsr356.samples.DummyEndpoint;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class JsrSessionTest
 {
     private ClientContainer container;
     private JsrSession session;
 
-    @Before
+    @BeforeEach
     public void initSession()
     {
         container = new ClientContainer();
@@ -72,8 +73,8 @@ public class JsrSessionTest
     {
         session.addMessageHandler(new ByteBufferPartialHandler());
         MessageHandlerWrapper wrapper = session.getMessageHandlerWrapper(MessageType.BINARY);
-        Assert.assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteBufferPartialHandler.class));
-        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),ByteBuffer.class);
+        assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteBufferPartialHandler.class));
+        assertEquals(wrapper.getMetadata().getMessageClass(), ByteBuffer.class, "Message Class");
     }
 
     @Test
@@ -82,11 +83,11 @@ public class JsrSessionTest
         session.addMessageHandler(new StringWholeHandler());
         session.addMessageHandler(new ByteArrayWholeHandler());
         MessageHandlerWrapper wrapper = session.getMessageHandlerWrapper(MessageType.TEXT);
-        Assert.assertThat("Text Handler",wrapper.getHandler(),instanceOf(StringWholeHandler.class));
-        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),String.class);
+        assertThat("Text Handler",wrapper.getHandler(),instanceOf(StringWholeHandler.class));
+        assertEquals(wrapper.getMetadata().getMessageClass(), String.class, "Message Class");
         wrapper = session.getMessageHandlerWrapper(MessageType.BINARY);
-        Assert.assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteArrayWholeHandler.class));
-        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),byte[].class);
+        assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteArrayWholeHandler.class));
+        assertEquals(wrapper.getMetadata().getMessageClass(), byte[].class, "Message Class");
     }
 
     @Test
@@ -98,11 +99,11 @@ public class JsrSessionTest
         session.removeMessageHandler(oldText); // remove original TEXT handler
         session.addMessageHandler(new LongMessageHandler()); // add new TEXT handler
         MessageHandlerWrapper wrapper = session.getMessageHandlerWrapper(MessageType.BINARY);
-        Assert.assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteArrayWholeHandler.class));
-        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),byte[].class);
+        assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteArrayWholeHandler.class));
+        assertEquals(wrapper.getMetadata().getMessageClass(), byte[].class, "Message Class");
         wrapper = session.getMessageHandlerWrapper(MessageType.TEXT);
-        Assert.assertThat("Text Handler",wrapper.getHandler(),instanceOf(LongMessageHandler.class));
-        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),Long.class);
+        assertThat("Text Handler",wrapper.getHandler(),instanceOf(LongMessageHandler.class));
+        assertEquals(wrapper.getMetadata().getMessageClass(), Long.class, "Message Class");
     }
 
     @Test
@@ -110,7 +111,7 @@ public class JsrSessionTest
     {
         session.addMessageHandler(new StringWholeHandler());
         MessageHandlerWrapper wrapper = session.getMessageHandlerWrapper(MessageType.TEXT);
-        Assert.assertThat("Text Handler",wrapper.getHandler(),instanceOf(StringWholeHandler.class));
-        Assert.assertEquals("Message Class",wrapper.getMetadata().getMessageClass(),String.class);
+        assertThat("Text Handler",wrapper.getHandler(),instanceOf(StringWholeHandler.class));
+        assertEquals(wrapper.getMetadata().getMessageClass(), String.class, "Message Class");
     }
 }

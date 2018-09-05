@@ -18,8 +18,12 @@
 
 package org.eclipse.jetty.util.log;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,9 +34,9 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for StdErrLog
@@ -44,7 +48,7 @@ public class StdErrLogTest
         StdErrLog.setTagPad(0);
     }
     
-    @Before
+    @BeforeEach
     public void before()
     {
         Thread.currentThread().setName("tname");
@@ -120,9 +124,9 @@ public class StdErrLogTest
         log.setPrintLongNames(true);
         StdErrCapture output = new StdErrCapture(log);
 
-        Assert.assertThat("Log.name", log.getName(), is("test"));
+        assertThat("Log.name", log.getName(), is("test"));
         Logger next=log.getLogger("next");
-        Assert.assertThat("Log.name(child)", next.getName(), is("test.next"));
+        assertThat("Log.name(child)", next.getName(), is("test.next"));
         next.info("testing {} {}","next","info");
 
         output.assertContains(":test.next:tname: testing next info");
@@ -205,10 +209,10 @@ public class StdErrLogTest
         Properties props = new Properties();
 
         // Default Levels
-        Assert.assertEquals("Default Logging Level",StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,null));
-        Assert.assertEquals("Default Logging Level",StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,""));
-        Assert.assertEquals("Default Logging Level",StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
-        Assert.assertEquals("Default Logging Level",StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,StdErrLogTest.class.getName()));
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props, null), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props, ""), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props, StdErrLogTest.class.getName()), "Default Logging Level");
     }
 
     @Test
@@ -219,7 +223,7 @@ public class StdErrLogTest
         props.setProperty("org.eclipse.jetty.bad.LEVEL","EXPECTED_BAD_LEVEL");
 
         // Default Level (because of bad level value)
-        Assert.assertEquals("Bad Logging Level",StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.bad"));
+        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.bad"), "Bad Logging Level");
     }
 
     @Test
@@ -230,9 +234,9 @@ public class StdErrLogTest
         props.setProperty("org.eclipse.jetty.util.LEVEL","info");
 
         // Default Level
-        Assert.assertEquals("Lowercase Level",StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
+        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"), "Lowercase Level");
         // Specific Level
-        Assert.assertEquals("Lowercase Level",StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util"));
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props, "org.eclipse.jetty.util"), "Lowercase Level");
     }
 
     @Test
@@ -242,10 +246,10 @@ public class StdErrLogTest
         props.setProperty("log.LEVEL","DEBUG");
 
         // Default Levels
-        Assert.assertEquals("Default Logging Level",StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,null));
-        Assert.assertEquals("Default Logging Level",StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,""));
-        Assert.assertEquals("Default Logging Level",StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
-        Assert.assertEquals("Default Logging Level",StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,StdErrLogTest.class.getName()));
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props, null), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props, ""), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props, "org.eclipse.jetty"), "Default Logging Level");
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props, StdErrLogTest.class.getName()), "Default Logging Level");
     }
 
     @Test
@@ -256,12 +260,12 @@ public class StdErrLogTest
         props.setProperty(name + ".LEVEL","ALL");
 
         // Default Levels
-        Assert.assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,null));
-        Assert.assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,""));
-        Assert.assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,null));
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,""));
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
 
         // Specified Level
-        Assert.assertEquals(StdErrLog.LEVEL_ALL,StdErrLog.getLoggingLevel(props,name));
+        assertEquals(StdErrLog.LEVEL_ALL,StdErrLog.getLoggingLevel(props,name));
     }
 
     @Test
@@ -271,16 +275,16 @@ public class StdErrLogTest
         props.setProperty("org.eclipse.jetty.util.LEVEL","DEBUG");
 
         // Default Levels
-        Assert.assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,null));
-        Assert.assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,""));
-        Assert.assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
-        Assert.assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.server.BogusObject"));
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,null));
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,""));
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
+        assertEquals(StdErrLog.LEVEL_INFO,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.server.BogusObject"));
 
         // Configured Level
-        Assert.assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,StdErrLogTest.class.getName()));
-        Assert.assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.Bogus"));
-        Assert.assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util"));
-        Assert.assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.resource.FileResource"));
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,StdErrLogTest.class.getName()));
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.Bogus"));
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util"));
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.resource.FileResource"));
     }
 
     @Test
@@ -292,17 +296,17 @@ public class StdErrLogTest
         props.setProperty("org.eclipse.jetty.util.ConcurrentHashMap.LEVEL","ALL");
 
         // Default Levels
-        Assert.assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,null));
-        Assert.assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,""));
-        Assert.assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
-        Assert.assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.server.ServerObject"));
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,null));
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,""));
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty"));
+        assertEquals(StdErrLog.LEVEL_DEBUG,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.server.ServerObject"));
 
         // Configured Level
-        Assert.assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,StdErrLogTest.class.getName()));
-        Assert.assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.MagicUtil"));
-        Assert.assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util"));
-        Assert.assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.resource.FileResource"));
-        Assert.assertEquals(StdErrLog.LEVEL_ALL,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.ConcurrentHashMap"));
+        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,StdErrLogTest.class.getName()));
+        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.MagicUtil"));
+        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util"));
+        assertEquals(StdErrLog.LEVEL_WARN,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.resource.FileResource"));
+        assertEquals(StdErrLog.LEVEL_ALL,StdErrLog.getLoggingLevel(props,"org.eclipse.jetty.util.ConcurrentHashMap"));
     }
 
     /**
@@ -513,19 +517,19 @@ public class StdErrLogTest
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             log.setLevel(StdErrLog.LEVEL_ALL);
-            Assert.assertThat("log.level(all).isDebugEnabled", log.isDebugEnabled(), is(true));
+            assertThat("log.level(all).isDebugEnabled", log.isDebugEnabled(), is(true));
 
             log.setLevel(StdErrLog.LEVEL_DEBUG);
-            Assert.assertThat("log.level(debug).isDebugEnabled", log.isDebugEnabled(), is(true));
+            assertThat("log.level(debug).isDebugEnabled", log.isDebugEnabled(), is(true));
 
             log.setLevel(StdErrLog.LEVEL_INFO);
-            Assert.assertThat("log.level(info).isDebugEnabled", log.isDebugEnabled(), is(false));
+            assertThat("log.level(info).isDebugEnabled", log.isDebugEnabled(), is(false));
 
             log.setLevel(StdErrLog.LEVEL_WARN);
-            Assert.assertThat("log.level(warn).isDebugEnabled", log.isDebugEnabled(), is(false));
+            assertThat("log.level(warn).isDebugEnabled", log.isDebugEnabled(), is(false));
 
             log.setLevel(StdErrLog.LEVEL_OFF);
-            Assert.assertThat("log.level(off).isDebugEnabled", log.isDebugEnabled(), is(false));
+            assertThat("log.level(off).isDebugEnabled", log.isDebugEnabled(), is(false));
         }
     }
 
@@ -536,19 +540,19 @@ public class StdErrLogTest
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
             log.setLevel(StdErrLog.LEVEL_ALL);
-            Assert.assertThat("log.level(all).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_ALL));
+            assertThat("log.level(all).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_ALL));
 
             log.setLevel(StdErrLog.LEVEL_DEBUG);
-            Assert.assertThat("log.level(debug).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_DEBUG));
+            assertThat("log.level(debug).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_DEBUG));
 
             log.setLevel(StdErrLog.LEVEL_INFO);
-            Assert.assertThat("log.level(info).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_INFO));
+            assertThat("log.level(info).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_INFO));
 
             log.setLevel(StdErrLog.LEVEL_WARN);
-            Assert.assertThat("log.level(warn).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_WARN));
+            assertThat("log.level(warn).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_WARN));
 
             log.setLevel(StdErrLog.LEVEL_OFF);
-            Assert.assertThat("log.level(off).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_OFF));
+            assertThat("log.level(off).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_OFF));
         }
     }
 
@@ -559,10 +563,10 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog(baseName,new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
-            Assert.assertThat("Logger.name", log.getName(), is("jetty"));
+            assertThat("Logger.name", log.getName(), is("jetty"));
 
             Logger log2 = log.getLogger("child");
-            Assert.assertThat("Logger.child.name", log2.getName(), is("jetty.child"));
+            assertThat("Logger.child.name", log2.getName(), is("jetty.child"));
         }
     }
 
@@ -573,10 +577,10 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog(baseName,new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
-            Assert.assertThat("Logger.name", log.getName(), is("jetty"));
+            assertThat("Logger.name", log.getName(), is("jetty"));
 
             Logger log2 = log.getLogger("child.of.the.sixties");
-            Assert.assertThat("Logger.child.name", log2.getName(), is("jetty.child.of.the.sixties"));
+            assertThat("Logger.child.name", log2.getName(), is("jetty.child.of.the.sixties"));
         }
     }
 
@@ -587,12 +591,12 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog(baseName,new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
-            Assert.assertThat("Logger.name", log.getName(), is("jetty"));
+            assertThat("Logger.name", log.getName(), is("jetty"));
 
             // Pass null as child reference, should return parent logger
             Logger log2 = log.getLogger((String)null);
-            Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
-            Assert.assertSame("Should have returned same logger", log2, log);
+            assertThat("Logger.child.name", log2.getName(), is("jetty"));
+            assertSame(log2, log, "Should have returned same logger");
         }
     }
 
@@ -603,12 +607,12 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog(baseName,new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
-            Assert.assertThat("Logger.name", log.getName(), is("jetty"));
+            assertThat("Logger.name", log.getName(), is("jetty"));
 
             // Pass empty name as child reference, should return parent logger
             Logger log2 = log.getLogger("");
-            Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
-            Assert.assertSame("Should have returned same logger", log2, log);
+            assertThat("Logger.child.name", log2.getName(), is("jetty"));
+            assertSame(log2, log, "Should have returned same logger");
         }
     }
 
@@ -619,12 +623,12 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog(baseName,new Properties());
         try (StacklessLogging stackless = new StacklessLogging(log))
         {
-            Assert.assertThat("Logger.name", log.getName(), is("jetty"));
+            assertThat("Logger.name", log.getName(), is("jetty"));
 
             // Pass empty name as child reference, should return parent logger
             Logger log2 = log.getLogger("      ");
-            Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
-            Assert.assertSame("Should have returned same logger", log2, log);
+            assertThat("Logger.child.name", log2.getName(), is("jetty"));
+            assertSame(log2, log, "Should have returned same logger");
         }
     }
 
@@ -633,11 +637,11 @@ public class StdErrLogTest
     {
         AbstractLogger log = new StdErrLog(null,new Properties());
 
-        Assert.assertThat("Logger.name", log.getName(), is(""));
+        assertThat("Logger.name", log.getName(), is(""));
 
         Logger log2 = log.getLogger("jetty");
-        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
-        Assert.assertNotSame("Should have returned same logger", log2, log);
+        assertThat("Logger.child.name", log2.getName(), is("jetty"));
+        assertNotSame(log2, log, "Should have returned same logger");
     }
 
     @Test
@@ -646,19 +650,19 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog("jetty",new Properties());
 
         log.setLevel(StdErrLog.LEVEL_ALL);
-        Assert.assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=ALL"));
+        assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=ALL"));
 
         log.setLevel(StdErrLog.LEVEL_DEBUG);
-        Assert.assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=DEBUG"));
+        assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=DEBUG"));
 
         log.setLevel(StdErrLog.LEVEL_INFO);
-        Assert.assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=INFO"));
+        assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=INFO"));
 
         log.setLevel(StdErrLog.LEVEL_WARN);
-        Assert.assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=WARN"));
+        assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=WARN"));
 
         log.setLevel(99); // intentionally bogus level
-        Assert.assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=?"));
+        assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=?"));
     }
 
     @Test
@@ -678,7 +682,7 @@ public class StdErrLogTest
         String output = new String(test.toByteArray(), StandardCharsets.UTF_8);
         // System.err.print(output);
 
-        Assert.assertThat(output, containsString(".StdErrLogTest#testPrintSource(StdErrLogTest.java:"));
+        assertThat(output, containsString(".StdErrLogTest#testPrintSource(StdErrLogTest.java:"));
         
 
         props.put("test.SOURCE","false");
@@ -696,17 +700,17 @@ public class StdErrLogTest
         assertLevel(root,StdErrLog.LEVEL_INFO); // default
 
         StdErrLog log = (StdErrLog)root.getLogger(StdErrLogTest.class.getName());
-        Assert.assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(false));
+        assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(false));
         assertLevel(log,StdErrLog.LEVEL_WARN); // as configured
 
         // Boot stomp it all to debug
         root.setDebugEnabled(true);
-        Assert.assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(true));
+        assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(true));
         assertLevel(log,StdErrLog.LEVEL_DEBUG); // as stomped
 
         // Restore configured
         root.setDebugEnabled(false);
-        Assert.assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(false));
+        assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(false));
         assertLevel(log,StdErrLog.LEVEL_WARN); // as configured
     }
 
@@ -732,7 +736,7 @@ public class StdErrLogTest
     
     private void assertLevel(StdErrLog log, int expectedLevel)
     {
-        Assert.assertThat("Log[" + log.getName() + "].level",levelToString(log.getLevel()),is(levelToString(expectedLevel)));
+        assertThat("Log[" + log.getName() + "].level",levelToString(log.getLevel()),is(levelToString(expectedLevel)));
     }
 
     private String levelToString(int level)

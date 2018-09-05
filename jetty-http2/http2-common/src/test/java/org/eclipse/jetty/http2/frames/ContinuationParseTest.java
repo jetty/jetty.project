@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +40,8 @@ import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class ContinuationParseTest
 {
@@ -77,7 +81,7 @@ public class ContinuationParseTest
             generator.generateHeaders(lease, streamId, metaData, null, true);
 
             List<ByteBuffer> byteBuffers = lease.getByteBuffers();
-            Assert.assertEquals(2, byteBuffers.size());
+            assertEquals(2, byteBuffers.size());
 
             ByteBuffer headersBody = byteBuffers.remove(1);
             int start = headersBody.position();
@@ -141,20 +145,20 @@ public class ContinuationParseTest
                 }
             }
 
-            Assert.assertEquals(1, frames.size());
+            assertEquals(1, frames.size());
             HeadersFrame frame = frames.get(0);
-            Assert.assertEquals(streamId, frame.getStreamId());
-            Assert.assertTrue(frame.isEndStream());
+            assertEquals(streamId, frame.getStreamId());
+            assertTrue(frame.isEndStream());
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
-            Assert.assertEquals(metaData.getMethod(), request.getMethod());
-            Assert.assertEquals(metaData.getURI(), request.getURI());
+            assertEquals(metaData.getMethod(), request.getMethod());
+            assertEquals(metaData.getURI(), request.getURI());
             for (int j = 0; j < fields.size(); ++j)
             {
                 HttpField field = fields.getField(j);
-                Assert.assertTrue(request.getFields().contains(field));
+                assertTrue(request.getFields().contains(field));
             }
             PriorityFrame priority = frame.getPriority();
-            Assert.assertNull(priority);
+            assertNull(priority);
         }
     }
 }

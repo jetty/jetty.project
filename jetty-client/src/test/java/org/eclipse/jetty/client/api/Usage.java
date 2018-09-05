@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.client.api;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -41,11 +45,11 @@ import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.FuturePromise;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
 
-@Ignore
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+@Disabled
 public class Usage
 {
     @Test
@@ -58,7 +62,7 @@ public class Usage
         ContentResponse response = client.GET("http://localhost:8080/foo");
 
         // Verify response status code
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
 
         // Access headers
         response.getHeaders().get("Content-Length");
@@ -83,7 +87,7 @@ public class Usage
                 .timeout(20, TimeUnit.SECONDS);
 
         ContentResponse response = request.send();
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -110,10 +114,10 @@ public class Usage
             }
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
         Response response = responseRef.get();
-        Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.getStatus());
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -141,7 +145,7 @@ public class Usage
                     {
                     }
                 }).send();
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -163,8 +167,8 @@ public class Usage
             // Wait for the response on the listener
             Response response = listener.get(5, TimeUnit.SECONDS);
 
-            Assert.assertNotNull(response);
-            Assert.assertEquals(200, response.getStatus());
+            assertNotNull(response);
+            assertEquals(200, response.getStatus());
         }
     }
 
@@ -177,7 +181,7 @@ public class Usage
         // One liner to upload files
         Response response = client.newRequest("localhost", 8080).file(Paths.get("file_to_upload.txt")).send();
 
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -192,7 +196,7 @@ public class Usage
         // Send a request for the cookie's domain
         Response response = client.newRequest("host", 8080).send();
 
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -209,7 +213,7 @@ public class Usage
         // One liner to send the request
         ContentResponse response = client.newRequest(uri).timeout(5, TimeUnit.SECONDS).send();
 
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -227,7 +231,7 @@ public class Usage
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -277,7 +281,7 @@ public class Usage
                 .content(new InputStreamContentProvider(input))
                 .send();
 
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -296,7 +300,7 @@ public class Usage
                         @Override
                         public void onComplete(Result result)
                         {
-                            Assert.assertEquals(200, result.getResponse().getStatus());
+                            assertEquals(200, result.getResponse().getStatus());
                         }
                     });
 

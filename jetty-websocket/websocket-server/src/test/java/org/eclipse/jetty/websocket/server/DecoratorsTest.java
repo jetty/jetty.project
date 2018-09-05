@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.server;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -45,9 +45,9 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class DecoratorsTest
 {
@@ -131,7 +131,7 @@ public class DecoratorsTest
     private static SimpleServletServer server;
     private static DecoratorsCreator decoratorsCreator;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         decoratorsCreator = new DecoratorsCreator();
@@ -148,13 +148,13 @@ public class DecoratorsTest
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = new BlockheadClient();
@@ -162,7 +162,7 @@ public class DecoratorsTest
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopClient() throws Exception
     {
         client.stop();

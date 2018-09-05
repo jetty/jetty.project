@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
@@ -43,10 +45,10 @@ import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.examples.echo.BigEchoSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class AnnotatedMaxMessageSizeTest
 {
@@ -55,7 +57,7 @@ public class AnnotatedMaxMessageSizeTest
     private static ServerConnector connector;
     private static URI serverUri;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new Server();
@@ -83,13 +85,13 @@ public class AnnotatedMaxMessageSizeTest
         serverUri = new URI(String.format("ws://%s:%d/",host,port));
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = new BlockheadClient();
@@ -97,7 +99,7 @@ public class AnnotatedMaxMessageSizeTest
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopClient() throws Exception
     {
         client.stop();
@@ -120,11 +122,11 @@ public class AnnotatedMaxMessageSizeTest
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
+            assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
         }
     }
     
-    @Test(timeout=8000)
+    @Test
     public void testEchoTooBig() throws Exception
     {
         BlockheadClientRequest request = client.newWsRequest(serverUri);
@@ -135,18 +137,20 @@ public class AnnotatedMaxMessageSizeTest
         try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
             StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
-            // Generate text frame
-            int size = 120 * 1024;
-            byte buf[] = new byte[size]; // buffer bigger than maxMessageSize
-            Arrays.fill(buf,(byte)'x');
-            clientConn.write(new TextFrame().setPayload(ByteBuffer.wrap(buf)));
+            Assertions.assertTimeoutPreemptively(ofSeconds(8), ()-> {
+                // Generate text frame
+                int size = 120 * 1024;
+                byte buf[] = new byte[size]; // buffer bigger than maxMessageSize
+                Arrays.fill(buf, (byte) 'x');
+                clientConn.write(new TextFrame().setPayload(ByteBuffer.wrap(buf)));
 
-            // Read frame (hopefully close frame saying its too large)
-            LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
-            WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Frame is close", tf.getOpCode(), is(OpCode.CLOSE));
-            CloseInfo close = new CloseInfo(tf);
-            Assert.assertThat("Close Code", close.getStatusCode(), is(StatusCode.MESSAGE_TOO_LARGE));
+                // Read frame (hopefully close frame saying its too large)
+                LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
+                WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
+                assertThat("Frame is close", tf.getOpCode(), is(OpCode.CLOSE));
+                CloseInfo close = new CloseInfo(tf);
+                assertThat("Close Code", close.getStatusCode(), is(StatusCode.MESSAGE_TOO_LARGE));
+            });
         }
     }
 }

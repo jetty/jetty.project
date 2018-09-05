@@ -18,16 +18,19 @@
 
 package org.eclipse.jetty.maven.plugin.it;
 
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jetty.client.HttpClient;
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jetty.client.HttpClient;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -39,7 +42,7 @@ public class TestGetContent
         throws Exception
     {
         int port = getPort();
-        Assert.assertTrue( port > 0 );
+        assertTrue( port > 0 );
         HttpClient httpClient = new HttpClient();
         try
         {
@@ -48,24 +51,23 @@ public class TestGetContent
             if (Boolean.getBoolean( "helloServlet" ))
             {
                 String response = httpClient.GET( "http://localhost:" + port + "/hello?name=beer" ).getContentAsString();
-                Assert.assertEquals( "Hello beer", response.trim() );
+                assertEquals( "Hello beer", response.trim() );
                 response = httpClient.GET( "http://localhost:" + port + "/hello?name=foo" ).getContentAsString();
-                Assert.assertEquals( "Hello foo", response.trim() );
+                assertEquals( "Hello foo", response.trim() );
                 System.out.println( "helloServlet" );
             }
             if (Boolean.getBoolean( "pingServlet" ))
             {
                 System.out.println( "pingServlet ok" );
                 String response = httpClient.GET( "http://localhost:" + port + "/ping?name=beer" ).getContentAsString();
-                Assert.assertEquals( "pong beer", response.trim() );
+                assertEquals( "pong beer", response.trim() );
                 System.out.println( "pingServlet" );
             }
             String contentCheck = System.getProperty( "contentCheck" );
             if(StringUtils.isNotBlank( contentCheck ) )
             {
                 String response = httpClient.GET( "http://localhost:" + port ).getContentAsString();
-                Assert.assertTrue( "response not contentCheck: " + contentCheck + ", response:" + response, //
-                                   response.contains( contentCheck ) );
+                assertTrue(response.contains(contentCheck), "response not contentCheck: " + contentCheck + ", response:" + response);
                 System.out.println( "contentCheck" );
             }
         }
@@ -82,7 +84,7 @@ public class TestGetContent
         int attempts = 70;
         int port = -1;
         String s = System.getProperty( "jetty.port.file" );
-        Assert.assertNotNull( s );
+        assertNotNull( s );
         Path p = Paths.get( s );
         while ( true )
         {
@@ -91,7 +93,7 @@ public class TestGetContent
                 try (Reader r = Files.newBufferedReader( p ); LineNumberReader lnr = new LineNumberReader( r );)
                 {
                     s = lnr.readLine();
-                    Assert.assertNotNull( s );
+                    assertNotNull( s );
                     port = Integer.parseInt( s.trim() );
                 }
                 break;

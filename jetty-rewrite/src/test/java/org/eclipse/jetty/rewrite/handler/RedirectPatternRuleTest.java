@@ -18,19 +18,19 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class RedirectPatternRuleTest extends AbstractRuleTestCase
 {
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         start(false);

@@ -19,7 +19,7 @@
 
 package org.eclipse.jetty.server.session.remote;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
@@ -31,8 +31,8 @@ import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * RemoteInfinispanSessionDataStoreTest
@@ -47,14 +47,14 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
    
     
     
-    @Before
+    @BeforeEach
     public void setup () throws Exception
     {
       __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
       __testSupport.setup();
     }
     
-    @After
+    @AfterEach
     public void teardown () throws Exception
     {
        __testSupport.teardown();

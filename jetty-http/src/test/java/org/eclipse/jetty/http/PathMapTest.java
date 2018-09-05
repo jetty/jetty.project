@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.http;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -70,77 +70,76 @@ public class PathMapTest
 
         for (String[] test : tests)
         {
-            assertEquals(test[0], test[1], p.getMatch(test[0]).getValue());
+            assertEquals(test[1], p.getMatch(test[0]).getValue(), test[0]);
         }
 
-        assertEquals("Get absolute path", "1", p.get("/abs/path"));
-        assertEquals("Match absolute path", "/abs/path", p.getMatch("/abs/path").getKey());
-        assertEquals("all matches", "[/animal/bird/*=3, /animal/*=5, *.tar.gz=6, *.gz=7, /=8]",
-                p.getMatches("/animal/bird/path.tar.gz").toString());
-        assertEquals("Dir matches", "[/animal/fish/*=4, /animal/*=5, /=8]", p.getMatches("/animal/fish/").toString());
-        assertEquals("Dir matches", "[/animal/fish/*=4, /animal/*=5, /=8]", p.getMatches("/animal/fish").toString());
-        assertEquals("Root matches", "[=10, /=8]",p.getMatches("/").toString());
-        assertEquals("Dir matches", "[/=8]", p.getMatches("").toString());
+        assertEquals("1", p.get("/abs/path"), "Get absolute path");
+        assertEquals("/abs/path", p.getMatch("/abs/path").getKey(), "Match absolute path");
+        assertEquals("[/animal/bird/*=3, /animal/*=5, *.tar.gz=6, *.gz=7, /=8]", p.getMatches("/animal/bird/path.tar.gz").toString(), "all matches");
+        assertEquals("[/animal/fish/*=4, /animal/*=5, /=8]", p.getMatches("/animal/fish/").toString(), "Dir matches");
+        assertEquals("[/animal/fish/*=4, /animal/*=5, /=8]", p.getMatches("/animal/fish").toString(), "Dir matches");
+        assertEquals("[=10, /=8]", p.getMatches("/").toString(), "Root matches");
+        assertEquals("[/=8]", p.getMatches("").toString(), "Dir matches");
 
-        assertEquals("pathMatch exact", "/Foo/bar", PathMap.pathMatch("/Foo/bar", "/Foo/bar"));
-        assertEquals("pathMatch prefix", "/Foo", PathMap.pathMatch("/Foo/*", "/Foo/bar"));
-        assertEquals("pathMatch prefix", "/Foo", PathMap.pathMatch("/Foo/*", "/Foo/"));
-        assertEquals("pathMatch prefix", "/Foo", PathMap.pathMatch("/Foo/*", "/Foo"));
-        assertEquals("pathMatch suffix", "/Foo/bar.ext", PathMap.pathMatch("*.ext", "/Foo/bar.ext"));
-        assertEquals("pathMatch default", "/Foo/bar.ext", PathMap.pathMatch("/", "/Foo/bar.ext"));
+        assertEquals("/Foo/bar", PathMap.pathMatch("/Foo/bar", "/Foo/bar"), "pathMatch exact");
+        assertEquals("/Foo", PathMap.pathMatch("/Foo/*", "/Foo/bar"), "pathMatch prefix");
+        assertEquals("/Foo", PathMap.pathMatch("/Foo/*", "/Foo/"), "pathMatch prefix");
+        assertEquals("/Foo", PathMap.pathMatch("/Foo/*", "/Foo"), "pathMatch prefix");
+        assertEquals("/Foo/bar.ext", PathMap.pathMatch("*.ext", "/Foo/bar.ext"), "pathMatch suffix");
+        assertEquals("/Foo/bar.ext", PathMap.pathMatch("/", "/Foo/bar.ext"), "pathMatch default");
 
-        assertEquals("pathInfo exact", null, PathMap.pathInfo("/Foo/bar", "/Foo/bar"));
-        assertEquals("pathInfo prefix", "/bar", PathMap.pathInfo("/Foo/*", "/Foo/bar"));
-        assertEquals("pathInfo prefix", "/*", PathMap.pathInfo("/Foo/*", "/Foo/*"));
-        assertEquals("pathInfo prefix", "/", PathMap.pathInfo("/Foo/*", "/Foo/"));
-        assertEquals("pathInfo prefix", null, PathMap.pathInfo("/Foo/*", "/Foo"));
-        assertEquals("pathInfo suffix", null, PathMap.pathInfo("*.ext", "/Foo/bar.ext"));
-        assertEquals("pathInfo default", null, PathMap.pathInfo("/", "/Foo/bar.ext"));
-        assertEquals("multi paths", "9", p.getMatch("/XXX").getValue());
-        assertEquals("multi paths", "9", p.getMatch("/YYY").getValue());
+        assertEquals(null, PathMap.pathInfo("/Foo/bar", "/Foo/bar"), "pathInfo exact");
+        assertEquals("/bar", PathMap.pathInfo("/Foo/*", "/Foo/bar"), "pathInfo prefix");
+        assertEquals("/*", PathMap.pathInfo("/Foo/*", "/Foo/*"), "pathInfo prefix");
+        assertEquals("/", PathMap.pathInfo("/Foo/*", "/Foo/"), "pathInfo prefix");
+        assertEquals(null, PathMap.pathInfo("/Foo/*", "/Foo"), "pathInfo prefix");
+        assertEquals(null, PathMap.pathInfo("*.ext", "/Foo/bar.ext"), "pathInfo suffix");
+        assertEquals(null, PathMap.pathInfo("/", "/Foo/bar.ext"), "pathInfo default");
+        assertEquals("9", p.getMatch("/XXX").getValue(), "multi paths");
+        assertEquals("9", p.getMatch("/YYY").getValue(), "multi paths");
 
         p.put("/*", "0");
 
-        assertEquals("Get absolute path", "1", p.get("/abs/path"));
-        assertEquals("Match absolute path", "/abs/path", p.getMatch("/abs/path").getKey());
-        assertEquals("Match absolute path", "1", p.getMatch("/abs/path").getValue());
-        assertEquals("Mismatch absolute path", "0", p.getMatch("/abs/path/xxx").getValue());
-        assertEquals("Mismatch absolute path", "0", p.getMatch("/abs/pith").getValue());
-        assertEquals("Match longer absolute path", "2", p.getMatch("/abs/path/longer").getValue());
-        assertEquals("Not exact absolute path", "0", p.getMatch("/abs/path/").getValue());
-        assertEquals("Not exact absolute path", "0", p.getMatch("/abs/path/xxx").getValue());
+        assertEquals("1", p.get("/abs/path"), "Get absolute path");
+        assertEquals("/abs/path", p.getMatch("/abs/path").getKey(), "Match absolute path");
+        assertEquals("1", p.getMatch("/abs/path").getValue(), "Match absolute path");
+        assertEquals("0", p.getMatch("/abs/path/xxx").getValue(), "Mismatch absolute path");
+        assertEquals("0", p.getMatch("/abs/pith").getValue(), "Mismatch absolute path");
+        assertEquals("2", p.getMatch("/abs/path/longer").getValue(), "Match longer absolute path");
+        assertEquals("0", p.getMatch("/abs/path/").getValue(), "Not exact absolute path");
+        assertEquals("0", p.getMatch("/abs/path/xxx").getValue(), "Not exact absolute path");
 
-        assertEquals("Match longest prefix", "3", p.getMatch("/animal/bird/eagle/bald").getValue());
-        assertEquals("Match longest prefix", "4", p.getMatch("/animal/fish/shark/grey").getValue());
-        assertEquals("Match longest prefix", "5", p.getMatch("/animal/insect/bug").getValue());
-        assertEquals("mismatch exact prefix", "5", p.getMatch("/animal").getValue());
-        assertEquals("mismatch exact prefix", "5", p.getMatch("/animal/").getValue());
+        assertEquals("3", p.getMatch("/animal/bird/eagle/bald").getValue(), "Match longest prefix");
+        assertEquals("4", p.getMatch("/animal/fish/shark/grey").getValue(), "Match longest prefix");
+        assertEquals("5", p.getMatch("/animal/insect/bug").getValue(), "Match longest prefix");
+        assertEquals("5", p.getMatch("/animal").getValue(), "mismatch exact prefix");
+        assertEquals("5", p.getMatch("/animal/").getValue(), "mismatch exact prefix");
 
-        assertEquals("Match longest suffix", "0", p.getMatch("/suffix/path.tar.gz").getValue());
-        assertEquals("Match longest suffix", "0", p.getMatch("/suffix/path.gz").getValue());
-        assertEquals("prefix rather than suffix", "5", p.getMatch("/animal/path.gz").getValue());
+        assertEquals("0", p.getMatch("/suffix/path.tar.gz").getValue(), "Match longest suffix");
+        assertEquals("0", p.getMatch("/suffix/path.gz").getValue(), "Match longest suffix");
+        assertEquals("5", p.getMatch("/animal/path.gz").getValue(), "prefix rather than suffix");
 
-        assertEquals("default", "0", p.getMatch("/Other/path").getValue());
+        assertEquals("0", p.getMatch("/Other/path").getValue(), "default");
 
-        assertEquals("pathMatch /*", "", PathMap.pathMatch("/*", "/xxx/zzz"));
-        assertEquals("pathInfo /*", "/xxx/zzz", PathMap.pathInfo("/*", "/xxx/zzz"));
+        assertEquals("", PathMap.pathMatch("/*", "/xxx/zzz"), "pathMatch /*");
+        assertEquals("/xxx/zzz", PathMap.pathInfo("/*", "/xxx/zzz"), "pathInfo /*");
 
-        assertTrue("match /", PathMap.match("/", "/anything"));
-        assertTrue("match /*", PathMap.match("/*", "/anything"));
-        assertTrue("match /foo", PathMap.match("/foo", "/foo"));
-        assertTrue("!match /foo", !PathMap.match("/foo", "/bar"));
-        assertTrue("match /foo/*", PathMap.match("/foo/*", "/foo"));
-        assertTrue("match /foo/*", PathMap.match("/foo/*", "/foo/"));
-        assertTrue("match /foo/*", PathMap.match("/foo/*", "/foo/anything"));
-        assertTrue("!match /foo/*", !PathMap.match("/foo/*", "/bar"));
-        assertTrue("!match /foo/*", !PathMap.match("/foo/*", "/bar/"));
-        assertTrue("!match /foo/*", !PathMap.match("/foo/*", "/bar/anything"));
-        assertTrue("match *.foo", PathMap.match("*.foo", "anything.foo"));
-        assertTrue("!match *.foo", !PathMap.match("*.foo", "anything.bar"));
+        assertTrue(PathMap.match("/", "/anything"), "match /");
+        assertTrue(PathMap.match("/*", "/anything"), "match /*");
+        assertTrue(PathMap.match("/foo", "/foo"), "match /foo");
+        assertTrue(!PathMap.match("/foo", "/bar"), "!match /foo");
+        assertTrue(PathMap.match("/foo/*", "/foo"), "match /foo/*");
+        assertTrue(PathMap.match("/foo/*", "/foo/"), "match /foo/*");
+        assertTrue(PathMap.match("/foo/*", "/foo/anything"), "match /foo/*");
+        assertTrue(!PathMap.match("/foo/*", "/bar"), "!match /foo/*");
+        assertTrue(!PathMap.match("/foo/*", "/bar/"), "!match /foo/*");
+        assertTrue(!PathMap.match("/foo/*", "/bar/anything"), "!match /foo/*");
+        assertTrue(PathMap.match("*.foo", "anything.foo"), "match *.foo");
+        assertTrue(!PathMap.match("*.foo", "anything.bar"), "!match *.foo");
 
-        assertEquals("match / with ''", "10", p.getMatch("/").getValue());
+        assertEquals("10", p.getMatch("/").getValue(), "match / with ''");
         
-        assertTrue("match \"\"", PathMap.match("", "/"));
+        assertTrue(PathMap.match("", "/"),"match \"\"");
     }
 
     /**
@@ -193,12 +192,12 @@ public class PathMapTest
     private void assertMatch(String spec, String path)
     {
         boolean match = PathMap.match(spec, path);
-        assertTrue("PathSpec '" + spec + "' should match path '" + path + "'", match);
+        assertTrue(match,"PathSpec '" + spec + "' should match path '" + path + "'");
     }
 
     private void assertNotMatch(String spec, String path)
     {
         boolean match = PathMap.match(spec, path);
-        assertFalse("PathSpec '" + spec + "' should not match path '" + path + "'", match);
+        assertFalse(match,"PathSpec '" + spec + "' should not match path '" + path + "'");
     }
 }

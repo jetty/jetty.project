@@ -22,34 +22,23 @@ import java.net.InetSocketAddress;
 
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
-import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.JDK;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
+// The mandatory cipher needed to run HTTP/2
+// over TLS is only available in JDK 8.
+@EnabledOnJre(JRE.JAVA_8)
 public class AbstractALPNTest
 {
-    @Rule
-    public final TestTracker tracker = new TestTracker();
     protected Server server;
     protected ServerConnector connector;
-
-    @Before
-    public void before()
-    {
-        // The mandatory cipher needed to run HTTP/2
-        // over TLS is only available in JDK 8.
-        Assume.assumeTrue(JDK.IS_8);
-    }
 
     protected InetSocketAddress prepare() throws Exception
     {
@@ -84,7 +73,7 @@ public class AbstractALPNTest
         return sslContextFactory;
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
         if (server != null)

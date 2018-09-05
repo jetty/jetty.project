@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -34,17 +35,17 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class SlowServerTest
 {
     private BlockheadServer server;
     private WebSocketClient client;
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
@@ -52,20 +53,20 @@ public class SlowServerTest
         client.start();
     }
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
@@ -117,9 +118,9 @@ public class SlowServerTest
             {
                 WebSocketFrame serverFrame = serverFrames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
                 String prefix = "Server Frame[" + i + "]";
-                Assert.assertThat(prefix, serverFrame, is(notNullValue()));
-                Assert.assertThat(prefix + ".opCode", serverFrame.getOpCode(), is(OpCode.TEXT));
-                Assert.assertThat(prefix + ".payload", serverFrame.getPayloadAsUTF8(), is("Hello/" + i + "/"));
+                assertThat(prefix, serverFrame, is(notNullValue()));
+                assertThat(prefix + ".opCode", serverFrame.getOpCode(), is(OpCode.TEXT));
+                assertThat(prefix + ".payload", serverFrame.getPayloadAsUTF8(), is("Hello/" + i + "/"));
             }
         }
     }
@@ -153,7 +154,7 @@ public class SlowServerTest
             writer.join();
 
             // Verify receive
-            Assert.assertThat("Message Receive Count", clientSocket.messageQueue.size(), is(messageCount));
+            assertThat("Message Receive Count", clientSocket.messageQueue.size(), is(messageCount));
         }
     }
 }

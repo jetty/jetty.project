@@ -36,15 +36,15 @@ import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.LargeEchoAnnotatedSocket;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 
 /**
  * Test send of large messages from within a Server using a ClientContainer
  */
-@RunWith(Parameterized.class)
 public class LargeNestedClientContainerTest
 {
     public static abstract class WSServerConfig
@@ -65,7 +65,6 @@ public class LargeNestedClientContainerTest
         }
     }
 
-    @Parameterized.Parameters(name = "[{index}] {0}")
     public static List<WSServerConfig[]> usecases()
     {
         List<WSServerConfig[]> scenarios = new ArrayList<>();
@@ -113,7 +112,7 @@ public class LargeNestedClientContainerTest
         return scenarios;
     }
 
-    @After
+    @AfterEach
     public void resetClientContainerProvider()
     {
         JettyClientContainerProvider.useServerContainer(false);
@@ -122,11 +121,10 @@ public class LargeNestedClientContainerTest
 
     private static final AtomicInteger appDirIdx = new AtomicInteger(0);
 
-    @Parameterized.Parameter
-    public WSServerConfig serverConfig;
 
-    @Test
-    public void testLargeEcho() throws Exception
+    @ParameterizedTest
+    @MethodSource("usecases")
+    public void testLargeEcho(WSServerConfig serverConfig) throws Exception
     {
         Path testDir = MavenTestingUtils.getTargetTestingPath(LargeNestedClientContainerTest.class.getSimpleName() + "-" + appDirIdx.getAndIncrement());
 

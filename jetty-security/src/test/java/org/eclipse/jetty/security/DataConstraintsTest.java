@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.security;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -41,10 +43,10 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class DataConstraintsTest
 {
@@ -54,7 +56,7 @@ public class DataConstraintsTest
     private SessionHandler _session;
     private ConstraintSecurityHandler _security;
 
-    @Before
+    @BeforeEach
     public  void startServer()
     {
         _server = new Server();
@@ -101,7 +103,7 @@ public class DataConstraintsTest
 
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         if (_server.isRunning())
@@ -131,15 +133,15 @@ public class DataConstraintsTest
 
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
         response = _connector.getResponse("GET /ctx/integral/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
-        Assert.assertThat(response, Matchers.containsString("Location: BWTP://"));
-        Assert.assertThat(response, Matchers.containsString(":9999"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
+        assertThat(response, Matchers.containsString("Location: BWTP://"));
+        assertThat(response, Matchers.containsString(":9999"));
 
         response = _connectorS.getResponse("GET /ctx/integral/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
     }
 
@@ -163,15 +165,15 @@ public class DataConstraintsTest
 
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
         response = _connector.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
-        Assert.assertThat(response, Matchers.containsString("Location: BWTP://"));
-        Assert.assertThat(response, Matchers.containsString(":9999"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
+        assertThat(response, Matchers.containsString("Location: BWTP://"));
+        assertThat(response, Matchers.containsString(":9999"));
 
         response = _connectorS.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
     }
 
@@ -195,10 +197,10 @@ public class DataConstraintsTest
         String response;
 
         response = _connector.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
 
         response = _connectorS.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
     }
 
@@ -223,16 +225,16 @@ public class DataConstraintsTest
         String response;
 
         response = _connector.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
         response = _connectorS.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
         response = _connector.getResponse("POST /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
 
         response = _connectorS.getResponse("POST /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
     }
     @Test
@@ -257,16 +259,16 @@ public class DataConstraintsTest
         String response;
 
         response = _connector.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
         response = _connectorS.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
         response = _connector.getResponse("POST /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
 
         response = _connectorS.getResponse("POST /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
     }
 
@@ -296,25 +298,25 @@ public class DataConstraintsTest
         String response;
 
         response = _connector.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
         response = _connectorS.getResponse("GET /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
         response = _connector.getResponse("POST /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
 
         response = _connectorS.getResponse("POST /ctx/confid/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 401 Unauthorized"));
 
         response = _connector.getResponse("GET /ctx/confid/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
         response = _connector.getResponse("POST /ctx/confid/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
 
         response = _connectorS.getResponse("POST /ctx/confid/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
     }
 
@@ -338,16 +340,16 @@ public class DataConstraintsTest
         String response;
 
         response = _connector.getResponse("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
         response = _connector.getResponse("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
     }
 
@@ -372,16 +374,16 @@ public class DataConstraintsTest
         String response;
 
         response = _connector.getResponse("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
         response = _connector.getResponse("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
     }
 
@@ -410,16 +412,16 @@ public class DataConstraintsTest
         String response;
 
         response = _connector.getResponse("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 401 Unauthorized"));
 
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 401 Unauthorized"));
 
         response = _connector.getResponse("GET /ctx/restricted/info HTTP/1.0\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\n\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\n\n");
-        Assert.assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
     }
 

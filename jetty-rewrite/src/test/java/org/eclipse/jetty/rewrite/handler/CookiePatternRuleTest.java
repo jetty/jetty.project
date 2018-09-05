@@ -18,21 +18,6 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.fail;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringReader;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
@@ -42,12 +27,27 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringReader;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.fail;
+
 
 public class CookiePatternRuleTest
 {
+
     private Server server;
     private LocalConnector localConnector;
 
@@ -85,7 +85,7 @@ public class CookiePatternRuleTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         if (server != null)
@@ -94,8 +94,8 @@ public class CookiePatternRuleTest
         }
     }
 
-    @Test
-    public void testSingleCookie() throws Exception
+    @BeforeEach
+    public void init() throws Exception
     {
         CookiePatternRule rule = new CookiePatternRule();
         rule.setPattern("*");
@@ -149,7 +149,7 @@ public class CookiePatternRuleTest
     }
 
     @Test
-    @Ignore("See #2675 for details") // TODO: needs to be fixed in RuleContainer
+    @Disabled("See #2675 for details") // TODO: needs to be fixed in RuleContainer
     public void testUrlParameter() throws Exception
     {
         CookiePatternRule rule = new CookiePatternRule();

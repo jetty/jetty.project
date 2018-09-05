@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,8 +30,8 @@ import org.eclipse.jetty.http2.generator.ResetGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class ResetGenerateParseTest
 {
@@ -70,10 +72,10 @@ public class ResetGenerateParseTest
             }
         }
 
-        Assert.assertEquals(1, frames.size());
+        assertEquals(1, frames.size());
         ResetFrame frame = frames.get(0);
-        Assert.assertEquals(streamId, frame.getStreamId());
-        Assert.assertEquals(error, frame.getError());
+        assertEquals(streamId, frame.getStreamId());
+        assertEquals(error, frame.getError());
     }
 
     @Test
@@ -110,10 +112,10 @@ public class ResetGenerateParseTest
                 }
             }
 
-            Assert.assertEquals(1, frames.size());
+            assertEquals(1, frames.size());
             ResetFrame frame = frames.get(0);
-            Assert.assertEquals(streamId, frame.getStreamId());
-            Assert.assertEquals(error, frame.getError());
+            assertEquals(streamId, frame.getStreamId());
+            assertEquals(error, frame.getError());
         }
     }
 }

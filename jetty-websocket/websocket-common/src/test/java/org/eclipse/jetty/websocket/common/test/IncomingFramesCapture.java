@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 
@@ -32,7 +33,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.junit.Assert;
+
 
 public class IncomingFramesCapture implements IncomingFrames
 {
@@ -42,7 +43,7 @@ public class IncomingFramesCapture implements IncomingFrames
 
     public void assertErrorCount(int expectedCount)
     {
-        Assert.assertThat("Captured error count",errors.size(),is(expectedCount));
+        assertThat("Captured error count",errors.size(),is(expectedCount));
     }
 
     public void assertFrameCount(int expectedCount)
@@ -60,33 +61,33 @@ public class IncomingFramesCapture implements IncomingFrames
                         BufferUtil.toDetailString(frame.getPayload()));
             }
         }
-        Assert.assertThat("Captured frame count",frames.size(),is(expectedCount));
+        assertThat("Captured frame count",frames.size(),is(expectedCount));
     }
 
     public void assertHasErrors(Class<? extends WebSocketException> errorType, int expectedCount)
     {
-        Assert.assertThat(errorType.getSimpleName(),getErrorCount(errorType),is(expectedCount));
+        assertThat(errorType.getSimpleName(),getErrorCount(errorType),is(expectedCount));
     }
 
     public void assertHasFrame(byte op)
     {
-        Assert.assertThat(OpCode.name(op),getFrameCount(op),greaterThanOrEqualTo(1));
+        assertThat(OpCode.name(op),getFrameCount(op),greaterThanOrEqualTo(1));
     }
 
     public void assertHasFrame(byte op, int expectedCount)
     {
         String msg = String.format("%s frame count",OpCode.name(op));
-        Assert.assertThat(msg,getFrameCount(op),is(expectedCount));
+        assertThat(msg,getFrameCount(op),is(expectedCount));
     }
 
     public void assertHasNoFrames()
     {
-        Assert.assertThat("Frame count",frames.size(),is(0));
+        assertThat("Frame count",frames.size(),is(0));
     }
 
     public void assertNoErrors()
     {
-        Assert.assertThat("Error count",errors.size(),is(0));
+        assertThat("Error count",errors.size(),is(0));
     }
 
     public void clear()
@@ -153,7 +154,7 @@ public class IncomingFramesCapture implements IncomingFrames
     {
         WebSocketFrame copy = WebSocketFrame.copy(frame);
         // TODO: might need to make this optional (depending on use by client vs server tests)
-        // Assert.assertThat("frame.masking must be set",frame.isMasked(),is(true));
+        // assertThat("frame.masking must be set",frame.isMasked(),is(true));
         frames.add(copy);
     }
 

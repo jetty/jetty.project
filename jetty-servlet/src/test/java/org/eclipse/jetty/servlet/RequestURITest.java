@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -28,6 +30,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -37,53 +40,47 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class RequestURITest
 {
-    @Parameters(name = "rawpath: \"{0}\"")
-    public static List<String[]> data()
+    public static Stream<Arguments> data()
     {
-        List<String[]> ret = new ArrayList<>();
-
-        ret.add(new String[] { "/hello", "/hello", null });
-        ret.add(new String[] { "/hello%20world", "/hello%20world", null });
-        ret.add(new String[] { "/hello;world", "/hello;world", null });
-        ret.add(new String[] { "/hello:world", "/hello:world", null });
-        ret.add(new String[] { "/hello!world", "/hello!world", null });
-        ret.add(new String[] { "/hello?world", "/hello", "world" });
-        ret.add(new String[] { "/hello?type=world", "/hello", "type=world" });
-        ret.add(new String[] { "/hello?type=wo&rld", "/hello", "type=wo&rld" });
-        ret.add(new String[] { "/hello?type=wo%20rld", "/hello", "type=wo%20rld" });
-        ret.add(new String[] { "/hello?type=wo+rld", "/hello", "type=wo+rld" });
-        ret.add(new String[] { "/It%27s%20me%21", "/It%27s%20me%21", null });
+        List<Arguments> ret = new ArrayList<>();
+        ret.add(Arguments.of("/hello", "/hello", null));
+        ret.add(Arguments.of("/hello%20world", "/hello%20world", null));
+        ret.add(Arguments.of("/hello;world", "/hello;world", null));
+        ret.add(Arguments.of("/hello:world", "/hello:world", null));
+        ret.add(Arguments.of("/hello!world", "/hello!world", null));
+        ret.add(Arguments.of("/hello?world", "/hello", "world"));
+        ret.add(Arguments.of("/hello?type=world", "/hello", "type=world"));
+        ret.add(Arguments.of("/hello?type=wo&rld", "/hello", "type=wo&rld"));
+        ret.add(Arguments.of("/hello?type=wo%20rld", "/hello", "type=wo%20rld"));
+        ret.add(Arguments.of("/hello?type=wo+rld", "/hello", "type=wo+rld"));
+        ret.add(Arguments.of("/It%27s%20me%21", "/It%27s%20me%21", null));
         // try some slash encoding (with case preservation tests)
-        ret.add(new String[] { "/hello%2fworld", "/hello%2fworld", null });
-        ret.add(new String[] { "/hello%2Fworld", "/hello%2Fworld", null });
-        ret.add(new String[] { "/%2f%2Fhello%2Fworld", "/%2f%2Fhello%2Fworld", null });
+        ret.add(Arguments.of("/hello%2fworld", "/hello%2fworld", null));
+        ret.add(Arguments.of("/hello%2Fworld", "/hello%2Fworld", null));
+        ret.add(Arguments.of("/%2f%2Fhello%2Fworld", "/%2f%2Fhello%2Fworld", null));
         // try some "?" encoding (should not see as query string)
-        ret.add(new String[] { "/hello%3Fworld", "/hello%3Fworld", null });
+        ret.add(Arguments.of("/hello%3Fworld", "/hello%3Fworld", null));
         // try some strange encodings (should preserve them)
-        ret.add(new String[] { "/hello%252Fworld", "/hello%252Fworld", null });
-        ret.add(new String[] { "/hello%u0025world", "/hello%u0025world", null });
-        ret.add(new String[] { "/hello-euro-%E2%82%AC", "/hello-euro-%E2%82%AC", null });
-        ret.add(new String[] { "/hello-euro?%E2%82%AC", "/hello-euro","%E2%82%AC" });
+        ret.add(Arguments.of("/hello%252Fworld", "/hello%252Fworld", null));
+        ret.add(Arguments.of("/hello%u0025world", "/hello%u0025world", null));
+        ret.add(Arguments.of("/hello-euro-%E2%82%AC", "/hello-euro-%E2%82%AC", null));
+        ret.add(Arguments.of("/hello-euro?%E2%82%AC", "/hello-euro","%E2%82%AC"));
         // test the ascii control characters (just for completeness)
         for (int i = 0x0; i < 0x1f; i++)
         {
             String raw = String.format("/hello%%%02Xworld",i);
-            ret.add(new String[] { raw, raw, null });
+            ret.add(Arguments.of(raw, raw, null ));
         }
 
-        return ret;
+        return ret.stream();
     }
 
     @SuppressWarnings("serial")
@@ -109,14 +106,7 @@ public class RequestURITest
     private static Server server;
     private static URI serverURI;
 
-    @Parameter(value = 0)
-    public String rawpath;
-    @Parameter(value = 1)
-    public String expectedReqUri;
-    @Parameter(value = 2)
-    public String expectedQuery;
-
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new Server();
@@ -141,7 +131,7 @@ public class RequestURITest
         serverURI = new URI(String.format("http://%s:%d/",host,port));
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         try
@@ -173,7 +163,7 @@ public class RequestURITest
      */
     protected static String readResponse(Socket client) throws IOException
     {
-
+        // TODO: use HttpTester.Response.parse instead
         StringBuilder sb = new StringBuilder();
         try (BufferedReader br = new BufferedReader(new InputStreamReader(client.getInputStream())))
         {
@@ -194,8 +184,9 @@ public class RequestURITest
         }
     }
 
-    @Test
-    public void testGetRequestURI_HTTP10() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testGetRequestURI_HTTP10(String rawpath, String expectedReqUri, String expectedQuery) throws Exception
     {
         try (Socket client = newSocket(serverURI.getHost(),serverURI.getPort()))
         {
@@ -209,14 +200,15 @@ public class RequestURITest
             String response = readResponse(client);
 
             // TODO: is HTTP/1.1 response appropriate for a HTTP/1.0 request?
-            Assert.assertThat(response,Matchers.containsString("HTTP/1.1 200 OK"));
-            Assert.assertThat(response,Matchers.containsString("RequestURI: " + expectedReqUri));
-            Assert.assertThat(response,Matchers.containsString("QueryString: " + expectedQuery));
+            assertThat(response,Matchers.containsString("HTTP/1.1 200 OK"));
+            assertThat(response,Matchers.containsString("RequestURI: " + expectedReqUri));
+            assertThat(response,Matchers.containsString("QueryString: " + expectedQuery));
         }
     }
 
-    @Test
-    public void testGetRequestURI_HTTP11() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testGetRequestURI_HTTP11(String rawpath, String expectedReqUri, String expectedQuery) throws Exception
     {
         try (Socket client = newSocket(serverURI.getHost(),serverURI.getPort()))
         {
@@ -229,9 +221,9 @@ public class RequestURITest
             // Read the response.
             String response = readResponse(client);
 
-            Assert.assertThat(response,Matchers.containsString("HTTP/1.1 200 OK"));
-            Assert.assertThat(response,Matchers.containsString("RequestURI: " + expectedReqUri));
-            Assert.assertThat(response,Matchers.containsString("QueryString: " + expectedQuery));
+            assertThat(response,Matchers.containsString("HTTP/1.1 200 OK"));
+            assertThat(response,Matchers.containsString("RequestURI: " + expectedReqUri));
+            assertThat(response,Matchers.containsString("QueryString: " + expectedQuery));
         }
     }
 }

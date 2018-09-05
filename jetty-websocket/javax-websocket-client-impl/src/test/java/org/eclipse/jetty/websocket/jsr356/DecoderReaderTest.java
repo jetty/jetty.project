@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.io.BufferedReader;
@@ -54,12 +55,12 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class DecoderReaderTest
 {
@@ -162,26 +163,26 @@ public class DecoderReaderTest
     private static BlockheadServer server;
     private WebSocketContainer client;
 
-    @Before
+    @BeforeEach
     public void initClient()
     {
         client = ContainerProvider.getWebSocketContainer();
     }
     
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         ((LifeCycle)client).stop();
     }
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -202,8 +203,8 @@ public class DecoderReaderTest
             writeQuotes(serverConn, "quotes-ben.txt");
 
             Quotes quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Quotes Author", quotes.author, is("Benjamin Franklin"));
-            Assert.assertThat("Quotes Count", quotes.quotes.size(), is(3));
+            assertThat("Quotes Author", quotes.author, is("Benjamin Franklin"));
+            assertThat("Quotes Count", quotes.quotes.size(), is(3));
         }
     }
 
@@ -230,12 +231,12 @@ public class DecoderReaderTest
         {
             writeQuotes( serverConn,"quotes-ben.txt");
             Quotes quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Quotes Author", quotes.author, is("Benjamin Franklin"));
-            Assert.assertThat("Quotes Count", quotes.quotes.size(), is(3));
+            assertThat("Quotes Author", quotes.author, is("Benjamin Franklin"));
+            assertThat("Quotes Count", quotes.quotes.size(), is(3));
 
             writeQuotes( serverConn,"quotes-twain.txt");
             quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("Quotes Author", quotes.author, is("Mark Twain"));
+            assertThat("Quotes Author", quotes.author, is("Mark Twain"));
         }
     }
 

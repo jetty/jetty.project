@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * ClusteredOrphanedSessionTest
@@ -37,7 +36,7 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
 
 
     
-    @After
+    @AfterEach
     public void tearDown() throws Exception 
     {
         JdbcTestHelper.shutdown(null);

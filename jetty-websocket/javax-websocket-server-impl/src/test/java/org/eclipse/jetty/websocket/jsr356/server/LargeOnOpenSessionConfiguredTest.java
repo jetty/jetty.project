@@ -32,10 +32,12 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.LargeEchoConfiguredSocket;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 /**
  * Test Echo of Large messages, targeting the use of {@link javax.websocket.Session#setMaxTextMessageBufferSize(int)}
@@ -45,7 +47,7 @@ public class LargeOnOpenSessionConfiguredTest
 {
     private WSServer server;
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         Path testDir = MavenTestingUtils.getTargetTestingPath(LargeOnOpenSessionConfiguredTest.class.getSimpleName());
@@ -57,7 +59,7 @@ public class LargeOnOpenSessionConfiguredTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopServer()
     {
         server.stop();
@@ -89,7 +91,7 @@ public class LargeOnOpenSessionConfiguredTest
             String msg = new String(txt,StandardCharsets.UTF_8);
             clientEcho.sendMessage(msg);
             LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
-            Assert.assertEquals("Expected message",msg,msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT));
+            assertEquals(msg,msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),"Expected message");
         }
         finally
         {

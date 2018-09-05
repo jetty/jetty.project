@@ -18,11 +18,12 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 
-import org.junit.Assert;
+
 
 public class RawFrameBuilder
 {
@@ -41,7 +42,7 @@ public class RawFrameBuilder
     {
         if (mask != null)
         {
-            Assert.assertThat("Mask.length",mask.length,is(4));
+            assertThat("Mask.length",mask.length,is(4));
             putLength(buf,length,(mask != null));
             buf.put(mask);
         }
@@ -53,7 +54,7 @@ public class RawFrameBuilder
 
     public static byte[] mask(final byte[] data, final byte mask[])
     {
-        Assert.assertThat("Mask.length",mask.length,is(4));
+        assertThat("Mask.length",mask.length,is(4));
         int len = data.length;
         byte ret[] = new byte[len];
         System.arraycopy(data,0,ret,0,len);
@@ -99,7 +100,7 @@ public class RawFrameBuilder
 
     public static void putMask(ByteBuffer buf, byte mask[])
     {
-        Assert.assertThat("Mask.length",mask.length,is(4));
+        assertThat("Mask.length",mask.length,is(4));
         buf.put(mask);
     }
 

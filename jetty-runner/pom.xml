@@ -38,20 +38,9 @@
       <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <extensions>true</extensions>
-          <executions>
-              <execution>
-                  <goals>
-                      <goal>manifest</goal>
-                  </goals>
-              </execution>
-          </executions>
           <configuration>
-            <instructions>
-              <Main-Class>org.eclipse.jetty.runner.Runner</Main-Class>
-              <Import-Package>!*</Import-Package>
-              <Export-Package />
-            </instructions>
+            <!-- jetty-runner is not an OSGi component -->
+            <skip>true</skip>
           </configuration>
         </plugin>
       <plugin>

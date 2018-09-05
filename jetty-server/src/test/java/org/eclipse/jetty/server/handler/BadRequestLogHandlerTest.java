@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,8 +34,10 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -50,19 +53,18 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Testing oddball request scenarios (like error 400) where the error should
  * be logged 
  */
-@RunWith(Parameterized.class)
-@Ignore
+@Tag("Unstable")
+@Disabled
 public class BadRequestLogHandlerTest
 {
     private static final Logger LOG = Log.getLogger(BadRequestLogHandlerTest.class);
@@ -90,8 +92,7 @@ public class BadRequestLogHandlerTest
         }
     }
     
-    @Parameters
-    public static List<Object[]> data()
+    public static Stream<Arguments> data()
     {
         List<Object[]> data = new ArrayList<>();
         
@@ -104,17 +105,12 @@ public class BadRequestLogHandlerTest
                 + "Connection: close\r\n\r\n" , 
                 "GET <invalidrequest> HTTP/1.1 400" });
         
-        return data;
+        return data.stream().map(Arguments::of);
     }
     
-    @Parameter(0)
-    public String requestHeader;
-    
-    @Parameter(1)
-    public String expectedLog;
-    
-    @Test(timeout=4000)
-    public void testLogHandler() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testLogHandler(String requestHeader, String expectedLog) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -148,22 +144,26 @@ public class BadRequestLogHandlerTest
             socket.setSoTimeout(1000);
             socket.connect(endpoint);
 
-            try(OutputStream out = socket.getOutputStream();
-                OutputStreamWriter writer = new OutputStreamWriter(out,StandardCharsets.UTF_8);
-                InputStream in = socket.getInputStream();
-                InputStreamReader reader = new InputStreamReader(in,StandardCharsets.UTF_8))
-            {
-                StringReader request = new StringReader(requestHeader);
-                IO.copy(request,writer);
-                writer.flush();
-                StringWriter response = new StringWriter();
-                IO.copy(reader,response);
-                LOG.info("Response: {}",response);
-            } finally {
-                socket.close();
-            }
+            assertTimeoutPreemptively(Duration.ofSeconds(4), ()-> {
+                try (OutputStream out = socket.getOutputStream();
+                     OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+                     InputStream in = socket.getInputStream();
+                     InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8))
+                {
+                    StringReader request = new StringReader(requestHeader);
+                    IO.copy(request, writer);
+                    writer.flush();
+                    StringWriter response = new StringWriter();
+                    IO.copy(reader, response);
+                    LOG.info("Response: {}", response);
+                }
+                finally
+                {
+                    socket.close();
+                }
+            });
 
-            assertRequestLog(captureLog);
+            assertRequestLog(expectedLog, captureLog);
         }
         finally
         {
@@ -171,7 +171,7 @@ public class BadRequestLogHandlerTest
         }
     }
     
-    private void assertRequestLog(CaptureLog captureLog)
+    private void assertRequestLog(final String expectedLog, CaptureLog captureLog)
     {
         int captureCount = captureLog.captured.size();
 

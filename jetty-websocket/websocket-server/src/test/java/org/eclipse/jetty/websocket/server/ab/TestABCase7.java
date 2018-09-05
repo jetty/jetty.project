@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.eclipse.jetty.websocket.common.util.Hex;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test of Close Handling

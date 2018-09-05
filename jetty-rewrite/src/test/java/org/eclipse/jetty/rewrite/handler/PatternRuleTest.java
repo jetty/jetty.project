@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 
@@ -30,21 +30,21 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.Request;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class PatternRuleTest
 {
     private PatternRule _rule;
 
-    @Before
+    @BeforeEach
     public void init()
     {
         _rule = new TestPatternRule();
     }
 
-    @After
+    @AfterEach
     public void destroy()
     {
         _rule = null;
@@ -147,7 +147,7 @@ public class PatternRuleTest
         }, null
         );
 
-        assertEquals("pattern: " + matchCase[0] + " uri: " + matchCase[1], flag, result!=null);
+        assertEquals(flag, result!=null, "pattern: " + matchCase[0] + " uri: " + matchCase[1]);
     }
 
     private class TestPatternRule extends PatternRule

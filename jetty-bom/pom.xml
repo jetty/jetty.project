@@ -28,7 +28,7 @@
   <properties>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <build-support-version>1.4</build-support-version>
+    <build-support.version>1.4</build-support.version>
   </properties>
 
   <scm>

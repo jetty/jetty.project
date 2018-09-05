@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.http2.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -73,8 +79,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class StreamResetTest extends AbstractTest
 {
@@ -94,7 +100,7 @@ public class StreamResetTest extends AbstractTest
         stream.reset(resetFrame, resetCallback);
         resetCallback.get(5, TimeUnit.SECONDS);
         // After reset the stream should be gone.
-        Assert.assertEquals(0, client.getStreams().size());
+        assertEquals(0, client.getStreams().size());
     }
 
     @Test
@@ -112,8 +118,8 @@ public class StreamResetTest extends AbstractTest
                     @Override
                     public void onReset(Stream stream, ResetFrame frame)
                     {
-                        Assert.assertNotNull(stream);
-                        Assert.assertTrue(stream.isReset());
+                        assertNotNull(stream);
+                        assertTrue(stream.isReset());
                         streamRef.set(stream);
                         resetLatch.countDown();
                     }
@@ -130,14 +136,14 @@ public class StreamResetTest extends AbstractTest
         ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code);
         stream.reset(resetFrame, Callback.NOOP);
 
-        Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
 
         // Wait a while to let the server remove the
         // stream after returning from onReset().
         Thread.sleep(1000);
 
         Stream serverStream = streamRef.get();
-        Assert.assertEquals(0, serverStream.getSession().getStreams().size());
+        assertEquals(0, serverStream.getSession().getStreams().size());
     }
 
     @Test
@@ -211,7 +217,7 @@ public class StreamResetTest extends AbstractTest
             }
         });
         Stream stream1 = promise1.get(5, TimeUnit.SECONDS);
-        Assert.assertTrue(stream1HeadersLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(stream1HeadersLatch.await(5, TimeUnit.SECONDS));
 
         MetaData.Request request2 = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame2 = new HeadersFrame(request2, null, false);
@@ -231,14 +237,14 @@ public class StreamResetTest extends AbstractTest
         ResetFrame resetFrame = new ResetFrame(stream1.getId(), ErrorCode.CANCEL_STREAM_ERROR.code);
         stream1.reset(resetFrame, Callback.NOOP);
 
-        Assert.assertTrue(serverResetLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverResetLatch.await(5, TimeUnit.SECONDS));
         // Stream MUST NOT receive data sent by server after reset.
-        Assert.assertFalse(stream1DataLatch.await(1, TimeUnit.SECONDS));
+        assertFalse(stream1DataLatch.await(1, TimeUnit.SECONDS));
 
         // The other stream should still be working.
         stream2.data(new DataFrame(stream2.getId(), ByteBuffer.allocate(16), true), Callback.NOOP);
-        Assert.assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(stream2DataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(stream2DataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -265,7 +271,7 @@ public class StreamResetTest extends AbstractTest
                 try
                 {
                     // Wait for the reset to be sent.
-                    Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+                    assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
                     // Wait for the reset to arrive to the server and be processed.
                     Thread.sleep(1000);
                 }
@@ -318,7 +324,7 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -345,7 +351,7 @@ public class StreamResetTest extends AbstractTest
                 try
                 {
                     // Wait for the reset to happen.
-                    Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+                    assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
                     // Wait for the reset to arrive to the server and be processed.
                     Thread.sleep(1000);
                 }
@@ -405,7 +411,7 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -430,8 +436,8 @@ public class StreamResetTest extends AbstractTest
             }
         });
         // The server does not read the data, so the flow control window should be zero.
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(0, ((ISession)client).updateSendWindow(0));
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        assertEquals(0, ((ISession)client).updateSendWindow(0));
 
         // Now reset the stream.
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
@@ -440,7 +446,7 @@ public class StreamResetTest extends AbstractTest
         // it, and for the client to process the window updates.
         Thread.sleep(1000);
 
-        Assert.assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
+        assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
     }
 
     @Test
@@ -531,13 +537,13 @@ public class StreamResetTest extends AbstractTest
         // Wait for WINDOW_UPDATEs to be processed by the client.
         Thread.sleep(1000);
 
-        Assert.assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
+        assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
 
         latch.set(new CountDownLatch(2 * streams.size()));
         // Complete all streams.
         streams.forEach(s -> s.data(new DataFrame(s.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP));
 
-        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
+        assertTrue(latch.get().await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -581,14 +587,14 @@ public class StreamResetTest extends AbstractTest
                 }
             });
             // The server does not read the data, so the flow control window should be zero.
-            Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
-            Assert.assertEquals(0, ((ISession)client).updateSendWindow(0));
+            assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+            assertEquals(0, ((ISession)client).updateSendWindow(0));
 
             // Wait for the server process the exception, and
             // for the client to process the window updates.
             Thread.sleep(2000);
 
-            Assert.assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
+            assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
         }
     }
 
@@ -643,13 +649,13 @@ public class StreamResetTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         // Reset and consume.
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
         dataQueue.forEach(Callback::succeeded);
 
-        Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -690,21 +696,21 @@ public class StreamResetTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         // Reset.
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
 
         // Give time to the server to process the reset and drain the flusher queue.
         Thread.sleep(500);
 
         AbstractHTTP2ServerConnectionFactory http2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
         Set<Session> sessions = http2.getBean(AbstractHTTP2ServerConnectionFactory.HTTP2SessionContainer.class).getSessions();
-        Assert.assertEquals(1, sessions.size());
+        assertEquals(1, sessions.size());
         HTTP2Session session = (HTTP2Session)sessions.iterator().next();
         HTTP2Flusher flusher = session.getBean(HTTP2Flusher.class);
-        Assert.assertEquals(0, flusher.getFrameQueueSize());
+        assertEquals(0, flusher.getFrameQueueSize());
     }
 
     @Test
@@ -769,13 +775,13 @@ public class StreamResetTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         // Reset and consume.
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
         dataQueue.forEach(Callback::succeeded);
 
-        Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -818,7 +824,7 @@ public class StreamResetTest extends AbstractTest
         ByteBuffer content = ByteBuffer.wrap(new byte[1024]);
         stream.data(new DataFrame(stream.getId(), content, true), Callback.NOOP);
 
-        Assert.assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
 
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
         // Wait for the reset to arrive to the server and be processed.
@@ -827,6 +833,6 @@ public class StreamResetTest extends AbstractTest
         // Try to read on server.
         readLatch.countDown();
         // Read on server should fail.
-        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
     }
 }

@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -29,26 +32,27 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
-public class HttpClientIdleTimeoutTest extends AbstractTest
+public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
 {
     private long idleTimeout = 1000;
 
-    public HttpClientIdleTimeoutTest(Transport transport)
+    @Override
+    public void init(Transport transport) throws IOException
     {
-        super(transport);
+        setScenario(new TransportScenario(transport));
     }
 
-    @Test
-    public void testClientIdleTimeout() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testClientIdleTimeout(Transport transport) throws Exception
     {
-        start(new AbstractHandler()
+        init(transport);
+        scenario.start(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -61,12 +65,12 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
                 }
             }
         });
-        client.stop();
-        client.setIdleTimeout(idleTimeout);
-        client.start();
+        scenario.client.stop();
+        scenario.client.setIdleTimeout(idleTimeout);
+        scenario.client.start();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI())
+        scenario.client.newRequest(scenario.newURI())
                 .path("/timeout")
                 .send(result ->
                 {
@@ -74,17 +78,19 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
                         latch.countDown();
                 });
 
-        Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Verify that after the timeout we can make another request.
-        ContentResponse response = client.newRequest(newURI()).send();
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        ContentResponse response = scenario.client.newRequest(scenario.newURI()).send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
-    @Test
-    public void testRequestIdleTimeout() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testRequestIdleTimeout(Transport transport) throws Exception
     {
-        start(new AbstractHandler()
+        init(transport);
+        scenario.start(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -99,7 +105,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         });
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI())
+        scenario.client.newRequest(scenario.newURI())
                 .path("/timeout")
                 .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
                 .send(result ->
@@ -108,50 +114,51 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
                         latch.countDown();
                 });
 
-        Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Verify that after the timeout we can make another request.
-        ContentResponse response = client.newRequest(newURI()).send();
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        ContentResponse response = scenario.client.newRequest(scenario.newURI()).send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
-    @Test
-    public void testIdleClientIdleTimeout() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testIdleClientIdleTimeout(Transport transport) throws Exception
     {
-        start(new EmptyServerHandler());
-        client.stop();
-        client.setIdleTimeout(idleTimeout);
-        client.start();
+        init(transport);
+        scenario.start(new EmptyServerHandler());
+        scenario.client.stop();
+        scenario.client.setIdleTimeout(idleTimeout);
+        scenario.client.start();
 
         // Make a first request to open a connection.
-        ContentResponse response = client.newRequest(newURI()).send();
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        ContentResponse response = scenario.client.newRequest(scenario.newURI()).send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // Let the connection idle timeout.
         Thread.sleep(2 * idleTimeout);
 
         // Verify that after the timeout we can make another request.
-        response = client.newRequest(newURI()).send();
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        response = scenario.client.newRequest(scenario.newURI()).send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
-    @Test
-    public void testIdleServerIdleTimeout() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testIdleServerIdleTimeout(Transport transport) throws Exception
     {
-        start(new EmptyServerHandler());
-        if (connector instanceof AbstractConnector )
-        {
-            AbstractConnector.class.cast( connector).setIdleTimeout(idleTimeout);
-        }
+        init(transport);
+        scenario.start(new EmptyServerHandler());
+        scenario.setServerIdleTimeout(idleTimeout);
 
-        ContentResponse response1 = client.newRequest(newURI()).send();
-        Assert.assertEquals(HttpStatus.OK_200, response1.getStatus());
+        ContentResponse response1 = scenario.client.newRequest(scenario.newURI()).send();
+        assertEquals(HttpStatus.OK_200, response1.getStatus());
 
         // Let the server idle timeout.
         Thread.sleep(2 * idleTimeout);
 
         // Make sure we can make another request successfully.
-        ContentResponse response2 = client.newRequest(newURI()).send();
-        Assert.assertEquals(HttpStatus.OK_200, response2.getStatus());
+        ContentResponse response2 = scenario.client.newRequest(scenario.newURI()).send();
+        assertEquals(HttpStatus.OK_200, response2.getStatus());
     }
 }

@@ -18,6 +18,19 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.test.Timeouts;
+import org.eclipse.jetty.websocket.jsr356.server.samples.echo.LargeEchoAnnotatedSocket;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -26,26 +39,21 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.eclipse.jetty.websocket.jsr356.server.samples.echo.LargeEchoAnnotatedSocket;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 /**
  * Test Echo of Large messages, targeting the {@code @OnMessage(maxMessage=###)} functionality
  */
+@ExtendWith(WorkDirExtension.class)
 public class LargeAnnotatedTest
 {
-    private static WSServer server;
+    public WorkDir testdir;
 
-    @BeforeClass
-    public static void startServer() throws Exception
+    private WSServer server;
+
+    @BeforeEach
+    public void startServer() throws Exception
     {
         Path testDir = MavenTestingUtils.getTargetTestingPath(LargeOnOpenSessionConfiguredTest.class.getSimpleName());
 
@@ -56,8 +64,8 @@ public class LargeAnnotatedTest
         server.start();
     }
 
-    @AfterClass
-    public static void stopServer()
+    @AfterEach
+    public void stopServer()
     {
         server.stop();
     }
@@ -88,7 +96,7 @@ public class LargeAnnotatedTest
             String msg = new String(txt,StandardCharsets.UTF_8);
             clientEcho.sendMessage(msg);
             LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
-            Assert.assertEquals("Expected message",msg,msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT));
+            assertEquals(msg,msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),"Expected message");
         }
         finally
         {

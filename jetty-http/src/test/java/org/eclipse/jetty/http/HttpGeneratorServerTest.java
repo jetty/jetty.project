@@ -18,20 +18,20 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class HttpGeneratorServerTest
 { 
@@ -249,15 +249,10 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
 
-        try
-        {
+        BadMessageException e = assertThrows(BadMessageException.class, ()->{
             gen.generateResponse(info, false, header, null, null, true);
-            Assert.fail();
-        }
-        catch(BadMessageException e)
-        {
-            assertEquals(e._code,500);
-        }
+        });
+        assertEquals(500, e._code);
     }
 
     @Test
@@ -833,9 +828,9 @@ public class HttpGeneratorServerTest
         MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_0, 200, "OK", fields, -1);
         ByteBuffer header = BufferUtil.allocate(4096);
         HttpGenerator.Result result = generator.generateResponse(info, false, header, null, null, true);
-        Assert.assertSame(HttpGenerator.Result.FLUSH, result);
+        assertSame(HttpGenerator.Result.FLUSH, result);
         String headers = BufferUtil.toString(header);
-        Assert.assertTrue(headers.contains(HttpHeaderValue.KEEP_ALIVE.asString()));
-        Assert.assertTrue(headers.contains(customValue));
+        assertThat(headers, containsString(HttpHeaderValue.KEEP_ALIVE.asString()));
+        assertThat(headers, containsString(customValue));
     }
 }

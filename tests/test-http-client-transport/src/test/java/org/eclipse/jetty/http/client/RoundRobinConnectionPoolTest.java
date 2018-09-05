@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.http.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -35,22 +40,25 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
-public class RoundRobinConnectionPoolTest extends AbstractTest
+public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario>
 {
-    public RoundRobinConnectionPoolTest(Transport transport)
+    @Override
+    public void init(Transport transport) throws IOException
     {
-        super(transport);
+        setScenario(new TransportScenario(transport));
     }
 
-    @Test
-    public void testRoundRobin() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testRoundRobin(Transport transport) throws Exception
     {
+        init(transport);
         AtomicBoolean record = new AtomicBoolean();
         List<Integer> remotePorts = new ArrayList<>();
-        start(new EmptyServerHandler()
+        scenario.start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
@@ -61,45 +69,47 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         });
 
         int maxConnections = 3;
-        client.getTransport().setConnectionPoolFactory(destination -> new RoundRobinConnectionPool(destination, maxConnections, destination));
+        scenario.client.getTransport().setConnectionPoolFactory(destination -> new RoundRobinConnectionPool(destination, maxConnections, destination));
 
         // Prime the connections, so that they are all opened
         // before we actually test the round robin behavior.
         for (int i = 0; i < maxConnections; ++i)
         {
-            ContentResponse response = client.newRequest(newURI())
+            ContentResponse response = scenario.client.newRequest(scenario.newURI())
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
-            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
         }
 
         record.set(true);
         int requests = 2 * maxConnections - 1;
         for (int i = 0; i < requests; ++i)
         {
-            ContentResponse response = client.newRequest(newURI())
+            ContentResponse response = scenario.client.newRequest(scenario.newURI())
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
-            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
         }
 
-        Assert.assertThat(remotePorts.size(), Matchers.equalTo(requests));
+        assertThat(remotePorts.size(), Matchers.equalTo(requests));
         for (int i = 0; i < requests; ++i)
         {
             int base = i % maxConnections;
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
-            Assert.assertThat(client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
+            assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
             if (i > 0)
-                Assert.assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
+                assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }
 
-    @Test
-    public void testMultiplex() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testMultiplex(Transport transport) throws Exception
     {
+        init(transport);
         int multiplex = 1;
-        if (transport == Transport.H2C || transport == Transport.H2)
+        if (scenario.isHttp2Based())
             multiplex = 4;
         int maxMultiplex = multiplex;
 
@@ -111,7 +121,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         AtomicReference<CountDownLatch> requestLatch = new AtomicReference<>();
         CountDownLatch serverLatch = new CountDownLatch(count);
         CyclicBarrier barrier = new CyclicBarrier(count + 1);
-        start(new EmptyServerHandler()
+        scenario.start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
@@ -133,16 +143,16 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
             }
         });
 
-        client.getTransport().setConnectionPoolFactory(destination -> new RoundRobinConnectionPool(destination, maxConnections, destination, maxMultiplex));
+        scenario.client.getTransport().setConnectionPoolFactory(destination -> new RoundRobinConnectionPool(destination, maxConnections, destination, maxMultiplex));
 
         // Prime the connections, so that they are all opened
         // before we actually test the round robin behavior.
         for (int i = 0; i < maxConnections; ++i)
         {
-            ContentResponse response = client.newRequest(newURI())
+            ContentResponse response = scenario.client.newRequest(scenario.newURI())
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
-            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
         }
 
         record.set(true);
@@ -152,7 +162,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         {
             CountDownLatch latch = new CountDownLatch(1);
             requestLatch.set(latch);
-            client.newRequest(newURI())
+            scenario.client.newRequest(scenario.newURI())
                     .path("/" + i)
                     .onRequestQueued(request -> requests.incrementAndGet())
                     .onRequestBegin(request -> requests.decrementAndGet())
@@ -162,24 +172,24 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
                         if (result.getResponse().getStatus() == HttpStatus.OK_200)
                             clientLatch.countDown();
                     });
-            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
 
-        Assert.assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(0, requests.get());
+        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+        assertEquals(0, requests.get());
 
         barrier.await();
 
-        Assert.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertThat(remotePorts.size(), Matchers.equalTo(count));
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+        assertThat(remotePorts.size(), Matchers.equalTo(count));
         for (int i = 0; i < count; ++i)
         {
             int base = i % maxConnections;
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
-            Assert.assertThat(client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
+            assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
             if (i > 0)
-                Assert.assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
+                assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
     }
 }

@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,9 +39,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.IO;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class IncludedServletTest
 {
@@ -75,7 +75,7 @@ public class IncludedServletTest
     private Server server;
     private URI baseUri;
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         this.server = new Server();
@@ -99,7 +99,7 @@ public class IncludedServletTest
         baseUri = URI.create("http://" + host + ":" + port + "/");
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         this.server.stop();

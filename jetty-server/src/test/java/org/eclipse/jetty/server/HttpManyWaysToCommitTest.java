@@ -18,15 +18,16 @@
 
 package org.eclipse.jetty.server;
 
+import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumingThat;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -35,45 +36,42 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 //TODO: reset buffer tests
 //TODO: add protocol specific tests for connection: close and/or chunking
-@RunWith(Parameterized.class)
 public class HttpManyWaysToCommitTest extends AbstractHttpTest
 {
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> data()
+    public static Stream<Arguments> httpVersions()
     {
-        Object[][] data = new Object[][]{{HttpVersion.HTTP_1_0.asString()}, {HttpVersion.HTTP_1_1.asString()}};
-        return Arrays.asList(data);
+        return Stream.of(
+                HttpVersion.HTTP_1_0,
+                HttpVersion.HTTP_1_1
+        ).map(Arguments::of);
     }
 
-    public HttpManyWaysToCommitTest(String httpVersion)
-    {
-        super(httpVersion);
-    }
-
-    @Test
-    public void testHandlerDoesNotSetHandled() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandlerDoesNotSetHandled(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new DoesNotSetHandledHandler(false));
         server.start();
     
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(404));
     }
 
-    @Test
-    public void testHandlerDoesNotSetHandledAndThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandlerDoesNotSetHandledAndThrow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new DoesNotSetHandledHandler(true));
         server.start();
     
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(500));
     }
@@ -93,26 +91,28 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
     }
 
-    @Test
-    public void testHandlerSetsHandledTrueOnly() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandlerSetsHandledTrueOnly(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new OnlySetHandledHandler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
         if (HttpVersion.HTTP_1_1.asString().equals(httpVersion))
-            assertHeader(response, "content-length", "0");
+            assertThat(response, containsHeaderValue("content-length", "0"));
     }
 
-    @Test
-    public void testHandlerSetsHandledTrueOnlyAndThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandlerSetsHandledTrueOnlyAndThrow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new OnlySetHandledHandler(true));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(500));
     }
@@ -132,26 +132,28 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
     }
 
-    @Test
-    public void testHandlerSetsHandledAndWritesSomeContent() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandlerSetsHandledAndWritesSomeContent(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetHandledWriteSomeDataHandler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
-        assertResponseBody(response, "foobar");
-        assertHeader(response, "content-length", "6");
+        assertThat(response.getContent(), is("foobar"));
+        assertThat(response, containsHeaderValue("content-length", "6"));
     }
 
-    @Test
-    public void testHandlerSetsHandledAndWritesSomeContentAndThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandlerSetsHandledAndWritesSomeContentAndThrow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetHandledWriteSomeDataHandler(true));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(500));
         assertThat("response body", response.getContent(), not(is("foobar")));
@@ -173,33 +175,35 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
     }
 
-    @Test
-    public void testHandlerExplicitFlush() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandlerExplicitFlush(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new ExplicitFlushHandler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
-        assertResponseBody(response, "foobar");
-        if (!"HTTP/1.0".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        assertThat(response.getContent(), is("foobar"));
+        assumingThat(httpVersion == HttpVersion.HTTP_1_1,
+                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
-    @Test
-    public void testHandlerExplicitFlushAndThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandlerExplicitFlushAndThrow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new ExplicitFlushHandler(true));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         // Since the 200 was committed, the 500 did not get the chance to be written
         assertThat("response code", response.getStatus(), is(200));
         assertThat("response body", response.getContent(), is("foobar"));
-        if (!"HTTP/1.0".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        assumingThat(httpVersion == HttpVersion.HTTP_1_1,
+                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     private class ExplicitFlushHandler extends ThrowExceptionOnDemandHandler
@@ -219,30 +223,32 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
     }
 
-    @Test
-    public void testHandledAndFlushWithoutContent() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandledAndFlushWithoutContent(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetHandledAndFlushWithoutContentHandler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
-        if (!"HTTP/1.0".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        assumingThat(httpVersion == HttpVersion.HTTP_1_1,
+                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
-    @Test
-    public void testHandledAndFlushWithoutContentAndThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandledAndFlushWithoutContentAndThrow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetHandledAndFlushWithoutContentHandler(true));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
-        if (!"HTTP/1.0".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        assumingThat(httpVersion == HttpVersion.HTTP_1_1,
+                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     private class SetHandledAndFlushWithoutContentHandler extends ThrowExceptionOnDemandHandler
@@ -261,32 +267,34 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
     }
 
-    @Test
-    public void testHandledWriteFlushWriteMore() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandledWriteFlushWriteMore(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new WriteFlushWriteMoreHandler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
-        assertResponseBody(response, "foobar");
-        if (!"HTTP/1.0".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        assertThat(response.getContent(), is("foobar"));
+        assumingThat(httpVersion == HttpVersion.HTTP_1_1,
+                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
-    @Test
-    public void testHandledWriteFlushWriteMoreAndThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandledWriteFlushWriteMoreAndThrow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new WriteFlushWriteMoreHandler(true));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         // Since the 200 was committed, the 500 did not get the chance to be written
         assertThat("response code", response.getStatus(), is(200));
-        if (!"HTTP/1.0".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        assumingThat(httpVersion == HttpVersion.HTTP_1_1,
+                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     private class WriteFlushWriteMoreHandler extends ThrowExceptionOnDemandHandler
@@ -307,61 +315,65 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
     }
 
-    @Test
-    public void testHandledOverflow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandledOverflow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new OverflowHandler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
-        assertResponseBody(response, "foobar");
-        if (!"HTTP/1.0".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        assertThat(response.getContent(), is("foobar"));
+        assumingThat(httpVersion == HttpVersion.HTTP_1_1,
+                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
     
-    @Test
-    public void testHandledOverflow2() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandledOverflow2(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new Overflow2Handler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
-        assertResponseBody(response, "foobarfoobar");
-        if (!"HTTP/1.0".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        assertThat(response.getContent(), is("foobarfoobar"));
+        assumingThat(httpVersion == HttpVersion.HTTP_1_1,
+                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
     
-    @Test
-    public void testHandledOverflow3() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandledOverflow3(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new Overflow3Handler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
-        assertResponseBody(response, "foobarfoobar");
-        if (!"HTTP/1.0".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        assertThat(response.getContent(), is("foobarfoobar"));
+        assumingThat(httpVersion == HttpVersion.HTTP_1_1,
+                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
-    @Test
-    public void testHandledBufferOverflowAndThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testHandledBufferOverflowAndThrow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new OverflowHandler(true));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         // Response was committed when we throw, so 200 expected
         assertThat("response code", response.getStatus(), is(200));
-        assertResponseBody(response, "foobar");
-        if (!"HTTP/1.0".equals(httpVersion))
-            assertHeader(response, "transfer-encoding", "chunked");
+        assertThat(response.getContent(), is("foobar"));
+        assumingThat(httpVersion == HttpVersion.HTTP_1_1,
+                () -> assertThat(response, containsHeaderValue("transfer-encoding", "chunked")));
     }
 
     private class OverflowHandler extends ThrowExceptionOnDemandHandler
@@ -421,63 +433,68 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
     }
 
-    @Test
-    public void testSetContentLengthFlushAndWriteInsufficientBytes() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testSetContentLengthFlushAndWriteInsufficientBytes(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(true));
         server.start();
         
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
         assertThat("response code", response.getStatus(), is(200));
-        assertHeader(response, "content-length", "6");
+        assertThat(response, containsHeaderValue("content-length", "6"));
         byte content[] = response.getContentBytes();
         assertThat("content bytes", content.length, is(0));
-        assertTrue("response eof", response.isEarlyEOF());
+        assertTrue(response.isEarlyEOF(), "response eof");
     }
 
-    @Test
-    public void testSetContentLengthAndWriteInsufficientBytes() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testSetContentLengthAndWriteInsufficientBytes(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
         assertThat("response is error", response.getStatus(), is(500));
-        assertFalse("response not eof", response.isEarlyEOF());
+        assertFalse(response.isEarlyEOF(), "response not eof");
     }
 
-    @Test
-    public void testSetContentLengthAndFlushWriteInsufficientBytes() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testSetContentLengthAndFlushWriteInsufficientBytes(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(true));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
         assertThat("response has no status", response.getStatus(), is(200));
-        assertTrue("response eof", response.isEarlyEOF());
+        assertTrue(response.isEarlyEOF(), "response eof");
     }
     
     
-    @Test
-    public void testSetContentLengthAndWriteExactlyThatAmountOfBytes() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testSetContentLengthAndWriteExactlyThatAmountOfBytes(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
         assertThat("response body", response.getContent(), is("foo"));
-        assertHeader(response, "content-length", "3");
+        assertThat(response, containsHeaderValue("content-length", "3"));
     }
 
-    @Test
-    public void testSetContentLengthAndWriteExactlyThatAmountOfBytesAndThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testSetContentLengthAndWriteExactlyThatAmountOfBytesAndThrow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(true));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         // Setting the content-length and then writing the bytes commits the response
         assertThat("response code", response.getStatus(), is(200));
@@ -520,26 +537,28 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
     }
 
-    @Test
-    public void testSetContentLengthAndWriteMoreBytes() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testSetContentLengthAndWriteMoreBytes(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteMoreBytesHandler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
         assertThat("response body", response.getContent(), is("foo"));
-        assertHeader(response, "content-length", "3");
+        assertThat(response, containsHeaderValue("content-length", "3"));
     }
 
-    @Test
-    public void testSetContentLengthAndWriteMoreAndThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testSetContentLengthAndWriteMoreAndThrow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteMoreBytesHandler(true));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         // Setting the content-length and then writing the bytes commits the response
         assertThat("response code", response.getStatus(), is(200));
@@ -564,26 +583,28 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
     }
 
-    @Test
-    public void testWriteAndSetContentLength() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testWriteAndSetContentLength(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new WriteAndSetContentLengthHandler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         assertThat("response code", response.getStatus(), is(200));
         assertThat("response body", response.getContent(), is("foo"));
-        assertHeader(response, "content-length", "3");
+        assertThat(response, containsHeaderValue("content-length", "3"));
     }
 
-    @Test
-    public void testWriteAndSetContentLengthAndThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testWriteAndSetContentLengthAndThrow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new WriteAndSetContentLengthHandler(true));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         // Writing the bytes and then setting the content-length commits the response
         assertThat("response code", response.getStatus(), is(200));
@@ -607,26 +628,28 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
     }
 
-    @Test
-    public void testWriteAndSetContentLengthTooSmall() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testWriteAndSetContentLengthTooSmall(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new WriteAndSetContentLengthTooSmallHandler(false));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         // Setting a content-length too small throws an IllegalStateException
         assertThat("response code", response.getStatus(), is(500));
         assertThat("response body", response.getContent(), not(is("foo")));
     }
 
-    @Test
-    public void testWriteAndSetContentLengthTooSmallAndThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testWriteAndSetContentLengthTooSmallAndThrow(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new WriteAndSetContentLengthTooSmallHandler(true));
         server.start();
 
-        HttpTester.Response response = executeRequest();
+        HttpTester.Response response = executeRequest(httpVersion);
 
         // Setting a content-length too small throws an IllegalStateException
         assertThat("response code", response.getStatus(), is(500));

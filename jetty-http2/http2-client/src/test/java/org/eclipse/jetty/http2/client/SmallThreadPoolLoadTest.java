@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http2.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Locale;
@@ -52,11 +55,11 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
 
-@Ignore
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+@Disabled
 public class SmallThreadPoolLoadTest extends AbstractTest
 {
     private final Logger logger = Log.getLogger(SmallThreadPoolLoadTest.class);
@@ -90,7 +93,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                         .reduce(true, (acc, res) -> acc && res))
                 .reduce(true, (acc, res) -> acc && res);
 
-        Assert.assertTrue(result);
+        assertTrue(result);
     }
 
     private boolean run(Session session, int iterations)
@@ -119,9 +122,9 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                     ++successes;
             }
 
-            Assert.assertTrue(latch.await(iterations, TimeUnit.SECONDS));
+            assertTrue(latch.await(iterations, TimeUnit.SECONDS));
             long end = System.nanoTime();
-            Assert.assertThat(successes, Matchers.greaterThan(0L));
+            assertThat(successes, Matchers.greaterThan(0L));
             task.cancel();
             long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
             logger.info("{} requests in {} ms, {}/{} success/failure, {} req/s",

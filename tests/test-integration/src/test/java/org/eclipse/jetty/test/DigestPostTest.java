@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -26,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -45,7 +47,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -61,10 +62,9 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class DigestPostTest
 {
@@ -122,7 +122,7 @@ public class DigestPostTest
     }
     
     
-    @BeforeClass
+    @BeforeAll
     public static void setUpServer()
     {
         try
@@ -163,7 +163,7 @@ public class DigestPostTest
         }
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownServer() throws Exception
     {
         _server.stop();
@@ -186,8 +186,8 @@ public class DigestPostTest
 
         String result = IO.toString(socket.getInputStream());
 
-        Assert.assertTrue(result.startsWith("HTTP/1.1 401 Unauthorized"));
-        Assert.assertEquals(null,_received);
+        assertTrue(result.startsWith("HTTP/1.1 401 Unauthorized"));
+        assertEquals(null,_received);
         
         int n=result.indexOf("nonce=");
         String nonce=result.substring(n+7,result.indexOf('"',n+7));
@@ -213,8 +213,8 @@ public class DigestPostTest
 
         result = IO.toString(socket.getInputStream());
 
-        Assert.assertTrue(result.startsWith("HTTP/1.1 200 OK"));
-        Assert.assertEquals(__message,_received);
+        assertTrue(result.startsWith("HTTP/1.1 200 OK"));
+        assertEquals(__message,_received);
     }
 
     @Test
@@ -238,8 +238,8 @@ public class DigestPostTest
         int len=socket.getInputStream().read(buf);
         String result=new String(buf,0,len,StandardCharsets.UTF_8);
 
-        Assert.assertTrue(result.startsWith("HTTP/1.1 401 Unauthorized"));
-        Assert.assertEquals(null,_received);
+        assertTrue(result.startsWith("HTTP/1.1 401 Unauthorized"));
+        assertEquals(null,_received);
         
         int n=result.indexOf("nonce=");
         String nonce=result.substring(n+7,result.indexOf('"',n+7));
@@ -262,8 +262,8 @@ public class DigestPostTest
 
         result = IO.toString(socket.getInputStream());
 
-        Assert.assertTrue(result.startsWith("HTTP/1.1 200 OK"));
-        Assert.assertEquals(__message,_received);
+        assertTrue(result.startsWith("HTTP/1.1 200 OK"));
+        assertEquals(__message,_received);
     }
 
     @Test
@@ -284,8 +284,8 @@ public class DigestPostTest
             _received=null;
             request = request.timeout(5, TimeUnit.SECONDS);
             ContentResponse response = request.send();
-            Assert.assertEquals(__message,_received);
-            Assert.assertEquals(200,response.getStatus());
+            assertEquals(__message,_received);
+            assertEquals(200,response.getStatus());
         }
         finally
         {
@@ -313,8 +313,8 @@ public class DigestPostTest
             request = request.timeout(5, TimeUnit.SECONDS);
             ContentResponse response = request.send();
            
-            Assert.assertEquals(200,response.getStatus());
-            Assert.assertEquals(sent,_received);
+            assertEquals(200,response.getStatus());
+            assertEquals(sent,_received);
 
         }
         finally

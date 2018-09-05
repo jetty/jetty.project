@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -27,16 +32,15 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.websocket.server.browser.BrowserDebugTool;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class WebSocketProtocolTest
 {
     private BrowserDebugTool server;
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new BrowserDebugTool();
@@ -44,7 +48,7 @@ public class WebSocketProtocolTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
@@ -72,20 +76,20 @@ public class WebSocketProtocolTest
 
             BufferedReader input = new BufferedReader(new InputStreamReader(client.getInputStream()));
             String line = input.readLine();
-            Assert.assertTrue(line.contains(" 101 "));
+            assertThat(line, containsString(" 101 "));
             HttpFields fields = new HttpFields();
             while ((line = input.readLine()) != null)
             {
                 if (line.isEmpty())
                     break;
                 int colon = line.indexOf(':');
-                Assert.assertTrue(colon > 0);
+                assertTrue(colon > 0);
                 String name = line.substring(0, colon).trim();
                 String value = line.substring(colon + 1).trim();
                 fields.add(name, value);
             }
 
-            Assert.assertEquals(1, fields.getValuesList("Sec-WebSocket-Protocol").size());
+            assertEquals(1, fields.getValuesList("Sec-WebSocket-Protocol").size());
         }
     }
 }
