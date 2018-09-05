@@ -1147,7 +1147,8 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                     }
                 }
 
-                if (!_certWilds.isEmpty() || _certHosts.size()>1)
+                // Is SNI needed to select a certificate?
+                if (!_certWilds.isEmpty() || _certHosts.size()>1 || _certHosts.size()==1 && _aliasX509.size()>1)
                 {
                     for (int idx = 0; idx < managers.length; idx++)
                     {
