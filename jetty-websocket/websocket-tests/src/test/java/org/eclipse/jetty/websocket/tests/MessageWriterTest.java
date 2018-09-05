@@ -19,8 +19,12 @@
 package org.eclipse.jetty.websocket.tests;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Arrays;
 
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
@@ -33,19 +37,13 @@ import org.eclipse.jetty.websocket.common.io.FramePipes;
 import org.eclipse.jetty.websocket.common.message.MessageWriter;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class MessageWriterTest
 {
     private static final Logger LOG = Log.getLogger(MessageWriterTest.class);
-
-    @Rule
-    public TestName testname = new TestName();
 
     public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
 
@@ -54,7 +52,7 @@ public class MessageWriterTest
     private WebSocketSession session;
     private WebSocketSession remoteSession;
 
-    @After
+    @AfterEach
     public void closeSession() throws Exception
     {
         session.close();
@@ -63,13 +61,13 @@ public class MessageWriterTest
         remoteSession.stop();
     }
 
-    @Before
+    @BeforeEach
     public void setupSession() throws Exception
     {
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
         policy.setOutputBufferSize(1024);
-    
+
         // remote socket
         WebSocketContainerScope remoteContainerScope = new SimpleContainerScope(policy, bufferPool);
         remoteSocket = new TrackingEndpoint("remote");
@@ -79,7 +77,7 @@ public class MessageWriterTest
         remoteSession.start();
         remoteSession.connect();
         remoteSession.open();
-    
+
         // Local Session
         WebSocketContainerScope localContainerScope = new SimpleContainerScope(policy, bufferPool);
         TrackingEndpoint localSocket = new TrackingEndpoint("local");
@@ -91,53 +89,58 @@ public class MessageWriterTest
         session.connect();
         session.open();
     }
-    
-    @Test(timeout = 2000)
+
+    @Test
     public void testMultipleWrites() throws Exception
     {
-        try (MessageWriter stream = new MessageWriter(session))
-        {
-            stream.write("Hello");
-            stream.write(" ");
-            stream.write("World");
-        }
+        assertTimeout( Duration.ofMillis( 2000 ), () -> {
+            try (MessageWriter stream = new MessageWriter( session ))
+            {
+                stream.write( "Hello" );
+                stream.write( " " );
+                stream.write( "World" );
+            }
 
-        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
-        String msg = remoteSocket.messageQueue.poll();
-        Assert.assertThat("Message",msg,is("Hello World"));
+            assertThat( "Socket.messageQueue.size", remoteSocket.messageQueue.size(), is( 1 ) );
+            String msg = remoteSocket.messageQueue.poll();
+            assertThat( "Message", msg, is( "Hello World" ) );
+        });
     }
-    
-    @Test(timeout = 20000)
+
+    @Test
     public void testSingleWrite() throws Exception
     {
-        try (MessageWriter stream = new MessageWriter(session))
-        {
-            stream.append("Hello World");
-        }
+        assertTimeout( Duration.ofMillis( 2000 ), () -> {
+            try (MessageWriter stream = new MessageWriter(session))
+            {
+                stream.append("Hello World");
+            }
 
-        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
-        String msg = remoteSocket.messageQueue.poll();
-        Assert.assertThat("Message",msg,is("Hello World"));
+            assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
+            String msg = remoteSocket.messageQueue.poll();
+            assertThat("Message",msg,is("Hello World"));
+        });
     }
-    
-    @Test(timeout = 20000)
+
+    @Test
     public void testWriteMultipleBuffers() throws Exception
     {
-        int size = (int)(policy.getOutputBufferSize() * 2.5);
-        char buf[] = new char[size];
-        if (LOG.isDebugEnabled())
-            LOG.debug("Buffer size: {}",size);
-        Arrays.fill(buf,'x');
-        buf[size - 1] = 'o'; // mark last entry for debugging
+        assertTimeout( Duration.ofMillis( 2000 ), () -> {
+            int size = (int) ( policy.getOutputBufferSize() * 2.5 );
+            char buf[] = new char[size];
+            if ( LOG.isDebugEnabled() ) LOG.debug( "Buffer size: {}", size );
+            Arrays.fill( buf, 'x' );
+            buf[size - 1] = 'o'; // mark last entry for debugging
 
-        try (MessageWriter stream = new MessageWriter(session))
-        {
-            stream.write(buf);
-        }
+            try (MessageWriter stream = new MessageWriter( session ))
+            {
+                stream.write( buf );
+            }
 
-        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
-        String msg = remoteSocket.messageQueue.poll();
-        String expected = new String(buf);
-        Assert.assertThat("Message",msg,is(expected));
+            assertThat( "Socket.messageQueue.size", remoteSocket.messageQueue.size(), is( 1 ) );
+            String msg = remoteSocket.messageQueue.poll();
+            String expected = new String( buf );
+            assertThat( "Message", msg, is( expected ) );
+        });
     }
 }

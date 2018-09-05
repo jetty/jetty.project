@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,22 +26,19 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-@RunWith(AdvancedRunner.class)
 public class HttpWriterTest
 {
     private HttpOutput _httpOut;
     private ByteBuffer _bytes;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         _bytes = BufferUtil.allocate(2048);
@@ -138,7 +135,7 @@ public class HttpWriterTest
     {
         HttpWriter _writer = new Iso88591HttpWriter(_httpOut);
         _writer.write("How now \uFF22rown cow");
-        assertEquals("How now ?rown cow",new String(BufferUtil.toArray(_bytes),StandardCharsets.ISO_8859_1));
+        assertEquals(new String(BufferUtil.toArray(_bytes), StandardCharsets.ISO_8859_1), "How now ?rown cow");
     }
 
     @Test
@@ -252,8 +249,8 @@ public class HttpWriterTest
     private void assertArrayEquals(byte[] b1, byte[] b2)
     {
         String test=new String(b1)+"=="+new String(b2);
-        assertEquals(test,b1.length,b2.length);
+        assertEquals(b1.length,b2.length,test);
         for (int i=0;i<b1.length;i++)
-            assertEquals(test,b1[i],b2[i]);
+            assertEquals(b1[i],b2[i],test);
     }
 }

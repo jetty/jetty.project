@@ -21,8 +21,8 @@ package org.eclipse.jetty.gcloud.session;
 
 import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.junit.AfterClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * ClusteredOrphanedSessionTest
@@ -32,7 +32,7 @@ import org.junit.Test;
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
 
-    @AfterClass
+    @AfterAll
     public static void teardown () throws Exception
     {
         GCloudTestSuite.__testSupport.deleteSessions();

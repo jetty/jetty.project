@@ -24,12 +24,13 @@
  */
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -53,25 +54,21 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-@RunWith(AdvancedRunner.class)
 public class HttpConnectionTest
 {
     private Server server;
     private LocalConnector connector;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         server = new Server();
@@ -92,7 +89,7 @@ public class HttpConnectionTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         server.stop();
@@ -144,7 +141,7 @@ public class HttpConnectionTest
             throw e;
         }
     }
-    
+
     /**
      * HTTP/0.9 does not support HttpVersion (this is a bad request)
      */
@@ -155,13 +152,13 @@ public class HttpConnectionTest
         String request = "GET / HTTP/0.9\r\n\r\n";
         String response = connector.getResponse(request);
         assertThat(response, containsString("400 Bad Version"));
-        
+
         connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC7230);
         request = "GET / HTTP/0.9\r\n\r\n";
         response = connector.getResponse(request);
         assertThat(response, containsString("400 Bad Version"));
     }
-    
+
     /**
      * HTTP/0.9 does not support headers
      */
@@ -169,13 +166,13 @@ public class HttpConnectionTest
     public void testHttp09_NoHeaders() throws Exception
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
-        // header looking like another request is ignored 
+        // header looking like another request is ignored
         String request = "GET /one\r\nGET :/two\r\n\r\n";
         String response = BufferUtil.toString(connector.executeRequest(request).waitForOutput(10,TimeUnit.SECONDS));
         assertThat(response, containsString("pathInfo=/"));
         assertThat(response, not(containsString("two")));
     }
-    
+
     /**
      * Http/0.9 does not support pipelining.
      */
@@ -183,16 +180,16 @@ public class HttpConnectionTest
     public void testHttp09_MultipleRequests() throws Exception
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
-        
+
         // Verify that pipelining does not work with HTTP/0.9.
         String requests = "GET /?id=123\r\n\r\nGET /?id=456\r\n\r\n";
         LocalEndPoint endp = connector.executeRequest(requests);
         String response = BufferUtil.toString(endp.waitForOutput(10,TimeUnit.SECONDS));
-        
+
         assertThat(response, containsString("id=123"));
         assertThat(response, not(containsString("id=456")));
     }
-    
+
     /**
      * Ensure that excessively large hexadecimal chunk body length is parsed properly.
      */
@@ -215,14 +212,14 @@ public class HttpConnectionTest
                 "Host: dummy-host.example.com\r\n" +
                 "\r\n" +
                 "12345";
-        
+
         String response = connector.getResponse(request);
         assertThat(response,containsString(" 200 OK"));
         assertThat(response,containsString("Connection: close"));
         assertThat(response,containsString("Early EOF"));
-        
+
     }
-    
+
     /**
      * More then 1 Content-Length is a bad requests per HTTP rfcs.
      */
@@ -260,13 +257,13 @@ public class HttpConnectionTest
             request.append("Connection: close\r\n");
             request.append("\r\n");
             request.append("abcdefgh"); // actual content of 8 bytes
-    
+
             String rawResponse = connector.getResponse(request.toString());
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_BAD_REQUEST));
         }
     }
-    
+
     /**
      * More then 1 Content-Length is a bad requests per HTTP rfcs.
      */
@@ -299,7 +296,7 @@ public class HttpConnectionTest
             request.append("8;\r\n"); // chunk header
             request.append("abcdefgh"); // actual content of 8 bytes
             request.append("\r\n0;\r\n"); // last chunk
-    
+
             String rawResponse = connector.getResponse(request.toString());
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_BAD_REQUEST));
@@ -890,8 +887,7 @@ public class HttpConnectionTest
 
         long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         String response = connector.getResponse(requests, 2000, TimeUnit.MILLISECONDS);
-        if ((TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start)>=2000)
-            Assert.fail();
+        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start, lessThanOrEqualTo(2000L));
 
         offset = checkContains(response,offset,"HTTP/1.1 200");
         offset = checkContains(response,offset,"pathInfo=/R1");
@@ -1107,7 +1103,7 @@ public class HttpConnectionTest
         });
         server.start();
 
-        Logger logger = Log.getLogger(HttpChannel.class); 
+        Logger logger = Log.getLogger(HttpChannel.class);
         String response = null;
         try (StacklessLogging stackless = new StacklessLogging(logger))
         {
@@ -1205,12 +1201,12 @@ public class HttpConnectionTest
 
     private int checkContains(String s,int offset,String c)
     {
-        Assert.assertThat(s.substring(offset),Matchers.containsString(c));
+        assertThat(s.substring(offset),Matchers.containsString(c));
         return s.indexOf(c,offset);
     }
 
     private void checkNotContained(String s,int offset,String c)
     {
-        Assert.assertThat(s.substring(offset),Matchers.not(Matchers.containsString(c)));
+        assertThat(s.substring(offset),Matchers.not(Matchers.containsString(c)));
     }
 }

@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.http.client;
 
+import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -61,102 +65,31 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import static org.eclipse.jetty.http.client.AbstractTest.Transport.UNIX_SOCKET;
-import static org.junit.Assert.assertThat;
-
-public class HttpClientLoadTest extends AbstractTest
+public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTransportScenario>
 {
     private final Logger logger = Log.getLogger(HttpClientLoadTest.class);
     private final AtomicLong requestCount = new AtomicLong();
     private final AtomicLong connectionLeaks = new AtomicLong();
 
-    public HttpClientLoadTest(Transport transport)
-    {
-        super(transport);
-    }
-
     @Override
-    protected Connector newServerConnector( Server server) throws Exception {
-        if (transport == UNIX_SOCKET)
-        {
-            UnixSocketConnector
-                unixSocketConnector = new UnixSocketConnector( server, provideServerConnectionFactory( transport ));
-            unixSocketConnector.setUnixSocket( sockFile.toString() );
-            return unixSocketConnector;
-        }
-        int cores = ProcessorUtils.availableProcessors();
-        ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        byteBufferPool = new LeakTrackingByteBufferPool(byteBufferPool);
-        return new ServerConnector(server, null, null, byteBufferPool,
-                1, Math.min(1, cores / 2), provideServerConnectionFactory(transport));
+    public void init(Transport transport) throws IOException
+    {
+        setScenario(new LoadTransportScenario(transport, connectionLeaks));
     }
 
-    @Override
-    protected HttpClientTransport provideClientTransport(Transport transport)
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testIterative(Transport transport) throws Exception
     {
-        switch (transport)
-        {
-            case HTTP:
-            case HTTPS:
-            {
-                HttpClientTransport clientTransport = new HttpClientTransportOverHTTP(1);
-                clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
-                {
-                    @Override
-                    protected void leaked(LeakDetector.LeakInfo leakInfo)
-                    {
-                        super.leaked(leakInfo);
-                        connectionLeaks.incrementAndGet();
-                    }
-                });
-                return clientTransport;
-            }
-            case FCGI:
-            {
-                HttpClientTransport clientTransport = new HttpClientTransportOverFCGI(1, false, "");
-                clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
-                {
-                    @Override
-                    protected void leaked(LeakDetector.LeakInfo leakInfo)
-                    {
-                        super.leaked(leakInfo);
-                        connectionLeaks.incrementAndGet();
-                    }
-                });
-                return clientTransport;
-            }
-            case UNIX_SOCKET:
-            {
-                HttpClientTransportOverUnixSockets clientTransport = new HttpClientTransportOverUnixSockets( sockFile.toString() );
-                clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
-                {
-                    @Override
-                    protected void leaked(LeakDetector.LeakInfo leakInfo)
-                    {
-                        super.leaked(leakInfo);
-                        connectionLeaks.incrementAndGet();
-                    }
-                });
-                return clientTransport;
-            }
-            default:
-            {
-                return super.provideClientTransport(transport);
-            }
-        }
-    }
+        init(transport);
+        scenario.start(new LoadHandler());
 
-    @Test
-    public void testIterative() throws Exception
-    {
-        start(new LoadHandler());
-
-        client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
-        client.setMaxConnectionsPerDestination(32768);
-        client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+        scenario.client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+        scenario.client.setMaxConnectionsPerDestination(32768);
+        scenario.client.setMaxRequestsQueuedPerDestination(1024 * 1024);
 
         // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
         int runs = 1;
@@ -171,7 +104,7 @@ public class HttpClientLoadTest extends AbstractTest
 
         System.gc();
 
-        ByteBufferPool byteBufferPool = connector.getByteBufferPool();
+        ByteBufferPool byteBufferPool = scenario.connector.getByteBufferPool();
         if (byteBufferPool instanceof LeakTrackingByteBufferPool)
         {
             LeakTrackingByteBufferPool serverBufferPool = (LeakTrackingByteBufferPool)byteBufferPool;
@@ -180,7 +113,7 @@ public class HttpClientLoadTest extends AbstractTest
             assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), Matchers.is(0L));
         }
 
-        byteBufferPool = client.getByteBufferPool();
+        byteBufferPool = scenario.client.getByteBufferPool();
         if (byteBufferPool instanceof LeakTrackingByteBufferPool)
         {
             LeakTrackingByteBufferPool clientBufferPool = (LeakTrackingByteBufferPool)byteBufferPool;
@@ -192,14 +125,16 @@ public class HttpClientLoadTest extends AbstractTest
         assertThat("Connection Leaks", connectionLeaks.get(), Matchers.is(0L));
     }
 
-    @Test
-    public void testConcurrent() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testConcurrent(Transport transport) throws Exception
     {
-        start(new LoadHandler());
+        init(transport);
+        scenario.start(new LoadHandler());
 
-        client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
-        client.setMaxConnectionsPerDestination(32768);
-        client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+        scenario.client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+        scenario.client.setMaxConnectionsPerDestination(32768);
+        scenario.client.setMaxRequestsQueuedPerDestination(1024 * 1024);
 
         int runs = 1;
         int iterations = 256;
@@ -217,11 +152,11 @@ public class HttpClientLoadTest extends AbstractTest
 
         // Dumps the state of the client if the test takes too long
         final Thread testThread = Thread.currentThread();
-        Scheduler.Task task = client.getScheduler().schedule(() ->
+        Scheduler.Task task = scenario.client.getScheduler().schedule(() ->
         {
             logger.warn("Interrupting test, it is taking too long{}{}{}{}",
-                    System.lineSeparator(), server.dump(),
-                    System.lineSeparator(), client.dump());
+                    System.lineSeparator(), scenario.server.dump(),
+                    System.lineSeparator(), scenario.client.dump());
             testThread.interrupt();
         }, iterations * factor, TimeUnit.MILLISECONDS);
 
@@ -231,7 +166,7 @@ public class HttpClientLoadTest extends AbstractTest
             test(latch, failures);
 //            test("http", "localhost", "GET", false, false, 64 * 1024, false, latch, failures);
         }
-        Assert.assertTrue(await(latch, iterations, TimeUnit.SECONDS));
+        assertTrue(await(latch, iterations, TimeUnit.SECONDS));
         long end = System.nanoTime();
         task.cancel();
         long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
@@ -240,7 +175,7 @@ public class HttpClientLoadTest extends AbstractTest
         for (String failure : failures)
             logger.info("FAILED: {}", failure);
 
-        Assert.assertTrue(failures.toString(), failures.isEmpty());
+        assertTrue(failures.isEmpty(),failures.toString());
     }
 
     private void test(final CountDownLatch latch, final List<String> failures)
@@ -251,7 +186,7 @@ public class HttpClientLoadTest extends AbstractTest
         // Choose a random method
         HttpMethod method = random.nextBoolean() ? HttpMethod.GET : HttpMethod.POST;
 
-        boolean ssl = isTransportSecure();
+        boolean ssl = scenario.isTransportSecure();
 
         // Choose randomly whether to close the connection on the client or on the server
         boolean clientClose = false;
@@ -264,14 +199,13 @@ public class HttpClientLoadTest extends AbstractTest
         int maxContentLength = 64 * 1024;
         int contentLength = random.nextInt(maxContentLength) + 1;
 
-        test(getScheme(), host, method.asString(), clientClose, serverClose, contentLength, true, latch, failures);
+        test(scenario.getScheme(), host, method.asString(), clientClose, serverClose, contentLength, true, latch, failures);
     }
 
     private void test(String scheme, String host, String method, boolean clientClose, boolean serverClose, int contentLength, final boolean checkContentLength, final CountDownLatch latch, final List<String> failures)
     {
         long requestId = requestCount.incrementAndGet();
-        Request request = client.newRequest(host,
-                                            (connector instanceof ServerConnector) ? ServerConnector.class.cast(connector).getLocalPort(): 0)
+        Request request = scenario.client.newRequest(host, scenario.getNetworkConnectorLocalPortInt().orElse(0))
                 .scheme(scheme)
                 .path("/" + requestId)
                 .method(method);
@@ -334,8 +268,8 @@ public class HttpClientLoadTest extends AbstractTest
         if (!await(requestLatch, 5, TimeUnit.SECONDS))
         {
             logger.warn("Request {} took too long{}{}{}{}", requestId,
-                    System.lineSeparator(), server.dump(),
-                    System.lineSeparator(), client.dump());
+                    System.lineSeparator(), scenario.server.dump(),
+                    System.lineSeparator(), scenario.client.dump());
         }
     }
 
@@ -381,6 +315,88 @@ public class HttpClientLoadTest extends AbstractTest
                 response.setHeader("Connection", "close");
 
             baseRequest.setHandled(true);
+        }
+    }
+
+    public static class LoadTransportScenario extends TransportScenario
+    {
+        private final AtomicLong connectionLeaks;
+
+        public LoadTransportScenario(Transport transport, AtomicLong connectionLeaks) throws IOException
+        {
+            super(transport);
+            this.connectionLeaks = connectionLeaks;
+        }
+
+        @Override
+        public Connector newServerConnector( Server server) throws Exception {
+            if (transport == UNIX_SOCKET)
+            {
+                UnixSocketConnector
+                        unixSocketConnector = new UnixSocketConnector( server, provideServerConnectionFactory( transport ));
+                unixSocketConnector.setUnixSocket( sockFile.toString() );
+                return unixSocketConnector;
+            }
+            int cores = ProcessorUtils.availableProcessors();
+            ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
+            byteBufferPool = new LeakTrackingByteBufferPool(byteBufferPool);
+            return new ServerConnector(server, null, null, byteBufferPool,
+                    1, Math.min(1, cores / 2), provideServerConnectionFactory(transport));
+        }
+
+        @Override
+        public HttpClientTransport provideClientTransport(Transport transport)
+        {
+            switch (transport)
+            {
+                case HTTP:
+                case HTTPS:
+                {
+                    HttpClientTransport clientTransport = new HttpClientTransportOverHTTP(1);
+                    clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
+                    {
+                        @Override
+                        protected void leaked(LeakDetector.LeakInfo leakInfo)
+                        {
+                            super.leaked(leakInfo);
+                            connectionLeaks.incrementAndGet();
+                        }
+                    });
+                    return clientTransport;
+                }
+                case FCGI:
+                {
+                    HttpClientTransport clientTransport = new HttpClientTransportOverFCGI(1, false, "");
+                    clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
+                    {
+                        @Override
+                        protected void leaked(LeakDetector.LeakInfo leakInfo)
+                        {
+                            super.leaked(leakInfo);
+                            connectionLeaks.incrementAndGet();
+                        }
+                    });
+                    return clientTransport;
+                }
+                case UNIX_SOCKET:
+                {
+                    HttpClientTransportOverUnixSockets clientTransport = new HttpClientTransportOverUnixSockets( sockFile.toString() );
+                    clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
+                    {
+                        @Override
+                        protected void leaked(LeakDetector.LeakInfo leakInfo)
+                        {
+                            super.leaked(leakInfo);
+                            connectionLeaks.incrementAndGet();
+                        }
+                    });
+                    return clientTransport;
+                }
+                default:
+                {
+                    return super.provideClientTransport(transport);
+                }
+            }
         }
     }
 }

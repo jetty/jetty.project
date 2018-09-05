@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
-
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -45,20 +36,28 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
+
 public class MessageOutputStreamTest
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStreamTest.class);
-    
+
     @Rule
     public TestName testname = new TestName();
 
     public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
-    
+
     private WebSocketPolicy policy;
     private TrackingEndpoint remoteSocket;
     private WebSocketSession session;
     private WebSocketSession remoteSession;
-    
+
     @After
     public void closeSession() throws Exception
     {
@@ -67,16 +66,16 @@ public class MessageOutputStreamTest
         remoteSession.close();
         remoteSession.stop();
     }
-    
+
     @Before
     public void setupSession() throws Exception
     {
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
-        
+
         // Container
         WebSocketContainerScope containerScope = new SimpleContainerScope(policy, bufferPool);
-        
+
         // remote socket
         remoteSocket = new TrackingEndpoint("remote");
         URI remoteURI = new URI("ws://localhost/remote");
@@ -85,13 +84,13 @@ public class MessageOutputStreamTest
         remoteSession.start();
         remoteSession.connect();
         remoteSession.open();
-        
+
         // Local Session
         TrackingEndpoint localSocket = new TrackingEndpoint("local");
         URI localURI = new URI("ws://localhost/local");
         LocalWebSocketConnection localConnection = new LocalWebSocketConnection(localURI, bufferPool);
         session = new WebSocketSession(containerScope, localURI, localSocket, localConnection);
-        
+
         // talk to our remote socket
         session.setOutgoingHandler(FramePipes.to(remoteSession));
         session.connect();
@@ -100,7 +99,7 @@ public class MessageOutputStreamTest
         // open connection
         session.open();
     }
-    
+
     @Test(timeout = 2000)
     public void testMultipleWrites() throws Exception
     {
@@ -110,13 +109,13 @@ public class MessageOutputStreamTest
             stream.write(" ".getBytes("UTF-8"));
             stream.write("World".getBytes("UTF-8"));
         }
-        
+
         Assert.assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
         ByteBuffer buffer = remoteSocket.bufferQueue.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         Assert.assertThat("Message", message, is("Hello World"));
     }
-    
+
     @Test(timeout = 2000)
     public void testSingleWrite() throws Exception
     {
@@ -124,13 +123,13 @@ public class MessageOutputStreamTest
         {
             stream.write("Hello World".getBytes("UTF-8"));
         }
-        
+
         Assert.assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
         ByteBuffer buffer = remoteSocket.bufferQueue.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         Assert.assertThat("Message", message, is("Hello World"));
     }
-    
+
     @Test(timeout = 2000000)
     public void testWriteMultipleBuffers() throws Exception
     {
@@ -139,12 +138,12 @@ public class MessageOutputStreamTest
         LOG.debug("Buffer sizes: max:{}, test:{}", policy.getOutputBufferSize(), bufsize);
         Arrays.fill(buf, (byte) 'x');
         buf[bufsize - 1] = (byte) 'o'; // mark last entry for debugging
-        
+
         try (MessageOutputStream stream = new MessageOutputStream(session))
         {
             stream.write(buf);
         }
-        
+
         Assert.assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
         ByteBuffer buffer = remoteSocket.bufferQueue.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);

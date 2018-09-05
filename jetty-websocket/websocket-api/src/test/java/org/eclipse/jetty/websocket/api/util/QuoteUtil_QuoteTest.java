@@ -18,31 +18,27 @@
 
 package org.eclipse.jetty.websocket.api.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test QuoteUtil.quote(), and QuoteUtil.dequote()
  */
-@RunWith(Parameterized.class)
 public class QuoteUtil_QuoteTest
 {
-    @Parameters
-    public static Collection<Object[]> data()
+    public static Stream<Arguments> data()
     {
         // The various quoting of a String
         List<Object[]> data = new ArrayList<>();
 
-        // @formatter:off
         data.add(new Object[] { "Hi", "\"Hi\"" });
         data.add(new Object[] { "Hello World", "\"Hello World\"" });
         data.add(new Object[] { "9.0.0", "\"9.0.0\"" });
@@ -50,35 +46,27 @@ public class QuoteUtil_QuoteTest
                                 "\"Something \\\"Special\\\"\"" });
         data.add(new Object[] { "A Few\n\"Good\"\tMen", 
                                 "\"A Few\\n\\\"Good\\\"\\tMen\"" });
-        // @formatter:on
 
-        return data;
+        return data.stream().map(Arguments::of);
     }
 
-    private String unquoted;
-    private String quoted;
-
-    public QuoteUtil_QuoteTest(String unquoted, String quoted)
-    {
-        this.unquoted = unquoted;
-        this.quoted = quoted;
-    }
-
-    @Test
-    public void testDequoting()
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testDequoting(final String unquoted, final String quoted)
     {
         String actual = QuoteUtil.dequote(quoted);
         actual = QuoteUtil.unescape(actual);
-        Assert.assertThat(actual,is(unquoted));
+        assertThat(actual,is(unquoted));
     }
 
-    @Test
-    public void testQuoting()
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testQuoting(final String unquoted, final String quoted)
     {
         StringBuilder buf = new StringBuilder();
         QuoteUtil.quote(buf,unquoted);
 
         String actual = buf.toString();
-        Assert.assertThat(actual,is(quoted));
+        assertThat(actual,is(quoted));
     }
 }

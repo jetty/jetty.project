@@ -18,8 +18,12 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.util.concurrent.ExecutionException;
@@ -32,49 +36,41 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
+
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.api.UpgradeException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class WebSocketInvalidVersionTest
 {
     private static SimpleServletServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
-
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
-    @Rule
-    public TestName testname = new TestName();
-    
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-    
-    private WebSocketClient client;
-    
-    @Before
-    public void startClient() throws Exception
+    private static WebSocketClient client;
+
+    @BeforeAll
+    public static void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
-    
-    @After
-    public void stopClient() throws Exception
+
+    @AfterAll
+    public static void stopClient() throws Exception
     {
         client.stop();
     }
@@ -84,18 +80,20 @@ public class WebSocketInvalidVersionTest
      * @throws Exception on test failure
      */
     @Test
-    public void testRequestVersion29() throws Exception
+    public void testRequestVersion29( TestInfo testInfo ) throws Exception
     {
         URI wsUri = server.getServerUri();
-    
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.setHeader("Sec-WebSocket-Version", "29");
-        
-        expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(instanceOf(HttpResponseException.class));
-        expectedException.expectMessage(containsString("Unsupported websocket version"));
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        clientConnectFuture.get();
+
+        Throwable expectedException = Assertions.assertThrows(ExecutionException.class, () -> {
+                                    TrackingEndpoint clientSocket = new TrackingEndpoint( testInfo.getTestMethod().get().getName() );
+                                    ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+                                    upgradeRequest.setHeader( "Sec-WebSocket-Version", "29" );
+                                    Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
+                                    clientConnectFuture.get();
+                                });
+
+        assertEquals(expectedException.getCause(), instanceOf(HttpResponseException.class));
+        assertTrue(expectedException.getMessage().contains("Unsupported websocket version"));
+
     }
 }

@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -31,14 +25,20 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.tests.client.jsr356.misbehaving.AnnotatedRuntimeOnOpen;
 import org.eclipse.jetty.websocket.tests.client.jsr356.misbehaving.EndpointRuntimeOnOpen;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
+import javax.websocket.ContainerProvider;
+import javax.websocket.WebSocketContainer;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MisbehavingClassTest
 {
@@ -47,7 +47,7 @@ public class MisbehavingClassTest
     private static URI serverUri;
 
     @SuppressWarnings("Duplicates")
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new Server();
@@ -73,7 +73,7 @@ public class MisbehavingClassTest
         serverUri = new URI(String.format("ws://%s:%d/",host,port));
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         try
@@ -94,23 +94,18 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         EndpointRuntimeOnOpen socket = new EndpointRuntimeOnOpen();
 
-        try (StacklessLogging ignored = new StacklessLogging(EndpointRuntimeOnOpen.class, WebSocketSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(EndpointRuntimeOnOpen.class, WebSocketSession.class))
         {
-            try
-            {
-                container.connectToServer(socket, serverUri);
-                fail("Should have failed .connectToServer()");
-            }
-            catch (IOException e)
-            {
-                assertThat(e.getCause(), instanceOf(RuntimeException.class));
-            }
+            // expecting IOException during onOpen - Should have failed .connectToServer()
+            IOException e = assertThrows(IOException.class,
+                    () -> container.connectToServer(socket, serverUri));
+            assertThat(e.getCause(), instanceOf(RuntimeException.class));
 
             assertThat("Close should have occurred", socket.closeLatch.await(10,TimeUnit.SECONDS), is(true));
             assertThat("Error", socket.errors.pop(), instanceOf(RuntimeException.class));
         }
     }
-    
+
     @Test
     public void testAnnotatedRuntimeOnOpen() throws Exception
     {
@@ -118,18 +113,13 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         AnnotatedRuntimeOnOpen socket = new AnnotatedRuntimeOnOpen();
 
-        try (StacklessLogging ignored = new StacklessLogging(AnnotatedRuntimeOnOpen.class, WebSocketSession.class))
+        try (StacklessLogging ignore = new StacklessLogging(AnnotatedRuntimeOnOpen.class, WebSocketSession.class))
         {
-            try
-            {
-                container.connectToServer(socket, serverUri);
-                fail("Should have failed .connectToServer()");
-            }
-            catch (IOException e)
-            {
-                assertThat(e.getCause(), instanceOf(RuntimeException.class));
-            }
-
+            // expecting IOException during onOpen - Should have failed .connectToServer()
+            IOException e = assertThrows(IOException.class,
+                    () -> container.connectToServer(socket, serverUri));
+            assertThat(e.getCause(), instanceOf(RuntimeException.class));
+            
             assertThat("Close should have occurred", socket.closeLatch.await(10,TimeUnit.SECONDS), is(true));
             assertThat("Error",socket.errors.pop(), instanceOf(RuntimeException.class));
         }

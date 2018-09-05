@@ -20,18 +20,20 @@
 package org.eclipse.jetty.http2.hpack;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 
 /* ------------------------------------------------------------ */
@@ -46,8 +48,8 @@ public class HpackContextTest
         HpackContext ctx = new HpackContext(4096);
         Entry entry=ctx.get(":method");
         assertEquals(":method",entry.getHttpField().getName());
-        Assert.assertTrue(entry.isStatic());
-        Assert.assertThat(entry.toString(),Matchers.startsWith("{S,2,:method: "));
+        assertTrue(entry.isStatic());
+        assertThat(entry.toString(),Matchers.startsWith("{S,2,:method: "));
     }
     
     @Test
@@ -55,7 +57,7 @@ public class HpackContextTest
     {
         HpackContext ctx = new HpackContext(0);
         HttpField field = new HttpField("foo","bar");
-        Assert.assertNull(ctx.add(field));
+        assertNull(ctx.add(field));
     }
     
     @Test
@@ -63,7 +65,7 @@ public class HpackContextTest
     {
         HpackContext ctx = new HpackContext(37);
         HttpField field = new HttpField("foo","bar");
-        Assert.assertNull(ctx.add(field));
+        assertNull(ctx.add(field));
     }
     
     @Test
@@ -72,8 +74,8 @@ public class HpackContextTest
         HpackContext ctx = new HpackContext(38);
         HttpField field = new HttpField("foo","bar");
         Entry entry=ctx.add(field);
-        Assert.assertNotNull(entry);
-        Assert.assertThat(entry.toString(),Matchers.startsWith("{D,0,foo: bar,"));
+        assertNotNull(entry);
+        assertThat(entry.toString(),Matchers.startsWith("{D,0,foo: bar,"));
     }
     
     @Test

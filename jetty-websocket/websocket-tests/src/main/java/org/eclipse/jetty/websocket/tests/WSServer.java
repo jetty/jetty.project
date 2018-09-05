@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Path;
-
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Handler;
@@ -38,12 +28,23 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebSocketConfiguration;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Utility to build out exploded directory WebApps, in the /target/tests/ directory, for testing out servers that use javax.websocket endpoints.
@@ -58,8 +59,9 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
     private ContextHandlerCollection contexts;
     private Path webinf;
     private Path classesDir;
-    
-    public WSServer(TestingDir testdir, String contextName)
+
+
+    public WSServer(WorkDir testdir, String contextName)
     {
         this(testdir.getPath(), contextName);
     }
@@ -81,11 +83,13 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         String endpointPath = clazz.getName().replace('.', '/') + ".class";
         URL classUrl = cl.getResource(endpointPath);
-        assertThat("Class URL for: " + clazz, classUrl, notNullValue());
-        Path destFile = classesDir.resolve(endpointPath);
-        FS.ensureDirExists(destFile.getParent());
+
+        assertThat("Class URL for: " + clazz,classUrl,notNullValue());
+        File destFile = Paths.get( classesDir.toString(), FS.separators( endpointPath)).toFile();
+        FS.ensureDirExists(destFile.getParentFile());
         File srcFile = new File(classUrl.toURI());
-        IO.copy(srcFile, destFile.toFile());
+        IO.copy(srcFile,destFile);
+
     }
     
     public void copyEndpoint(Class<?> endpointClass) throws Exception

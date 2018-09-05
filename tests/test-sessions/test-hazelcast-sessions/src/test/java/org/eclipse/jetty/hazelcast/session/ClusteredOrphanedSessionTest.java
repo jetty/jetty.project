@@ -19,12 +19,10 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * ClusteredOrphanedSessionTest
@@ -37,13 +35,13 @@ public class ClusteredOrphanedSessionTest
 
     HazelcastTestHelper _testHelper;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _testHelper = new HazelcastTestHelper();
     }
 
-    @After
+    @AfterEach
     public void shutdown()
     {
         _testHelper.tearDown();

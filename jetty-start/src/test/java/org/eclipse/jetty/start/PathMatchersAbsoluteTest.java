@@ -18,65 +18,58 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
-import org.eclipse.jetty.toolchain.test.OS;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class PathMatchersAbsoluteTest
 {
-    @Parameters(name="{0} -> {1}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> pathPatterns()
     {
-        List<Object[]> cases = new ArrayList<>();
+        List<Arguments> arguments = new ArrayList<>();
         
-        if(OS.IS_UNIX)
+        if(OS.LINUX.isCurrentOs() | OS.MAC.isCurrentOs())
         {
-            cases.add(new Object[]{"/opt/app",true});
-            cases.add(new Object[]{"/opt/app",true});
-            cases.add(new Object[]{"/opt/florb",true});
-            cases.add(new Object[]{"/home/user/benfranklin",true});
-            cases.add(new Object[]{"glob:/home/user/benfranklin/*.jar",true});
-            cases.add(new Object[]{"glob:/**/*.jar",true});
-            cases.add(new Object[]{"regex:/*-[^dev].ini",true});
+            arguments.add(Arguments.of("/opt/app",true));
+            arguments.add(Arguments.of("/opt/app",true));
+            arguments.add(Arguments.of("/opt/florb",true));
+            arguments.add(Arguments.of("/home/user/benfranklin",true));
+            arguments.add(Arguments.of("glob:/home/user/benfranklin/*.jar",true));
+            arguments.add(Arguments.of("glob:/**/*.jar",true));
+            arguments.add(Arguments.of("regex:/*-[^dev].ini",true));
         }
         
-        if(OS.IS_WINDOWS)
+        if(OS.WINDOWS.isCurrentOs())
         {
             // normal declaration
-            cases.add(new Object[]{"D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs\\example.jar",true});
+            arguments.add(Arguments.of("D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs\\example.jar",true));
             // escaped declaration
-            cases.add(new Object[]{"C:\\\\System32",true});
-            cases.add(new Object[]{"C:\\\\Program Files",true});
+            arguments.add(Arguments.of("C:\\\\System32",true));
+            arguments.add(Arguments.of("C:\\\\Program Files",true));
         }
         
-        cases.add(new Object[]{"etc",false});
-        cases.add(new Object[]{"lib",false});
-        cases.add(new Object[]{"${user.dir}",false});
-        cases.add(new Object[]{"**/*.jar",false});
-        cases.add(new Object[]{"glob:*.ini",false});
-        cases.add(new Object[]{"regex:*-[^dev].ini",false});
+        arguments.add(Arguments.of("etc",false));
+        arguments.add(Arguments.of("lib",false));
+        arguments.add(Arguments.of("${user.dir}",false));
+        arguments.add(Arguments.of("**/*.jar",false));
+        arguments.add(Arguments.of("glob:*.ini",false));
+        arguments.add(Arguments.of("regex:*-[^dev].ini",false));
 
-        return cases;
+        return Stream.of(arguments.toArray(new Arguments[0]));
     }
     
-    @Parameter(value=0)
-    public String pattern;
-    @Parameter(value=1)
-    public boolean expected;
-
-    @Test
-    public void testIsAbsolute()
+    @ParameterizedTest
+    @MethodSource("pathPatterns")
+    public void testIsAbsolute(String pattern, boolean expected)
     {
-        Assert.assertThat("isAbsolute(\""+pattern+"\")",PathMatchers.isAbsolute(pattern),is(expected));
+        assertThat("isAbsolute(\""+pattern+"\")",PathMatchers.isAbsolute(pattern),is(expected));
     }
 }

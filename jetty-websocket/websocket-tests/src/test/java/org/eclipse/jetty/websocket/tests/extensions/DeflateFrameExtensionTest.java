@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.websocket.tests.extensions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -59,8 +60,8 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.CapturedHexPayloads;
 import org.eclipse.jetty.websocket.tests.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.tests.OutgoingNetworkBytesCapture;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
@@ -439,6 +440,6 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         frame.setFin(true);
         clientExtension.outgoingFrame(frame, null, BatchMode.OFF);
 
-        Assert.assertArrayEquals(input, result.toByteArray());
+        assertArrayEquals(input, result.toByteArray());
     }
 }

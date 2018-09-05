@@ -31,6 +31,7 @@ import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.junit.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 
 import javax.security.auth.login.AppConfigurationEntry;

@@ -51,9 +51,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
-@Ignore("Not a test case")
+@Disabled("Not a test case")
 public class TestServer
 {
     private static final Logger LOG = Log.getLogger(TestServer.class);

@@ -18,10 +18,14 @@
 
 package org.eclipse.jetty.annotations;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,8 +41,8 @@ import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -86,7 +90,7 @@ public class TestAnnotationInheritance
         }
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         classNames.clear();
@@ -171,17 +175,14 @@ public class TestAnnotationInheritance
         assertNotNull(map);
         assertFalse(map.isEmpty());
         assertEquals(2, map.size());
-      
-        
-        assertTrue (map.keySet().contains("org.eclipse.jetty.annotations.ClassA"));
-        assertTrue (map.keySet().contains("org.eclipse.jetty.annotations.InterfaceD"));
+
+        assertThat(map, hasKey("org.eclipse.jetty.annotations.ClassA"));
+        assertThat(map, hasKey("org.eclipse.jetty.annotations.InterfaceD"));
         Set<String> classes = map.get("org.eclipse.jetty.annotations.ClassA");
-        assertEquals(1, classes.size());
-        assertEquals ("org.eclipse.jetty.annotations.ClassB", classes.iterator().next());
+        assertThat(classes, contains("org.eclipse.jetty.annotations.ClassB"));
 
         classes = map.get("org.eclipse.jetty.annotations.InterfaceD");
-        assertEquals(2, classes.size());
-        assertTrue(classes.contains("org.eclipse.jetty.annotations.ClassB"));
-        assertTrue(classes.contains(Foo.class.getName()));
+        assertThat(classes, containsInAnyOrder("org.eclipse.jetty.annotations.ClassB",
+                Foo.class.getName()));
     }
 }

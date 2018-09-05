@@ -18,35 +18,32 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.MultiReleaseJarFile.VersionedJarEntry;
 import org.hamcrest.Matchers;
-import org.junit.Assume;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-@RunWith(AdvancedRunner.class)
 public class MultiReleaseJarFileTest
 {
-    private File testResources = MavenTestingUtils.getTestResourcesDir().getAbsoluteFile();
-    private File example = new File(testResources,"example.jar");
+    private File example = MavenTestingUtils.getTestResourceFile("example.jar");
 
     @Test
     public void testExampleJarIsMR() throws Exception
     {
         try(MultiReleaseJarFile jarFile = new MultiReleaseJarFile(example))
         {
-            assertTrue(jarFile.isMultiRelease());
+            assertTrue(jarFile.isMultiRelease(), "Expected " + example + " to be MultiRelease JAR File");
         }
     }
 
@@ -127,10 +124,9 @@ public class MultiReleaseJarFileTest
     
     
     @Test
+    @EnabledOnJre({JRE.JAVA_9, JRE.JAVA_10, JRE.JAVA_11})
     public void testClassLoaderJava9() throws Exception
     {
-        Assume.assumeTrue(JavaVersion.VERSION.getPlatform()==9);
-        
         try(URLClassLoader loader = new URLClassLoader(new URL[]{example.toURI().toURL()}))
         {
             assertThat(IO.toString(loader.getResource("org/example/OnlyInBase.class").openStream()),is("org/example/OnlyInBase.class"));
@@ -139,8 +135,5 @@ public class MultiReleaseJarFileTest
             assertThat(IO.toString(loader.getResource("WEB-INF/classes/App.class").openStream()),is("META-INF/versions/9/WEB-INF/classes/App.class"));
             assertThat(IO.toString(loader.getResource("WEB-INF/lib/depend.jar").openStream()),is("META-INF/versions/9/WEB-INF/lib/depend.jar"));
         }
-        
     }
-
-
 }

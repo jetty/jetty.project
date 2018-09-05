@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 
@@ -31,9 +31,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -43,7 +43,7 @@ public class InvokerTest
     private Server _server;
     private LocalConnector _connector;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         _server = new Server();
@@ -62,7 +62,7 @@ public class InvokerTest
         _server.start();
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         _server.stop();

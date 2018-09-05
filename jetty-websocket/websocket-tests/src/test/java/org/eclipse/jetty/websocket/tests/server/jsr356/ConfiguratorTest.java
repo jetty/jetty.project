@@ -18,10 +18,36 @@
 
 package org.eclipse.jetty.websocket.tests.server.jsr356;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.util.QuoteUtil;
+import org.eclipse.jetty.websocket.api.util.WSURI;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.jsr356.server.JsrCreator;
+import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Extension;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.server.HandshakeRequest;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
@@ -36,48 +62,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Extension;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.server.HandshakeRequest;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
-
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.util.QuoteUtil;
-import org.eclipse.jetty.websocket.api.util.WSURI;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.jsr356.server.JsrCreator;
-import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.eclipse.jetty.websocket.tests.Defaults;
-import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 public class ConfiguratorTest
 {
@@ -406,7 +398,7 @@ public class ConfiguratorTest
     private static Server server;
     private static URI baseServerUri;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new Server();
@@ -447,36 +439,34 @@ public class ConfiguratorTest
         return String.format("%s:%d", addr.getAddress().getHostAddress(), addr.getPort());
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
 
-    @Rule
-    public TestName testname = new TestName();
 
-    private WebSocketClient client;
+    private static WebSocketClient client;
 
-    @Before
-    public void startClient() throws Exception
+
+    @BeforeAll
+    public static void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
 
-    @After
-    public void stopClient() throws Exception
+    public static void stopClient() throws Exception
     {
         client.stop();
     }
 
     @Test
-    public void testEmptyConfigurator() throws Exception
+    public void testEmptyConfigurator(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/empty");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("identity");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -491,11 +481,11 @@ public class ConfiguratorTest
     }
 
     @Test
-    public void testNoExtensionsConfigurator() throws Exception
+    public void testNoExtensionsConfigurator(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/no-extensions");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("identity");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -510,11 +500,11 @@ public class ConfiguratorTest
     }
 
     @Test
-    public void testCaptureRequestHeadersConfigurator() throws Exception
+    public void testCaptureRequestHeadersConfigurator(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/capture-request-headers");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setHeader("X-Dummy", "Bogus");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -529,25 +519,25 @@ public class ConfiguratorTest
     }
     
     @Test
-    public void testUniqueUserPropsConfigurator() throws Exception
+    public void testUniqueUserPropsConfigurator(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/unique-user-props");
 
         // First Request
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
 
         org.eclipse.jetty.websocket.api.Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         clientSession.getRemote().sendString("apple"); // first request has this UserProperty
-        
+
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = \"fruit from tree\""));
 
         clientSession.close();
 
         // Second request
-        clientSocket = new TrackingEndpoint(testname.getMethodName());
+        clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         upgradeRequest = new ClientUpgradeRequest();
         clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
 
@@ -559,16 +549,14 @@ public class ConfiguratorTest
         assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = <null>"));
         incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming Message", incomingMessage, is("Requested User Property: [blueberry] = \"fruit from bush\""));
-
-        clientSession.close();
     }
     
     @Test
-    public void testUserPropsAddress() throws Exception
+    public void testUserPropsAddress(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/addr");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
 
@@ -590,7 +578,7 @@ public class ConfiguratorTest
 
         assertThat("Frame Response", incomingMessage, is(expected.toString()));
 
-        clientSession.close();
+
     }
     
     /**
@@ -599,12 +587,12 @@ public class ConfiguratorTest
      * @throws Exception on test failure
      */
     @Test
-    public void testProtocol_Single() throws Exception
+    public void testProtocol_Single(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -624,12 +612,12 @@ public class ConfiguratorTest
      * @throws Exception on test failure
      */
     @Test
-    public void testProtocol_Triple() throws Exception
+    public void testProtocol_Triple(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo", "chat", "status");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -649,12 +637,12 @@ public class ConfiguratorTest
      * @throws Exception on test failure
      */
     @Test
-    public void testProtocol_LowercaseHeader() throws Exception
+    public void testProtocol_LowercaseHeader(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setHeader("sec-websocket-protocol", "echo, chat, status");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -674,12 +662,12 @@ public class ConfiguratorTest
      * @throws Exception on test failure
      */
     @Test
-    public void testProtocol_AltHeaderCase() throws Exception
+    public void testProtocol_AltHeaderCase(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         // header name is not to spec (case wise)
         upgradeRequest.setHeader("Sec-Websocket-Protocol", "echo, chat, status");
@@ -698,11 +686,11 @@ public class ConfiguratorTest
      * Test of Sec-WebSocket-Protocol, using non-spec case header
      */
     @Test
-    public void testDecoderWithProtocol() throws Exception
+    public void testDecoderWithProtocol(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/timedecoder");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("gmt");
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -721,11 +709,11 @@ public class ConfiguratorTest
      * @throws Exception
      */
     @Test
-    public void testAnnotationConfigurator() throws Exception
+    public void testAnnotationConfigurator(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/config-normal");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
 
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -736,6 +724,8 @@ public class ConfiguratorTest
 
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming message", incomingMessage, is("UserProperties[self.configurator] = " + ConfigNormalConfigurator.class.getName()));
+
+        clientSession.close();
     }
 
     /**
@@ -743,10 +733,10 @@ public class ConfiguratorTest
      * @throws Exception
      */
     @Test
-    public void testOverrideConfigurator() throws Exception
+    public void testOverrideConfigurator(TestInfo testInfo) throws Exception
     {
         URI wsUri = baseServerUri.resolve("/config-override");
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
 
         Future<org.eclipse.jetty.websocket.api.Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
@@ -757,5 +747,7 @@ public class ConfiguratorTest
 
         String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Incoming message", incomingMessage, is("UserProperties[self.configurator] = " + ConfigOverrideConfigurator.class.getName()));
+
+        clientSession.close();
     }
 }

@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.tests.server;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -31,24 +31,21 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.servlets.EchoSocket;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests of Known Bad UTF8 sequences that should trigger a {@link StatusCode#BAD_PAYLOAD} close and early connection termination
  */
-@RunWith(Parameterized.class)
 public class Text_InvalidUtf8Test extends AbstractLocalServerCase
 {
-    @Parameters(name = "{0} - {1}")
-    public static Collection<String[]> data()
+    public static Stream<Arguments> utfSequences()
     {
         // The various Known Bad UTF8 sequences as a String (hex form)
         List<String[]> data = new ArrayList<>();
 
-        // @formatter:off
         // - differently unicode fragmented
         data.add(new String[]{ "6.3.1", "CEBAE1BDB9CF83CEBCCEB5EDA080656469746564" });
         // - partial/incomplete multi-byte code points
@@ -136,29 +133,25 @@ public class Text_InvalidUtf8Test extends AbstractLocalServerCase
         data.add(new String[]{ "6.21.6", "EDAE80EDBFBF" });
         data.add(new String[]{ "6.21.7", "EDAFBFEDB080" });
         data.add(new String[]{ "6.21.8", "EDAFBFEDBFBF" });
-        // @formatter:on
 
-        return data;
+        return data.stream().map(Arguments::of);
+
     }
 
-    private final byte[] invalid;
 
-    public Text_InvalidUtf8Test(String testId, String hexMsg)
-    {
-        LOG.debug("Test ID: {}",testId);
-        this.invalid = Hex.asByteArray(hexMsg);
-    }
-
+    @ParameterizedTest
+    @MethodSource("utfSequences")
     @Test
-    public void assertBadTextPayload() throws Exception
+    public void assertBadTextPayload(String testId, String hexMsg) throws Exception
     {
+        byte[] invalid = Hex.asByteArray(hexMsg);
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(ByteBuffer.wrap(invalid)));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
-    
+
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
@@ -166,4 +159,5 @@ public class Text_InvalidUtf8Test extends AbstractLocalServerCase
             session.expect(expect);
         }
     }
+
 }

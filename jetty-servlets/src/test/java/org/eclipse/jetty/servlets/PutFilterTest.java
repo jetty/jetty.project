@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.isIn;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,7 +29,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Locale;
@@ -42,16 +43,16 @@ import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class PutFilterTest
 {
     private File _dir;
     private ServletTester tester;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _dir = File.createTempFile("testPutFilter",null);
@@ -71,7 +72,7 @@ public class PutFilterTest
         tester.start();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         tester.stop();
@@ -269,11 +270,10 @@ public class PutFilterTest
         Set<String> options = new HashSet<String>();
         String allow=response.get("Allow");
         options.addAll(StringUtil.csvSplit(null,allow,0,allow.length()));
-        assertTrue(options.contains("GET"));
-        assertTrue(options.contains("POST"));
-        assertTrue(options.contains("PUT"));
-        assertTrue(options.contains("MOVE"));
-
+        assertThat("GET", isIn(options));
+        assertThat("POST", isIn(options));
+        assertThat("PUT", isIn(options));
+        assertThat("MOVE", isIn(options));
     }
 
     @Test

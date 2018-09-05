@@ -18,19 +18,21 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 
 public class OutgoingFramesCapture implements OutgoingFrames
 {
@@ -40,16 +42,21 @@ public class OutgoingFramesCapture implements OutgoingFrames
     {
         assertThat("Frame Count", frames.size(), is(expectedCount));
     }
-    
-    @Deprecated
-    public void assertHasFrame(byte opCode, int expectedCount)
+
+    public void assertHasFrame(byte op)
     {
-        assertHasOpCount(opCode, expectedCount);
+        assertThat( OpCode.name( op), getFrameCount( op), greaterThanOrEqualTo( 1));
+    }
+
+    public void assertHasFrame(byte op, int expectedCount)
+    {
+        assertThat(OpCode.name(op),getFrameCount(op),is(expectedCount));
     }
     
     public void assertHasOpCount(byte opCode, int expectedCount)
     {
         assertThat("Frame Count [op=" + opCode + "]", getFrameCount(opCode), is(expectedCount));
+        assertThat("Has no frames",frames.size(),is(0));
     }
     
     public void dump()

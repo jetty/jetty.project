@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.URI;
 import java.util.concurrent.Future;
@@ -54,21 +55,21 @@ public class SubProtocolTest
     {
         private Session session;
         private String acceptedProtocol;
-        
+
         @OnWebSocketConnect
         public void onConnect(Session session)
         {
             this.session = session;
             this.acceptedProtocol = session.getUpgradeResponse().getAcceptedSubProtocol();
         }
-        
+
         @OnWebSocketMessage
         public void onMsg(String msg)
         {
             session.getRemote().sendStringByFuture("acceptedSubprotocol=" + acceptedProtocol);
         }
     }
-    
+
     public static class ProtocolCreator implements WebSocketCreator
     {
         @Override
@@ -83,11 +84,11 @@ public class SubProtocolTest
                     resp.setAcceptedSubProtocol(subProtocol);
                 }
             }
-            
+
             return new ProtocolEchoSocket();
         }
     }
-    
+
     public static class ProtocolServlet extends WebSocketServlet
     {
         @Override
@@ -96,71 +97,71 @@ public class SubProtocolTest
             factory.setCreator(new ProtocolCreator());
         }
     }
-    
+
     private static SimpleServletServer server;
-    
+
     @BeforeClass
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new ProtocolServlet());
         server.start();
     }
-    
+
     @AfterClass
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Rule
     public TestName testname = new TestName();
-    
+
     private WebSocketClient client;
-    
+
     @Before
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
-    
+
     @After
     public void stopClient() throws Exception
     {
         client.stop();
     }
-    
+
     @Test
     public void testSingleProtocol() throws Exception
     {
         testSubProtocol(new String[]{"echo"}, "echo");
     }
-    
+
     @Test
     public void testMultipleProtocols() throws Exception
     {
         testSubProtocol(new String[]{"chat", "info", "echo"}, "chat");
     }
-    
+
     private void testSubProtocol(String[] requestProtocols, String acceptedSubProtocols) throws Exception
     {
         URI wsUri = server.getServerUri();
         client.setMaxIdleTimeout(1000);
-        
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols(requestProtocols);
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
+
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        
+
         // Message
         clientSession.getRemote().sendString("showme");
-        
+
         // Read message
         String incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        Assert.assertThat("Incoming Message", incomingMsg, is("acceptedSubprotocol=" + acceptedSubProtocols));
-        
+        Assert.assertThat( "Incoming Message", incomingMsg, is( "acceptedSubprotocol=" + acceptedSubProtocols));
+
         clientSession.close();
     }
 }

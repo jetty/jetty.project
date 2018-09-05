@@ -20,11 +20,12 @@ package org.eclipse.jetty.websocket.tests.client;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 
 /**
  * Test various init techniques for WebSocketClient

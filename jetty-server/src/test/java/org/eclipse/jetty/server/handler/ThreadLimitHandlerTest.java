@@ -19,7 +19,7 @@
 package org.eclipse.jetty.server.handler;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -40,10 +40,10 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ThreadLimitHandlerTest
 {
@@ -52,7 +52,7 @@ public class ThreadLimitHandlerTest
     private LocalConnector _local;
 
 
-    @Before
+    @BeforeEach
     public void before()
         throws Exception
     {
@@ -63,7 +63,7 @@ public class ThreadLimitHandlerTest
 
     }
 
-    @After
+    @AfterEach
     public void after()
         throws Exception
     {
@@ -98,15 +98,15 @@ public class ThreadLimitHandlerTest
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\n\r\n");
-        Assert.assertThat(last.get(),Matchers.is("0.0.0.0"));
+        assertThat(last.get(),Matchers.is("0.0.0.0"));
         
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
-        Assert.assertThat(last.get(),Matchers.is("0.0.0.0"));
+        assertThat(last.get(),Matchers.is("0.0.0.0"));
         
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
-        Assert.assertThat(last.get(),Matchers.is("0.0.0.0"));
+        assertThat(last.get(),Matchers.is("0.0.0.0"));
     }
     
     @Test
@@ -127,19 +127,19 @@ public class ThreadLimitHandlerTest
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\n\r\n");
-        Assert.assertThat(last.get(),Matchers.is("0.0.0.0"));
+        assertThat(last.get(),Matchers.is("0.0.0.0"));
         
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
-        Assert.assertThat(last.get(),Matchers.is("1.2.3.4"));
+        assertThat(last.get(),Matchers.is("1.2.3.4"));
         
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
-        Assert.assertThat(last.get(),Matchers.is("0.0.0.0"));
+        assertThat(last.get(),Matchers.is("0.0.0.0"));
         
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nX-Forwarded-For: 6.6.6.6,1.2.3.4\r\nForwarded: for=1.2.3.4\r\n\r\n");
-        Assert.assertThat(last.get(),Matchers.is("1.2.3.4"));
+        assertThat(last.get(),Matchers.is("1.2.3.4"));
 
     }
 
@@ -161,19 +161,19 @@ public class ThreadLimitHandlerTest
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\n\r\n");
-        Assert.assertThat(last.get(),Matchers.is("0.0.0.0"));
+        assertThat(last.get(),Matchers.is("0.0.0.0"));
         
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
-        Assert.assertThat(last.get(),Matchers.is("0.0.0.0"));
+        assertThat(last.get(),Matchers.is("0.0.0.0"));
         
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
-        Assert.assertThat(last.get(),Matchers.is("1.2.3.4"));
+        assertThat(last.get(),Matchers.is("1.2.3.4"));
         
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nForwarded: for=6.6.6.6; for=1.2.3.4\r\nX-Forwarded-For: 6.6.6.6\r\nForwarded: proto=https\r\n\r\n");
-        Assert.assertThat(last.get(),Matchers.is("1.2.3.4"));
+        assertThat(last.get(),Matchers.is("1.2.3.4"));
     }
     
 

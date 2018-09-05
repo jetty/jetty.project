@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.tests.jsr356.coders;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import javax.websocket.DecodeException;
 
 import org.eclipse.jetty.websocket.jsr356.decoders.IntegerDecoder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class IntegerDecoderTest
 {
@@ -33,6 +33,6 @@ public class IntegerDecoderTest
     {
         IntegerDecoder decoder = new IntegerDecoder();
         Integer val = decoder.decode("123");
-        Assert.assertThat("Decoded value",val,is(123));
+        assertThat("Decoded value",val,is(123));
     }
 }
