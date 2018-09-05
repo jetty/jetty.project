@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -36,7 +32,8 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class SessionFailureTest extends AbstractTest
 {
@@ -60,7 +57,7 @@ public class SessionFailureTest extends AbstractTest
             output.write(0x0);
             output.flush();
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             // The server will reply with a GOAWAY frame, and then shutdown.
             // Read until EOF.
@@ -118,15 +115,15 @@ public class SessionFailureTest extends AbstractTest
         Promise<Stream> promise = new Promise.Adapter<>();
         session.newStream(frame, promise, null);
 
-        assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
         long start = System.nanoTime();
         long now = System.nanoTime();
         while (((HTTP2Session)session).getEndPoint().isOpen())
         {
-            assertThat(TimeUnit.NANOSECONDS.toSeconds(now-start), lessThanOrEqualTo(5L));
-
+            if (TimeUnit.NANOSECONDS.toSeconds(now-start)>5)
+                Assert.fail();
             Thread.sleep(10);
             now = System.nanoTime();
         }

@@ -20,11 +20,11 @@ package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import org.eclipse.jetty.start.Props.Prop;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class PropsTest
 {

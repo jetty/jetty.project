@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -36,19 +36,19 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.ServletTester;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
-@ExtendWith(WorkDirExtension.class)
 public class IncludedGzipTest
 {
-    public WorkDir testdir;
+
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
     private static String __content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
@@ -72,7 +72,7 @@ public class IncludedGzipTest
         this.compressionType = GzipHandler.GZIP;
     }
 
-    @BeforeEach
+    @Before
     public void setUp() throws Exception
     {
         testdir.ensureEmpty();
@@ -93,7 +93,7 @@ public class IncludedGzipTest
         tester.start();
     }
 
-    @AfterEach
+    @After
     public void tearDown() throws Exception
     {
         tester.stop();

@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -59,13 +51,21 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 /**
  * HttpServer Tester.
@@ -79,7 +79,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         _scheme="https";
     }
 
-    @BeforeEach
+    @Before
     public void init() throws Exception
     {
         String keystorePath = MavenTestingUtils.getTestResourcePath("keystore").toString();
@@ -133,9 +133,11 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     }
 
     @Override
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
     public void testFullMethod() throws Exception
     {
+        // Don't run on Windows (buggy JVM)
+        Assume.assumeTrue(!OS.IS_WINDOWS);
+
         try
         {
             super.testFullMethod();
@@ -156,9 +158,10 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     }
 
     @Override
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
     public void testFullURI() throws Exception
     {
+        // Don't run on Windows (buggy JVM)
+        Assume.assumeTrue(!OS.IS_WINDOWS);
         try
         {
             super.testFullURI();
@@ -237,12 +240,12 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
 
     @Override
     @Test
-    @Disabled("Override and ignore this test as SSLSocket.shutdownOutput() is not supported, " +
+    @Ignore("Override and ignore this test as SSLSocket.shutdownOutput() is not supported, " +
             "but shutdownOutput() is needed by the test.")
     public void testInterruptedRequest(){}
 
     @Override
-    @Disabled
+    @Ignore
     public void testAvailable() throws Exception
     {
     }

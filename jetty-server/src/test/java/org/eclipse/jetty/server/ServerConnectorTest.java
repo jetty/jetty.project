@@ -20,14 +20,12 @@ package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,11 +50,19 @@ import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertTrue;
+
+@RunWith(AdvancedRunner.class)
 public class ServerConnectorTest
 {
     public static class ReuseInfoHandler extends AbstractHandler
@@ -140,7 +146,7 @@ public class ServerConnectorTest
             assertThat("Response",response,containsString("connector._reuseAddress() = true"));
 
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
-            if (!org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
+            if (!OS.IS_WINDOWS)
             {
                 assertThat("Response",response,containsString("socket.getReuseAddress() = true"));
             }
@@ -176,7 +182,7 @@ public class ServerConnectorTest
             assertThat("Response",response,containsString("connector._reuseAddress() = true"));
 
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
-            if (!org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
+            if (!OS.IS_WINDOWS)
             {
                 assertThat("Response",response,containsString("socket.getReuseAddress() = true"));
             }
@@ -212,7 +218,7 @@ public class ServerConnectorTest
             assertThat("Response",response,containsString("connector._reuseAddress() = false"));
 
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
-            if (!org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
+            if (!OS.IS_WINDOWS)
             {
                 assertThat("Response",response,containsString("socket.getReuseAddress() = false"));
             }

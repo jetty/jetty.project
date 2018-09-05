@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
@@ -46,8 +43,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HttpClientUploadDuringServerShutdown
 {
@@ -219,7 +216,7 @@ public class HttpClientUploadDuringServerShutdown
 
         // Create one connection.
         client.newRequest("localhost", connector.getLocalPort()).send();
-        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
 
         afterSetup.set(true);
         Thread.sleep(1000);
@@ -231,7 +228,7 @@ public class HttpClientUploadDuringServerShutdown
 
         // Wait for close() so that the connection that
         // is being closed is used to send the request.
-        assertTrue(sendLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(sendLatch.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
@@ -250,12 +247,12 @@ public class HttpClientUploadDuringServerShutdown
                 })
                 .send(result -> completeLatch.countDown());
 
-        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", connector.getLocalPort());
         DuplexConnectionPool pool = (DuplexConnectionPool)destination.getConnectionPool();
-        assertEquals(0, pool.getConnectionCount());
-        assertEquals(0, pool.getIdleConnections().size());
-        assertEquals(0, pool.getActiveConnections().size());
+        Assert.assertEquals(0, pool.getConnectionCount());
+        Assert.assertEquals(0, pool.getIdleConnections().size());
+        Assert.assertEquals(0, pool.getActiveConnections().size());
     }
 }

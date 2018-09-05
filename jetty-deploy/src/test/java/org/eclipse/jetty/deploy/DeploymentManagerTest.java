@@ -18,23 +18,20 @@
 
 package org.eclipse.jetty.deploy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.util.Collection;
 import java.util.Set;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
-@ExtendWith(WorkDirExtension.class)
 public class DeploymentManagerTest
 {
-    public WorkDir testdir;
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
     @Test
     public void testReceiveApp() throws Exception
@@ -56,13 +53,13 @@ public class DeploymentManagerTest
 
         // Test app tracking
         Collection<App> apps = depman.getApps();
-        assertNotNull(apps, "Should never be null");
-        assertEquals(1, apps.size(), "Expected App Count");
+        Assert.assertNotNull("Should never be null",apps);
+        Assert.assertEquals("Expected App Count",1,apps.size());
 
         // Test app get
         App actual = depman.getAppByOriginId("mock-foo-webapp-1.war");
-        assertNotNull(actual, "Should have gotten app (by id)");
-        assertEquals("mock-foo-webapp-1.war", actual.getOriginId(), "Should have gotten app (by id)");
+        Assert.assertNotNull("Should have gotten app (by id)",actual);
+        Assert.assertEquals("Should have gotten app (by id)","mock-foo-webapp-1.war",actual.getOriginId());
     }
 
     @Test
@@ -73,12 +70,12 @@ public class DeploymentManagerTest
         depman.addLifeCycleBinding(pathtracker);
 
         Set<AppLifeCycle.Binding> allbindings = depman.getLifeCycle().getBindings();
-        assertNotNull(allbindings, "All Bindings should never be null");
-        assertEquals(1, allbindings.size(), "All Bindings.size");
+        Assert.assertNotNull("All Bindings should never be null",allbindings);
+        Assert.assertEquals("All Bindings.size",1,allbindings.size());
 
         Set<AppLifeCycle.Binding> deploybindings = depman.getLifeCycle().getBindings("deploying");
-        assertNotNull(deploybindings, "'deploying' Bindings should not be null");
-        assertEquals(1, deploybindings.size(), "'deploying' Bindings.size");
+        Assert.assertNotNull("'deploying' Bindings should not be null",deploybindings);
+        Assert.assertEquals("'deploying' Bindings.size",1,deploybindings.size());
     }
 
     @Test
@@ -87,7 +84,7 @@ public class DeploymentManagerTest
         XmlConfiguredJetty jetty = null;
         try
         {
-            jetty = new XmlConfiguredJetty(testdir.getEmptyPathDir());
+            jetty = new XmlConfiguredJetty(testdir);
             jetty.addConfiguration("jetty.xml");
             jetty.addConfiguration("jetty-http.xml");
             jetty.addConfiguration("jetty-deploymgr-contexts.xml");

@@ -18,17 +18,14 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.junit.jupiter.api.condition.OS.LINUX;
-import static org.junit.jupiter.api.condition.OS.MAC;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -39,12 +36,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
+import org.junit.AfterClass;
+import org.junit.Assume;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class ContextHandlerGetResourceTest
 {
@@ -56,7 +53,7 @@ public class ContextHandlerGetResourceTest
     private final static AtomicBoolean allowAliases= new AtomicBoolean(false);
     private final static AtomicBoolean allowSymlinks= new AtomicBoolean(false);
     
-    @BeforeAll
+    @BeforeClass
     public static void beforeClass()  throws Exception
     {
         File testRoot = MavenTestingUtils.getTargetTestingDir(ContextHandlerGetResourceTest.class.getSimpleName());
@@ -80,9 +77,9 @@ public class ContextHandlerGetResourceTest
         File transit = new File(docroot.getParentFile(),"transit");
         transit.delete();
         
-        if (!OS.WINDOWS.isCurrentOs())
+        if (OS.IS_UNIX)
         {
-            // Create alias as 8.3 name so same test will produce an alias on both windows an unix/normal systems
+            // Create alias as 8.3 name so same test will produce an alias on both windows an normal systems
             File eightDotThree=new File(sub,"TEXTFI~1.TXT");
             Files.createSymbolicLink(eightDotThree.toPath(),verylong.toPath());
             
@@ -127,7 +124,7 @@ public class ContextHandlerGetResourceTest
         server.start();
     }
     
-    @AfterAll
+    @AfterClass
     public static void afterClass()  throws Exception
     {
         server.stop(); 
@@ -319,7 +316,7 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testSlashSlash() throws Exception
     {
-        File expected = new File(docroot, FS.separators("subdir/data.txt"));
+        File expected = new File(docroot, OS.separators("subdir/data.txt"));
         URL expectedUrl = expected.toURI().toURL();
         
         String path="//subdir/data.txt";
@@ -338,7 +335,7 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testAliasedFile() throws Exception
     {
-        assumeTrue(OS_ALIAS_SUPPORTED, "OS Supports 8.3 Aliased / Alternate References");
+        Assume.assumeTrue("OS Supports 8.3 Aliased / Alternate References",OS_ALIAS_SUPPORTED);
         final String path="/subdir/TEXTFI~1.TXT";
         
         Resource resource=context.getResource(path);
@@ -351,7 +348,7 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testAliasedFileAllowed() throws Exception
     {
-        assumeTrue(OS_ALIAS_SUPPORTED, "OS Supports 8.3 Aliased / Alternate References");
+        Assume.assumeTrue("OS Supports 8.3 Aliased / Alternate References",OS_ALIAS_SUPPORTED);
         try
         {
             allowAliases.set(true);
@@ -373,9 +370,10 @@ public class ContextHandlerGetResourceTest
     }
 
     @Test
-    @EnabledOnOs({LINUX, MAC})
     public void testSymlinkKnown() throws Exception
     {
+        Assume.assumeTrue(OS.IS_UNIX);
+        
         try
         {
             allowSymlinks.set(true);
@@ -399,9 +397,10 @@ public class ContextHandlerGetResourceTest
     }
     
     @Test
-    @EnabledOnOs({LINUX, MAC})
     public void testSymlinkNested() throws Exception
     {
+        Assume.assumeTrue(OS.IS_UNIX);
+        
         try
         {
             allowSymlinks.set(true);
@@ -421,9 +420,10 @@ public class ContextHandlerGetResourceTest
     }
 
     @Test
-    @EnabledOnOs({LINUX, MAC})
     public void testSymlinkUnknown() throws Exception
     {
+        if (!OS.IS_UNIX)
+            return;
         try
         {
             allowSymlinks.set(true);

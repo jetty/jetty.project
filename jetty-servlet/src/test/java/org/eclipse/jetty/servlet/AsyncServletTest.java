@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,15 +61,20 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
+
+@RunWith(AdvancedRunner.class)
 public class AsyncServletTest
 {
     protected AsyncServlet _servlet=new AsyncServlet();
@@ -91,7 +96,7 @@ public class AsyncServletTest
         __history.add(item);
     }
     
-    @BeforeEach
+    @Before
     public void setUp() throws Exception
     {
         _connector = new ServerConnector(_server);
@@ -142,12 +147,12 @@ public class AsyncServletTest
         });
     }
 
-    @AfterEach
+    @After
     public void tearDown() throws Exception
     {
         _server.stop();
         assertEquals(_expectedLogs,_log.size());
-        assertThat(_log.get(0), Matchers.containsString(_expectedCode));
+        Assert.assertThat(_log.get(0), Matchers.containsString(_expectedCode));
     }
 
     @Test
@@ -180,7 +185,7 @@ public class AsyncServletTest
     public void testNonAsync() throws Exception
     {
         String response=process("",null);
-        assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
+        Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
         assertThat(__history,contains(
             "REQUEST /ctx/path/info",
             "initial"));
@@ -193,7 +198,7 @@ public class AsyncServletTest
     {
         _expectedCode="200 ";
         String response=process("noasync","",null);
-        assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
+        Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
         assertThat(__history,contains(
             "REQUEST /ctx/noasync/info",
             "initial"
@@ -209,7 +214,7 @@ public class AsyncServletTest
         {
             _expectedCode="500 ";
             String response=process("noasync","start=200",null);
-            assertThat(response,Matchers.startsWith("HTTP/1.1 500 "));
+            Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 500 "));
             assertThat(__history,contains(
                     "REQUEST /ctx/noasync/info",
                     "initial",
@@ -228,7 +233,7 @@ public class AsyncServletTest
     {
         _expectedCode="500 ";
         String response=process("start=200",null);
-        assertThat(response,Matchers.startsWith("HTTP/1.1 500 Server Error"));
+        Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 500 Server Error"));
         assertThat(__history,contains(
             "REQUEST /ctx/path/info",
             "initial",
@@ -719,12 +724,12 @@ public class AsyncServletTest
 
     protected void assertContains(String content,String response)
     {
-        assertThat(response, Matchers.containsString(content));
+        Assert.assertThat(response, Matchers.containsString(content));
     }
 
     protected void assertNotContains(String content,String response)
     {
-        assertThat(response,Matchers.not(Matchers.containsString(content)));
+        Assert.assertThat(response,Matchers.not(Matchers.containsString(content)));
     }
 
     private static class FwdServlet extends HttpServlet

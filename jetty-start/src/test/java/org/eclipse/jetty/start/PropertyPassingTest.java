@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
@@ -36,12 +35,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
-@ExtendWith(WorkDirExtension.class)
 public class PropertyPassingTest
 {
     private static class ConsoleCapture implements Runnable
@@ -95,7 +93,8 @@ public class PropertyPassingTest
         }
     }
 
-    public WorkDir testingdir;
+    @Rule
+    public TestingDir testingdir = new TestingDir();
     
     @Test
     public void testAsJvmArg() throws IOException, InterruptedException
@@ -117,7 +116,7 @@ public class PropertyPassingTest
         String output = collectRunOutput(commands);
 
         // Test for values
-        assertThat("output",output,containsString("foo=bar"));
+        Assert.assertThat("output",output,containsString("foo=bar"));
     }
 
     @Test
@@ -140,7 +139,7 @@ public class PropertyPassingTest
         String output = collectRunOutput(commands);
 
         // Test for values
-        assertThat("output",output,containsString("foo=bar"));
+        Assert.assertThat("output",output,containsString("foo=bar"));
     }
 
     @Test
@@ -163,7 +162,7 @@ public class PropertyPassingTest
         String output = collectRunOutput(commands);
         
         // Test for values
-        assertThat(output,containsString("test.foo=bar"));
+        Assert.assertThat(output,containsString("test.foo=bar"));
     }
 
     private String getClassPath()
@@ -206,7 +205,7 @@ public class PropertyPassingTest
         {
             System.out.printf("STDERR: [" + stdErrPump.getConsoleOutput() + "]%n");
             System.out.printf("STDOUT: [" + stdOutPump.getConsoleOutput() + "]%n");
-            assertThat("Exit code",exitCode,is(0));
+            Assert.assertThat("Exit code",exitCode,is(0));
         }
         stdErrPump.getConsoleOutput();
         return stdOutPump.getConsoleOutput();

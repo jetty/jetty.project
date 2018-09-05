@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.http2.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -48,8 +45,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class CloseTest extends AbstractServerTest
 {
@@ -119,8 +116,8 @@ public class CloseTest extends AbstractServerTest
             Thread.sleep(1000);
 
             Session session = sessionRef.get();
-            assertTrue(session.isClosed());
-            assertTrue(((HTTP2Session)session).isDisconnected());
+            Assert.assertTrue(session.isClosed());
+            Assert.assertTrue(((HTTP2Session)session).isDisconnected());
         }
     }
 
@@ -172,18 +169,18 @@ public class CloseTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
 
             // Wait for the server to close.
             Thread.sleep(1000);
 
             // Client received the TCP FIN from server.
-            assertEquals(-1, client.getInputStream().read());
+            Assert.assertEquals(-1, client.getInputStream().read());
 
             // Server is closed.
             Session session = sessionRef.get();
-            assertTrue(session.isClosed());
-            assertTrue(((HTTP2Session)session).isDisconnected());
+            Assert.assertTrue(session.isClosed());
+            Assert.assertTrue(((HTTP2Session)session).isDisconnected());
         }
     }
 
@@ -241,8 +238,8 @@ public class CloseTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
-            assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
 
             // Don't close the connection.
 
@@ -250,12 +247,12 @@ public class CloseTest extends AbstractServerTest
             Thread.sleep(2 * idleTimeout);
 
             // Client received the TCP FIN from server.
-            assertEquals(-1, client.getInputStream().read());
+            Assert.assertEquals(-1, client.getInputStream().read());
 
             // Server is closed.
             Session session = sessionRef.get();
-            assertTrue(session.isClosed());
-            assertTrue(((HTTP2Session)session).isDisconnected());
+            Assert.assertTrue(session.isClosed());
+            Assert.assertTrue(((HTTP2Session)session).isDisconnected());
         }
     }
 }

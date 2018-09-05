@@ -18,13 +18,11 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -35,7 +33,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assume;
+import org.junit.Test;
 
 /**
  * Tests for LazyList utility class.
@@ -114,13 +113,13 @@ public class LazyListTest
 
         Object list = LazyList.add(input, "b");
         assertEquals(2,LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
+        assertEquals("a",LazyList.get(list,0));
 
         list=LazyList.add(list, "c");
         assertEquals(3,LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
+        assertEquals("a",LazyList.get(list,0));
+        assertEquals("b",LazyList.get(list,1));
+        assertEquals("c",LazyList.get(list,2));
     }
 
     /**
@@ -134,13 +133,13 @@ public class LazyListTest
 
         Object list = LazyList.add(input, "b");
         assertEquals(2,LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
+        assertEquals("a",LazyList.get(list,0));
 
         list=LazyList.add(list, "c");
         assertEquals(3,LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
+        assertEquals("a",LazyList.get(list,0));
+        assertEquals("b",LazyList.get(list,1));
+        assertEquals("c",LazyList.get(list,2));
     }
 
     /**
@@ -157,12 +156,12 @@ public class LazyListTest
         list="a";
         list=LazyList.add(list, null);
         assertEquals(2,LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
+        assertEquals("a",LazyList.get(list,0));
         assertEquals(null,LazyList.get(list,1));
 
         list=LazyList.add(list, null);
         assertEquals(3,LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
+        assertEquals("a",LazyList.get(list,0));
         assertEquals(null,LazyList.get(list,1));
         assertEquals(null,LazyList.get(list,2));
     }
@@ -200,7 +199,7 @@ public class LazyListTest
     @Test
     public void testAddObjectIntObject_NullInput_NonListItem2()
     {
-        assumeTrue(STRICT); // Only run in STRICT mode.
+        Assume.assumeTrue(STRICT); // Only run in STRICT mode.
 
         String item = "a";
         // Test branch of logic "index>0"
@@ -255,7 +254,7 @@ public class LazyListTest
         assertNotNull(list);
         assertEquals(2,LazyList.size(list));
         assertEquals(null, LazyList.get(list,0));
-        assertEquals(LazyList.get(list, 1), "a");
+        assertEquals("a", LazyList.get(list,1));
     }
 
     /**
@@ -270,8 +269,8 @@ public class LazyListTest
         Object list = LazyList.add(input, 0, item);
         assertNotNull(list);
         assertEquals(2, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "b");
-        assertEquals(LazyList.get(list, 1), "a");
+        assertEquals("b", LazyList.get(list,0));
+        assertEquals("a", LazyList.get(list,1));
     }
 
     /**
@@ -286,10 +285,10 @@ public class LazyListTest
         list=LazyList.add(list,3,"d"); // [a, b, c, d]
 
         assertEquals(4,LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
-        assertEquals(LazyList.get(list, 3), "d");
+        assertEquals("a",LazyList.get(list,0));
+        assertEquals("b",LazyList.get(list,1));
+        assertEquals("c",LazyList.get(list,2));
+        assertEquals("d",LazyList.get(list,3));
     }
 
     /**
@@ -303,9 +302,9 @@ public class LazyListTest
         Object list = LazyList.addCollection(null,coll);
         assertTrue(list instanceof List);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
+        assertEquals("a",LazyList.get(list,0));
+        assertEquals("b",LazyList.get(list,1));
+        assertEquals("c",LazyList.get(list,2));
     }
 
     /**
@@ -320,10 +319,10 @@ public class LazyListTest
         Object list = LazyList.addCollection(input,coll);
         assertTrue(list instanceof List);
         assertEquals(4, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "z");
-        assertEquals(LazyList.get(list, 1), "a");
-        assertEquals(LazyList.get(list, 2), "b");
-        assertEquals(LazyList.get(list, 3), "c");
+        assertEquals("z",LazyList.get(list,0));
+        assertEquals("a",LazyList.get(list,1));
+        assertEquals("b",LazyList.get(list,2));
+        assertEquals("c",LazyList.get(list,3));
     }
 
     /**
@@ -341,12 +340,12 @@ public class LazyListTest
         Object list = LazyList.addCollection(input,coll);
         assertTrue(list instanceof List);
         assertEquals(6, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "x");
-        assertEquals(LazyList.get(list, 1), "y");
-        assertEquals(LazyList.get(list, 2), "z");
-        assertEquals(LazyList.get(list, 3), "a");
-        assertEquals(LazyList.get(list, 4), "b");
-        assertEquals(LazyList.get(list, 5), "c");
+        assertEquals("x",LazyList.get(list,0));
+        assertEquals("y",LazyList.get(list,1));
+        assertEquals("z",LazyList.get(list,2));
+        assertEquals("a",LazyList.get(list,3));
+        assertEquals("b",LazyList.get(list,4));
+        assertEquals("c",LazyList.get(list,5));
     }
 
     /**
@@ -365,12 +364,12 @@ public class LazyListTest
         Object list = LazyList.addCollection(input,coll);
         assertTrue(list instanceof List);
         assertEquals(6, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "x");
-        assertEquals(LazyList.get(list, 1), "y");
-        assertEquals(LazyList.get(list, 2), "z");
-        assertEquals(LazyList.get(list, 3), "a");
-        assertEquals(LazyList.get(list, 4), "b");
-        assertEquals(LazyList.get(list, 5), "c");
+        assertEquals("x",LazyList.get(list,0));
+        assertEquals("y",LazyList.get(list,1));
+        assertEquals("z",LazyList.get(list,2));
+        assertEquals("a",LazyList.get(list,3));
+        assertEquals("b",LazyList.get(list,4));
+        assertEquals("c",LazyList.get(list,5));
     }
 
     /**
@@ -386,10 +385,10 @@ public class LazyListTest
         list = LazyList.addCollection(list,coll);
 
         assertEquals(4,LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "a");
-        assertEquals(LazyList.get(list, 3), "b");
+        assertEquals("a",LazyList.get(list,0));
+        assertEquals("b",LazyList.get(list,1));
+        assertEquals("a",LazyList.get(list,2));
+        assertEquals("b",LazyList.get(list,3));
     }
 
     /**
@@ -407,10 +406,10 @@ public class LazyListTest
         list=LazyList.addCollection(list,l);
 
         assertEquals(4,LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "a");
-        assertEquals(LazyList.get(list, 3), "b");
+        assertEquals("a",LazyList.get(list,0));
+        assertEquals("b",LazyList.get(list,1));
+        assertEquals("a",LazyList.get(list,2));
+        assertEquals("b",LazyList.get(list,3));
     }
 
     /**
@@ -451,7 +450,7 @@ public class LazyListTest
             assertTrue(list instanceof List);
         }
         assertEquals(1, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
+        assertEquals("a", LazyList.get(list,0));
     }
 
     /**
@@ -465,9 +464,9 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
+        assertEquals("a", LazyList.get(list,0));
+        assertEquals("b", LazyList.get(list,1));
+        assertEquals("c", LazyList.get(list,2));
     }
 
     /**
@@ -484,7 +483,7 @@ public class LazyListTest
             assertTrue(list instanceof List);
         }
         assertEquals(1, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "z");
+        assertEquals("z", LazyList.get(list,0));
     }
 
     /**
@@ -501,7 +500,7 @@ public class LazyListTest
             assertTrue(list instanceof List);
         }
         assertEquals(1, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "z");
+        assertEquals("z", LazyList.get(list,0));
     }
 
     /**
@@ -516,8 +515,8 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(2, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "z");
-        assertEquals(LazyList.get(list, 1), "a");
+        assertEquals("z", LazyList.get(list,0));
+        assertEquals("a", LazyList.get(list,1));
     }
 
     /**
@@ -532,10 +531,10 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(4, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "z");
-        assertEquals(LazyList.get(list, 1), "a");
-        assertEquals(LazyList.get(list, 2), "b");
-        assertEquals(LazyList.get(list, 3), "c");
+        assertEquals("z", LazyList.get(list,0));
+        assertEquals("a", LazyList.get(list,1));
+        assertEquals("b", LazyList.get(list,2));
+        assertEquals("c", LazyList.get(list,3));
     }
 
     /**
@@ -553,9 +552,9 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "x");
-        assertEquals(LazyList.get(list, 1), "y");
-        assertEquals(LazyList.get(list, 2), "z");
+        assertEquals("x", LazyList.get(list,0));
+        assertEquals("y", LazyList.get(list,1));
+        assertEquals("z", LazyList.get(list,2));
     }
 
     /**
@@ -573,9 +572,9 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "x");
-        assertEquals(LazyList.get(list, 1), "y");
-        assertEquals(LazyList.get(list, 2), "z");
+        assertEquals("x", LazyList.get(list,0));
+        assertEquals("y", LazyList.get(list,1));
+        assertEquals("z", LazyList.get(list,2));
     }
 
     /**
@@ -593,10 +592,10 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(4, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "x");
-        assertEquals(LazyList.get(list, 1), "y");
-        assertEquals(LazyList.get(list, 2), "z");
-        assertEquals(LazyList.get(list, 3), "a");
+        assertEquals("x", LazyList.get(list,0));
+        assertEquals("y", LazyList.get(list,1));
+        assertEquals("z", LazyList.get(list,2));
+        assertEquals("a", LazyList.get(list,3));
     }
 
     /**
@@ -614,12 +613,12 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(6, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "x");
-        assertEquals(LazyList.get(list, 1), "y");
-        assertEquals(LazyList.get(list, 2), "z");
-        assertEquals(LazyList.get(list, 3), "a");
-        assertEquals(LazyList.get(list, 4), "b");
-        assertEquals(LazyList.get(list, 5), "c");
+        assertEquals("x", LazyList.get(list,0));
+        assertEquals("y", LazyList.get(list,1));
+        assertEquals("z", LazyList.get(list,2));
+        assertEquals("a", LazyList.get(list,3));
+        assertEquals("b", LazyList.get(list,4));
+        assertEquals("c", LazyList.get(list,5));
     }
 
     /**
@@ -638,9 +637,9 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "x");
-        assertEquals(LazyList.get(list, 1), "y");
-        assertEquals(LazyList.get(list, 2), "z");
+        assertEquals("x", LazyList.get(list,0));
+        assertEquals("y", LazyList.get(list,1));
+        assertEquals("z", LazyList.get(list,2));
     }
 
     /**
@@ -659,9 +658,9 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "x");
-        assertEquals(LazyList.get(list, 1), "y");
-        assertEquals(LazyList.get(list, 2), "z");
+        assertEquals("x", LazyList.get(list,0));
+        assertEquals("y", LazyList.get(list,1));
+        assertEquals("z", LazyList.get(list,2));
     }
 
     /**
@@ -680,10 +679,10 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(4, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "x");
-        assertEquals(LazyList.get(list, 1), "y");
-        assertEquals(LazyList.get(list, 2), "z");
-        assertEquals(LazyList.get(list, 3), "a");
+        assertEquals("x", LazyList.get(list,0));
+        assertEquals("y", LazyList.get(list,1));
+        assertEquals("z", LazyList.get(list,2));
+        assertEquals("a", LazyList.get(list,3));
     }
 
     /**
@@ -702,12 +701,12 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(6, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "x");
-        assertEquals(LazyList.get(list, 1), "y");
-        assertEquals(LazyList.get(list, 2), "z");
-        assertEquals(LazyList.get(list, 3), "a");
-        assertEquals(LazyList.get(list, 4), "b");
-        assertEquals(LazyList.get(list, 5), "c");
+        assertEquals("x", LazyList.get(list,0));
+        assertEquals("y", LazyList.get(list,1));
+        assertEquals("z", LazyList.get(list,2));
+        assertEquals("a", LazyList.get(list,3));
+        assertEquals("b", LazyList.get(list,4));
+        assertEquals("c", LazyList.get(list,5));
     }
 
     /**
@@ -734,7 +733,7 @@ public class LazyListTest
         assertTrue(list instanceof List);
         // Not possible to test for List capacity value.
         assertEquals(1, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
+        assertEquals("a", LazyList.get(list,0));
     }
 
     /**
@@ -751,8 +750,8 @@ public class LazyListTest
         assertTrue(list instanceof List);
         // Not possible to test for List capacity value.
         assertEquals(2, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
+        assertEquals("a", LazyList.get(list,0));
+        assertEquals("b", LazyList.get(list,1));
     }
 
     /**
@@ -770,8 +769,8 @@ public class LazyListTest
         assertTrue(list instanceof List);
         // Not possible to test for List capacity value.
         assertEquals(2, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
+        assertEquals("a", LazyList.get(list,0));
+        assertEquals("b", LazyList.get(list,1));
     }
 
     /**
@@ -780,7 +779,7 @@ public class LazyListTest
     @Test
     public void testEnsureSize_GenericListInput_LinkedList()
     {
-        assumeTrue(STRICT); // Only run in STRICT mode.
+        Assume.assumeTrue(STRICT); // Only run in STRICT mode.
 
         // Using LinkedList concrete type as LazyList internal
         // implementation does not look for this specifically.
@@ -793,8 +792,8 @@ public class LazyListTest
         assertTrue(list instanceof List);
         // Not possible to test for List capacity value.
         assertEquals(2, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
+        assertEquals("a", LazyList.get(list,0));
+        assertEquals("b", LazyList.get(list,1));
     }
 
     /**
@@ -816,11 +815,11 @@ public class LazyListTest
 
         // Trigger growth
         Object ret = LazyList.ensureSize(l,10);
-        assertTrue(ret != l, "Should have returned a new list object");
+        assertTrue("Should have returned a new list object", ret != l);
 
         // Growth not neeed.
         ret = LazyList.ensureSize(l,1);
-        assertTrue(ret == l, "Should have returned same list object");
+        assertTrue("Should have returned same list object", ret == l);
     }
 
     /**
@@ -829,7 +828,7 @@ public class LazyListTest
     @Test
     public void testEnsureSize_Growth_LinkedList()
     {
-        assumeTrue(STRICT); // Only run in STRICT mode.
+        Assume.assumeTrue(STRICT); // Only run in STRICT mode.
 
         // Using LinkedList concrete type as LazyList internal
         // implementation has not historically looked for this
@@ -847,11 +846,11 @@ public class LazyListTest
 
         // Trigger growth
         Object ret = LazyList.ensureSize(l,10);
-        assertTrue(ret != l, "Should have returned a new list object");
+        assertTrue("Should have returned a new list object", ret != l);
 
         // Growth not neeed.
         ret = LazyList.ensureSize(l,1);
-        assertTrue(ret == l, "Should have returned same list object");
+        assertTrue("Should have returned same list object", ret == l);
     }
 
     /**
@@ -926,8 +925,8 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(2, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "c");
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("c", LazyList.get(list, 1));
     }
 
     /**
@@ -945,24 +944,24 @@ public class LazyListTest
         Object list = LazyList.remove(input, null);
         assertNotNull(list);
         assertTrue(list instanceof List);
-        assertTrue(input == list, "Should not have recreated list obj");
+        assertTrue("Should not have recreated list obj", input == list);
         assertEquals(3, LazyList.size(list));
 
         // Attempt to remove something that doesn't exist
         list = LazyList.remove(input, "z");
         assertNotNull(list);
         assertTrue(list instanceof List);
-        assertTrue(input == list, "Should not have recreated list obj");
+        assertTrue("Should not have recreated list obj", input == list);
         assertEquals(3, LazyList.size(list));
 
         // Remove something that exists in input
         list = LazyList.remove(input, "b");
         assertNotNull(list);
         assertTrue(list instanceof List);
-        assertTrue(input == list, "Should not have recreated list obj");
+        assertTrue("Should not have recreated list obj", input == list);
         assertEquals(2, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "c");
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("c", LazyList.get(list, 1));
 
         // Try to remove the rest.
         list = LazyList.remove(list,"a");
@@ -986,24 +985,24 @@ public class LazyListTest
         Object list = LazyList.remove(input, null);
         assertNotNull(list);
         assertTrue(list instanceof List);
-        assertTrue(input == list, "Should not have recreated list obj");
+        assertTrue("Should not have recreated list obj", input == list);
         assertEquals(3, LazyList.size(list));
 
         // Attempt to remove something that doesn't exist
         list = LazyList.remove(input, "z");
         assertNotNull(list);
         assertTrue(list instanceof List);
-        assertTrue(input == list, "Should not have recreated list obj");
+        assertTrue("Should not have recreated list obj", input == list);
         assertEquals(3, LazyList.size(list));
 
         // Remove something that exists in input
         list = LazyList.remove(input, "b");
         assertNotNull(list);
         assertTrue(list instanceof List);
-        assertTrue(input == list, "Should not have recreated list obj");
+        assertTrue("Should not have recreated list obj", input == list);
         assertEquals(2, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "c");
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("c", LazyList.get(list, 1));
     }
 
     /**
@@ -1071,8 +1070,8 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(2, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "c");
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("c", LazyList.get(list, 1));
     }
 
     /**
@@ -1105,8 +1104,8 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(2, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "c");
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("c", LazyList.get(list, 1));
 
         // Remove the rest
         list = LazyList.remove(list, 0); // the 'a'
@@ -1156,9 +1155,9 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("b", LazyList.get(list, 1));
+        assertEquals("c", LazyList.get(list, 2));
     }
 
     /**
@@ -1176,9 +1175,9 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("b", LazyList.get(list, 1));
+        assertEquals("c", LazyList.get(list, 2));
     }
 
     /**
@@ -1196,9 +1195,9 @@ public class LazyListTest
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("b", LazyList.get(list, 1));
+        assertEquals("c", LazyList.get(list, 2));
     }
 
 
@@ -1404,50 +1403,41 @@ public class LazyListTest
     /**
      * Tests for bad input on {@link LazyList#get(Object, int)}
      */
-    @Test
+    @Test(expected=IndexOutOfBoundsException.class)
     public void testGet_OutOfBounds_NullInput()
     {
-        assertThrows(IndexOutOfBoundsException.class, () -> {
-            LazyList.get(null,0); // Should Fail due to null input
-            }
-        );
+        LazyList.get(null,0); // Should Fail due to null input
     }
 
     /**
      * Tests for bad input on {@link LazyList#get(Object, int)}
      */
-    @Test
+    @Test(expected=IndexOutOfBoundsException.class)
     public void testGet_OutOfBounds_NonListInput()
     {
-        assertThrows(IndexOutOfBoundsException.class, () -> {
-            String input = "a";
-            LazyList.get(input, 1); // Should Fail
-        });
+        String input = "a";
+        LazyList.get(input,1); // Should Fail
     }
 
     /**
      * Tests for bad input on {@link LazyList#get(Object, int)}
      */
-    @Test
+    @Test(expected=IndexOutOfBoundsException.class)
     public void testGet_OutOfBounds_LazyListInput()
     {
-        assertThrows(IndexOutOfBoundsException.class, () -> {
-            Object input = LazyList.add(null, "a");
-            LazyList.get(input, 1); // Should Fail
-        });
+        Object input = LazyList.add(null,"a");
+        LazyList.get(input,1); // Should Fail
     }
 
     /**
      * Tests for bad input on {@link LazyList#get(Object, int)}
      */
-    @Test
+    @Test(expected=IndexOutOfBoundsException.class)
     public void testGet_OutOfBounds_GenericListInput()
     {
-        assertThrows(IndexOutOfBoundsException.class, () -> {
-            List<String> input = new ArrayList<String>();
-            input.add("a");
-            LazyList.get(input, 1); // Should Fail
-        });
+        List<String> input = new ArrayList<String>();
+        input.add("a");
+        LazyList.get(input,1); // Should Fail
     }
 
     /**
@@ -1457,7 +1447,7 @@ public class LazyListTest
     public void testGet_NonListInput()
     {
         String input = "a";
-        assertEquals(LazyList.get(input, 0), "a");
+        assertEquals("a",LazyList.get(input,0));
     }
 
     /**
@@ -1467,7 +1457,7 @@ public class LazyListTest
     public void testGet_LazyListInput()
     {
         Object input = LazyList.add(null,"a");
-        assertEquals(LazyList.get(input, 0), "a");
+        assertEquals("a",LazyList.get(input,0));
     }
 
     /**
@@ -1478,7 +1468,7 @@ public class LazyListTest
     {
         List<String> input = new ArrayList<String>();
         input.add("a");
-        assertEquals(LazyList.get(input, 0), "a");
+        assertEquals("a",LazyList.get(input,0));
 
         List<URI> uris = new ArrayList<URI>();
         uris.add(URI.create("http://www.mortbay.org/"));
@@ -1565,7 +1555,7 @@ public class LazyListTest
 
         Object list = LazyList.clone(input);
         assertNotNull(list);
-        assertTrue(input == list, "Should be the same object");
+        assertTrue("Should be the same object", input == list);
     }
 
     /**
@@ -1580,12 +1570,12 @@ public class LazyListTest
 
         Object list = LazyList.clone(input);
         assertNotNull(list);
-        assertTrue(list instanceof List, "Should be a List object");
-        assertFalse(input == list, "Should NOT be the same object");
+        assertTrue("Should be a List object", list instanceof List);
+        assertFalse("Should NOT be the same object", input == list);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
+        assertEquals("a", LazyList.get(list,0));
+        assertEquals("b", LazyList.get(list,1));
+        assertEquals("c", LazyList.get(list,2));
     }
 
     /**
@@ -1603,12 +1593,12 @@ public class LazyListTest
         //       the same generic object element type
         Object list = LazyList.clone(input);
         assertNotNull(list);
-        assertTrue(list instanceof List, "Should be a List object");
-        assertFalse(input == list, "Should NOT be the same object");
+        assertTrue("Should be a List object", list instanceof List);
+        assertFalse("Should NOT be the same object", input == list);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
+        assertEquals("a", LazyList.get(list,0));
+        assertEquals("b", LazyList.get(list,1));
+        assertEquals("c", LazyList.get(list,2));
     }
 
     /**
@@ -1821,7 +1811,7 @@ public class LazyListTest
 
         Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
-        assertTrue(list instanceof List, "Should be a List object");
+        assertTrue("Should be a List object", list instanceof List);
         assertEquals(0, LazyList.size(list));
     }
 
@@ -1835,7 +1825,7 @@ public class LazyListTest
 
         Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
-        assertTrue(list instanceof List, "Should be a List object");
+        assertTrue("Should be a List object", list instanceof List);
         assertEquals(0, LazyList.size(list));
     }
 
@@ -1849,9 +1839,9 @@ public class LazyListTest
 
         Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
-        assertTrue(list instanceof List, "Should be a List object");
+        assertTrue("Should be a List object", list instanceof List);
         assertEquals(1, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
+        assertEquals("a", LazyList.get(list, 0));
     }
 
     /**
@@ -1864,11 +1854,11 @@ public class LazyListTest
 
         Object list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
-        assertTrue(list instanceof List, "Should be a List object");
+        assertTrue("Should be a List object", list instanceof List);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("b", LazyList.get(list, 1));
+        assertEquals("c", LazyList.get(list, 2));
     }
 
     /**
@@ -1882,11 +1872,11 @@ public class LazyListTest
         // Test the Generics definitions for array2List
         List<String> list = ArrayUtil.asMutableList(input);
         assertNotNull(list);
-        assertTrue(list instanceof List, "Should be a List object");
+        assertTrue("Should be a List object", list instanceof List);
         assertEquals(3, LazyList.size(list));
-        assertEquals(LazyList.get(list, 0), "a");
-        assertEquals(LazyList.get(list, 1), "b");
-        assertEquals(LazyList.get(list, 2), "c");
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("b", LazyList.get(list, 1));
+        assertEquals("c", LazyList.get(list, 2));
     }
 
     /**
@@ -1914,7 +1904,7 @@ public class LazyListTest
     public void testAddToArray_NullNullNull()
     {
         // NPE if item && type are both null.
-        assumeTrue(STRICT);
+        Assume.assumeTrue(STRICT);
 
         // Harsh test case.
         Object input[] = null;
@@ -2046,7 +2036,7 @@ public class LazyListTest
         String input[] = new String[0];
 
         String arr[] = ArrayUtil.removeFromArray(input,null);
-        assertNotNull(arr, "Should not be null");
+        assertNotNull("Should not be null", arr);
         assertEquals(0, arr.length);
     }
 
@@ -2058,7 +2048,7 @@ public class LazyListTest
         String input[] = new String[0];
 
         String arr[] = ArrayUtil.removeFromArray(input,"a");
-        assertNotNull(arr, "Should not be null");
+        assertNotNull("Should not be null", arr);
         assertEquals(0, arr.length);
     }
 
@@ -2070,13 +2060,13 @@ public class LazyListTest
         String input[] = new String[] { "a" };
 
         String arr[] = ArrayUtil.removeFromArray(input,null);
-        assertNotNull(arr, "Should not be null");
+        assertNotNull("Should not be null", arr);
         assertEquals(1, arr.length);
         assertEquals("a", arr[0]);
 
         // Remove actual item
         arr = ArrayUtil.removeFromArray(input,"a");
-        assertNotNull(arr, "Should not be null");
+        assertNotNull("Should not be null", arr);
         assertEquals(0, arr.length);
     }
 
@@ -2088,7 +2078,7 @@ public class LazyListTest
         String input[] = new String[] { "a", "b", "c" };
 
         String arr[] = ArrayUtil.removeFromArray(input,null);
-        assertNotNull(arr, "Should not be null");
+        assertNotNull("Should not be null", arr);
         assertEquals(3, arr.length);
         assertEquals("a", arr[0]);
         assertEquals("b", arr[1]);
@@ -2096,7 +2086,7 @@ public class LazyListTest
 
         // Remove an actual item
         arr = ArrayUtil.removeFromArray(input,"b");
-        assertNotNull(arr, "Should not be null");
+        assertNotNull("Should not be null", arr);
         assertEquals(2, arr.length);
         assertEquals("a", arr[0]);
         assertEquals("c", arr[1]);

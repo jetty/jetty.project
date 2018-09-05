@@ -20,13 +20,11 @@ package org.eclipse.jetty.websocket.tests.server;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -34,40 +32,51 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.servlets.EchoSocket;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test Bad Close Status Codes
  */
+@RunWith(value = Parameterized.class)
 public class CloseHandling_BadStatusCodesTest extends AbstractLocalServerCase
 {
-    private static final Logger LOG = Log.getLogger( CloseHandling_BadStatusCodesTest.class);
-
-    public static Stream<Arguments> data()
+    @Parameters(name = "{0} {1}")
+    public static Collection<Object[]> data()
     {
         // The various Good UTF8 sequences as a String (hex form)
         List<Object[]> data = new ArrayList<>();
 
-        data.add(new Object[]{"7.9.1", 0});
-        data.add(new Object[]{"7.9.2", 999});
-        data.add(new Object[]{"7.9.3", 1004}); // RFC6455/UNDEFINED
-        data.add(new Object[]{"7.9.4", 1005}); // RFC6455/Cannot Be Transmitted
-        data.add(new Object[]{"7.9.5", 1006}); // RFC6455/Cannot Be Transmitted
+        // @formatter:off
+        data.add(new Object[] { "7.9.1", 0 });
+        data.add(new Object[] { "7.9.2", 999 });
+        data.add(new Object[] { "7.9.3", 1004 }); // RFC6455/UNDEFINED
+        data.add(new Object[] { "7.9.4", 1005 }); // RFC6455/Cannot Be Transmitted
+        data.add(new Object[] { "7.9.5", 1006 }); // RFC6455/Cannot Be Transmitted
         // data.add(new Object[] { "7.9.6", 1012 }); - IANA Defined
         // data.add(new Object[] { "7.9.7", 1013 }); - IANA Defined
         // data.add(new Object[] { "7.9.8", 1014 }); - IANA Defined
-        data.add(new Object[]{"7.9.9", 1015}); // RFC6455/Cannot Be Transmitted
-        data.add(new Object[]{"7.9.10", 1016});
-        data.add(new Object[]{"7.9.11", 1100});
-        data.add(new Object[]{"7.9.12", 2000});
-        data.add(new Object[]{"7.9.13", 2999});
+        data.add(new Object[] { "7.9.9", 1015 }); // RFC6455/Cannot Be Transmitted
+        data.add(new Object[] { "7.9.10", 1016 });
+        data.add(new Object[] { "7.9.11", 1100 });
+        data.add(new Object[] { "7.9.12", 2000 });
+        data.add(new Object[] { "7.9.13", 2999 });
         // -- close status codes, with undefined events in spec 
         data.add(new Object[]{"7.13.1", 5000});
         data.add(new Object[]{"7.13.2", 65536});
+        // @formatter:on
 
-        return data.stream().map(Arguments::of);
+        return data;
+    }
+
+    private final int statusCode;
+
+    public CloseHandling_BadStatusCodesTest(String testId, int statusCode)
+    {
+        LOG.debug("Test ID: {}", testId);
+        this.statusCode = statusCode;
     }
 
     /**
@@ -75,9 +84,8 @@ public class CloseHandling_BadStatusCodesTest extends AbstractLocalServerCase
      *
      * @throws Exception on test failure
      */
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testBadStatusCode(String testId, int statusCode) throws Exception
+    @Test
+    public void testBadStatusCode() throws Exception
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
@@ -103,9 +111,8 @@ public class CloseHandling_BadStatusCodesTest extends AbstractLocalServerCase
      *
      * @throws Exception on test failure
      */
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testBadStatusCodeWithReason(String testId, int statusCode) throws Exception
+    @Test
+    public void testBadStatusCodeWithReason() throws Exception
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);

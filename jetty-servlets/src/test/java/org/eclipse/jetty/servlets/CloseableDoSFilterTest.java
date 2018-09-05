@@ -18,19 +18,13 @@
 
 package org.eclipse.jetty.servlets;
 
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Before;
 
-@ExtendWith(WorkDirExtension.class)
 public class CloseableDoSFilterTest extends AbstractDoSFilterTest
 {
-    public WorkDir workDir;
-
-    @BeforeEach
+    @Before
     public void setUp() throws Exception
     {
-        startServer(workDir, CloseableDoSFilter.class);
+        startServer(CloseableDoSFilter.class);
     }
 }

@@ -21,8 +21,8 @@ package org.eclipse.jetty;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,9 +44,9 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * DataSourceLoginServiceTest
@@ -67,7 +67,7 @@ public class DataSourceLoginServiceTest
 
     
     
-    @BeforeAll
+    @BeforeClass
     public static void setUp() throws Exception
     {
        
@@ -97,7 +97,7 @@ public class DataSourceLoginServiceTest
         _baseUri = _testServer.getBaseUri();
      }
 
-     @AfterAll
+     @AfterClass
      public static void tearDown()
          throws Exception
      {

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -39,9 +35,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HttpClientFailureTest
 {
@@ -60,7 +56,7 @@ public class HttpClientFailureTest
         server.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         if (server != null)
@@ -87,17 +83,23 @@ public class HttpClientFailureTest
         }, null);
         client.start();
 
-        assertThrows(ExecutionException.class, ()->{
+        try
+        {
             client.newRequest("localhost", connector.getLocalPort())
                     .onRequestHeaders(request -> connectionRef.get().getEndPoint().close())
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
-        });
+            Assert.fail();
+        }
+        catch (ExecutionException x)
+        {
+            // Expected.
+        }
 
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)connectionRef.get().getHttpDestination().getConnectionPool();
-        assertEquals(0, connectionPool.getConnectionCount());
-        assertEquals(0, connectionPool.getActiveConnections().size());
-        assertEquals(0, connectionPool.getIdleConnections().size());
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
     @Test
@@ -135,7 +137,7 @@ public class HttpClientFailureTest
                         completeLatch.countDown();
                 });
 
-        assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
         final CountDownLatch contentLatch = new CountDownLatch(1);
         content.offer(ByteBuffer.allocate(1024), new Callback()
         {
@@ -146,14 +148,14 @@ public class HttpClientFailureTest
             }
         });
 
-        assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)connectionRef.get().getHttpDestination().getConnectionPool();
-        assertEquals(0, connectionPool.getConnectionCount());
-        assertEquals(0, connectionPool.getActiveConnections().size());
-        assertEquals(0, connectionPool.getIdleConnections().size());
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 /*
     @Test
@@ -215,7 +217,7 @@ public class HttpClientFailureTest
                     }
                 });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -246,7 +248,7 @@ public class HttpClientFailureTest
                     }
                 });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 */
 }

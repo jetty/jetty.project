@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,11 +31,15 @@ import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.ResourceHttpContent;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class ResourceCacheTest
 {
     @Test
@@ -54,17 +58,17 @@ public class ResourceCacheTest
         CachedContentFactory rc2 = new CachedContentFactory(rc3,r[1],mime,false,false,CompressedContentFormat.NONE);
         CachedContentFactory rc1 = new CachedContentFactory(rc2,r[0],mime,false,false,CompressedContentFormat.NONE);
 
-        assertEquals(getContent(rc1, "1.txt"), "1 - one");
-        assertEquals(getContent(rc1, "2.txt"), "2 - two");
-        assertEquals(getContent(rc1, "3.txt"), "3 - three");
+        assertEquals("1 - one", getContent(rc1, "1.txt"));
+        assertEquals("2 - two", getContent(rc1, "2.txt"));
+        assertEquals("3 - three", getContent(rc1, "3.txt"));
 
-        assertEquals(getContent(rc2, "1.txt"), "1 - two");
-        assertEquals(getContent(rc2, "2.txt"), "2 - two");
-        assertEquals(getContent(rc2, "3.txt"), "3 - three");
+        assertEquals("1 - two", getContent(rc2, "1.txt"));
+        assertEquals("2 - two", getContent(rc2, "2.txt"));
+        assertEquals("3 - three", getContent(rc2, "3.txt"));
 
         assertEquals(null, getContent(rc3, "1.txt"));
-        assertEquals(getContent(rc3, "2.txt"), "2 - three");
-        assertEquals(getContent(rc3, "3.txt"), "3 - three");
+        assertEquals("2 - three", getContent(rc3, "2.txt"));
+        assertEquals("3 - three", getContent(rc3, "3.txt"));
 
     }
 
@@ -92,17 +96,17 @@ public class ResourceCacheTest
 
         CachedContentFactory rc1 = new CachedContentFactory(rc2,r[0],mime,false,false,CompressedContentFormat.NONE);
 
-        assertEquals(getContent(rc1, "1.txt"), "1 - one");
-        assertEquals(getContent(rc1, "2.txt"), "2 - two");
-        assertEquals(getContent(rc1, "3.txt"), "3 - three");
+        assertEquals("1 - one", getContent(rc1, "1.txt"));
+        assertEquals("2 - two", getContent(rc1, "2.txt"));
+        assertEquals("3 - three", getContent(rc1, "3.txt"));
 
-        assertEquals(getContent(rc2, "1.txt"), "1 - two");
-        assertEquals(getContent(rc2, "2.txt"), "2 - two");
-        assertEquals(getContent(rc2, "3.txt"), "3 - three");
+        assertEquals("1 - two", getContent(rc2, "1.txt"));
+        assertEquals("2 - two", getContent(rc2, "2.txt"));
+        assertEquals("3 - three", getContent(rc2, "3.txt"));
 
         assertEquals(null, getContent(rc3, "1.txt"));
-        assertEquals(getContent(rc3, "2.txt"), "2 - three");
-        assertEquals(getContent(rc3, "3.txt"), "3 - three");
+        assertEquals("2 - three", getContent(rc3, "2.txt"));
+        assertEquals("3 - three", getContent(rc3, "3.txt"));
 
     }
 
@@ -147,7 +151,7 @@ public class ResourceCacheTest
         assertEquals(80,content.getContentLengthValue());
         assertEquals(0,cache.getCachedSize());
         
-        if (org.junit.jupiter.api.condition.OS.LINUX.isCurrentOs())
+        if (OS.IS_LINUX)
         {
             // Initially not using memory mapped files
             content.getDirectBuffer();
@@ -170,7 +174,6 @@ public class ResourceCacheTest
             // with both types of buffer loaded, this is not too large for cache because
             // mapped buffers don't count, so we can continue
         }
-
         content.getIndirectBuffer();
         assertEquals(80,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
@@ -286,8 +289,8 @@ public class ResourceCacheTest
 
         CachedContentFactory cache = new CachedContentFactory(null,resources[0],mime,false,false,CompressedContentFormat.NONE);
 
-        assertEquals(getContent(cache, "four.txt"), "4 - four");
-        assertEquals(getContent(cache, "four"), "4 - four (no extension)");
+        assertEquals("4 - four", getContent(cache, "four.txt"));
+        assertEquals("4 - four (no extension)", getContent(cache, "four"));
     }
 
     

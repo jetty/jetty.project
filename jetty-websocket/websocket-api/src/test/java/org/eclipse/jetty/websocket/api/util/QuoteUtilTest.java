@@ -19,14 +19,13 @@
 package org.eclipse.jetty.websocket.api.util;
 
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertThat;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Test QuoteUtil
@@ -39,8 +38,8 @@ public class QuoteUtilTest
         for (int i = 0; i < len; i++)
         {
             String expected = expectedParts[i];
-            assertThat("Split[" + i + "].hasNext()",iter.hasNext(),is(true));
-            assertThat("Split[" + i + "].next()",iter.next(),is(expected));
+            Assert.assertThat("Split[" + i + "].hasNext()",iter.hasNext(),is(true));
+            Assert.assertThat("Split[" + i + "].next()",iter.next(),is(expected));
         }
     }
 
@@ -58,20 +57,20 @@ public class QuoteUtilTest
         assertSplitAt(iter,"permessage-compress","method=\"foo; x=10\"");
     }
 
-    @Test
+    @Test(expected = NoSuchElementException.class)
     public void testSplitAtAllWhitespace()
     {
         Iterator<String> iter = QuoteUtil.splitAt("   ","=");
-        assertThat("Has Next",iter.hasNext(),is(false));
-        assertThrows(NoSuchElementException.class, ()-> iter.next());
+        Assert.assertThat("Has Next",iter.hasNext(),is(false));
+        iter.next(); // should trigger NoSuchElementException
     }
 
-    @Test
+    @Test(expected = NoSuchElementException.class)
     public void testSplitAtEmpty()
     {
         Iterator<String> iter = QuoteUtil.splitAt("","=");
-        assertThat("Has Next",iter.hasNext(),is(false));
-        assertThrows(NoSuchElementException.class, ()-> iter.next());
+        Assert.assertThat("Has Next",iter.hasNext(),is(false));
+        iter.next(); // should trigger NoSuchElementException
     }
 
     @Test

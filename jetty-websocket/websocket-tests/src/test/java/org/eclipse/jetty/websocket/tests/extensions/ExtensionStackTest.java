@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.websocket.tests.extensions;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +37,8 @@ import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.tests.DummyIncomingFrames;
 import org.eclipse.jetty.websocket.tests.DummyOutgoingFrames;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ExtensionStackTest
 {
@@ -55,7 +53,7 @@ public class ExtensionStackTest
         {
             return (T)obj;
         }
-        assertEquals(clazz.getName(), obj.getClass().getName(), "Expected " + msg + " class");
+        Assert.assertEquals("Expected " + msg + " class",clazz.getName(),obj.getClass().getName());
         return null;
     }
 
@@ -94,7 +92,7 @@ public class ExtensionStackTest
             // Should be no change to handlers
             Extension actualIncomingExtension = assertIsExtension("Incoming",stack.getNextIncoming(),IdentityExtension.class);
             Extension actualOutgoingExtension = assertIsExtension("Outgoing",stack.getNextOutgoing(),IdentityExtension.class);
-            assertEquals(actualIncomingExtension,actualOutgoingExtension);
+            Assert.assertEquals(actualIncomingExtension,actualOutgoingExtension);
         }
         finally
         {
@@ -130,8 +128,8 @@ public class ExtensionStackTest
             IdentityExtension actualIncomingExtension = assertIsExtension("Incoming",stack.getNextIncoming(),IdentityExtension.class);
             IdentityExtension actualOutgoingExtension = assertIsExtension("Outgoing",stack.getNextOutgoing(),IdentityExtension.class);
 
-            assertThat("Incoming[identity].id",actualIncomingExtension.getParam("id"),is("A"));
-            assertThat("Outgoing[identity].id",actualOutgoingExtension.getParam("id"),is("B"));
+            Assert.assertThat("Incoming[identity].id",actualIncomingExtension.getParam("id"),is("A"));
+            Assert.assertThat("Outgoing[identity].id",actualOutgoingExtension.getParam("id"),is("B"));
         }
         finally
         {
@@ -162,8 +160,8 @@ public class ExtensionStackTest
             LOG.debug("{}",stack.dump());
 
             // Should be no change to handlers
-            assertEquals(stack.getNextIncoming(), session, "Incoming Handler");
-            assertEquals(stack.getNextOutgoing(), connection, "Outgoing Handler");
+            Assert.assertEquals("Incoming Handler",stack.getNextIncoming(),session);
+            Assert.assertEquals("Outgoing Handler",stack.getNextOutgoing(),connection);
         }
         finally
         {
@@ -191,7 +189,7 @@ public class ExtensionStackTest
         List<ExtensionConfig> negotiated = stack.getNegotiatedExtensions();
         String response = ExtensionConfig.toHeaderValue(negotiated);
         
-        assertThat("Negotiated Extensions", response, is("permessage-deflate"));
+        Assert.assertThat("Negotiated Extensions", response, is("permessage-deflate"));
         LOG.debug("Shouldn't cause a NPE: {}",stack.toString());
     }
 }

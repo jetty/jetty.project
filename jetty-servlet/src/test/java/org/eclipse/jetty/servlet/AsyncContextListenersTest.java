@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -39,8 +37,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class AsyncContextListenersTest
 {
@@ -59,7 +58,7 @@ public class AsyncContextListenersTest
         _server.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         _server.stop();
@@ -117,7 +116,7 @@ public class AsyncContextListenersTest
     
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
-            assertEquals(200, response.getStatus());
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
 
             // Send a second request
@@ -126,7 +125,7 @@ public class AsyncContextListenersTest
             output.flush();
 
             response = HttpTester.parseResponse(input);
-            assertEquals(200, response.getStatus());
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
         }
     }
@@ -188,7 +187,7 @@ public class AsyncContextListenersTest
 
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
-            assertEquals(200, response.getStatus());
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
 
             // Send a second request
@@ -197,7 +196,7 @@ public class AsyncContextListenersTest
             output.flush();
     
             response = HttpTester.parseResponse(input);
-            assertEquals(200, response.getStatus());
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
         }
     }
@@ -265,7 +264,7 @@ public class AsyncContextListenersTest
     
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
-            assertEquals(200, response.getStatus());
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
 
             // Send a second request
@@ -274,7 +273,7 @@ public class AsyncContextListenersTest
             output.flush();
 
             response = HttpTester.parseResponse(input);
-            assertEquals(200, response.getStatus());
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
         }
     }

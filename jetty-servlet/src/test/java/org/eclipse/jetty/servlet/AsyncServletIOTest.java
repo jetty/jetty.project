@@ -19,15 +19,14 @@
 package org.eclipse.jetty.servlet;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -43,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import javax.servlet.AsyncContext;
@@ -68,9 +68,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 // TODO need  these on HTTP2 as well!
 public class AsyncServletIOTest 
@@ -87,7 +88,7 @@ public class AsyncServletIOTest
     protected ServletHandler _servletHandler;
     protected ServerConnector _connector;
 
-    @BeforeEach
+    @Before
     public void setUp() throws Exception
     {
         _wQTP = new WrappingQTP();
@@ -133,7 +134,7 @@ public class AsyncServletIOTest
         _read.set(0);
     }
 
-    @AfterEach
+    @After
     public void tearDown() throws Exception
     {
         _server.stop();
@@ -173,7 +174,7 @@ public class AsyncServletIOTest
     public void testBigWrites() throws Exception
     {
         process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
-        assertThat("On Write Possible",_owp.get(),greaterThanOrEqualTo(1));
+        Assert.assertThat("On Write Possible",_owp.get(),greaterThanOrEqualTo(1));
     }
 
     @Test
@@ -216,7 +217,7 @@ public class AsyncServletIOTest
             // response line
             String line = in.readLine();
             LOG.debug("response-line: "+line);
-            assertThat(line,startsWith("HTTP/1.1 200 OK"));
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 OK"));
             
             // Skip headers
             while (line!=null)
@@ -238,8 +239,8 @@ public class AsyncServletIOTest
             }
         }
 
-        assertEquals(list.get(0),"data");
-        assertTrue(_servlet2.completed.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(list.get(0),"data");
+        Assert.assertTrue(_servlet2.completed.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -265,7 +266,7 @@ public class AsyncServletIOTest
             // response line
             String line = in.readLine();
             LOG.debug("response-line: "+line);
-            assertThat(line,startsWith("HTTP/1.1 200 OK"));
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 OK"));
             
             // Skip headers
             while (line!=null)
@@ -279,11 +280,11 @@ public class AsyncServletIOTest
             // Get body
             line = in.readLine();
             LOG.debug("body: "+line);
-            assertEquals("DONE",line);
+            Assert.assertEquals("DONE",line);
 
             // The connection should be aborted
             line = in.readLine();
-            assertNull(line);
+            Assert.assertNull(line);
         }
     }
     
@@ -344,7 +345,7 @@ public class AsyncServletIOTest
             // response line
             String line = in.readLine();
             LOG.debug("response-line: "+line);
-            assertThat(line,startsWith("HTTP/1.1 200 OK"));
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 OK"));
             
             // Skip headers
             while (line!=null)
@@ -374,8 +375,8 @@ public class AsyncServletIOTest
             LOG.debug("line:  "+brief(line));
             if ("-".equals(line))
                 continue;
-            assertEquals(writes[w], line.length(), "Line Length");
-            assertEquals(line.charAt(0), '0'+(w%10), "Line Contents");
+            assertEquals("Line Length",writes[w],line.length());
+            assertEquals("Line Contents",line.charAt(0),'0'+(w%10));
             
             w++;
             if (w<writes.length && writes[w]<=0)
@@ -383,7 +384,7 @@ public class AsyncServletIOTest
         }
         
         if (content!=null)
-            assertEquals(content.length, _read.get(), "Content Length");
+            Assert.assertEquals("Content Length",content.length,_read.get());
         
         return list;
     }
@@ -657,7 +658,7 @@ public class AsyncServletIOTest
             // response line
             String line = in.readLine();
             LOG.debug("response-line: "+line);
-            assertThat(line,startsWith("HTTP/1.1 200 OK"));
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 OK"));
             
             boolean chunked=false;
             // Skip headers
@@ -845,38 +846,38 @@ public class AsyncServletIOTest
             // thread should be dispatched to handle, but held by our wQTP wait.
             
             // Let's steal our read
-            assertTrue(sin.isReady());
-            assertThat(sin.read(),Matchers.is((int)'1'));
-            assertFalse(sin.isReady());
+            Assert.assertTrue(sin.isReady());
+            Assert.assertThat(sin.read(),Matchers.is((int)'1'));
+            Assert.assertFalse(sin.isReady());
             
             // let the ODA call go
             _wQTP.wrapper.set(old);
             wait.countDown();
             
             // ODA should not be called
-            assertFalse(_servletStolenAsyncRead.oda.await(500,TimeUnit.MILLISECONDS));
+            Assert.assertFalse(_servletStolenAsyncRead.oda.await(500,TimeUnit.MILLISECONDS));
 
             // Send some more data
             out.write((int)'2');
             out.flush();
 
             // ODA should now be called!!
-            assertTrue(_servletStolenAsyncRead.oda.await(500,TimeUnit.MILLISECONDS));
+            Assert.assertTrue(_servletStolenAsyncRead.oda.await(500,TimeUnit.MILLISECONDS));
             
             // We can not read some more
-            assertTrue(sin.isReady());
-            assertThat(sin.read(),Matchers.is((int)'2'));
+            Assert.assertTrue(sin.isReady());
+            Assert.assertThat(sin.read(),Matchers.is((int)'2'));
 
             // read EOF
-            assertTrue(sin.isReady());
-            assertThat(sin.read(),Matchers.is(-1));
+            Assert.assertTrue(sin.isReady());
+            Assert.assertThat(sin.read(),Matchers.is(-1));
             
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             
             // response line
             String line = in.readLine();
             LOG.debug("response-line: "+line);
-            assertThat(line,startsWith("HTTP/1.1 200 OK"));
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 OK"));
             
             // Skip headers
             while (line!=null)

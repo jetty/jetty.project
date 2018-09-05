@@ -18,6 +18,19 @@
 
 package org.eclipse.jetty.http2.client;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.ServletInputStream;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -36,22 +49,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
-import org.junit.jupiter.api.Test;
-
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.*;
-
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class TrailersTest extends AbstractTest
 {
@@ -65,16 +65,16 @@ public class TrailersTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                assertFalse(frame.isEndStream());
-                assertTrue(request.getFields().containsKey("X-Request"));
+                Assert.assertFalse(frame.isEndStream());
+                Assert.assertTrue(request.getFields().containsKey("X-Request"));
                 return new Stream.Listener.Adapter()
                 {
                     @Override
                     public void onHeaders(Stream stream, HeadersFrame frame)
                     {
                         MetaData trailer = frame.getMetaData();
-                        assertTrue(frame.isEndStream());
-                        assertTrue(trailer.getFields().containsKey("X-Trailer"));
+                        Assert.assertTrue(frame.isEndStream());
+                        Assert.assertTrue(trailer.getFields().containsKey("X-Trailer"));
                         latch.countDown();
                     }
                 };
@@ -98,7 +98,7 @@ public class TrailersTest extends AbstractTest
         HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), trailers, null, true);
         stream.headers(trailerFrame, Callback.NOOP);
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -112,7 +112,7 @@ public class TrailersTest extends AbstractTest
             {
                 Request jettyRequest = (Request)request;
                 // No trailers yet.
-                assertNull(jettyRequest.getTrailerHttpFields());
+                Assert.assertNull(jettyRequest.getTrailerHttpFields());
 
                 trailerLatch.countDown();
 
@@ -127,8 +127,8 @@ public class TrailersTest extends AbstractTest
 
                 // Now we have the trailers.
                 HttpFields trailers = jettyRequest.getTrailerHttpFields();
-                assertNotNull(trailers);
-                assertNotNull(trailers.get("X-Trailer"));
+                Assert.assertNotNull(trailers);
+                Assert.assertNotNull(trailers.get("X-Trailer"));
             }
         });
 
@@ -146,7 +146,7 @@ public class TrailersTest extends AbstractTest
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
                 MetaData.Response response = (MetaData.Response)frame.getMetaData();
-                assertEquals(HttpStatus.OK_200, response.getStatus());
+                Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
                 if (frame.isEndStream())
                     latch.countDown();
             }
@@ -157,7 +157,7 @@ public class TrailersTest extends AbstractTest
         Callback.Completable callback = new Callback.Completable();
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), false), callback);
 
-        assertTrue(trailerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(trailerLatch.await(5, TimeUnit.SECONDS));
 
         // Send the trailers.
         callback.thenRun(() ->
@@ -169,7 +169,7 @@ public class TrailersTest extends AbstractTest
             stream.headers(trailerFrame, Callback.NOOP);
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -214,22 +214,22 @@ public class TrailersTest extends AbstractTest
                 if (!responded)
                 {
                     MetaData.Response response = (MetaData.Response)frame.getMetaData();
-                    assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertTrue(response.getFields().containsKey("X-Response"));
-                    assertFalse(frame.isEndStream());
+                    Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+                    Assert.assertTrue(response.getFields().containsKey("X-Response"));
+                    Assert.assertFalse(frame.isEndStream());
                     responded = true;
                 }
                 else
                 {
                     MetaData trailer = frame.getMetaData();
-                    assertTrue(trailer.getFields().containsKey("X-Trailer"));
-                    assertTrue(frame.isEndStream());
+                    Assert.assertTrue(trailer.getFields().containsKey("X-Trailer"));
+                    Assert.assertTrue(frame.isEndStream());
                     latch.countDown();
                 }
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -277,18 +277,17 @@ public class TrailersTest extends AbstractTest
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-        assertTrue( frames.size()==3, frames.toString());
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertThat(frames.toString(), frames.size(), Matchers.is(3));
 
         HeadersFrame headers = (HeadersFrame)frames.get(0);
         DataFrame data = (DataFrame)frames.get(1);
         HeadersFrame trailers = (HeadersFrame)frames.get(2);
 
-        assertFalse(headers.isEndStream());
-        assertFalse(data.isEndStream());
-        assertTrue(trailers.isEndStream());
-        assertTrue(trailers.getMetaData().getFields().get(trailerName).equals(trailerValue));
+        Assert.assertFalse(headers.isEndStream());
+        Assert.assertFalse(data.isEndStream());
+        Assert.assertTrue(trailers.isEndStream());
+        Assert.assertThat(trailers.getMetaData().getFields().get(trailerName), Matchers.equalTo(trailerValue));
     }
 
     @Test
@@ -333,7 +332,7 @@ public class TrailersTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.wrap( StringUtil.getUtf8Bytes( "hello"));
+        ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
         Callback.Completable completable = new Callback.Completable();
         stream.data(new DataFrame(stream.getId(), data, false), completable);
         completable.thenRun(() ->
@@ -346,8 +345,7 @@ public class TrailersTest extends AbstractTest
             stream.headers(trailerFrame, Callback.NOOP);
         });
 
-        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
-
+        Assert.assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
 }

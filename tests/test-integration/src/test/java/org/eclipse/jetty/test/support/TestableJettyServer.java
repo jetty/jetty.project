@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.test.support;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,15 +33,17 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.xml.XmlConfiguration;
-import org.junit.jupiter.api.Disabled;
+import org.junit.Assert;
+import org.junit.Ignore;
 
 /**
  * Allows for setting up a Jetty server for testing based on XML configuration files.
  */
-@Disabled
+@Ignore
 public class TestableJettyServer
 {
     private List<URL> _xmlConfigurations;
@@ -155,7 +153,7 @@ public class TestableJettyServer
             throw new Exception("Load failed to configure a " + Server.class.getName());
         }
 
-        assertEquals(1, serverCount, "Server load count");
+        Assert.assertEquals("Server load count",1,serverCount);
 
         this._server = foundServer;
         this._server.setStopTimeout(1000);
@@ -174,13 +172,13 @@ public class TestableJettyServer
 
     public void start() throws Exception
     {
-        assertNotNull(_server, "Server should not be null (failed load?)");
+        Assert.assertNotNull("Server should not be null (failed load?)",_server);
 
         _server.start();
 
         // Find the active server port.
         this._serverPort = ((NetworkConnector)_server.getConnectors()[0]).getLocalPort();
-        assertTrue((1 <= this._serverPort) && (this._serverPort <= 65535),"Server Port is between 1 and 65535. Actually <" + _serverPort + ">");
+        Assert.assertTrue("Server Port is between 1 and 65535. Actually <" + _serverPort + ">",(1 <= this._serverPort) && (this._serverPort <= 65535));
     }
 
     public int getServerPort()

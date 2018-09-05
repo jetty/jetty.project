@@ -30,10 +30,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class OverlayedAppProviderTest
@@ -45,7 +47,7 @@ public class OverlayedAppProviderTest
     File _nodes;
     File _instances;
 
-    @BeforeEach
+    @Before
     public void before() throws Exception
     {
         _tmp=File.createTempFile("OAPTest",null);
@@ -64,7 +66,7 @@ public class OverlayedAppProviderTest
         _instances.mkdir();
     }
 
-    @AfterEach
+    @After
     public void after() throws Exception
     {
         if (_tmp.exists())
@@ -114,10 +116,10 @@ public class OverlayedAppProviderTest
         Set<String> results = scanned.poll();
         assertTrue(results!=null);
         assertEquals(4,results.size());
-        assertThat(results, contains("webapps/foo-1.2.3.war"));
-        assertThat(results, contains("templates/foo=foo-1.2.3.war"));
-        assertThat(results, contains("nodes/nodeA.war"));
-        assertThat(results, contains("instances/foo=instance.war"));
+        assertTrue(results.contains("webapps/foo-1.2.3.war"));
+        assertTrue(results.contains("templates/foo=foo-1.2.3.war"));
+        assertTrue(results.contains("nodes/nodeA.war"));
+        assertTrue(results.contains("instances/foo=instance.war"));
 
         provider.scan();
         provider.scan();
@@ -371,7 +373,7 @@ public class OverlayedAppProviderTest
         touch(war);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadWebapp foo-1.2.3");
+        assertEquals("loadWebapp foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(war.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
 
@@ -380,7 +382,7 @@ public class OverlayedAppProviderTest
         touch(template);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadTemplate foo=foo-1.2.3");
+        assertEquals("loadTemplate foo=foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(template.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
         // Add a node
@@ -388,7 +390,7 @@ public class OverlayedAppProviderTest
         touch(nodeA);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadNode");
+        assertEquals("loadNode",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(nodeA.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
         // Add another node
@@ -402,7 +404,7 @@ public class OverlayedAppProviderTest
         touch(instance);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadInstance foo=instance");
+        assertEquals("loadInstance foo=instance",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(instance.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
 
@@ -414,7 +416,7 @@ public class OverlayedAppProviderTest
         touch(warDirWI,"web.xml");
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadWebapp foo-1.2.3");
+        assertEquals("loadWebapp foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(warDir.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
         // Add a template dir
@@ -425,7 +427,7 @@ public class OverlayedAppProviderTest
         touch(templateDirWI,"web.xml");
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadTemplate foo=foo-1.2.3");
+        assertEquals("loadTemplate foo=foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(templateDir.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
         // Add a node dir
@@ -436,7 +438,7 @@ public class OverlayedAppProviderTest
         touch(nodeADirWI,"web.xml");
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadNode");
+        assertEquals("loadNode",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(nodeADir.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
         // Add another node dir
@@ -457,7 +459,7 @@ public class OverlayedAppProviderTest
         touch(instanceDirWI,"web.xml");
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadInstance foo=instance");
+        assertEquals("loadInstance foo=instance",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(instanceDir.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
 
@@ -484,24 +486,24 @@ public class OverlayedAppProviderTest
         IO.delete(warDir);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "removeWebapp foo-1.2.3");
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadWebapp foo-1.2.3");
+        assertEquals("removeWebapp foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
+        assertEquals("loadWebapp foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(war.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
         // Remove template dir
         IO.delete(templateDir);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "removeTemplate foo=foo-1.2.3");
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadTemplate foo=foo-1.2.3");
+        assertEquals("removeTemplate foo=foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
+        assertEquals("loadTemplate foo=foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(template.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
         // Remove nodeA dir
         IO.delete(nodeADir);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "removeNode");
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadNode");
+        assertEquals("removeNode",scanned.poll(1,TimeUnit.SECONDS));
+        assertEquals("loadNode",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(nodeA.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
         // Remove nodeB dir
@@ -515,27 +517,27 @@ public class OverlayedAppProviderTest
         IO.delete(instanceDir);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "removeInstance foo=instance");
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "loadInstance foo=instance");
+        assertEquals("removeInstance foo=instance",scanned.poll(1,TimeUnit.SECONDS));
+        assertEquals("loadInstance foo=instance",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(instance.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
         // Remove web
         IO.delete(war);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "removeWebapp foo-1.2.3");
+        assertEquals("removeWebapp foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
 
         // Remove template
         IO.delete(template);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "removeTemplate foo=foo-1.2.3");
+        assertEquals("removeTemplate foo=foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
 
         // Remove nodeA dir
         IO.delete(nodeA);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "removeNode");
+        assertEquals("removeNode",scanned.poll(1,TimeUnit.SECONDS));
 
         // Remove nodeB dir
         IO.delete(nodeB);
@@ -547,7 +549,7 @@ public class OverlayedAppProviderTest
         IO.delete(instance);
         provider.scan();
         provider.scan();
-        assertEquals(scanned.poll(1, TimeUnit.SECONDS), "removeInstance foo=instance");
+        assertEquals("removeInstance foo=instance",scanned.poll(1,TimeUnit.SECONDS));
 
         provider.scan();
         provider.scan();

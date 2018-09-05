@@ -18,38 +18,33 @@
 
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.websocket.tests.SimpleServletServer;
-import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
+import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import org.eclipse.jetty.websocket.tests.SimpleServletServer;
+import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class AnnotatedEchoTest
 {
     private static SimpleServletServer server;
-    private static EchoHandler handler;
-    private static URI serverUri;
-
-    @SuppressWarnings("Duplicates")
-    @BeforeAll
+    
+    @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new SimpleServletServer( new EchoServlet());
+        server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
-
-
-    @AfterAll
+    
+    @AfterClass
     public static void stopServer() throws Exception
     {
         server.stop();

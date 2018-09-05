@@ -18,10 +18,8 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -54,9 +52,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class DebugHandlerTest
 {
@@ -77,8 +75,7 @@ public class DebugHandlerTest
     private DebugHandler debugHandler;
     private ByteArrayOutputStream capturedLog;
     
-    @SuppressWarnings("deprecation")
-    @BeforeEach
+    @Before
     public void startServer() throws Exception
     {
         server = new Server();
@@ -147,7 +144,7 @@ public class DebugHandlerTest
         }
     }
     
-    @AfterEach
+    @After
     public void stopServer() throws Exception
     {
         server.stop();

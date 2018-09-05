@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -48,9 +45,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HttpClientCustomProxyTest
 {
@@ -75,7 +72,7 @@ public class HttpClientCustomProxyTest
         client.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         if (client != null)
@@ -111,7 +108,7 @@ public class HttpClientCustomProxyTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(status, response.getStatus());
+        Assert.assertEquals(status, response.getStatus());
     }
 
     private class CAFEBABEProxy extends ProxyConfiguration.Proxy
@@ -185,8 +182,8 @@ public class HttpClientCustomProxyTest
             {
                 ByteBuffer buffer = BufferUtil.allocate(4);
                 int filled = getEndPoint().fill(buffer);
-                assertEquals(4, filled);
-                assertArrayEquals(CAFE_BABE, buffer.array());
+                Assert.assertEquals(4, filled);
+                Assert.assertArrayEquals(CAFE_BABE, buffer.array());
 
                 // We are good, upgrade the connection
                 getEndPoint().upgrade(connectionFactory.newConnection(getEndPoint(), context));
@@ -242,8 +239,8 @@ public class HttpClientCustomProxyTest
             {
                 ByteBuffer buffer = BufferUtil.allocate(4);
                 int filled = getEndPoint().fill(buffer);
-                assertEquals(4, filled);
-                assertArrayEquals(CAFE_BABE, buffer.array());
+                Assert.assertEquals(4, filled);
+                Assert.assertArrayEquals(CAFE_BABE, buffer.array());
                 getEndPoint().write(this, buffer);
             }
             catch (Throwable x)

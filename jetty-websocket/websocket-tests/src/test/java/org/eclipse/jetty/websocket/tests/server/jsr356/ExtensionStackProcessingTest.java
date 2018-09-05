@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.server.jsr356;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -52,9 +48,11 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ExtensionStackProcessingTest
 {
@@ -82,7 +80,7 @@ public class ExtensionStackProcessingTest
     private WebSocketContainer client;
     private ServletContextHandler servletContextHandler;
     
-    @BeforeEach
+    @Before
     public void prepare() throws Exception
     {
         server = new Server();
@@ -100,7 +98,7 @@ public class ExtensionStackProcessingTest
         server.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         server.stop();
@@ -111,7 +109,7 @@ public class ExtensionStackProcessingTest
         NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) servletContextHandler
                 .getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
         ExtensionFactory serverExtensionFactory = configuration.getFactory().getExtensionFactory();
-        assumeTrue(serverExtensionFactory.isAvailable("permessage-deflate"), "Server has permessage-deflate extension registered");
+        Assume.assumeTrue("Server has permessage-deflate extension registered",serverExtensionFactory.isAvailable("permessage-deflate"));
     }
 
     @Test
@@ -131,22 +129,22 @@ public class ExtensionStackProcessingTest
             @Override
             public void onMessage(String message)
             {
-                assertEquals(content, message);
+                Assert.assertEquals(content, message);
                 messageLatch.countDown();
             }
         }, config, uri);
 
         // Make sure everything is wired properly.
         OutgoingFrames firstOut = ((JsrSession)session).getOutgoingHandler();
-        assertTrue(firstOut instanceof ExtensionStack);
+        Assert.assertTrue(firstOut instanceof ExtensionStack);
         ExtensionStack extensionStack = (ExtensionStack)firstOut;
-        assertTrue(extensionStack.isRunning());
+        Assert.assertTrue(extensionStack.isRunning());
         OutgoingFrames secondOut = extensionStack.getNextOutgoing();
-        assertTrue(secondOut instanceof DeflateFrameExtension);
+        Assert.assertTrue(secondOut instanceof DeflateFrameExtension);
         DeflateFrameExtension deflateExtension = (DeflateFrameExtension)secondOut;
-        assertTrue(deflateExtension.isRunning());
+        Assert.assertTrue(deflateExtension.isRunning());
         OutgoingFrames thirdOut = deflateExtension.getNextOutgoing();
-        assertTrue(thirdOut instanceof WebSocketClientConnection);
+        Assert.assertTrue(thirdOut instanceof WebSocketClientConnection);
 
         final CountDownLatch latch = new CountDownLatch(1);
         session.getAsyncRemote().sendText(content, new SendHandler()
@@ -158,8 +156,8 @@ public class ExtensionStackProcessingTest
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-        assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -179,7 +177,7 @@ public class ExtensionStackProcessingTest
             @Override
             public void onMessage(String message)
             {
-                assertEquals(content, message);
+                Assert.assertEquals(content, message);
                 messageLatch.countDown();
             }
         }, config, uri);
@@ -194,8 +192,8 @@ public class ExtensionStackProcessingTest
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-        assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
     }
 
     private static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>

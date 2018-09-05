@@ -18,20 +18,19 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import junit.framework.Assert;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 @SuppressWarnings("unused")
 public class ValidUrlRuleTest extends AbstractRuleTestCase
 {
     private ValidUrlRule _rule;
     
-    @BeforeEach
+    @Before
     public void init() throws Exception
     {
         start(true);
@@ -86,7 +85,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         assertEquals("foo",_response.getReason());
     }
     
-    @Disabled("Not working in jetty-9")
+    @Ignore("Not working in jetty-9")
     @Test
     public void testInvalidShamrock() throws Exception
     {
@@ -100,7 +99,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         assertEquals("foo",_response.getReason());
     }
 
-    @Disabled("Not working in jetty-9")
+    @Ignore("Not working in jetty-9")
     @Test
     public void testValidShamrock() throws Exception
     {
@@ -117,9 +116,9 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     public void testCharacters() throws Exception
     {
         // space
-        assertTrue( _rule.isValidChar("\u0020".charAt(0)));
+        Assert.assertTrue( _rule.isValidChar("\u0020".charAt(0)));
         // form feed
-        assertFalse( _rule.isValidChar("\u000c".charAt(0)));
+        Assert.assertFalse( _rule.isValidChar("\u000c".charAt(0)));
     }
 }
 

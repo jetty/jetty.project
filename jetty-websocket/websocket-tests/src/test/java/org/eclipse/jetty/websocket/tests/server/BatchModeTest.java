@@ -19,8 +19,6 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import java.io.IOException;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -41,9 +39,10 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class BatchModeTest
 {
@@ -91,7 +90,7 @@ public class BatchModeTest
     private ServerConnector connector;
     private WebSocketClient client;
 
-    @BeforeEach
+    @Before
     public void prepare() throws Exception
     {
         server = new Server();
@@ -115,7 +114,7 @@ public class BatchModeTest
         server.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         server.stop();
@@ -144,7 +143,7 @@ public class BatchModeTest
             future.get(1, TimeUnit.MICROSECONDS);
 
             // Wait for the echo.
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 }

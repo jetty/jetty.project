@@ -22,7 +22,7 @@ package org.eclipse.jetty.gcloud.session;
 
 import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.junit.jupiter.api.AfterAll;
+import org.junit.AfterClass;
 
 /**
  * InvalidationSessionTest
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.AfterAll;
 public class InvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
     
-    @AfterAll
+    @AfterClass
     public static void teardown () throws Exception
     {
         GCloudTestSuite.__testSupport.deleteSessions();

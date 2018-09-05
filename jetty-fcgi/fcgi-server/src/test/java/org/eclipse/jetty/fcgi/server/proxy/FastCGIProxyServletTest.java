@@ -18,15 +18,9 @@
 
 package org.eclipse.jetty.fcgi.server.proxy;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -48,28 +42,34 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class FastCGIProxyServletTest
 {
-    public static Stream<Arguments> factories()
+    @Parameterized.Parameters
+    public static Object[] parameters()
     {
-        return Stream.of(
-                true, // send status 200
-                false // don't send status 200
-        ).map(Arguments::of);
+        return new Object[]{true, false};
     }
 
+    private final boolean sendStatus200;
     private Server server;
     private ServerConnector httpConnector;
     private ServerConnector fcgiConnector;
     private ServletContextHandler context;
     private HttpClient client;
 
-    public void prepare(boolean sendStatus200, HttpServlet servlet) throws Exception
+    public FastCGIProxyServletTest(boolean sendStatus200)
+    {
+        this.sendStatus200 = sendStatus200;
+    }
+
+    public void prepare(HttpServlet servlet) throws Exception
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
@@ -110,45 +110,42 @@ public class FastCGIProxyServletTest
         server.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         server.stop();
     }
 
-    @ParameterizedTest(name="[{index}] sendStatus200={0}")
-    @MethodSource("factories")
-    public void testGETWithSmallResponseContent(boolean sendStatus200) throws Exception
+    @Test
+    public void testGETWithSmallResponseContent() throws Exception
     {
-        testGETWithResponseContent(sendStatus200, 1024, 0);
+        testGETWithResponseContent(1024, 0);
     }
 
-    @ParameterizedTest(name="[{index}] sendStatus200={0}")
-    @MethodSource("factories")
-    public void testGETWithLargeResponseContent(boolean sendStatus200) throws Exception
+    @Test
+    public void testGETWithLargeResponseContent() throws Exception
     {
-        testGETWithResponseContent(sendStatus200, 16 * 1024 * 1024, 0);
+        testGETWithResponseContent(16 * 1024 * 1024, 0);
     }
 
-    @ParameterizedTest(name="[{index}] sendStatus200={0}")
-    @MethodSource("factories")
-    public void testGETWithLargeResponseContentWithSlowClient(boolean sendStatus200) throws Exception
+    @Test
+    public void testGETWithLargeResponseContentWithSlowClient() throws Exception
     {
-        testGETWithResponseContent(sendStatus200, 16 * 1024 * 1024, 1);
+        testGETWithResponseContent(16 * 1024 * 1024, 1);
     }
 
-    private void testGETWithResponseContent(boolean sendStatus200, int length, final long delay) throws Exception
+    private void testGETWithResponseContent(int length, final long delay) throws Exception
     {
         final byte[] data = new byte[length];
         new Random().nextBytes(data);
 
         final String path = "/foo/index.php";
-        prepare(sendStatus200, new HttpServlet()
+        prepare(new HttpServlet()
         {
             @Override
             protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                assertTrue(request.getRequestURI().endsWith(path));
+                Assert.assertTrue(request.getRequestURI().endsWith(path));
                 response.setContentLength(data.length);
                 response.getOutputStream().write(data);
             }
@@ -174,25 +171,24 @@ public class FastCGIProxyServletTest
 
         ContentResponse response = listener.get(30, TimeUnit.SECONDS);
 
-        assertEquals(200, response.getStatus());
-        assertArrayEquals(data, response.getContent());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(data, response.getContent());
     }
 
-    @ParameterizedTest(name="[{index}] sendStatus200={0}")
-    @MethodSource("factories")
-    public void testURIRewrite(boolean sendStatus200) throws Exception
+    @Test
+    public void testURIRewrite() throws Exception
     {
         String originalPath = "/original/index.php";
         String originalQuery = "foo=bar";
         String remotePath = "/remote/index.php";
-        prepare(sendStatus200, new HttpServlet()
+        prepare(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                assertThat((String)request.getAttribute(FCGI.Headers.REQUEST_URI), Matchers.startsWith(originalPath));
-                assertEquals(originalQuery, request.getAttribute(FCGI.Headers.QUERY_STRING));
-                assertThat(request.getRequestURI(), Matchers.endsWith(remotePath));
+                Assert.assertThat((String)request.getAttribute(FCGI.Headers.REQUEST_URI), Matchers.startsWith(originalPath));
+                Assert.assertEquals(originalQuery, request.getAttribute(FCGI.Headers.QUERY_STRING));
+                Assert.assertThat(request.getRequestURI(), Matchers.endsWith(remotePath));
             }
         });
         context.stop();
@@ -220,6 +216,6 @@ public class FastCGIProxyServletTest
                 .path(remotePath)
                 .send();
 
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 }

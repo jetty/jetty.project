@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util.log;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.io.PrintWriter;
@@ -27,17 +26,17 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 
-import org.junit.jupiter.api.AfterAll;
-
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class JavaUtilLogTest
 {
     private static Handler[] originalHandlers;
     private static CapturingJULHandler jul;
 
-    @BeforeAll
+    @BeforeClass
     public static void setJUL()
     {
         LogManager lmgr = LogManager.getLogManager();
@@ -54,7 +53,7 @@ public class JavaUtilLogTest
         root.addHandler(jul);
     }
 
-    @AfterAll
+    @AfterClass
     public static void restoreJUL()
     {
         LogManager lmgr = LogManager.getLogManager();
@@ -211,28 +210,28 @@ public class JavaUtilLogTest
         JavaUtilLog log = new JavaUtilLog("test.legacy");
 
         setJulLevel("test.legacy",Level.ALL);
-        assertThat("log.level(all).isDebugEnabled", log.isDebugEnabled(), is(true));
+        Assert.assertThat("log.level(all).isDebugEnabled", log.isDebugEnabled(), is(true));
 
         setJulLevel("test.legacy",Level.FINEST);
-        assertThat("log.level(finest).isDebugEnabled", log.isDebugEnabled(), is(true));
+        Assert.assertThat("log.level(finest).isDebugEnabled", log.isDebugEnabled(), is(true));
 
         setJulLevel("test.legacy",Level.FINER);
-        assertThat("log.level(finer).isDebugEnabled", log.isDebugEnabled(), is(true));
+        Assert.assertThat("log.level(finer).isDebugEnabled", log.isDebugEnabled(), is(true));
 
         setJulLevel("test.legacy",Level.FINE);
-        assertThat("log.level(fine).isDebugEnabled", log.isDebugEnabled(), is(true));
+        Assert.assertThat("log.level(fine).isDebugEnabled", log.isDebugEnabled(), is(true));
 
         setJulLevel("test.legacy",Level.INFO);
-        assertThat("log.level(info).isDebugEnabled", log.isDebugEnabled(), is(false));
+        Assert.assertThat("log.level(info).isDebugEnabled", log.isDebugEnabled(), is(false));
 
         setJulLevel("test.legacy",Level.WARNING);
-        assertThat("log.level(warn).isDebugEnabled", log.isDebugEnabled(), is(false));
+        Assert.assertThat("log.level(warn).isDebugEnabled", log.isDebugEnabled(), is(false));
 
         log.setDebugEnabled(true);
-        assertThat("log.isDebugEnabled", log.isDebugEnabled(), is(true));
+        Assert.assertThat("log.isDebugEnabled", log.isDebugEnabled(), is(true));
 
         log.setDebugEnabled(false);
-        assertThat("log.isDebugEnabled", log.isDebugEnabled(), is(false));
+        Assert.assertThat("log.isDebugEnabled", log.isDebugEnabled(), is(false));
     }
 
     private void setJulLevel(String name, Level lvl)

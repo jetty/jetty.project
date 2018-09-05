@@ -18,22 +18,26 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  *
  */
+@RunWith(AdvancedRunner.class)
 public class CheckReverseProxyHeadersTest
 {
     @Test

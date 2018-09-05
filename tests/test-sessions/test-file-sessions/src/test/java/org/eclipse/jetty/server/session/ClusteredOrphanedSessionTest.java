@@ -18,22 +18,22 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * ClusteredOrphanedSessionTest
  */
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
-    @BeforeEach
+    @Before
     public void before() throws Exception
     {
        FileTestHelper.setup();
     }
     
-    @AfterEach
+    @After 
     public void after()
     {
        FileTestHelper.teardown();

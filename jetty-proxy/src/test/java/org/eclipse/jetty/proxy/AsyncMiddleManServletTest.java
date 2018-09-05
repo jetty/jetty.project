@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -78,6 +71,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -86,16 +81,18 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.OS;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class AsyncMiddleManServletTest
 {
     private static final Logger LOG = Log.getLogger(AsyncMiddleManServletTest.class);
     private static final String PROXIED_HEADER = "X-Proxied";
 
+    @Rule
+    public final TestTracker tracker = new TestTracker();
     private HttpClient client;
     private Server proxy;
     private ServerConnector proxyConnector;
@@ -158,7 +155,7 @@ public class AsyncMiddleManServletTest
         client.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         client.stop();
@@ -178,7 +175,7 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -207,9 +204,9 @@ public class AsyncMiddleManServletTest
             {
                 String transferEncoding = request.getHeader(HttpHeader.TRANSFER_ENCODING.asString());
                 if (expectChunked)
-                    assertNotNull(transferEncoding);
+                    Assert.assertNotNull(transferEncoding);
                 else
-                    assertNull(transferEncoding);
+                    Assert.assertNull(transferEncoding);
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
                 super.service(request, response);
             }
@@ -233,8 +230,8 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
-        assertArrayEquals(bytes, response.getContent());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(bytes, response.getContent());
     }
 
     @Test
@@ -267,8 +264,8 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
-        assertArrayEquals(bytes, response.getContent());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(bytes, response.getContent());
     }
 
     @Test
@@ -308,8 +305,8 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
-        assertArrayEquals(bytes, response.getContent());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(bytes, response.getContent());
     }
 
     @Test
@@ -354,11 +351,11 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
 
         String expectedStr = "<a href=\"http://webtide.com/\">Webtide</a>";
         byte[] expected = expectedStr.getBytes(StandardCharsets.UTF_8);
-        assertArrayEquals(expected, response.getContent());
+        Assert.assertArrayEquals(expected, response.getContent());
     }
 
     @Test
@@ -402,8 +399,8 @@ public class AsyncMiddleManServletTest
         content.close();
 
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.getStatus());
-        assertArrayEquals(bytes, response.getContent());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(bytes, response.getContent());
     }
 
     @Test
@@ -443,8 +440,8 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
-        assertArrayEquals(bytes, response.getContent());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(bytes, response.getContent());
     }
 
     @Test
@@ -460,7 +457,7 @@ public class AsyncMiddleManServletTest
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 IO.copy(new GZIPInputStream(request.getInputStream()), bos);
                 // ensure decompressed is 0 length
-                assertEquals(0, bos.toByteArray().length);
+                Assert.assertEquals(0, bos.toByteArray().length);
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
                 response.getOutputStream().write(gzip(bytes));
             }
@@ -487,8 +484,8 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
-        assertEquals(0, response.getContent().length);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(0, response.getContent().length);
     }
 
     @Test
@@ -518,7 +515,7 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(500, response.getStatus());
+        Assert.assertEquals(500, response.getStatus());
     }
 
     @Test
@@ -568,7 +565,7 @@ public class AsyncMiddleManServletTest
             content.offer(ByteBuffer.allocate(512));
             content.close();
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 
@@ -637,7 +634,7 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(502, response.getStatus());
+        Assert.assertEquals(502, response.getStatus());
     }
 
     @Test
@@ -709,13 +706,13 @@ public class AsyncMiddleManServletTest
                     @Override
                     public void onComplete(Result result)
                     {
-                        assertTrue(result.isSucceeded());
-                        assertEquals(200, result.getResponse().getStatus());
+                        Assert.assertTrue(result.isSucceeded());
+                        Assert.assertEquals(200, result.getResponse().getStatus());
                         latch.countDown();
                     }
                 });
 
-        assertTrue(latch.await(15, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(15, TimeUnit.SECONDS));
     }
 
     @Test
@@ -758,7 +755,7 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -794,7 +791,7 @@ public class AsyncMiddleManServletTest
         content.offer(ByteBuffer.allocate(512));
         content.close();
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -836,7 +833,7 @@ public class AsyncMiddleManServletTest
             content.offer(ByteBuffer.allocate(512));
             content.close();
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 
@@ -884,7 +881,7 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(502, response.getStatus());
+        Assert.assertEquals(502, response.getStatus());
     }
 
     @Test
@@ -934,13 +931,13 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
         @SuppressWarnings("unchecked")
         Map<String, Object> obj = (Map<String, Object>)JSON.parse(response.getContentAsString());
-        assertNotNull(obj);
-        assertEquals(2, obj.size());
-        assertEquals(value0, obj.get(key0));
-        assertEquals(value1, obj.get(key2));
+        Assert.assertNotNull(obj);
+        Assert.assertEquals(2, obj.size());
+        Assert.assertEquals(value0, obj.get(key0));
+        Assert.assertEquals(value1, obj.get(key2));
     }
 
     @Test
@@ -1003,8 +1000,8 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertArrayEquals(data, response.getContent());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertArrayEquals(data, response.getContent());
     }
 
     @Test
@@ -1066,25 +1063,25 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
         @SuppressWarnings("unchecked")
         Map<String, Object> obj = (Map<String, Object>)JSON.parse(response.getContentAsString());
-        assertNotNull(obj);
-        assertEquals(2, obj.size());
-        assertEquals(value0, obj.get(key0));
-        assertEquals(value1, obj.get(key2));
+        Assert.assertNotNull(obj);
+        Assert.assertEquals(2, obj.size());
+        Assert.assertEquals(value0, obj.get(key0));
+        Assert.assertEquals(value1, obj.get(key2));
         // Make sure the files do not exist.
         try (DirectoryStream<Path> paths = Files.newDirectoryStream(targetTestsDir, inputPrefix + "*.*"))
         {
-            assertFalse(paths.iterator().hasNext());
+            Assert.assertFalse(paths.iterator().hasNext());
         }
 
         // File deletion is delayed on windows, testing for deletion is not going to work
-        if(!OS.WINDOWS.isCurrentOs())
+        if(!OS.IS_WINDOWS)
         {
             try (DirectoryStream<Path> paths = Files.newDirectoryStream(targetTestsDir, outputPrefix + "*.*"))
             {
-                assertFalse(paths.iterator().hasNext());
+                Assert.assertFalse(paths.iterator().hasNext());
             }
         }
     }
@@ -1150,8 +1147,8 @@ public class AsyncMiddleManServletTest
                 .timeout(5 * idleTimeout, TimeUnit.MILLISECONDS)
                 .send();
 
-        assertTrue(destroyLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
-        assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.getStatus());
+        Assert.assertTrue(destroyLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.getStatus());
     }
 
     @Test
@@ -1210,9 +1207,9 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertTrue(serviceLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
-        assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
+        Assert.assertTrue(serviceLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
     }
 
     @Test
@@ -1274,13 +1271,13 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
         @SuppressWarnings("unchecked")
         Map<String, Object> obj = (Map<String, Object>)JSON.parse(response.getContentAsString());
-        assertNotNull(obj);
-        assertEquals(2, obj.size());
-        assertEquals(value0, obj.get(key0));
-        assertEquals(value1, obj.get(key1));
+        Assert.assertNotNull(obj);
+        Assert.assertEquals(2, obj.size());
+        Assert.assertEquals(value0, obj.get(key0));
+        Assert.assertEquals(value1, obj.get(key1));
     }
 
     @Test
@@ -1318,8 +1315,8 @@ public class AsyncMiddleManServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
-        assertFalse(transformed.get());
+        Assert.assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
+        Assert.assertFalse(transformed.get());
     }
 
     @Test
@@ -1354,20 +1351,20 @@ public class AsyncMiddleManServletTest
         // Send one chunk of content, the proxy request must not be sent.
         ByteBuffer chunk1 = ByteBuffer.allocate(1024);
         content.offer(chunk1);
-        assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Send another chunk of content, the proxy request must not be sent.
         ByteBuffer chunk2 = ByteBuffer.allocate(512);
         content.offer(chunk2);
-        assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Finish the content, request must be sent.
         content.close();
-        assertTrue(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals(0, response.getContent().length);
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(0, response.getContent().length);
     }
 
     @Test
@@ -1402,20 +1399,20 @@ public class AsyncMiddleManServletTest
         // Send one chunk of content, the proxy request must not be sent.
         ByteBuffer chunk1 = ByteBuffer.allocate(1024);
         content.offer(chunk1);
-        assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Send another chunk of content, the proxy request must not be sent.
         ByteBuffer chunk2 = ByteBuffer.allocate(512);
         content.offer(chunk2);
-        assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Finish the content, request must be sent.
         content.close();
-        assertTrue(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals(chunk1.capacity() + chunk2.capacity(), response.getContent().length);
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(chunk1.capacity() + chunk2.capacity(), response.getContent().length);
     }
 
     @Test
@@ -1473,19 +1470,19 @@ public class AsyncMiddleManServletTest
         // Send one chunk of content, the proxy request must not be sent.
         ByteBuffer chunk1 = ByteBuffer.allocate(1024);
         content.offer(chunk1);
-        assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Send another chunk of content, the proxy request must be sent.
         ByteBuffer chunk2 = ByteBuffer.allocate(512);
         content.offer(chunk2);
-        assertTrue(proxyRequestLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(proxyRequestLatch.await(5, TimeUnit.SECONDS));
 
         // Finish the content.
         content.close();
 
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals(chunk1.capacity() + chunk2.capacity(), response.getContent().length);
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(chunk1.capacity() + chunk2.capacity(), response.getContent().length);
     }
 
     @Test
@@ -1519,8 +1516,8 @@ public class AsyncMiddleManServletTest
                 .path(target)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
-        assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
     }
 
     private Path prepareTargetTestsDir() throws IOException
@@ -1700,7 +1697,7 @@ public class AsyncMiddleManServletTest
 
             if (finished)
             {
-                assertFalse(buffers.isEmpty());
+                Assert.assertFalse(buffers.isEmpty());
                 output.addAll(buffers);
                 buffers.clear();
             }

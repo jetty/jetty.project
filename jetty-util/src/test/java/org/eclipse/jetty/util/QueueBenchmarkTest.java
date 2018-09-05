@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -30,26 +28,27 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Assume;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-// TODO: Review - this is a HIGH_CPU, HIGH_MEMORY test that takes 20 minutes to execute.
-// perhaps this should not be a normal every day testcase?
-// Move to a different module? make it not a junit testcase?
-@Disabled
+@RunWith(AdvancedRunner.class)
 public class QueueBenchmarkTest
 {
     private static final Logger logger = Log.getLogger(QueueBenchmarkTest.class);
     private static final Runnable ELEMENT = () -> {};
     private static final Runnable END = () -> {};
 
+    @Stress("High CPU")
     @Test
     public void testQueues() throws Exception
     {
         int cores = ProcessorUtils.availableProcessors();
-        assumeTrue(cores > 1);
+        Assume.assumeTrue(cores > 1);
 
         final int readers = cores / 2;
         final int writers = readers;
@@ -63,11 +62,12 @@ public class QueueBenchmarkTest
         testQueues(readers, writers, iterations, queues, false);
     }
 
+    @Stress("High CPU")
     @Test
     public void testBlockingQueues() throws Exception
     {
         int cores = ProcessorUtils.availableProcessors();
-        assumeTrue(cores > 1);
+        Assume.assumeTrue(cores > 1);
 
         final int readers = cores / 2;
         final int writers = readers;

@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -31,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.hamcrest.Matchers;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class FutureCallbackTest
 {
@@ -40,8 +34,8 @@ public class FutureCallbackTest
     public void testNotDone()
     {
         FutureCallback fcb= new FutureCallback();
-        assertFalse(fcb.isDone());
-        assertFalse(fcb.isCancelled());
+        Assert.assertFalse(fcb.isDone());
+        Assert.assertFalse(fcb.isCancelled());
     }
     
     @Test
@@ -53,12 +47,12 @@ public class FutureCallbackTest
         try
         {
             fcb.get(500,TimeUnit.MILLISECONDS);
-            fail("Expected a TimeoutException");
+            Assert.fail();
         }
         catch(TimeoutException e)
         {
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.greaterThan(50L));
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.greaterThan(50L));
     }
 
     @Test
@@ -66,12 +60,12 @@ public class FutureCallbackTest
     {
         FutureCallback fcb= new FutureCallback();
         fcb.succeeded();
-        assertTrue(fcb.isDone());
-        assertFalse(fcb.isCancelled());
+        Assert.assertTrue(fcb.isDone());
+        Assert.assertFalse(fcb.isCancelled());
 
         long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        assertEquals(null,fcb.get());
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(500L));
+        Assert.assertEquals(null,fcb.get());
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(500L));     
     }
     
     @Test
@@ -92,12 +86,12 @@ public class FutureCallbackTest
         
         latch.await();
         long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        assertEquals(null,fcb.get(10000,TimeUnit.MILLISECONDS));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(1000L));
+        Assert.assertEquals(null,fcb.get(10000,TimeUnit.MILLISECONDS));
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.greaterThan(10L)); 
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(1000L)); 
         
-        assertTrue(fcb.isDone());
-        assertFalse(fcb.isCancelled());
+        Assert.assertTrue(fcb.isDone());
+        Assert.assertFalse(fcb.isCancelled());   
     }
     
 
@@ -108,20 +102,20 @@ public class FutureCallbackTest
         FutureCallback fcb= new FutureCallback();
         Exception ex=new Exception("FAILED");
         fcb.failed(ex);
-        assertTrue(fcb.isDone());
-        assertFalse(fcb.isCancelled());
+        Assert.assertTrue(fcb.isDone());
+        Assert.assertFalse(fcb.isCancelled());
 
         long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         try
         {
             fcb.get();
-            fail("Expected an ExecutionException");
+            Assert.fail();
         }
         catch(ExecutionException ee)
         {
-            assertEquals(ex,ee.getCause());
+            Assert.assertEquals(ex,ee.getCause());
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(100L));
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(100L));     
     }
     
     @Test
@@ -146,17 +140,17 @@ public class FutureCallbackTest
         try
         {
             fcb.get(10000,TimeUnit.MILLISECONDS);
-            fail("Expected an ExecutionException");
+            Assert.fail();
         }
         catch(ExecutionException ee)
         {
-            assertEquals(ex,ee.getCause());
+            Assert.assertEquals(ex,ee.getCause());
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(5000L));
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.greaterThan(10L)); 
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(5000L));
 
-        assertTrue(fcb.isDone());
-        assertFalse(fcb.isCancelled());
+        Assert.assertTrue(fcb.isDone());
+        Assert.assertFalse(fcb.isCancelled());
     }
     
 
@@ -166,20 +160,20 @@ public class FutureCallbackTest
     {
         FutureCallback fcb= new FutureCallback();
         fcb.cancel(true);
-        assertTrue(fcb.isDone());
-        assertTrue(fcb.isCancelled());
+        Assert.assertTrue(fcb.isDone());
+        Assert.assertTrue(fcb.isCancelled());
 
         long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         try
         {
             fcb.get();
-            fail("Expected a CancellationException");
+            Assert.fail();
         }
         catch(CancellationException e)
         {
-            assertThat(e.getCause(),Matchers.instanceOf(CancellationException.class));
+            Assert.assertThat(e.getCause(),Matchers.instanceOf(CancellationException.class));
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(100L));
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(100L));     
     }
     
     @Test
@@ -203,17 +197,17 @@ public class FutureCallbackTest
         try
         {
             fcb.get(10000,TimeUnit.MILLISECONDS);
-            fail("Expected a CancellationException");
+            Assert.fail();
         }
         catch(CancellationException e)
         {
-            assertThat(e.getCause(),Matchers.instanceOf(CancellationException.class));
+            Assert.assertThat(e.getCause(),Matchers.instanceOf(CancellationException.class));
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(1000L));
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.greaterThan(10L)); 
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(1000L));
 
-        assertTrue(fcb.isDone());
-        assertTrue(fcb.isCancelled());
+        Assert.assertTrue(fcb.isDone());
+        Assert.assertTrue(fcb.isCancelled());
            
     }
     

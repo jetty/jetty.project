@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.tests.BadFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.servlets.EchoSocket;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 /**
  * Test of Close Handling

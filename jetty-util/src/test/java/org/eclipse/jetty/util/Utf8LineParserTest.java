@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 
@@ -26,8 +25,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class Utf8LineParserTest
 {
@@ -38,14 +37,14 @@ public class Utf8LineParserTest
 
     private void assertEquals(List<String> expected, List<String> actual)
     {
-        assertThat("Expected Line Count",actual.size(),is(expected.size()));
+        Assert.assertThat("Expected Line Count",actual.size(),is(expected.size()));
         int len = expected.size();
         for (int i = 0; i < len; i++)
         {
             String expectedLine = expected.get(i);
             String actualLine = actual.get(i);
 
-            assertThat("Line[" + i + "]",actualLine,is(expectedLine));
+            Assert.assertThat("Line[" + i + "]",actualLine,is(expectedLine));
         }
     }
 
@@ -62,7 +61,7 @@ public class Utf8LineParserTest
         Utf8LineParser utfparser = new Utf8LineParser();
 
         String line = utfparser.parse(buf);
-        assertThat("Line",line,is("Hello World"));
+        Assert.assertThat("Line",line,is("Hello World"));
     }
 
     /**
@@ -78,7 +77,7 @@ public class Utf8LineParserTest
         Utf8LineParser utfparser = new Utf8LineParser();
 
         String line = utfparser.parse(buf);
-        assertThat("Line",line,is("Hello World"));
+        Assert.assertThat("Line",line,is("Hello World"));
     }
 
     /**
@@ -125,7 +124,7 @@ public class Utf8LineParserTest
                 done = true;
             }
             count++;
-            assertThat("Parse Count is excessive (bug in code!)",count,lessThan(excessive));
+            Assert.assertThat("Parse Count is excessive (bug in code!)",count,lessThan(excessive));
         }
 
         // Validate Results
@@ -183,7 +182,7 @@ public class Utf8LineParserTest
                 done = true;
             }
             count++;
-            assertThat("Parse Count is excessive (bug in code!)",count,lessThan(excessive));
+            Assert.assertThat("Parse Count is excessive (bug in code!)",count,lessThan(excessive));
         }
 
         // Validate Results

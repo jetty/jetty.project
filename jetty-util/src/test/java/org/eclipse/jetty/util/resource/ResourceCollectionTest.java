@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class ResourceCollectionTest
 {
@@ -39,9 +39,9 @@ public class ResourceCollectionTest
                 "src/test/resources/org/eclipse/jetty/util/resource/two/",
                 "src/test/resources/org/eclipse/jetty/util/resource/three/"
         });
-        assertEquals(getContent(rc1, "1.txt"), "1 - one");
-        assertEquals(getContent(rc1, "2.txt"), "2 - two");
-        assertEquals(getContent(rc1, "3.txt"), "3 - three");
+        assertEquals("1 - one", getContent(rc1, "1.txt"));
+        assertEquals("2 - two", getContent(rc1, "2.txt"));
+        assertEquals("3 - three", getContent(rc1, "3.txt"));
 
 
         ResourceCollection rc2 = new ResourceCollection(
@@ -49,9 +49,9 @@ public class ResourceCollectionTest
                 "src/test/resources/org/eclipse/jetty/util/resource/two/," +
                 "src/test/resources/org/eclipse/jetty/util/resource/three/"
         );
-        assertEquals(getContent(rc2, "1.txt"), "1 - one");
-        assertEquals(getContent(rc2, "2.txt"), "2 - two");
-        assertEquals(getContent(rc2, "3.txt"), "3 - three");
+        assertEquals("1 - one", getContent(rc2, "1.txt"));
+        assertEquals("2 - two", getContent(rc2, "2.txt"));
+        assertEquals("3 - three", getContent(rc2, "3.txt"));
 
     }
 
@@ -67,9 +67,9 @@ public class ResourceCollectionTest
         Resource r = rc.addPath("dir");
         assertTrue(r instanceof ResourceCollection);
         rc=(ResourceCollection)r;
-        assertEquals(getContent(rc, "1.txt"), "1 - one");
-        assertEquals(getContent(rc, "2.txt"), "2 - two");
-        assertEquals(getContent(rc, "3.txt"), "3 - three");
+        assertEquals("1 - one", getContent(rc, "1.txt"));
+        assertEquals("2 - two", getContent(rc, "2.txt"));
+        assertEquals("3 - three", getContent(rc, "3.txt"));
     }
 
     @Test
@@ -89,13 +89,13 @@ public class ResourceCollectionTest
         rc.copyTo(dest);
 
         Resource r = Resource.newResource(dest.toURI());
-        assertEquals(getContent(r, "1.txt"), "1 - one");
-        assertEquals(getContent(r, "2.txt"), "2 - two");
-        assertEquals(getContent(r, "3.txt"), "3 - three");
+        assertEquals("1 - one", getContent(r, "1.txt"));
+        assertEquals("2 - two", getContent(r, "2.txt"));
+        assertEquals("3 - three", getContent(r, "3.txt"));
         r = r.addPath("dir");
-        assertEquals(getContent(r, "1.txt"), "1 - one");
-        assertEquals(getContent(r, "2.txt"), "2 - two");
-        assertEquals(getContent(r, "3.txt"), "3 - three");
+        assertEquals("1 - one", getContent(r, "1.txt"));
+        assertEquals("2 - two", getContent(r, "2.txt"));
+        assertEquals("3 - three", getContent(r, "3.txt"));
 
         IO.delete(dest);
     }

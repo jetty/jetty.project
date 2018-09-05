@@ -21,8 +21,8 @@ package org.eclipse.jetty.start;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -32,13 +32,18 @@ import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class MainTest
 {
-    @BeforeEach
+    @Rule
+    public TestTracker ttracker = new TestTracker();
+    
+    @Before
     public void clearSystemProperties()
     {
         System.setProperty("jetty.home","");
@@ -94,14 +99,14 @@ public class MainTest
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
         // System.err.println(args);
 
-        // assertEquals(0, args.getEnabledModules().size(), "--stop should not build module tree");
-        assertEquals("10000", args.getProperties().getString("STOP.PORT"), "--stop missing port");
-        assertEquals("foo", args.getProperties().getString("STOP.KEY"), "--stop missing key");
-        assertEquals("300", args.getProperties().getString("STOP.WAIT"), "--stop missing wait");
+        // Assert.assertEquals("--stop should not build module tree", 0, args.getEnabledModules().size());
+        assertEquals("--stop missing port","10000",args.getProperties().getString("STOP.PORT"));
+        assertEquals("--stop missing key","foo",args.getProperties().getString("STOP.KEY"));
+        assertEquals("--stop missing wait","300",args.getProperties().getString("STOP.WAIT"));
     }
 
     @Test
-    @Disabled("Too noisy for general testing")
+    @Ignore("Too noisy for general testing")
     public void testListConfig() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
@@ -117,7 +122,7 @@ public class MainTest
     }
 
     @Test
-    @Disabled("Just a bit noisy for general testing")
+    @Ignore("Just a bit noisy for general testing")
     public void testHelp() throws Exception
     {
         Main main = new Main();

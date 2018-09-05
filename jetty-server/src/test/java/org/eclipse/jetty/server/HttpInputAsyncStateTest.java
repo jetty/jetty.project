@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.eclipse.jetty.server.HttpInput.EARLY_EOF_CONTENT;
-import static org.eclipse.jetty.server.HttpInput.EOF_CONTENT;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
@@ -36,13 +27,23 @@ import javax.servlet.ReadListener;
 
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.HttpInput.Content;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.eclipse.jetty.server.HttpInput.EARLY_EOF_CONTENT;
+import static org.eclipse.jetty.server.HttpInput.EOF_CONTENT;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.Test;
  */
 
 
+@RunWith(AdvancedRunner.class)
 public class HttpInputAsyncStateTest
 {
 
@@ -95,7 +97,7 @@ public class HttpInputAsyncStateTest
         }
     }
 
-    @BeforeEach
+    @Before
     public void before()
     {        
         _noReadInDataAvailable = false;
@@ -178,7 +180,7 @@ public class HttpInputAsyncStateTest
             {
                 case DISPATCH:
                     if (run==null)
-                        fail("Run is null during DISPATCH");
+                        Assert.fail();
                     run.run();
                     break;
                     
@@ -195,7 +197,7 @@ public class HttpInputAsyncStateTest
                     break;
                     
                 default:
-                    fail("Bad Action: " + action);
+                    Assert.fail();
             }
             action = _state.unhandle();
         }
@@ -266,10 +268,10 @@ public class HttpInputAsyncStateTest
     }
     
     
-    @AfterEach
+    @After
     public void after()
     {
-        assertThat(__history.poll(), Matchers.nullValue());
+        Assert.assertThat(__history.poll(), Matchers.nullValue());
     }
 
     @Test

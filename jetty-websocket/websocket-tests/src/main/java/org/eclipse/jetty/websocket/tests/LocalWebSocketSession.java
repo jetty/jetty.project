@@ -23,22 +23,22 @@ import java.net.URI;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.function.CommonEndpointFunctions;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.rules.TestName;
 
 public class LocalWebSocketSession extends WebSocketSession
 {
     private String id;
     private OutgoingFramesCapture outgoingCapture;
-
-    public LocalWebSocketSession( WebSocketContainerScope containerScope, TestInfo testInfo, Object websocket)
+    
+    public LocalWebSocketSession(WebSocketContainerScope containerScope, TestName testname, Object websocket)
     {
-        super(containerScope,URI.create("ws://localhost/LocalWebSocketSesssion/" + testInfo.getTestMethod().get().getName()),websocket,
-              new LocalWebSocketConnection(testInfo,containerScope));
-        this.id = testInfo.getTestMethod().get().getName();
+        super(containerScope,URI.create("ws://localhost/LocalWebSocketSesssion/" + testname.getMethodName()),websocket,
+                new LocalWebSocketConnection(testname,containerScope));
+        this.id = testname.getMethodName();
         outgoingCapture = new OutgoingFramesCapture();
         setOutgoingHandler(outgoingCapture);
     }
-
+    
     public CommonEndpointFunctions getEndpointFunctions()
     {
         return (CommonEndpointFunctions) endpointFunctions;
@@ -49,7 +49,7 @@ public class LocalWebSocketSession extends WebSocketSession
     {
         runnable.run();
     }
-
+    
     public OutgoingFramesCapture getOutgoingCapture()
     {
         return outgoingCapture;

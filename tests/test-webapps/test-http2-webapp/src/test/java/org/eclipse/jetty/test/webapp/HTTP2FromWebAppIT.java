@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.test.webapp;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -36,8 +34,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HTTP2FromWebAppIT
 {
@@ -83,7 +81,7 @@ public class HTTP2FromWebAppIT
                         .timeout(5, TimeUnit.SECONDS)
                         .send();
 
-                assertEquals("ok", response.getContentAsString());
+                Assert.assertEquals("ok", response.getContentAsString());
             }
             finally
             {

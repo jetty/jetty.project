@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
@@ -41,47 +36,40 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class ForwardProxyServerTest
 {
-    @SuppressWarnings("Duplicates")
-    public static Stream<Arguments> scenarios()
+    @Parameterized.Parameters
+    public static Object[] parameters()
     {
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-
-        // no server SSL
-        SslContextFactory scenario1 = null;
-        // basic server SSL
-        SslContextFactory scenario2 = new SslContextFactory();
-        scenario2.setKeyStorePath(keyStorePath);
-        scenario2.setKeyStorePassword("storepwd");
-        scenario2.setKeyManagerPassword("keypwd");
-        // TODO: add more SslContextFactory configurations/scenarios?
-
-        return Stream.of(
-                scenario1, scenario2
-        ).map(Arguments::of);
+        return new Object[]{null, newSslContextFactory()};
     }
 
-    private SslContextFactory serverSslContextFactory;
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+    private final SslContextFactory serverSslContextFactory;
     private Server server;
     private ServerConnector serverConnector;
     private Server proxy;
     private ServerConnector proxyConnector;
 
-    public void init(SslContextFactory scenario)
+    public ForwardProxyServerTest(SslContextFactory serverSslContextFactory)
     {
-        serverSslContextFactory = scenario;
+        this.serverSslContextFactory = serverSslContextFactory;
     }
 
     protected void startServer(ConnectionFactory connectionFactory) throws Exception
@@ -118,7 +106,17 @@ public class ForwardProxyServerTest
         return new HttpProxy("localhost", proxyConnector.getLocalPort());
     }
 
-    @AfterEach
+    private static SslContextFactory newSslContextFactory()
+    {
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
+        sslContextFactory.setKeyStorePath(keyStorePath);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        return sslContextFactory;
+    }
+
+    @After
     public void stop() throws Exception
     {
         stopProxy();
@@ -143,12 +141,9 @@ public class ForwardProxyServerTest
         }
     }
 
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testRequestTarget(SslContextFactory scenario) throws Exception
+    @Test
+    public void testRequestTarget() throws Exception
     {
-        init(scenario);
-
         startServer(new AbstractConnectionFactory("http/1.1")
         {
             @Override
@@ -181,11 +176,11 @@ public class ForwardProxyServerTest
                             // the client, and convert it to a relative URI.
                             // The ConnectHandler won't modify what the client
                             // sent, which must be a relative URI.
-                            assertThat(request.length(), Matchers.greaterThan(0));
+                            Assert.assertThat(request.length(), Matchers.greaterThan(0));
                             if (serverSslContextFactory == null)
-                                assertFalse(request.contains("http://"));
+                                Assert.assertFalse(request.contains("http://"));
                             else
-                                assertFalse(request.contains("https://"));
+                                Assert.assertFalse(request.contains("https://"));
 
                             String response = "" +
                                     "HTTP/1.1 200 OK\r\n" +
@@ -204,13 +199,7 @@ public class ForwardProxyServerTest
         });
         startProxy();
 
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        SslContextFactory clientSsl = new SslContextFactory();
-        clientSsl.setKeyStorePath(keyStorePath);
-        clientSsl.setKeyStorePassword("storepwd");
-        clientSsl.setKeyManagerPassword("keypwd");
-
-        HttpClient httpClient = new HttpClient(clientSsl);
+        HttpClient httpClient = new HttpClient(newSslContextFactory());
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 
@@ -222,7 +211,7 @@ public class ForwardProxyServerTest
                     .path("/test")
                     .send();
 
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         }
         finally
         {

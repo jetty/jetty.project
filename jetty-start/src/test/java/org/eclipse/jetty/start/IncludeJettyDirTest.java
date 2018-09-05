@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -34,12 +32,11 @@ import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
-@ExtendWith(WorkDirExtension.class)
 public class IncludeJettyDirTest
 {
     private static class MainResult
@@ -65,12 +62,13 @@ public class IncludeJettyDirTest
         {
             Prop prop = args.getProperties().getProp(key);
             String prefix = "Prop[" + key + "]";
-            assertThat(prefix + " should have a value",prop,notNullValue());
-            assertThat(prefix + " value",prop.value,is(expectedValue));
+            Assert.assertThat(prefix + " should have a value",prop,notNullValue());
+            Assert.assertThat(prefix + " value",prop.value,is(expectedValue));
         }
     }
 
-    public WorkDir testdir;
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
     private MainResult runMain(Path baseDir, Path homeDir, String... cmdLineArgs) throws Exception
     {
@@ -551,7 +549,14 @@ public class IncludeJettyDirTest
                 "jetty.http.host=127.0.0.1",//
                 "--include-jetty-dir=" + common.toString());
 
-        UsageException e = assertThrows(UsageException.class, ()-> runMain(base,home));
-        assertThat("UsageException",e.getMessage(),containsString("Duplicate"));
+        try
+        {
+            runMain(base,home);
+            Assert.fail("Should have thrown a UsageException");
+        }
+        catch (UsageException e)
+        {
+            Assert.assertThat("UsageException",e.getMessage(),containsString("Duplicate"));
+        }
     }
 }

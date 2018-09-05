@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,13 +46,13 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ConnectHandlerTest extends AbstractConnectHandlerTest
 {
-    @BeforeEach
+    @Before
     public void prepare() throws Exception
     {
         server = new Server();
@@ -84,7 +80,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
 
             // Expect 200 OK from the CONNECT request
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         }
     }
 
@@ -105,7 +101,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
 
             // Expect 200 OK from the CONNECT request
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         }
     }
 
@@ -128,7 +124,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             request = "" +
                     "GET /echo" + " HTTP/1.1\r\n" +
@@ -138,8 +134,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             output.flush();
 
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("GET /echo", response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("GET /echo", response.getContent());
         }
     }
 
@@ -166,10 +162,10 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 403 from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+            Assert.assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
 
             // Socket should be closed
-            assertEquals(-1, input.read());
+            Assert.assertEquals(-1, input.read());
         }
 
         // Try again with the right host
@@ -188,7 +184,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             request = "" +
                     "GET /echo" + " HTTP/1.1\r\n" +
@@ -198,8 +194,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             output.flush();
 
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("GET /echo", response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("GET /echo", response.getContent());
         }
     }
 
@@ -226,10 +222,10 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 403 from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+            Assert.assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
 
             // Socket should be closed
-            assertEquals(-1, input.read());
+            Assert.assertEquals(-1, input.read());
         }
 
         // Try again with the right host
@@ -248,7 +244,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             request = "" +
                     "GET /echo" + " HTTP/1.1\r\n" +
@@ -258,8 +254,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             output.flush();
 
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("GET /echo", response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("GET /echo", response.getContent());
         }
     }
 
@@ -305,11 +301,11 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 407 from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407, response.getStatus());
-            assertTrue(response.containsKey("Proxy-Authenticate".toLowerCase(Locale.ENGLISH)));
+            Assert.assertEquals(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407, response.getStatus());
+            Assert.assertTrue(response.containsKey("Proxy-Authenticate".toLowerCase(Locale.ENGLISH)));
 
             // Socket should be closed
-            assertEquals(-1, input.read());
+            Assert.assertEquals(-1, input.read());
         }
 
         // Try with authentication
@@ -330,7 +326,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             request = "" +
                     "GET /echo" + " HTTP/1.1\r\n" +
@@ -340,8 +336,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             output.flush();
 
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("GET /echo", response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("GET /echo", response.getContent());
         }
     }
 
@@ -359,7 +355,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             err.append(address.getHostAddress()).append("].  ");
             err.append("Fix your DNS provider to have this test pass.");
             err.append("\nFor more info see https://en.wikipedia.org/wiki/DNS_hijacking");
-            assertNull(address, err.toString());
+            Assert.assertNull(err.toString(), address);
         }
         catch (UnknownHostException e)
         {
@@ -383,7 +379,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 500 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus(), "Response Code");
+            Assert.assertEquals("Response Code", HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
         }
     }
 
@@ -406,7 +402,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             request = "" +
                     "GET /echo" + " HTTP/1.1\r\n" +
@@ -416,8 +412,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             output.flush();
 
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("GET /echo", response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("GET /echo", response.getContent());
         }
     }
 
@@ -443,12 +439,12 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             // The pipelined request must have gone up to the server as is
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("GET /echo", response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("GET /echo", response.getContent());
         }
     }
 
@@ -471,7 +467,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             for (int i = 0; i < 10; ++i)
             {
@@ -483,8 +479,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                 output.flush();
 
                 response = HttpTester.parseResponse(in);
-                assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertEquals("GET /echo", response.getContent());
+                Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+                Assert.assertEquals("GET /echo", response.getContent());
             }
         }
     }
@@ -508,7 +504,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             request = "" +
                     "GET /echo HTTP/1.1\r\n" +
@@ -518,14 +514,14 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             output.flush();
 
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("GET /echo", response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("GET /echo", response.getContent());
 
             // Idle server is shut down
             disposeServer();
 
             int read = input.read();
-            assertEquals(-1, read);
+            Assert.assertEquals(-1, read);
         }
     }
 
@@ -548,7 +544,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             request = "" +
                     "GET /close HTTP/1.1\r\n" +
@@ -558,7 +554,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             output.flush();
 
             int read = input.read();
-            assertEquals(-1, read);
+            Assert.assertEquals(-1, read);
         }
     }
 
@@ -581,7 +577,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             request = "" +
                     "POST /echo HTTP/1.1\r\n" +
@@ -593,8 +589,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             output.flush();
 
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("POST /echo\r\nHELLO", response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("POST /echo\r\nHELLO", response.getContent());
 
             request = "" +
                     "GET /echo" + " HTTP/1.1\r\n" +
@@ -604,8 +600,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             output.flush();
 
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("GET /echo", response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("GET /echo", response.getContent());
         }
     }
 
@@ -637,7 +633,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             StringBuilder body = new StringBuilder();
             String chunk = "0123456789ABCDEF";
@@ -654,8 +650,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             output.flush();
 
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("POST /echo\r\n" + body, response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("POST /echo\r\n" + body, response.getContent());
         }
     }
 
@@ -679,7 +675,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             @Override
             protected void connectToServer(HttpServletRequest request, String host, int port, Promise<SocketChannel> promise)
             {
-                assertEquals(contextValue, request.getAttribute(contextKey));
+                Assert.assertEquals(contextValue, request.getAttribute(contextKey));
                 super.connectToServer(request, host, port, promise);
             }
 
@@ -687,21 +683,21 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             protected void prepareContext(HttpServletRequest request, ConcurrentMap<String, Object> context)
             {
                 // Transfer data from the HTTP request to the connection context
-                assertEquals(contextValue, request.getAttribute(contextKey));
+                Assert.assertEquals(contextValue, request.getAttribute(contextKey));
                 context.put(contextKey, request.getAttribute(contextKey));
             }
 
             @Override
             protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
             {
-                assertEquals(contextValue, context.get(contextKey));
+                Assert.assertEquals(contextValue, context.get(contextKey));
                 return super.read(endPoint, buffer, context);
             }
 
             @Override
             protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
             {
-                assertEquals(contextValue, context.get(contextKey));
+                Assert.assertEquals(contextValue, context.get(contextKey));
                 super.write(endPoint, buffer, callback, context);
             }
         });
@@ -723,7 +719,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String body = "0123456789ABCDEF";
             request = "" +
@@ -736,8 +732,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             output.flush();
 
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("POST /echo\r\n" + body, response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("POST /echo\r\n" + body, response.getContent());
         }
     }
     
@@ -764,12 +760,12 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             // The pipelined request must have gone up to the server as is
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("GET /echo", response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("GET /echo", response.getContent());
         }
     }
 
@@ -792,7 +788,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             // Expect 200 OK from the CONNECT request
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             request = "" +
                     "GET /echo" + " HTTP/1.1\r\n" +
@@ -804,8 +800,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
 
             // The pipelined request must have gone up to the server as is
             response = HttpTester.parseResponse(in);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("GET /echo", response.getContent());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals("GET /echo", response.getContent());
         }
     }
 

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -38,27 +36,24 @@ import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.Assert;
+import org.junit.Test;
 
-public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
+public class AsyncRequestContentTest extends AbstractTest
 {
-    @Override
-    public void init(Transport transport) throws IOException
+    public AsyncRequestContentTest(Transport transport)
     {
-        setScenario(new TransportScenario(transport));
+        super(transport);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testEmptyDeferredContent(Transport transport) throws Exception
+    @Test
+    public void testEmptyDeferredContent() throws Exception
     {
-        init(transport);
-        scenario.start(new ConsumeInputHandler());
+        start(new ConsumeInputHandler());
 
         DeferredContentProvider contentProvider = new DeferredContentProvider();
         CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.POST(scenario.newURI())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
@@ -68,19 +63,17 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
                 });
         contentProvider.close();
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testDeferredContent(Transport transport) throws Exception
+    @Test
+    public void testDeferredContent() throws Exception
     {
-        init(transport);
-        scenario.start(new ConsumeInputHandler());
+        start(new ConsumeInputHandler());
 
         DeferredContentProvider contentProvider = new DeferredContentProvider();
         CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.POST(scenario.newURI())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
@@ -91,20 +84,18 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
         contentProvider.offer(ByteBuffer.wrap(new byte[1]));
         contentProvider.close();
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testEmptyInputStream(Transport transport) throws Exception
+    @Test
+    public void testEmptyInputStream() throws Exception
     {
-        init(transport);
-        scenario.start(new ConsumeInputHandler());
+        start(new ConsumeInputHandler());
 
         InputStreamContentProvider contentProvider =
                 new InputStreamContentProvider(new ByteArrayInputStream(new byte[0]));
         CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.POST(scenario.newURI())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
@@ -114,20 +105,18 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
                 });
         contentProvider.close();
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testInputStream(Transport transport) throws Exception
+    @Test
+    public void testInputStream() throws Exception
     {
-        init(transport);
-        scenario.start(new ConsumeInputHandler());
+        start(new ConsumeInputHandler());
 
         InputStreamContentProvider contentProvider =
                 new InputStreamContentProvider(new ByteArrayInputStream(new byte[1]));
         CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.POST(scenario.newURI())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
@@ -137,19 +126,17 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
                 });
         contentProvider.close();
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testEmptyOutputStream(Transport transport) throws Exception
+    @Test
+    public void testEmptyOutputStream() throws Exception
     {
-        init(transport);
-        scenario.start(new ConsumeInputHandler());
+        start(new ConsumeInputHandler());
 
         OutputStreamContentProvider contentProvider = new OutputStreamContentProvider();
         CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.POST(scenario.newURI())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
@@ -159,19 +146,17 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
                 });
         contentProvider.close();
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testOutputStream(Transport transport) throws Exception
+    @Test
+    public void testOutputStream() throws Exception
     {
-        init(transport);
-        scenario.start(new ConsumeInputHandler());
+        start(new ConsumeInputHandler());
 
         OutputStreamContentProvider contentProvider = new OutputStreamContentProvider();
         CountDownLatch latch = new CountDownLatch(1);
-        scenario.client.POST(scenario.newURI())
+        client.POST(newURI())
                 .content(contentProvider)
                 .send(result ->
                 {
@@ -184,7 +169,7 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
         output.flush();
         contentProvider.close();
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     private static class ConsumeInputHandler extends AbstractHandler

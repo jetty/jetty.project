@@ -67,8 +67,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <!-- Disabled due to junit5 bug - https://github.com/junit-team/junit5/issues/801 -->
-          <!--<forkMode>always</forkMode>-->
+          <forkMode>always</forkMode>
           <useSystemClassLoader>true</useSystemClassLoader>
           <useManifestOnlyJar>false</useManifestOnlyJar>
         </configuration>

@@ -20,34 +20,30 @@ package org.eclipse.jetty.util.log;
 
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class LogTest
 {
     private static Logger originalLogger;
     private static Map<String,Logger> originalLoggers;
 
-    @BeforeAll
+    @BeforeClass
     public static void rememberOriginalLogger()
     {
         originalLogger = Log.getLog();
-        originalLoggers = new HashMap<>(Log.getLoggers());
+        originalLoggers = new HashMap<String, Logger>(Log.getLoggers());
         Log.getMutableLoggers().clear();
     }
 
-    @AfterAll
+    @AfterClass
     public static void restoreOriginalLogger()
     {
         Log.setLog(originalLogger);
@@ -95,26 +91,27 @@ public class LogTest
     private void assertNamedLogging(Class<?> clazz)
     {
         Logger lc = Log.getLogger(clazz);
-        assertEquals(lc.getName(), clazz.getName(), "Named logging (impl=" + Log.getLog().getClass().getName() + ")");
-    }
-
-    public static Stream<Arguments> packageCases()
-    {
-        return Stream.of(
-                Arguments.of(null, ""),
-                Arguments.of("org.eclipse.Foo.\u0000", "oe.Foo"),
-                Arguments.of(".foo", "foo"),
-                Arguments.of(".bar.Foo", "b.Foo"),
-                Arguments.of("org...bar..Foo", "ob.Foo")
-        );
+        Assert.assertEquals("Named logging (impl=" + Log.getLog().getClass().getName() + ")",lc.getName(),clazz.getName());
     }
     
-    @ParameterizedTest
-    @MethodSource("packageCases")
-    public void testCondensePackage(String input, String expected)
+    @Test
+    public void testCondensePackage()
     {
+        String cases[][] = new String[][]{
+                {null, ""},
+                {"org.eclipse.Foo.\u0000", "oe.Foo"},
+                {".foo", "foo"},
+                {".bar.Foo", "b.Foo"},
+                {"org...bar..Foo", "ob.Foo"}
+        };
+    
         StdErrLog log = new StdErrLog();
-        StdErrLog logger = (StdErrLog) log.newLogger(input);
-        assertThat("log[" + input + "] condenses to name", logger._abbrevname, is(expected));
+        
+        for (int i = 0; i < cases.length; i++)
+        {
+            // System.err.printf("newLogger(%s)%n", cases[i][0]);
+            StdErrLog logger = (StdErrLog) log.newLogger(cases[i][0]);
+            assertThat("log[" + cases[i][0] + "] condenses to name", logger._abbrevname, is(cases[i][1]));
+        }
     }
 }

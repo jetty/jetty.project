@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,15 +41,15 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 {
     private SslContextFactory sslContextFactory;
 
-    @BeforeEach
+    @Before
     public void prepare() throws Exception
     {
         sslContextFactory = new SslContextFactory();
@@ -84,7 +82,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 
             // Expect 200 OK from the CONNECT request
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             // Upgrade the socket to SSL
             try (SSLSocket sslSocket = wrapSocket(socket))
@@ -99,8 +97,8 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 output.flush();
 
                 response = HttpTester.parseResponse(HttpTester.from(sslSocket.getInputStream()));
-                assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertEquals("GET /echo", response.getContent());
+                Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+                Assert.assertEquals("GET /echo", response.getContent());
             }
         }
     }
@@ -122,7 +120,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 
             // Expect 200 OK from the CONNECT request
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             // Upgrade the socket to SSL
             try (SSLSocket sslSocket = wrapSocket(socket))
@@ -141,8 +139,8 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                     output.flush();
 
                     response = HttpTester.parseResponse(HttpTester.from(sslSocket.getInputStream()));
-                    assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertEquals("POST /echo?param=" + i + "\r\nHELLO", response.getContent());
+                    Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+                    Assert.assertEquals("POST /echo?param=" + i + "\r\nHELLO", response.getContent());
                 }
             }
         }

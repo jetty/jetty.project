@@ -19,14 +19,15 @@
 package org.eclipse.jetty.server;
 
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +41,7 @@ import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 
+@RunWith(AdvancedRunner.class)
 public class CustomResourcesMonitorTest
 {
     Server _server;
@@ -48,7 +50,7 @@ public class CustomResourcesMonitorTest
     Path _monitoredPath;
     LowResourceMonitor _lowResourceMonitor;
 
-    @BeforeEach
+    @Before
     public void before() throws Exception
     {
         _server = new Server();
@@ -70,7 +72,7 @@ public class CustomResourcesMonitorTest
         _server.start();
     }
     
-    @AfterEach
+    @After
     public void after() throws Exception
     {
         _server.stop();

@@ -34,8 +34,6 @@ package org.eclipse.jetty.test.support;
 //========================================================================
 //
 
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
@@ -54,9 +52,10 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.PathAssert;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Assert;
 
 /**
  * Basic process based executor for using the Jetty Distribution along with custom configurations to perform basic
@@ -155,7 +154,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
  * <code>src/test/resources/</code> directory. <br>
  * Notes:
  * <ol>
- * <li>The {@link JettyDistro} sets up a unique test directory (based on the constructor {@link #JettyDistro(Class)} or {@link #JettyDistro(org.eclipse.jetty.toolchain.test.jupiter.WorkDir)}), by
+ * <li>The {@link JettyDistro} sets up a unique test directory (based on the constructor {@link #JettyDistro(Class)} or {@link #JettyDistro(TestingDir)}), by
  * ensuring the directory is empty, then copying the <code>target/test-dist</code> directory into this new testing directory prior to the test specific changes
  * to the configuration.<br>
  * Note: this testing directory is a complete jetty distribution, suitable for executing via the command line for additional testing needs.</li>
@@ -214,7 +213,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
  *         SimpleRequest request = new SimpleRequest(jetty.getBaseUri());
  *         String path = &quot;/test-war-policy/security/PRACTICAL/testFilsystem&quot;);
  *         String response = request.getString(path);
- *         assertEquals(&quot;Success&quot;, response);
+ *         Assert.assertEquals(&quot;Success&quot;, response);
  *     }
  * }
  * </pre>
@@ -275,7 +274,7 @@ public class JettyDistro
      * @throws IOException
      *             if unable to copy unpacked distribution into place for the provided testing directory
      */
-    public JettyDistro(WorkDir testdir) throws IOException
+    public JettyDistro(TestingDir testdir) throws IOException
     {
         this.jettyHomeDir = testdir.getPath().toFile();
         copyBaseDistro();
@@ -291,7 +290,7 @@ public class JettyDistro
      * @throws IOException
      *             if unable to copy unpacked distribution into place for the provided testing directory
      */
-    public JettyDistro(WorkDir testdir, String artifact) throws IOException
+    public JettyDistro(TestingDir testdir, String artifact) throws IOException
     {
         this.jettyHomeDir = testdir.getPath().toFile();
         if (artifact != null)
@@ -383,7 +382,7 @@ public class JettyDistro
     public void copyTestWar(String testWarFilename) throws IOException
     {
         File srcWar = MavenTestingUtils.getTargetFile("test-wars/" + testWarFilename);
-        File destWar = new File(jettyHomeDir,FS.separators("webapps/" + testWarFilename));
+        File destWar = new File(jettyHomeDir,OS.separators("webapps/" + testWarFilename));
         FS.ensureDirExists(destWar.getParentFile());
         IO.copyFile(srcWar,destWar);
     }
@@ -401,7 +400,7 @@ public class JettyDistro
     public void copyResource(String resourcePath, String outputPath) throws IOException
     {
         File srcFile = MavenTestingUtils.getTestResourceFile(resourcePath);
-        File destFile = new File(jettyHomeDir,FS.separators(outputPath));
+        File destFile = new File(jettyHomeDir,OS.separators(outputPath));
         FS.ensureDirExists(destFile.getParentFile());
         IO.copyFile(srcFile,destFile);
     }
@@ -419,7 +418,7 @@ public class JettyDistro
     public void copyLib(String libFilename, String outputPath) throws IOException
     {
         File srcLib = MavenTestingUtils.getTargetFile("test-libs/" + libFilename);
-        File destLib = new File(jettyHomeDir,FS.separators(outputPath));
+        File destLib = new File(jettyHomeDir,OS.separators(outputPath));
         FS.ensureDirExists(destLib.getParentFile());
         IO.copyFile(srcLib,destLib);
     }
@@ -445,7 +444,7 @@ public class JettyDistro
     public void createProjectLib(String jarFilename) throws IOException
     {
         File srcDir = MavenTestingUtils.getTargetFile("classes");
-        File libSelfDir = new File(jettyHomeDir,FS.separators("lib/self"));
+        File libSelfDir = new File(jettyHomeDir,OS.separators("lib/self"));
         FS.ensureDirExists(libSelfDir);
         File jarFile = new File(libSelfDir,jarFilename);
         JAR.create(srcDir,jarFile);
@@ -473,7 +472,7 @@ public class JettyDistro
      */
     public void delete(String path)
     {
-        File jettyPath = new File(jettyHomeDir,FS.separators(path));
+        File jettyPath = new File(jettyHomeDir,OS.separators(path));
         FS.delete(jettyPath);
     }
 
@@ -550,7 +549,7 @@ public class JettyDistro
 
         if (cmdLine == null || !cmdLine.contains("XmlConfiguration"))
         {
-            fail("Unable to get Jetty command line");
+            Assert.fail("Unable to get Jetty command line");
         }
 
         // Need to breakdown commandline into parts, as spaces in command line will cause failures.
@@ -595,7 +594,7 @@ public class JettyDistro
         catch (InterruptedException e)
         {
             pid.destroy();
-            fail("Unable to get required information within time limit");
+            Assert.fail("Unable to get required information within time limit");
         }
     }
 
@@ -797,14 +796,14 @@ public class JettyDistro
         File javaHomeDir = new File(System.getProperty("java.home"));
         for (String javaexe : javaexes)
         {
-            File javabin = new File(javaHomeDir,FS.separators("bin/" + javaexe));
+            File javabin = new File(javaHomeDir,OS.separators("bin/" + javaexe));
             if (javabin.exists() && javabin.isFile())
             {
                 return javabin.getAbsolutePath();
             }
         }
 
-        fail("Unable to find java bin");
+        Assert.fail("Unable to find java bin");
         return "java";
     }
 

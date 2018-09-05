@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -86,44 +76,47 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Rule;
+import org.junit.Test;
 
-@ExtendWith(WorkDirExtension.class)
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
-    public WorkDir testdir;
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testStoppingClosesConnections(Scenario scenario) throws Exception
+    public HttpClientTest(SslContextFactory sslContextFactory)
     {
-        start(scenario, new EmptyServerHandler());
+        super(sslContextFactory);
+    }
+
+    @Test
+    public void testStoppingClosesConnections() throws Exception
+    {
+        start(new EmptyServerHandler());
 
         String host = "localhost";
         int port = connector.getLocalPort();
         String path = "/";
-        Response response = client.GET(scenario.getScheme() + "://" + host + ":" + port + path);
-        assertEquals(200, response.getStatus());
+        Response response = client.GET(scheme + "://" + host + ":" + port + path);
+        Assert.assertEquals(200, response.getStatus());
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scenario.getScheme(), host, port);
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
         long start = System.nanoTime();
@@ -133,57 +126,54 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             connection = (HttpConnectionOverHTTP)connectionPool.getIdleConnections().peek();
             TimeUnit.MILLISECONDS.sleep(10);
         }
-        assertNotNull(connection);
+        Assert.assertNotNull(connection);
 
         String uri = destination.getScheme() + "://" + destination.getHost() + ":" + destination.getPort();
         client.getCookieStore().add(URI.create(uri), new HttpCookie("foo", "bar"));
 
         client.stop();
 
-        assertEquals(0, client.getDestinations().size());
-        assertEquals(0, connectionPool.getIdleConnectionCount());
-        assertEquals(0, connectionPool.getActiveConnectionCount());
-        assertFalse(connection.getEndPoint().isOpen());
+        Assert.assertEquals(0, client.getDestinations().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnectionCount());
+        Assert.assertFalse(connection.getEndPoint().isOpen());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_DestinationCount(Scenario scenario) throws Exception
+    @Test
+    public void test_DestinationCount() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        client.GET(scenario.getScheme() + "://" + host + ":" + port);
+        client.GET(scheme + "://" + host + ":" + port);
 
         List<Destination> destinations = client.getDestinations();
-        assertNotNull(destinations);
-        assertEquals(1, destinations.size());
+        Assert.assertNotNull(destinations);
+        Assert.assertEquals(1, destinations.size());
         Destination destination = destinations.get(0);
-        assertNotNull(destination);
-        assertEquals(scenario.getScheme(), destination.getScheme());
-        assertEquals(host, destination.getHost());
-        assertEquals(port, destination.getPort());
+        Assert.assertNotNull(destination);
+        Assert.assertEquals(scheme, destination.getScheme());
+        Assert.assertEquals(host, destination.getHost());
+        Assert.assertEquals(port, destination.getPort());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_ResponseWithoutContent(Scenario scenario) throws Exception
+    @Test
+    public void test_GET_ResponseWithoutContent() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
-        Response response = client.GET(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
+        Response response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_ResponseWithContent(Scenario scenario) throws Exception
+    @Test
+    public void test_GET_ResponseWithContent() throws Exception
     {
         final byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -194,21 +184,20 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         client.setConnectBlocking(true);
-        ContentResponse response = client.GET(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
+        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
         byte[] content = response.getContent();
-        assertArrayEquals(data, content);
+        Assert.assertArrayEquals(data, content);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_WithParameters_ResponseWithContent(Scenario scenario) throws Exception
+    @Test
+    public void test_GET_WithParameters_ResponseWithContent() throws Exception
     {
         final String paramName1 = "a";
         final String paramName2 = "b";
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -218,7 +207,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 String paramValue1 = request.getParameter(paramName1);
                 output.write(paramValue1.getBytes(StandardCharsets.UTF_8));
                 String paramValue2 = request.getParameter(paramName2);
-                assertEquals("", paramValue2);
+                Assert.assertEquals("", paramValue2);
                 output.write("empty".getBytes(StandardCharsets.UTF_8));
                 baseRequest.setHandled(true);
             }
@@ -227,21 +216,20 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         String value1 = "\u20AC";
         String paramValue1 = URLEncoder.encode(value1, "UTF-8");
         String query = paramName1 + "=" + paramValue1 + "&" + paramName2;
-        ContentResponse response = client.GET(scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/?" + query);
+        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query);
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
         String content = new String(response.getContent(), StandardCharsets.UTF_8);
-        assertEquals(value1 + "empty", content);
+        Assert.assertEquals(value1 + "empty", content);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_WithParametersMultiValued_ResponseWithContent(Scenario scenario) throws Exception
+    @Test
+    public void test_GET_WithParametersMultiValued_ResponseWithContent() throws Exception
     {
         final String paramName1 = "a";
         final String paramName2 = "b";
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -264,21 +252,20 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         String paramValue12 = URLEncoder.encode(value12, "UTF-8");
         String paramValue2 = URLEncoder.encode(value2, "UTF-8");
         String query = paramName1 + "=" + paramValue11 + "&" + paramName1 + "=" + paramValue12 + "&" + paramName2 + "=" + paramValue2;
-        ContentResponse response = client.GET(scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/?" + query);
+        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query);
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
         String content = new String(response.getContent(), StandardCharsets.UTF_8);
-        assertEquals(value11 + value12 + value2, content);
+        Assert.assertEquals(value11 + value12 + value2, content);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithParameters(Scenario scenario) throws Exception
+    @Test
+    public void test_POST_WithParameters() throws Exception
     {
         final String paramName = "a";
         final String paramValue = "\u20AC";
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -294,24 +281,23 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        ContentResponse response = client.POST(scenario.getScheme() + "://localhost:" + connector.getLocalPort())
+        ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
                 .param(paramName, paramValue)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-        assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_PUT_WithParameters(Scenario scenario) throws Exception
+    @Test
+    public void test_PUT_WithParameters() throws Exception
     {
         final String paramName = "a";
         final String paramValue = "\u20AC";
         final String encodedParamValue = URLEncoder.encode(paramValue, "UTF-8");
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -327,25 +313,24 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/path?" + paramName + "=" + encodedParamValue);
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort() + "/path?" + paramName + "=" + encodedParamValue);
         ContentResponse response = client.newRequest(uri)
                 .method(HttpMethod.PUT)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-        assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithParameters_WithContent(Scenario scenario) throws Exception
+    @Test
+    public void test_POST_WithParameters_WithContent() throws Exception
     {
         final byte[] content = {0, 1, 2, 3};
         final String paramName = "a";
         final String paramValue = "\u20AC";
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -362,22 +347,21 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        ContentResponse response = client.POST(scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/?b=1")
+        ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort() + "/?b=1")
                 .param(paramName, paramValue)
                 .content(new BytesContentProvider(content))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-        assertArrayEquals(content, response.getContent());
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(content, response.getContent());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithContent_NotifiesRequestContentListener(Scenario scenario) throws Exception
+    @Test
+    public void test_POST_WithContent_NotifiesRequestContentListener() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -388,7 +372,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         final byte[] content = {0, 1, 2, 3};
-        ContentResponse response = client.POST(scenario.getScheme() + "://localhost:" + connector.getLocalPort())
+        ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
                 .onRequestContent((request, buffer) ->
                 {
                     byte[] bytes = new byte[buffer.remaining()];
@@ -400,15 +384,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithContent_TracksProgress(Scenario scenario) throws Exception
+    @Test
+    public void test_POST_WithContent_TracksProgress() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -419,35 +402,34 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         final AtomicInteger progress = new AtomicInteger();
-        ContentResponse response = client.POST(scenario.getScheme() + "://localhost:" + connector.getLocalPort())
+        ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
                 .onRequestContent((request, buffer) ->
                 {
                     byte[] bytes = new byte[buffer.remaining()];
-                    assertEquals(1, bytes.length);
+                    Assert.assertEquals(1, bytes.length);
                     buffer.get(bytes);
-                    assertEquals(bytes[0], progress.getAndIncrement());
+                    Assert.assertEquals(bytes[0], progress.getAndIncrement());
                 })
                 .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{2}, new byte[]{3}, new byte[]{4}))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-        assertEquals(5, progress.get());
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(5, progress.get());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_QueuedRequest_IsSent_WhenPreviousRequestSucceeded(Scenario scenario) throws Exception
+    @Test
+    public void test_QueuedRequest_IsSent_WhenPreviousRequestSucceeded() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         client.setMaxConnectionsPerDestination(1);
 
         final CountDownLatch latch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(2);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onRequestBegin(request ->
                 {
                     try
@@ -464,32 +446,31 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     @Override
                     public void onSuccess(Response response)
                     {
-                        assertEquals(200, response.getStatus());
+                        Assert.assertEquals(200, response.getStatus());
                         successLatch.countDown();
                     }
                 });
 
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onRequestQueued(request -> latch.countDown())
                 .send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onSuccess(Response response)
                     {
-                        assertEquals(200, response.getStatus());
+                        Assert.assertEquals(200, response.getStatus());
                         successLatch.countDown();
                     }
                 });
 
-        assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_QueuedRequest_IsSent_WhenPreviousRequestClosedConnection(Scenario scenario) throws Exception
+    @Test
+    public void test_QueuedRequest_IsSent_WhenPreviousRequestClosedConnection() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -507,30 +488,29 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         {
             final CountDownLatch latch = new CountDownLatch(2);
             client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
+            .scheme(scheme)
             .path("/one")
             .onResponseFailure((response, failure) -> latch.countDown())
             .send(null);
 
             client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
+            .scheme(scheme)
             .path("/two")
             .onResponseSuccess(response ->
             {
-                assertEquals(200, response.getStatus());
+                Assert.assertEquals(200, response.getStatus());
                 latch.countDown();
             })
             .send(null);
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete(Scenario scenario) throws Exception
+    @Test
+    public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete() throws Exception
     {
-        start(scenario,new AbstractHandler.ErrorDispatchHandler()
+        start(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
             protected void doNonErrorHandle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -567,34 +547,34 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final AtomicLong requestTime = new AtomicLong();
         final AtomicLong responseTime = new AtomicLong();
         client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
-            .file(file)
-            .onRequestSuccess(request ->
-                              {
-                                  requestTime.set(System.nanoTime());
-                                  latch.countDown();
-                              })
-            .send(new Response.Listener.Adapter()
-            {
-                @Override
-                public void onSuccess(Response response)
+                .scheme(scheme)
+                .file(file)
+                .onRequestSuccess(request ->
                 {
-                    responseTime.set(System.nanoTime());
+                    requestTime.set(System.nanoTime());
                     latch.countDown();
-                }
-
-                @Override
-                public void onComplete(Result result)
+                })
+                .send(new Response.Listener.Adapter()
                 {
-                    exchangeTime.set(System.nanoTime());
-                    latch.countDown();
-                }
-            });
+                    @Override
+                    public void onSuccess(Response response)
+                    {
+                        responseTime.set(System.nanoTime());
+                        latch.countDown();
+                    }
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        exchangeTime.set(System.nanoTime());
+                        latch.countDown();
+                    }
+                });
 
-        assertTrue(requestTime.get() <= exchangeTime.get());
-        assertTrue(responseTime.get() <= exchangeTime.get());
+        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+        Assert.assertTrue(requestTime.get() <= exchangeTime.get());
+        Assert.assertTrue(responseTime.get() <= exchangeTime.get());
 
         // Give some time to the server to consume the request content
         // This is just to avoid exception traces in the test output
@@ -603,12 +583,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Files.delete(file);
     }
 
-
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_ExchangeIsComplete_WhenRequestFailsMidway_WithResponse(Scenario scenario) throws Exception
+    @Test
+    public void test_ExchangeIsComplete_WhenRequestFailsMidway_WithResponse() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -620,7 +598,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 // The second ByteBuffer set to null will throw an exception
                 .content(new ContentProvider()
                 {
@@ -664,23 +642,22 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_ExchangeIsComplete_WhenRequestFails_WithNoResponse(Scenario scenario) throws Exception
+    @Test
+    public void test_ExchangeIsComplete_WhenRequestFails_WithNoResponse() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
         final String host = "localhost";
         final int port = connector.getLocalPort();
         client.newRequest(host, port)
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onRequestBegin(request ->
                 {
-                    HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scenario.getScheme(), host, port);
+                    HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
                     DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
                     connectionPool.getActiveConnections().iterator().next().close();
                 })
@@ -693,16 +670,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void test_Request_IdleTimeout(Scenario scenario) throws Exception
+    @Slow
+    @Test
+    public void test_Request_IdleTimeout() throws Exception
     {
         final long idleTimeout = 1000;
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -721,45 +697,48 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final String host = "localhost";
         final int port = connector.getLocalPort();
-        assertThrows(TimeoutException.class, ()->{
+        try
+        {
             client.newRequest(host, port)
-                    .scheme(scenario.getScheme())
+                    .scheme(scheme)
                     .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
                     .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
                     .send();
-        });
+            Assert.fail();
+        }
+        catch (TimeoutException expected)
+        {
+        }
 
         // Make another request without specifying the idle timeout, should not fail
         ContentResponse response = client.newRequest(host, port)
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
                 .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testSendToIPv6Address(Scenario scenario) throws Exception
+    @Test
+    public void testSendToIPv6Address() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("[::1]", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testHeaderProcessing(Scenario scenario) throws Exception
+    @Test
+    public void testHeaderProcessing() throws Exception
     {
         final String headerName = "X-Header-Test";
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -770,28 +749,27 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onResponseHeader((response1, field) -> !field.getName().equals(headerName))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(headerName));
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertFalse(response.getHeaders().containsKey(headerName));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testAllHeadersDiscarded(Scenario scenario) throws Exception
+    @Test
+    public void testAllHeadersDiscarded() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         int count = 10;
         final CountDownLatch latch = new CountDownLatch(count);
         for (int i = 0; i < count; ++i)
         {
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
+                    .scheme(scheme)
                     .send(new Response.Listener.Adapter()
                     {
                         @Override
@@ -809,15 +787,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     });
         }
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_HEAD_With_ResponseContentLength(Scenario scenario) throws Exception
+    @Test
+    public void test_HEAD_With_ResponseContentLength() throws Exception
     {
         final int length = 1024;
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -830,57 +807,60 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         // HEAD requests receive a Content-Length header, but do not
         // receive the content so they must handle this case properly
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .method(HttpMethod.HEAD)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-        assertEquals(0, response.getContent().length);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(0, response.getContent().length);
 
         // Perform a normal GET request to be sure the content is now read
         response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-        assertEquals(length, response.getContent().length);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(length, response.getContent().length);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testConnectThrowsUnknownHostException(Scenario scenario) throws Exception
+    @Test
+    public void testConnectThrowsUnknownHostException() throws Exception
     {
         String host = "idontexist";
         int port = 80;
 
-        assertThrows(IOException.class, ()->{
+        try
+        {
             Socket socket = new Socket();
             socket.connect(new InetSocketAddress(host, port), 1000);
-        }, "Host must not be resolvable");
+            Assume.assumeTrue("Host must not be resolvable", false);
+        }
+        catch (IOException ignored)
+        {
+        }
 
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(host, port)
                 .send(result ->
                 {
-                    assertTrue(result.isFailed());
+                    Assert.assertTrue(result.isFailed());
                     Throwable failure = result.getFailure();
-                    assertTrue(failure instanceof UnknownHostException);
+                    Assert.assertTrue(failure instanceof UnknownHostException);
                     latch.countDown();
                 });
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testConnectHostWithMultipleAddresses(Scenario scenario) throws Exception
+    @Test
+    public void testConnectHostWithMultipleAddresses() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         client.setSocketAddressResolver(new SocketAddressResolver.Async(client.getExecutor(), client.getScheduler(), client.getConnectTimeout())
         {
@@ -909,51 +889,49 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         // If no exceptions the test passes.
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .header(HttpHeader.CONNECTION, "close")
                 .send();
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testCustomUserAgent(Scenario scenario) throws Exception
+    @Test
+    public void testCustomUserAgent() throws Exception
     {
         final String userAgent = "Test/1.0";
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 ArrayList<String> userAgents = Collections.list(request.getHeaders("User-Agent"));
-                assertEquals(1, userAgents.size());
-                assertEquals(userAgent, userAgents.get(0));
+                Assert.assertEquals(1, userAgents.size());
+                Assert.assertEquals(userAgent, userAgents.get(0));
             }
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .agent(userAgent)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
 
         response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .header(HttpHeader.USER_AGENT, null)
                 .header(HttpHeader.USER_AGENT, userAgent)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testUserAgentCanBeRemoved(Scenario scenario) throws Exception
+    @Test
+    public void testUserAgentCanBeRemoved() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -961,45 +939,44 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 baseRequest.setHandled(true);
                 ArrayList<String> userAgents = Collections.list(request.getHeaders("User-Agent"));
                 if ("/ua".equals(target))
-                    assertEquals(1, userAgents.size());
+                    Assert.assertEquals(1, userAgents.size());
                 else
-                    assertEquals(0, userAgents.size());
+                    Assert.assertEquals(0, userAgents.size());
             }
         });
 
         // User agent not specified, use default.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/ua")
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
 
         // User agent explicitly removed.
         response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .agent(null)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
 
         // User agent explicitly removed.
         response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .header(HttpHeader.USER_AGENT, null)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testRequestListenerForMultipleEventsIsInvokedOncePerEvent(Scenario scenario) throws Exception
+    @Test
+    public void testRequestListenerForMultipleEventsIsInvokedOncePerEvent() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         final AtomicInteger counter = new AtomicInteger();
         Request.Listener listener = new Request.Listener()
@@ -1049,7 +1026,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         };
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onRequestQueued(listener)
                 .onRequestBegin(listener)
                 .onRequestHeaders(listener)
@@ -1060,18 +1037,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .listener(listener)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
         int expectedEventsTriggeredByOnRequestXXXListeners = 5;
         int expectedEventsTriggeredByListener = 5;
         int expected = expectedEventsTriggeredByOnRequestXXXListeners + expectedEventsTriggeredByListener;
-        assertEquals(expected, counter.get());
+        Assert.assertEquals(expected, counter.get());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testResponseListenerForMultipleEventsIsInvokedOncePerEvent(Scenario scenario) throws Exception
+    @Test
+    public void testResponseListenerForMultipleEventsIsInvokedOncePerEvent() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         final AtomicInteger counter = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
@@ -1126,13 +1102,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void onComplete(Result result)
             {
-                assertEquals(200, result.getResponse().getStatus());
+                Assert.assertEquals(200, result.getResponse().getStatus());
                 counter.incrementAndGet();
                 latch.countDown();
             }
         };
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onResponseBegin(listener)
                 .onResponseHeader(listener)
                 .onResponseHeaders(listener)
@@ -1142,20 +1118,19 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .onResponseFailure(listener)
                 .send(listener);
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         int expectedEventsTriggeredByOnResponseXXXListeners = 3;
         int expectedEventsTriggeredByCompletionListener = 4;
         int expected = expectedEventsTriggeredByOnResponseXXXListeners + expectedEventsTriggeredByCompletionListener;
-        assertEquals(expected, counter.get());
+        Assert.assertEquals(expected, counter.get());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void setOnCompleteCallbackWithBlockingSend(Scenario scenario) throws Exception
+    @Test
+    public void setOnCompleteCallbackWithBlockingSend() throws Exception
     {
         final byte[] content = new byte[512];
         new Random().nextBytes(content);
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -1184,44 +1159,42 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
 
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .send(listener);
 
         Response response = ex.exchange(null);
 
-        assertEquals(200, response.getStatus());
-        assertArrayEquals(content, listener.getContent());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(content, listener.getContent());
 
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testCustomHostHeader(Scenario scenario) throws Exception
+    @Test
+    public void testCustomHostHeader() throws Exception
     {
         final String host = "localhost";
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                assertEquals(host, request.getServerName());
+                Assert.assertEquals(host, request.getServerName());
             }
         });
 
         ContentResponse response = client.newRequest("http://127.0.0.1:" + connector.getLocalPort() + "/path")
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .header(HttpHeader.HOST, host)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testHTTP10WithKeepAliveAndContentLength(Scenario scenario) throws Exception
+    @Test
+    public void testHTTP10WithKeepAliveAndContentLength() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -1235,21 +1208,20 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .version(HttpVersion.HTTP_1_0)
                 .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()));
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testHTTP10WithKeepAliveAndNoContentLength(Scenario scenario) throws Exception
+    @Test
+    public void testHTTP10WithKeepAliveAndNoContentLength() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -1261,7 +1233,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         FuturePromise<Connection> promise = new FuturePromise<>();
-        Destination destination = client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
         destination.newConnection(promise);
         try (Connection connection = promise.get(5, TimeUnit.SECONDS))
         {
@@ -1276,38 +1248,36 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             connection.send(request, listener);
             ContentResponse response = listener.get(2 * timeout, TimeUnit.MILLISECONDS);
 
-            assertEquals(200, response.getStatus());
+            Assert.assertEquals(200, response.getStatus());
             // The parser notifies end-of-content and therefore the CompleteListener
             // before closing the connection, so we need to wait before checking
             // that the connection is closed to avoid races.
             Thread.sleep(1000);
-            assertTrue(connection.isClosed());
+            Assert.assertTrue(connection.isClosed());
         }
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testHTTP10WithKeepAliveAndNoContent(Scenario scenario) throws Exception
+    @Test
+    public void testHTTP10WithKeepAliveAndNoContent() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .version(HttpVersion.HTTP_1_0)
                 .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()));
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testLongPollIsAbortedWhenClientIsStopped(Scenario scenario) throws Exception
+    @Test
+    public void testLongPollIsAbortedWhenClientIsStopped() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(1);
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -1320,73 +1290,73 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .send(result ->
                 {
                     if (result.isFailed())
                         completeLatch.countDown();
                 });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         // Stop the client, the complete listener must be invoked.
         client.stop();
 
-        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testSmallContentDelimitedByEOFWithSlowRequestHTTP10(Scenario scenario) throws Exception
+    @Test
+    public void testSmallContentDelimitedByEOFWithSlowRequestHTTP10() throws Exception
     {
-        Assumptions.assumeTrue(HttpScheme.HTTP.is(scenario.getScheme()));
-
-        ExecutionException e = assertThrows(ExecutionException.class, ()->{
-            testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_0, 1024);
-        });
-
-        assertThat(e.getCause(), instanceOf(BadMessageException.class));
-        assertThat(e.getCause().getMessage(), containsString("Unknown content"));
+        try
+        {
+            testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 1024);
+        }
+        catch(ExecutionException e)
+        {
+            Assert.assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
+            Assert.assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
+        }
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(NonSslScenarioProvider.class)
-    public void testBigContentDelimitedByEOFWithSlowRequestHTTP10(Scenario scenario) throws Exception
+    @Test
+    public void testBigContentDelimitedByEOFWithSlowRequestHTTP10() throws Exception
     {
-        ExecutionException e = assertThrows(ExecutionException.class, ()->{
-            testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_0, 128 * 1024);
-        });
-
-        assertThat(e.getCause(), instanceOf(BadMessageException.class));
-        assertThat(e.getCause().getMessage(), containsString("Unknown content"));
+        try
+        {
+            testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 128 * 1024);
+        }
+        catch(ExecutionException e)
+        {
+            Assert.assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
+            Assert.assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
+        }
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(NonSslScenarioProvider.class)
-    public void testSmallContentDelimitedByEOFWithSlowRequestHTTP11(Scenario scenario) throws Exception
+    @Test
+    public void testSmallContentDelimitedByEOFWithSlowRequestHTTP11() throws Exception
     {
-        testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_1, 1024);
+        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_1, 1024);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(NonSslScenarioProvider.class)
-    public void testBigContentDelimitedByEOFWithSlowRequestHTTP11(Scenario scenario) throws Exception
+    @Test
+    public void testBigContentDelimitedByEOFWithSlowRequestHTTP11() throws Exception
     {
-        testContentDelimitedByEOFWithSlowRequest(scenario, HttpVersion.HTTP_1_1, 128 * 1024);
+        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_1, 128 * 1024);
     }
 
-    private void testContentDelimitedByEOFWithSlowRequest(final Scenario scenario, final HttpVersion version, int length) throws Exception
+    private void testContentDelimitedByEOFWithSlowRequest(final HttpVersion version, int length) throws Exception
     {
         // This test is crafted in a way that the response completes before the request is fully written.
         // With SSL, the response coming down will close the SSLEngine so it would not be possible to
         // write the last chunk of the request content, and the request will be failed, failing also the
         // test, which is not what we want.
         // This is a limit of Java's SSL implementation that does not allow half closes.
-        Assumptions.assumeTrue(HttpScheme.HTTP.is(scenario.getScheme()));
+        Assume.assumeTrue(sslContextFactory == null);
 
         final byte[] data = new byte[length];
         new Random().nextBytes(data);
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -1401,7 +1371,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0}));
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .version(version)
                 .content(content);
         FutureResponseListener listener = new FutureResponseListener(request);
@@ -1412,17 +1382,16 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
 
-        assertEquals(200, response.getStatus());
-        assertArrayEquals(data, response.getContent());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertArrayEquals(data, response.getContent());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testRequestRetries(Scenario scenario) throws Exception
+    @Test
+    public void testRequestRetries() throws Exception
     {
         final int maxRetries = 3;
         final AtomicInteger requests = new AtomicInteger();
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -1435,7 +1404,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         final CountDownLatch latch = new CountDownLatch(1);
-        new RetryListener(client, scenario.getScheme(), "localhost", connector.getLocalPort(), maxRetries)
+        new RetryListener(client, scheme, "localhost", connector.getLocalPort(), maxRetries)
         {
             @Override
             protected void completed(Result result)
@@ -1444,14 +1413,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         }.perform();
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testCompleteNotInvokedUntilContentConsumed(Scenario scenario) throws Exception
+    @Test
+    public void testCompleteNotInvokedUntilContentConsumed() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -1466,7 +1434,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         final CountDownLatch contentLatch = new CountDownLatch(1);
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .send(new Response.Listener.Adapter()
                 {
                     @Override
@@ -1485,23 +1453,22 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
                 });
 
-        assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
 
         // Make sure the complete event is not emitted.
-        assertFalse(completeLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(completeLatch.await(1, TimeUnit.SECONDS));
 
         // Consume the content.
         callbackRef.get().succeeded();
 
         // Now the complete event is emitted.
-        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testRequestSentOnlyAfterConnectionOpen(Scenario scenario) throws Exception
+    @Test
+    public void testRequestSentOnlyAfterConnectionOpen() throws Exception
     {
-        startServer(scenario, new AbstractHandler()
+        startServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -1526,15 +1493,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
                 };
             }
-        }, scenario.newSslContextFactory());
+        }, sslContextFactory);
         client.start();
 
         final CountDownLatch latch = new CountDownLatch(2);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onRequestBegin(request ->
                 {
-                    assertTrue(open.get());
+                    Assert.assertTrue(open.get());
                     latch.countDown();
                 })
                 .send(result ->
@@ -1543,16 +1510,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         latch.countDown();
                 });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testCONNECTWithHTTP10(Scenario scenario) throws Exception
+    @Test
+    public void testCONNECTWithHTTP10() throws Exception
     {
         try (ServerSocket server = new ServerSocket(0))
         {
-            startClient(scenario);
+            startClient();
 
             String host = "localhost";
             int port = server.getLocalPort();
@@ -1580,7 +1546,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 output.flush();
 
                 ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-                assertEquals(200, response.getStatus());
+                Assert.assertEquals(200, response.getStatus());
 
                 // Because the tunnel was successful, this connection will be
                 // upgraded to an SslConnection, so it will not be fill interested.
@@ -1606,11 +1572,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         }
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_IPv6_Host(Scenario scenario) throws Exception
+    @Test
+    public void test_IPv6_Host() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -1621,22 +1586,21 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        URI uri = URI.create(scenario.getScheme() + "://[::1]:" + connector.getLocalPort() + "/path");
+        URI uri = URI.create(scheme + "://[::1]:" + connector.getLocalPort() + "/path");
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.PUT)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
-        assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1),Matchers.startsWith("[::1]:"));
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1),Matchers.startsWith("[::1]:"));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testCopyRequest(Scenario scenario) throws Exception
+    @Test
+    public void testCopyRequest() throws Exception
     {
-        startClient(scenario);
+        startClient();
 
         assertCopyRequest(client.newRequest("http://example.com/some/url")
                 .method(HttpMethod.HEAD)
@@ -1681,45 +1645,43 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .header("X-Custom-Header-2", "value"));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testHostWithHTTP10(Scenario scenario) throws Exception
+    @Test
+    public void testHostWithHTTP10() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                assertThat(request.getHeader("Host"), Matchers.notNullValue());
+                Assert.assertThat(request.getHeader("Host"), Matchers.notNullValue());
             }
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .version(HttpVersion.HTTP_1_0)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(NonSslScenarioProvider.class)
-    public void test204WithContent(Scenario scenario) throws Exception
+    @Test
+    public void test204WithContent() throws Exception
     {
         // This test only works with clear-text HTTP.
-        Assumptions.assumeTrue(HttpScheme.HTTP.is(scenario.getScheme()));
+        Assume.assumeTrue(sslContextFactory == null);
 
         try (ServerSocket server = new ServerSocket(0))
         {
-            startClient(scenario);
+            startClient();
             client.setMaxConnectionsPerDestination(1);
             int idleTimeout = 2000;
             client.setIdleTimeout(idleTimeout);
 
             Request request = client.newRequest("localhost", server.getLocalPort())
-                    .scheme(scenario.getScheme())
+                    .scheme(scheme)
                     .timeout(5, TimeUnit.SECONDS);
             FutureResponseListener listener = new FutureResponseListener(request);
             request.send(listener);
@@ -1741,15 +1703,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 output.flush();
 
                 ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-                assertEquals(204, response.getStatus());
+                Assert.assertEquals(204, response.getStatus());
 
                 byte[] responseContent = response.getContent();
-                assertNotNull(responseContent);
-                assertEquals(0, responseContent.length);
+                Assert.assertNotNull(responseContent);
+                Assert.assertEquals(0, responseContent.length);
 
                 // Send another request to verify we have handled the wrong response correctly.
                 request = client.newRequest("localhost", server.getLocalPort())
-                        .scheme(scenario.getScheme())
+                        .scheme(scheme)
                         .timeout(5, TimeUnit.SECONDS);
                 listener = new FutureResponseListener(request);
                 request.send(listener);
@@ -1764,7 +1726,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 output.flush();
 
                 response = listener.get(5, TimeUnit.SECONDS);
-                assertEquals(200, response.getStatus());
+                Assert.assertEquals(200, response.getStatus());
             }
         }
     }
@@ -1772,14 +1734,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     private void assertCopyRequest(Request original)
     {
         Request copy = client.copyRequest((HttpRequest) original, original.getURI());
-        assertEquals(original.getURI(), copy.getURI());
-        assertEquals(original.getMethod(), copy.getMethod());
-        assertEquals(original.getVersion(), copy.getVersion());
-        assertEquals(original.getContent(), copy.getContent());
-        assertEquals(original.getIdleTimeout(), copy.getIdleTimeout());
-        assertEquals(original.getTimeout(), copy.getTimeout());
-        assertEquals(original.isFollowRedirects(), copy.isFollowRedirects());
-        assertEquals(original.getHeaders(), copy.getHeaders());
+        Assert.assertEquals(original.getURI(), copy.getURI());
+        Assert.assertEquals(original.getMethod(), copy.getMethod());
+        Assert.assertEquals(original.getVersion(), copy.getVersion());
+        Assert.assertEquals(original.getContent(), copy.getContent());
+        Assert.assertEquals(original.getIdleTimeout(), copy.getIdleTimeout());
+        Assert.assertEquals(original.getTimeout(), copy.getTimeout());
+        Assert.assertEquals(original.isFollowRedirects(), copy.isFollowRedirects());
+        Assert.assertEquals(original.getHeaders(), copy.getHeaders());
     }
 
     private void consume(InputStream input, boolean eof) throws IOException

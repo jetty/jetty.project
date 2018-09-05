@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
@@ -36,9 +35,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class RequestHeadersTest
 {
@@ -58,7 +58,7 @@ public class RequestHeadersTest
     private static ServerConnector connector;
     private static URI serverUri;
 
-    @BeforeAll
+    @BeforeClass
     public static void startServer() throws Exception
     {
         // Configure Server
@@ -85,7 +85,7 @@ public class RequestHeadersTest
         serverUri = new URI(String.format("http://%s:%d/",host,port));
     }
 
-    @AfterAll
+    @AfterClass
     public static void stopServer()
     {
         try
@@ -111,7 +111,7 @@ public class RequestHeadersTest
             try (InputStream in = http.getInputStream())
             {
                 String resp = IO.toString(in, StandardCharsets.UTF_8);
-                assertThat("Response", resp, is("X-Camel-Type = bactrian"));
+                Assert.assertThat("Response", resp, is("X-Camel-Type = bactrian"));
             }
         }
         finally

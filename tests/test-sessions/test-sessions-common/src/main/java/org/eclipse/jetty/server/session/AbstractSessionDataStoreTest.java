@@ -19,14 +19,12 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
@@ -35,7 +33,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 /**
  * AbstractSessionDataStoreTest
@@ -401,7 +399,9 @@ public abstract class AbstractSessionDataStoreTest
         
         Set<String> candidates = new HashSet<>(Arrays.asList(new String[] {"1234", "5678"}));
         Set<String> expiredIds = store.getExpired(candidates);
-        assertThat(expiredIds, containsInAnyOrder("1234", "5678"));
+        assertEquals(2, expiredIds.size());
+        assertTrue(expiredIds.contains("1234"));
+        assertTrue(expiredIds.contains("5678"));
     }
     
 
@@ -461,7 +461,9 @@ public abstract class AbstractSessionDataStoreTest
         
         Set<String> candidates = new HashSet<>(Arrays.asList(new String[] {"1234", "5678"}));
         Set<String> expiredIds = store.getExpired(candidates);
-        assertThat(expiredIds, containsInAnyOrder("1234", "5678"));
+        assertEquals(2, expiredIds.size());
+        assertTrue(expiredIds.contains("1234"));
+        assertTrue(expiredIds.contains("5678"));
     }
     
     /**
@@ -499,7 +501,9 @@ public abstract class AbstractSessionDataStoreTest
         
         Set<String> candidates = new HashSet<>();
         Set<String> expiredIds = store.getExpired(candidates);
-        assertThat(expiredIds, containsInAnyOrder("1234", "5678"));
+        assertEquals(2, expiredIds.size());
+        assertTrue(expiredIds.contains("1234"));
+        assertTrue(expiredIds.contains("5678"));
     }
     
     
@@ -532,7 +536,8 @@ public abstract class AbstractSessionDataStoreTest
         
         Set<String> candidates = new HashSet<>();
         Set<String> expiredIds = store.getExpired(candidates);
-        assertThat(expiredIds, containsInAnyOrder("1234"));
+        assertEquals(1, expiredIds.size());
+        assertTrue(expiredIds.contains("1234"));
     }
     
     

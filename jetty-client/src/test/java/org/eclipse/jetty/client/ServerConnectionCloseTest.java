@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,13 +31,17 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class ServerConnectionCloseTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
     private HttpClient client;
 
     private void startClient() throws Exception
@@ -51,7 +53,7 @@ public class ServerConnectionCloseTest
         client.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         if (client != null)
@@ -143,7 +145,7 @@ public class ServerConnectionCloseTest
                     socket.shutdownOutput();
 
                 ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-                assertEquals(HttpStatus.OK_200, response.getStatus());
+                Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
                 // Give some time to process the connection.
                 Thread.sleep(1000);
@@ -151,9 +153,9 @@ public class ServerConnectionCloseTest
                 // Connection should have been removed from pool.
                 HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
                 DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-                assertEquals(0, connectionPool.getConnectionCount());
-                assertEquals(0, connectionPool.getIdleConnectionCount());
-                assertEquals(0, connectionPool.getActiveConnectionCount());
+                Assert.assertEquals(0, connectionPool.getConnectionCount());
+                Assert.assertEquals(0, connectionPool.getIdleConnectionCount());
+                Assert.assertEquals(0, connectionPool.getActiveConnectionCount());
             }
         }
     }

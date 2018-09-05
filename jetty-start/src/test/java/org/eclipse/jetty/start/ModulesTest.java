@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,17 +28,20 @@ import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Rule;
+import org.junit.Test;
 
-@ExtendWith(WorkDirExtension.class)
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertThat;
+
 public class ModulesTest
 {
     private final static String TEST_SOURCE = "<test>";
 
-    public WorkDir testdir;
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
     @Test
     public void testLoadAllModules() throws IOException

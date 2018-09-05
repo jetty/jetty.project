@@ -21,8 +21,8 @@ package org.eclipse.jetty.server;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
@@ -30,17 +30,20 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class LocalConnectorTest
 {
     private Server _server;
     private LocalConnector _connector;
 
-    @BeforeEach
+    @Before
     public void prepare() throws Exception
     {
         _server = new Server();
@@ -51,7 +54,7 @@ public class LocalConnectorTest
         _server.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         _server.stop();

@@ -20,9 +20,8 @@ package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -42,7 +41,7 @@ import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.hamcrest.Matchers;
-
+import org.junit.Assert;
 
 public class ConfigurationAssert
 {
@@ -202,7 +201,7 @@ public class ConfigurationAssert
         {
             Pattern pat = Pattern.compile(regex);
             Matcher mat = pat.matcher(output);
-            assertTrue(mat.find(),"Output [\n" + output + "]\nContains Regex Match: " + pat.pattern());
+            assertTrue("Output [\n" + output + "]\nContains Regex Match: " + pat.pattern(), mat.find());
         });
     }
 
@@ -226,7 +225,7 @@ public class ConfigurationAssert
     {
         try
         {
-            assertEquals(expectedSet.size(), actualSet.size(), msg);
+            Assert.assertEquals(msg, expectedSet.size(), actualSet.size());
             if (!expectedSet.isEmpty())
                 assertThat(msg, actualSet, Matchers.containsInAnyOrder(expectedSet.toArray()));
         }
@@ -244,7 +243,7 @@ public class ConfigurationAssert
     {
         try
         {
-            assertEquals(expectedList.size(), actualList.size(), msg);
+            Assert.assertEquals(msg, expectedList.size(), actualList.size());
             if (!expectedList.isEmpty())
                 assertThat(msg, actualList, Matchers.contains(expectedList.toArray()));
         }

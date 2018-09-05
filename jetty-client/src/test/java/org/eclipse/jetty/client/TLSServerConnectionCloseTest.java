@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -36,15 +34,34 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class TLSServerConnectionCloseTest
 {
+    @Parameterized.Parameters(name = "CloseMode: {0}")
+    public static Object[] parameters()
+    {
+        return new Object[]{CloseMode.NONE, CloseMode.CLOSE, CloseMode.ABRUPT};
+    }
+
+    @Rule
+    public final TestTracker tracker = new TestTracker();
     private HttpClient client;
+    private final CloseMode closeMode;
+
+    public TLSServerConnectionCloseTest(CloseMode closeMode)
+    {
+        this.closeMode = closeMode;
+    }
 
     private void startClient() throws Exception
     {
@@ -60,35 +77,32 @@ public class TLSServerConnectionCloseTest
         client.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         if (client != null)
             client.stop();
     }
 
-    @ParameterizedTest
-    @EnumSource(CloseMode.class)
-    public void testServerSendsConnectionCloseWithoutContent(CloseMode closeMode) throws Exception
+    @Test
+    public void testServerSendsConnectionCloseWithoutContent() throws Exception
     {
-        testServerSendsConnectionClose(closeMode, false, "");
+        testServerSendsConnectionClose(false, "");
     }
 
-    @ParameterizedTest
-    @EnumSource(CloseMode.class)
-    public void testServerSendsConnectionCloseWithContent(CloseMode closeMode) throws Exception
+    @Test
+    public void testServerSendsConnectionCloseWithContent() throws Exception
     {
-        testServerSendsConnectionClose(closeMode, false, "data");
+        testServerSendsConnectionClose(false, "data");
     }
 
-    @ParameterizedTest
-    @EnumSource(CloseMode.class)
-    public void testServerSendsConnectionCloseWithChunkedContent(CloseMode closeMode) throws Exception
+    @Test
+    public void testServerSendsConnectionCloseWithChunkedContent() throws Exception
     {
-        testServerSendsConnectionClose(closeMode, true, "data");
+        testServerSendsConnectionClose(true, "data");
     }
 
-    private void testServerSendsConnectionClose(final CloseMode closeMode, boolean chunked, String content) throws Exception
+    private void testServerSendsConnectionClose(boolean chunked, String content) throws Exception
     {
         try (ServerSocket server = new ServerSocket(0))
         {
@@ -162,7 +176,7 @@ public class TLSServerConnectionCloseTest
                 }
 
                 ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-                assertEquals(HttpStatus.OK_200, response.getStatus());
+                Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
                 // Give some time to process the connection.
                 Thread.sleep(1000);
@@ -170,9 +184,9 @@ public class TLSServerConnectionCloseTest
                 // Connection should have been removed from pool.
                 HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
                 DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-                assertEquals(0, connectionPool.getConnectionCount());
-                assertEquals(0, connectionPool.getIdleConnectionCount());
-                assertEquals(0, connectionPool.getActiveConnectionCount());
+                Assert.assertEquals(0, connectionPool.getConnectionCount());
+                Assert.assertEquals(0, connectionPool.getIdleConnectionCount());
+                Assert.assertEquals(0, connectionPool.getActiveConnectionCount());
             }
         }
     }

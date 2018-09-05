@@ -18,11 +18,8 @@
 
 package org.eclipse.jetty.util;
 
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ProcessorUtilsTest
 {
@@ -35,10 +32,10 @@ public class ProcessorUtilsTest
         // Verify that the static initializer logic is correct.
         System.setProperty(ProcessorUtils.AVAILABLE_PROCESSORS, "42");
         int processors = ProcessorUtils.init();
-        assertEquals(42, processors);
+        Assert.assertEquals(42, processors);
 
         // Make sure the original value is preserved.
-        assertEquals(original, ProcessorUtils.availableProcessors());
+        Assert.assertEquals(original, ProcessorUtils.availableProcessors());
     }
 
     @Test
@@ -48,11 +45,18 @@ public class ProcessorUtilsTest
         int original = ProcessorUtils.availableProcessors();
         try
         {
-            assertThrows(IllegalArgumentException.class, ()-> ProcessorUtils.setAvailableProcessors(0));
+            try
+            {
+                ProcessorUtils.setAvailableProcessors(0);
+                Assert.fail();
+            }
+            catch (IllegalArgumentException expected)
+            {
+            }
 
             int processors = 42;
             ProcessorUtils.setAvailableProcessors(processors);
-            assertEquals(processors, ProcessorUtils.availableProcessors());
+            Assert.assertEquals(processors, ProcessorUtils.availableProcessors());
         }
         finally
         {

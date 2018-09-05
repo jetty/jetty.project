@@ -23,8 +23,8 @@ import java.net.URLStreamHandlerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.After;
+import org.junit.Before;
 
 public class WebAppClassLoaderUrlStreamTest extends WebAppClassLoaderTest
 {
@@ -98,13 +98,13 @@ public class WebAppClassLoaderUrlStreamTest extends WebAppClassLoaderTest
         }
     }
     
-    @AfterEach
+    @After
     public void cleanupURLStreamHandlerFactory()
     {
         URLStreamHandlerUtil.setFactory(null);
     }
     
-    @BeforeEach
+    @Before
     @Override
     public void init() throws Exception
     {

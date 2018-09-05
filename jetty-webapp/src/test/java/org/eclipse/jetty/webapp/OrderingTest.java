@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.webapp;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,7 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 /**
  * OrderingTest
@@ -553,10 +550,15 @@ public class OrderingTest
         f2._otherType = FragmentDescriptor.OtherType.None;
         f2._afters.add("A");
 
-        assertThrows(IllegalStateException.class, () -> {
+        try
+        {
             metaData._ordering.order(resources);
             fail("No circularity detected");
-        });
+        }
+        catch (Exception e)
+        {
+            assertTrue (e instanceof IllegalStateException);
+        }
     }
 
 
@@ -604,7 +606,7 @@ public class OrderingTest
         //((RelativeOrdering)metaData._ordering).addNoOthers(r3);
         f3._otherType = FragmentDescriptor.OtherType.None;
 
-        assertThrows(IllegalStateException.class, () ->
+        try
         {
             List<Resource> orderedList = metaData._ordering.order(resources);
             String result = "";
@@ -612,7 +614,11 @@ public class OrderingTest
                 result +=((TestResource)r)._name;
             System.err.println("Invalid Result = "+result);
             fail("A and B have an impossible relationship to C");
-        });
+        }
+        catch (Exception e)
+        {
+            assertTrue (e instanceof IllegalStateException);
+        }
     }
 
     @Test
@@ -775,7 +781,7 @@ public class OrderingTest
         resources.add(new TestResource("B"));
 
         List<Resource> list = metaData._ordering.order(resources);
-        assertThat(list, is(empty()));
+        assertTrue(list.isEmpty());
     }
 
     @Test

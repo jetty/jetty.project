@@ -18,18 +18,13 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -47,32 +42,39 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-@Disabled // Disabled by @gregw on issue #2540 - commit 621b946b10884e7308eacca241dcf8b5d6f6cff2
+@RunWith(Parameterized.class)
+@Ignore
 public class ConnectionPoolTest
 {
     private Server server;
     private ServerConnector connector;
     private HttpClient client;
 
-    public static Stream<Arguments> pools()
+    @Parameterized.Parameters
+    public static ConnectionPool.Factory[] parameters()
     {
-        List<Object[]> pools = new ArrayList<>();
-        pools.add(new Object[] { DuplexConnectionPool.class,
-                (ConnectionPool.Factory)
-                        destination -> new DuplexConnectionPool(destination, 8, destination)});
-        pools.add(new Object[] { RoundRobinConnectionPool.class,
-                (ConnectionPool.Factory)
-                        destination -> new RoundRobinConnectionPool(destination, 8, destination)});
-        return pools.stream().map(Arguments::of);
+        return new ConnectionPool.Factory[]
+                {
+                        destination -> new DuplexConnectionPool(destination, 8, destination),
+                        destination -> new RoundRobinConnectionPool(destination, 8, destination)
+                };
     }
 
-    private void start(final ConnectionPool.Factory factory, Handler handler) throws Exception
+    private final ConnectionPool.Factory factory;
+
+    public ConnectionPoolTest(ConnectionPool.Factory factory)
+    {
+        this.factory = factory;
+    }
+
+    private void start(Handler handler) throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server);
@@ -81,38 +83,23 @@ public class ConnectionPoolTest
 
         HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
         transport.setConnectionPoolFactory(factory);
-        server.start();
-
         client = new HttpClient(transport, null);
-        client.start();
+        server.addBean(client);
+
+        server.start();
     }
 
-    @AfterEach
-    public void disposeServer() throws Exception
+    @After
+    public void dispose() throws Exception
     {
-        connector = null;
         if (server != null)
-        {
             server.stop();
-            server = null;
-        }
     }
 
-    @AfterEach
-    public void disposeClient() throws Exception
+    @Test
+    public void test() throws Exception
     {
-        if (client != null)
-        {
-            client.stop();
-            client = null;
-        }
-    }
-
-    @ParameterizedTest(name = "[{index}] {0}")
-    @MethodSource("pools")
-    public void test(Class<? extends ConnectionPool> connectionPoolClass, ConnectionPool.Factory factory) throws Exception
-    {
-        start(factory, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -156,8 +143,8 @@ public class ConnectionPoolTest
         IntStream.range(0, parallelism).parallel().forEach(i ->
                 IntStream.range(0, runs).forEach(j ->
                         run(latch, iterations, failures)));
-        assertTrue(latch.await(iterations, TimeUnit.SECONDS));
-        assertTrue(failures.isEmpty(), failures.toString());
+        Assert.assertTrue(latch.await(iterations, TimeUnit.SECONDS));
+        Assert.assertTrue(failures.toString(), failures.isEmpty());
     }
 
     private void run(CountDownLatch latch, int iterations, List<Throwable> failures)
@@ -221,7 +208,7 @@ public class ConnectionPoolTest
         try
         {
             ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
         }
         catch (Throwable x)
         {

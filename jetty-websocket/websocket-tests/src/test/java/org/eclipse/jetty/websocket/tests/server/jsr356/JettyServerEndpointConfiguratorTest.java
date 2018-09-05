@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.tests.server.jsr356;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThat;
 
 import java.util.Iterator;
 import java.util.ServiceLoader;
@@ -29,7 +29,7 @@ import java.util.ServiceLoader;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.jsr356.server.ContainerDefaultConfigurator;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 /**
  * Test the JettyServerEndpointConfigurator impl.

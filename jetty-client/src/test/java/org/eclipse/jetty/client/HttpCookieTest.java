@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.URI;
@@ -44,20 +37,26 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HttpCookieTest extends AbstractHttpClientServerTest
 {
     private static final Cookie[] EMPTY_COOKIES = new Cookie[0];
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_CookieIsStored(Scenario scenario) throws Exception
+    public HttpCookieTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
+    @Test
+    public void test_CookieIsStored() throws Exception
     {
         final String name = "foo";
         final String value = "bar";
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -69,54 +68,52 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String path = "/path";
-        String uri = scenario.getScheme() + "://" + host + ":" + port + path;
+        String uri = scheme + "://" + host + ":" + port + path;
         Response response = client.GET(uri);
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
 
         List<HttpCookie> cookies = client.getCookieStore().get(URI.create(uri));
-        assertNotNull(cookies);
-        assertEquals(1, cookies.size());
+        Assert.assertNotNull(cookies);
+        Assert.assertEquals(1, cookies.size());
         HttpCookie cookie = cookies.get(0);
-        assertEquals(name, cookie.getName());
-        assertEquals(value, cookie.getValue());
+        Assert.assertEquals(name, cookie.getName());
+        Assert.assertEquals(value, cookie.getValue());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_CookieIsSent(Scenario scenario) throws Exception
+    @Test
+    public void test_CookieIsSent() throws Exception
     {
         final String name = "foo";
         final String value = "bar";
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 Cookie[] cookies = request.getCookies();
-                assertNotNull(cookies);
-                assertEquals(1, cookies.length);
+                Assert.assertNotNull(cookies);
+                Assert.assertEquals(1, cookies.length);
                 Cookie cookie = cookies[0];
-                assertEquals(name, cookie.getName());
-                assertEquals(value, cookie.getValue());
+                Assert.assertEquals(name, cookie.getName());
+                Assert.assertEquals(value, cookie.getValue());
             }
         });
 
         String host = "localhost";
         int port = connector.getLocalPort();
         String path = "/path";
-        String uri = scenario.getScheme() + "://" + host + ":" + port;
+        String uri = scheme + "://" + host + ":" + port;
         HttpCookie cookie = new HttpCookie(name, value);
         client.getCookieStore().add(URI.create(uri), cookie);
 
-        Response response = client.GET(scenario.getScheme() + "://" + host + ":" + port + path);
-        assertEquals(200, response.getStatus());
+        Response response = client.GET(scheme + "://" + host + ":" + port + path);
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_CookieWithoutValue(Scenario scenario) throws Exception
+    @Test
+    public void test_CookieWithoutValue() throws Exception
     {
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -126,48 +123,46 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .send();
-        assertEquals(200, response.getStatus());
-        assertTrue(client.getCookieStore().getCookies().isEmpty());
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(client.getCookieStore().getCookies().isEmpty());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_PerRequestCookieIsSent(Scenario scenario) throws Exception
+    @Test
+    public void test_PerRequestCookieIsSent() throws Exception
     {
         final String name = "foo";
         final String value = "bar";
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 Cookie[] cookies = request.getCookies();
-                assertNotNull(cookies);
-                assertEquals(1, cookies.length);
+                Assert.assertNotNull(cookies);
+                Assert.assertEquals(1, cookies.length);
                 Cookie cookie = cookies[0];
-                assertEquals(name, cookie.getName());
-                assertEquals(value, cookie.getValue());
+                Assert.assertEquals(name, cookie.getName());
+                Assert.assertEquals(value, cookie.getValue());
             }
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .cookie(new HttpCookie(name, value))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_SetCookieWithoutPath_RequestURIWithOneSegment(Scenario scenario) throws Exception
+    @Test
+    public void test_SetCookieWithoutPath_RequestURIWithOneSegment() throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
         String cookieValue = "1";
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -186,44 +181,43 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                         case "/":
                         case "/foo":
                         case "/foo/bar":
-                            assertEquals(1, cookies.length, target);
+                            Assert.assertEquals(target, 1, cookies.length);
                             Cookie cookie = cookies[0];
-                            assertEquals(cookieName, cookie.getName(), target);
-                            assertEquals(cookieValue, cookie.getValue(), target);
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue, cookie.getValue());
                             break;
                         default:
-                            fail("Unrecognized target: " + target);
+                            Assert.fail();
                     }
                 }
             }
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/foo")
                 .header(headerName, "0")
                 .timeout(5, TimeUnit.SECONDS));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/bar").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
+                    .scheme(scheme)
                     .path(path)
                     .header(headerName, "1")
                     .timeout(5, TimeUnit.SECONDS));
-            assertEquals(HttpStatus.OK_200, r.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_SetCookieWithoutPath_RequestURIWithTwoSegments(Scenario scenario) throws Exception
+    @Test
+    public void test_SetCookieWithoutPath_RequestURIWithTwoSegments() throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
         String cookieValue = "1";
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -242,49 +236,48 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                         case "/":
                         case "/foo":
                         case "/foobar":
-                            assertEquals(0, cookies.length, target);
+                            Assert.assertEquals(target, 0, cookies.length);
                             break;
                         case "/foo/":
                         case "/foo/bar":
                         case "/foo/bar/baz":
-                            assertEquals(1, cookies.length, target);
+                            Assert.assertEquals(target, 1, cookies.length);
                             Cookie cookie = cookies[0];
-                            assertEquals(cookieName, cookie.getName(), target);
-                            assertEquals(cookieValue, cookie.getValue(), target);
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue, cookie.getValue());
                             break;
                         default:
-                            fail("Unrecognized Target: " + target);
+                            Assert.fail();
                     }
                 }
             }
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/foo/bar")
                 .header(headerName, "0")
                 .timeout(5, TimeUnit.SECONDS));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar", "/foo/bar/baz").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
+                    .scheme(scheme)
                     .path(path)
                     .header(headerName, "1")
                     .timeout(5, TimeUnit.SECONDS));
-            assertEquals(HttpStatus.OK_200, r.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_SetCookieWithLongerPath(Scenario scenario) throws Exception
+    @Test
+    public void test_SetCookieWithLongerPath() throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
         String cookieValue = "1";
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -304,48 +297,47 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                         case "/":
                         case "/foo":
                         case "/foo/barbaz":
-                            assertEquals(0, cookies.length, target);
+                            Assert.assertEquals(target, 0, cookies.length);
                             break;
                         case "/foo/bar":
                         case "/foo/bar/":
-                            assertEquals(1, cookies.length, target);
+                            Assert.assertEquals(target, 1, cookies.length);
                             Cookie cookie = cookies[0];
-                            assertEquals(cookieName, cookie.getName(), target);
-                            assertEquals(cookieValue, cookie.getValue(), target);
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue, cookie.getValue());
                             break;
                         default:
-                            fail("Unrecognized Target: " + target);
+                            Assert.fail();
                     }
                 }
             }
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/foo")
                 .header(headerName, "0")
                 .timeout(5, TimeUnit.SECONDS));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/bar", "/foo/bar/", "/foo/barbaz").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
+                    .scheme(scheme)
                     .path(path)
                     .header(headerName, "1")
                     .timeout(5, TimeUnit.SECONDS));
-            assertEquals(HttpStatus.OK_200, r.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_SetCookieWithShorterPath(Scenario scenario) throws Exception
+    @Test
+    public void test_SetCookieWithShorterPath() throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
         String cookieValue = "1";
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -364,50 +356,49 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                     {
                         case "/":
                         case "/foobar":
-                            assertEquals(0, cookies.length, target);
+                            Assert.assertEquals(target, 0, cookies.length);
                             break;
                         case "/foo":
                         case "/foo/":
                         case "/foo/bar":
-                            assertEquals(1, cookies.length, target);
+                            Assert.assertEquals(target, 1, cookies.length);
                             Cookie cookie = cookies[0];
-                            assertEquals(cookieName, cookie.getName(), target);
-                            assertEquals(cookieValue, cookie.getValue(), target);
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue, cookie.getValue());
                             break;
                         default:
-                            fail("Unrecognized Target: " + target);
+                            Assert.fail();
                     }
                 }
             }
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/foo/bar")
                 .header(headerName, "0")
                 .timeout(5, TimeUnit.SECONDS));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
+                    .scheme(scheme)
                     .path(path)
                     .header(headerName, "1")
                     .timeout(5, TimeUnit.SECONDS));
-            assertEquals(HttpStatus.OK_200, r.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_TwoSetCookieWithSameNameSamePath(Scenario scenario) throws Exception
+    @Test
+    public void test_TwoSetCookieWithSameNameSamePath() throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
         String cookieValue1 = "1";
         String cookieValue2 = "2";
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -428,49 +419,48 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                     switch (target)
                     {
                         case "/":
-                            assertEquals(0, cookies.length, target);
+                            Assert.assertEquals(target, 0, cookies.length);
                             break;
                         case "/foo":
                         case "/foo/bar":
-                            assertEquals(1, cookies.length, target);
+                            Assert.assertEquals(target, 1, cookies.length);
                             Cookie cookie = cookies[0];
-                            assertEquals(cookieName, cookie.getName(), target);
-                            assertEquals(cookieValue2, cookie.getValue(), target);
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue2, cookie.getValue());
                             break;
                         default:
-                            fail("Unrecognized Target: " + target);
+                            Assert.fail();
                     }
                 }
             }
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/foo")
                 .header(headerName, "0")
                 .timeout(5, TimeUnit.SECONDS));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/bar").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
+                    .scheme(scheme)
                     .path(path)
                     .header(headerName, "1")
                     .timeout(5, TimeUnit.SECONDS));
-            assertEquals(HttpStatus.OK_200, r.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_TwoSetCookieWithSameNameDifferentPath(Scenario scenario) throws Exception
+    @Test
+    public void test_TwoSetCookieWithSameNameDifferentPath() throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
         String cookieValue1 = "1";
         String cookieValue2 = "2";
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -491,56 +481,55 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                     switch (target)
                     {
                         case "/":
-                            assertEquals(0, cookies.length, target);
+                            Assert.assertEquals(target, 0, cookies.length);
                             break;
                         case "/foo":
                         case "/foo/bar":
-                            assertEquals(1, cookies.length, target);
+                            Assert.assertEquals(target, 1, cookies.length);
                             Cookie cookie1 = cookies[0];
-                            assertEquals(cookieName, cookie1.getName(), target);
-                            assertEquals(cookieValue1, cookie1.getValue(), target);
+                            Assert.assertEquals(target, cookieName, cookie1.getName());
+                            Assert.assertEquals(target, cookieValue1, cookie1.getValue());
                             break;
                         case "/bar":
                         case "/bar/foo":
-                            assertEquals(1, cookies.length, target);
+                            Assert.assertEquals(target, 1, cookies.length);
                             Cookie cookie2 = cookies[0];
-                            assertEquals(cookieName, cookie2.getName(), target);
-                            assertEquals(cookieValue2, cookie2.getValue(), target);
+                            Assert.assertEquals(target, cookieName, cookie2.getName());
+                            Assert.assertEquals(target, cookieValue2, cookie2.getValue());
                             break;
                         default:
-                            fail("Unrecognized Target: " + target);
+                            Assert.fail();
                     }
                 }
             }
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/foo")
                 .header(headerName, "0")
                 .timeout(5, TimeUnit.SECONDS));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/bar", "/bar", "/bar/foo").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
+                    .scheme(scheme)
                     .path(path)
                     .header(headerName, "1")
                     .timeout(5, TimeUnit.SECONDS));
-            assertEquals(HttpStatus.OK_200, r.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_TwoSetCookieWithSameNamePath1PrefixOfPath2(Scenario scenario) throws Exception
+    @Test
+    public void test_TwoSetCookieWithSameNamePath1PrefixOfPath2() throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
         String cookieValue1 = "1";
         String cookieValue2 = "2";
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -561,58 +550,57 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                     switch (target)
                     {
                         case "/":
-                            assertEquals(0, cookies.length, target);
+                            Assert.assertEquals(target, 0, cookies.length);
                             break;
                         case "/foo":
-                            assertEquals(1, cookies.length, target);
+                            Assert.assertEquals(target, 1, cookies.length);
                             Cookie cookie = cookies[0];
-                            assertEquals(cookieName, cookie.getName(), target);
-                            assertEquals(cookieValue1, cookie.getValue(), target);
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue1, cookie.getValue());
                             break;
                         case "/foo/bar":
-                            assertEquals(2, cookies.length, target);
+                            Assert.assertEquals(target, 2, cookies.length);
                             Cookie cookie1 = cookies[0];
                             Cookie cookie2 = cookies[1];
-                            assertEquals(cookieName, cookie1.getName(), target);
-                            assertEquals(cookieName, cookie2.getName(), target);
+                            Assert.assertEquals(target, cookieName, cookie1.getName());
+                            Assert.assertEquals(target, cookieName, cookie2.getName());
                             Set<String> values = new HashSet<>();
                             values.add(cookie1.getValue());
                             values.add(cookie2.getValue());
-                            assertThat(target, values, containsInAnyOrder(cookieValue1, cookieValue2));
+                            Assert.assertThat(target, values, Matchers.containsInAnyOrder(cookieValue1, cookieValue2));
                             break;
                         default:
-                            fail("Unrecognized Target: " + target);
+                            Assert.fail();
                     }
                 }
             }
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/foo")
                 .header(headerName, "0")
                 .timeout(5, TimeUnit.SECONDS));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/bar").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
+                    .scheme(scheme)
                     .path(path)
                     .header(headerName, "1")
                     .timeout(5, TimeUnit.SECONDS));
-            assertEquals(HttpStatus.OK_200, r.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void test_CookiePathWithTrailingSlash(Scenario scenario) throws Exception
+    @Test
+    public void test_CookiePathWithTrailingSlash() throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
         String cookieValue = "1";
-        start(scenario, new EmptyServerHandler()
+        start(new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -632,37 +620,37 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                         case "/":
                         case "/foo":
                         case "/foobar":
-                            assertEquals(0, cookies.length, target);
+                            Assert.assertEquals(target, 0, cookies.length);
                             break;
                         case "/foo/":
                         case "/foo/bar":
-                            assertEquals(1, cookies.length, target);
+                            Assert.assertEquals(target, 1, cookies.length);
                             Cookie cookie = cookies[0];
-                            assertEquals(cookieName, cookie.getName(), target);
-                            assertEquals(cookieValue, cookie.getValue(), target);
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue, cookie.getValue());
                             break;
                         default:
-                            fail("Unrecognized Target: " + target);
+                            Assert.fail();
                     }
                 }
             }
         });
 
         ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/foo/bar")
                 .header(headerName, "0")
                 .timeout(5, TimeUnit.SECONDS));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme())
+                    .scheme(scheme)
                     .path(path)
                     .header(headerName, "1")
                     .timeout(5, TimeUnit.SECONDS));
-            assertEquals(HttpStatus.OK_200, r.getStatus());
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
         });
     }
 

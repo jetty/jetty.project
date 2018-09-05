@@ -22,17 +22,17 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.test.support.TestableJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.test.support.rawhttp.HttpsSocketImpl;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Perform the RFC2616 tests against a server running with the Jetty NIO Connector and listening on HTTPS (HTTP over SSL).
  * TODO
  */
-@Disabled("TODO")
+@Ignore ("TODO")
 public class RFC2616NIOHttpsTest extends RFC2616BaseTest
 {
-    @BeforeAll
+    @BeforeClass
     public static void setupServer() throws Exception
     {
         TestableJettyServer server = new TestableJettyServer();

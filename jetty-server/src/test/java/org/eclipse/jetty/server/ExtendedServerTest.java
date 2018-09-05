@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -41,18 +39,21 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Extended Server Tester.
  */
+@RunWith(AdvancedRunner.class)
 public class ExtendedServerTest extends HttpServerTestBase
 {
-    @BeforeEach
+    @Before
     public void init() throws Exception
     {
         startServer(new ServerConnector(_server,new HttpConnectionFactory()
@@ -141,15 +142,15 @@ public class ExtendedServerTest extends HttpServerTestBase
             // Read the response.
             String response = readResponse(client);
 
-            assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
-            assertThat(response, Matchers.containsString("DispatchedAt="));
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
+            Assert.assertThat(response, Matchers.containsString("DispatchedAt="));
             
             String s=response.substring(response.indexOf("DispatchedAt=")+13);
             s=s.substring(0,s.indexOf('\n'));
             long dispatched=Long.parseLong(s);
             
-            assertThat(dispatched, Matchers.greaterThanOrEqualTo(start));
-            assertThat(dispatched, Matchers.lessThan(end));
+            Assert.assertThat(dispatched, Matchers.greaterThanOrEqualTo(start));
+            Assert.assertThat(dispatched, Matchers.lessThan(end));
         }
     }
     

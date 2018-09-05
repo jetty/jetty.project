@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -39,10 +37,10 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class BalancerServletTest
 {
@@ -55,14 +53,14 @@ public class BalancerServletTest
     private Server balancer;
     private HttpClient client;
 
-    @BeforeEach
+    @Before
     public void prepare() throws Exception
     {
         client = new HttpClient();
         client.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         server1.stop();
@@ -133,7 +131,7 @@ public class BalancerServletTest
             String returnedCounter = readFirstLine(responseBytes);
             // Counter should increment every other request
             String expectedCounter = String.valueOf(i / 2);
-            assertEquals(expectedCounter, returnedCounter);
+            Assert.assertEquals(expectedCounter, returnedCounter);
         }
     }
 
@@ -148,7 +146,7 @@ public class BalancerServletTest
             String returnedCounter = readFirstLine(responseBytes);
             // Counter should increment every request
             String expectedCounter = String.valueOf(i);
-            assertEquals(expectedCounter, returnedCounter);
+            Assert.assertEquals(expectedCounter, returnedCounter);
         }
     }
 
@@ -159,7 +157,7 @@ public class BalancerServletTest
         startBalancer(RelocationServlet.class);
         byte[] responseBytes = sendRequestToBalancer("/index.html");
         String msg = readFirstLine(responseBytes);
-        assertEquals("success", msg);
+        Assert.assertEquals("success", msg);
     }
 
     private String readFirstLine(byte[] responseBytes) throws IOException

@@ -22,9 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -35,17 +32,20 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.PongFrame;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test various invalid frame situations
  */
+@RunWith(value = Parameterized.class)
 public class GeneratorFrameFlagsTest
 {
     private static ByteBufferPool bufferPool = new MappedByteBufferPool();
     
+    @Parameters
     public static Collection<WebSocketFrame[]> data()
     {
         List<WebSocketFrame[]> data = new ArrayList<>();
@@ -63,35 +63,18 @@ public class GeneratorFrameFlagsTest
         data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setRsv3(true)});
         return data;
     }
-
-    public static Stream<Arguments> badFrames()
+    
+    private WebSocketFrame invalidFrame;
+    
+    public GeneratorFrameFlagsTest(WebSocketFrame invalidFrame)
     {
-        return Stream.of(
-                new PingFrame().setFin(false),
-                new PingFrame().setRsv1(true),
-                new PingFrame().setRsv2(true),
-                new PingFrame().setRsv3(true),
-                new PongFrame().setFin(false),
-                new PingFrame().setRsv1(true),
-                new PongFrame().setRsv2(true),
-                new PongFrame().setRsv3(true),
-                new CloseInfo().asFrame().setFin(false),
-                new CloseInfo().asFrame().setRsv1(true),
-                new CloseInfo().asFrame().setRsv2(true),
-                new CloseInfo().asFrame().setRsv3(true))
-                .map(Arguments::of);
+        this.invalidFrame = invalidFrame;
     }
-
-
-    @ParameterizedTest
-    @MethodSource("badFrames")
-    public void testGenerateInvalidControlFrame(WebSocketFrame invalidFrame)
+    
+    @Test(expected = ProtocolException.class)
+    public void testGenerateInvalidControlFrame()
     {
-        assertThrows(ProtocolException.class, () ->
-                     {
-                         ByteBuffer buffer = ByteBuffer.allocate(100);
-                         new Generator(WebSocketPolicy.newServerPolicy(), bufferPool).generateWholeFrame(invalidFrame, buffer);
-                     }
-            );
+        ByteBuffer buffer = ByteBuffer.allocate(100);
+        new Generator(WebSocketPolicy.newServerPolicy(), bufferPool).generateWholeFrame(invalidFrame, buffer);
     }
 }

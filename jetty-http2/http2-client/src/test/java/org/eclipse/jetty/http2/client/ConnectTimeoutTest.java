@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -32,8 +28,9 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.util.Promise;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Test;
 
 public class ConnectTimeoutTest extends AbstractTest
 {
@@ -55,12 +52,12 @@ public class ConnectTimeoutTest extends AbstractTest
             @Override
             public void failed(Throwable x)
             {
-                assertThat(x, instanceOf(SocketTimeoutException.class));
+                Assert.assertTrue(x instanceof SocketTimeoutException);
                 latch.countDown();
             }
         });
 
-        assertTrue(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
     }
 
     private void assumeConnectTimeout(String host, int port, int connectTimeout) throws IOException
@@ -88,6 +85,6 @@ public class ConnectTimeoutTest extends AbstractTest
         }
         
         // Abort the test if we can connect.
-        Assumptions.assumeTrue(socketTimeout, "Should have seen connect timeout");
+        Assume.assumeTrue("Should have seen connect timeout",socketTimeout);
     }
 }

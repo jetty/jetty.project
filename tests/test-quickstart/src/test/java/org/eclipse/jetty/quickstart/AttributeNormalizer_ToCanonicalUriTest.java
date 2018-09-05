@@ -22,22 +22,27 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
+import java.nio.file.FileSystems;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class AttributeNormalizer_ToCanonicalUriTest
 {
-    public static Stream<String[]> sampleUris() {
-        List<String[]> data = new ArrayList<>();
+    @Parameterized.Parameters(name = "[{index}] {0} - {1}")
+    public static List<Object[]> data()
+    {
+        List<Object[]> data = new ArrayList<>();
 
+        
         // root without authority
         data.add(new String[]{ "file:/", "file:/" });
         data.add(new String[]{ "file:/F:/", "file:/F:" });
-
+        
         // root with empty authority
         data.add(new String[]{ "file:///", "file:///" });
         data.add(new String[]{ "file:///F:/", "file:///F:" });
@@ -54,12 +59,17 @@ public class AttributeNormalizer_ToCanonicalUriTest
         data.add(new String[]{ "http://webtide.com/", "http://webtide.com/" });
         data.add(new String[]{ "http://webtide.com/cometd/", "http://webtide.com/cometd" });
 
-        return data.stream();
+        return data;
     }
 
-    @ParameterizedTest
-    @MethodSource("sampleUris")
-    public void testCanonicalURI(String input, String expected)
+    @Parameterized.Parameter
+    public String input;
+
+    @Parameterized.Parameter(1)
+    public String expected;
+
+    @Test
+    public void testCanonicalURI()
     {
         URI inputURI = URI.create(input);
         URI actual = AttributeNormalizer.toCanonicalURI(inputURI);

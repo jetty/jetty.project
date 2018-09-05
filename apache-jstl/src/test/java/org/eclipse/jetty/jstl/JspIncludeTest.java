@@ -20,7 +20,7 @@ package org.eclipse.jetty.jstl;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,16 +41,16 @@ import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class JspIncludeTest
 {
     private static Server server;
     private static URI baseUri;
     
-    @BeforeAll
+    @BeforeClass
     public static void startServer() throws Exception
     {
         // Setup Server
@@ -93,7 +93,7 @@ public class JspIncludeTest
         baseUri = new URI(String.format("http://%s:%d/", host, port));
     }
     
-    @AfterAll
+    @AfterClass
     public static void stopServer() throws Exception
     {
         server.stop();

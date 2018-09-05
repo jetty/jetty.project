@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -34,14 +32,20 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.After;
+import org.junit.Rule;
+
+import static org.junit.Assert.assertThat;
 
 public abstract class AbstractHttpClientServerTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
     private LeakTrackingByteBufferPool serverBufferPool;
     protected ByteBufferPool clientBufferPool;
     private final AtomicLong connectionLeaks = new AtomicLong();
@@ -84,7 +88,7 @@ public abstract class AbstractHttpClientServerTest
         client.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         System.gc();

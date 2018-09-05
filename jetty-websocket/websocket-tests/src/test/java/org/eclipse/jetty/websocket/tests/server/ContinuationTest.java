@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.tests.server;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.servlets.EchoSocket;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 /**
  * Fragmentation Tests
@@ -423,6 +424,7 @@ public class ContinuationTest extends AbstractLocalServerCase
      * @throws Exception on test failure
      */
     @Test
+    @Slow
     public void testFragmented_TextContinuation_PingInterleaved() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();

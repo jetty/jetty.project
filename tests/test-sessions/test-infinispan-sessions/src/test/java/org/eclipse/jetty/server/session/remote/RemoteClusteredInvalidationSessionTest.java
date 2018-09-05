@@ -22,8 +22,8 @@ package org.eclipse.jetty.server.session.remote;
 import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * InvalidationSessionTest
@@ -38,14 +38,14 @@ public class RemoteClusteredInvalidationSessionTest extends AbstractClusteredInv
    
     
     
-    @BeforeAll
+    @BeforeClass
     public static void setup () throws Exception
     {
       __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
       __testSupport.setup();
     }
     
-    @AfterAll
+    @AfterClass
     public static void teardown () throws Exception
     {
        __testSupport.teardown();

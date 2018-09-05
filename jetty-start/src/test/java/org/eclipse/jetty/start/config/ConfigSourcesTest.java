@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.start.config;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,15 +34,15 @@ import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.TestEnv;
 import org.eclipse.jetty.start.UsageException;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
-@ExtendWith(WorkDirExtension.class)
 public class ConfigSourcesTest
 {
-    public WorkDir testdir;
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
     private void assertIdOrder(ConfigSources sources, String... expectedOrder)
     {
@@ -78,8 +76,8 @@ public class ConfigSourcesTest
     private void assertProperty(ConfigSources sources, String key, String expectedValue)
     {
         Prop prop = sources.getProp(key);
-        assertThat("getProp('" + key + "') should not be null",prop,notNullValue());
-        assertThat("getProp('" + key + "')",prop.value,is(expectedValue));
+        Assert.assertThat("getProp('" + key + "') should not be null",prop,notNullValue());
+        Assert.assertThat("getProp('" + key + "')",prop.value,is(expectedValue));
     }
 
     @Test
@@ -588,12 +586,18 @@ public class ConfigSourcesTest
 
         ConfigSources sources = new ConfigSources();
 
-        UsageException e = assertThrows(UsageException.class, ()->{
+        try
+        {
             String cmdLine[] = new String[0];
             sources.add(new CommandLineConfigSource(cmdLine));
             sources.add(new JettyHomeConfigSource(home));
             sources.add(new JettyBaseConfigSource(base));
-        });
-        assertThat("UsageException",e.getMessage(),containsString("Duplicate"));
+            
+            Assert.fail("Should have thrown a UsageException");
+        }
+        catch (UsageException e)
+        {
+            Assert.assertThat("UsageException",e.getMessage(),containsString("Duplicate"));
+        }
     }
 }

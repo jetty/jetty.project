@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 
@@ -34,7 +33,7 @@ import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.Generator;
-
+import org.junit.Assert;
 
 /**
  * Capture outgoing network bytes.
@@ -52,10 +51,10 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
 
     public void assertBytes(int idx, String expectedHex)
     {
-        assertThat("Capture index does not exist",idx,lessThan(captured.size()));
+        Assert.assertThat("Capture index does not exist",idx,lessThan(captured.size()));
         ByteBuffer buf = captured.get(idx);
         String actualHex = TypeUtil.toHexString(BufferUtil.toArray(buf)).toUpperCase(Locale.ENGLISH);
-        assertThat("captured[" + idx + "]",actualHex,is(expectedHex.toUpperCase(Locale.ENGLISH)));
+        Assert.assertThat("captured[" + idx + "]",actualHex,is(expectedHex.toUpperCase(Locale.ENGLISH)));
     }
 
     public List<ByteBuffer> getCaptured()

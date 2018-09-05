@@ -18,12 +18,14 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.*;
+
+import java.util.Arrays;
 
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class TopologicalSortTest
 {
@@ -35,7 +37,7 @@ public class TopologicalSortTest
         TopologicalSort<String> ts = new TopologicalSort<>();
         ts.sort(s);
         
-        assertThat(s,Matchers.arrayContaining("D","E","C","B","A"));
+        Assert.assertThat(s,Matchers.arrayContaining("D","E","C","B","A"));        
     }
     
     @Test
@@ -50,7 +52,7 @@ public class TopologicalSortTest
         
         ts.sort(s);
         
-        assertThat(s,Matchers.arrayContaining("A","B","C","D","E"));
+        Assert.assertThat(s,Matchers.arrayContaining("A","B","C","D","E"));        
     }
 
     @Test
@@ -66,7 +68,7 @@ public class TopologicalSortTest
         
         ts.sort(s);
         
-        assertThat(s,Matchers.arrayContaining("A","B","C","AA","BB","CC"));
+        Assert.assertThat(s,Matchers.arrayContaining("A","B","C","AA","BB","CC"));   
     }
 
     @Test
@@ -82,7 +84,7 @@ public class TopologicalSortTest
         
         ts.sort(s);
           
-        assertThat(s,Matchers.arrayContaining("AA","BB","CC","A","B","C"));
+        Assert.assertThat(s,Matchers.arrayContaining("AA","BB","CC","A","B","C"));  
     }
 
     @Test
@@ -99,10 +101,10 @@ public class TopologicalSortTest
         ts.sort(s);
 
         // Check direct ordering
-        assertThat(indexOf(s,"A"),lessThan(indexOf(s,"B")));
-        assertThat(indexOf(s,"B"),lessThan(indexOf(s,"C")));
-        assertThat(indexOf(s,"AA"),lessThan(indexOf(s,"BB")));
-        assertThat(indexOf(s,"BB"),lessThan(indexOf(s,"CC")));
+        Assert.assertThat(indexOf(s,"A"),lessThan(indexOf(s,"B"))); 
+        Assert.assertThat(indexOf(s,"B"),lessThan(indexOf(s,"C"))); 
+        Assert.assertThat(indexOf(s,"AA"),lessThan(indexOf(s,"BB"))); 
+        Assert.assertThat(indexOf(s,"BB"),lessThan(indexOf(s,"CC"))); 
     }
 
     @Test
@@ -121,17 +123,17 @@ public class TopologicalSortTest
         ts.sort(s);
         
         // Check direct ordering
-        assertThat(indexOf(s,"Root"),lessThan(indexOf(s,"BranchA")));
-        assertThat(indexOf(s,"Root"),lessThan(indexOf(s,"BranchB")));
-        assertThat(indexOf(s,"BranchA"),lessThan(indexOf(s,"LeafA0")));
-        assertThat(indexOf(s,"BranchA"),lessThan(indexOf(s,"LeafA1")));
-        assertThat(indexOf(s,"BranchB"),lessThan(indexOf(s,"LeafB0")));
-        assertThat(indexOf(s,"BranchB"),lessThan(indexOf(s,"LeafB1")));
+        Assert.assertThat(indexOf(s,"Root"),lessThan(indexOf(s,"BranchA")));  
+        Assert.assertThat(indexOf(s,"Root"),lessThan(indexOf(s,"BranchB")));   
+        Assert.assertThat(indexOf(s,"BranchA"),lessThan(indexOf(s,"LeafA0")));    
+        Assert.assertThat(indexOf(s,"BranchA"),lessThan(indexOf(s,"LeafA1"))); 
+        Assert.assertThat(indexOf(s,"BranchB"),lessThan(indexOf(s,"LeafB0")));    
+        Assert.assertThat(indexOf(s,"BranchB"),lessThan(indexOf(s,"LeafB1")));   
         
         // check remnant ordering of original list
-        assertThat(indexOf(s,"BranchA"),lessThan(indexOf(s,"BranchB")));
-        assertThat(indexOf(s,"LeafA0"),lessThan(indexOf(s,"LeafA1")));
-        assertThat(indexOf(s,"LeafB0"),lessThan(indexOf(s,"LeafB1")));
+        Assert.assertThat(indexOf(s,"BranchA"),lessThan(indexOf(s,"BranchB")));  
+        Assert.assertThat(indexOf(s,"LeafA0"),lessThan(indexOf(s,"LeafA1")));  
+        Assert.assertThat(indexOf(s,"LeafB0"),lessThan(indexOf(s,"LeafB1")));  
     }
 
     @Test
@@ -148,7 +150,7 @@ public class TopologicalSortTest
         ts.addDependency("Deep","Bozo");
         
         ts.sort(s);
-        assertThat(s,Matchers.arrayContaining("Foobar","Wibble","Bozo","XXX","12345","Test","Deep"));
+        Assert.assertThat(s,Matchers.arrayContaining("Foobar","Wibble","Bozo","XXX","12345","Test","Deep")); 
     }
     
     @Test
@@ -159,9 +161,15 @@ public class TopologicalSortTest
         ts.addDependency("B","A");
         ts.addDependency("A","B");
         
-        assertThrows(IllegalStateException.class, ()->{
+        try
+        {
             ts.sort(s);
-        });
+            Assert.fail();
+        }
+        catch(IllegalStateException e)
+        {
+            Assert.assertThat(e.getMessage(),Matchers.containsString("cyclic"));
+        }
     }
 
     @Test
@@ -174,10 +182,15 @@ public class TopologicalSortTest
         ts.addDependency("D","C");
         ts.addDependency("E","D");
         ts.addDependency("A","E");
-
-        assertThrows(IllegalStateException.class, ()-> {
+        try
+        {
             ts.sort(s);
-        });
+            Assert.fail();
+        }
+        catch(IllegalStateException e)
+        {
+            Assert.assertThat(e.getMessage(),Matchers.containsString("cyclic"));
+        }
     }
     
     @SuppressWarnings("ReferenceEquality")

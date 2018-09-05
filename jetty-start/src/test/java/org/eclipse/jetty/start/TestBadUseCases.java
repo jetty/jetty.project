@@ -18,28 +18,31 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.start.util.RebuildTestResources;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test bad configuration scenarios.
  */
+@RunWith(Parameterized.class)
 public class TestBadUseCases
 {
-    public static Stream<Arguments> getCases()
+    @Parameters(name = "{0}")
+    public static List<Object[]> getCases()
     {
         List<Object[]> ret = new ArrayList<>();
 
@@ -51,14 +54,25 @@ public class TestBadUseCases
                 "Module [http3] specifies jetty version [10.0] which is newer than this version of jetty [" + RebuildTestResources.JETTY_VERSION + "]",
                 null});
 
-        return ret.stream().map(Arguments::of);
+        return ret;
     }
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    @Parameter(0)
+    public String caseName;
+
+    @Parameter(1)
+    public String expectedErrorMessage;
+
+    @Parameter(2)
+    public String[] commandLineArgs;
+
     // TODO unsure how this failure should be handled
-    @Disabled
-    @ParameterizedTest
-    @MethodSource("getCases")
-    public void testBadConfig(String caseName, String expectedErrorMessage, String[] commandLineArgs) throws Exception
+    @Test
+    @Ignore
+    public void testBadConfig() throws Exception
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + caseName);
@@ -77,7 +91,8 @@ public class TestBadUseCases
             }
         }
 
-        UsageException x = assertThrows(UsageException.class, ()->main.processCommandLine(cmdLine));
-        assertThat(x.getMessage(), containsString(expectedErrorMessage));
+        expectedException.expect(UsageException.class);
+        expectedException.expectMessage(containsString(expectedErrorMessage));
+        main.processCommandLine(cmdLine);
     }
 }

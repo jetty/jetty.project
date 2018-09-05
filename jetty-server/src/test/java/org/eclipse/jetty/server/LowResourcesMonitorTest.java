@@ -19,13 +19,15 @@
 package org.eclipse.jetty.server;
 
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.InputStream;
 import java.net.Socket;
@@ -35,12 +37,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.fail;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
+@RunWith(AdvancedRunner.class)
 public class LowResourcesMonitorTest
 {
     QueuedThreadPool _threadPool;
@@ -48,7 +49,7 @@ public class LowResourcesMonitorTest
     ServerConnector _connector;
     LowResourceMonitor _lowResourcesMonitor;
 
-    @BeforeEach
+    @Before
     public void before() throws Exception
     {
         _threadPool = new QueuedThreadPool();
@@ -76,7 +77,7 @@ public class LowResourcesMonitorTest
         _server.start();
     }
     
-    @AfterEach
+    @After
     public void after() throws Exception
     {
         _server.stop();
@@ -90,8 +91,8 @@ public class LowResourcesMonitorTest
         Thread.sleep(1200);
         _threadPool.setMaxThreads(_threadPool.getThreads()-_threadPool.getIdleThreads()+10);
         Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources(), _lowResourcesMonitor.getReasons());
-
+        assertFalse(_lowResourcesMonitor.getReasons(), _lowResourcesMonitor.isLowOnResources());
+        
         final CountDownLatch latch = new CountDownLatch(1);
         
         for (int i=0;i<100;i++)
@@ -114,8 +115,7 @@ public class LowResourcesMonitorTest
         
         latch.countDown();
         Thread.sleep(1200);
-
-        assertFalse(_lowResourcesMonitor.isLowOnResources(), _lowResourcesMonitor.getReasons());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
     }
     
 
@@ -129,8 +129,8 @@ public class LowResourcesMonitorTest
         System.out.println("maxThreads:"+maxThreads);
         _threadPool.setMaxThreads(maxThreads);
         Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources(), _lowResourcesMonitor.getReasons());
-
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
+        
         for (AbstractConnector c : _server.getBeans(AbstractConnector.class))
             assertThat(c.isAccepting(),Matchers.is(true));
         
@@ -157,19 +157,19 @@ public class LowResourcesMonitorTest
         
         latch.countDown();
         Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources(), _lowResourcesMonitor.getReasons());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
         for (AbstractConnector c : _server.getBeans(AbstractConnector.class))
             assertThat(c.isAccepting(),Matchers.is(true));   
     }
     
 
-    @Disabled("not reliable")
+    @Ignore ("not reliable")
     @Test
     public void testLowOnMemory() throws Exception
     {
         _lowResourcesMonitor.setMaxMemory(Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory()+(100*1024*1024));
         Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources(), _lowResourcesMonitor.getReasons());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
 
         byte[] data = new byte[100*1024*1024];
         Arrays.fill(data,(byte)1);
@@ -183,7 +183,7 @@ public class LowResourcesMonitorTest
         System.gc();
 
         Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources(),_lowResourcesMonitor.getReasons());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
     }
     
 
@@ -191,7 +191,7 @@ public class LowResourcesMonitorTest
     public void testMaxConnectionsAndMaxIdleTime() throws Exception
     {
         _lowResourcesMonitor.setMaxMemory(0);
-        assertFalse(_lowResourcesMonitor.isLowOnResources(), _lowResourcesMonitor.getReasons());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
 
         assertEquals( 20, _lowResourcesMonitor.getMaxConnections() );
         Socket[] socket = new Socket[_lowResourcesMonitor.getMaxConnections()+1];
@@ -205,7 +205,7 @@ public class LowResourcesMonitorTest
         {
             // wait for low idle time to close sockets, but not new Socket
             Thread.sleep(1200);
-            assertFalse(_lowResourcesMonitor.isLowOnResources(),_lowResourcesMonitor.getReasons());
+            assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
 
             for (int i=0;i<socket.length;i++)
                 assertEquals(-1,socket[i].getInputStream().read());
@@ -224,7 +224,7 @@ public class LowResourcesMonitorTest
 
         int maxLowResourcesTime = 5 * monitorPeriod;
         _lowResourcesMonitor.setMaxLowResourcesTime(maxLowResourcesTime);
-        assertFalse(_lowResourcesMonitor.isLowOnResources(), _lowResourcesMonitor.getReasons());
+        assertFalse(_lowResourcesMonitor.getReasons(),_lowResourcesMonitor.isLowOnResources());
 
         try(Socket socket0 = new Socket("localhost",_connector.getLocalPort()))
         {

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.osgi.test;
 
+
 import static org.junit.Assert.fail;
 
 import java.util.concurrent.CountDownLatch;

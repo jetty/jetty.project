@@ -18,22 +18,12 @@
 
 package org.eclipse.jetty.webapp;
 
-<<<<<<< HEAD
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
-=======
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
->>>>>>> a3f1592c50... Issue #2431 - Upgrade to Junit 5 (#2436)
 
 import java.io.File;
 import java.io.IOException;
@@ -65,7 +55,9 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.junit.jupiter.api.Test;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class WebAppContextTest
 {
@@ -197,12 +189,12 @@ public class WebAppContextTest
         server.start();
 
         // context A should be able to get both A and B servlet contexts
-        assertNotNull(contextA.getServletHandler().getServletContext().getContext("/A/s"));
-        assertNotNull(contextA.getServletHandler().getServletContext().getContext("/B/s"));
+        Assert.assertNotNull(contextA.getServletHandler().getServletContext().getContext("/A/s"));
+        Assert.assertNotNull(contextA.getServletHandler().getServletContext().getContext("/B/s"));
 
         // context B has a contextWhiteList set and should only be able to get ones that are approved
-        assertNull(contextB.getServletHandler().getServletContext().getContext("/A/s"));
-        assertNotNull(contextB.getServletHandler().getServletContext().getContext("/B/s"));
+        Assert.assertNull(contextB.getServletHandler().getServletContext().getContext("/A/s"));
+        Assert.assertNotNull(contextB.getServletHandler().getServletContext().getContext("/B/s"));
     }
 
 
@@ -264,11 +256,7 @@ public class WebAppContextTest
         try
         {
             String response = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
-<<<<<<< HEAD
             assertThat(response,containsString("200 OK"));
-=======
-            assertTrue(response.indexOf("200 OK")>=0);
->>>>>>> a3f1592c50... Issue #2431 - Upgrade to Junit 5 (#2436)
         }
         finally
         {
@@ -296,7 +284,7 @@ public class WebAppContextTest
         try
         {
             server.start();
-            assertTrue(context.isAvailable());
+            Assert.assertTrue(context.isAvailable());
         }
         finally
         {
@@ -422,7 +410,7 @@ public class WebAppContextTest
             }
         }
          
-        assertThat(history,contains("I0","I1","I2","Listener2 init broken","D1","D0","Listener1 destroy broken"));
+        Assert.assertThat(history,Matchers.contains("I0","I1","I2","Listener2 init broken","D1","D0","Listener1 destroy broken"));
         
         server.stop();
     }

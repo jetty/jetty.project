@@ -19,11 +19,19 @@
 
 package org.eclipse.jetty.hazelcast.session.client;
 
+import com.hazelcast.config.Config;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory;
 import org.eclipse.jetty.hazelcast.session.HazelcastTestHelper;
 import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.After;
+import org.junit.Before;
 
 public class ClientSessionScavengingTest
     extends AbstractClusteredSessionScavengingTest
@@ -37,13 +45,13 @@ public class ClientSessionScavengingTest
         return _testHelper.createSessionDataStoreFactory(true);
     }
 
-    @BeforeEach
+    @Before
     public void setUp()
     {
         _testHelper = new HazelcastTestHelper();
     }
 
-    @AfterEach
+    @After
     public void shutdown()
     {
         _testHelper.tearDown();

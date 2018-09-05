@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.websocket.tests.server.jsr356;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assume.assumeThat;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
+import java.net.URI;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
@@ -36,15 +36,17 @@ import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpointConfig;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
-import java.net.URI;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.toolchain.test.JDK;
+import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class MemoryUsageTest
 {
@@ -71,7 +73,7 @@ public class MemoryUsageTest
     private ServerConnector connector;
     private WebSocketContainer client;
 
-    @BeforeEach
+    @Before
     public void prepare() throws Exception
     {
         server = new Server();
@@ -88,7 +90,7 @@ public class MemoryUsageTest
         client = ContainerProvider.getWebSocketContainer();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         server.stop();
@@ -96,9 +98,9 @@ public class MemoryUsageTest
 
     @SuppressWarnings("unused")
     @Test
-    @DisabledOnJre( JRE.JAVA_8 )
     public void testMemoryUsage() throws Exception
     {
+        assumeThat("Only run on JDK 8 and older", JDK.IS_9, is(false));
 
         int sessionCount = 1000;
         Session[] sessions = new Session[sessionCount];
@@ -137,7 +139,7 @@ public class MemoryUsageTest
 
         // Assume no more than 25 KiB per session pair (client and server).
         long expected = 25 * 1024 * sessionCount;
-        assertThat("heap used", heapUsed,lessThan(expected));
+        Assert.assertThat("heap used", heapUsed,lessThan(expected));
     }
 
     private static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>

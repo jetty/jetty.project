@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -35,12 +35,15 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class ForwardedRequestCustomizerTest
 {
     private Server _server;
@@ -53,7 +56,7 @@ public class ForwardedRequestCustomizerTest
     
     ForwardedRequestCustomizer _customizer;
 
-    @BeforeEach
+    @Before
     public void init() throws Exception
     {
         _server = new Server();
@@ -88,7 +91,7 @@ public class ForwardedRequestCustomizerTest
         _server.start();
     }
 
-    @AfterEach
+    @After
     public void destroy() throws Exception
     {
         _server.stop();

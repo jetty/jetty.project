@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.server.jsr356;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 
@@ -30,7 +29,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -59,18 +57,17 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.Sha1Sum;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import org.eclipse.jetty.websocket.tests.Sha1Sum;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class StreamTest
 {
@@ -82,7 +79,7 @@ public class StreamTest
     private static Server server;
     private static URI serverUri;
 
-    @BeforeAll
+    @BeforeClass
     public static void startServer() throws Exception
     {
         server = new Server();
@@ -118,7 +115,7 @@ public class StreamTest
             LOG.debug("Server started on {}",serverUri);
     }
 
-    @AfterAll
+    @AfterClass
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -142,10 +139,10 @@ public class StreamTest
         upload("larger.png");
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testUploadLargest() throws Exception
     {
-        assertTimeoutPreemptively( Duration.ofMillis( 60000 ), () -> upload("largest.jpg"));
+        upload("largest.jpg");
     }
 
     private void upload(String filename) throws Exception
@@ -180,14 +177,13 @@ public class StreamTest
      */
     private void assertFileUpload(File file, File sha1File) throws IOException, NoSuchAlgorithmException
     {
-        assertThat("Path should exist: " + file,file.exists(),is(true));
-        assertThat("Path should not be a directory:" + file,file.isDirectory(),is(false));
+        Assert.assertThat("Path should exist: " + file,file.exists(),is(true));
+        Assert.assertThat("Path should not be a directory:" + file,file.isDirectory(),is(false));
 
         String expectedSha1 = Sha1Sum.loadSha1(sha1File);
-        String actualSha1 = Sha1Sum.calculate( file);
+        String actualSha1 = Sha1Sum.calculate(file);
 
-        assertThat("SHA1Sum of content: " + file,expectedSha1,equalToIgnoringCase(actualSha1));
-
+        Assert.assertThat("SHA1Sum of content: " + file,actualSha1,equalToIgnoringCase(expectedSha1));
     }
 
     @ClientEndpoint
@@ -215,7 +211,7 @@ public class StreamTest
 
         public void awaitClose() throws InterruptedException
         {
-            assertThat("Wait for ClientSocket close success",closeLatch.await(5,TimeUnit.SECONDS),is(true));
+            Assert.assertThat("Wait for ClientSocket close success",closeLatch.await(5,TimeUnit.SECONDS),is(true));
         }
 
         @OnError

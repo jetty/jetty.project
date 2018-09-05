@@ -2,7 +2,7 @@
 
 // in case of change update method isMainBuild
 def jdks = ["jdk8","jdk9","jdk10","jdk11"]
-def oss = ["linux"]
+def oss = ["linux"] 
 def builds = [:]
 for (def os in oss) {
   for (def jdk in jdks) {
@@ -18,7 +18,7 @@ def getFullBuild(jdk, os) {
     node(os) {
       // System Dependent Locations
       def mvnName = 'maven3.5'
-      def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" //
+      def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" // 
       def settingsName = 'oss-settings.xml'
       def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 

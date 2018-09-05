@@ -18,20 +18,23 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-
 import java.net.URI;
+import java.util.Arrays;
 
+import org.eclipse.jetty.toolchain.test.JDK;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Test;
+
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
 
 
 public class JrtResourceTest
@@ -39,10 +42,12 @@ public class JrtResourceTest
     private String testResURI = MavenTestingUtils.getTestResourcesDir().getAbsoluteFile().toURI().toASCIIString();
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testResourceFromUriForString()
     throws Exception
     {
+
+        Assume.assumeTrue(JDK.IS_9);
+
         URI string_loc = TypeUtil.getLocationOfClass(String.class);
         Resource resource = Resource.newResource(string_loc);
 
@@ -56,10 +61,11 @@ public class JrtResourceTest
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testResourceFromStringForString()
             throws Exception
     {
+        Assume.assumeTrue(JDK.IS_9);
+
         URI string_loc = TypeUtil.getLocationOfClass(String.class);
         Resource resource = Resource.newResource(string_loc.toASCIIString());
 
@@ -72,10 +78,11 @@ public class JrtResourceTest
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testResourceFromURLForString()
             throws Exception
     {
+        Assume.assumeTrue(JDK.IS_9);
+
         URI string_loc = TypeUtil.getLocationOfClass(String.class);
         Resource resource = Resource.newResource(string_loc.toURL());
 
@@ -89,10 +96,11 @@ public class JrtResourceTest
 
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testResourceModule()
             throws Exception
     {
+        Assume.assumeTrue(JDK.IS_9);
+
         Resource resource = Resource.newResource("jrt:/java.base");
 
         assertThat(resource.exists(), is(false));
@@ -101,10 +109,11 @@ public class JrtResourceTest
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testResourceAllModules()
             throws Exception
     {
+        Assume.assumeTrue(JDK.IS_9);
+
         Resource resource = Resource.newResource("jrt:/");
 
         assertThat(resource.exists(), is(false));

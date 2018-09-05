@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests.extensions;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
@@ -51,8 +51,8 @@ import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.tests.OutgoingFramesCapture;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class FragmentExtensionTest
 {
@@ -96,14 +96,14 @@ public class FragmentExtensionTest
         {
             prefix = "Frame[" + i + "]";
 
-            assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
-            assertThat(prefix + ".fin", actual.isFin(), is(true));
-            assertThat(prefix + ".rsv1", actual.isRsv1(), is(false));
-            assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
-            assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
+            Assert.assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
+            Assert.assertThat(prefix + ".fin", actual.isFin(), is(true));
+            Assert.assertThat(prefix + ".rsv1", actual.isRsv1(), is(false));
+            Assert.assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
+            Assert.assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
 
             ByteBuffer expected = BufferUtil.toBuffer(quote.get(i), StandardCharsets.UTF_8);
-            assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+            Assert.assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload", expected, actual.getPayload().slice());
             i++;
         }
@@ -133,14 +133,14 @@ public class FragmentExtensionTest
         capture.assertHasOpCount(OpCode.PING, 1);
         WebSocketFrame actual = capture.frames.poll();
 
-        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
-        assertThat("Frame.fin", actual.isFin(), is(true));
-        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
+        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
+        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
-        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 
@@ -203,17 +203,17 @@ public class FragmentExtensionTest
             // System.out.printf("expect: %s%n",expectedFrame);
 
             // Validate Frame
-            assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
-            assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
-            assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
-            assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
-            assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
+            Assert.assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
+            Assert.assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
+            Assert.assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
+            Assert.assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
+            Assert.assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
 
             // Validate Payload
             ByteBuffer expectedData = expectedFrame.getPayload().slice();
             ByteBuffer actualData = actualFrame.getPayload().slice();
 
-            assertThat(prefix + ".payloadLength", actualData.remaining(), is(expectedData.remaining()));
+            Assert.assertThat(prefix + ".payloadLength", actualData.remaining(), is(expectedData.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload", expectedData, actualData);
         }
     }
@@ -269,17 +269,17 @@ public class FragmentExtensionTest
             WebSocketFrame expectedFrame = expectedFrames.get(i);
 
             // Validate Frame
-            assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
-            assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
-            assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
-            assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
-            assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
+            Assert.assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
+            Assert.assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
+            Assert.assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
+            Assert.assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
+            Assert.assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
 
             // Validate Payload
             ByteBuffer expectedData = expectedFrame.getPayload().slice();
             ByteBuffer actualData = actualFrame.getPayload().slice();
 
-            assertThat(prefix + ".payloadLength", actualData.remaining(), is(expectedData.remaining()));
+            Assert.assertThat(prefix + ".payloadLength", actualData.remaining(), is(expectedData.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload", expectedData, actualData);
         }
     }
@@ -311,14 +311,14 @@ public class FragmentExtensionTest
 
         WebSocketFrame actual = capture.frames.poll();
 
-        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
-        assertThat("Frame.fin", actual.isFin(), is(true));
-        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
+        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
+        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
-        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 

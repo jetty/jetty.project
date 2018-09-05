@@ -28,11 +28,15 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.After;
+import org.junit.Rule;
 
 public class AbstractTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
     protected Server server;
     protected ServerConnector connector;
     protected HttpClient client;
@@ -71,7 +75,7 @@ public class AbstractTest
         client.setExecutor(clientExecutor);
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         if (client != null)

@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.util.statistic;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 
 /* ------------------------------------------------------------ */
@@ -57,7 +57,7 @@ public class SampleStatisticTest
             for (long x : data[d])
                 stats.record(x);
 
-            assertEquals(data[d].length, (int)stats.getCount(), "count"+d);
+            assertEquals("count"+d,data[d].length, (int)stats.getCount());
             assertNearEnough("mean"+d,results[d][0], stats.getMean());
             assertNearEnough("stddev"+d,results[d][1], stats.getStdDev());
         }
@@ -66,8 +66,8 @@ public class SampleStatisticTest
 
     private void assertNearEnough(String test,double expected, double actual)
     {
-        assertThat(actual,Matchers.greaterThan(expected-0.1D));
-        assertThat(actual,Matchers.lessThan(expected+0.1D));
+        Assert.assertThat(actual,Matchers.greaterThan(expected-0.1D));
+        Assert.assertThat(actual,Matchers.lessThan(expected+0.1D));
     }
 
 }

@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -35,38 +32,42 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HttpResponseAbortTest extends AbstractHttpClientServerTest
 {
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testAbortOnBegin(Scenario scenario) throws Exception
+    public HttpResponseAbortTest(SslContextFactory sslContextFactory)
     {
-        start(scenario, new EmptyServerHandler());
+        super(sslContextFactory);
+    }
+
+    @Test
+    public void testAbortOnBegin() throws Exception
+    {
+        start(new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onResponseBegin(response -> response.abort(new Exception()))
                 .send(result ->
                 {
-                    assertTrue(result.isFailed());
+                    Assert.assertTrue(result.isFailed());
                     latch.countDown();
                 });
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testAbortOnHeader(Scenario scenario) throws Exception
+    @Test
+    public void testAbortOnHeader() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onResponseHeader((response, field) ->
                 {
                     response.abort(new Exception());
@@ -74,35 +75,33 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
                 })
                 .send(result ->
                 {
-                    assertTrue(result.isFailed());
+                    Assert.assertTrue(result.isFailed());
                     latch.countDown();
                 });
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testAbortOnHeaders(Scenario scenario) throws Exception
+    @Test
+    public void testAbortOnHeaders() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onResponseHeaders(response -> response.abort(new Exception()))
                 .send(result ->
                 {
-                    assertTrue(result.isFailed());
+                    Assert.assertTrue(result.isFailed());
                     latch.countDown();
                 });
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testAbortOnContent(Scenario scenario) throws Exception
+    @Test
+    public void testAbortOnContent() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -125,21 +124,20 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onResponseContent((response, content) -> response.abort(new Exception()))
                 .send(result ->
                 {
-                    assertTrue(result.isFailed());
+                    Assert.assertTrue(result.isFailed());
                     latch.countDown();
                 });
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testAbortOnContentBeforeRequestTermination(Scenario scenario) throws Exception
+    @Test
+    public void testAbortOnContentBeforeRequestTermination() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -164,7 +162,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         final AtomicInteger completes = new AtomicInteger();
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .content(contentProvider)
                 .onResponseContent((response, content) ->
                 {
@@ -183,14 +181,14 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
                 .send(result ->
                 {
                     completes.incrementAndGet();
-                    assertTrue(result.isFailed());
+                    Assert.assertTrue(result.isFailed());
                     completeLatch.countDown();
                 });
-        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 
         // Wait to be sure that the complete event is only notified once.
         Thread.sleep(1000);
 
-        assertEquals(1, completes.get());
+        Assert.assertEquals(1, completes.get());
     }
 }

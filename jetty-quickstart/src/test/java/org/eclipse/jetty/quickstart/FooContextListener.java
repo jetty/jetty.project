@@ -19,9 +19,7 @@
 
 package org.eclipse.jetty.quickstart;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isIn;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
 import java.util.Set;
@@ -42,16 +40,18 @@ public class FooContextListener implements ServletContextListener
     {
         ServletRegistration defaultRego = sce.getServletContext().getServletRegistration("default");
         Collection<String> mappings = defaultRego.getMappings();
-        assertThat("/", isIn(mappings));
+        assertTrue(mappings.contains("/"));
         
         Set<String> otherMappings = sce.getServletContext().getServletRegistration("foo").addMapping("/");
         assertTrue(otherMappings.isEmpty());
         Collection<String> fooMappings = sce.getServletContext().getServletRegistration("foo").getMappings();
-        assertThat("/", isIn(fooMappings));
+        assertTrue(fooMappings.contains("/"));
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
+        // TODO Auto-generated method stub
+        
     }
 }

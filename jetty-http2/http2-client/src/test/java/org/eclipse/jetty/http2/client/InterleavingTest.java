@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -53,7 +47,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.jupiter.api.Test;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class InterleavingTest extends AbstractTest
 {
@@ -105,7 +101,7 @@ public class InterleavingTest extends AbstractTest
         session.newStream(headersFrame2, streamPromise2, streamListener);
         streamPromise2.get(5, TimeUnit.SECONDS);
 
-        assertTrue(serverStreamsLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(serverStreamsLatch.await(5, TimeUnit.SECONDS));
 
         Thread.sleep(1000);
 
@@ -150,7 +146,7 @@ public class InterleavingTest extends AbstractTest
         {
             DataFrameCallback dataFrameCallback = dataFrames.poll(5, TimeUnit.SECONDS);
             if (dataFrameCallback == null)
-                fail();
+                Assert.fail();
 
             DataFrame dataFrame = dataFrameCallback.frame;
             int streamId = dataFrame.getStreamId();
@@ -165,8 +161,8 @@ public class InterleavingTest extends AbstractTest
         }
 
         // Verify that the content has been sent properly.
-        assertArrayEquals(content1, contents.get(serverStream1.getId()).toByteArray());
-        assertArrayEquals(content2, contents.get(serverStream2.getId()).toByteArray());
+        Assert.assertArrayEquals(content1, contents.get(serverStream1.getId()).toByteArray());
+        Assert.assertArrayEquals(content2, contents.get(serverStream2.getId()).toByteArray());
 
         // Verify that the interleaving is correct.
         Map<Integer, List<Integer>> groups = new HashMap<>();
@@ -195,7 +191,7 @@ public class InterleavingTest extends AbstractTest
         {
             logger.debug("stream {} interleaved lengths = {}", stream, lengths);
             for (Integer length : lengths)
-                assertThat(length, lessThanOrEqualTo(maxFrameSize));
+                Assert.assertThat(length, Matchers.lessThanOrEqualTo(maxFrameSize));
         });
     }
 

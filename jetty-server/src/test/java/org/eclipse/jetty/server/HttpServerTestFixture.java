@@ -33,16 +33,17 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
+import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.After;
+import org.junit.Before;
 
 public class HttpServerTestFixture
 {    // Useful constants
     protected static final long PAUSE=10L;
-    protected static final int LOOPS = 50;
+    protected static final int LOOPS= PropertyFlag.isEnabled("test.stress")?250:50;
 
     protected QueuedThreadPool _threadPool;
     protected Server _server;
@@ -59,7 +60,7 @@ public class HttpServerTestFixture
         return socket;
     }
 
-    @BeforeEach
+    @Before
     public void before()
     {
         _threadPool = new QueuedThreadPool();
@@ -83,7 +84,7 @@ public class HttpServerTestFixture
         _serverURI = _server.getURI();
     }
 
-    @AfterEach
+    @After
     public void stopServer() throws Exception
     {
         _server.stop();

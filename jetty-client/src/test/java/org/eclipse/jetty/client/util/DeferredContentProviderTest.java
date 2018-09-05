@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client.util;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -33,21 +29,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class DeferredContentProviderTest
 {
     private ExecutorService executor;
 
-    @BeforeEach
+    @Before
     public void prepare() throws Exception
     {
         executor = Executors.newCachedThreadPool();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         executor.shutdownNow();
@@ -68,7 +65,7 @@ public class DeferredContentProviderTest
             }
         });
 
-        assertTrue(await(task, 5, TimeUnit.SECONDS));
+        Assert.assertTrue(await(task, 5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -90,14 +87,14 @@ public class DeferredContentProviderTest
         });
 
         // Wait until flush() blocks.
-        assertFalse(await(task, 1, TimeUnit.SECONDS));
+        Assert.assertFalse(await(task, 1, TimeUnit.SECONDS));
 
         // Consume the content and succeed the callback.
         iterator.next();
         ((Callback)iterator).succeeded();
 
         // Flush should return.
-        assertTrue(await(task, 5, TimeUnit.SECONDS));
+        Assert.assertTrue(await(task, 5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -118,7 +115,7 @@ public class DeferredContentProviderTest
         });
 
         // Wait until flush() blocks.
-        assertTrue(await(task, 5, TimeUnit.SECONDS));
+        Assert.assertTrue(await(task, 5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -129,11 +126,19 @@ public class DeferredContentProviderTest
 
         provider.close();
 
-        assertFalse(iterator.hasNext());
+        Assert.assertFalse(iterator.hasNext());
 
-        assertThrows(NoSuchElementException.class, ()->iterator.next());
+        try
+        {
+            iterator.next();
+            Assert.fail();
+        }
+        catch (NoSuchElementException x)
+        {
+            // Expected
+        }
 
-        assertFalse(iterator.hasNext());
+        Assert.assertFalse(iterator.hasNext());
     }
 
     private boolean await(Future<?> task, long time, TimeUnit unit) throws Exception

@@ -19,8 +19,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.After;
+import org.junit.Before;
 
 /**
  * JDBCSessionDataStoreTest
@@ -30,14 +30,14 @@ import org.junit.jupiter.api.BeforeEach;
 public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
     
-    @BeforeEach
+    @Before
     public void setUp() throws Exception
     {
         JdbcTestHelper.prepareTables();
     }
     
     
-    @AfterEach
+    @After
     public void tearDown() throws Exception 
     {
         JdbcTestHelper.shutdown(null);

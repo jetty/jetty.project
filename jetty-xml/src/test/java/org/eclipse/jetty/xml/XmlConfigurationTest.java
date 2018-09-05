@@ -20,27 +20,24 @@ package org.eclipse.jetty.xml;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class XmlConfigurationTest
 {
@@ -71,66 +68,66 @@ public class XmlConfigurationTest
             configuration.getProperties().putAll(properties);
             configuration.configure(tc);
 
-            assertEquals("SetValue", tc.testObject, "Set String");
-            assertEquals(2, tc.testInt, "Set Type");
+            assertEquals("Set String","SetValue",tc.testObject);
+            assertEquals("Set Type",2,tc.testInt);
 
             assertEquals(18080, tc.propValue);
 
-            assertEquals("PutValue", tc.get("Test"), "Put");
-            assertEquals("2", tc.get("TestDft"), "Put dft");
-            assertEquals(2, tc.get("TestInt"), "Put type");
+            assertEquals("Put","PutValue",tc.get("Test"));
+            assertEquals("Put dft","2",tc.get("TestDft"));
+            assertEquals("Put type",2,tc.get("TestInt"));
 
-            assertEquals("PutValue", tc.get("Trim"), "Trim");
-            assertEquals(null, tc.get("Null"), "Null");
-            assertEquals(null, tc.get("NullTrim"), "NullTrim");
+            assertEquals("Trim","PutValue",tc.get("Trim"));
+            assertEquals("Null",null,tc.get("Null"));
+            assertEquals("NullTrim",null,tc.get("NullTrim"));
 
-            assertEquals(1.2345, tc.get("ObjectTrim"), "ObjectTrim");
-            assertEquals("-1String", tc.get("Objects"), "Objects");
-            assertEquals("-1String", tc.get("ObjectsTrim"), "ObjectsTrim");
-            assertEquals("\n    PutValue\n  ", tc.get("String"), "String");
-            assertEquals("", tc.get("NullString"), "NullString");
-            assertEquals("\n  ", tc.get("WhiteSpace"), "WhiteSpace");
-            assertEquals("\n    1.2345\n  ", tc.get("ObjectString"), "ObjectString");
-            assertEquals("-1String", tc.get("ObjectsString"), "ObjectsString");
-            assertEquals("-1\n  String", tc.get("ObjectsWhiteString"), "ObjectsWhiteString");
+            assertEquals("ObjectTrim",1.2345,tc.get("ObjectTrim"));
+            assertEquals("Objects","-1String",tc.get("Objects"));
+            assertEquals( "ObjectsTrim", "-1String",tc.get("ObjectsTrim"));
+            assertEquals( "String", "\n    PutValue\n  ",tc.get("String"));
+            assertEquals( "NullString", "",tc.get("NullString"));
+            assertEquals( "WhiteSpace", "\n  ",tc.get("WhiteSpace"));
+            assertEquals( "ObjectString", "\n    1.2345\n  ",tc.get("ObjectString"));
+            assertEquals( "ObjectsString", "-1String",tc.get("ObjectsString"));
+            assertEquals( "ObjectsWhiteString", "-1\n  String",tc.get("ObjectsWhiteString"));
 
-            assertEquals(System.getProperty("user.dir")+"/stuff", tc.get("SystemProperty"), "SystemProperty");
-            assertEquals(System.getenv("HOME"), tc.get("Env"), "Env");
+            assertEquals( "SystemProperty", System.getProperty("user.dir")+"/stuff",tc.get("SystemProperty"));
+            assertEquals( "Env", System.getenv("HOME"),tc.get("Env"));
 
-            assertEquals("xxx", tc.get("Property"), "Property");
+            assertEquals( "Property", "xxx", tc.get("Property"));
 
 
-            assertEquals("Yes", tc.get("Called"), "Called");
+            assertEquals( "Called", "Yes",tc.get("Called"));
 
             assertTrue(TestConfiguration.called);
 
-            assertEquals("Blah", tc.oa[0], "oa[0]");
-            assertEquals("1.2.3.4:5678", tc.oa[1], "oa[1]");
-            assertEquals(1.2345, tc.oa[2], "oa[2]");
-            assertEquals(null, tc.oa[3], "oa[3]");
+            assertEquals("oa[0]","Blah",tc.oa[0]);
+            assertEquals("oa[1]","1.2.3.4:5678",tc.oa[1]);
+            assertEquals("oa[2]",1.2345,tc.oa[2]);
+            assertEquals("oa[3]",null,tc.oa[3]);
 
-            assertEquals(1, tc.ia[0], "ia[0]");
-            assertEquals(2, tc.ia[1], "ia[1]");
-            assertEquals(3, tc.ia[2], "ia[2]");
-            assertEquals(0, tc.ia[3], "ia[3]");
+            assertEquals("ia[0]",1,tc.ia[0]);
+            assertEquals("ia[1]",2,tc.ia[1]);
+            assertEquals("ia[2]",3,tc.ia[2]);
+            assertEquals("ia[3]",0,tc.ia[3]);
 
             TestConfiguration tc2=tc.nested;
             assertTrue(tc2!=null);
-            assertEquals(true, tc2.get("Arg"), "Called(bool)");
+            assertEquals( "Called(bool)",true,tc2.get("Arg"));
 
-            assertEquals(null, tc.get("Arg"), "nested config");
-            assertEquals(true, tc2.get("Arg"), "nested config");
+            assertEquals("nested config",null,tc.get("Arg"));
+            assertEquals("nested config",true,tc2.get("Arg"));
 
-            assertEquals("Call1", tc2.testObject, "nested config");
-            assertEquals(4, tc2.testInt, "nested config");
-            assertEquals("http://www.eclipse.com/", tc2.url.toString(), "nested call");
+            assertEquals("nested config","Call1",tc2.testObject);
+            assertEquals("nested config",4,tc2.testInt);
+            assertEquals( "nested call", "http://www.eclipse.com/",tc2.url.toString());
 
-            assertEquals(tc.testField1, 77, "static to field");
-            assertEquals(tc.testField2, 2, "field to field");
-            assertEquals(TestConfiguration.VALUE, 42, "literal to static");
+            assertEquals("static to field",tc.testField1,77);
+            assertEquals("field to field",tc.testField2,2);
+            assertEquals("literal to static",TestConfiguration.VALUE,42);
             
-            assertEquals(((Map<String, String>)configuration.getIdMap().get("map")).get("key0"), "value0");
-            assertEquals(((Map<String, String>)configuration.getIdMap().get("map")).get("key1"), "value1");
+            assertEquals("value0",((Map<String,String>)configuration.getIdMap().get("map")).get("key0"));
+            assertEquals("value1",((Map<String,String>)configuration.getIdMap().get("map")).get("key1"));
         }
     }
 
@@ -167,61 +164,61 @@ public class XmlConfigurationTest
             assertEquals("nested",tc.getNested().getTestString());
             assertEquals("NEW DEFAULT",tc.getNested().getNested().getTestString());
 
-            assertEquals("SetValue", tc.testObject, "Set String");
-            assertEquals(2, tc.testInt, "Set Type");
+            assertEquals("Set String","SetValue",tc.testObject);
+            assertEquals("Set Type",2,tc.testInt);
 
             assertEquals(18080, tc.propValue);
 
-            assertEquals("PutValue", tc.get("Test"), "Put");
-            assertEquals("2", tc.get("TestDft"), "Put dft");
-            assertEquals(2, tc.get("TestInt"), "Put type");
+            assertEquals("Put","PutValue",tc.get("Test"));
+            assertEquals("Put dft","2",tc.get("TestDft"));
+            assertEquals("Put type",2,tc.get("TestInt"));
 
-            assertEquals("PutValue", tc.get("Trim"), "Trim");
-            assertEquals(null, tc.get("Null"), "Null");
-            assertEquals(null, tc.get("NullTrim"), "NullTrim");
+            assertEquals("Trim","PutValue",tc.get("Trim"));
+            assertEquals("Null",null,tc.get("Null"));
+            assertEquals("NullTrim",null,tc.get("NullTrim"));
 
-            assertEquals(1.2345, tc.get("ObjectTrim"), "ObjectTrim");
-            assertEquals("-1String", tc.get("Objects"), "Objects");
-            assertEquals("-1String", tc.get("ObjectsTrim"), "ObjectsTrim");
-            assertEquals("\n    PutValue\n  ", tc.get("String"), "String");
-            assertEquals("", tc.get("NullString"), "NullString");
-            assertEquals("\n  ", tc.get("WhiteSpace"), "WhiteSpace");
-            assertEquals("\n    1.2345\n  ", tc.get("ObjectString"), "ObjectString");
-            assertEquals("-1String", tc.get("ObjectsString"), "ObjectsString");
-            assertEquals("-1\n  String", tc.get("ObjectsWhiteString"), "ObjectsWhiteString");
+            assertEquals("ObjectTrim",1.2345,tc.get("ObjectTrim"));
+            assertEquals("Objects","-1String",tc.get("Objects"));
+            assertEquals( "ObjectsTrim", "-1String",tc.get("ObjectsTrim"));
+            assertEquals( "String", "\n    PutValue\n  ",tc.get("String"));
+            assertEquals( "NullString", "",tc.get("NullString"));
+            assertEquals( "WhiteSpace", "\n  ",tc.get("WhiteSpace"));
+            assertEquals( "ObjectString", "\n    1.2345\n  ",tc.get("ObjectString"));
+            assertEquals( "ObjectsString", "-1String",tc.get("ObjectsString"));
+            assertEquals( "ObjectsWhiteString", "-1\n  String",tc.get("ObjectsWhiteString"));
 
-            assertEquals(System.getProperty("user.dir")+"/stuff", tc.get("SystemProperty"), "SystemProperty");
-            assertEquals("xxx", tc.get("Property"), "Property");
+            assertEquals( "SystemProperty", System.getProperty("user.dir")+"/stuff",tc.get("SystemProperty"));
+            assertEquals( "Property", "xxx", tc.get("Property"));
 
 
-            assertEquals("Yes", tc.get("Called"), "Called");
+            assertEquals( "Called", "Yes",tc.get("Called"));
 
             assertTrue(TestConfiguration.called);
 
-            assertEquals("Blah", tc.oa[0], "oa[0]");
-            assertEquals("1.2.3.4:5678", tc.oa[1], "oa[1]");
-            assertEquals(1.2345, tc.oa[2], "oa[2]");
-            assertEquals(null, tc.oa[3], "oa[3]");
+            assertEquals("oa[0]","Blah",tc.oa[0]);
+            assertEquals("oa[1]","1.2.3.4:5678",tc.oa[1]);
+            assertEquals("oa[2]",1.2345,tc.oa[2]);
+            assertEquals("oa[3]",null,tc.oa[3]);
 
-            assertEquals(1, tc.ia[0], "ia[0]");
-            assertEquals(2, tc.ia[1], "ia[1]");
-            assertEquals(3, tc.ia[2], "ia[2]");
-            assertEquals(0, tc.ia[3], "ia[3]");
+            assertEquals("ia[0]",1,tc.ia[0]);
+            assertEquals("ia[1]",2,tc.ia[1]);
+            assertEquals("ia[2]",3,tc.ia[2]);
+            assertEquals("ia[3]",0,tc.ia[3]);
 
             TestConfiguration tc2=tc.nested;
             assertTrue(tc2!=null);
-            assertEquals(true, tc2.get("Arg"), "Called(bool)");
+            assertEquals( "Called(bool)",true,tc2.get("Arg"));
 
-            assertEquals(null, tc.get("Arg"), "nested config");
-            assertEquals(true, tc2.get("Arg"), "nested config");
+            assertEquals("nested config",null,tc.get("Arg"));
+            assertEquals("nested config",true,tc2.get("Arg"));
 
-            assertEquals("Call1", tc2.testObject, "nested config");
-            assertEquals(4, tc2.testInt, "nested config");
-            assertEquals("http://www.eclipse.com/", tc2.url.toString(), "nested call");
+            assertEquals("nested config","Call1",tc2.testObject);
+            assertEquals("nested config",4,tc2.testInt);
+            assertEquals( "nested call", "http://www.eclipse.com/",tc2.url.toString());
 
-            assertEquals(71, tc.testField1, "static to field");
-            assertEquals(2, tc.testField2, "field to field");
-            assertEquals(42, TestConfiguration.VALUE, "literal to static");
+            assertEquals("static to field",71,tc.testField1);
+            assertEquals("field to field",2,tc.testField2);
+            assertEquals("literal to static",42,TestConfiguration.VALUE);
         }
     }
 
@@ -249,8 +246,8 @@ public class XmlConfigurationTest
             new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\">SetValue</Set><Set name=\"Test\" type=\"int\">2</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         configuration.configure(tc);
-        assertEquals("SetValue", tc.testObject, "Set String 3");
-        assertEquals(2, tc.testInt, "Set Type 3");
+        assertEquals("Set String 3", "SetValue", tc.testObject);
+        assertEquals("Set Type 3", 2, tc.testInt);
     }
 
     @Test
@@ -259,12 +256,15 @@ public class XmlConfigurationTest
         XmlConfiguration configuration =
             new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"PropertyTest\"><Property name=\"null\"/></Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
-
-        NoSuchMethodException e = assertThrows(NoSuchMethodException.class, () -> {
+        try
+        {
             configuration.configure(tc);
-        });
-
-        assertThat(e.getMessage(), containsString("Found setters for int"));
+            Assert.fail();
+        }
+        catch(NoSuchMethodException e)
+        {
+            assertThat(e.getMessage(),containsString("Found setters for int"));
+        }
     }
 
     @Test
@@ -295,16 +295,13 @@ public class XmlConfigurationTest
         assertThat("tc.getList() has two entries as specified in the xml", tc.getList().size(), is(2));
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void testListNotContainingArray() throws Exception
     {
         XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
                 + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">Some String</Arg></New></Configure>");
         TestConfiguration tc = new TestConfiguration();
-
-        assertThrows(IllegalArgumentException.class, ()-> {
-            xmlConfiguration.configure(tc);
-        });
+        xmlConfiguration.configure(tc);
     }
 
     @Test
@@ -320,15 +317,13 @@ public class XmlConfigurationTest
         assertThat("tc.getList() has two entries as specified in the xml", tc.getSet().size(), is(2));
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void testSetNotContainingArray() throws Exception
     {
         XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
                 + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">Some String</Arg></New></Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertThrows(IllegalArgumentException.class, ()->{
-            xmlConfiguration.configure(tc);
-        });
+        xmlConfiguration.configure(tc);
     }
 
     @Test
@@ -353,16 +348,14 @@ public class XmlConfigurationTest
         assertThat("tc.getList() has two entries as specified in the xml", tc.getList().size(), is(2));
     }
 
-    @Test
+    @Test(expected=NoSuchMethodException.class)
     public void testNotSupportedLinkedListSetter() throws Exception
     {
         XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"LinkedList\">"
                 + INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getList(), is(nullValue()));
-        assertThrows(NoSuchMethodException.class, ()->{
-            xmlConfiguration.configure(tc);
-        });
+        xmlConfiguration.configure(tc);
     }
 
     @Test
@@ -417,9 +410,9 @@ public class XmlConfigurationTest
                 "    </Set>" +
                 "</Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertNull(tc.map, "tc.map is null as it's not configured yet");
+        Assert.assertNull("tc.map is null as it's not configured yet", tc.map);
         xmlConfiguration.configure(tc);
-        assertEquals(2, tc.map.size(), "tc.map is has two entries as specified in the XML");
+        Assert.assertEquals("tc.map is has two entries as specified in the XML", 2, tc.map.size());
     }
 
     @Test
@@ -434,9 +427,9 @@ public class XmlConfigurationTest
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
     }
 
     @Test
@@ -451,9 +444,9 @@ public class XmlConfigurationTest
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
     }
 
     @Test
@@ -468,9 +461,9 @@ public class XmlConfigurationTest
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
     }
 
     @Test
@@ -485,9 +478,9 @@ public class XmlConfigurationTest
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
     }
 
     @Test
@@ -502,9 +495,9 @@ public class XmlConfigurationTest
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
     }
 
     @Test
@@ -526,12 +519,12 @@ public class XmlConfigurationTest
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
-        assertEquals("arg1", atc.getNested().getFirst(), "nested first parameter not wired correctly");
-        assertEquals("arg2", atc.getNested().getSecond(), "nested second parameter not wired correctly");
-        assertEquals("arg3", atc.getNested().getThird(), "nested third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
 
     }
 
@@ -554,12 +547,12 @@ public class XmlConfigurationTest
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
-        assertEquals("arg1", atc.getNested().getFirst(), "nested first parameter not wired correctly");
-        assertEquals("arg2", atc.getNested().getSecond(), "nested second parameter not wired correctly");
-        assertEquals("arg3", atc.getNested().getThird(), "nested third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
     }
 
     @Test
@@ -581,12 +574,12 @@ public class XmlConfigurationTest
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
-        assertEquals("arg1", atc.getNested().getFirst(), "nested first parameter not wired correctly");
-        assertEquals("arg2", atc.getNested().getSecond(), "nested second parameter not wired correctly");
-        assertEquals("arg3", atc.getNested().getThird(), "nested third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
     }
 
     @Test
@@ -608,12 +601,12 @@ public class XmlConfigurationTest
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
-        assertEquals("arg1", atc.getNested().getFirst(), "nested first parameter not wired correctly");
-        assertEquals("arg2", atc.getNested().getSecond(), "nested second parameter not wired correctly");
-        assertEquals("arg3", atc.getNested().getThird(), "nested third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
     }
     
     @Test
@@ -636,12 +629,12 @@ public class XmlConfigurationTest
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
-        assertEquals("arg1", atc.getNested().getFirst(), "nested first parameter not wired correctly");
-        assertEquals("arg2", atc.getNested().getSecond(), "nested second parameter not wired correctly");
-        assertEquals("arg3", atc.getNested().getThird(), "nested third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly", "arg3", atc.getNested().getThird());
     }
 
     @Test
@@ -664,12 +657,12 @@ public class XmlConfigurationTest
 
         DefaultTestConfiguration atc = (DefaultTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
-        assertEquals("arg1", atc.getNested().getFirst(), "nested first parameter not wired correctly");
-        assertEquals("arg2", atc.getNested().getSecond(), "nested second parameter not wired correctly");
-        assertEquals("arg3", atc.getNested().getThird(), "nested third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly", "arg3", atc.getNested().getThird());
     }
 
     @Test
@@ -691,12 +684,12 @@ public class XmlConfigurationTest
 
         AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
 
-        assertEquals("arg1", atc.getFirst(), "first parameter not wired correctly");
-        assertEquals("arg2", atc.getSecond(), "second parameter not wired correctly");
-        assertEquals("arg3", atc.getThird(), "third parameter not wired correctly");
-        assertEquals("arg1", atc.getNested().getFirst(), "nested first parameter not wired correctly");
-        assertEquals("arg2", atc.getNested().getSecond(), "nested second parameter not wired correctly");
-        assertEquals("arg3", atc.getNested().getThird(), "nested third parameter not wired correctly");
+        Assert.assertEquals("first parameter not wired correctly","arg1", atc.getFirst());
+        Assert.assertEquals("second parameter not wired correctly","arg2", atc.getSecond());
+        Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
+        Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
+        Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
+        Assert.assertEquals("nested third parameter not wired correctly", "arg3", atc.getNested().getThird());
     }
 
     public static class NativeHolder
@@ -746,7 +739,7 @@ public class XmlConfigurationTest
                 "</Configure>");
 
         NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
-        assertTrue(bh.getBoolean());
+        Assert.assertTrue(bh.getBoolean());
     }
     
     @Test
@@ -758,11 +751,11 @@ public class XmlConfigurationTest
                 "</Configure>");
 
         NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
-        assertFalse(bh.getBoolean());
+        Assert.assertFalse(bh.getBoolean());
     }
     
     @Test
-    @Disabled
+    @Ignore
     public void testSetBadBoolean() throws Exception
     {
         XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
@@ -771,7 +764,7 @@ public class XmlConfigurationTest
                 "</Configure>");
 
         NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
-        assertTrue(bh.getBoolean(), "boolean['tru']");
+        Assert.assertTrue(bh.getBoolean());
     }
     
     @Test
@@ -782,9 +775,15 @@ public class XmlConfigurationTest
                 "  <Set name=\"integer\">bad</Set>" +
                 "</Configure>");
 
-        assertThrows(InvocationTargetException.class, ()->{
+        try
+        {
             xmlConfiguration.configure();
-        });
+            Assert.fail();
+        }
+        catch (Exception e)
+        {
+            
+        }
     }
     
     @Test
@@ -795,9 +794,15 @@ public class XmlConfigurationTest
                 "  <Set name=\"integer\">100 bas</Set>" +
                 "</Configure>");
 
-        assertThrows(InvocationTargetException.class, ()->{
+        try
+        {
             xmlConfiguration.configure();
-        });
+            Assert.fail();
+        }
+        catch (Exception e)
+        {
+            
+        }
     }
     
     @Test
@@ -808,9 +813,15 @@ public class XmlConfigurationTest
                 "  <Set name=\"integer\">1.5</Set>" +
                 "</Configure>");
 
-        assertThrows(InvocationTargetException.class, ()->{
+        try
+        {
             xmlConfiguration.configure();
-        });
+            Assert.fail();
+        }
+        catch (Exception e)
+        {
+            
+        }
     }
 
     @Test

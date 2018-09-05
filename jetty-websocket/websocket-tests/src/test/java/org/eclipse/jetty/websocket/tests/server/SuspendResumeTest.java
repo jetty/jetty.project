@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,12 +37,10 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTimeout;
-
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class SuspendResumeTest
 {
@@ -51,35 +48,35 @@ public class SuspendResumeTest
     public static class BackPressureEchoSocket
     {
         private Session session;
-
+        
         @OnWebSocketConnect
         public void onConnect(Session session)
         {
             this.session = session;
         }
-
+        
         @OnWebSocketMessage
         public void onMessage(String message)
         {
             SuspendToken suspendToken = this.session.suspend();
             this.session.getRemote().sendString(message,
-                                                new WriteCallback()
-                                                {
-                                                    @Override
-                                                    public void writeSuccess()
-                                                    {
-                                                        suspendToken.resume();
-                                                    }
-
-                                                    @Override
-                                                    public void writeFailed(Throwable t)
-                                                    {
-                                                        fail(t);
-                                                    }
-                                                });
+                    new WriteCallback()
+                    {
+                        @Override
+                        public void writeSuccess()
+                        {
+                            suspendToken.resume();
+                        }
+                        
+                        @Override
+                        public void writeFailed(Throwable t)
+                        {
+                            Assert.fail(t.getMessage());
+                        }
+                    });
         }
     }
-
+    
     public static class BackPressureEchoCreator implements WebSocketCreator
     {
         @Override
@@ -88,96 +85,90 @@ public class SuspendResumeTest
             return new BackPressureEchoSocket();
         }
     }
-
+    
     public static class BackPressureServlet extends WebSocketServlet
     {
         private static final long serialVersionUID = 1L;
-
+        
         @Override
         public void configure(WebSocketServletFactory factory)
         {
             factory.setCreator(new BackPressureEchoCreator());
         }
     }
-
+    
     private static SimpleServletServer server;
-
-    @BeforeAll
+    
+    @BeforeClass
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new BackPressureServlet());
         server.start();
     }
-
-    @AfterAll
+    
+    @AfterClass
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-
-    @Test
+    
+    @Test(timeout = 10000)
     public void testSuspendResume_Bulk() throws Exception
     {
-        assertTimeout( Duration.ofMillis( 10000 ), () ->{
-            List<WebSocketFrame> send = new ArrayList<>();
-            send.add(new TextFrame().setPayload("echo1"));
-            send.add(new TextFrame().setPayload("echo2"));
-            send.add(new CloseFrame());
-
-            List<WebSocketFrame> expect = new ArrayList<>();
-            expect.add(new TextFrame().setPayload("echo1"));
-            expect.add(new TextFrame().setPayload("echo2"));
-            expect.add(new CloseFrame());
-
-            try (LocalFuzzer session = server.newLocalFuzzer())
-            {
-                session.sendBulk(send);
-                session.expect(expect);
-            }
-        });
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new TextFrame().setPayload("echo1"));
+        send.add(new TextFrame().setPayload("echo2"));
+        send.add(new CloseFrame());
+        
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new TextFrame().setPayload("echo1"));
+        expect.add(new TextFrame().setPayload("echo2"));
+        expect.add(new CloseFrame());
+        
+        try (LocalFuzzer session = server.newLocalFuzzer())
+        {
+            session.sendBulk(send);
+            session.expect(expect);
+        }
     }
-
-    @Test
+    
+    @Test(timeout = 10000)
     public void testSuspendResume_SmallBuffers() throws Exception
     {
-        assertTimeout( Duration.ofMillis( 10000 ), () ->{
-            List<WebSocketFrame> send = new ArrayList<>();
-            send.add(new TextFrame().setPayload("echo1"));
-            send.add(new TextFrame().setPayload("echo2"));
-            send.add(new CloseFrame());
-
-            List<WebSocketFrame> expect = new ArrayList<>();
-            expect.add(new TextFrame().setPayload("echo1"));
-            expect.add(new TextFrame().setPayload("echo2"));
-            expect.add(new CloseFrame());
-
-            try (LocalFuzzer session = server.newLocalFuzzer())
-            {
-                session.sendSegmented(send, 2);
-                session.expect(expect);
-            }
-        });
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new TextFrame().setPayload("echo1"));
+        send.add(new TextFrame().setPayload("echo2"));
+        send.add(new CloseFrame());
+        
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new TextFrame().setPayload("echo1"));
+        expect.add(new TextFrame().setPayload("echo2"));
+        expect.add(new CloseFrame());
+        
+        try (LocalFuzzer session = server.newLocalFuzzer())
+        {
+            session.sendSegmented(send, 2);
+            session.expect(expect);
+        }
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testSuspendResume_AsFrames() throws Exception
     {
-        assertTimeout( Duration.ofMillis( 10000 ), () ->{
-            List<WebSocketFrame> send = new ArrayList<>();
-            send.add(new TextFrame().setPayload("echo1"));
-            send.add(new TextFrame().setPayload("echo2"));
-            send.add(new CloseFrame());
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new TextFrame().setPayload("echo1"));
+        send.add(new TextFrame().setPayload("echo2"));
+        send.add(new CloseFrame());
 
-            List<WebSocketFrame> expect = new ArrayList<>();
-            expect.add(new TextFrame().setPayload("echo1"));
-            expect.add(new TextFrame().setPayload("echo2"));
-            expect.add(new CloseFrame());
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new TextFrame().setPayload("echo1"));
+        expect.add(new TextFrame().setPayload("echo2"));
+        expect.add(new CloseFrame());
 
-            try (LocalFuzzer session = server.newLocalFuzzer())
-            {
-                session.sendFrames(send);
-                session.expect(expect);
-            }
-        });
+        try (LocalFuzzer session = server.newLocalFuzzer())
+        {
+            session.sendFrames(send);
+            session.expect(expect);
+        }
     }
 }

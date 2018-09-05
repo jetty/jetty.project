@@ -19,59 +19,69 @@
 package org.eclipse.jetty.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.stream.Stream;
+import java.util.List;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class UrlEncodedInvalidEncodingTest
 {
-    public static Stream<Arguments> data()
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+    
+    @Parameterized.Parameters(name = "{1} | {0}")
+    public static List<Object[]> data()
     {
-        ArrayList<Arguments> data = new ArrayList<>();
-        data.add(Arguments.of( "Name=xx%zzyy", UTF_8, IllegalArgumentException.class ));
-        data.add(Arguments.of( "Name=%FF%FF%FF", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
-        data.add(Arguments.of( "Name=%EF%EF%EF", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
-        data.add(Arguments.of( "Name=%E%F%F", UTF_8, IllegalArgumentException.class ));
-        data.add(Arguments.of( "Name=x%", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
-        data.add(Arguments.of( "Name=x%2", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
-        data.add(Arguments.of( "Name=xxx%", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
-        data.add(Arguments.of( "name=X%c0%afZ", UTF_8, Utf8Appendable.NotUtf8Exception.class ));
-        return data.stream();
+        ArrayList<Object[]> data = new ArrayList<>();
+        
+        data.add(new Object[]{ "Name=xx%zzyy", UTF_8, IllegalArgumentException.class });
+        data.add(new Object[]{ "Name=%FF%FF%FF", UTF_8, Utf8Appendable.NotUtf8Exception.class });
+        data.add(new Object[]{ "Name=%EF%EF%EF", UTF_8, Utf8Appendable.NotUtf8Exception.class });
+        data.add(new Object[]{ "Name=%E%F%F", UTF_8, IllegalArgumentException.class });
+        data.add(new Object[]{ "Name=x%", UTF_8, Utf8Appendable.NotUtf8Exception.class });
+        data.add(new Object[]{ "Name=x%2", UTF_8, Utf8Appendable.NotUtf8Exception.class });
+        data.add(new Object[]{ "Name=xxx%", UTF_8, Utf8Appendable.NotUtf8Exception.class });
+        data.add(new Object[]{ "name=X%c0%afZ", UTF_8, Utf8Appendable.NotUtf8Exception.class });
+        return data;
     }
-
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testDecode(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
+    
+    @Parameterized.Parameter(0)
+    public String inputString;
+    
+    @Parameterized.Parameter(1)
+    public Charset charset;
+    
+    @Parameterized.Parameter(2)
+    public Class<? extends Throwable> expectedThrowable;
+    
+    @Test
+    public void testDecode()
     {
-        assertThrows(expectedThrowable, ()->{
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.decode(inputString, charset);
-        });
+        UrlEncoded url_encoded = new UrlEncoded();
+        expectedException.expect(expectedThrowable);
+        url_encoded.decode(inputString, charset);
     }
-
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testDecodeUtf8ToMap(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
+    
+    @Test
+    public void testDecodeUtf8ToMap()
     {
-        assertThrows(expectedThrowable, ()->{
-            MultiMap<String> map = new MultiMap<>();
-            UrlEncoded.decodeUtf8To(inputString,map);
-        });
+        MultiMap<String> map = new MultiMap<String>();
+        expectedException.expect(expectedThrowable);
+        UrlEncoded.decodeUtf8To(inputString,map);
     }
-
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testDecodeTo(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
+    
+    @Test
+    public void testDecodeTo()
     {
-        assertThrows(expectedThrowable, ()->{
-            MultiMap<String> map = new MultiMap<>();
-            UrlEncoded.decodeTo(inputString,map,charset);
-        });
+        MultiMap<String> map = new MultiMap<String>();
+        expectedException.expect(expectedThrowable);
+        UrlEncoded.decodeTo(inputString,map,charset);
     }
 }

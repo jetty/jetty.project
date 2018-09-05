@@ -21,26 +21,27 @@ package org.eclipse.jetty.server.handler.gzip;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.stream.Stream;
+import java.util.List;
 
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Tests {@link GzipHandler} in combination with {@link DefaultServlet} for ability to configure {@link GzipHandler} to
  * ignore recompress situations from upstream.
  */
-@ExtendWith(WorkDirExtension.class)
+@RunWith(Parameterized.class)
 public class GzipDefaultNoRecompressTest
 {
-    public static Stream<Arguments> data()
+    @Parameters
+    public static List<Object[]> data()
     {
         return Arrays.asList(new Object[][]
         {
@@ -65,16 +66,27 @@ public class GzipDefaultNoRecompressTest
                 { "test_quotes.txt", "text/plain", GzipHandler.GZIP+";q=0"},
                 { "test_quotes.txt", "text/plain", GzipHandler.GZIP+"; q =    0 "},
                 
-        }).stream().map(Arguments::of);
+        });
     }
 
-    public WorkDir testingdir;
+    @Rule
+    public TestingDir testingdir = new TestingDir();
 
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testNotGzipHandlered_Default_AlreadyCompressed(String alreadyCompressedFilename, String expectedContentType, String compressionType) throws Exception
+    private String alreadyCompressedFilename;
+    private String expectedContentType;
+    private String compressionType;
+
+    public GzipDefaultNoRecompressTest(String testFilename, String expectedContentType, String compressionType)
     {
-        GzipTester tester = new GzipTester(testingdir.getEmptyPathDir(), compressionType);
+        this.alreadyCompressedFilename = testFilename;
+        this.expectedContentType = expectedContentType;
+        this.compressionType = compressionType;
+    }
+
+    @Test
+    public void testNotGzipHandlered_Default_AlreadyCompressed() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType);
 
         copyTestFileToServer(alreadyCompressedFilename);
 

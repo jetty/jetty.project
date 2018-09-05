@@ -18,12 +18,7 @@
 
 package org.eclipse.jetty.deploy.test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -36,7 +31,6 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,12 +45,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
-
+import org.junit.Assert;
 
 /**
  * Allows for setting up a Jetty server for testing based on XML configuration files.
@@ -70,12 +65,12 @@ public class XmlConfiguredJetty
     private String _scheme = HttpScheme.HTTP.asString();
     private File _jettyHome;
 
-    public XmlConfiguredJetty(Path testdir) throws IOException
+    public XmlConfiguredJetty(TestingDir testdir) throws IOException
     {
         _xmlConfigurations = new ArrayList<>();
         Properties properties = new Properties();
 
-        String jettyHomeBase = testdir.toString();
+        String jettyHomeBase = testdir.getPath().toString();
         // Ensure we have a new (pristene) directory to work with.
         int idx = 0;
         _jettyHome = new File(jettyHomeBase + "#" + idx);
@@ -161,7 +156,7 @@ public class XmlConfiguredJetty
             {
                 System.err.println("WebAppContext should not exist:\n" + context);
             }
-            assertEquals(0, contexts.size(), "Contexts.size");
+            Assert.assertEquals("Contexts.size",0,contexts.size());
         }
     }
 
@@ -186,8 +181,9 @@ public class XmlConfiguredJetty
 
     public void assertResponseContains(String path, String needle) throws IOException
     {
+        // System.err.println("Issuing request to " + path);
         String content = getResponse(path);
-        assertThat(content, containsString(needle));
+        Assert.assertTrue("Content should contain <" + needle + ">, instead got <" + content + ">",content.contains(needle));
     }
 
     public void assertWebAppContextsExists(String... expectedContextPaths)
@@ -205,7 +201,7 @@ public class XmlConfiguredJetty
             {
                 System.err.printf("%s ## %s%n",context.getContextPath(),context);
             }
-            assertEquals(expectedContextPaths.length, contexts.size(), "Contexts.size");
+            Assert.assertEquals("Contexts.size",expectedContextPaths.length,contexts.size());
         }
 
         for (String expectedPath : expectedContextPaths)
@@ -216,11 +212,11 @@ public class XmlConfiguredJetty
                 if (context.getContextPath().equals(expectedPath))
                 {
                     found = true;
-                    assertThat("Context[" + context.getContextPath() + "].state", context.getState(), is("STARTED"));
+                    Assert.assertThat("Context[" + context.getContextPath() + "].state", context.getState(), is("STARTED"));
                     break;
                 }
             }
-            assertTrue(found,"Did not find Expected Context Path " + expectedPath);
+            Assert.assertTrue("Did not find Expected Context Path " + expectedPath,found);
         }
     }
 
@@ -262,11 +258,12 @@ public class XmlConfiguredJetty
                 if (file.isDirectory() && file.getAbsolutePath().contains("target" + File.separator))
                 {
                     deleteContents(file);
-                    assertTrue(file.delete(),"Delete failed: " + file.getAbsolutePath());
+                    Assert.assertTrue("Delete failed: " + file.getAbsolutePath(),file.delete());
                 }
                 else
                 {
-                    assertTrue(file.delete(),"Delete failed: " + file.getAbsolutePath());
+                    System.err.printf("Delete (file) %s%n",file);
+                    Assert.assertTrue("Delete failed: " + file.getAbsolutePath(),file.delete());
                 }
             }
         }
@@ -361,7 +358,7 @@ public class XmlConfiguredJetty
             throw new Exception("Load failed to configure a " + Server.class.getName());
         }
 
-        assertEquals(1, serverCount, "Server load count");
+        Assert.assertEquals("Server load count",1,serverCount);
 
         this._server = foundServer;
         this._server.setStopTimeout(10);
@@ -373,7 +370,7 @@ public class XmlConfiguredJetty
         File contextFile = new File(destDir,name);
         if (contextFile.exists())
         {
-            assertTrue(contextFile.delete(),"Delete of Webapp file: " + contextFile.getAbsolutePath());
+            Assert.assertTrue("Delete of Webapp file: " + contextFile.getAbsolutePath(),contextFile.delete());
         }
     }
 
@@ -389,7 +386,7 @@ public class XmlConfiguredJetty
 
     public void start() throws Exception
     {
-        assertNotNull(_server, "Server should not be null (failed load?)");
+        Assert.assertNotNull("Server should not be null (failed load?)",_server);
 
         _server.start();
 
@@ -406,7 +403,7 @@ public class XmlConfiguredJetty
             }
         }
 
-        assertTrue((1 <= this._serverPort) && (this._serverPort <= 65535),"Server Port is between 1 and 65535. Was actually <" + _serverPort + ">");
+        Assert.assertTrue("Server Port is between 1 and 65535. Actually <" + _serverPort + ">",(1 <= this._serverPort) && (this._serverPort <= 65535));
 
         // Uncomment to have server start and continue to run (without exiting)
         // System.err.printf("Listening to port %d%n",this.serverPort);

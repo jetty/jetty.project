@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -41,8 +38,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ShutdownHandlerTest
 {
@@ -82,10 +79,10 @@ public class ShutdownHandlerTest
         });
 
         HttpTester.Response response = shutdown(shutdownToken);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        assertTrue(stopLatch.await(5, TimeUnit.SECONDS));
-        assertEquals(AbstractLifeCycle.STOPPED, server.getState());
+        Assert.assertTrue(stopLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(AbstractLifeCycle.STOPPED, server.getState());
     }
 
     @Test
@@ -94,10 +91,10 @@ public class ShutdownHandlerTest
         start(null);
 
         HttpTester.Response response = shutdown("wrongToken");
-        assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
+        Assert.assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
 
         Thread.sleep(1000);
-        assertEquals(AbstractLifeCycle.STARTED, server.getState());
+        Assert.assertEquals(AbstractLifeCycle.STARTED, server.getState());
     }
 
     @Test
@@ -114,10 +111,10 @@ public class ShutdownHandlerTest
         });
 
         HttpTester.Response response = shutdown(shutdownToken);
-        assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
+        Assert.assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
 
         Thread.sleep(1000);
-        assertEquals(AbstractLifeCycle.STARTED, server.getState());
+        Assert.assertEquals(AbstractLifeCycle.STARTED, server.getState());
     }
 
     private HttpTester.Response shutdown(String shutdownToken) throws IOException

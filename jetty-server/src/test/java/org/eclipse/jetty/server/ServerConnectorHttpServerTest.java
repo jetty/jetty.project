@@ -18,14 +18,17 @@
 
 package org.eclipse.jetty.server;
 
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.junit.Before;
+import org.junit.runner.RunWith;
 
 /**
  * HttpServer Tester.
  */
+@RunWith(AdvancedRunner.class)
 public class ServerConnectorHttpServerTest extends HttpServerTestBase
 {
-    @BeforeEach
+    @Before
     public void init() throws Exception
     {
         // Run this test with 0 acceptors. Other tests already check the acceptors >0

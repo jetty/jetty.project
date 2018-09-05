@@ -20,10 +20,8 @@ package org.eclipse.jetty.http2.hpack;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -37,8 +35,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Response;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.api.Test;
-
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HpackTest
 {
@@ -96,7 +94,7 @@ public class HpackTest
         Response decoded1 = (Response)decoder.decode(buffer);
 
         assertMetadataSame(original1,decoded1);
-        assertEquals("custom-key",decoded1.getFields().getField("Custom-Key").getName());
+        Assert.assertEquals("custom-key",decoded1.getFields().getField("Custom-Key").getName());
     }
     
     @Test
@@ -130,13 +128,12 @@ public class HpackTest
         try
         {
             decoder.decode(buffer);
-            fail();
+            Assert.fail();
         }
         catch(HpackException.SessionException e)
         {
             assertThat(e.getMessage(),containsString("Header too large"));
         }
-
     }
 
     @Test

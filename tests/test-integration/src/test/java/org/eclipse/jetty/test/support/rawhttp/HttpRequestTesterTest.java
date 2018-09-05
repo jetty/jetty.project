@@ -18,16 +18,14 @@
 
 package org.eclipse.jetty.test.support.rawhttp;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.BufferUtil;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HttpRequestTesterTest
 {
@@ -47,7 +45,7 @@ public class HttpRequestTesterTest
         expectedRequest.append("Host: fakehost\r\n");
         expectedRequest.append("\r\n");
 
-        assertEquals(expectedRequest.toString(), BufferUtil.toString(bBuff), "Basic Request");
+        Assert.assertEquals("Basic Request",expectedRequest.toString(),BufferUtil.toString(bBuff));
     }
 
     @Test
@@ -73,6 +71,6 @@ public class HttpRequestTesterTest
         expectedRequest.append("aaa");
        
 
-        assertEquals(expectedRequest.toString(), BufferUtil.toString(bBuff), "Basic Request");
+        Assert.assertEquals("Basic Request",expectedRequest.toString(),BufferUtil.toString(bBuff));
     }
 }

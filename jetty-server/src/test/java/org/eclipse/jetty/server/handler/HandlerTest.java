@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 
@@ -30,10 +29,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.hamcrest.Matchers;
+import org.junit.Test;
 
 public class HandlerTest
 {
@@ -72,9 +73,16 @@ public class HandlerTest
     public void testWrapperThisLoop()
     {
         HandlerWrapper a = new HandlerWrapper();
-
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> a.setHandler(a));
-        assertThat(e.getMessage(),containsString("loop"));
+        
+        try
+        {
+            a.setHandler(a);
+            fail();
+        }
+        catch(IllegalStateException e)
+        {
+            assertThat(e.getMessage(),containsString("loop"));
+        }
     }
     
     @Test
@@ -84,9 +92,16 @@ public class HandlerTest
         HandlerWrapper b = new HandlerWrapper();
         
         a.setHandler(b);
-
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> b.setHandler(a));
-        assertThat(e.getMessage(),containsString("loop"));
+        
+        try
+        {
+            b.setHandler(a);
+            fail();
+        }
+        catch(IllegalStateException e)
+        {
+            assertThat(e.getMessage(),containsString("loop"));
+        }
     }
     
     @Test
@@ -98,9 +113,16 @@ public class HandlerTest
         
         a.setHandler(b);
         b.setHandler(c);
-
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> c.setHandler(a));
-        assertThat(e.getMessage(),containsString("loop"));
+        
+        try
+        {
+            c.setHandler(a);
+            fail();
+        }
+        catch(IllegalStateException e)
+        {
+            assertThat(e.getMessage(),containsString("loop"));
+        }
     }
     
     @Test
@@ -112,9 +134,16 @@ public class HandlerTest
         
         a.setHandler(b);
         c.setHandler(a);
-
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> b.setHandler(c));
-        assertThat(e.getMessage(),containsString("loop"));
+        
+        try
+        {
+            b.setHandler(c);
+            fail();
+        }
+        catch(IllegalStateException e)
+        {
+            assertThat(e.getMessage(),containsString("loop"));
+        }
     }
 
 
@@ -174,9 +203,16 @@ public class HandlerTest
     public void testCollectionThisLoop()
     {
         HandlerCollection a = new HandlerCollection();
-
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> a.addHandler(a));
-        assertThat(e.getMessage(),containsString("loop"));
+        
+        try
+        {
+            a.addHandler(a);
+            fail();
+        }
+        catch(IllegalStateException e)
+        {
+            assertThat(e.getMessage(),containsString("loop"));
+        }
     }
     
     @Test
@@ -195,8 +231,15 @@ public class HandlerTest
         b.setHandlers(new Handler[]{b1,b2});
         c.setHandlers(new Handler[]{c1,c2});
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> b2.addHandler(a));
-        assertThat(e.getMessage(),containsString("loop"));
+        try
+        {
+            b2.addHandler(a);
+            fail();
+        }
+        catch(IllegalStateException e)
+        {
+            assertThat(e.getMessage(),containsString("loop"));
+        }
     }
     
     @Test
@@ -215,8 +258,15 @@ public class HandlerTest
         c.setHandlers(new Handler[]{c1,c2});
         b2.addHandler(a);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> a.addHandler(b));
-        assertThat(e.getMessage(),containsString("loop"));
+        try
+        {
+            a.addHandler(b);
+            fail();
+        }
+        catch(IllegalStateException e)
+        {
+            assertThat(e.getMessage(),containsString("loop"));
+        }
     }
     
     @Test
@@ -278,8 +328,15 @@ public class HandlerTest
             {                
             }
         });
-
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, ()-> a.insertHandler(b));
-        assertThat(e.getMessage(),containsString("bad tail"));
+        
+        try
+        {
+            a.insertHandler(b);
+            fail();
+        }
+        catch(IllegalArgumentException e)
+        {
+            assertThat(e.getMessage(),containsString("bad tail"));
+        }
     }
 }

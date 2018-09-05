@@ -44,10 +44,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class MaxPushedStreamsTest extends AbstractTest
 {
@@ -90,7 +88,7 @@ public class MaxPushedStreamsTest extends AbstractTest
                                 @Override
                                 public void onReset(Stream stream, ResetFrame frame)
                                 {
-                                    assertEquals(ErrorCode.REFUSED_STREAM_ERROR.code, frame.getError());
+                                    Assert.assertEquals(ErrorCode.REFUSED_STREAM_ERROR.code, frame.getError());
                                     resetLatch.countDown();
                                 }
                             });
@@ -126,7 +124,7 @@ public class MaxPushedStreamsTest extends AbstractTest
             }
         });
 
-        assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 }

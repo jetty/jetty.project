@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 import java.net.InetAddress;
 import java.util.Iterator;
 
-import org.junit.jupiter.api.Test;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class InetAddressSetTest
 {
@@ -93,7 +93,7 @@ public class InetAddressSetTest
             }
             catch(IllegalArgumentException e)
             {
-                assertThat(e.getMessage(),containsString(t));
+                Assert.assertThat(e.getMessage(),Matchers.containsString(t));
             }
         }
     }
@@ -174,7 +174,7 @@ public class InetAddressSetTest
             }
             catch(IllegalArgumentException e)
             {
-                assertThat(e.getMessage(),containsString(t));
+                Assert.assertThat(e.getMessage(),Matchers.containsString(t));
             }
         }
     }
@@ -229,7 +229,7 @@ public class InetAddressSetTest
             }
             catch(IllegalArgumentException e)
             {
-                assertThat(e.getMessage(),containsString(t));
+                Assert.assertThat(e.getMessage(),Matchers.containsString(t));
             }
         }
     }
@@ -281,7 +281,7 @@ public class InetAddressSetTest
             }
             catch(IllegalArgumentException e)
             {
-                assertThat(e.getMessage(),containsString(t));
+                Assert.assertThat(e.getMessage(),Matchers.containsString(t));
             }
         }
     }

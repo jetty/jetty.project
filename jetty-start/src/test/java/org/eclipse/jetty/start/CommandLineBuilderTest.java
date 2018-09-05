@@ -19,16 +19,16 @@
 package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThat;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 public class CommandLineBuilderTest
 {
     private CommandLineBuilder cmd = new CommandLineBuilder("java");
 
-    @BeforeEach
+    @Before
     public void setUp()
     {
         cmd.addEqualsArg("-Djava.io.tmpdir","/home/java/temp dir/");

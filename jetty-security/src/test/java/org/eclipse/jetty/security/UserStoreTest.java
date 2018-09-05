@@ -18,24 +18,21 @@
 
 package org.eclipse.jetty.security;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.util.security.Credential;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.security.Credential;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 public class UserStoreTest
 {
     UserStore userStore;
 
-    @BeforeEach
+    @Before
     public void setup() {
         userStore = new UserStore();
     }
@@ -44,30 +41,30 @@ public class UserStoreTest
     public void addUser()
     {
         this.userStore.addUser( "foo", Credential.getCredential( "beer" ), new String[]{"pub"} );
-        assertEquals(1, this.userStore.getKnownUserIdentities().size());
+        Assert.assertEquals(1, this.userStore.getKnownUserIdentities().size());
         UserIdentity userIdentity = this.userStore.getUserIdentity( "foo" );
-        assertNotNull( userIdentity );
-        assertEquals( "foo", userIdentity.getUserPrincipal().getName() );
+        Assert.assertNotNull( userIdentity );
+        Assert.assertEquals( "foo", userIdentity.getUserPrincipal().getName() );
         Set<AbstractLoginService.RolePrincipal>
             roles = userIdentity.getSubject().getPrincipals( AbstractLoginService.RolePrincipal.class);
         List<String> list = roles.stream()
             .map( rolePrincipal -> rolePrincipal.getName() )
             .collect( Collectors.toList() );
-        assertEquals(1, list.size());
-        assertEquals( "pub", list.get( 0 ) );
+        Assert.assertEquals(1, list.size());
+        Assert.assertEquals( "pub", list.get( 0 ) );
     }
 
     @Test
     public void removeUser()
     {
         this.userStore.addUser( "foo", Credential.getCredential( "beer" ), new String[]{"pub"} );
-        assertEquals(1, this.userStore.getKnownUserIdentities().size());
+        Assert.assertEquals(1, this.userStore.getKnownUserIdentities().size());
         UserIdentity userIdentity = this.userStore.getUserIdentity( "foo" );
-        assertNotNull( userIdentity );
-        assertEquals( "foo", userIdentity.getUserPrincipal().getName() );
+        Assert.assertNotNull( userIdentity );
+        Assert.assertEquals( "foo", userIdentity.getUserPrincipal().getName() );
         userStore.removeUser( "foo" );
         userIdentity = this.userStore.getUserIdentity( "foo" );
-        assertNull( userIdentity );
+        Assert.assertNull( userIdentity );
     }
 
 }

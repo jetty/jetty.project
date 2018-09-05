@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.Writer;
 import java.util.concurrent.TimeUnit;
@@ -42,8 +38,12 @@ import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 public class AsyncListenerTest
 {
@@ -61,7 +61,7 @@ public class AsyncListenerTest
         server.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         if (server != null)
@@ -444,7 +444,7 @@ public class AsyncListenerTest
                 "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "\r\n"));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     // Unique named RuntimeException to help during debugging / assertions.

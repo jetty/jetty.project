@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.tests.server;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -31,23 +31,26 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test Good Close Status Codes
  */
-
+@RunWith(value = Parameterized.class)
 public class CloseHandling_GoodStatusCodesTest extends AbstractLocalServerCase
 {
     private static final Logger LOG = Log.getLogger(CloseHandling_GoodStatusCodesTest.class);
 
-    public static Stream<Arguments> statusCodes()
+    @Parameters(name = "{0} {1}")
+    public static Collection<Object[]> data()
     {
         // The various Good UTF8 sequences as a String (hex form)
         List<Object[]> data = new ArrayList<>();
 
+        // @formatter:off
         data.add(new Object[] { "7.7.1", 1000 });
         data.add(new Object[] { "7.7.2", 1001 });
         data.add(new Object[] { "7.7.3", 1002 });
@@ -64,19 +67,26 @@ public class CloseHandling_GoodStatusCodesTest extends AbstractLocalServerCase
         data.add(new Object[] { "7.7.11", 3999 });
         data.add(new Object[] { "7.7.12", 4000 });
         data.add(new Object[] { "7.7.13", 4999 });
+        // @formatter:on
 
-        return data.stream().map(Arguments::of);
+        return data;
     }
 
+    private final int statusCode;
+
+    public CloseHandling_GoodStatusCodesTest(String testId, int statusCode)
+    {
+        LOG.debug("Test ID: {}", testId);
+        this.statusCode = statusCode;
+    }
 
     /**
      * just the close code, no reason
      *
      * @throws Exception on test failure
      */
-    @ParameterizedTest
-    @MethodSource("statusCodes")
-    public void testStatusCode(String testId, int statusCode) throws Exception
+    @Test
+    public void testStatusCode() throws Exception
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
@@ -101,9 +111,8 @@ public class CloseHandling_GoodStatusCodesTest extends AbstractLocalServerCase
      *
      * @throws Exception on test failure
      */
-    @ParameterizedTest
-    @MethodSource("statusCodes")
-    public void testStatusCodeWithReason(String testId, int statusCode) throws Exception
+    @Test
+    public void testStatusCodeWithReason() throws Exception
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         payload.putChar((char) statusCode);

@@ -18,28 +18,33 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.util.thread.ThreadPoolBudget;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-public class InsufficientThreadsDetectionTest
+@RunWith(AdvancedRunner.class)
+public class InsufficientThreadsDetectionTest 
 {
 
     private Server _server;
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         _server.stop();
     }
 
-    @Test
+    @Test()
     public void testConnectorUsesServerExecutorWithNotEnoughThreads() throws Exception
     {
-        assertThrows(IllegalStateException.class, ()->{
+        try
+        {
             // server has 3 threads in the executor
             _server = new Server(new QueuedThreadPool(3));
 
@@ -52,7 +57,12 @@ public class InsufficientThreadsDetectionTest
 
             // should throw IllegalStateException because there are no required threads in server pool
             _server.start();
-        });
+            Assert.fail();
+        }
+        catch(IllegalStateException e)
+        {
+            Log.getLogger(ThreadPoolBudget.class).warn(e.toString());
+        }
     }
 
     @Test
@@ -75,7 +85,8 @@ public class InsufficientThreadsDetectionTest
     @Test
     public void testCaseForMultipleConnectors() throws Exception
     {
-        assertThrows(IllegalStateException.class, ()->{
+        try
+        {
             // server has 4 threads in the executor
             _server = new Server(new QueuedThreadPool(4));
 
@@ -91,6 +102,12 @@ public class InsufficientThreadsDetectionTest
 
             // should throw exception because limit was overflown
             _server.start();
-        });
+
+            Assert.fail();
+        }
+        catch(IllegalStateException e)
+        {
+            Log.getLogger(ThreadPoolBudget.class).warn(e.toString());
+        }
     }
 }

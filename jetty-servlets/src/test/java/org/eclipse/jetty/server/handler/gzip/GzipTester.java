@@ -18,15 +18,13 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -35,7 +33,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.nio.file.Path;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.EnumSet;
@@ -60,13 +57,13 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
-import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
-
+import org.junit.Assert;
 
 public class GzipTester
 {
@@ -87,12 +84,12 @@ public class GzipTester
     private String encoding = "ISO8859_1";
     private String userAgent = null;
     private final ServletTester tester = new ServletTester("/context",ServletContextHandler.GZIP);
-    private Path testdir;
+    private TestingDir testdir;
     private String accept;
     private String compressionType;
     
 
-    public GzipTester(Path testingdir, String compressionType, String accept)
+    public GzipTester(TestingDir testingdir, String compressionType, String accept)
     {
         this.testdir = testingdir;
         this.compressionType = compressionType;
@@ -100,7 +97,7 @@ public class GzipTester
         
     }
 
-    public GzipTester(Path testingdir, String compressionType)
+    public GzipTester(TestingDir testingdir, String compressionType)
     {
         this.testdir = testingdir;
         this.compressionType = compressionType;
@@ -202,9 +199,9 @@ public class GzipTester
 
         int qindex = compressionType.indexOf(";");
         if (qindex < 0)
-            assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType));
+            Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType));
         else
-            assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType.substring(0,qindex)));
+            Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType.substring(0,qindex)));
 
         ByteArrayInputStream bais = null;
         InputStream in = null;
@@ -258,7 +255,7 @@ public class GzipTester
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
 
         // Assert the response headers
-        // assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
+        // Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
 
         // Response headers should have either a Transfer-Encoding indicating chunked OR a Content-Length
         /*
@@ -266,20 +263,20 @@ public class GzipTester
          * contentLength = response.get("Content-Length"); String transferEncoding = response.get("Transfer-Encoding");
          * 
          * boolean chunked = (transferEncoding != null) && (transferEncoding.indexOf("chunk") >= 0); if(!chunked) {
-         * assertThat("Response.header[Content-Length]",contentLength,notNullValue()); } else {
-         * assertThat("Response.header[Transfer-Encoding]",transferEncoding,notNullValue()); }
+         * Assert.assertThat("Response.header[Content-Length]",contentLength,notNullValue()); } else {
+         * Assert.assertThat("Response.header[Transfer-Encoding]",transferEncoding,notNullValue()); }
          */
 
         int qindex = compressionType.indexOf(";");
         if (qindex < 0)
-            assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType));
+            Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType));
         else
-            assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType.substring(0,qindex)));
+            Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),containsString(compressionType.substring(0,qindex)));
 
-        assertThat(response.get("ETag"),Matchers.startsWith("W/"));
+        Assert.assertThat(response.get("ETag"),Matchers.startsWith("W/"));
 
         // Assert that the decompressed contents are what we expect.
-        File serverFile = testdir.resolve(FS.separators(serverFilename)).toFile();
+        File serverFile = testdir.getPathFile(serverFilename).toFile();
         String expected = IO.readToString(serverFile);
         String actual = null;
 
@@ -331,8 +328,8 @@ public class GzipTester
         // Issue the request
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
 
-        assertThat(response.getStatus(),Matchers.equalTo(304));
-        assertThat(response.get("ETag"),Matchers.startsWith("W/"));
+        Assert.assertThat(response.getStatus(),Matchers.equalTo(304));
+        Assert.assertThat(response.get("ETag"),Matchers.startsWith("W/"));
 
         return response;
     }
@@ -393,16 +390,16 @@ public class GzipTester
 
         // Assert the response headers
         String prefix = requestedFilename + " / Response";
-        assertThat(prefix + ".status",response.getStatus(),is(HttpServletResponse.SC_OK));
-        assertThat(prefix + ".header[Content-Length]",response.get("Content-Length"),notNullValue());
-        assertThat(prefix + ".header[Content-Encoding] (should not be recompressed by GzipHandler)",response.get("Content-Encoding"),
+        Assert.assertThat(prefix + ".status",response.getStatus(),is(HttpServletResponse.SC_OK));
+        Assert.assertThat(prefix + ".header[Content-Length]",response.get("Content-Length"),notNullValue());
+        Assert.assertThat(prefix + ".header[Content-Encoding] (should not be recompressed by GzipHandler)",response.get("Content-Encoding"),
                 expectedContentEncoding == null?nullValue():notNullValue());
         if (expectedContentEncoding != null)
-            assertThat(prefix + ".header[Content-Encoding]",response.get("Content-Encoding"),is(expectedContentEncoding));
-        assertThat(prefix + ".header[Content-Type] (should have a Content-Type associated with it)",response.get("Content-Type"),notNullValue());
-        assertThat(prefix + ".header[Content-Type]",response.get("Content-Type"),is(expectedContentType));
+            Assert.assertThat(prefix + ".header[Content-Encoding]",response.get("Content-Encoding"),is(expectedContentEncoding));
+        Assert.assertThat(prefix + ".header[Content-Type] (should have a Content-Type associated with it)",response.get("Content-Type"),notNullValue());
+        Assert.assertThat(prefix + ".header[Content-Type]",response.get("Content-Type"),is(expectedContentType));
 
-        assertThat(response.get("ETAG"),Matchers.startsWith("W/"));
+        Assert.assertThat(response.get("ETAG"),Matchers.startsWith("W/"));
 
         ByteArrayInputStream bais = null;
         DigestOutputStream digester = null;
@@ -415,7 +412,7 @@ public class GzipTester
 
             String actualSha1Sum = Hex.asHex(digest.digest());
             String expectedSha1Sum = loadExpectedSha1Sum(testResourceSha1Sum);
-            assertEquals(expectedSha1Sum,actualSha1Sum,requestedFilename + " / SHA1Sum of content");
+            Assert.assertEquals(requestedFilename + " / SHA1Sum of content",expectedSha1Sum,actualSha1Sum);
         }
         finally
         {
@@ -436,16 +433,13 @@ public class GzipTester
         }
     }
 
-    /**
-     * @deprecated use {@link org.eclipse.jetty.toolchain.test.Sha1Sum} instead
-     */
     private String loadExpectedSha1Sum(String testResourceSha1Sum) throws IOException
     {
         File sha1File = MavenTestingUtils.getTestResourceFile(testResourceSha1Sum);
         String contents = IO.readToString(sha1File);
         Pattern pat = Pattern.compile("^[0-9A-Fa-f]*");
         Matcher mat = pat.matcher(contents);
-        assertTrue(mat.find(),"Should have found HEX code in SHA1 file: " + sha1File);
+        Assert.assertTrue("Should have found HEX code in SHA1 file: " + sha1File,mat.find());
         return mat.group();
     }
 
@@ -544,7 +538,7 @@ public class GzipTester
      */
     public File prepareServerFile(String filename, int filesize) throws IOException
     {
-        File dir = testdir.toFile();
+        File dir = testdir.getPath().toFile();
         File testFile = new File(dir,filename);
         // Make sure we have a uniq filename (to work around windows File.delete bug)
         int i = 0;
@@ -579,7 +573,7 @@ public class GzipTester
     public void copyTestServerFile(String filename) throws IOException
     {
         File srcFile = MavenTestingUtils.getTestResourceFile(filename);
-        File testFile = testdir.resolve(FS.separators(filename)).toFile();
+        File testFile = testdir.getPathFile(filename).toFile();
 
         IO.copy(srcFile,testFile);
     }
@@ -593,7 +587,7 @@ public class GzipTester
      */
     public void setContentServlet(Class<? extends Servlet> servletClass) throws IOException
     {
-        String resourceBase = testdir.toString();
+        String resourceBase = testdir.getPath().toString();
         tester.setContextPath("/context");
         tester.setResourceBase(resourceBase);
         ServletHolder servletHolder = tester.addServlet(servletClass,"/");
@@ -634,7 +628,7 @@ public class GzipTester
 
     public void start() throws Exception
     {
-        assertThat("No servlet defined yet.  Did you use #setContentServlet()?",tester,notNullValue());
+        Assert.assertThat("No servlet defined yet.  Did you use #setContentServlet()?",tester,notNullValue());
         
         if (LOG.isDebugEnabled())
         {
@@ -645,8 +639,8 @@ public class GzipTester
 
     public void stop()
     {
-        // NOTE: Do not cleanup the workDir. Failures can't be diagnosed if you do that.
-        // IO.delete(workDir.getDir()):
+        // NOTE: Do not cleanup the testdir. Failures can't be diagnosed if you do that.
+        // IO.delete(testdir.getDir()):
         try
         {
             tester.stop();

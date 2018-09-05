@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -36,18 +36,21 @@ import org.junit.runners.Suite;
   ClusteredSessionScavengingTest.class,
   ClusteredOrphanedSessionTest.class
 })
+
+
 public class GCloudTestSuite
 {
     public static GCloudSessionTestSupport __testSupport;
-
-    @BeforeAll
+    
+    
+    @BeforeClass
     public static void setUp () throws Exception
     {
         __testSupport = new GCloudSessionTestSupport();
         __testSupport.setUp();
     }
     
-    @AfterAll
+    @AfterClass
     public static void tearDown () throws Exception
     {
         __testSupport.tearDown();

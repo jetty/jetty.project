@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -51,16 +48,20 @@ import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class FlowControlStalledTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
     protected ServerConnector connector;
     protected HTTP2Client client;
     protected Server server;
@@ -106,7 +107,7 @@ public class FlowControlStalledTest
         return new MetaData.Request(method, HttpScheme.HTTP, new HostPortHttpField(authority), target, HttpVersion.HTTP_2, fields);
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         // Allow WINDOW_UPDATE frames to be sent/received to avoid exception stack traces.
@@ -183,7 +184,7 @@ public class FlowControlStalledTest
             }
         });
 
-        assertTrue(stallLatch.get().await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(stallLatch.get().await(5, TimeUnit.SECONDS));
 
         // First stream is now stalled, check that writing a second stream
         // does not result in the first be notified again of being stalled.
@@ -192,7 +193,7 @@ public class FlowControlStalledTest
         request = newRequest("GET", "/", new HttpFields());
         client.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter());
 
-        assertFalse(stallLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(stallLatch.get().await(1, TimeUnit.SECONDS));
 
         // Consume all data.
         while (!latch.await(10, TimeUnit.MILLISECONDS))
@@ -203,7 +204,7 @@ public class FlowControlStalledTest
         }
 
         // Make sure the unstall callback is invoked.
-        assertTrue(unstallLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(unstallLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -283,7 +284,7 @@ public class FlowControlStalledTest
             }
         });
 
-        assertTrue(stallLatch.get().await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(stallLatch.get().await(5, TimeUnit.SECONDS));
 
         // The session is now stalled, check that writing a second stream
         // does not result in the session be notified again of being stalled.
@@ -292,7 +293,7 @@ public class FlowControlStalledTest
         request = newRequest("GET", "/", new HttpFields());
         session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter());
 
-        assertFalse(stallLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(stallLatch.get().await(1, TimeUnit.SECONDS));
 
         // Consume all data.
         while (!latch.await(10, TimeUnit.MILLISECONDS))
@@ -303,6 +304,6 @@ public class FlowControlStalledTest
         }
 
         // Make sure the unstall callback is invoked.
-        assertTrue(unstallLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(unstallLatch.await(5, TimeUnit.SECONDS));
     }
 }

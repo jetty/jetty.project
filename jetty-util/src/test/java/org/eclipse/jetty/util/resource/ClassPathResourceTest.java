@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class ClassPathResourceTest
 {
@@ -39,10 +39,10 @@ public class ClassPathResourceTest
         try(Resource resource=Resource.newClassPathResource(classPathName);)
         {
             // A class path cannot be a directory
-            assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
+            assertFalse("Class path cannot be a directory.",resource.isDirectory());
 
             // A class path must exist
-            assertTrue(resource.exists(), "Class path resource does not exist.");
+            assertTrue("Class path resource does not exist.",resource.exists());
         }
     }
 
@@ -57,10 +57,10 @@ public class ClassPathResourceTest
         Resource resource=Resource.newClassPathResource(classPathName);
 
         // A class path cannot be a directory
-        assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
+        assertFalse("Class path cannot be a directory.",resource.isDirectory());
 
         // A class path must exist
-        assertTrue(resource.exists(), "Class path resource does not exist.");
+        assertTrue("Class path resource does not exist.",resource.exists());
     }
 
     /**
@@ -75,12 +75,12 @@ public class ClassPathResourceTest
         Resource resource=Resource.newClassPathResource(classPathName);
 
         // A class path must be a directory
-        assertTrue(resource.isDirectory(), "Class path must be a directory.");
+        assertTrue("Class path must be a directory.",resource.isDirectory());
 
-        assertTrue(resource.getFile().isDirectory(), "Class path returned file must be a directory.");
+        assertTrue("Class path returned file must be a directory.",resource.getFile().isDirectory());
 
         // A class path must exist
-        assertTrue(resource.exists(), "Class path resource does not exist.");
+        assertTrue("Class path resource does not exist.",resource.exists());
     }
 
     /**
@@ -97,16 +97,16 @@ public class ClassPathResourceTest
         Resource resource=Resource.newClassPathResource(classPathName);
 
         // A class path cannot be a directory
-        assertFalse(resource.isDirectory(), "Class path must be a directory.");
+        assertFalse("Class path must be a directory.",resource.isDirectory());
 
         assertTrue(resource!=null);
 
         File file=resource.getFile();
 
-        assertEquals(fileName, file.getName(), "File name from class path is not equal.");
-        assertTrue(file.isFile(), "File returned from class path should be a file.");
+        assertEquals("File name from class path is not equal.",fileName,file.getName());
+        assertTrue("File returned from class path should be a file.",file.isFile());
 
         // A class path must exist
-        assertTrue(resource.exists(), "Class path resource does not exist.");
+        assertTrue("Class path resource does not exist.",resource.exists());
     }
 }

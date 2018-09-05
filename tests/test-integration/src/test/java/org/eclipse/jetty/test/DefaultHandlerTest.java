@@ -18,11 +18,8 @@
 
 package org.eclipse.jetty.test;
 
-import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -31,7 +28,6 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
 
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -39,10 +35,11 @@ import org.eclipse.jetty.test.support.TestableJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocketImpl;
 import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Tests against the facilities within the TestSuite to ensure that the various
@@ -50,10 +47,11 @@ import org.junit.jupiter.api.Test;
  */
 public class DefaultHandlerTest
 {
+    private boolean debug = false;
     private static TestableJettyServer server;
     private int serverPort;
 
-    @BeforeAll
+    @BeforeClass
     public static void setUpServer() throws Exception
     {
         server = new TestableJettyServer();
@@ -65,12 +63,12 @@ public class DefaultHandlerTest
         server.start();
     }
     
-    @BeforeEach
+    @Before
     public void testInit() {
         serverPort = server.getServerPort();
     }
 
-    @AfterAll
+    @AfterClass
     public static void tearDownServer() throws Exception
     {
         server.stop();
@@ -88,7 +86,7 @@ public class DefaultHandlerTest
         String response = IO.toString(in);
         String expected = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
         
-        assertEquals(expected, response, "Response");
+        Assert.assertEquals("Response",expected,response);
     }
 
     @Test
@@ -103,6 +101,7 @@ public class DefaultHandlerTest
         Socket sock = new Socket(InetAddress.getLocalHost(),serverPort);
         sock.setSoTimeout(5000); // 5 second timeout;
 
+        DEBUG("--raw-request--\n" + rawRequest);
         InputStream in = new ByteArrayInputStream(rawRequest.toString().getBytes());
 
         // Send request
@@ -110,11 +109,52 @@ public class DefaultHandlerTest
 
         // Collect response
         String rawResponse = IO.toString(sock.getInputStream());
+        DEBUG("--raw-response--\n" + rawResponse);
+        
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContent(), containsString("ABCDEFGHIJKLMNOPQRSTUVWXYZ\n"));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        assertTrue(response.getContent().contains("ABCDEFGHIJKLMNOPQRSTUVWXYZ\n"));
     }
+
+    /*
+    @Test
+    public void testMultiGET_Raw() throws Exception
+    {
+        StringBuffer rawRequests = new StringBuffer();
+        rawRequests.append("GET /tests/alpha.txt HTTP/1.1\r\n");
+        rawRequests.append("Host: localhost\r\n");
+        rawRequests.append("\r\n");
+        rawRequests.append("GET /tests/R1.txt HTTP/1.1\r\n");
+        rawRequests.append("Host: localhost\r\n");
+        rawRequests.append("\r\n");
+        rawRequests.append("GET /tests/R1.txt HTTP/1.1\r\n");
+        rawRequests.append("Host: localhost\r\n");
+        rawRequests.append("Connection: close\r\n");
+        rawRequests.append("\r\n");
+
+        HttpTesting http = new HttpTesting(new HttpSocketImpl(),serverPort);
+      
+
+        List<HttpTester.Response> responses = http.requests(rawRequests);
+
+        HttpTester.Response response = responses.get(0);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertTrue(response.getContent().contains("ABCDEFGHIJKLMNOPQRSTUVWXYZ\n"));
+
+        response = responses.get(1);
+        assertEquals(HttpStatus.OK_200, response.getStatus()); 
+        assertTrue(response.getContent().contains("Host=Default\nResource=R1\n"));
+
+        response = responses.get(2);
+        assertEquals(HttpStatus.OK_200, response.getStatus()); 
+        assertTrue(response.getContent().contains("Host=Default\nResource=R1\n"));
+    }
+    */
+    
+    
+    
 
     @Test
     public void testGET_HttpTesting() throws Exception
@@ -129,8 +169,16 @@ public class DefaultHandlerTest
         HttpTesting testing = new HttpTesting(new HttpSocketImpl(),serverPort);
         HttpTester.Response response = testing.request(request);
 
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response.getContent(), containsString("ABCDEFGHIJKLMNOPQRSTUVWXYZ\n"));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals("text/plain", response.get("Content-Type"));
+        assertTrue(response.getContent().contains("ABCDEFGHIJKLMNOPQRSTUVWXYZ\n"));
+    }
+
+    private void DEBUG(String msg)
+    {
+        if (debug)
+        {
+            System.out.println(msg);
+        }
     }
 }

@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.security.cert.Certificate;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +37,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * In order to work, client authentication needs a certificate
@@ -90,7 +85,7 @@ public class NeedWantClientAuthTest
         return sslContextFactory;
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         if (client != null)
@@ -113,7 +108,7 @@ public class NeedWantClientAuthTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Test
@@ -132,8 +127,8 @@ public class NeedWantClientAuthTest
                 {
                     SSLSession session = event.getSSLEngine().getSession();
                     Certificate[] clientCerts = session.getPeerCertificates();
-                    assertNotNull(clientCerts);
-                    assertThat(clientCerts.length, Matchers.greaterThan(0));
+                    Assert.assertNotNull(clientCerts);
+                    Assert.assertThat(clientCerts.length, Matchers.greaterThan(0));
                     handshakeLatch.countDown();
                 }
                 catch (Throwable x)
@@ -152,8 +147,8 @@ public class NeedWantClientAuthTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -185,7 +180,7 @@ public class NeedWantClientAuthTest
             @Override
             public void handshakeFailed(Event event, Throwable failure)
             {
-                assertThat(failure, Matchers.instanceOf(SSLHandshakeException.class));
+                Assert.assertThat(failure, Matchers.instanceOf(SSLHandshakeException.class));
                 handshakeLatch.countDown();
             }
         });
@@ -203,8 +198,8 @@ public class NeedWantClientAuthTest
                     }
                 });
 
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -223,8 +218,8 @@ public class NeedWantClientAuthTest
                 {
                     SSLSession session = event.getSSLEngine().getSession();
                     Certificate[] clientCerts = session.getPeerCertificates();
-                    assertNotNull(clientCerts);
-                    assertThat(clientCerts.length, Matchers.greaterThan(0));
+                    Assert.assertNotNull(clientCerts);
+                    Assert.assertThat(clientCerts.length, Matchers.greaterThan(0));
                     handshakeLatch.countDown();
                 }
                 catch (Throwable x)
@@ -243,7 +238,7 @@ public class NeedWantClientAuthTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
     }
 }

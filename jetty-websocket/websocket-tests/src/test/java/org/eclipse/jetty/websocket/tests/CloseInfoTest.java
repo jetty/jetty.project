@@ -18,20 +18,24 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.eclipse.jetty.websocket.api.StatusCode.FAILED_TLS_HANDSHAKE;
+import static org.eclipse.jetty.websocket.api.StatusCode.NORMAL;
+import static org.eclipse.jetty.websocket.api.StatusCode.NO_CLOSE;
+import static org.eclipse.jetty.websocket.api.StatusCode.NO_CODE;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-
-import java.nio.ByteBuffer;
-
-import static org.eclipse.jetty.websocket.api.StatusCode.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import org.junit.Test;
 
 public class CloseInfoTest
 {

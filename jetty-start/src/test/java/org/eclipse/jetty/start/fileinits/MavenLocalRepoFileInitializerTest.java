@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.start.fileinits;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.net.URI;
@@ -36,20 +35,23 @@ import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer.Coordinates;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-@ExtendWith(WorkDirExtension.class)
 public class MavenLocalRepoFileInitializerTest
 {
-    public WorkDir testdir;
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+    
+    @Rule
+    public TestingDir testdir = new TestingDir();
     
     private BaseHome baseHome;
     
-    @BeforeEach
+    @Before
     public void setupBaseHome() throws IOException
     {
         Path homeDir = testdir.getEmptyPathDir();
@@ -75,8 +77,9 @@ public class MavenLocalRepoFileInitializerTest
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
         String ref = "maven://www.eclipse.org/jetty";
-        RuntimeException x = assertThrows(RuntimeException.class, () -> repo.getCoordinates(URI.create(ref)));
-        assertThat(x.getMessage(), containsString("Not a valid maven:// uri"));
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectMessage(containsString("Not a valid maven:// uri"));
+        repo.getCoordinates(URI.create(ref));
     }
 
     @Test

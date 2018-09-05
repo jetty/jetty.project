@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http2.server;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
@@ -73,8 +67,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.StacklessLogging;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HTTP2ServerTest extends AbstractServerTest
 {
@@ -109,7 +103,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 
@@ -160,12 +154,12 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             HeadersFrame response = frameRef.get();
-            assertNotNull(response);
+            Assert.assertNotNull(response);
             MetaData.Response responseMetaData = (MetaData.Response)response.getMetaData();
-            assertEquals(200, responseMetaData.getStatus());
+            Assert.assertEquals(200, responseMetaData.getStatus());
         }
     }
 
@@ -226,16 +220,16 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             HeadersFrame response = headersRef.get();
-            assertNotNull(response);
+            Assert.assertNotNull(response);
             MetaData.Response responseMetaData = (MetaData.Response)response.getMetaData();
-            assertEquals(200, responseMetaData.getStatus());
+            Assert.assertEquals(200, responseMetaData.getStatus());
 
             DataFrame responseData = dataRef.get();
-            assertNotNull(responseData);
-            assertArrayEquals(content, BufferUtil.toArray(responseData.getData()));
+            Assert.assertNotNull(responseData);
+            Assert.assertArrayEquals(content, BufferUtil.toArray(responseData.getData()));
         }
     }
 
@@ -265,7 +259,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 @Override
                 public void onGoAway(GoAwayFrame frame)
                 {
-                    assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, frame.getError());
+                    Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, frame.getError());
                     latch.countDown();
                 }
             }, 4096, 8192);
@@ -273,7 +267,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 
@@ -303,7 +297,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 @Override
                 public void onGoAway(GoAwayFrame frame)
                 {
-                    assertEquals(ErrorCode.PROTOCOL_ERROR.code, frame.getError());
+                    Assert.assertEquals(ErrorCode.PROTOCOL_ERROR.code, frame.getError());
                     latch.countDown();
                 }
             }, 4096, 8192);
@@ -311,7 +305,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 
@@ -376,7 +370,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter(), 4096, 8192);
             parser.init(UnaryOperator.identity());
             boolean closed = parseResponse(client, parser, 2 * delay);
-            assertTrue(closed);
+            Assert.assertTrue(closed);
         }
     }
 
@@ -412,7 +406,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 parser.init(UnaryOperator.identity());
                 boolean closed = parseResponse(client, parser);
 
-                assertTrue(closed);
+                Assert.assertTrue(closed);
             }
         }
     }
@@ -550,11 +544,11 @@ public class HTTP2ServerTest extends AbstractServerTest
                 if (priorityFrame != null)
                 {
                     PriorityFrame priority = frame.getPriority();
-                    assertNotNull(priority);
-                    assertEquals(priorityFrame.getStreamId(), priority.getStreamId());
-                    assertEquals(priorityFrame.getParentStreamId(), priority.getParentStreamId());
-                    assertEquals(priorityFrame.getWeight(), priority.getWeight());
-                    assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
+                    Assert.assertNotNull(priority);
+                    Assert.assertEquals(priorityFrame.getStreamId(), priority.getStreamId());
+                    Assert.assertEquals(priorityFrame.getParentStreamId(), priority.getParentStreamId());
+                    Assert.assertEquals(priorityFrame.getWeight(), priority.getWeight());
+                    Assert.assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
                 }
 
                 serverLatch.countDown();
@@ -576,7 +570,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 output.write(BufferUtil.toArray(buffer));
             output.flush();
 
-            assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
 
             final CountDownLatch clientLatch = new CountDownLatch(1);
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
@@ -591,8 +585,8 @@ public class HTTP2ServerTest extends AbstractServerTest
             parser.init(UnaryOperator.identity());
             boolean closed = parseResponse(client, parser);
 
-            assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
-            assertFalse(closed);
+            Assert.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+            Assert.assertFalse(closed);
         }
     }
 }

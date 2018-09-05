@@ -28,10 +28,8 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class UnknownParseTest
 {
@@ -70,7 +68,7 @@ public class UnknownParseTest
         while (buffer.hasRemaining())
             parser.parse(buffer);
 
-        assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, failure.get());
+        Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, failure.get());
     }
 
     private void testParse(Function<ByteBuffer, ByteBuffer> fn)
@@ -95,6 +93,6 @@ public class UnknownParseTest
                 parser.parse(fn.apply(buffer));
         }
 
-        assertFalse(failure.get());
+        Assert.assertFalse(failure.get());
     }
 }

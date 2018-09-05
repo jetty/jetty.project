@@ -19,8 +19,7 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,7 +32,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 /**
  * FilterHolderTest

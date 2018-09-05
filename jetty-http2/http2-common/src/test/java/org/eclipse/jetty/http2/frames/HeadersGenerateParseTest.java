@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +35,8 @@ import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HeadersGenerateParseTest
 {
@@ -84,24 +80,24 @@ public class HeadersGenerateParseTest
                 }
             }
 
-            assertEquals(1, frames.size());
+            Assert.assertEquals(1, frames.size());
             HeadersFrame frame = frames.get(0);
-            assertEquals(streamId, frame.getStreamId());
-            assertTrue(frame.isEndStream());
+            Assert.assertEquals(streamId, frame.getStreamId());
+            Assert.assertTrue(frame.isEndStream());
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
-            assertEquals(metaData.getMethod(), request.getMethod());
-            assertEquals(metaData.getURI(), request.getURI());
+            Assert.assertEquals(metaData.getMethod(), request.getMethod());
+            Assert.assertEquals(metaData.getURI(), request.getURI());
             for (int j = 0; j < fields.size(); ++j)
             {
                 HttpField field = fields.getField(j);
-                assertTrue(request.getFields().contains(field));
+                Assert.assertTrue(request.getFields().contains(field));
             }
             PriorityFrame priority = frame.getPriority();
-            assertNotNull(priority);
-            assertEquals(priorityFrame.getStreamId(), priority.getStreamId());
-            assertEquals(priorityFrame.getParentStreamId(), priority.getParentStreamId());
-            assertEquals(priorityFrame.getWeight(), priority.getWeight());
-            assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
+            Assert.assertNotNull(priority);
+            Assert.assertEquals(priorityFrame.getStreamId(), priority.getStreamId());
+            Assert.assertEquals(priorityFrame.getParentStreamId(), priority.getParentStreamId());
+            Assert.assertEquals(priorityFrame.getWeight(), priority.getWeight());
+            Assert.assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
         }
     }
 
@@ -144,24 +140,24 @@ public class HeadersGenerateParseTest
                 }
             }
 
-            assertEquals(1, frames.size());
+            Assert.assertEquals(1, frames.size());
             HeadersFrame frame = frames.get(0);
-            assertEquals(streamId, frame.getStreamId());
-            assertTrue(frame.isEndStream());
+            Assert.assertEquals(streamId, frame.getStreamId());
+            Assert.assertTrue(frame.isEndStream());
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
-            assertEquals(metaData.getMethod(), request.getMethod());
-            assertEquals(metaData.getURI(), request.getURI());
+            Assert.assertEquals(metaData.getMethod(), request.getMethod());
+            Assert.assertEquals(metaData.getURI(), request.getURI());
             for (int j = 0; j < fields.size(); ++j)
             {
                 HttpField field = fields.getField(j);
-                assertTrue(request.getFields().contains(field));
+                Assert.assertTrue(request.getFields().contains(field));
             }
             PriorityFrame priority = frame.getPriority();
-            assertNotNull(priority);
-            assertEquals(priorityFrame.getStreamId(), priority.getStreamId());
-            assertEquals(priorityFrame.getParentStreamId(), priority.getParentStreamId());
-            assertEquals(priorityFrame.getWeight(), priority.getWeight());
-            assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
+            Assert.assertNotNull(priority);
+            Assert.assertEquals(priorityFrame.getStreamId(), priority.getStreamId());
+            Assert.assertEquals(priorityFrame.getParentStreamId(), priority.getParentStreamId());
+            Assert.assertEquals(priorityFrame.getWeight(), priority.getWeight());
+            Assert.assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
         }
     }
 }

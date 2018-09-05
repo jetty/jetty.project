@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests.extensions;
 
-
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -60,7 +59,7 @@ public class ExtensionTool
             this.extConfig = ExtensionConfig.parse(parameterizedExtension);
             Class<?> extClass = factory.getExtension(extConfig.getName());
             assertThat("extClass", extClass, notNullValue());
-
+    
             this.capture = new IncomingFramesCapture();
             this.parser = new Parser(policy, new MappedByteBufferPool(), frame ->
             {
@@ -81,7 +80,7 @@ public class ExtensionTool
 
             this.parser.configureFromExtensions(Collections.singletonList(ext));
         }
-
+    
         public void parseIncomingHex(String... rawhex)
         {
             int parts = rawhex.length;

@@ -18,13 +18,11 @@
 
 package org.eclipse.jetty.annotations;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.isIn;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -48,14 +46,13 @@ import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
-@ExtendWith(WorkDirExtension.class)
 public class TestAnnotationParser
 {
     public static class TrackingAnnotationHandler extends AnnotationParser.AbstractHandler
@@ -105,7 +102,8 @@ public class TestAnnotationParser
         
     }
 
-    public WorkDir testdir;
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
     @Test
     public void testSampleAnnotation() throws Exception
@@ -142,7 +140,7 @@ public class TestAnnotationParser
                 if (annotation == null || !"org.eclipse.jetty.annotations.Sample".equals(annotation))
                     return;
                 assertEquals("org.eclipse.jetty.annotations.ClassA",info.getClassInfo().getClassName());
-                assertThat(info.getMethodName(), isIn(methods));
+                assertTrue(methods.contains(info.getMethodName()));
                 assertEquals("org.eclipse.jetty.annotations.Sample",annotation);
             }
         }
@@ -173,9 +171,11 @@ public class TestAnnotationParser
 
             @Override
             public void handle(FieldInfo info, String annotation)
-            {
-                assertTrue(annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation),
-                        "There should not be any");
+            {                
+                if (annotation == null || ! "org.eclipse.jetty.annotations.Multi".equals(annotation))
+                    return;
+                // there should not be any
+                fail();
             }
 
             @Override
@@ -256,7 +256,7 @@ public class TestAnnotationParser
         parser.parse(Collections.singleton(tracker), basedir.toURI());
         
         // Validate
-        assertThat("Found Class", tracker.foundClasses, contains(ClassA.class.getName()));
+        Assert.assertThat("Found Class", tracker.foundClasses, contains(ClassA.class.getName()));
     }
     
     
@@ -271,9 +271,9 @@ public class TestAnnotationParser
         parser.parse(handlers, testJar);
         parser.parse(handlers, testJar2);        
         List<String> locations = handler.getParsedList("org.acme.ClassOne");
-        assertNotNull(locations);
-        assertEquals(2, locations.size());
-        assertTrue(!(locations.get(0).equals(locations.get(1))));
+        Assert.assertNotNull(locations);
+        Assert.assertEquals(2, locations.size());
+        Assert.assertTrue(!(locations.get(0).equals(locations.get(1))));
     }
     
     
@@ -288,9 +288,9 @@ public class TestAnnotationParser
         parser.parse(handlers, testJar);
         parser.parse(handlers, Resource.newResource(testClasses));        
         List<String>locations = handler.getParsedList("org.acme.ClassOne");
-        assertNotNull(locations);
-        assertEquals(2, locations.size());
-        assertTrue(!(locations.get(0).equals(locations.get(1))));
+        Assert.assertNotNull(locations);
+        Assert.assertEquals(2, locations.size());
+        Assert.assertTrue(!(locations.get(0).equals(locations.get(1))));
     }
     
     
@@ -299,7 +299,7 @@ public class TestAnnotationParser
     {
         String classname = clazz.getName().replace('.',File.separatorChar) + ".class";
         URL url = this.getClass().getResource('/'+classname);
-        assertThat("URL for: " + classname,url,notNullValue());
+        Assert.assertThat("URL for: " + classname,url,notNullValue());
 
         String classpath = classname.substring(0,classname.lastIndexOf(File.separatorChar));
         FS.ensureDirExists(new File(basedir,classpath));

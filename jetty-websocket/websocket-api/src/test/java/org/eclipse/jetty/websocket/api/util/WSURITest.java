@@ -18,20 +18,19 @@
 
 package org.eclipse.jetty.websocket.api.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class WSURITest
 {
     private void assertURI(URI actual, URI expected)
     {
-        assertThat(actual.toASCIIString(),is(expected.toASCIIString()));
+        Assert.assertThat(actual.toASCIIString(),is(expected.toASCIIString()));
     }
 
     @Test

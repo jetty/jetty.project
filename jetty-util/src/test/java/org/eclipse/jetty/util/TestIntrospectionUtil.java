@@ -18,18 +18,20 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 
 /**
  * TestInjection
+ *
+ *
  */
 public class TestIntrospectionUtil
 {
@@ -83,7 +85,7 @@ public class TestIntrospectionUtil
         void setDefaultD(Integer d) {}
     }
 
-    @BeforeAll
+    @BeforeClass
     public static void setUp()
     throws Exception
     {
@@ -114,10 +116,15 @@ public class TestIntrospectionUtil
         assertEquals(privateAField,f);
 
         //inheritance
-        assertThrows(NoSuchFieldException.class, ()-> {
-            // Private fields should not be inherited
+        try
+        {
             IntrospectionUtil.findField(ServletB.class, "privateA", Integer.class, true, false);
-        });
+            fail("Private fields should not be inherited");
+        }
+        catch (NoSuchFieldException e)
+        {
+            //expected
+        }
     }
 
     @Test
@@ -168,9 +175,15 @@ public class TestIntrospectionUtil
         assertEquals(m, privateCMethod);
 
         //inheritance
-        assertThrows(NoSuchMethodException.class, ()-> {
+        try
+        {
             IntrospectionUtil.findMethod(ServletD.class, "setPrivateC", __INTEGER_ARG, true, false);
-        });
+            fail();
+        }
+        catch (NoSuchMethodException e)
+        {
+            //expected
+        }
     }
 
     @Test

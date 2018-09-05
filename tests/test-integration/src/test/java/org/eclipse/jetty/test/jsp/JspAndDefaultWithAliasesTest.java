@@ -18,19 +18,14 @@
 
 package org.eclipse.jetty.test.jsp;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -42,40 +37,56 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 /**
  * Test various paths for JSP resources that tickle various java.io.File bugs to get around the JspServlet matching, that then flows to the DefaultServlet to be
  * served as source files.
  */
+@RunWith(Parameterized.class)
 public class JspAndDefaultWithAliasesTest
 {
     private static final Logger LOG = Log.getLogger(JspAndDefaultWithAliasesTest.class);
     private static Server server;
     private static URI serverURI;
 
-    public static Stream<Arguments> aliases()
+    @Parameters
+    public static Collection<String[]> data()
     {
-        List<Arguments> data = new ArrayList<>();
+        List<String[]> data = new ArrayList<String[]>();
 
-        data.add(Arguments.of( "false","/dump.jsp" ));
-        data.add(Arguments.of( "false","/dump.jsp/" ));
-        data.add(Arguments.of( "true", "/dump.jsp%00" ));
-        data.add(Arguments.of( "false","/dump.jsp%00/" ));
-        data.add(Arguments.of( "false","/dump.jsp%00x/dump.jsp" ));
-        data.add(Arguments.of( "false","/dump.jsp%00/dump.jsp" ));
-        data.add(Arguments.of( "false","/dump.jsp%00x" ));
-        data.add(Arguments.of( "false","/dump.jsp%00x/" ));
-        data.add(Arguments.of( "false","/dump.jsp%00/index.html" ));
+        double javaVersion = Double.parseDouble(System.getProperty("java.specification.version"));
 
-        return data.stream();
+        // @formatter:off
+        data.add(new String[] { "false","/dump.jsp" });
+        data.add(new String[] { "false","/dump.jsp/" });
+        data.add(new String[] { "true", "/dump.jsp%00" });
+        data.add(new String[] { "false","/dump.jsp%00/" });
+        data.add(new String[] { "false","/dump.jsp%00x/dump.jsp" });
+        data.add(new String[] { "false","/dump.jsp%00/dump.jsp" });
+
+        if (javaVersion >= 1.7)
+        {
+            data.add(new String[] { "false","/dump.jsp%00x" });
+            data.add(new String[] { "false","/dump.jsp%00x/" });
+            data.add(new String[] { "false","/dump.jsp%00/index.html" });
+        }
+        // @formatter:on
+
+        return data;
     }
 
-    @BeforeAll
+    @BeforeClass
     public static void startServer() throws Exception
     {
         server = new Server(0);
@@ -113,13 +124,23 @@ public class JspAndDefaultWithAliasesTest
         serverURI = new URI("http://localhost:" + port + "/");
     }
 
-    @AfterAll
+    @AfterClass
     public static void stopServer() throws Exception
     {
         server.stop();
     }
 
-    private void assertProcessedByJspServlet(HttpURLConnection conn, String path, boolean knownBypass) throws IOException
+    private String path;
+    private boolean knownBypass;
+
+    public JspAndDefaultWithAliasesTest(String bypassed, String encodedRequestPath)
+    {
+        LOG.info("Path \"" + encodedRequestPath + "\"");
+        this.path = encodedRequestPath;
+        this.knownBypass= Boolean.parseBoolean(bypassed);
+    }
+
+    private void assertProcessedByJspServlet(HttpURLConnection conn) throws IOException
     {
         // make sure that jsp actually ran, and didn't just get passed onto
         // the default servlet to return the jsp source
@@ -129,17 +150,17 @@ public class JspAndDefaultWithAliasesTest
             LOG.info("Known bypass of mapping by "+path);
         else
         {
-            assertThat("Body",body,not(containsString("<%@")));
-            assertThat("Body",body,not(containsString("<jsp:")));
+            Assert.assertThat("Body",body,not(containsString("<%@")));
+            Assert.assertThat("Body",body,not(containsString("<jsp:")));
         }
     }
 
-    private void assertResponse(HttpURLConnection conn, String path, boolean knownBypass) throws IOException
+    private void assertResponse(HttpURLConnection conn) throws IOException
     {
         if (conn.getResponseCode() == 200)
         {
             // Serving content is allowed, but it better be the processed JspServlet
-            assertProcessedByJspServlet(conn, path, knownBypass);
+            assertProcessedByJspServlet(conn);
             return;
         }
 
@@ -147,12 +168,11 @@ public class JspAndDefaultWithAliasesTest
             System.err.println(conn.getResponseMessage());
 
         // Of other possible paths, only 404 Not Found is expected
-        assertThat("Response Code",conn.getResponseCode(),is(404));
+        Assert.assertThat("Response Code",conn.getResponseCode(),is(404));
     }
 
-    @ParameterizedTest
-    @MethodSource("aliases")
-    public void testGetReference(String path, boolean knownBypass) throws Exception
+    @Test
+    public void testGetReference() throws Exception
     {
         URI uri = serverURI.resolve(path);
 
@@ -162,7 +182,7 @@ public class JspAndDefaultWithAliasesTest
             conn = (HttpURLConnection)uri.toURL().openConnection();
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
-            assertResponse(conn, path, knownBypass);
+            assertResponse(conn);
         }
         finally
         {

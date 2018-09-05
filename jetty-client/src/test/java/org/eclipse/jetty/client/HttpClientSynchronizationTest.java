@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.ConnectException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -29,20 +25,25 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Verifies that synchronization performed from outside HttpClient does not cause deadlocks
  */
 public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
 {
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testSynchronizationOnException(Scenario scenario) throws Exception
+    public HttpClientSynchronizationTest(SslContextFactory sslContextFactory)
     {
-        start(scenario, new EmptyServerHandler());
+        super(sslContextFactory);
+    }
+
+    @Test
+    public void testSynchronizationOnException() throws Exception
+    {
+        start(new EmptyServerHandler());
         int port = connector.getLocalPort();
         server.stop();
 
@@ -51,7 +52,7 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
         for (int i = 0; i < count; ++i)
         {
             Request request = client.newRequest("localhost", port)
-                    .scheme(scenario.getScheme());
+                    .scheme(scheme);
 
             synchronized (this)
             {
@@ -62,7 +63,7 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
                     {
                         synchronized (HttpClientSynchronizationTest.this)
                         {
-                            assertThat(failure, Matchers.instanceOf(ConnectException.class));
+                            Assert.assertThat(failure, Matchers.instanceOf(ConnectException.class));
                             latch.countDown();
                         }
                     }
@@ -70,21 +71,20 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
             }
         }
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testSynchronizationOnComplete(Scenario scenario) throws Exception
+    @Test
+    public void testSynchronizationOnComplete() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         int count = 10;
         final CountDownLatch latch = new CountDownLatch(count);
         for (int i = 0; i < count; ++i)
         {
             Request request = client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scenario.getScheme());
+                    .scheme(scheme);
 
             synchronized (this)
             {
@@ -95,7 +95,7 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
                     {
                         synchronized (HttpClientSynchronizationTest.this)
                         {
-                            assertFalse(result.isFailed());
+                            Assert.assertFalse(result.isFailed());
                             latch.countDown();
                         }
                     }
@@ -103,6 +103,6 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
             }
         }
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.condition.OS.MAC;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Queue;
@@ -38,21 +31,24 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-@Disabled
-@Tag("stress")
-@DisabledOnOs(MAC) // TODO: needs investigation
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
+@RunWith(AdvancedRunner.class)
 public class StressTest
 {
     private static final Logger LOG = Log.getLogger(StressTest.class);
@@ -92,7 +88,7 @@ public class StressTest
         "/path/f",
     };
 
-    @BeforeAll
+    @BeforeClass
     public static void init() throws Exception
     {
         _threads = new QueuedThreadPool();
@@ -111,14 +107,14 @@ public class StressTest
         _server.start();
     }
 
-    @AfterAll
+    @AfterClass
     public static void destroy() throws Exception
     {
         _server.stop();
         _server.join();
     }
 
-    @BeforeEach
+    @Before
     public void reset()
     {
         _handled.set(0);
@@ -129,12 +125,17 @@ public class StressTest
     @Test
     public void testMinNonPersistent() throws Throwable
     {
+        assumeTrue(!OS.IS_OSX);
         doThreads(10,10,false);
     }
 
     @Test
+    @Stress("Hey, its called StressTest for a reason")
     public void testNonPersistent() throws Throwable
     {
+        // TODO needs to be further investigated
+        assumeTrue(!OS.IS_OSX);
+
         doThreads(20,20,false);
         Thread.sleep(1000);
         doThreads(200,10,false);
@@ -145,12 +146,17 @@ public class StressTest
     @Test
     public void testMinPersistent() throws Throwable
     {
+        // TODO needs to be further investigated
+        assumeTrue(!OS.IS_OSX);
         doThreads(10,10,true);
     }
     
     @Test
+    @Stress("Hey, its called StressTest for a reason")
     public void testPersistent() throws Throwable
     {
+        // TODO needs to be further investigated
+        assumeTrue(!OS.IS_OSX);
         doThreads(40,40,true);
         Thread.sleep(1000);
         doThreads(200,10,true);
@@ -371,7 +377,7 @@ public class StressTest
             int bodies = count(response,"HTTP/1.1 200 OK");
             if (__tests.length!=bodies)
                 System.err.println("responses=\n"+response+"\n---");
-            assertEquals(__tests.length,bodies,name);
+            assertEquals(name,__tests.length,bodies);
 
             long bind=connected-start;
             long flush=(written-connected)/__tests.length;
@@ -423,10 +429,10 @@ public class StressTest
                 long end=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
                 String endOfResponse = "\r\n\r\n";
-                assertThat(response, containsString(endOfResponse));
+                assertTrue("response = '" + response + "'", response.contains(endOfResponse));
                 response=response.substring(response.indexOf(endOfResponse) + endOfResponse.length());
 
-                assertThat(uri, response, startsWith("DATA "+__tests[i]));
+                assertTrue(uri,response.startsWith("DATA "+__tests[i]));
                 long latency=end-start;
 
                 _latencies[5].add(new Long(latency));

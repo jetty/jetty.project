@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Random;
@@ -60,8 +55,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class AsyncServletTest extends AbstractTest
 {
@@ -120,8 +115,8 @@ public class AsyncServletTest extends AbstractTest
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-        assertArrayEquals(content, buffer.toByteArray());
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertArrayEquals(content, buffer.toByteArray());
     }
 
     @Test
@@ -154,8 +149,8 @@ public class AsyncServletTest extends AbstractTest
         // When the client closes, the server receives the
         // corresponding frame and acts by notifying the failure,
         // which sends back to the client the error response.
-        assertTrue(serverLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-        assertTrue(clientLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(serverLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(clientLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -187,8 +182,8 @@ public class AsyncServletTest extends AbstractTest
         // When the client resets, the server receives the
         // corresponding frame and acts by notifying the failure,
         // but the response is not sent back to the client.
-        assertTrue(serverLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-        assertTrue(clientLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(serverLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(clientLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -224,7 +219,7 @@ public class AsyncServletTest extends AbstractTest
         Stream stream = promise.get(5, TimeUnit.SECONDS);
 
         // Wait for the server to be in ASYNC_WAIT.
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         sleep(500);
 
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
@@ -235,13 +230,17 @@ public class AsyncServletTest extends AbstractTest
         AsyncContext asyncContext = asyncContextRef.get();
         ServletResponse response = asyncContext.getResponse();
         ServletOutputStream output = response.getOutputStream();
-
-        assertThrows(IOException.class,
-                () -> {
-                    // Large writes or explicit flush() must
-                    // fail because the stream has been reset.
-                    output.flush();
-                });
+        try
+        {
+            // Large writes or explicit flush() must
+            // fail because the stream has been reset.
+            output.flush();
+            Assert.fail();
+        }
+        catch (IOException x)
+        {
+            // Expected
+        }
     }
 
     @Test
@@ -343,8 +342,8 @@ public class AsyncServletTest extends AbstractTest
 
         // When the server idle times out, but the request has been dispatched
         // then the server must ignore the idle timeout as per Servlet semantic.
-        assertFalse(errorLatch.await(2 * timeout, TimeUnit.MILLISECONDS));
-        assertTrue(clientLatch.await(2 * timeout, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(errorLatch.await(2 * timeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(clientLatch.await(2 * timeout, TimeUnit.MILLISECONDS));
     }
 
     private void sleep(long ms)

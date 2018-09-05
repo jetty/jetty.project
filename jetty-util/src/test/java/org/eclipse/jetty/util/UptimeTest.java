@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.util;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class UptimeTest
 {

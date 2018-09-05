@@ -151,6 +151,7 @@
         <artifactId>jetty-ant</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-client</artifactId>
@@ -389,7 +390,6 @@
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-common</artifactId>
         <version>10.0.0-SNAPSHOT</version>
-      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-server</artifactId>

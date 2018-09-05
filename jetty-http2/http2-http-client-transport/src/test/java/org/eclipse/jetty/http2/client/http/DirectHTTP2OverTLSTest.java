@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.http2.client.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -43,14 +41,18 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class DirectHTTP2OverTLSTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
     private Server server;
     private ServerConnector connector;
     private HttpClient client;
@@ -87,7 +89,7 @@ public class DirectHTTP2OverTLSTest
         client.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         if (client != null)
@@ -125,6 +127,6 @@ public class DirectHTTP2OverTLSTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 }

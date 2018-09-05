@@ -18,14 +18,13 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.common.AcceptHash;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class AcceptHashTest
 {
@@ -33,7 +32,7 @@ public class AcceptHashTest
     public void testHash()
     {
         byte key[] = TypeUtil.fromHexString("00112233445566778899AABBCCDDEEFF");
-        assertThat("Key size",key.length,is(16));
+        Assert.assertThat("Key size",key.length,is(16));
 
         // what the client sends
         String clientKey = String.valueOf(B64Code.encode(key));
@@ -41,7 +40,7 @@ public class AcceptHashTest
         String serverHash = AcceptHash.hashKey(clientKey);
 
         // how the client validates
-        assertThat(serverHash,is("mVL6JKtNRC4tluIaFAW2hhMffgE="));
+        Assert.assertThat(serverHash,is("mVL6JKtNRC4tluIaFAW2hhMffgE="));
     }
 
     /**
@@ -59,6 +58,6 @@ public class AcceptHashTest
         String serverAccept = AcceptHash.hashKey(clientKey);
         String expectedHash = "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=";
 
-        assertThat(serverAccept,is(expectedHash));
+        Assert.assertThat(serverAccept,is(expectedHash));
     }
 }

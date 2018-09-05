@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,13 +27,14 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class ExternalFastCGIServerTest
 {
     @Test
-    @Disabled("Relies on an external server")
+    @Ignore("Relies on an external server")
     public void testExternalFastCGIServer() throws Exception
     {
         // Assume a FastCGI server is listening on localhost:9000
@@ -48,7 +47,7 @@ public class ExternalFastCGIServerTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
 
         Path responseFile = Paths.get(System.getProperty("java.io.tmpdir"), "fcgi_response.html");
         Files.write(responseFile, response.getContent(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);

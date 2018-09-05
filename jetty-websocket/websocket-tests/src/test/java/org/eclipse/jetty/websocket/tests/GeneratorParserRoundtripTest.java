@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.Matchers.is;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -29,16 +36,10 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
-import static org.hamcrest.Matchers.is;
-
 public class GeneratorParserRoundtripTest
 {
     public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
-
+    
     @Test
     public void testParserAndGenerator() throws Exception
     {

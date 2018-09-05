@@ -18,23 +18,26 @@
 
 package org.eclipse.jetty;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-
-import com.acme.ChatServlet;
+import static org.junit.Assert.assertThat;
 
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+import com.acme.ChatServlet;
+
+@RunWith(JUnit4.class)
 public class ChatServletTest
 {
 
     private final ServletTester tester = new ServletTester();
 
-    @BeforeEach
+    @Before
     public void setUp() throws Exception
     {
         tester.setContextPath("/");
@@ -44,7 +47,7 @@ public class ChatServletTest
         tester.start();
     }
 
-    @AfterEach
+    @After
     public void tearDown() throws Exception
     {
         tester.stop();

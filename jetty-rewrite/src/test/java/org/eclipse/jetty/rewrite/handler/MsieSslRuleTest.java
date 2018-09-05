@@ -18,19 +18,19 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 public class MsieSslRuleTest extends AbstractRuleTestCase
 {
     private MsieSslRule _rule;
 
-    @BeforeEach
+    @Before
     public void init() throws Exception
     {
         // enable SSL

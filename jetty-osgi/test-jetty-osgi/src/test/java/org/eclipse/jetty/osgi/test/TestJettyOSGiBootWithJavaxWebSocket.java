@@ -53,6 +53,7 @@ import aQute.bnd.osgi.Constants;
  * Test using websocket in osgi
  */
 @RunWith(PaxExam.class)
+
 public class TestJettyOSGiBootWithJavaxWebSocket
 {
     private static final String LOG_LEVEL = "WARN";

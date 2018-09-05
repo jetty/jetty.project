@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,11 +30,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * HttpServer Tester.
  */
+@RunWith(AdvancedRunner.class)
 public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
 {
     private static String __content =

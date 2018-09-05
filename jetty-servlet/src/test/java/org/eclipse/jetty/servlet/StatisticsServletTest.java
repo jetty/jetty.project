@@ -18,14 +18,17 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringReader;
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.xml.sax.InputSource;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -33,17 +36,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
-
-import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.server.session.SessionHandler;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.xml.sax.InputSource;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringReader;
+import java.nio.ByteBuffer;
 
 public class StatisticsServletTest
 {
@@ -51,7 +47,7 @@ public class StatisticsServletTest
 
     private LocalConnector _connector;
 
-    @BeforeEach
+    @Before
     public void createServer()
     {
         _server = new Server();
@@ -60,7 +56,7 @@ public class StatisticsServletTest
     }
 
 
-    @AfterEach
+    @After
     public void destroyServer()
         throws Exception
     {
@@ -86,21 +82,21 @@ public class StatisticsServletTest
         String response = getResponse("/stats?xml=true" );
         Stats stats = parseStats( response );
 
-        assertEquals(1, stats.responses2xx);
+        Assert.assertEquals(1, stats.responses2xx);
 
         getResponse("/stats?statsReset=true" );
         response = getResponse("/stats?xml=true" );
         stats = parseStats( response );
 
-        assertEquals(1, stats.responses2xx);
+        Assert.assertEquals(1, stats.responses2xx);
 
         getResponse("/test1" );
         getResponse("/nothing" );
         response = getResponse("/stats?xml=true" );
         stats = parseStats( response );
 
-        assertThat("2XX Response Count" + response, stats.responses2xx, is(3));
-        assertThat("4XX Response Count" + response, stats.responses4xx, is(1));
+        Assert.assertEquals(3, stats.responses2xx);
+        Assert.assertEquals(1, stats.responses4xx);
     }
 
     public String getResponse( String path )

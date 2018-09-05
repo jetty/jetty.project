@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.jsp;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,27 +31,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspFactory;
 
-import org.apache.jasper.runtime.JspFactoryImpl;
-import org.apache.tomcat.InstanceManager;
-import org.apache.tomcat.SimpleInstanceManager;
-import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.apache.jasper.runtime.JspFactoryImpl;
+import org.apache.tomcat.InstanceManager;
+import org.apache.tomcat.SimpleInstanceManager;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 
-@ExtendWith(WorkDirExtension.class)
 public class TestJettyJspServlet
 {
-    public WorkDir workdir;
-
-    private File _dir;
-    private ServletTester _tester;
+    File _dir;
+    ServletTester _tester;
     
     public static class DfltServlet extends HttpServlet
     {
@@ -75,7 +67,7 @@ public class TestJettyJspServlet
         
     }
     
-    @BeforeEach
+    @Before
     public void setUp () throws Exception
     {
         JspFactory.setDefaultFactory(new JspFactoryImpl());
@@ -83,7 +75,7 @@ public class TestJettyJspServlet
         _tester = new ServletTester("/context");
         _tester.getContext().setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
         ServletHolder jspHolder = _tester.getContext().addServlet(JettyJspServlet.class, "/*");
-        jspHolder.setInitParameter("scratchdir", workdir.getPath().toString());
+        jspHolder.setInitParameter("scratchdir", MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
         _tester.getContext().setResourceBase(_dir.getAbsolutePath());
         _tester.getContext().setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
         ServletHolder dfltHolder = new ServletHolder();
@@ -94,7 +86,7 @@ public class TestJettyJspServlet
         _tester.start();
     }
     
-    @AfterEach
+    @After
     public void tearDown() throws Exception
     {
         if (_tester != null)
@@ -110,10 +102,8 @@ public class TestJettyJspServlet
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-
-        String rawResponse = _tester.getResponses(request);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getContent(), not(containsString("This.Is.The.Default.")));
+        String response = _tester.getResponses(request);
+        assertTrue(!response.contains("This.Is.The.Default."));
     }
     
     
@@ -126,8 +116,8 @@ public class TestJettyJspServlet
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String rawResponse = _tester.getResponses(request);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getContent(), containsString("This.Is.The.Default."));
+        String response = _tester.getResponses(request);
+        assertTrue(response.contains("This.Is.The.Default."));
     }
+
 }

@@ -19,14 +19,20 @@
 package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.Socket;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.junit.jupiter.api.AfterEach;
+import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.junit.After;
+import org.junit.Rule;
 
 public abstract class AbstractConnectHandlerTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
     protected Server server;
     protected ServerConnector serverConnector;
     protected Server proxy;
@@ -43,7 +49,7 @@ public abstract class AbstractConnectHandlerTest
         proxy.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         disposeServer();

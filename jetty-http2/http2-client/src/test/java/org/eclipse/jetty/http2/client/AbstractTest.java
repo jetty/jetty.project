@@ -39,12 +39,16 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.After;
+import org.junit.Rule;
 
 public class AbstractTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
     protected ServerConnector connector;
     protected String servletPath = "/test";
     protected HTTP2Client client;
@@ -123,7 +127,7 @@ public class AbstractTest
         return new MetaData.Request(method, HttpScheme.HTTP, new HostPortHttpField(authority), servletPath + pathInfo, HttpVersion.HTTP_2, fields);
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         if (client != null)

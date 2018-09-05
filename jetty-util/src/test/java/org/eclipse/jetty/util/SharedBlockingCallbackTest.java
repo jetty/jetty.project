@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CountDownLatch;
@@ -37,7 +28,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.jupiter.api.Test;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
+
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class SharedBlockingCallbackTest
 {
@@ -70,8 +69,8 @@ public class SharedBlockingCallbackTest
             start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             blocker.block();
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,lessThan(500L));
-        assertEquals(0,notComplete.get());
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(500L));  
+        Assert.assertEquals(0,notComplete.get());   
     }
     
     @Test
@@ -97,9 +96,9 @@ public class SharedBlockingCallbackTest
             start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             blocker.block();
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,lessThan(1000L));
-        assertEquals(0,notComplete.get());
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.greaterThan(10L)); 
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(1000L)); 
+        Assert.assertEquals(0,notComplete.get());   
     }
     
     @Test
@@ -114,15 +113,15 @@ public class SharedBlockingCallbackTest
                 blocker.failed(ex);
                 blocker.block();
             }
-            fail("Should have thrown IOException");
+            Assert.fail();
         }
         catch(IOException ee)
         {
             start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            assertEquals(ex,ee.getCause());
+            Assert.assertEquals(ex,ee.getCause());
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,lessThan(100L));
-        assertEquals(0,notComplete.get());
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(100L));    
+        Assert.assertEquals(0,notComplete.get());    
     }
     
     @Test
@@ -152,15 +151,15 @@ public class SharedBlockingCallbackTest
                 start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 blocker.block();
             }
-            fail("Should have thrown IOException");
+            Assert.fail();
         }
         catch(IOException ee)
         {
-            assertEquals(ex,ee.getCause());
+            Assert.assertEquals(ex,ee.getCause());
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,greaterThan(10L));
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,lessThan(1000L));
-        assertEquals(0,notComplete.get());
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.greaterThan(10L)); 
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(1000L));
+        Assert.assertEquals(0,notComplete.get());   
     }
 
 
@@ -196,14 +195,14 @@ public class SharedBlockingCallbackTest
         long start=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         try (Blocker blocker=sbcb.acquire())
         {
-            assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,greaterThan(10L));
-            assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,lessThan(500L));
+            Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.greaterThan(10L)); 
+            Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(500L)); 
 
             blocker.succeeded();
             blocker.block();
         }
-        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,lessThan(600L));
-        assertEquals(0,notComplete.get());
+        Assert.assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())-start,Matchers.lessThan(600L)); 
+        Assert.assertEquals(0,notComplete.get());     
     }
 
     @Test
@@ -214,7 +213,7 @@ public class SharedBlockingCallbackTest
             LOG.info("Blocker not complete "+blocker+" warning is expected...");
         }
         
-        assertEquals(1,notComplete.get());
+        Assert.assertEquals(1,notComplete.get());
     }
     
     @Test
@@ -230,7 +229,7 @@ public class SharedBlockingCallbackTest
                 Thread.sleep(400);
                 blocker.block();
             }
-            fail("Should have thrown IOException");
+            fail();
         }
         catch(IOException e)
         {
@@ -238,7 +237,7 @@ public class SharedBlockingCallbackTest
             assertThat(cause,instanceOf(TimeoutException.class));
         }
         
-        assertEquals(0,notComplete.get());
+        Assert.assertEquals(0,notComplete.get());
 
         try (Blocker blocker=sbcb.acquire())
         {

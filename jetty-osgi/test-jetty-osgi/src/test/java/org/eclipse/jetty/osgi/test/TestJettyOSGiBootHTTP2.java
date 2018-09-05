@@ -20,7 +20,6 @@ package org.eclipse.jetty.osgi.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
@@ -36,11 +35,11 @@ import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -122,8 +121,8 @@ public class TestJettyOSGiBootHTTP2
     public void checkALPNBootOnBootstrapClasspath() throws Exception
     {
         Class<?> alpn = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.alpn.ALPN");
-        assertNotNull(alpn);
-        assertNull(alpn.getClassLoader());
+        Assert.assertNotNull(alpn);
+        Assert.assertNull(alpn.getClassLoader());
     }
     
     @Ignore
@@ -171,9 +170,9 @@ public class TestJettyOSGiBootHTTP2
             httpClient.start();
 
             ContentResponse response = httpClient.GET("https://localhost:"+port+"/jsp/jstl.jsp");
-            assertEquals(response.toString(), response.getStatus(), HttpStatus.OK_200);
-            String body = response.getContentAsString();
-            assertTrue("Body contains \"JSTL Example\": " + body, body.contains("JSTL Example"));
+            assertEquals(200, response.getStatus());
+            assertTrue(response.getContentAsString().contains("JSTL Example"));
+
         }
         finally
         {

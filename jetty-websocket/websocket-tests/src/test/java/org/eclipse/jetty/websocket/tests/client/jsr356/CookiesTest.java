@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertThat;
 
 import java.net.HttpCookie;
 import java.net.URI;
@@ -46,9 +43,9 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class CookiesTest
 {
@@ -69,7 +66,7 @@ public class CookiesTest
         server.start();
     }
 
-    @AfterEach
+    @After
     public void stopServer() throws Exception
     {
         server.stop();
@@ -91,16 +88,16 @@ public class CookiesTest
                 assertThat("Cookies", cookies, notNullValue());
                 assertThat("Cookies", cookies.size(), is(1));
                 HttpCookie cookie = cookies.get(0);
-                assertEquals(cookieName, cookie.getName());
-                assertEquals(cookieValue, cookie.getValue());
+                Assert.assertEquals(cookieName, cookie.getName());
+                Assert.assertEquals(cookieValue, cookie.getValue());
 
                 Map<String, List<String>> headers = request.getHeaders();
                 // Test case insensitivity
-                assertTrue(headers.containsKey("cookie"));
+                Assert.assertTrue(headers.containsKey("cookie"));
                 List<String> values = headers.get("Cookie");
-                assertNotNull(values);
-                assertEquals(1, values.size());
-                assertEquals(cookieString, values.get(0));
+                Assert.assertNotNull(values);
+                Assert.assertEquals(1, values.size());
+                Assert.assertEquals(cookieString, values.get(0));
 
                 return super.createWebSocket(request, response);
             }
@@ -161,18 +158,18 @@ public class CookiesTest
             {
                 Map<String, List<String>> headers = response.getHeaders();
                 // Test case insensitivity
-                assertTrue(headers.containsKey("set-cookie"));
+                Assert.assertTrue(headers.containsKey("set-cookie"));
                 List<String> values = headers.get("Set-Cookie");
-                assertNotNull(values);
-                assertEquals(1, values.size());
+                Assert.assertNotNull(values);
+                Assert.assertEquals(1, values.size());
 
                 List<HttpCookie> cookies = HttpCookie.parse(values.get(0));
-                assertEquals(1, cookies.size());
+                Assert.assertEquals(1, cookies.size());
                 HttpCookie cookie = cookies.get(0);
-                assertEquals(cookieName, cookie.getName());
-                assertEquals(cookieValue, cookie.getValue());
-                assertEquals(cookieDomain, cookie.getDomain());
-                assertEquals(cookiePath, cookie.getPath());
+                Assert.assertEquals(cookieName, cookie.getName());
+                Assert.assertEquals(cookieValue, cookie.getValue());
+                Assert.assertEquals(cookieDomain, cookie.getDomain());
+                Assert.assertEquals(cookiePath, cookie.getPath());
             }
         });
         ClientEndpointConfig config = builder.build();

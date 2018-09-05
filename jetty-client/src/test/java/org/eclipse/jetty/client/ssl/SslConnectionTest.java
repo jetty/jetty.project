@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.File;
 import java.nio.ByteBuffer;
 
@@ -36,8 +34,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class SslConnectionTest
 {
@@ -83,6 +81,14 @@ public class SslConnectionTest
         // We want SSLHandshakeException to be thrown instead, because it is
         // handled better (it is an IOException) by the Connection code that
         // reads from the EndPoint.
-        assertThrows(SSLHandshakeException.class, ()->sslEndPoint.fill(BufferUtil.EMPTY_BUFFER));
+        try
+        {
+            sslEndPoint.fill(BufferUtil.EMPTY_BUFFER);
+            Assert.fail();
+        }
+        catch (SSLHandshakeException x)
+        {
+            // Expected.
+        }
     }
 }

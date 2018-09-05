@@ -19,29 +19,28 @@
 package org.eclipse.jetty.websocket.tests.client;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import java.util.stream.Stream;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
+@RunWith(Parameterized.class)
 public class WebSocketClientBadUriTest
 {
     @WebSocket
@@ -57,15 +56,15 @@ public class WebSocketClientBadUriTest
         
         public void assertNotOpened()
         {
-            assertThat("Open Latch", openLatch.getCount(), greaterThanOrEqualTo(1L));
+            Assert.assertThat("Open Latch", openLatch.getCount(), greaterThanOrEqualTo(1L));
         }
     }
     
-
-    public static Stream<Arguments> data()
+    @Parameters
+    public static Collection<String[]> data()
     {
         List<String[]> data = new ArrayList<>();
-
+        // @formatter:off
         // - not using right scheme
         data.add(new String[]{"http://localhost"});
         data.add(new String[]{"https://localhost"});
@@ -73,17 +72,18 @@ public class WebSocketClientBadUriTest
         data.add(new String[]{"content://localhost"});
         data.add(new String[]{"jar://localhost"});
         // - non-absolute uri
-        data.add(new String[] { "/mysocket" });
-        data.add(new String[] { "/sockets/echo" });
-        data.add(new String[] { "#echo" });
-        data.add(new String[] { "localhost:8080/echo" });
-
-        return data.stream().map(Arguments::of);
+        data.add(new String[]{"/mysocket"});
+        data.add(new String[]{"/sockets/echo"});
+        data.add(new String[]{"#echo"});
+        data.add(new String[]{"localhost:8080/echo"});
+        // @formatter:on
+        return data;
     }
-
+    
+    @Rule
+    public TestTracker tt = new TestTracker();
     
     private WebSocketClient client;
-
     private final String uriStr;
     private final URI uri;
     
@@ -92,47 +92,35 @@ public class WebSocketClientBadUriTest
         this.uriStr = rawUri;
         this.uri = URI.create(uriStr);
     }
-
-
-    @BeforeEach
+    
+    @Before
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
-
-    @AfterEach
+    
+    @After
     public void stopClient() throws Exception
     {
         client.stop();
     }
-
+    
     @Test
     public void testBadURI() throws Exception
     {
         OpenTrackingSocket clientSocket = new OpenTrackingSocket();
-
+        
         try
         {
-            client.connect( clientSocket, uri ); // should toss exception
-
-            fail( "Expected IllegalArgumentException" );
+            client.connect(clientSocket, uri); // should toss exception
+            
+            Assert.fail("Expected IllegalArgumentException");
         }
-        catch ( IllegalArgumentException e )
+        catch (IllegalArgumentException e)
         {
             // expected path
             clientSocket.assertNotOpened();
         }
-    }
-
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testBadURI(String uriStr) throws Exception
-    {
-        OpenTrackingSocket clientSocket = new OpenTrackingSocket();
-        URI uri = URI.create(uriStr);
-
-        assertThrows(IllegalArgumentException.class, ()-> client.connect(clientSocket, uri));
-        clientSocket.assertNotOpened();
     }
 }

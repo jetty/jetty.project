@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.client.util;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,8 +26,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class InputStreamContentProviderTest
 {
@@ -59,13 +54,20 @@ public class InputStreamContentProviderTest
         InputStreamContentProvider provider = new InputStreamContentProvider(stream);
         Iterator<ByteBuffer> iterator = provider.iterator();
 
-        assertNotNull(iterator);
-        assertFalse(iterator.hasNext());
+        Assert.assertNotNull(iterator);
+        Assert.assertFalse(iterator.hasNext());
 
-        assertThrows(NoSuchElementException.class, () -> iterator.next());
+        try
+        {
+            iterator.next();
+            Assert.fail();
+        }
+        catch (NoSuchElementException expected)
+        {
+        }
 
-        assertFalse(iterator.hasNext());
-        assertTrue(closed.get());
+        Assert.assertFalse(iterator.hasNext());
+        Assert.assertTrue(closed.get());
     }
 
     @Test
@@ -85,16 +87,23 @@ public class InputStreamContentProviderTest
         InputStreamContentProvider provider = new InputStreamContentProvider(stream);
         Iterator<ByteBuffer> iterator = provider.iterator();
 
-        assertNotNull(iterator);
+        Assert.assertNotNull(iterator);
 
         ByteBuffer buffer = iterator.next();
 
-        assertNotNull(buffer);
+        Assert.assertNotNull(buffer);
 
-        assertThrows(NoSuchElementException.class, ()->iterator.next());
+        try
+        {
+            iterator.next();
+            Assert.fail();
+        }
+        catch (NoSuchElementException expected)
+        {
+        }
 
-        assertFalse(iterator.hasNext());
-        assertTrue(closed.get());
+        Assert.assertFalse(iterator.hasNext());
+        Assert.assertTrue(closed.get());
     }
 
     @Test
@@ -120,12 +129,19 @@ public class InputStreamContentProviderTest
         InputStreamContentProvider provider = new InputStreamContentProvider(stream);
         Iterator<ByteBuffer> iterator = provider.iterator();
 
-        assertNotNull(iterator);
+        Assert.assertNotNull(iterator);
 
-        assertThrows(NoSuchElementException.class, ()->iterator.next());
+        try
+        {
+            iterator.next();
+            Assert.fail();
+        }
+        catch (NoSuchElementException expected)
+        {
+        }
 
-        assertFalse(iterator.hasNext());
-        assertTrue(closed.get());
+        Assert.assertFalse(iterator.hasNext());
+        Assert.assertTrue(closed.get());
     }
 
     @Test
@@ -151,12 +167,19 @@ public class InputStreamContentProviderTest
         InputStreamContentProvider provider = new InputStreamContentProvider(stream);
         Iterator<ByteBuffer> iterator = provider.iterator();
 
-        assertNotNull(iterator);
-        assertTrue(iterator.hasNext());
+        Assert.assertNotNull(iterator);
+        Assert.assertTrue(iterator.hasNext());
 
-        assertThrows(NoSuchElementException.class, ()->iterator.next());
+        try
+        {
+            iterator.next();
+            Assert.fail();
+        }
+        catch (NoSuchElementException expected)
+        {
+        }
 
-        assertFalse(iterator.hasNext());
-        assertTrue(closed.get());
+        Assert.assertFalse(iterator.hasNext());
+        Assert.assertTrue(closed.get());
     }
 }

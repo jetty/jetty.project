@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -35,27 +35,26 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
-@ExtendWith(WorkDirExtension.class)
 public class DataRateLimitedServletTest
 {
     public static final int BUFFER=8192;
     public static final int PAUSE=10;
     
-    public WorkDir testdir;
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
     private Server server;
     private LocalConnector connector;
     private ServletContextHandler context;
 
-    @BeforeEach
+    @Before
     public void init() throws Exception
     {
         server = new Server();
@@ -83,7 +82,7 @@ public class DataRateLimitedServletTest
         server.start();
     }
 
-    @AfterEach
+    @After
     public void destroy() throws Exception
     {
         server.stop();

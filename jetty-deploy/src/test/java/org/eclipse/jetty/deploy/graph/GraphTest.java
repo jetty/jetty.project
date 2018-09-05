@@ -18,10 +18,8 @@
 
 package org.eclipse.jetty.deploy.graph;
 
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class GraphTest
 {
@@ -38,19 +36,19 @@ public class GraphTest
 
         Path path = new Path();
 
-        assertEquals(0, path.nodes());
-        assertEquals(null,path.firstNode());
-        assertEquals(null,path.lastNode());
+        Assert.assertEquals(0, path.nodes());
+        Assert.assertEquals(null,path.firstNode());
+        Assert.assertEquals(null,path.lastNode());
 
         path.add(new Edge(nodeA ,nodeB));
-        assertEquals(2,path.nodes());
-        assertEquals(nodeA,path.firstNode());
-        assertEquals(nodeB,path.lastNode());
+        Assert.assertEquals(2,path.nodes());
+        Assert.assertEquals(nodeA,path.firstNode());
+        Assert.assertEquals(nodeB,path.lastNode());
 
         path.add(new Edge(nodeB ,nodeC));
-        assertEquals(3,path.nodes());
-        assertEquals(nodeA,path.firstNode());
-        assertEquals(nodeC,path.lastNode());
+        Assert.assertEquals(3,path.nodes());
+        Assert.assertEquals(nodeA,path.firstNode());
+        Assert.assertEquals(nodeC,path.lastNode());
     }
 
     @Test
@@ -58,10 +56,10 @@ public class GraphTest
     {
         Graph graph = new Graph();
         graph.addNode(nodeA);
-        assertEquals(1,graph.getNodes().size());
-        assertEquals(0,graph.getEdges().size());
+        Assert.assertEquals(1,graph.getNodes().size());
+        Assert.assertEquals(0,graph.getEdges().size());
         Path path = graph.getPath(nodeA,nodeA);
-        assertEquals(0,path.nodes());
+        Assert.assertEquals(0,path.nodes());
     }
 
     @Test
@@ -69,10 +67,10 @@ public class GraphTest
     {
         Graph graph = new Graph();
         graph.addEdge(new Edge(nodeA,nodeB));
-        assertEquals(2,graph.getNodes().size());
-        assertEquals(1,graph.getEdges().size());
+        Assert.assertEquals(2,graph.getNodes().size());
+        Assert.assertEquals(1,graph.getEdges().size());
         Path path = graph.getPath(nodeA,nodeB);
-        assertEquals(2,path.nodes());
+        Assert.assertEquals(2,path.nodes());
     }
 
     @Test
@@ -82,14 +80,14 @@ public class GraphTest
         graph.addEdge(new Edge(nodeA,nodeB));
         graph.addEdge(new Edge(nodeA,nodeC));
         graph.addEdge(new Edge(nodeB,nodeC));
-        assertEquals(3,graph.getNodes().size());
-        assertEquals(3,graph.getEdges().size());
+        Assert.assertEquals(3,graph.getNodes().size());
+        Assert.assertEquals(3,graph.getEdges().size());
         Path path = graph.getPath(nodeA,nodeB);
-        assertEquals(2,path.nodes());
+        Assert.assertEquals(2,path.nodes());
         path = graph.getPath(nodeA,nodeC);
-        assertEquals(2,path.nodes());
+        Assert.assertEquals(2,path.nodes());
         path = graph.getPath(nodeB,nodeC);
-        assertEquals(2,path.nodes());
+        Assert.assertEquals(2,path.nodes());
 
     }
 
@@ -101,13 +99,13 @@ public class GraphTest
         graph.addEdge(new Edge(nodeB,nodeC));
         graph.addEdge(new Edge(nodeA,nodeD));
         graph.addEdge(new Edge(nodeD,nodeC));
-        assertEquals(4,graph.getNodes().size());
-        assertEquals(4,graph.getEdges().size());
+        Assert.assertEquals(4,graph.getNodes().size());
+        Assert.assertEquals(4,graph.getEdges().size());
         Path path = graph.getPath(nodeA,nodeC);
-        assertEquals(3,path.nodes());
+        Assert.assertEquals(3,path.nodes());
 
         path = graph.getPath(nodeC,nodeA);
-        assertEquals(null,path);
+        Assert.assertEquals(null,path);
 
     }
 
@@ -119,19 +117,19 @@ public class GraphTest
         graph.addEdge(new Edge(nodeB,nodeC));
         graph.addEdge(new Edge(nodeC,nodeD));
         graph.addEdge(new Edge(nodeD,nodeA));
-        assertEquals(4,graph.getNodes().size());
-        assertEquals(4,graph.getEdges().size());
+        Assert.assertEquals(4,graph.getNodes().size());
+        Assert.assertEquals(4,graph.getEdges().size());
         Path path = graph.getPath(nodeA,nodeB);
-        assertEquals(2,path.nodes());
+        Assert.assertEquals(2,path.nodes());
 
         path = graph.getPath(nodeA,nodeC);
-        assertEquals(3,path.nodes());
+        Assert.assertEquals(3,path.nodes());
         path = graph.getPath(nodeA,nodeD);
-        assertEquals(4,path.nodes());
+        Assert.assertEquals(4,path.nodes());
 
         graph.addNode(nodeE);
         path = graph.getPath(nodeA,nodeE);
-        assertEquals(null,path);
+        Assert.assertEquals(null,path);
     }
 
 

@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.test.support.rawhttp;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.util.List;
@@ -31,7 +28,8 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HttpResponseTesterTest
 {
@@ -52,17 +50,17 @@ public class HttpResponseTesterTest
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse.toString());
 
-        assertEquals("HTTP/1.1", response.getVersion().asString(), "Response.version");
-        assertEquals(200, response.getStatus(), "Response.status");
-        assertEquals("OK", response.getReason(), "Response.reason");
+        Assert.assertEquals("Response.version","HTTP/1.1",response.getVersion().asString());
+        Assert.assertEquals("Response.status",200,response.getStatus());
+        Assert.assertEquals("Response.reason","OK",response.getReason());
 
-        assertEquals("text/plain", response.get(HttpHeader.CONTENT_TYPE), "Response[Content-Type]");
-        assertEquals(28, response.getLongField("Content-Length"), "Response[Content-Length]");
-        assertEquals("close", response.get("Connection"), "Response[Connection]");
+        Assert.assertEquals("Response[Content-Type]","text/plain",response.get(HttpHeader.CONTENT_TYPE));
+        Assert.assertEquals("Response[Content-Length]",28,response.getLongField("Content-Length"));
+        Assert.assertEquals("Response[Connection]","close",response.get("Connection"));
 
         String expected = "ABCDEFGHIJKLMNOPQRSTTUVWXYZ\n";
 
-        assertEquals(expected, response.getContent().toString(), "Response.content");
+        Assert.assertEquals("Response.content",expected,response.getContent().toString());
     }
 
     @Test
@@ -102,28 +100,28 @@ public class HttpResponseTesterTest
 
         List<HttpTester.Response> responses = HttpTesting.readResponses(rawResponse.toString());
 
-        assertNotNull(responses, "Responses should not be null");
-        assertEquals(3, responses.size(), "Responses.size");
+        Assert.assertNotNull("Responses should not be null",responses);
+        Assert.assertEquals("Responses.size",3,responses.size());
 
         HttpTester.Response resp1 = responses.get(0);
         // System.err.println(resp1.toString());
-        assertEquals(HttpStatus.OK_200, resp1.getStatus());
-        assertEquals("text/plain", resp1.get("Content-Type"));
-        assertThat(resp1.getContent(), containsString("ABCDEFGHIJKLMNOPQRSTTUVWXYZ\n"));
+        Assert.assertEquals(HttpStatus.OK_200, resp1.getStatus());
+        Assert.assertEquals("text/plain", resp1.get("Content-Type"));
+        Assert.assertTrue(resp1.getContent().contains("ABCDEFGHIJKLMNOPQRSTTUVWXYZ\n"));
         assertThat(resp1.get("Connection"),is(not("close")));
 
         HttpTester.Response resp2 = responses.get(1);
         // System.err.println(resp2.toString());
-        assertEquals(HttpStatus.OK_200, resp2.getStatus());
-        assertEquals("text/plain", resp2.get("Content-Type"));
-        assertThat(resp2.getContent(), containsString("Host=Default\nResource=R1\n"));
+        Assert.assertEquals(HttpStatus.OK_200, resp2.getStatus());
+        Assert.assertEquals("text/plain", resp2.get("Content-Type"));
+        Assert.assertTrue(resp2.getContent().contains("Host=Default\nResource=R1\n"));
         assertThat(resp2.get("Connection"),is(not("close")));
 
         HttpTester.Response resp3 = responses.get(2);
         // System.err.println(resp3.toString());
-        assertEquals(HttpStatus.OK_200, resp3.getStatus());
-        assertEquals("text/plain", resp3.get("Content-Type"));
-        assertThat(resp3.getContent(), containsString("Host=Default\nResource=R2\n"));
+        Assert.assertEquals(HttpStatus.OK_200, resp3.getStatus());
+        Assert.assertEquals("text/plain", resp3.get("Content-Type"));
+        Assert.assertTrue(resp3.getContent().contains("Host=Default\nResource=R2\n"));
         assertThat(resp3.get("Connection"),is("close"));
     }
 }

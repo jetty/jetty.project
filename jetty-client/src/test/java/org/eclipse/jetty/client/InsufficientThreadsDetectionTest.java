@@ -18,24 +18,20 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class InsufficientThreadsDetectionTest
 {
-    @Test
-    public void testInsufficientThreads()
+    @Test(expected = IllegalStateException.class)
+    public void testInsufficientThreads() throws Exception
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool(1);
         HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(1), null);
         httpClient.setExecutor(clientThreads);
-        assertThrows(IllegalStateException.class, ()->{
-            httpClient.start();
-        });
+        httpClient.start();
     }
 
     @Test
@@ -46,11 +42,17 @@ public class InsufficientThreadsDetectionTest
         httpClient1.setExecutor(clientThreads);
         httpClient1.start();
 
-        assertThrows(IllegalStateException.class, ()->{
+        try
+        {
             // Share the same thread pool with another instance.
             HttpClient httpClient2 = new HttpClient(new HttpClientTransportOverHTTP(1), null);
             httpClient2.setExecutor(clientThreads);
             httpClient2.start();
-        });
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+            // Expected.
+        }
     }
 }

@@ -40,9 +40,9 @@ import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.jupiter.api.Disabled;
+import org.junit.Ignore;
 
-@Disabled("Not a test case")
+@Ignore("Not a test case")
 public class TestTransparentProxyServer
 {
     public static void main(String[] args) throws Exception

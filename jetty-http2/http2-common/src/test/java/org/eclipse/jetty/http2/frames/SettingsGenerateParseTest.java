@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,8 +33,8 @@ import org.eclipse.jetty.http2.generator.SettingsGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class SettingsGenerateParseTest
 {
@@ -46,12 +43,11 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseNoSettings()
     {
-
-        List<SettingsFrame> frames = testGenerateParse(Collections.<Integer, Integer>emptyMap());
-        assertEquals(1, frames.size());
+        List<SettingsFrame> frames = testGenerateParse(Collections.emptyMap());
+        Assert.assertEquals(1, frames.size());
         SettingsFrame frame = frames.get(0);
-        assertEquals(0, frame.getSettings().size());
-        assertTrue(frame.isReply());
+        Assert.assertEquals(0, frame.getSettings().size());
+        Assert.assertTrue(frame.isReply());
     }
 
     @Test
@@ -65,12 +61,12 @@ public class SettingsGenerateParseTest
         Integer value2 = 23;
         settings1.put(key2, value2);
         List<SettingsFrame> frames = testGenerateParse(settings1);
-        assertEquals(1, frames.size());
+        Assert.assertEquals(1, frames.size());
         SettingsFrame frame = frames.get(0);
         Map<Integer, Integer> settings2 = frame.getSettings();
-        assertEquals(2, settings2.size());
-        assertEquals(value1, settings2.get(key1));
-        assertEquals(value2, settings2.get(key2));
+        Assert.assertEquals(2, settings2.size());
+        Assert.assertEquals(value1, settings2.get(key1));
+        Assert.assertEquals(value2, settings2.get(key2));
     }
 
     private List<SettingsFrame> testGenerateParse(Map<Integer, Integer> settings)
@@ -139,7 +135,7 @@ public class SettingsGenerateParseTest
             }
         }
 
-        assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, errorRef.get());
+        Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, errorRef.get());
     }
 
     @Test
@@ -178,12 +174,12 @@ public class SettingsGenerateParseTest
                 }
             }
 
-            assertEquals(1, frames.size());
+            Assert.assertEquals(1, frames.size());
             SettingsFrame frame = frames.get(0);
             Map<Integer, Integer> settings2 = frame.getSettings();
-            assertEquals(1, settings2.size());
-            assertEquals(value, settings2.get(key));
-            assertTrue(frame.isReply());
+            Assert.assertEquals(1, settings2.size());
+            Assert.assertEquals(value, settings2.get(key));
+            Assert.assertTrue(frame.isReply());
         }
     }
 
@@ -218,7 +214,7 @@ public class SettingsGenerateParseTest
                 parser.parse(buffer);
         }
 
-        assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
+        Assert.assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }
 
     @Test
@@ -259,7 +255,7 @@ public class SettingsGenerateParseTest
         while (buffer.hasRemaining())
             parser.parse(buffer);
 
-        assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
+        Assert.assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }
 
     @Test
@@ -293,6 +289,6 @@ public class SettingsGenerateParseTest
                 parser.parse(buffer);
         }
 
-        assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
+        Assert.assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }
 }

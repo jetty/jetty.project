@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.servlet;
 
-import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +30,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -58,16 +56,18 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Servlet equivalent of the jetty-server's RequestLogHandlerTest, but with more ErrorHandler twists. 
  */
-@Disabled
+@RunWith(Parameterized.class)
+@Ignore
 public class ServletRequestLogTest
 {
     private static final Logger LOG = Log.getLogger(ServletRequestLogTest.class);
@@ -268,7 +268,8 @@ public class ServletRequestLogTest
         }
     }
     
-    public static Stream<Arguments> data()
+    @Parameters(name="{0}")
+    public static List<Object[]> data()
     {
         List<Object[]> data = new ArrayList<>();
 
@@ -282,8 +283,17 @@ public class ServletRequestLogTest
         data.add(new Object[] { new IOExceptionServlet(), "/test/", "GET /test/ HTTP/1.1 500" });
         data.add(new Object[] { new RuntimeExceptionServlet(), "/test/", "GET /test/ HTTP/1.1 500" });
 
-        return data.stream().map(Arguments::of);
+        return data;
     }
+
+    @Parameter(0)
+    public Servlet testServlet;
+    
+    @Parameter(1)
+    public String requestPath;
+
+    @Parameter(2)
+    public String expectedLogEntry;
 
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection.
@@ -291,9 +301,8 @@ public class ServletRequestLogTest
      * Default configuration.
      * @throws Exception on test failure
      */
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testLogHandlerCollection(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    @Test(timeout=4000)
+    public void testLogHandlerCollection() throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -331,42 +340,40 @@ public class ServletRequestLogTest
 
         try
         {
-            Assertions.assertTimeoutPreemptively(ofSeconds(4), ()-> {
-                server.start();
+            server.start();
 
-                String host = connector.getHost();
-                if (host == null)
+            String host = connector.getHost();
+            if (host == null)
+            {
+                host = "localhost";
+            }
+            int port = connector.getLocalPort();
+
+            URI serverUri = new URI("http",null,host,port,requestPath,null,null);
+
+            // Make call to test handler
+            HttpURLConnection connection = (HttpURLConnection)serverUri.toURL().openConnection();
+            try
+            {
+                connection.setAllowUserInteraction(false);
+
+                // log response status code
+                int statusCode = connection.getResponseCode();
+                LOG.debug("Response Status Code: {}",statusCode);
+
+                if (statusCode == 200)
                 {
-                    host = "localhost";
+                    // collect response message and log it
+                    String content = getResponseContent(connection);
+                    LOG.debug("Response Content: {}",content);
                 }
-                int port = connector.getLocalPort();
+            }
+            finally
+            {
+                connection.disconnect();
+            }
 
-                URI serverUri = new URI("http", null, host, port, requestPath, null, null);
-
-                // Make call to test handler
-                HttpURLConnection connection = (HttpURLConnection) serverUri.toURL().openConnection();
-                try
-                {
-                    connection.setAllowUserInteraction(false);
-
-                    // log response status code
-                    int statusCode = connection.getResponseCode();
-                    LOG.debug("Response Status Code: {}", statusCode);
-
-                    if (statusCode == 200)
-                    {
-                        // collect response message and log it
-                        String content = getResponseContent(connection);
-                        LOG.debug("Response Content: {}", content);
-                    }
-                }
-                finally
-                {
-                    connection.disconnect();
-                }
-
-                assertRequestLog(expectedLogEntry, captureLog);
-            });
+            assertRequestLog(captureLog);
         }
         finally
         {
@@ -379,9 +386,8 @@ public class ServletRequestLogTest
      * and also with the default ErrorHandler as server bean in place.
      * @throws Exception on test failure
      */
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testLogHandlerCollection_ErrorHandler_ServerBean(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    @Test(timeout=4000)
+    public void testLogHandlerCollection_ErrorHandler_ServerBean() throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -424,41 +430,38 @@ public class ServletRequestLogTest
         {
             server.start();
 
-            Assertions.assertTimeoutPreemptively(ofSeconds(4), ()-> {
+            String host = connector.getHost();
+            if (host == null)
+            {
+                host = "localhost";
+            }
+            int port = connector.getLocalPort();
 
-                String host = connector.getHost();
-                if (host == null)
+            URI serverUri = new URI("http",null,host,port,requestPath,null,null);
+
+            // Make call to test handler
+            HttpURLConnection connection = (HttpURLConnection)serverUri.toURL().openConnection();
+            try
+            {
+                connection.setAllowUserInteraction(false);
+
+                // log response status code
+                int statusCode = connection.getResponseCode();
+                LOG.debug("Response Status Code: {}",statusCode);
+
+                if (statusCode == 200)
                 {
-                    host = "localhost";
+                    // collect response message and log it
+                    String content = getResponseContent(connection);
+                    LOG.debug("Response Content: {}",content);
                 }
-                int port = connector.getLocalPort();
+            }
+            finally
+            {
+                connection.disconnect();
+            }
 
-                URI serverUri = new URI("http", null, host, port, requestPath, null, null);
-
-                // Make call to test handler
-                HttpURLConnection connection = (HttpURLConnection) serverUri.toURL().openConnection();
-                try
-                {
-                    connection.setAllowUserInteraction(false);
-
-                    // log response status code
-                    int statusCode = connection.getResponseCode();
-                    LOG.debug("Response Status Code: {}", statusCode);
-
-                    if (statusCode == 200)
-                    {
-                        // collect response message and log it
-                        String content = getResponseContent(connection);
-                        LOG.debug("Response Content: {}", content);
-                    }
-                }
-                finally
-                {
-                    connection.disconnect();
-                }
-
-                assertRequestLog(expectedLogEntry,captureLog);
-            });
+            assertRequestLog(captureLog);
         }
         finally
         {
@@ -471,9 +474,8 @@ public class ServletRequestLogTest
      * using servlet specific error page mapping.
      * @throws Exception on test failure
      */
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testLogHandlerCollection_SimpleErrorPageMapping(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    @Test(timeout=4000)
+    public void testLogHandlerCollection_SimpleErrorPageMapping() throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -519,41 +521,38 @@ public class ServletRequestLogTest
         {
             server.start();
 
-            Assertions.assertTimeoutPreemptively(ofSeconds(4), ()-> {
+            String host = connector.getHost();
+            if (host == null)
+            {
+                host = "localhost";
+            }
+            int port = connector.getLocalPort();
 
-                String host = connector.getHost();
-                if (host == null)
+            URI serverUri = new URI("http",null,host,port,requestPath,null,null);
+
+            // Make call to test handler
+            HttpURLConnection connection = (HttpURLConnection)serverUri.toURL().openConnection();
+            try
+            {
+                connection.setAllowUserInteraction(false);
+
+                // log response status code
+                int statusCode = connection.getResponseCode();
+                LOG.debug("Response Status Code: {}",statusCode);
+
+                if (statusCode == 200)
                 {
-                    host = "localhost";
+                    // collect response message and log it
+                    String content = getResponseContent(connection);
+                    LOG.debug("Response Content: {}",content);
                 }
-                int port = connector.getLocalPort();
+            }
+            finally
+            {
+                connection.disconnect();
+            }
 
-                URI serverUri = new URI("http", null, host, port, requestPath, null, null);
-
-                // Make call to test handler
-                HttpURLConnection connection = (HttpURLConnection) serverUri.toURL().openConnection();
-                try
-                {
-                    connection.setAllowUserInteraction(false);
-
-                    // log response status code
-                    int statusCode = connection.getResponseCode();
-                    LOG.debug("Response Status Code: {}", statusCode);
-
-                    if (statusCode == 200)
-                    {
-                        // collect response message and log it
-                        String content = getResponseContent(connection);
-                        LOG.debug("Response Content: {}", content);
-                    }
-                }
-                finally
-                {
-                    connection.disconnect();
-                }
-
-                assertRequestLog(expectedLogEntry,captureLog);
-            });
+            assertRequestLog(captureLog);
         }
         finally
         {
@@ -565,9 +564,8 @@ public class ServletRequestLogTest
      * Test an alternate (proposed) setup for using RequestLogHandler in a wrapped style
      * @throws Exception on test failure
      */
-    @ParameterizedTest
-    @MethodSource("data")
-    public void testLogHandlerWrapped(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    @Test(timeout=4000)
+    public void testLogHandlerWrapped() throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -615,40 +613,38 @@ public class ServletRequestLogTest
         {
             server.start();
 
-            Assertions.assertTimeoutPreemptively(ofSeconds(4), ()-> {
-                String host = connector.getHost();
-                if (host == null)
+            String host = connector.getHost();
+            if (host == null)
+            {
+                host = "localhost";
+            }
+            int port = connector.getLocalPort();
+
+            URI serverUri = new URI("http",null,host,port,"/test",null,null);
+
+            // Make call to test handler
+            HttpURLConnection connection = (HttpURLConnection)serverUri.toURL().openConnection();
+            try
+            {
+                connection.setAllowUserInteraction(false);
+
+                // log response status code
+                int statusCode = connection.getResponseCode();
+                LOG.info("Response Status Code: {}",statusCode);
+
+                if (statusCode == 200)
                 {
-                    host = "localhost";
+                    // collect response message and log it
+                    String content = getResponseContent(connection);
+                    LOG.info("Response Content: {}",content);
                 }
-                int port = connector.getLocalPort();
+            }
+            finally
+            {
+                connection.disconnect();
+            }
 
-                URI serverUri = new URI("http", null, host, port, "/test", null, null);
-
-                // Make call to test handler
-                HttpURLConnection connection = (HttpURLConnection) serverUri.toURL().openConnection();
-                try
-                {
-                    connection.setAllowUserInteraction(false);
-
-                    // log response status code
-                    int statusCode = connection.getResponseCode();
-                    LOG.info("Response Status Code: {}", statusCode);
-
-                    if (statusCode == 200)
-                    {
-                        // collect response message and log it
-                        String content = getResponseContent(connection);
-                        LOG.info("Response Content: {}", content);
-                    }
-                }
-                finally
-                {
-                    connection.disconnect();
-                }
-
-                assertRequestLog(expectedLogEntry,captureLog);
-            });
+            assertRequestLog(captureLog);
         }
         finally
         {
@@ -656,7 +652,7 @@ public class ServletRequestLogTest
         }
     }
 
-    private void assertRequestLog(final String expectedLogEntry, CaptureLog captureLog)
+    private void assertRequestLog(CaptureLog captureLog)
     {
         int captureCount = captureLog.captured.size();
 

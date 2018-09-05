@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -61,9 +61,10 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ServletContextHandlerTest
 {
@@ -123,7 +124,7 @@ public class ServletContextHandlerTest
         
     }
     
-    @BeforeEach
+    @Before
     public void createServer()
     {
         _server = new Server();
@@ -133,7 +134,7 @@ public class ServletContextHandlerTest
         __testServlets.set(0);
     }
 
-    @AfterEach
+    @After
     public void destroyServer() throws Exception
     {
         _server.stop();
@@ -196,12 +197,12 @@ public class ServletContextHandlerTest
         assertEquals(2,__testServlets.get());
         
         String response =_connector.getResponse("GET /test1 HTTP/1.0\r\n\r\n");
-        assertThat(response,Matchers.containsString("200 OK"));
+        Assert.assertThat(response,Matchers.containsString("200 OK"));
         
         assertEquals(2,__testServlets.get());
         
         response =_connector.getResponse("GET /test2 HTTP/1.0\r\n\r\n");
-        assertThat(response,containsString("200 OK"));
+        Assert.assertThat(response,containsString("200 OK"));
         
         assertEquals(2,__testServlets.get());
         
@@ -238,8 +239,7 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
-        assertThat("Response", response, containsString("Test"));
+        assertResponseContains("Test", response);
 
         context.addServlet(HelloServlet.class, "/hello");
 
@@ -249,7 +249,7 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         response = _connector.getResponse(request.toString());
-        assertThat("Response", response, containsString("Hello World"));
+        assertResponseContains("Hello World", response);
     }
     
     @Test
@@ -272,9 +272,8 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
-        assertThat("Response", response, containsString("Test"));
-
+        assertResponseContains("Test", response);
+        
         assertEquals(extra,context.getSessionHandler().getHandler());
     }
     
@@ -317,8 +316,7 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
-        assertThat("Response", response, containsString("Test"));
+        assertResponseContains("Test", response);
 
         context.stop();
         ServletHandler srvHnd = new ServletHandler();
@@ -332,7 +330,7 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         response = _connector.getResponse(request.toString());
-        assertThat("Response", response, containsString("Hello World"));
+        assertResponseContains("Hello World", response);
     }
 
     @Test
@@ -350,8 +348,7 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
-        assertThat("Response", response, containsString("Test"));
+        assertResponseContains("Test", response);
 
         context.stop();
         ServletHandler srvHnd = new ServletHandler();
@@ -366,7 +363,7 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         response = _connector.getResponse(request.toString());
-        assertThat("Response", response, containsString("Hello World"));
+        assertResponseContains("Hello World", response);
     }
     
     @Test
@@ -435,10 +432,10 @@ public class ServletContextHandlerTest
         _server.start();
 
         String response= _connector.getResponse("GET /hello HTTP/1.0\r\n\r\n");
-        assertThat(response, Matchers.containsString("200 OK"));
+        Assert.assertThat(response, Matchers.containsString("200 OK"));
         
         response= _connector.getResponse("GET /other HTTP/1.0\r\n\r\n");
-        assertThat(response, Matchers.containsString("404 Fell Through"));
+        Assert.assertThat(response, Matchers.containsString("404 Fell Through"));
         
     }
     
@@ -495,6 +492,22 @@ public class ServletContextHandlerTest
         
         expected = String.format("decorator[] = %s", DummyUtilDecorator.class.getName());
         assertThat("Specific Legacy Decorator", response, containsString(expected));
+    }
+
+    private int assertResponseContains(String expected, String response)
+    {
+        int idx = response.indexOf(expected);
+        if (idx == (-1))
+        {
+            // Not found
+            StringBuffer err = new StringBuffer();
+            err.append("Response does not contain expected string \"").append(expected).append("\"");
+            err.append("\n").append(response);
+
+            System.err.println(err);
+            Assert.fail(err.toString());
+        }
+        return idx;
     }
 
     public static class HelloServlet extends HttpServlet

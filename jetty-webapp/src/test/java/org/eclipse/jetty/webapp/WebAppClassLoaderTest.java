@@ -19,16 +19,14 @@
 package org.eclipse.jetty.webapp;
 
 import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
@@ -47,16 +45,21 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class WebAppClassLoaderTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     private Path testWebappDir;
     private WebAppContext _context;
     protected WebAppClassLoader _loader;
 
-    @BeforeEach
+    @Before
     public void init() throws Exception
     {
         this.testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
@@ -122,9 +125,8 @@ public class WebAppClassLoaderTest
         assertCantLoadClass("org.eclipse.jetty.webapp.Configuration");
 
         Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
-        assertThrows(NoSuchFieldException.class, () -> {
-            clazzA.getField("FROM_PARENT");
-        });
+        expectedException.expect(NoSuchFieldException.class);
+        clazzA.getField("FROM_PARENT");
     }
     
     @Test
@@ -286,7 +288,7 @@ public class WebAppClassLoaderTest
     public void testResources() throws Exception
     {
         // The existence of a URLStreamHandler changes the behavior
-        assumeTrue(URLStreamHandlerUtil.getFactory() == null, "URLStreamHandler changes behavior, skip test");
+        assumeThat("URLStreamHandler changes behavior, skip test", URLStreamHandlerUtil.getFactory(), nullValue());
         
         List<URL> expected = new ArrayList<>();
         List<URL> resources;
@@ -368,20 +370,20 @@ public class WebAppClassLoaderTest
     public void ordering() throws Exception
     {
         // The existence of a URLStreamHandler changes the behavior
-        assumeTrue(URLStreamHandlerUtil.getFactory() == null, "URLStreamHandler changes behavior, skip test");
+        assumeThat("URLStreamHandler changes behavior, skip test", URLStreamHandlerUtil.getFactory(), nullValue());
 
         Enumeration<URL> resources = _loader.getResources("org/acme/clashing.txt");
         assertTrue(resources.hasMoreElements());
         URL resource = resources.nextElement();
         try (InputStream data = resource.openStream())
         {
-            assertThat("correct contents of " + resource, IO.toString(data), is("alpha"));
+            assertEquals("correct contents of " + resource, "alpha", IO.toString(data));
         }
         assertTrue(resources.hasMoreElements());
         resource = resources.nextElement();
         try (InputStream data = resource.openStream())
         {
-            assertThat("correct contents of " + resource, IO.toString(data), is("omega"));
+            assertEquals("correct contents of " + resource, "omega", IO.toString(data));
         }
         assertFalse(resources.hasMoreElements());
     }

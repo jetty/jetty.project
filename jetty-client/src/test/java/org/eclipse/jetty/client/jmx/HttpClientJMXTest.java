@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client.jmx;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.lang.management.ManagementFactory;
 import java.util.Locale;
 import java.util.Set;
@@ -30,8 +28,8 @@ import javax.management.ObjectName;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.jmx.MBeanContainer;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HttpClientJMXTest
 {
@@ -53,16 +51,16 @@ public class HttpClientJMXTest
             String domain = HttpClient.class.getPackage().getName();
             ObjectName pattern = new ObjectName(domain + ":type=" + HttpClient.class.getSimpleName().toLowerCase(Locale.ENGLISH) + ",*");
             Set<ObjectName> objectNames = mbeanServer.queryNames(pattern, null);
-            assertEquals(1, objectNames.size());
+            Assert.assertEquals(1, objectNames.size());
             ObjectName objectName = objectNames.iterator().next();
-            assertEquals(name, objectName.getKeyProperty("context"));
+            Assert.assertEquals(name, objectName.getKeyProperty("context"));
 
             // Verify that the context is inherited by the descendant components.
             domain = SelectorManager.class.getPackage().getName();
             pattern = new ObjectName(domain + ":*");
             objectNames = mbeanServer.queryNames(pattern, null);
             for (ObjectName oName : objectNames)
-                assertEquals(name, oName.getKeyProperty("context"));
+                Assert.assertEquals(name, oName.getKeyProperty("context"));
         }
         finally
         {

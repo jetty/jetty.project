@@ -18,153 +18,96 @@
 
 package org.eclipse.jetty.client;
 
-import java.nio.file.Path;
-import java.util.stream.Stream;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public abstract class AbstractHttpClientServerTest
 {
+    @Parameterized.Parameters(name = "ssl={0}")
+    public static Collection<SslContextFactory[]> parameters()
+    {
+        return Arrays.asList(new SslContextFactory[]{null}, new SslContextFactory[]{new SslContextFactory()});
+    }
+
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+
+    protected SslContextFactory sslContextFactory;
+    protected String scheme;
     protected Server server;
     protected HttpClient client;
     protected ServerConnector connector;
 
-    public void start(final Scenario scenario, Handler handler) throws Exception
+    public AbstractHttpClientServerTest(SslContextFactory sslContextFactory)
     {
-        startServer(scenario, handler);
-        startClient(scenario);
+        this.sslContextFactory = sslContextFactory;
+        this.scheme = (sslContextFactory == null ? HttpScheme.HTTP : HttpScheme.HTTPS).asString();
     }
 
-    protected void startServer(final Scenario scenario, Handler handler) throws Exception
+    public void start(Handler handler) throws Exception
     {
+        startServer(handler);
+        startClient();
+    }
+
+    protected void startServer(Handler handler) throws Exception
+    {
+        if (sslContextFactory != null)
+        {
+            sslContextFactory.setEndpointIdentificationAlgorithm("");
+            sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+            sslContextFactory.setKeyStorePassword("storepwd");
+        }
+
         if (server == null)
         {
             QueuedThreadPool serverThreads = new QueuedThreadPool();
             serverThreads.setName("server");
             server = new Server(serverThreads);
         }
-        connector = new ServerConnector(server, scenario.newSslContextFactory());
-        connector.setPort(0);
+        connector = new ServerConnector(server, sslContextFactory);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
     }
 
-    protected void startClient(final Scenario scenario) throws Exception
+    protected void startClient() throws Exception
     {
-        startClient(scenario, new HttpClientTransportOverHTTP(1));
+        startClient(new HttpClientTransportOverHTTP(1));
     }
 
-    protected void startClient(final Scenario scenario, HttpClientTransport transport) throws Exception
+    protected void startClient(HttpClientTransport transport) throws Exception
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(transport, scenario.newSslContextFactory());
+        client = new HttpClient(transport, sslContextFactory);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         client.start();
     }
 
-    @AfterEach
-    public void disposeClient() throws Exception
+    @After
+    public void dispose() throws Exception
     {
         if (client != null)
-        {
             client.stop();
-            client = null;
-        }
-    }
-
-    @AfterEach
-    public void disposeServer() throws Exception
-    {
         if (server != null)
-        {
             server.stop();
-            server = null;
-        }
-    }
-
-    public static class ScenarioProvider implements ArgumentsProvider {
-        @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception
-        {
-            return Stream.of(
-                    new NormalScenario(),
-                    new SslScenario()
-                    // TODO: add more ssl / non-ssl scenarios here
-            ).map(Arguments::of);
-        }
-    }
-
-    public static class NonSslScenarioProvider implements ArgumentsProvider {
-        @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception
-        {
-            return Stream.of(
-                    new NormalScenario()
-                    // TODO: add more non-ssl scenarios here
-            ).map(Arguments::of);
-        }
-    }
-
-    public interface Scenario
-    {
-        default SslContextFactory newSslContextFactory() { return null; }
-        String getScheme();
-    }
-
-    public static class NormalScenario implements Scenario
-    {
-        @Override
-        public String getScheme()
-        {
-            return HttpScheme.HTTP.asString();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "HTTP";
-        }
-    }
-
-    public static class SslScenario implements Scenario
-    {
-        @Override
-        public SslContextFactory newSslContextFactory()
-        {
-            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.jks");
-
-            SslContextFactory ssl = new SslContextFactory();
-            ssl.setEndpointIdentificationAlgorithm("");
-            ssl.setKeyStorePath(keystorePath.toString());
-            ssl.setKeyStorePassword("storepwd");
-            return ssl;
-        }
-
-        @Override
-        public String getScheme()
-        {
-            return HttpScheme.HTTPS.asString();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "HTTPS";
-        }
+        server = null;
     }
 }

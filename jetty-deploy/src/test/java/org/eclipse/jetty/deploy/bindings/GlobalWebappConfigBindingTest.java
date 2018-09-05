@@ -18,39 +18,39 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.isIn;
+
+import java.io.File;
+import java.util.List;
+
 import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.io.File;
-import java.util.List;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 /**
  * Tests {@link ScanningAppProvider} as it starts up for the first time.
  */
-@ExtendWith(WorkDirExtension.class)
 public class GlobalWebappConfigBindingTest
 {
-    public WorkDir testdir;
+    @Rule
+    public TestingDir testdir = new TestingDir();
     private static XmlConfiguredJetty jetty;
 
-    @BeforeEach
+    @Before
     public void setupEnvironment() throws Exception
     {
-        jetty = new XmlConfiguredJetty(testdir.getEmptyPathDir());
+        jetty = new XmlConfiguredJetty(testdir);
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-http.xml");
 
@@ -60,7 +60,7 @@ public class GlobalWebappConfigBindingTest
 
     }
 
-    @AfterEach
+    @After
     public void teardownEnvironment() throws Exception
     {
         // Stop jetty.
@@ -81,16 +81,15 @@ public class GlobalWebappConfigBindingTest
         jetty.start();
 
         List<WebAppContext> contexts = jetty.getWebAppContexts();
-        assertThat("List of Contexts", contexts, hasSize(greaterThan(0)));
+        Assert.assertThat("List of Contexts", contexts, hasSize(greaterThan(0)));
 
         WebAppContext context = contexts.get(0);
 
-        assertNotNull(context, "Context should not be null");
+        Assert.assertNotNull("Context should not be null",context);
         String currentClasses[] = context.getServerClasses();
 
         String addedClass = "org.eclipse.foo."; // What was added by the binding
-        assertThat("Current Server Classes",addedClass,isIn(currentClasses));
-
+        Assert.assertThat("Current Server Classes",addedClass,isIn(currentClasses));
 
         //  boolean jndiPackage = false;
 
@@ -104,6 +103,6 @@ public class GlobalWebappConfigBindingTest
         //            }
         //        }
         //
-        //        assertFalse(jndiPackage);
+        //        Assert.assertFalse(jndiPackage);
     }
 }

@@ -19,14 +19,13 @@
 package org.eclipse.jetty.websocket.tests;
 
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.junit.jupiter.api.TestInfo;
-
+import org.junit.rules.TestName;
 
 public class CloseableLocalWebSocketSession extends LocalWebSocketSession implements AutoCloseable
 {
-    public CloseableLocalWebSocketSession( WebSocketContainerScope containerScope, TestInfo testInfo, Object websocket)
+    public CloseableLocalWebSocketSession(WebSocketContainerScope containerScope, TestName testname, Object websocket)
     {
-        super(containerScope, testInfo, websocket);
+        super(containerScope, testname, websocket);
         // LifeCycle start
         try
         {

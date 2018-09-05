@@ -20,10 +20,9 @@ package org.eclipse.jetty.server.handler.gzip;
 
 import javax.servlet.Servlet;
 
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Rule;
+import org.junit.Test;
 
 /**
  * Perform specific tests on the IncludableGzipHandler's ability to manage
@@ -31,7 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *
  * @see <a href="Eclipse Bug 366106">http://bugs.eclipse.org/366106</a>
  */
-@ExtendWith(WorkDirExtension.class)
 public class IncludedGzipMinSizeTest
 {
     public IncludedGzipMinSizeTest()
@@ -39,7 +37,8 @@ public class IncludedGzipMinSizeTest
         this.compressionType = GzipHandler.GZIP;
     }
 
-    public WorkDir testdir;
+    @Rule
+    public TestingDir testdir = new TestingDir();
 
     private String compressionType;
     private Class<? extends Servlet> testServlet = TestMinGzipSizeServlet.class;
@@ -47,7 +46,7 @@ public class IncludedGzipMinSizeTest
     @Test
     public void testUnderMinSize() throws Exception
     {
-        GzipTester tester = new GzipTester(testdir.getEmptyPathDir(), compressionType);
+        GzipTester tester = new GzipTester(testdir, compressionType);
 
         tester.setContentServlet(testServlet);
         // A valid mime type that we will never use in this test.
@@ -70,7 +69,7 @@ public class IncludedGzipMinSizeTest
     @Test
     public void testOverMinSize() throws Exception
     {
-        GzipTester tester = new GzipTester(testdir.getEmptyPathDir(), compressionType);
+        GzipTester tester = new GzipTester(testdir, compressionType);
 
         tester.setContentServlet(testServlet);
         tester.getGzipHandler().addIncludedMimeTypes("application/soap+xml","text/javascript","application/javascript");

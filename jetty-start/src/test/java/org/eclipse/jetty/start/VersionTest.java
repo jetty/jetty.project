@@ -19,10 +19,10 @@
 package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class VersionTest
 {
@@ -114,14 +114,14 @@ public class VersionTest
     {
         Version vbase = new Version(basever);
         Version vtest = new Version(testver);
-        assertTrue(vtest.isOlderThan(vbase),"Version [" + testver + "] should be older than [" + basever + "]");
+        assertTrue("Version [" + testver + "] should be older than [" + basever + "]", vtest.isOlderThan(vbase));
     }
 
     private void assertIsNewer(String basever, String testver)
     {
         Version vbase = new Version(basever);
         Version vtest = new Version(testver);
-        assertTrue(vtest.isNewerThan(vbase),"Version [" + testver + "] should be newer than [" + basever + "]");
+        assertTrue("Version [" + testver + "] should be newer than [" + basever + "]", vtest.isNewerThan(vbase));
     }
     
     

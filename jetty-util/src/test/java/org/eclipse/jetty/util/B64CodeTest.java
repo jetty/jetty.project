@@ -18,12 +18,10 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.nio.charset.StandardCharsets;
 
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class B64CodeTest
 {
@@ -33,7 +31,7 @@ public class B64CodeTest
     public void testRFC1421() throws Exception
     {
         String b64 = B64Code.encode(text, StandardCharsets.ISO_8859_1);
-        assertEquals("TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz"+
+        Assert.assertEquals("TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz"+
                 "IHNpbmd1bGFyIHBhc3Npb24gZnJvbSBvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2Yg"+
                 "dGhlIG1pbmQsIHRoYXQgYnkgYSBwZXJzZXZlcmFuY2Ugb2YgZGVsaWdodCBpbiB0aGUgY29udGlu"+
                 "dWVkIGFuZCBpbmRlZmF0aWdhYmxlIGdlbmVyYXRpb24gb2Yga25vd2xlZGdlLCBleGNlZWRzIHRo"+
@@ -41,7 +39,7 @@ public class B64CodeTest
         
         char[] chars = B64Code.encode(text.getBytes(StandardCharsets.ISO_8859_1),false);
         b64 = new String(chars,0,chars.length);
-        assertEquals("TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz"+
+        Assert.assertEquals("TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz"+
                 "IHNpbmd1bGFyIHBhc3Npb24gZnJvbSBvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2Yg"+
                 "dGhlIG1pbmQsIHRoYXQgYnkgYSBwZXJzZXZlcmFuY2Ugb2YgZGVsaWdodCBpbiB0aGUgY29udGlu"+
                 "dWVkIGFuZCBpbmRlZmF0aWdhYmxlIGdlbmVyYXRpb24gb2Yga25vd2xlZGdlLCBleGNlZWRzIHRo"+
@@ -54,7 +52,7 @@ public class B64CodeTest
     {
         char[] chars = B64Code.encode(text.getBytes(StandardCharsets.ISO_8859_1),true);
         String b64 = new String(chars,0,chars.length);
-        assertEquals("TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz\r\n"+
+        Assert.assertEquals("TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz\r\n"+
                 "IHNpbmd1bGFyIHBhc3Npb24gZnJvbSBvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2Yg\r\n"+
                 "dGhlIG1pbmQsIHRoYXQgYnkgYSBwZXJzZXZlcmFuY2Ugb2YgZGVsaWdodCBpbiB0aGUgY29udGlu\r\n"+
                 "dWVkIGFuZCBpbmRlZmF0aWdhYmxlIGdlbmVyYXRpb24gb2Yga25vd2xlZGdlLCBleGNlZWRzIHRo\r\n"+
@@ -71,7 +69,7 @@ public class B64CodeTest
         
         StringBuilder b = new StringBuilder();
         B64Code.encode(value,b);
-        assertEquals("TWFuIA=",b.toString());
+        Assert.assertEquals("TWFuIA=",b.toString());
     }
     @Test
     public void testLong() throws Exception
@@ -82,6 +80,6 @@ public class B64CodeTest
         
         StringBuilder b = new StringBuilder();
         B64Code.encode(value,b);
-        assertEquals("TWFuIGlzIGQ",b.toString());
+        Assert.assertEquals("TWFuIGlzIGQ",b.toString());
     }
 }

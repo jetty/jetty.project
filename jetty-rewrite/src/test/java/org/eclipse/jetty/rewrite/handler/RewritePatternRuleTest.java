@@ -19,16 +19,15 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 public class RewritePatternRuleTest extends AbstractRuleTestCase
 {
-    // TODO: Parameterize
     private String[][] _tests =
             {
                     {"/foo/bar", "/", "/replace"},
@@ -40,7 +39,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
             };
     private RewritePatternRule _rule;
 
-    @BeforeEach
+    @Before
     public void init() throws Exception
     {
         start(false);

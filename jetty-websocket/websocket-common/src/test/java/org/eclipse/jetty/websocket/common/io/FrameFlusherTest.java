@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
+import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Callback;
@@ -28,18 +36,15 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.junit.jupiter.api.Test;
-
-import java.nio.ByteBuffer;
-import java.nio.channels.WritePendingException;
-import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 public class FrameFlusherTest
 {
+    @Rule
+    public TestName testname = new TestName();
+
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     /**

@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -63,7 +57,8 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class PrefaceTest extends AbstractTest
 {
@@ -122,7 +117,7 @@ public class PrefaceTest extends AbstractTest
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -184,11 +179,11 @@ public class PrefaceTest extends AbstractTest
                 parser.parse(buffer);
             }
 
-            assertEquals(2, settings.size());
+            Assert.assertEquals(2, settings.size());
             SettingsFrame frame1 = settings.poll();
-            assertFalse(frame1.isReply());
+            Assert.assertFalse(frame1.isReply());
             SettingsFrame frame2 = settings.poll();
-            assertTrue(frame2.isReply());
+            Assert.assertTrue(frame2.isReply());
         }
     }
 
@@ -249,8 +244,8 @@ public class PrefaceTest extends AbstractTest
             socket.write(upgradeBuffer);
 
             // Make sure onPreface() is called on server.
-            assertTrue(serverPrefaceLatch.get().await(5, TimeUnit.SECONDS));
-            assertTrue(serverSettingsLatch.get().await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(serverPrefaceLatch.get().await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(serverSettingsLatch.get().await(5, TimeUnit.SECONDS));
 
             // The 101 response is the reply to the client preface SETTINGS frame.
             ByteBuffer buffer = byteBufferPool.acquire(1024, true);
@@ -259,7 +254,8 @@ public class PrefaceTest extends AbstractTest
                 BufferUtil.clearToFill(buffer);
                 int read = socket.read(buffer);
                 BufferUtil.flipToFlush(buffer, 0);
-                assertThat(read, greaterThanOrEqualTo(0));
+                if (read < 0)
+                    Assert.fail();
 
                 int crlfs = 0;
                 while (buffer.hasRemaining())
@@ -289,9 +285,9 @@ public class PrefaceTest extends AbstractTest
             socket.write(buffers.toArray(new ByteBuffer[buffers.size()]));
 
             // However, we should not call onPreface() again.
-            assertFalse(serverPrefaceLatch.get().await(1, TimeUnit.SECONDS));
+            Assert.assertFalse(serverPrefaceLatch.get().await(1, TimeUnit.SECONDS));
             // Although we should notify of the SETTINGS frame.
-            assertTrue(serverSettingsLatch.get().await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(serverSettingsLatch.get().await(5, TimeUnit.SECONDS));
 
             CountDownLatch clientSettingsLatch = new CountDownLatch(1);
             AtomicBoolean responded = new AtomicBoolean();
@@ -302,7 +298,7 @@ public class PrefaceTest extends AbstractTest
                 {
                     if (frame.isReply())
                         return;
-                    assertEquals(maxConcurrentStreams, frame.getSettings().get(SettingsFrame.MAX_CONCURRENT_STREAMS));
+                    Assert.assertEquals(maxConcurrentStreams, frame.getSettings().get(SettingsFrame.MAX_CONCURRENT_STREAMS));
                     clientSettingsLatch.countDown();
                 }
 
@@ -325,10 +321,11 @@ public class PrefaceTest extends AbstractTest
                 BufferUtil.clearToFill(buffer);
                 int read = socket.read(buffer);
                 BufferUtil.flipToFlush(buffer, 0);
-                assertThat(read, greaterThanOrEqualTo(0));
+                if (read < 0)
+                    Assert.fail();
             }
 
-            assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));
         }
     }
 }

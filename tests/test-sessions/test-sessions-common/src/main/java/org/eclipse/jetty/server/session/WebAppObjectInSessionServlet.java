@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-
 import java.io.IOException;
 import java.io.Serializable;
 
@@ -30,7 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-
+import org.junit.Assert;
 
 
 /**
@@ -52,7 +49,7 @@ public class WebAppObjectInSessionServlet extends HttpServlet
                 session.setAttribute("staticAttribute", new TestSharedStatic());
 
                 Object staticAttribute = session.getAttribute("staticAttribute");
-                assertThat(staticAttribute, instanceOf(TestSharedStatic.class));
+                Assert.assertTrue(staticAttribute instanceof TestSharedStatic);
                 
 //                session.setAttribute("objectAttribute", new TestSharedNonStatic());
            
@@ -65,10 +62,10 @@ public class WebAppObjectInSessionServlet extends HttpServlet
             {
                 HttpSession session = request.getSession(false);
                 Object staticAttribute = session.getAttribute("staticAttribute");
-                assertThat(staticAttribute, instanceOf(TestSharedStatic.class));
+                Assert.assertTrue(staticAttribute instanceof TestSharedStatic);
                 
 //                Object objectAttribute = session.getAttribute("objectAttribute");
-//                assertTrue(objectAttribute instanceof TestSharedNonStatic);
+//                Assert.assertTrue(objectAttribute instanceof TestSharedNonStatic);
                 
 //                Object sessionAttribute = session.getAttribute("sessionAttribute");
 //                assertTrue(sessionAttribute instanceof HttpSession);

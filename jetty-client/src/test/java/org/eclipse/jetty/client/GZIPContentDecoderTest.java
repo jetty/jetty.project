@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,11 +29,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.junit.Rule;
+import org.junit.Test;
 
 @Deprecated 
 public class GZIPContentDecoderTest
 {
+    @Rule
+    public final TestTracker tracker = new TestTracker();
+
     @Test
     public void testStreamNoBlocks() throws Exception
     {

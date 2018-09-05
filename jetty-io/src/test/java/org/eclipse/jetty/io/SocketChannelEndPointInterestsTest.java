@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -42,9 +39,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
-import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class SocketChannelEndPointInterestsTest
 {
@@ -107,7 +104,7 @@ public class SocketChannelEndPointInterestsTest
         selectorManager.start();
     }
 
-    @AfterEach
+    @After
     public void destroy() throws Exception
     {
         if (scheduler!=null)
@@ -191,13 +188,13 @@ public class SocketChannelEndPointInterestsTest
                 OutputStream clientOutput = client.getOutputStream();
                 clientOutput.write(1);
                 clientOutput.flush();
-                assertTrue(latch1.await(5, TimeUnit.SECONDS));
+                Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
 
                 // We do not read to keep the socket write blocked
 
                 clientOutput.write(2);
                 clientOutput.flush();
-                assertTrue(latch2.await(5, TimeUnit.SECONDS));
+                Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
 
                 // Sleep before reading to allow waking up the server only for read
                 Thread.sleep(1000);
@@ -207,7 +204,7 @@ public class SocketChannelEndPointInterestsTest
                 while (size.getAndDecrement() > 0)
                     clientInput.read();
 
-                assertNull(failure.get());
+                Assert.assertNull(failure.get());
             }
         }
     }

@@ -31,8 +31,7 @@ import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.servlets.EchoSocket;
-import org.junit.jupiter.api.Test;
-
+import org.junit.Test;
 
 /**
  * Test various RSV violations

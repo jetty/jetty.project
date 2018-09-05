@@ -103,7 +103,7 @@ public class MessageInputStreamTest
 
             // wait for thread to start
             startLatch.await();
-
+            
             // Read it from the stream.
             byte data[] = IO.readBytes(stream);
             String message = new String(data,0,data.length,StandardCharsets.UTF_8);
@@ -180,7 +180,7 @@ public class MessageInputStreamTest
             Assert.assertThat("Initial byte (Should be EOF)",b,is(-1));
         }
     }
-
+    
     @Test(timeout=5000)
     public void testAppendEmptyPayloadRead() throws IOException
     {
@@ -191,7 +191,7 @@ public class MessageInputStreamTest
             // what is being tested (an empty payload)
             WebSocketFrame msg2 = new ContinuationFrame().setPayload(new byte[0]).setFin(false);
             WebSocketFrame msg3 = new ContinuationFrame().setPayload("World").setFin(true);
-
+            
             stream.accept(msg1, new FrameCallback.Adapter());
             stream.accept(msg2, new FrameCallback.Adapter());
             stream.accept(msg3, new FrameCallback.Adapter());
@@ -204,7 +204,7 @@ public class MessageInputStreamTest
             Assert.assertThat("Message",message,is("Hello World"));
         }
     }
-
+    
     @Test(timeout=5000)
     public void testAppendNullPayloadRead() throws IOException
     {
@@ -216,7 +216,7 @@ public class MessageInputStreamTest
             ByteBuffer nilPayload = null;
             WebSocketFrame msg2 = new ContinuationFrame().setPayload(nilPayload).setFin(false);
             WebSocketFrame msg3 = new ContinuationFrame().setPayload("World").setFin(true);
-
+            
             stream.accept(msg1, new FrameCallback.Adapter());
             stream.accept(msg2, new FrameCallback.Adapter());
             stream.accept(msg3, new FrameCallback.Adapter());

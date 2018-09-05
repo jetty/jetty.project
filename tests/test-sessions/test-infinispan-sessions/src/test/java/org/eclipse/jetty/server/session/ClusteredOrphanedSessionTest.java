@@ -20,8 +20,8 @@
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * ClusteredOrphanedSessionTest
@@ -33,14 +33,14 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     public static InfinispanTestSupport __testSupport;
     
     
-    @BeforeAll
+    @BeforeClass
     public static void setup () throws Exception
     {
         __testSupport = new InfinispanTestSupport();
         __testSupport.setup();
     }
     
-    @AfterAll
+    @AfterClass
     public static void teardown () throws Exception
     {
         __testSupport.teardown();

@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.fcgi.server.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.EnumSet;
 
@@ -38,8 +35,9 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class TryFilesFilterTest
 {
@@ -78,7 +76,7 @@ public class TryFilesFilterTest
         server.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         server.stop();
@@ -93,10 +91,10 @@ public class TryFilesFilterTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                assertTrue("https".equalsIgnoreCase(req.getScheme()));
-                assertTrue(req.isSecure());
-                assertEquals(forwardPath, req.getRequestURI());
-                assertTrue(req.getQueryString().endsWith(path));
+                Assert.assertTrue("https".equalsIgnoreCase(req.getScheme()));
+                Assert.assertTrue(req.isSecure());
+                Assert.assertEquals(forwardPath, req.getRequestURI());
+                Assert.assertTrue(req.getQueryString().endsWith(path));
             }
         });
 
@@ -105,6 +103,6 @@ public class TryFilesFilterTest
                 .path(path)
                 .send();
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
     }
 }

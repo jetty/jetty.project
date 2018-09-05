@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import javax.servlet.ServletContext;
 
@@ -51,35 +50,34 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.junit.jupiter.params.provider.ArgumentsSources;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.After;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Test the {@link Decorator} features of the WebSocketServer
  */
+@RunWith(Parameterized.class)
 public class DecoratorsTest
 {
     private static final Logger LOG = Log.getLogger(DecoratorsTest.class);
-
+    
     private static class DecoratorsSocket extends WebSocketAdapter
     {
         private final DecoratedObjectFactory objFactory;
-
+        
         public DecoratorsSocket(DecoratedObjectFactory objFactory)
         {
             this.objFactory = objFactory;
         }
-
+        
         @Override
         public void onWebSocketText(String message)
         {
             StringWriter str = new StringWriter();
             PrintWriter out = new PrintWriter(str);
-
+            
             if (objFactory != null)
             {
                 out.printf("Object is a DecoratedObjectFactory%n");
@@ -94,7 +92,7 @@ public class DecoratorsTest
             {
                 out.printf("DecoratedObjectFactory is NULL%n");
             }
-
+            
             LOG.debug(out.toString());
 
             getRemote().sendStringByFuture(str.toString());
@@ -128,7 +126,7 @@ public class DecoratorsTest
             factory.setCreator(this.creator);
         }
     }
-
+    
     private static class DummyUtilDecorator implements org.eclipse.jetty.util.Decorator
     {
         @Override
@@ -142,7 +140,7 @@ public class DecoratorsTest
         {
         }
     }
-
+    
     @SuppressWarnings("deprecation")
     private static class DummyLegacyDecorator implements org.eclipse.jetty.servlet.ServletContextHandler.Decorator
     {
@@ -151,51 +149,54 @@ public class DecoratorsTest
         {
             return o;
         }
-
+        
         @Override
         public void destroy(Object o)
         {
         }
     }
-
+    
     private interface Case
     {
         void customize(ServletContextHandler context);
     }
-
+    
     @SuppressWarnings("deprecation")
-    public static Stream<Object[]> data()
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> data()
     {
         List<Object[]> cases = new ArrayList<>();
-
+        
         cases.add(new Object[] {
-            "Legacy Usage",
-            (Case) (context) -> {
-                context.getObjectFactory().clear();
-                // Add decorator in the legacy way
-                context.addDecorator(new DummyLegacyDecorator());
-            },
-            DummyLegacyDecorator.class
+                "Legacy Usage",
+                (Case) (context) -> {
+                    context.getObjectFactory().clear();
+                    // Add decorator in the legacy way
+                    context.addDecorator(new DummyLegacyDecorator());
+                },
+                DummyLegacyDecorator.class
         });
-
+    
         cases.add(new Object[] {
-            "Recommended Usage",
-            (Case) (context) -> {
-                // Add decorator in the new util way
-                context.getObjectFactory().clear();
-                context.getObjectFactory().addDecorator(new DummyUtilDecorator());
-            },
-            DummyUtilDecorator.class
+                "Recommended Usage",
+                (Case) (context) -> {
+                    // Add decorator in the new util way
+                    context.getObjectFactory().clear();
+                    context.getObjectFactory().addDecorator(new DummyUtilDecorator());
+                },
+                DummyUtilDecorator.class
         });
-
-        return cases.stream();
+        
+        return cases;
     }
 
     private SimpleServletServer server;
-
-    public DecoratorsTest(String testId, Case testcase) throws Exception
+    private Class<?> expectedDecoratorClass;
+    
+    public DecoratorsTest(String testId, Case testcase, Class<?> expectedDecoratorClass) throws Exception
     {
         LOG.debug("Testing {}", testId);
+        this.expectedDecoratorClass = expectedDecoratorClass;
         server = new SimpleServletServer(new DecoratorsRequestServlet(new DecoratorsCreator()))
         {
             @Override
@@ -208,33 +209,31 @@ public class DecoratorsTest
         server.start();
     }
 
-    @AfterEach
+    @After
     public void stopServer() throws Exception
     {
         server.stop();
     }
-
-    @ParameterizedTest
-    @MethodSource("data")
+    
+    @Test
     public void testAccessRequestCookies() throws Exception
     {
         try (LocalFuzzer session = server.newLocalFuzzer("/"))
         {
             session.sendFrames(
-                new TextFrame().setPayload("info"),
-                new CloseInfo(StatusCode.NORMAL).asFrame()
+                    new TextFrame().setPayload("info"),
+                    new CloseInfo(StatusCode.NORMAL).asFrame()
             );
-
+        
             BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
-
+        
             WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
-
+        
             String payload = frame.getPayloadAsUTF8();
             assertThat("Text - DecoratedObjectFactory", payload, containsString("Object is a DecoratedObjectFactory"));
             assertThat("Text - decorators.size", payload, containsString("Decorators.size = [1]"));
-            // FIXME
-            //assertThat("Text - decorator type", payload, containsString("decorator[] = " + this.expectedDecoratorClass.getName()));
+            assertThat("Text - decorator type", payload, containsString("decorator[] = " + this.expectedDecoratorClass.getName()));
         }
     }
 }

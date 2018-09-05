@@ -20,9 +20,8 @@ package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -42,18 +41,21 @@ import org.eclipse.jetty.server.HttpOutput.Interceptor;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  *
  */
+@RunWith(AdvancedRunner.class)
 public class HttpOutputTest
 {
     private Server _server;
@@ -61,7 +63,7 @@ public class HttpOutputTest
     private ContentHandler _handler;
     private HotSwapHandler _swap;
 
-    @BeforeEach
+    @Before
     public void init() throws Exception
     {
         _server = new Server();
@@ -80,7 +82,7 @@ public class HttpOutputTest
         _server.start();
     }
 
-    @AfterEach
+    @After
     public void destroy() throws Exception
     {
         _server.stop();
@@ -119,9 +121,9 @@ public class HttpOutputTest
         assertThat(response,containsString("\r\nXXXXXXXXXXXXXXXXXXXXXXXXXXX"));
         
         for (int i=0;i<4*1024;i++)
-            assertEquals((byte)0x99, buffer[i], "i="+i);
+            assertEquals("i="+i,(byte)0x99,buffer[i]);
         for (int i=12*1024;i<16*1024;i++)
-            assertEquals((byte)0x66, buffer[i], "i="+i);
+            assertEquals("i="+i,(byte)0x66,buffer[i]);
     }
     
     @Test
@@ -752,7 +754,7 @@ public class HttpOutputTest
                             
                             while (out.isReady())
                             {
-                                assertTrue(out.isReady());
+                                Assert.assertTrue(out.isReady());
                                 int len=_content.remaining();
                                 if (len>_arrayBuffer.length)
                                     len=_arrayBuffer.length;
@@ -768,7 +770,7 @@ public class HttpOutputTest
                                 else
                                     out.write(_arrayBuffer,0,len);
                             }
-                            // assertFalse(out.isReady());
+                            // Assert.assertFalse(out.isReady());
                         }
 
                         @Override
@@ -813,8 +815,8 @@ public class HttpOutputTest
                             
                             while (out.isReady())
                             {
-                                assertTrue(isFirstWrite || !_byteBuffer.hasRemaining());
-                                assertTrue(out.isReady());
+                                Assert.assertTrue(isFirstWrite || !_byteBuffer.hasRemaining());
+                                Assert.assertTrue(out.isReady());
                                 if(BufferUtil.isEmpty(_content))
                                 {
                                     async.complete();

@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -36,8 +32,8 @@ import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class PriorityTest extends AbstractTest
 {
@@ -58,7 +54,7 @@ public class PriorityTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
         int streamId = session.priority(new PriorityFrame(0, 13, false), Callback.NOOP);
-        assertTrue(streamId > 0);
+        Assert.assertTrue(streamId > 0);
 
         CountDownLatch latch = new CountDownLatch(2);
         MetaData metaData = newRequest("GET", new HttpFields());
@@ -68,7 +64,7 @@ public class PriorityTest extends AbstractTest
             @Override
             public void succeeded(Stream result)
             {
-                assertEquals(streamId, result.getId());
+                Assert.assertEquals(streamId, result.getId());
                 latch.countDown();
             }
         }, new Stream.Listener.Adapter()
@@ -81,7 +77,7 @@ public class PriorityTest extends AbstractTest
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -136,14 +132,14 @@ public class PriorityTest extends AbstractTest
         Stream stream2 = promise2.get(5, TimeUnit.SECONDS);
 
         int streamId = session.priority(new PriorityFrame(stream1.getId(), stream2.getId(), 13, false), Callback.NOOP);
-        assertEquals(stream1.getId(), streamId);
+        Assert.assertEquals(stream1.getId(), streamId);
 
         // Give time to the PRIORITY frame to arrive to server.
         Thread.sleep(1000);
         beforeRequests.countDown();
 
-        assertTrue(afterRequests.await(5, TimeUnit.SECONDS));
-        assertTrue(responses.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(afterRequests.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(responses.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -157,10 +153,10 @@ public class PriorityTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 PriorityFrame priority = frame.getPriority();
-                assertNotNull(priority);
-                assertEquals(priorityFrame.getParentStreamId(), priority.getParentStreamId());
-                assertEquals(priorityFrame.getWeight(), priority.getWeight());
-                assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
+                Assert.assertNotNull(priority);
+                Assert.assertEquals(priorityFrame.getParentStreamId(), priority.getParentStreamId());
+                Assert.assertEquals(priorityFrame.getWeight(), priority.getWeight());
+                Assert.assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
                 latch.countDown();
 
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
@@ -183,6 +179,6 @@ public class PriorityTest extends AbstractTest
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

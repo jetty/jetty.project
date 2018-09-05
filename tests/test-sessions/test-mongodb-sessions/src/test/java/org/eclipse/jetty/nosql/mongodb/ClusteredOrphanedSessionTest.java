@@ -20,9 +20,9 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * ClusteredOrphanedSessionTest
@@ -30,14 +30,14 @@ import org.junit.jupiter.api.Test;
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
     
-    @BeforeAll
+    @BeforeClass
     public static void beforeClass() throws Exception
     {
         MongoTestHelper.dropCollection();
         MongoTestHelper.createCollection();
     }
 
-    @AfterAll
+    @AfterClass
     public static void afterClass() throws Exception
     {
         MongoTestHelper.dropCollection();

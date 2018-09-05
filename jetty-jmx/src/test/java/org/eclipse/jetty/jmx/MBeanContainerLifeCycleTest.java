@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.jmx;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.lang.management.ManagementFactory;
 import java.util.Set;
 
@@ -28,17 +26,17 @@ import javax.management.ObjectName;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class MBeanContainerLifeCycleTest
 {
     private ContainerLifeCycle container;
     private MBeanServer mbeanServer;
 
-    @BeforeEach
+    @Before
     public void prepare() throws Exception
     {
         container = new ContainerLifeCycle();
@@ -48,7 +46,7 @@ public class MBeanContainerLifeCycleTest
         container.start();
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         container.stop();
@@ -63,12 +61,12 @@ public class MBeanContainerLifeCycleTest
 
         String pkg = bean.getClass().getPackage().getName();
         Set<ObjectName> objectNames = mbeanServer.queryNames(ObjectName.getInstance(pkg + ":*"), null);
-        assertEquals(1, objectNames.size());
+        Assert.assertEquals(1, objectNames.size());
 
         // Removing the bean should unregister the MBean.
         container.removeBean(bean);
         objectNames = mbeanServer.queryNames(ObjectName.getInstance(pkg + ":*"), null);
-        assertEquals(0, objectNames.size());
+        Assert.assertEquals(0, objectNames.size());
     }
 
     @Test
@@ -79,12 +77,12 @@ public class MBeanContainerLifeCycleTest
 
         String pkg = bean.getClass().getPackage().getName();
         Set<ObjectName> objectNames = mbeanServer.queryNames(ObjectName.getInstance(pkg + ":*"), null);
-        assertEquals(1, objectNames.size());
+        Assert.assertEquals(1, objectNames.size());
 
         container.stop();
 
         objectNames = mbeanServer.queryNames(ObjectName.getInstance(pkg + ":*"), null);
-        assertEquals(1, objectNames.size());
+        Assert.assertEquals(1, objectNames.size());
 
         // Remove the MBeans to start clean on the next test.
         objectNames.forEach(objectName ->
@@ -107,12 +105,12 @@ public class MBeanContainerLifeCycleTest
 
         String pkg = bean.getClass().getPackage().getName();
         Set<ObjectName> objectNames = mbeanServer.queryNames(ObjectName.getInstance(pkg + ":*"), null);
-        assertEquals(1, objectNames.size());
+        Assert.assertEquals(1, objectNames.size());
 
         container.stop();
         container.destroy();
 
         objectNames = mbeanServer.queryNames(ObjectName.getInstance(pkg + ":*"), null);
-        assertEquals(0, objectNames.size());
+        Assert.assertEquals(0, objectNames.size());
     }
 }

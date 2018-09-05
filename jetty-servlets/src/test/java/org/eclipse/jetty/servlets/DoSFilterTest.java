@@ -20,9 +20,7 @@ package org.eclipse.jetty.servlets;
 
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertThat;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -37,19 +35,13 @@ import javax.servlet.ServletRequest;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlets.DoSFilter.RateTracker;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-@ExtendWith(WorkDirExtension.class)
 public class DoSFilterTest extends AbstractDoSFilterTest
 {
-    public WorkDir workDir;
-
     private static class RemoteAddressRequest extends Request
     {
         public RemoteAddressRequest(String remoteHost, int remotePort)
@@ -86,10 +78,10 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         }
     }
 
-    @BeforeEach
+    @Before
     public void setUp() throws Exception
     {
-        startServer(workDir, DoSFilter.class);
+        startServer(DoSFilter.class);
     }
 
     @Test
@@ -138,11 +130,11 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         DoSFilter doSFilter = new DoSFilter();
         doSFilter.setName("foo");
         boolean exceeded = hitRateTracker(doSFilter,0);
-        assertTrue(exceeded, "Last hit should have exceeded");
+        Assert.assertTrue("Last hit should have exceeded",exceeded);
 
         int sleep = 250;
         exceeded = hitRateTracker(doSFilter,sleep);
-        assertFalse(exceeded, "Should not exceed as we sleep 300s for each hit and thus do less than 4 hits/s");
+        Assert.assertFalse("Should not exceed as we sleep 300s for each hit and thus do less than 4 hits/s",exceeded);
     }
 
     @Test
@@ -151,15 +143,15 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         DoSFilter filter = new DoSFilter();
         filter.setName("foo");
         filter.setWhitelist("192.168.0.1/32,10.0.0.0/8,4d8:0:a:1234:ABc:1F:b18:17,4d8:0:a:1234:ABc:1F:0:0/96");
-        assertTrue(filter.checkWhitelist("192.168.0.1"));
-        assertFalse(filter.checkWhitelist("192.168.0.2"));
-        assertFalse(filter.checkWhitelist("11.12.13.14"));
-        assertTrue(filter.checkWhitelist("10.11.12.13"));
-        assertTrue(filter.checkWhitelist("10.0.0.0"));
-        assertFalse(filter.checkWhitelist("0.0.0.0"));
-        assertTrue(filter.checkWhitelist("4d8:0:a:1234:ABc:1F:b18:17"));
-        assertTrue(filter.checkWhitelist("4d8:0:a:1234:ABc:1F:b18:0"));
-        assertFalse(filter.checkWhitelist("4d8:0:a:1234:ABc:1D:0:0"));
+        Assert.assertTrue(filter.checkWhitelist("192.168.0.1"));
+        Assert.assertFalse(filter.checkWhitelist("192.168.0.2"));
+        Assert.assertFalse(filter.checkWhitelist("11.12.13.14"));
+        Assert.assertTrue(filter.checkWhitelist("10.11.12.13"));
+        Assert.assertTrue(filter.checkWhitelist("10.0.0.0"));
+        Assert.assertFalse(filter.checkWhitelist("0.0.0.0"));
+        Assert.assertTrue(filter.checkWhitelist("4d8:0:a:1234:ABc:1F:b18:17"));
+        Assert.assertTrue(filter.checkWhitelist("4d8:0:a:1234:ABc:1F:b18:0"));
+        Assert.assertFalse(filter.checkWhitelist("4d8:0:a:1234:ABc:1D:0:0"));
     }
 
     @Test

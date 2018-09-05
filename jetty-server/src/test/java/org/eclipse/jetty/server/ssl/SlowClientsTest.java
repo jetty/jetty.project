@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static java.time.Duration.ofSeconds;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,18 +44,15 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.Ignore;
+import org.junit.Test;
 
-@Tag("Unstable")
-@Disabled
+@Ignore
 public class SlowClientsTest
 {
     private Logger logger = Log.getLogger(getClass());
     
-    @Test
+    @Test(timeout = 10000)
     public void testSlowClientsWithSmallThreadPool() throws Exception
     {
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
@@ -71,7 +66,6 @@ public class SlowClientsTest
         QueuedThreadPool serverThreads = new QueuedThreadPool(maxThreads);
         serverThreads.setDetailedDump(true);
         Server server = new Server(serverThreads);
-
         try
         {
             ServerConnector connector = new ServerConnector(server, 1, 1, sslContextFactory);
@@ -93,50 +87,48 @@ public class SlowClientsTest
 
             SSLContext sslContext = sslContextFactory.getSslContext();
 
-            Assertions.assertTimeoutPreemptively(ofSeconds(10),()-> {
-                CompletableFuture[] futures = new CompletableFuture[2 * maxThreads];
-                ExecutorService executor = Executors.newFixedThreadPool(futures.length);
-                for (int i = 0; i < futures.length; i++)
+            CompletableFuture[] futures = new CompletableFuture[2 * maxThreads];
+            ExecutorService executor = Executors.newFixedThreadPool(futures.length);
+            for (int i = 0; i < futures.length; i++)
+            {
+                int k = i;
+                futures[i] = CompletableFuture.runAsync(() ->
                 {
-                    int k = i;
-                    futures[i] = CompletableFuture.runAsync(() ->
+                    try (SSLSocket socket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
                     {
-                        try (SSLSocket socket = (SSLSocket) sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
-                        {
-                            socket.setSoTimeout(contentLength / 1024);
-                            OutputStream output = socket.getOutputStream();
-                            String target = "/" + k;
-                            String request = "GET " + target + " HTTP/1.1\r\n" +
-                                    "Host: localhost\r\n" +
-                                    "Connection: close\r\n" +
-                                    "\r\n";
-                            output.write(request.getBytes(StandardCharsets.UTF_8));
-                            output.flush();
+                        socket.setSoTimeout(contentLength / 1024);
+                        OutputStream output = socket.getOutputStream();
+                        String target = "/" + k;
+                        String request = "GET " + target + " HTTP/1.1\r\n" +
+                                "Host: localhost\r\n" +
+                                "Connection: close\r\n" +
+                                "\r\n";
+                        output.write(request.getBytes(StandardCharsets.UTF_8));
+                        output.flush();
 
-                            while (serverThreads.getIdleThreads() > 0)
-                                Thread.sleep(50);
+                        while (serverThreads.getIdleThreads() > 0)
+                            Thread.sleep(50);
 
-                            InputStream input = socket.getInputStream();
-                            while (true)
-                            {
-                                int read = input.read();
-                                if (read < 0)
-                                    break;
-                            }
-                            logger.info("FINISHED {}", target);
-                        }
-                        catch (IOException x)
+                        InputStream input = socket.getInputStream();
+                        while (true)
                         {
-                            throw new UncheckedIOException(x);
+                            int read = input.read();
+                            if (read < 0)
+                                break;
                         }
-                        catch (InterruptedException x)
-                        {
-                            throw new UncheckedIOException(new InterruptedIOException());
-                        }
-                    }, executor);
-                }
-                CompletableFuture.allOf(futures).join();
-            });
+                        logger.info("FINISHED {}", target);
+                    }
+                    catch (IOException x)
+                    {
+                        throw new UncheckedIOException(x);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        throw new UncheckedIOException(new InterruptedIOException());
+                    }
+                }, executor);
+            }
+            CompletableFuture.allOf(futures).join();
         }
         finally
         {

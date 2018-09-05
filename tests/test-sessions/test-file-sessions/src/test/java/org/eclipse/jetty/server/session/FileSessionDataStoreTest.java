@@ -19,8 +19,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.After;
+import org.junit.Before;
 
 /**
  * FileSessionDataStoreTest
@@ -29,13 +29,13 @@ import org.junit.jupiter.api.BeforeEach;
  */
 public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-    @BeforeEach
+    @Before
     public void before() throws Exception
     {
        FileTestHelper.setup();
     }
     
-    @AfterEach
+    @After 
     public void after()
     {
        FileTestHelper.teardown();

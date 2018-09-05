@@ -18,13 +18,11 @@
 
 package org.eclipse.jetty.deploy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.deploy.graph.Node;
-
+import org.junit.Assert;
 
 /**
  * Binds to all lifecycle nodes, and tracks the order of the lifecycle nodes for testing purposes.
@@ -71,12 +69,12 @@ public class AppLifeCyclePathCollector implements AppLifeCycle.Binding
                 System.out.println(path.getName());
             }
 
-            assertEquals(expectedOrder.size(),actualOrder.size(),msg + " / count");
+            Assert.assertEquals(msg + " / count",expectedOrder.size(),actualOrder.size());
         }
 
         for (int i = 0, n = expectedOrder.size(); i < n; i++)
         {
-            assertEquals(expectedOrder.get(i),actualOrder.get(i).getName(),msg + "[" + i + "]");
+            Assert.assertEquals(msg + "[" + i + "]",expectedOrder.get(i),actualOrder.get(i).getName());
         }
     }
 }

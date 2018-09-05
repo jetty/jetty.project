@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,7 +38,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -53,22 +52,27 @@ import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class ThreadStarvationTest
 {
     final static int BUFFER_SIZE=1024*1024;
     final static int BUFFERS=64;
     final static int THREADS=5;
     final static int CLIENTS=THREADS+2;
-
+    @Rule
+    public TestTracker tracker = new TestTracker();
+    
     interface ConnectorProvider {
         ServerConnector newConnector(Server server, int acceptors, int selectors);
     }
@@ -77,14 +81,15 @@ public class ThreadStarvationTest
         Socket newSocket(String host, int port) throws IOException;
     }
     
-    public static Stream<Arguments> scenarios()
+    @Parameterized.Parameters(name = "{0}")
+    public static List<Object[]> params()
     {
-        List<Scenario> params = new ArrayList<>();
+        List<Object[]> params = new ArrayList<>();
         
         // HTTP
         ConnectorProvider http = (server, acceptors, selectors) -> new ServerConnector(server, acceptors, selectors);
         ClientSocketProvider httpClient = (host, port) -> new Socket(host, port);
-        params.add(new Scenario("http", http, httpClient));
+        params.add(new Object[]{ "http", http, httpClient });
         
         // HTTPS/SSL/TLS
         ConnectorProvider https = (server, acceptors, selectors) -> {
@@ -130,16 +135,24 @@ public class ThreadStarvationTest
                 return sslContext.getSocketFactory().createSocket(host,port);
             }
         };
-        params.add(new Scenario("https/ssl/tls", https, httpsClient ));
+        params.add(new Object[]{ "https/ssl/tls", https, httpsClient });
         
-        return params.stream().map(Arguments::of);
+        return params;
     }
     
+    private final ConnectorProvider connectorProvider;
+    private final ClientSocketProvider clientSocketProvider;
     private QueuedThreadPool _threadPool;
     private Server _server;
     private ServerConnector _connector;
-
-    private Server prepareServer(Scenario scenario, Handler handler)
+    
+    public ThreadStarvationTest(String testType, ConnectorProvider connectorProvider, ClientSocketProvider clientSocketProvider)
+    {
+        this.connectorProvider = connectorProvider;
+        this.clientSocketProvider = clientSocketProvider;
+    }
+    
+    private Server prepareServer(Handler handler)
     {
         _threadPool = new QueuedThreadPool();
         _threadPool.setMinThreads(THREADS);
@@ -148,25 +161,24 @@ public class ThreadStarvationTest
         _server = new Server(_threadPool);
         int acceptors = 1;
         int selectors = 1;
-        _connector = scenario.connectorProvider.newConnector(_server, acceptors, selectors);
+        _connector = connectorProvider.newConnector(_server, acceptors, selectors);
         _server.addConnector(_connector);
         _server.setHandler(handler);
         return _server;
     }
 
-    @AfterEach
+    @After
     public void dispose() throws Exception
     {
         _server.stop();
     }
 
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testReadInput(Scenario scenario) throws Exception
+    @Test
+    public void testReadInput() throws Exception
     {
-        prepareServer(scenario, new ReadHandler()).start();
+        prepareServer(new ReadHandler()).start();
 
-        try(Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort()))
+        try(Socket client = clientSocketProvider.newSocket("localhost", _connector.getLocalPort()))
         {
             client.setSoTimeout(10000);
             OutputStream os = client.getOutputStream();
@@ -188,11 +200,10 @@ public class ThreadStarvationTest
         }
     }
 
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testReadStarvation(Scenario scenario) throws Exception
+    @Test
+    public void testReadStarvation() throws Exception
     {
-        prepareServer(scenario, new ReadHandler());
+        prepareServer(new ReadHandler());
         _server.start();
     
         ExecutorService clientExecutors = Executors.newFixedThreadPool(CLIENTS);
@@ -202,7 +213,7 @@ public class ThreadStarvationTest
         for(int i=0; i<CLIENTS; i++) {
             clientTasks.add(() ->
             {
-                try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
+                try (Socket client = clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
                      OutputStream out = client.getOutputStream();
                      InputStream in = client.getInputStream())
                 {
@@ -275,13 +286,12 @@ public class ThreadStarvationTest
             }
         }
     }
+    
 
-
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testWriteStarvation(Scenario scenario) throws Exception
+    @Test
+    public void testWriteStarvation() throws Exception
     {
-        prepareServer(scenario, new WriteHandler());
+        prepareServer(new WriteHandler());
         _server.start();
     
         ExecutorService clientExecutors = Executors.newFixedThreadPool(CLIENTS);
@@ -292,7 +302,7 @@ public class ThreadStarvationTest
         {
             clientTasks.add(() ->
             {
-                try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
+                try (Socket client = clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
                      OutputStream out = client.getOutputStream();
                      InputStream in = client.getInputStream())
                 {
@@ -373,26 +383,6 @@ public class ThreadStarvationTest
                 out.write(content);
                 out.flush();
             }
-        }
-    }
-
-    public static class Scenario
-    {
-        public final String testType;
-        public final ConnectorProvider connectorProvider;
-        public final ClientSocketProvider clientSocketProvider;
-
-        public Scenario(String testType, ConnectorProvider connectorProvider, ClientSocketProvider clientSocketProvider)
-        {
-            this.testType = testType;
-            this.connectorProvider = connectorProvider;
-            this.clientSocketProvider = clientSocketProvider;
-        }
-
-        @Override
-        public String toString()
-        {
-            return this.testType;
         }
     }
 }

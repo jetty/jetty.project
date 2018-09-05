@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -35,53 +30,57 @@ import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.FuturePromise;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTest
 {
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testExplicitConnection(Scenario scenario) throws Exception
+    public HttpClientExplicitConnectionTest(SslContextFactory sslContextFactory)
     {
-        start(scenario, new EmptyServerHandler());
+        super(sslContextFactory);
+    }
 
-        Destination destination = client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+    @Test
+    public void testExplicitConnection() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            Request request = client.newRequest(destination.getHost(), destination.getPort()).scheme(scenario.getScheme());
+            Request request = client.newRequest(destination.getHost(), destination.getPort()).scheme(scheme);
             FutureResponseListener listener = new FutureResponseListener(request);
             connection.send(request, listener);
             ContentResponse response = listener.get(5, TimeUnit.SECONDS);
 
-            assertNotNull(response);
-            assertEquals(200, response.getStatus());
+            Assert.assertNotNull(response);
+            Assert.assertEquals(200, response.getStatus());
 
             HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)httpDestination.getConnectionPool();
-            assertTrue(connectionPool.getActiveConnections().isEmpty());
-            assertTrue(connectionPool.getIdleConnections().isEmpty());
+            Assert.assertTrue(connectionPool.getActiveConnections().isEmpty());
+            Assert.assertTrue(connectionPool.getIdleConnections().isEmpty());
         }
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testExplicitConnectionIsClosedOnRemoteClose(Scenario scenario) throws Exception
+    @Test
+    public void testExplicitConnectionIsClosedOnRemoteClose() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
-        Destination destination = client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         Connection connection = futureConnection.get(5, TimeUnit.SECONDS);
-        Request request = client.newRequest(destination.getHost(), destination.getPort()).scheme(scenario.getScheme());
+        Request request = client.newRequest(destination.getHost(), destination.getPort()).scheme(scheme);
         FutureResponseListener listener = new FutureResponseListener(request);
         connection.send(request, listener);
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
 
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
 
         // Wait some time to have the client is an idle state.
         TimeUnit.SECONDS.sleep(1);
@@ -92,34 +91,33 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         TimeUnit.SECONDS.sleep(1);
 
         HttpConnectionOverHTTP httpConnection = (HttpConnectionOverHTTP)connection;
-        assertFalse(httpConnection.getEndPoint().isOpen());
+        Assert.assertFalse(httpConnection.getEndPoint().isOpen());
 
         HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)httpDestination.getConnectionPool();
-        assertTrue(connectionPool.getActiveConnections().isEmpty());
-        assertTrue(connectionPool.getIdleConnections().isEmpty());
+        Assert.assertTrue(connectionPool.getActiveConnections().isEmpty());
+        Assert.assertTrue(connectionPool.getIdleConnections().isEmpty());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testExplicitConnectionResponseListeners(Scenario scenario) throws Exception
+    @Test
+    public void testExplicitConnectionResponseListeners() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
-        Destination destination = client.getDestination(scenario.getScheme(), "localhost", connector.getLocalPort());
+        Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         Connection connection = futureConnection.get(5, TimeUnit.SECONDS);
         CountDownLatch responseLatch = new CountDownLatch(1);
         Request request = client.newRequest(destination.getHost(), destination.getPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .onResponseSuccess(response -> responseLatch.countDown());
 
         FutureResponseListener listener = new FutureResponseListener(request);
         connection.send(request, listener);
         ContentResponse response = listener.get(5, TimeUnit.SECONDS);
 
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 }

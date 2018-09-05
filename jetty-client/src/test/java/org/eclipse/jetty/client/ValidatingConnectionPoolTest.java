@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,46 +35,50 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 {
+    public ValidatingConnectionPoolTest(SslContextFactory sslContextFactory)
+    {
+        super(sslContextFactory);
+    }
+
     @Override
-    protected void startClient(final Scenario scenario) throws Exception
+    protected void startClient() throws Exception
     {
         long timeout = 1000;
         HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(1);
         transport.setConnectionPoolFactory(destination ->
                 new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, destination.getHttpClient().getScheduler(), timeout));
-        startClient(scenario, transport);
+        startClient(transport);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testRequestAfterValidation(Scenario scenario) throws Exception
+    @Test
+    public void testRequestAfterValidation() throws Exception
     {
-        start(scenario, new EmptyServerHandler());
+        start(new EmptyServerHandler());
 
         client.setMaxConnectionsPerDestination(1);
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .send();
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
 
         // The second request should be sent after the validating timeout.
         response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .send();
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testServerClosesConnectionAfterRedirectWithoutConnectionCloseHeader(Scenario scenario) throws Exception
+    @Test
+    public void testServerClosesConnectionAfterRedirectWithoutConnectionCloseHeader() throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -86,7 +88,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
                 {
                     response.setStatus(HttpStatus.TEMPORARY_REDIRECT_307);
                     response.setContentLength(0);
-                    response.setHeader(HttpHeader.LOCATION.asString(), scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/");
+                    response.setHeader(HttpHeader.LOCATION.asString(), scheme + "://localhost:" + connector.getLocalPort() + "/");
                     response.flushBuffer();
                     baseRequest.getHttpChannel().getEndPoint().shutdownOutput();
                 }
@@ -100,17 +102,16 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/redirect")
                 .send();
-        assertEquals(200, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithConnectionCloseHeader(Scenario scenario) throws Exception
+    @Test
+    public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithConnectionCloseHeader() throws Exception
     {
-        testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(scenario, new AbstractHandler()
+        testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -123,11 +124,10 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         });
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithoutConnectionCloseHeader(Scenario scenario) throws Exception
+    @Test
+    public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithoutConnectionCloseHeader() throws Exception
     {
-        testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(scenario, new AbstractHandler()
+        testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(new AbstractHandler()
         {
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -141,14 +141,14 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         });
     }
 
-    private void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(final Scenario scenario, Handler handler) throws Exception
+    private void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(Handler handler) throws Exception
     {
-        start(scenario, handler);
+        start(handler);
         client.setMaxConnectionsPerDestination(1);
 
         final CountDownLatch latch = new CountDownLatch(1);
         Request request1 = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/one")
                 .onRequestBegin(r ->
                 {
@@ -165,7 +165,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         request1.send(listener1);
 
         Request request2 = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
+                .scheme(scheme)
                 .path("/two");
         FutureResponseListener listener2 = new FutureResponseListener(request2);
         request2.send(listener2);
@@ -175,9 +175,9 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         latch.countDown();
 
         ContentResponse response1 = listener1.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response1.getStatus());
+        Assert.assertEquals(200, response1.getStatus());
 
         ContentResponse response2 = listener2.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response2.getStatus());
+        Assert.assertEquals(200, response2.getStatus());
     }
 }

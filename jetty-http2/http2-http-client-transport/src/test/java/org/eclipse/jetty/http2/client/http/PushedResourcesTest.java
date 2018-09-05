@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http2.client.http;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -50,8 +46,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class PushedResourcesTest extends AbstractTest
 {
@@ -94,8 +90,8 @@ public class PushedResourcesTest extends AbstractTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -147,15 +143,15 @@ public class PushedResourcesTest extends AbstractTest
                     @Override
                     public void onComplete(Result result)
                     {
-                        assertTrue(result.isSucceeded());
+                        Assert.assertTrue(result.isSucceeded());
                         if (pushedRequest.getPath().equals(path1))
                         {
-                            assertArrayEquals(pushBytes1, getContent());
+                            Assert.assertArrayEquals(pushBytes1, getContent());
                             latch1.countDown();
                         }
                         else if (pushedRequest.getPath().equals(path2))
                         {
-                            assertArrayEquals(pushBytes2, getContent());
+                            Assert.assertArrayEquals(pushBytes2, getContent());
                             latch2.countDown();
                         }
                     }
@@ -163,10 +159,10 @@ public class PushedResourcesTest extends AbstractTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertArrayEquals(bytes, response.getContent());
-        assertTrue(latch1.await(5, TimeUnit.SECONDS));
-        assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertArrayEquals(bytes, response.getContent());
+        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -201,17 +197,17 @@ public class PushedResourcesTest extends AbstractTest
                     @Override
                     public void onComplete(Result result)
                     {
-                        assertTrue(result.isSucceeded());
-                        assertEquals(oldPath, pushedRequest.getPath());
-                        assertEquals(newPath, result.getRequest().getPath());
-                        assertArrayEquals(pushBytes, getContent());
+                        Assert.assertTrue(result.isSucceeded());
+                        Assert.assertEquals(oldPath, pushedRequest.getPath());
+                        Assert.assertEquals(newPath, result.getRequest().getPath());
+                        Assert.assertArrayEquals(pushBytes, getContent());
                         latch.countDown();
                     }
                 })
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

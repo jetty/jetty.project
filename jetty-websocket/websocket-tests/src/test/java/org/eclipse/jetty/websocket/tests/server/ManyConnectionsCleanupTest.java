@@ -49,12 +49,13 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.rules.TestName;
 
 /**
  * Tests various close scenarios that should result in Open Session cleanup
@@ -67,7 +68,7 @@ public class ManyConnectionsCleanupTest
         public String closeReason = null;
         public int closeStatusCode = -1;
         public List<Throwable> errors = new ArrayList<>();
-
+        
         @Override
         public void onWebSocketClose(int statusCode, String reason)
         {
@@ -76,20 +77,20 @@ public class ManyConnectionsCleanupTest
             this.closeReason = reason;
             closeLatch.countDown();
         }
-
+        
         @Override
         public void onWebSocketError(Throwable cause)
         {
             errors.add(cause);
         }
     }
-
+    
     @SuppressWarnings("serial")
     public static class CloseServlet extends WebSocketServlet implements WebSocketCreator
     {
         private WebSocketServerFactory serverFactory;
         private AtomicInteger calls = new AtomicInteger(0);
-
+        
         @Override
         public void configure(WebSocketServletFactory factory)
         {
@@ -99,7 +100,7 @@ public class ManyConnectionsCleanupTest
                 this.serverFactory = (WebSocketServerFactory) factory;
             }
         }
-
+        
         @Override
         public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
         {
@@ -108,13 +109,13 @@ public class ManyConnectionsCleanupTest
                 closeSocket = new FastCloseSocket(calls);
                 return closeSocket;
             }
-
+            
             if (req.hasSubProtocol("fastfail"))
             {
                 closeSocket = new FastFailSocket(calls);
                 return closeSocket;
             }
-
+            
             if (req.hasSubProtocol("container"))
             {
                 closeSocket = new ContainerSocket(serverFactory, calls);
@@ -123,7 +124,7 @@ public class ManyConnectionsCleanupTest
             return new RFC6455Socket();
         }
     }
-
+    
     /**
      * On Message, return container information
      */
@@ -133,13 +134,13 @@ public class ManyConnectionsCleanupTest
         private final WebSocketServerFactory container;
         private final AtomicInteger calls;
         private Session session;
-
+        
         public ContainerSocket(WebSocketServerFactory container, AtomicInteger calls)
         {
             this.container = container;
             this.calls = calls;
         }
-
+        
         @Override
         public void onWebSocketText(String message)
         {
@@ -148,7 +149,7 @@ public class ManyConnectionsCleanupTest
             if (message.equalsIgnoreCase("openSessions"))
             {
                 Collection<WebSocketSession> sessions = container.getOpenSessions();
-
+                
                 StringBuilder ret = new StringBuilder();
                 ret.append("openSessions.size=").append(sessions.size()).append('\n');
                 int idx = 0;
@@ -164,7 +165,7 @@ public class ManyConnectionsCleanupTest
                 session.getRemote().sendStringByFuture(String.format("calls=%,d", calls.get()));
             }
         }
-
+        
         @Override
         public void onWebSocketConnect(Session sess)
         {
@@ -172,7 +173,7 @@ public class ManyConnectionsCleanupTest
             this.session = sess;
         }
     }
-
+    
     /**
      * On Connect, close socket
      */
@@ -180,12 +181,12 @@ public class ManyConnectionsCleanupTest
     {
         private static final Logger LOG = Log.getLogger(ManyConnectionsCleanupTest.FastCloseSocket.class);
         private final AtomicInteger calls;
-
+        
         public FastCloseSocket(AtomicInteger calls)
         {
             this.calls = calls;
         }
-
+        
         @Override
         public void onWebSocketConnect(Session sess)
         {
@@ -194,7 +195,7 @@ public class ManyConnectionsCleanupTest
             sess.close(StatusCode.NORMAL, "FastCloseServer");
         }
     }
-
+    
     /**
      * On Connect, throw unhandled exception
      */
@@ -202,12 +203,12 @@ public class ManyConnectionsCleanupTest
     {
         private static final Logger LOG = Log.getLogger(ManyConnectionsCleanupTest.FastFailSocket.class);
         private final AtomicInteger calls;
-
+        
         public FastFailSocket(AtomicInteger calls)
         {
             this.calls = calls;
         }
-
+        
         @Override
         public void onWebSocketConnect(Session sess)
         {
@@ -218,48 +219,50 @@ public class ManyConnectionsCleanupTest
             throw new RuntimeException("Intentional FastFail");
         }
     }
-
+    
     private static final Logger LOG = Log.getLogger(ManyConnectionsCleanupTest.class);
-
+    
     private static SimpleServletServer server;
     private static AbstractCloseSocket closeSocket;
-
-    @BeforeAll
+    
+    @BeforeClass
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new CloseServlet());
         server.start();
     }
-
-    @AfterAll
+    
+    @AfterClass
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-
-
+    
+    @Rule
+    public TestName testname = new TestName();
+    
     private WebSocketClient client;
-
-    @BeforeEach
+    
+    @Before
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
-
-    @AfterEach
+    
+    @After
     public void stopClient() throws Exception
     {
         client.stop();
     }
-
+    
     /**
      * Test session tracking (open + close + cleanup) (bug #474936)
      *
      * @throws Exception on test failure
      */
     @Test
-    public void testOpenSessionCleanup( TestInfo testInfo ) throws Exception
+    public void testOpenSessionCleanup() throws Exception
     {
         int iterationCount = 100;
 
@@ -267,86 +270,86 @@ public class ManyConnectionsCleanupTest
         {
             for (int requests = 0; requests < iterationCount; requests++)
             {
-                fastFail(testInfo);
-                fastClose(testInfo);
-                dropConnection(testInfo);
+                fastFail();
+                fastClose();
+                dropConnection();
             }
         }
-
+        
         URI wsUri = server.getServerUri();
-
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
+        
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("container");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-
+        
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-
+        
         clientSession.getRemote().sendString("calls");
         clientSession.getRemote().sendString("openSessions");
-
+        
         String incomingMessage;
         incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Should only have 1 open session", incomingMessage, containsString("calls=" + ((iterationCount * 2) + 1)));
-
+        
         incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Should only have 1 open session", incomingMessage, containsString("openSessions.size=1\n"));
-
+        
         clientSocket.awaitCloseEvent("Client");
         clientSocket.assertCloseInfo("Client", StatusCode.NORMAL, anything());
     }
-
+    
     @SuppressWarnings("Duplicates")
-    private void fastClose(TestInfo testInfo) throws Exception
+    private void fastClose() throws Exception
     {
         client.setMaxIdleTimeout(1000);
         URI wsUri = server.getServerUri();
-
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
+        
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("fastclose");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-
+        
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
         clientSocket.awaitCloseEvent("Client");
         clientSocket.assertCloseInfo("Client", StatusCode.NORMAL, anything());
-
+        
         clientSession.close();
     }
-
-    private void fastFail(TestInfo testInfo) throws Exception
+    
+    private void fastFail() throws Exception
     {
         client.setMaxIdleTimeout(1000);
         URI wsUri = server.getServerUri();
-
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
+        
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("fastfail");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-
+        
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-
+        
         clientSocket.awaitCloseEvent("Client");
         clientSocket.assertCloseInfo("Client", StatusCode.SERVER_ERROR, anything());
-
+        
         clientSession.close();
     }
-
+    
     @SuppressWarnings("Duplicates")
-    private void dropConnection(TestInfo testInfo) throws Exception
+    private void dropConnection() throws Exception
     {
         client.setMaxIdleTimeout(1000);
         URI wsUri = server.getServerUri();
-
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getTestMethod().get().getName());
+        
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("container");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-
+        
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-
+        
         clientSession.close();
     }
-
+    
 }

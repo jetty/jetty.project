@@ -22,11 +22,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
@@ -41,8 +40,8 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.hamcrest.Matchers;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ContextHandlerCollectionTest
 {
@@ -145,14 +144,16 @@ public class ContextHandlerCollectionTest
                 
                 if (handler==null)
                 {
-                    assertThat(t,response,Matchers.containsString(" 302 "));
+                    Assert.assertThat(t,response,Matchers.containsString(" 302 "));
                 }
                 else
                 {
                     assertThat(t,response,endsWith(handler.toString()));
                     if (!handler.isHandled())
                     {
-                        fail("FAILED " + t + "\n" + response);
+                        System.err.printf("FAILED %s",t);
+                        System.err.println(response);
+                        Assert.fail();
                     }
                 }
             }
@@ -224,9 +225,9 @@ public class ContextHandlerCollectionTest
             String response=connector.getResponse("GET / HTTP/1.0\n" + "Host: "+host+"\nConnection:close\n\n");
             // System.err.println(response);
             if(succeed)
-                assertTrue(handler.isHandled(),"'"+host+"' should have been handled.");
+                assertTrue("'"+host+"' should have been handled.",handler.isHandled());
             else
-                assertFalse(handler.isHandled(),"'"+host + "' should not have been handled.");
+                assertFalse("'"+host + "' should not have been handled.", handler.isHandled());
             handler.reset();
         }
 

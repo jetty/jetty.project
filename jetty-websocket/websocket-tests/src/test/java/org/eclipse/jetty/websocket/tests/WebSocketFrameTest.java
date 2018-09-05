@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
@@ -36,9 +35,9 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class WebSocketFrameTest
 {
@@ -55,7 +54,7 @@ public class WebSocketFrameTest
         return buf;
     }
 
-    @BeforeEach
+    @Before
     public void initGenerator()
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
@@ -66,7 +65,7 @@ public class WebSocketFrameTest
     private void assertFrameHex(String message, String expectedHex, ByteBuffer actual)
     {
         String actualHex = Hex.asHex(actual);
-        assertThat("Generated Frame:" + message,actualHex,is(expectedHex));
+        Assert.assertThat("Generated Frame:" + message,actualHex,is(expectedHex));
     }
 
     @Test
