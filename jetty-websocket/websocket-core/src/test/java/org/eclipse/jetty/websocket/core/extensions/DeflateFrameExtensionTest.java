@@ -118,7 +118,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         ExtensionConfig config = ExtensionConfig.parse("deflate-frame");
         ext.setConfig(config);
 
-        Generator generator = new Generator(policy, bufferPool, true);
+        Generator generator = new Generator(policy, bufferPool);
         generator.configureFromExtensions(Collections.singletonList(ext));
 
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
@@ -300,7 +300,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         ext.setPolicy(policy);
         ext.setConfig(new ExtensionConfig(ext.getName()));
 
-        Generator generator = new Generator(policy, bufferPool, true);
+        Generator generator = new Generator(policy, bufferPool);
         generator.configureFromExtensions(Collections.singletonList(ext));
 
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);

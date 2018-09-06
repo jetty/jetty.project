@@ -114,7 +114,7 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
         this.policy = channel.getPolicy();
         this.channel = channel;
 
-        this.generator = new Generator(policy, bufferPool, validating);
+        this.generator = new Generator(policy, bufferPool);
         this.parser = new Parser(policy, bufferPool);
         this.suspendToken = new AtomicBoolean(false);
         this.flusher = new Flusher(policy.getOutputBufferSize(), generator, endp);

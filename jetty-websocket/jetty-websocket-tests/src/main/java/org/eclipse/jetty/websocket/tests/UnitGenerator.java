@@ -39,13 +39,13 @@ public class UnitGenerator extends Generator
     
     public UnitGenerator(WebSocketPolicy policy)
     {
-        super(policy, new MappedByteBufferPool(), false);
+        super(policy, new MappedByteBufferPool());
         applyMask = (getBehavior() == WebSocketBehavior.CLIENT);
     }
     
     public UnitGenerator(WebSocketPolicy policy, boolean validating)
     {
-        super(policy, new MappedByteBufferPool(), validating);
+        super(policy, new MappedByteBufferPool());
         applyMask = (getBehavior() == WebSocketBehavior.CLIENT);
     }
     

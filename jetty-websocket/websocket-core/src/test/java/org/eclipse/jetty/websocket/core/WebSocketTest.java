@@ -159,7 +159,14 @@ public class WebSocketTest
         client = new WebSocketClient("localhost", server.getLocalPort(), clientHandler);
         client.start();
 
-        client.sendFrame(new Frame((byte)4));
+        try
+        {
+            client.sendFrame(new Frame((byte)4));
+        }
+        catch (ProtocolException e)
+        {
+            assertThat(e.getMessage(), Matchers.containsString("Unknown opcode"));
+        }
 
         assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));

@@ -84,30 +84,41 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         if (!OpCode.isKnown(frame.getOpCode()))
             throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
 
-        //frame.assertValid();
-
-        if (frame.isControlFrame() && !frame.isFin())
-            throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(frame.getOpCode()) + "]");
-
+        int payloadLength = (frame.getPayload()==null) ? 0 : frame.getPayload().remaining(); // TODO is this accurately getting length of payload
 
         // Sane Payload Length //
-        int payloadLength = (frame.getPayload()==null) ? 0 : frame.getPayload().remaining(); // TODO is this accurately getting length of payload
         if (payloadLength > policy.getMaxAllowedFrameSize())
-        {
             throw new MessageTooLargeException("Cannot handle payload lengths larger than " + policy.getMaxAllowedFrameSize());
-        }
 
-        if (frame.getOpCode() == OpCode.CLOSE && (payloadLength == 1))
+        // Control Frame Validation
+        if (frame.isControlFrame())
         {
-            throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
-        }
+            if (!frame.isFin())
+                throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(frame.getOpCode()) + "]");
 
-        if (frame.isControlFrame() && payloadLength > Frame.MAX_CONTROL_PAYLOAD)
-        {
-            throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
-                    + Frame.MAX_CONTROL_PAYLOAD + "]");
-        }
+            if (payloadLength > Frame.MAX_CONTROL_PAYLOAD)
+                throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
 
+            if (frame.isRsv1())
+                throw new ProtocolException("Cannot have RSV1==true on Control frames");
+
+            if (frame.isRsv2())
+                throw new ProtocolException("Cannot have RSV2==true on Control frames");
+
+            if (frame.isRsv3())
+                throw new ProtocolException("Cannot have RSV3==true on Control frames");
+
+
+            /*
+             * RFC 6455 Section 5.5.1
+             *
+             * close frame payload is specially formatted which is checked in CloseStatus
+             */
+            if (frame.getOpCode() == OpCode.CLOSE)
+            {
+                new CloseStatus(frame.getPayload());
+            }
+        }
 
         // Checks for incoming frames only
         if(incoming)
@@ -123,38 +134,38 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                 if (frame.isMasked())
                     throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
             }
-
-
-            /*
-             * RFC 6455 Section 5.2
-             *
-             * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
-             * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
-             */
-            List<? extends Extension > exts = getExtensionStack().getExtensions();
-
-            boolean isRsv1InUse = false;
-            boolean isRsv2InUse = false;
-            boolean isRsv3InUse = false;
-            for (Extension ext : exts)
-            {
-                if (ext.isRsv1User())
-                    isRsv1InUse = true;
-                if (ext.isRsv2User())
-                    isRsv2InUse = true;
-                if (ext.isRsv3User())
-                    isRsv3InUse = true;
-            }
-
-            if (frame.isRsv1() && !isRsv1InUse)
-                throw new ProtocolException("RSV1 not allowed to be set");
-
-            if (frame.isRsv2() && !isRsv2InUse)
-                throw new ProtocolException("RSV2 not allowed to be set");
-
-            if (frame.isRsv3() && !isRsv3InUse)
-                throw new ProtocolException("RSV3 not allowed to be set");
         }
+        // TODO what do we need to validate only for outgoing frames
+
+        /*
+         * RFC 6455 Section 5.2
+         *
+         * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
+         * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
+         */
+        List<? extends Extension > exts = getExtensionStack().getExtensions();
+
+        boolean isRsv1InUse = false;
+        boolean isRsv2InUse = false;
+        boolean isRsv3InUse = false;
+        for (Extension ext : exts)
+        {
+            if (ext.isRsv1User())
+                isRsv1InUse = true;
+            if (ext.isRsv2User())
+                isRsv2InUse = true;
+            if (ext.isRsv3User())
+                isRsv3InUse = true;
+        }
+
+        if (frame.isRsv1() && !isRsv1InUse)
+            throw new ProtocolException("RSV1 not allowed to be set");
+
+        if (frame.isRsv2() && !isRsv2InUse)
+            throw new ProtocolException("RSV2 not allowed to be set");
+
+        if (frame.isRsv3() && !isRsv3InUse)
+            throw new ProtocolException("RSV3 not allowed to be set");
     }
 
 
@@ -270,7 +281,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             LOG.debug("close({}, {}, {})", closeStatus, callback, batchMode);
         }
 
-        extensionStack.sendFrame(closeStatus.toFrame(),callback,batchMode);
+        Frame frame = closeStatus.toFrame();
+        assertValid(frame, false);
+        extensionStack.sendFrame(frame,callback,batchMode);
     }
     
     public WebSocketPolicy getPolicy()
@@ -455,7 +468,10 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         if (frame.getOpCode() == OpCode.CLOSE)
             close(new CloseStatus(frame.getPayload()),callback, batchMode);
         else
-            extensionStack.sendFrame(frame,callback,batchMode);
+        {
+            assertValid(frame, false);
+            extensionStack.sendFrame(frame, callback, batchMode);
+        }
     }
 
 

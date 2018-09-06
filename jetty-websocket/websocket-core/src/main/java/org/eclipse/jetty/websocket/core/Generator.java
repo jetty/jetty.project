@@ -25,7 +25,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.extensions.Extension;
 import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 /**
  * Generating a frame in WebSocket land.
@@ -61,8 +60,6 @@ public class Generator
     private final WebSocketBehavior behavior;
     private final ByteBufferPool bufferPool;
     private final boolean readOnly;
-    
-    private boolean validating = true;
 
     /**
      * Are any flags in use
@@ -86,99 +83,22 @@ public class Generator
      */
     public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        this(policy,bufferPool,true,false);
+        this(policy,bufferPool, false);
     }
 
     /**
      * Construct Generator with provided policy and bufferPool
-     * 
-     * @param policy
+     *  @param policy
      *            the policy to use
      * @param bufferPool
      *            the buffer pool to use
-     * @param validating
-     *            true to enable RFC frame validation
-     */
-    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating)
-    {
-        this(policy,bufferPool,validating,false);
-    }
-
-    /**
-     * Construct Generator with provided policy and bufferPool
-     * 
-     * @param policy
-     *            the policy to use
-     * @param bufferPool
-     *            the buffer pool to use
-     * @param validating
-     *            true to enable RFC frame validation
      * @param readOnly
-     *            true if generator is to treat frames as read-only and not modify them. Useful for debugging purposes, but not generally for runtime use.
      */
-    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating, boolean readOnly)
+    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean readOnly)
     {
         this.behavior = policy.getBehavior();
         this.bufferPool = bufferPool;
-        this.validating = validating;
         this.readOnly = readOnly;
-    }
-
-    public void assertFrameValid(Frame frame)
-    {
-        if (!validating)
-        {
-            return;
-        }
-
-        /*
-         * RFC 6455 Section 5.2
-         * 
-         * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
-         * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
-         */
-        if (frame.isRsv1() && !isRsv1InUse())
-        {
-            throw new ProtocolException("RSV1 not allowed to be set");
-        }
-
-        if (frame.isRsv2() && !isRsv2InUse())
-        {
-            throw new ProtocolException("RSV2 not allowed to be set");
-        }
-
-        if (frame.isRsv3() && !isRsv3InUse())
-        {
-            throw new ProtocolException("RSV3 not allowed to be set");
-        }
-
-        if (OpCode.isControlFrame(frame.getOpCode()))
-        {
-            /*
-             * RFC 6455 Section 5.5
-             * 
-             * All control frames MUST have a payload length of 125 bytes or less and MUST NOT be fragmented.
-             */
-            if (frame.getPayloadLength() > 125)
-            {
-                throw new ProtocolException("Invalid control frame payload length");
-            }
-
-            if (!frame.isFin())
-            {
-                throw new ProtocolException("Control Frames must be FIN=true");
-            }
-
-            /*
-             * RFC 6455 Section 5.5.1
-             * 
-             * close frame payload is specially formatted which is checked in CloseStatus
-             */
-            if (frame.getOpCode() == OpCode.CLOSE)
-            {
-                new CloseStatus(frame.getPayload());
-            }
-        }
     }
 
     public void configureFromExtensions(List<? extends Extension> exts)
@@ -215,9 +135,6 @@ public class Generator
 
     public void generateHeaderBytes(Frame frame, ByteBuffer buffer)
     {
-        // we need a framing header
-        assertFrameValid(frame);
-
         /*
          * start the generation process
          */
@@ -360,11 +277,6 @@ public class Generator
         return bufferPool;
     }
     
-    public boolean isValidating()
-    {
-        return validating;
-    }
-    
     public void setRsv1InUse(boolean rsv1InUse)
     {
         if (readOnly)
@@ -392,11 +304,6 @@ public class Generator
         flagsInUse = (byte)((flagsInUse & 0xEF) | (rsv3InUse?0x10:0x00));
     }
     
-    public void setValidating(boolean validating)
-    {
-        this.validating = validating;
-    }
-    
     public boolean isRsv1InUse()
     {
         return (flagsInUse & 0x40) != 0;
@@ -418,10 +325,6 @@ public class Generator
         StringBuilder builder = new StringBuilder();
         builder.append("Generator[");
         builder.append(behavior);
-        if (validating)
-        {
-            builder.append(",validating");
-        }
         if (isRsv1InUse())
         {
             builder.append(",+rsv1");

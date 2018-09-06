@@ -55,7 +55,7 @@ public class WebSocketFrameTest
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         strictGenerator = new Generator(policy,bufferPool);
-        laxGenerator = new Generator(policy,bufferPool,false);
+        laxGenerator = new Generator(policy,bufferPool);
     }
 
     private void assertFrameHex(String message, String expectedHex, ByteBuffer actual)

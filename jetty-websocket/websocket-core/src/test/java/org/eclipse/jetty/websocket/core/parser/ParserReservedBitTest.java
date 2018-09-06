@@ -62,7 +62,7 @@ public class ParserReservedBitTest
         int size = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
         ByteBuffer raw = BufferUtil.allocate(size);
         BufferUtil.clearToFill(raw);
-        Generator generator = new Generator(policy, bufferPool, validatingGenerator);
+        Generator generator = new Generator(policy, bufferPool);
         frames.forEach(frame -> generator.generateWholeFrame(frame, raw));
         BufferUtil.flipToFlush(raw, 0);
 
