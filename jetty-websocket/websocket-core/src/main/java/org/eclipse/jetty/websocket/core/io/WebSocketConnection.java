@@ -121,7 +121,6 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
 
-        this.parser.configureFromExtensions(channel.getExtensionStack().getExtensions());
         this.generator.configureFromExtensions(channel.getExtensionStack().getExtensions());
 
         this.random = this.policy.getBehavior() == WebSocketBehavior.CLIENT ? new Random(endp.hashCode()) : null;
@@ -199,6 +198,7 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
 
+        channel.assertValid(frame, true);
         channel.onReceiveFrame(frame, new Callback()
         {
             @Override

@@ -84,12 +84,6 @@ public class DelegateFrame extends Frame
     }
 
     @Override
-    public Type getType()
-    {
-        return delegate.getType();
-    }
-
-    @Override
     public int hashCode()
     {
         return delegate.hashCode();

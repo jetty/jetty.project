@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
 public class AbstractTestFrameHandler implements FrameHandler
 {
     private Logger LOG = Log.getLogger(AbstractTestFrameHandler.class);
-    private Frame.Type partial;
+    private byte partial = OpCode.UNDEFINED;
     private Utf8StringBuilder utf8;
     private ByteBuffer byteBuffer;
     private FrameHandler.CoreSession channel;
@@ -167,7 +167,7 @@ public class AbstractTestFrameHandler implements FrameHandler
         if (frame.isFin())
             utf8.checkState(); // TODO: this should not be necessary, checkState() shouldn't be necessary to use (the utf8.toString() should trigger on bad utf8 in final octets)
         else
-            partial = Frame.Type.TEXT;
+            partial = OpCode.TEXT;
         
         onText(utf8,callback,frame.isFin());            
     }
@@ -207,7 +207,7 @@ public class AbstractTestFrameHandler implements FrameHandler
         }
         else
         {
-            partial = Frame.Type.BINARY;
+            partial = OpCode.BINARY;
             
             // TODO use the pool?
             if (byteBuffer==null)
@@ -248,7 +248,7 @@ public class AbstractTestFrameHandler implements FrameHandler
      */
     protected void onContinuationFrame(Frame frame, Callback callback)
     {
-        if (partial==null)
+        if (partial==OpCode.UNDEFINED)
         {
             callback.failed(new IllegalStateException());
             return;
@@ -256,7 +256,7 @@ public class AbstractTestFrameHandler implements FrameHandler
             
         switch(partial)
         {
-            case TEXT:
+            case OpCode.TEXT:
                 if (frame.hasPayload())
                     utf8.append(frame.getPayload());
 
@@ -266,7 +266,7 @@ public class AbstractTestFrameHandler implements FrameHandler
                 onText(utf8,callback,frame.isFin());
                 break;
 
-            case BINARY:
+            case OpCode.BINARY:
                 if (frame.hasPayload())
                 {
                     int factor = frame.isFin()?1:3;

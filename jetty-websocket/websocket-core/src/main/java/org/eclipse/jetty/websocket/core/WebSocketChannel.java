@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.extensions.Extension;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.Frame;
@@ -74,6 +75,86 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         this.extensionStack = extensionStack;
         this.subprotocol = subprotocol;
         extensionStack.connect(new IncomingState(),new OutgoingState());
+    }
+
+
+    public void assertValid(Frame frame, boolean incoming)
+    {
+
+        if (!OpCode.isKnown(frame.getOpCode()))
+            throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
+
+        //frame.assertValid();
+
+        if (frame.isControlFrame() && !frame.isFin())
+            throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(frame.getOpCode()) + "]");
+
+
+        // Sane Payload Length //
+        int payloadLength = (frame.getPayload()==null) ? 0 : frame.getPayload().remaining(); // TODO is this accurately getting length of payload
+        if (payloadLength > policy.getMaxAllowedFrameSize())
+        {
+            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + policy.getMaxAllowedFrameSize());
+        }
+
+        if (frame.getOpCode() == OpCode.CLOSE && (payloadLength == 1))
+        {
+            throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
+        }
+
+        if (frame.isControlFrame() && payloadLength > Frame.MAX_CONTROL_PAYLOAD)
+        {
+            throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
+                    + Frame.MAX_CONTROL_PAYLOAD + "]");
+        }
+
+
+        // Checks for incoming frames only
+        if(incoming)
+        {
+            // Assert Behavior Required by RFC-6455 / Section 5.1
+            if (policy.getBehavior() == WebSocketBehavior.SERVER)
+            {
+                if (!frame.isMasked())
+                    throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
+            }
+            else if (policy.getBehavior() == WebSocketBehavior.CLIENT)
+            {
+                if (frame.isMasked())
+                    throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
+            }
+
+
+            /*
+             * RFC 6455 Section 5.2
+             *
+             * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
+             * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
+             */
+            List<? extends Extension > exts = getExtensionStack().getExtensions();
+
+            boolean isRsv1InUse = false;
+            boolean isRsv2InUse = false;
+            boolean isRsv3InUse = false;
+            for (Extension ext : exts)
+            {
+                if (ext.isRsv1User())
+                    isRsv1InUse = true;
+                if (ext.isRsv2User())
+                    isRsv2InUse = true;
+                if (ext.isRsv3User())
+                    isRsv3InUse = true;
+            }
+
+            if (frame.isRsv1() && !isRsv1InUse)
+                throw new ProtocolException("RSV1 not allowed to be set");
+
+            if (frame.isRsv2() && !isRsv2InUse)
+                throw new ProtocolException("RSV2 not allowed to be set");
+
+            if (frame.isRsv3() && !isRsv3InUse)
+                throw new ProtocolException("RSV3 not allowed to be set");
+        }
     }
 
 

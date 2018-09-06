@@ -62,7 +62,7 @@ public class PerMessageDeflateExtension extends CompressExtension
 
         // This extension requires the RSV1 bit set only in the first frame.
         // Subsequent continuation frames don't have RSV1 set, but are compressed.
-        if (frame.getType().isData())
+        if (OpCode.isDataFrame(frame.getOpCode()) && frame.getOpCode()!=OpCode.CONTINUATION)
         {
             incomingCompressed = frame.isRsv1();
         }

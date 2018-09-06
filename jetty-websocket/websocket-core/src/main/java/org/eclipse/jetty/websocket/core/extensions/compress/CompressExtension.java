@@ -536,7 +536,7 @@ public abstract class CompressExtension extends AbstractExtension
                 LOG.debug("Compressed {}: input:{} -> payload:{}",entry,outputLength,payload.remaining());
             }
 
-            boolean continuation = frame.getType().isContinuation() || !first;
+            boolean continuation = (frame.getOpCode()==OpCode.CONTINUATION) || !first;
             Frame chunk = new Frame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
             if (rsvUse == RSV_USE_ONLY_FIRST)
             {

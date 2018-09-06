@@ -23,7 +23,7 @@ import java.util.zip.DataFormatException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 /**
  * Implementation of the
@@ -57,7 +57,7 @@ public class DeflateFrameExtension extends CompressExtension
         // they are read and parsed with a single thread, and
         // therefore there is no need for synchronization.
 
-        if ( frame.getType().isControl() || !frame.isRsv1() || !frame.hasPayload() )
+        if ( (OpCode.isControlFrame(frame.getOpCode())) || !frame.isRsv1() || !frame.hasPayload() )
         {
             nextIncomingFrame(frame, callback);
             return;

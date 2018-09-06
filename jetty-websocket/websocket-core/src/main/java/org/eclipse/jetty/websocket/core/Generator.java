@@ -243,17 +243,8 @@ public class Generator
             b |= 0x10; // 0001_0000
         }
 
-        // NOTE: using .getOpCode() here, not .getType().getOpCode() for testing reasons
         byte opcode = frame.getOpCode();
-
-        if (frame.getOpCode() == OpCode.CONTINUATION)
-        {
-            // Continuations are not the same OPCODE
-            opcode = OpCode.CONTINUATION;
-        }
-
         b |= opcode & 0x0F;
-
         buffer.put(b);
 
         // is masked

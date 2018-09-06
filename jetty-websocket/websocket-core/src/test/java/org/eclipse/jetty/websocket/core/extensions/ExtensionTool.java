@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.core.extensions;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -69,8 +68,6 @@ public class ExtensionTool
         {
             this.ext = factory.newInstance(objectFactory, policy, bufferPool, extConfig);
             this.ext.setNextIncomingFrames(capture);
-
-            this.parser.configureFromExtensions(Collections.singletonList(ext));
         }
     
         public void parseIncomingHex(String... rawhex)

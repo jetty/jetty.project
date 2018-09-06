@@ -146,7 +146,7 @@ public class FragmentExtension extends AbstractExtension
             int length = Math.min(remaining, maxLength);
             finished = length == remaining;
 
-            boolean continuation = frame.getType().isContinuation() || !first;
+            boolean continuation = (frame.getOpCode()==OpCode.CONTINUATION) || !first;
             Frame fragment = new Frame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
             boolean fin = frame.isFin() && finished;
             fragment.setFin(fin);

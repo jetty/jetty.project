@@ -44,6 +44,7 @@ import org.eclipse.jetty.websocket.core.generator.UnitGenerator;
 import org.eclipse.jetty.websocket.core.util.MaskedByteBuffer;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -458,6 +459,8 @@ public class ParserTest
      * A normal 2 fragment text text message, followed by another continuation.
      * </p>
      */
+    // TODO this check is done in WebSocketChannel.IncomingState not parser; was catching another exception because the frames weren't masked
+    @Ignore
     @Test
     public void testParse_Continuation_BadFinState()
     {
@@ -1329,6 +1332,8 @@ public class ParserTest
      * Text message fragmented as 2 frames, both as opcode=TEXT
      * </p>
      */
+    // TODO this check is done in WebSocketChannel.IncomingState not parser; was catching another exception because the frames weren't masked
+    @Ignore
     @Test
     public void testParse_Text_BadFinState()
     {

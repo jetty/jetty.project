@@ -147,6 +147,25 @@ public class WebSocketTest
 //        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
     }
 
+
+    @Test
+    public void testInvalidOpCode() throws Exception
+    {
+        TestFrameHandler serverHandler = new TestFrameHandler();
+        TestFrameHandler clientHandler = new TestFrameHandler();
+
+        server = new WebSocketServer(0, serverHandler);
+        server.start();
+        client = new WebSocketClient("localhost", server.getLocalPort(), clientHandler);
+        client.start();
+
+        client.sendFrame(new Frame((byte)4));
+
+        assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+    }
+
+
     static class WebSocketClient
     {
         private static Logger LOG = Log.getLogger(WebSocketClient.class);
@@ -179,6 +198,12 @@ public class WebSocketTest
             this.client.start();
             Future<FrameHandler.CoreSession> response = client.connect(request);
             response.get(5, TimeUnit.SECONDS);
+        }
+
+
+        public void sendFrame(Frame frame)
+        {
+            handler.getChannel().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
         }
 
 
@@ -304,6 +329,11 @@ public class WebSocketTest
                     baseRequest.setHandled(true);
                 }
             });
+        }
+
+        public void sendFrame(Frame frame)
+        {
+            handler.getChannel().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
         }
 
         public void sendText(String line)

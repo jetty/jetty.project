@@ -34,6 +34,8 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
  */
 public class Parser
 {
+    private List<? extends Extension> exts;
+
     private enum State
     {
         START,
@@ -57,65 +59,17 @@ public class Parser
     private ByteBuffer payload;
     private int payloadLength;
     private ParserDeMasker deMasker = new ParserDeMasker();
-
-    /** 
-     * Is there an extension using RSV flag?
-     * <p>
-     * 
-     * <pre>
-     *   0100_0000 (0x40) = rsv1
-     *   0010_0000 (0x20) = rsv2
-     *   0001_0000 (0x10) = rsv3
-     * </pre>
-     */
-    private byte flagsInUse=0x00;
     
     public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool)
     {
         this.bufferPool = bufferPool;
         this.policy = wspolicy;
     }
-    
-    private void assertSanePayloadLength(long len)
+
+    private void assertBelowMaxPayloadLength(long payloadLength)
     {
-        if (len > this.policy.getMaxAllowedFrameSize())
-        {
+        if (payloadLength > this.policy.getMaxAllowedFrameSize())
             throw new MessageTooLargeException("Cannot handle payload lengths larger than " + this.policy.getMaxAllowedFrameSize());
-        }
-    
-        if (frame.getOpCode() == OpCode.CLOSE && (len == 1))
-        {
-            throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
-        }
-    
-        if (frame.isControlFrame() && len > Frame.MAX_CONTROL_PAYLOAD)
-        {
-            throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
-                    + Frame.MAX_CONTROL_PAYLOAD + "]");
-        }
-    }
-
-    public void configureFromExtensions(List<? extends Extension> exts)
-    {        
-        // default
-        flagsInUse = 0x00;
-
-        // configure from list of extensions in use
-        for (Extension ext : exts)
-        {
-            if (ext.isRsv1User())
-            {
-                flagsInUse = (byte)(flagsInUse | 0x40);
-            }
-            if (ext.isRsv2User())
-            {
-                flagsInUse = (byte)(flagsInUse | 0x20);
-            }
-            if (ext.isRsv3User())
-            {
-                flagsInUse = (byte)(flagsInUse | 0x10);
-            }
-        }
     }
 
     public WebSocketPolicy getPolicy()
@@ -123,21 +77,6 @@ public class Parser
         return policy;
     }
 
-    public boolean isRsv1InUse()
-    {
-        return (flagsInUse & 0x40) != 0;
-    }
-
-    public boolean isRsv2InUse()
-    {
-        return (flagsInUse & 0x20) != 0;
-    }
-
-    public boolean isRsv3InUse()
-    {
-        return (flagsInUse & 0x10) != 0;
-    }
-    
     /**
      * Parse the buffer.
      *
@@ -168,9 +107,6 @@ public class Parser
 
                         byte opcode = (byte)(b & 0x0F);
 
-                        if (!OpCode.isKnown(opcode))
-                            throw new ProtocolException("Unknown opcode: " + opcode);
-
                         if (LOG.isDebugEnabled())
                             LOG.debug("{} OpCode {}, fin={} rsv={}{}{}",
                                     getPolicy().getBehavior(),
@@ -180,58 +116,12 @@ public class Parser
                                     (((b & 0x20) != 0)?'1':'.'),
                                     (((b & 0x10) != 0)?'1':'.'));
 
-                        // base framing flags
-                        switch(opcode)
-                        {
-                            case OpCode.TEXT:
-                                frame = new Frame(OpCode.TEXT);
-                                break;
-                            case OpCode.BINARY:
-                                frame = new Frame(OpCode.BINARY);
-                                break;
-                            case OpCode.CONTINUATION:
-                                frame = new Frame(OpCode.CONTINUATION);
-                                break;
-                            case OpCode.CLOSE:
-                                frame = new Frame(OpCode.CLOSE);
-                                // control frame validation
-                                if (!fin)
-                                    throw new ProtocolException("Fragmented Close Frame [" + OpCode.name(opcode) + "]");
-                                break;
-                            case OpCode.PING:
-                                frame = new Frame(OpCode.PING);
-                                // control frame validation
-                                if (!fin)
-                                    throw new ProtocolException("Fragmented Ping Frame [" + OpCode.name(opcode) + "]");
-                                break;
-                            case OpCode.PONG:
-                                frame = new Frame(OpCode.PONG);
-                                // control frame validation
-                                if (!fin)
-                                    throw new ProtocolException("Fragmented Pong Frame [" + OpCode.name(opcode) + "]");
-                                break;
-                        }
-
+                        frame = new Frame(opcode);
                         frame.setFin(fin);
 
                         // Are any flags set?
                         if ((b & 0x70) != 0)
                         {
-                            int  not_in_use = (isRsv1InUse()?0:0x40) + (isRsv2InUse()?0:0x20) + (isRsv3InUse()?0:0x10);
-                            /*
-                             * RFC 6455 Section 5.2
-                             * 
-                             * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the
-                             * negotiated extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
-                             */
-                            if ((b & not_in_use) != 0)
-                            {
-                                String err = String.format("RSV bits %x not in use %x",b,not_in_use);
-                                if(LOG.isDebugEnabled())
-                                    LOG.debug(getPolicy().getBehavior() + " " + err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
-                                throw new ProtocolException(err);
-                            }
-                            
                             // TODO yuck
                             if ((b & 0x40) != 0)
                                 frame.setRsv1(true);
@@ -268,7 +158,7 @@ public class Parser
                             break; // continue onto next state
                         }
 
-                        assertSanePayloadLength(payloadLength);
+                        assertBelowMaxPayloadLength(payloadLength);
                         if (frame.isMasked())
                         {
                             state = State.MASK;
@@ -279,7 +169,6 @@ public class Parser
                             if (payloadLength == 0)
                             {
                                 state = State.START;
-                                assertBehavior();
                                 return frame;
                             }
 
@@ -297,7 +186,7 @@ public class Parser
                         payloadLength |= (b & 0xFF) << (8 * cursor);
                         if (cursor == 0)
                         {
-                            assertSanePayloadLength(payloadLength);
+                            assertBelowMaxPayloadLength(payloadLength);
                             if (frame.isMasked())
                             {
                                 state = State.MASK;
@@ -308,7 +197,6 @@ public class Parser
                                 if (payloadLength == 0)
                                 {
                                     state = State.START;
-                                    assertBehavior();
                                     return frame;
                                 }
 
@@ -330,7 +218,6 @@ public class Parser
                             if (payloadLength == 0)
                             {
                                 state = State.START;
-                                assertBehavior();
                                 return frame;
                             }
 
@@ -356,7 +243,6 @@ public class Parser
                             if (payloadLength == 0)
                             {
                                 state = State.START;
-                                assertBehavior();
                                 return frame;
                             }
 
@@ -368,12 +254,10 @@ public class Parser
 
                     case PAYLOAD:
                     {
-                        frame.assertValid();
                         if (parsePayload(buffer))
                         {
                             state = State.START;
                             // we have a frame!
-                            assertBehavior();
                             return frame;
                         }
                         break;
@@ -405,35 +289,6 @@ public class Parser
         }
         
         return null;
-    }
-    
-    private void assertBehavior()
-    {
-        if (policy.getBehavior() == WebSocketBehavior.SERVER)
-        {
-            /* Parsing on server.
-             *
-             * Then you MUST make sure all incoming frames are masked!
-             *
-             * Technically, this test is in violation of RFC-6455, Section 5.1
-             * http://tools.ietf.org/html/rfc6455#section-5.1
-             *
-             * But we can't trust the client at this point, so Jetty opts to close
-             * the connection as a Protocol error.
-             */
-            if (!frame.isMasked())
-            {
-                throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
-            }
-        }
-        else if(policy.getBehavior() == WebSocketBehavior.CLIENT)
-        {
-            // Required by RFC-6455 / Section 5.1
-            if (frame.isMasked())
-            {
-                throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
-            }
-        }
     }
     
     public void release(org.eclipse.jetty.websocket.core.frames.Frame frame)

@@ -51,62 +51,6 @@ import org.eclipse.jetty.websocket.core.ProtocolException;
  */
 public class Frame
 {
-    public enum Type
-    {
-        CONTINUATION((byte)0x00),
-        TEXT((byte)0x01),
-        BINARY((byte)0x02),
-        CLOSE((byte)0x08),
-        PING((byte)0x09),
-        PONG((byte)0x0A);
-
-        public static Type from(byte op)
-        {
-            for (Type type : values())
-            {
-                if (type.opcode == op)
-                {
-                    return type;
-                }
-            }
-            throw new IllegalArgumentException("OpCode " + op + " is not a valid Frame.Type");
-        }
-
-        private byte opcode;
-
-        Type(byte code)
-        {
-            this.opcode = code;
-        }
-
-        public byte getOpCode()
-        {
-            return opcode;
-        }
-
-        public boolean isControl()
-        {
-            return (opcode >= CLOSE.getOpCode());
-        }
-
-        public boolean isData()
-        {
-            return (opcode == TEXT.getOpCode()) || (opcode == BINARY.getOpCode());
-        }
-
-        public boolean isContinuation()
-        {
-            return opcode == CONTINUATION.getOpCode();
-        }
-
-        @Override
-        public String toString()
-        {
-            return this.name();
-        }
-    }
-
-
     public static Frame copyWithoutPayload(Frame original)
     {
         Frame copy = new Frame(original.getOpCode());
@@ -200,7 +144,7 @@ public class Frame
 
     public boolean isControlFrame()
     {
-        return getType().isControl();
+        return OpCode.isControlFrame(getOpCode());
     }
 
     public boolean isDataFrame()
@@ -334,11 +278,6 @@ public class Frame
         return payload.remaining();
     }
 
-    public Type getType()
-    {
-        return Type.from(getOpCode());
-    }
-
     @Override
     public int hashCode()
     {
@@ -425,13 +364,6 @@ public class Frame
      */
     public Frame setPayload(ByteBuffer buf)
     {
-        if(isControlFrame())
-        {
-            // RFC-6455 Spec Required Control Frame validation.
-            if (buf != null && buf.remaining() > MAX_CONTROL_PAYLOAD)
-                throw new ProtocolException("Control Payloads can not exceed " + MAX_CONTROL_PAYLOAD + " bytes in length.");
-        }
-
         payload = buf;
         return this;
     }
