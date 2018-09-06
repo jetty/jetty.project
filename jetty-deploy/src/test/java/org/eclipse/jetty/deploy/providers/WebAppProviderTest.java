@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.deploy.providers;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.nio.file.FileSystemException;
@@ -29,26 +30,26 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-@Ignore("See issue #1200")
+@Disabled("See issue #1200")
+@ExtendWith(WorkDirExtension.class)
 public class WebAppProviderTest
 {
-    @Rule
-    public TestingDir testdir = new TestingDir();
+    public WorkDir testdir;
     private static XmlConfiguredJetty jetty;
     private boolean symlinkSupported = false;
     
-    @Before
+    @BeforeEach
     public void setupEnvironment() throws Exception
     {
-        jetty = new XmlConfiguredJetty(testdir);
+        jetty = new XmlConfiguredJetty(testdir.getEmptyPathDir());
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-http.xml");
         jetty.addConfiguration("jetty-deploy-wars.xml");
@@ -77,7 +78,7 @@ public class WebAppProviderTest
         jetty.start();
     }
 
-    @After
+    @AfterEach
     public void teardownEnvironment() throws Exception
     {
         // Stop jetty.
@@ -97,7 +98,7 @@ public class WebAppProviderTest
         assertDirNotExists("root of work directory",workDir,"jsp");
 
         // Test for correct behaviour
-        assertTrue("Should have generated directory in work directory: " + workDir,hasJettyGeneratedPath(workDir,"foo.war"));
+        assertTrue(hasJettyGeneratedPath(workDir,"foo.war"),"Should have generated directory in work directory: " + workDir);
     }
     
     @Test
@@ -107,15 +108,15 @@ public class WebAppProviderTest
         
         // Check for path
         File barLink = jetty.getJettyDir("webapps/bar.war");
-        assertTrue("bar.war link exists: " + barLink.toString(), barLink.exists());
-        assertTrue("bar.war link isFile: " + barLink.toString(), barLink.isFile());
+        assertTrue(barLink.exists(),"bar.war link exists: " + barLink.toString());
+        assertTrue(barLink.isFile(), "bar.war link isFile: " + barLink.toString());
         
         // Check Server for expected Handlers
         jetty.assertWebAppContextsExists("/bar", "/foo");
         
         // Test for expected work/temp directory behaviour
         File workDir = jetty.getJettyDir("workish");
-        assertTrue("Should have generated directory in work directory: " + workDir,hasJettyGeneratedPath(workDir,"bar.war"));
+        assertTrue(hasJettyGeneratedPath(workDir,"bar.war"),"Should have generated directory in work directory: " + workDir);
     }
 
     private static boolean hasJettyGeneratedPath(File basedir, String expectedWarFilename)
@@ -139,6 +140,6 @@ public class WebAppProviderTest
     public static void assertDirNotExists(String msg, File workDir, String subdir)
     {
         File dir = new File(workDir,subdir);
-        Assert.assertFalse("Should not have " + subdir + " in " + msg + " - " + workDir,dir.exists());
+        assertFalse(dir.exists(),"Should not have " + subdir + " in " + msg + " - " + workDir);
     }
 }

@@ -52,7 +52,7 @@ In the forthcoming Java EE-7 specification, the Web Profile reflects updates in 
 
 |http://jcp.org/en/jsr/detail?id=345[JSR 345] |Enterprise JavaBeans 3.2 Lite |No |
 
-|http://jcp.org/en/jsr/detail?id=338[JSR 338] |Java Persistance 2.1 (JPA) |No |Yes, eg http://www.hibernate.org/[Hibernate]
+|http://jcp.org/en/jsr/detail?id=338[JSR 338] |Java Persistence 2.1 (JPA) |No |Yes, eg http://www.hibernate.org/[Hibernate]
 
 |http://jcp.org/en/jsr/detail?id=250[JSR 250] |Common Annotations for the Java Platform 1.2 |Yes |Partially (for non-core Servlet Spec annotations)
 
@@ -98,7 +98,7 @@ Here is the matrix of JSRs for Java EE 6 Web Profile, and how they relate to Jet
 
 |http://jcp.org/en/jsr/detail?id=318[JSR 318] |Enterprise JavaBeans 3.1 |No |Yes, OpenEJB
 
-|http://jcp.org/en/jsr/detail?id=317[JSR 317] |Java Persistance 2.0 (JPA) |No |Yes, http://www.hibernate.org/[Hibernate]
+|http://jcp.org/en/jsr/detail?id=317[JSR 317] |Java Persistence 2.0 (JPA) |No |Yes, http://www.hibernate.org/[Hibernate]
 
 |http://jcp.org/en/jsr/detail?id=250[JSR 250] |Common Annotations for the Java Platform |Yes |Partially (for non-core Servlet Spec annotations)
 

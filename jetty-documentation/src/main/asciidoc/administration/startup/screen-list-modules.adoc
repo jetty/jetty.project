@@ -29,10 +29,14 @@ Modules for tag '*':
 
      Module: alpn
            : Enables the ALPN (Application Layer Protocol Negotiation) TLS extension.
-     Depend: ssl, alpn-impl/alpn-9
+     Depend: ssl, alpn-impl
         LIB: lib/jetty-alpn-client-${jetty.version}.jar
         LIB: lib/jetty-alpn-server-${jetty.version}.jar
         XML: etc/jetty-alpn.xml
+
+     Module: alpn-impl
+           : Selects an ALPN (Application Layer Protocol Negotiation) implementation by java version.
+     Depend: alpn-impl/alpn-${java.version.platform}
 
      Module: annotations
            : Enables Annotation scanning for deployed webapplications.
@@ -40,38 +44,54 @@ Modules for tag '*':
         LIB: lib/jetty-annotations-${jetty.version}.jar
         LIB: lib/annotations/*.jar
         XML: etc/jetty-annotations.xml
+    Enabled: ${jetty.base}\start.d\annotations.ini
 
      Module: apache-jsp
            : Enables use of the apache implementation of JSP
         LIB: lib/apache-jsp/*.jar
+    Enabled: transitive provider of apache-jsp for jsp
 
      Module: apache-jstl
            : Enables the apache version of JSTL
         LIB: lib/apache-jstl/*.jar
+    Enabled: transitive provider of apache-jstl for jstl
 
      Module: cdi
            : Experimental CDI/Weld integration
+     Depend: cdi1
+
+     Module: cdi1
+           : Experimental CDI/Weld integration
+           : Deprecated in favour of cdi2 module.
      Depend: deploy, annotations, plus, jsp
         LIB: lib/cdi/*.jar
         LIB: lib/cdi-core-${jetty.version}.jar
         LIB: lib/cdi-servlet-${jetty.version}.jar
         XML: etc/jetty-cdi.xml
 
+     Module: cdi2
+           : Jetty setup to support Weld/CDI2 with WELD inside the webapp
+     Depend: deploy
+        XML: etc/cdi2/jetty-cdi2.xml
+
      Module: client
            : Adds the Jetty HTTP client to the server classpath.
         LIB: lib/jetty-client-${jetty.version}.jar
+    Enabled: ${jetty.base}\start.d\client.ini
 
      Module: continuation
            : Enables support for Continuation style asynchronous
            : Servlets.  Now deprecated in favour of Servlet 3.1
            : API
         LIB: lib/jetty-continuation-${jetty.version}.jar
+    Enabled: ${jetty.base}\start.d\continuation.ini
 
      Module: deploy
            : Enables webapplication deployment from the webapps directory.
      Depend: webapp
         LIB: lib/jetty-deploy-${jetty.version}.jar
         XML: etc/jetty-deploy.xml
+    Enabled: ${jetty.base}\start.d\deploy.ini
 
      Module: fcgi
            : Adds the FastCGI implementation to the classpath.
@@ -83,6 +103,11 @@ Modules for tag '*':
      Depend: server
         JVM: -XX:+UnlockCommercialFeatures
         JVM: -XX:+FlightRecorder
+
+     Module: global-webapp-common
+           : Enables Deployer to apply common configuration to all webapp deployments
+     Depend: deploy
+        XML: etc/global-webapp-common.xml
 
      Module: hazelcast-embedded-sessions
      Depend: annotations, webapp
@@ -104,6 +129,7 @@ Modules for tag '*':
      Depend: server
         LIB: lib/jetty-jaas-${jetty.version}.jar
         XML: etc/jetty-jaas.xml
+    Enabled: ${jetty.base}\start.d\demo.ini
 
      Module: jaspi
            : Enable JASPI authentication for deployed webapplications.
@@ -128,14 +154,17 @@ Modules for tag '*':
      Depend: server, mail
         LIB: lib/jetty-jndi-${jetty.version}.jar
         LIB: lib/jndi/*.jar
+    Enabled: ${jetty.base}\start.d\jndi.ini
 
      Module: jsp
            : Enables JSP for all webapplications deployed on the server.
      Depend: servlet, annotations, apache-jsp
+    Enabled: ${jetty.base}\start.d\jsp.ini
 
      Module: jstl
            : Enables JSTL for all webapplications deployed on the server
      Depend: jsp, apache-jstl
+    Enabled: ${jetty.base}\start.d\jstl.ini
 
      Module: jvm
            : A noop module that creates an ini template useful for
@@ -151,6 +180,7 @@ Modules for tag '*':
      Module: mail
            : Adds the javax.mail implementation to the classpath.
         LIB: lib/mail/*.jar
+    Enabled: transitive provider of mail for jndi
 
      Module: plus
            : Enables JNDI and resource injection for webapplications
@@ -159,6 +189,7 @@ Modules for tag '*':
      Depend: server, security, jndi, webapp, transactions
         LIB: lib/jetty-plus-${jetty.version}.jar
         XML: etc/jetty-plus.xml
+    Enabled: transitive provider of plus for annotations
 
      Module: proxy
            : Enable the Jetty Proxy, that allows the server to act
@@ -189,6 +220,7 @@ Modules for tag '*':
      Depend: server
         LIB: lib/jetty-rewrite-${jetty.version}.jar
         XML: etc/jetty-rewrite.xml
+    Enabled: ${jetty.base}\start.d\demo.ini
 
      Module: rewrite-compactpath
            : Add a rule to the rewrite module to compact paths so that double slashes
@@ -207,9 +239,12 @@ Modules for tag '*':
            : Adds servlet standard security handling to the classpath.
      Depend: server
         LIB: lib/jetty-security-${jetty.version}.jar
+    Enabled: transitive provider of security for webapp
+    Enabled: transitive provider of security for plus
 
      Module: server
            : Enables the core Jetty server on the classpath.
+     Depend: threadpool
    Optional: jvm, ext, resources, logging
         LIB: lib/servlet-api-3.1.jar
         LIB: lib/jetty-schemas-3.1.jar
@@ -219,12 +254,15 @@ Modules for tag '*':
         LIB: lib/jetty-util-${jetty.version}.jar
         LIB: lib/jetty-io-${jetty.version}.jar
         XML: etc/jetty.xml
-    Enabled: transitive provider of server for ssl
+    Enabled: ${jetty.base}\start.d\server.ini
 
      Module: servlet
            : Enables standard Servlet handling.
      Depend: server
         LIB: lib/jetty-servlet-${jetty.version}.jar
+    Enabled: transitive provider of servlet for webapp
+    Enabled: transitive provider of servlet for servlets
+    Enabled: transitive provider of servlet for jsp
 
      Module: servlets
            : Puts a collection of jetty utility servlets and filters
@@ -233,6 +271,7 @@ Modules for tag '*':
            : use by all webapplications.
      Depend: servlet
         LIB: lib/jetty-servlets-${jetty.version}.jar
+    Enabled: ${jetty.base}\start.d\servlets.ini
 
      Module: setuid
            : Enables the unix setUID configuration so that the server
@@ -252,9 +291,15 @@ Modules for tag '*':
            : This module causes jetty to stop immediately after starting. This is good for testing configuration and/or precompiling quickstart webapps
         XML: etc/jetty-stop.xml
 
+     Module: threadpool
+           : Enables the Server thread pool.
+        XML: etc/jetty-threadpool.xml
+    Enabled: ${jetty.base}\start.d\threadpool.ini
+
      Module: transactions
            : Puts javax.transaction api on the classpath
         LIB: lib/transactions/*.jar
+    Enabled: transitive provider of transactions for plus
 
      Module: webapp
            : Adds support for servlet specification webapplication to the server
@@ -262,22 +307,25 @@ Modules for tag '*':
      Depend: servlet, security
         LIB: lib/jetty-webapp-${jetty.version}.jar
         XML: etc/jetty-webapp.xml
+    Enabled: transitive provider of webapp for plus
+    Enabled: transitive provider of webapp for deploy
 
      Module: websocket
            : Enable websockets for deployed web applications
      Depend: client, annotations
         LIB: lib/websocket/*.jar
+    Enabled: ${jetty.base}\start.d\demo.ini
 
 Modules for tag '3rdparty':
 ---------------------------
 
-     Module: conscrypt
+     Module: conscrypt [alpn-impl]
            : Installs the Conscrypt JSSE provider
        Tags: 3rdparty
      Depend: ssl
         LIB: lib/conscrypt/**.jar
+        LIB: lib/jetty-alpn-conscrypt-server-${jetty.version}.jar
         XML: etc/conscrypt.xml
-    Enabled: ${jetty.base}/start.d/conscrypt.ini
 
      Module: gcloud
            : Control GCloud API classpath
@@ -323,6 +371,7 @@ Modules for tag 'classpath':
            : and $JETTY_BASE/lib/ext to the servers classpath.
        Tags: classpath
         LIB: lib/ext/**.jar
+    Enabled: ${jetty.base}\start.d\ext.ini
 
      Module: resources
            : Adds the $JETTY_HOME/resources and/or $JETTY_BASE/resources
@@ -330,9 +379,16 @@ Modules for tag 'classpath':
            : property files (eg jetty-logging.properties)
        Tags: classpath
         LIB: resources/
+    Enabled: ${jetty.base}\start.d\resources.ini
 
 Modules for tag 'connector':
 ----------------------------
+
+     Module: acceptratelimit
+           : Enable a server wide accept rate limit
+       Tags: connector
+     Depend: server
+        XML: etc/jetty-acceptratelimit.xml
 
      Module: connectionlimit
            : Enable a server wide connection limit
@@ -347,6 +403,7 @@ Modules for tag 'connector':
        Tags: connector, http
      Depend: server
         XML: etc/jetty-http.xml
+    Enabled: ${jetty.base}\start.d\http.ini
 
      Module: http-forwarded
            : Adds a forwarded request customizer to the HTTP Connector
@@ -377,6 +434,7 @@ Modules for tag 'connector':
      Depend: ssl
    Optional: http-forwarded, http2
         XML: etc/jetty-https.xml
+    Enabled: ${jetty.base}\start.d\https.ini
 
      Module: proxy-protocol-ssl
            : Enables the Proxy Protocol on the TLS(SSL) Connector.
@@ -396,7 +454,7 @@ Modules for tag 'connector':
      Depend: server
         XML: etc/jetty-ssl.xml
         XML: etc/jetty-ssl-context.xml
-    Enabled: ${jetty.base}/start.d/ssl.ini
+    Enabled: transitive provider of ssl for https
 
      Module: unixsocket
            : Enables a Unix Domain Socket Connector that can receive
@@ -629,7 +687,15 @@ Modules for tag 'session':
         LIB: lib/hazelcast/*.jar
         XML: etc/sessions/hazelcast/remote.xml
 
-     Module: session-store-infinispan-embedded [session-store]
+     Module: session-store-infinispan-embedded [session-store-infnispan-embedded, session-store]
+           : Enables session data store in a local Infinispan cache
+       Tags: session
+     Depend: sessions
+        LIB: lib/jetty-infinispan-${jetty.version}.jar
+        LIB: lib/infinispan/*.jar
+        XML: etc/sessions/infinispan/default.xml
+
+     Module: session-store-infinispan-embedded-910 [session-store-infinispan-embedded, session-store]
            : Enables session data store in a local Infinispan cache
        Tags: session
      Depend: sessions
@@ -645,8 +711,16 @@ Modules for tag 'session':
         LIB: lib/infinispan/*.jar
         XML: etc/sessions/infinispan/remote.xml
 
+     Module: session-store-infinispan-remote-910 [session-store-infinispan-remote, session-store]
+           : Enables session data store in a remote Infinispan cache
+       Tags: session
+     Depend: sessions
+        LIB: lib/jetty-infinispan-${jetty.version}.jar
+        LIB: lib/infinispan/*.jar
+        XML: etc/sessions/infinispan/remote.xml
+
      Module: session-store-jdbc [session-store]
-           : Enables JDBC peristent/distributed session storage.
+           : Enables JDBC persistent/distributed session storage.
        Tags: session
      Depend: sessions, sessions/jdbc/${db-connection-type}
         XML: etc/sessions/jdbc/session-store.xml

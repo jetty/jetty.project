@@ -18,28 +18,28 @@
 
 package org.eclipse.jetty.util;
 
+import java.time.Instant;
+import java.util.Date;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+
+import org.junit.jupiter.api.Test;
 
 
 /**
  * Util meta Tests.
  */
-@RunWith(AdvancedRunner.class)
 public class DateCacheTest
 {
     /* ------------------------------------------------------------ */
     @Test
-    @Slow
     @SuppressWarnings("ReferenceEquality")
     public void testDateCache() throws Exception
     {
@@ -70,6 +70,34 @@ public class DateCacheTest
             TimeUnit.MILLISECONDS.sleep(100);
             now=TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
-        Assert.assertThat(hits,Matchers.greaterThan(misses));
+        assertThat(hits,Matchers.greaterThan(misses));
+    }
+
+    @Test
+    public void test_all_methods() {
+        // we simply check we do not have any exception
+        DateCache dateCache = new DateCache();
+        assertNotNull(dateCache.formatNow(System.currentTimeMillis()));
+        assertNotNull(dateCache.formatNow(new Date().getTime()));
+        assertNotNull(dateCache.formatNow(Instant.now().toEpochMilli()));
+
+        assertNotNull(dateCache.format(new Date()));
+        assertNotNull(dateCache.format(new Date(System.currentTimeMillis())));
+
+        assertNotNull(dateCache.format(System.currentTimeMillis()));
+        assertNotNull(dateCache.format(new Date().getTime()));
+        assertNotNull(dateCache.format(Instant.now().toEpochMilli()));
+
+        assertNotNull(dateCache.formatTick(System.currentTimeMillis()));
+        assertNotNull(dateCache.formatTick(new Date().getTime()));
+        assertNotNull(dateCache.formatTick(Instant.now().toEpochMilli()));
+
+        assertNotNull(dateCache.getFormatString());
+
+        assertNotNull(dateCache.getTimeZone());
+
+        assertNotNull(dateCache.now());
+
+        assertNotNull(dateCache.tick());
     }
 }

@@ -406,7 +406,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return scopeDelegate.getPolicy();
+        return client.getPolicy();
     }
 
     @Override
@@ -482,10 +482,11 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
-        // overall message limit (used in non-streaming)
-        client.getPolicy().setMaxBinaryMessageSize(max);
         // incoming streaming buffer size
         client.setMaxBinaryMessageBufferSize(max);
+
+        // bump overall message limit (used in non-streaming)
+        client.getPolicy().setMaxBinaryMessageSize(max);
     }
 
     @Override
@@ -497,9 +498,10 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
-        // overall message limit (used in non-streaming)
-        client.getPolicy().setMaxTextMessageSize(max);
         // incoming streaming buffer size
         client.setMaxTextMessageBufferSize(max);
+
+        // bump overall message limit (used in non-streaming)
+        client.getPolicy().setMaxTextMessageSize(max);
     }
 }

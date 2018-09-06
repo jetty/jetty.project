@@ -51,6 +51,7 @@ public class JNDITest extends HttpServlet
     private Double wiggle;
     private Integer woggle;
     private Double gargle;
+    private String svr;
     
     private String resourceNameMappingInjectionResult;
     private String envEntryOverrideResult;
@@ -60,6 +61,7 @@ public class JNDITest extends HttpServlet
     private String envEntryWebAppScopeResult;
     private String userTransactionResult;
     private String mailSessionResult;
+    private String svrResult;
     
     
     public void setMyDatasource(DataSource ds)
@@ -91,6 +93,9 @@ public class JNDITest extends HttpServlet
             woggle = (Integer)ic.lookup("java:comp/env/woggle");
             envEntryGlobalScopeResult = "EnvEntry defined in context xml lookup result (java:comp/env/woggle): "+(woggle==4000?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL(expected 4000, got "+woggle+")")+"</span>";
             gargle = (Double)ic.lookup("java:comp/env/gargle");
+            svr = (String)ic.lookup("java:comp/env/svr");
+            svrResult = "Ref to Server in jetty-env.xml result: "+(svr!=null?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span>";
+            
             envEntryWebAppScopeResult = "EnvEntry defined in jetty-env.xml lookup result (java:comp/env/gargle): "+(gargle==100.0?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL(expected 100, got "+gargle+")")+"</span>";
             UserTransaction utx = (UserTransaction)ic.lookup("java:comp/UserTransaction");
             userTransactionResult = "UserTransaction lookup result (java:comp/UserTransaction): "+(utx!=null?"<span class=\"pass\">PASS":"<span class=\"fail\">FAIL")+"</span>";
@@ -141,6 +146,7 @@ public class JNDITest extends HttpServlet
             out.println("<p>"+preDestroyResult+"</p>");
             out.println("<p>"+envEntryGlobalScopeResult+"</p>");
             out.println("<p>"+envEntryWebAppScopeResult+"</p>");
+            out.println("<p>"+svrResult+"</p>");
             out.println("<p>"+userTransactionResult+"</p>");
             out.println("<p>"+mailSessionResult+"</p>");
         

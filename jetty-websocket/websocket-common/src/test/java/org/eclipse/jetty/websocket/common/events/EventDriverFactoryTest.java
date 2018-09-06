@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -28,8 +29,8 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.annotations.NotASocket;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import examples.AdapterConnectCloseSocket;
 import examples.ListenerBasicSocket;
@@ -47,7 +48,7 @@ public class EventDriverFactoryTest
         EventDriver driver = factory.wrap(socket);
 
         String classId = AdapterConnectCloseSocket.class.getSimpleName();
-        Assert.assertThat("EventDriver for " + classId,driver,instanceOf(JettyListenerEventDriver.class));
+        assertThat("EventDriver for " + classId,driver,instanceOf(JettyListenerEventDriver.class));
     }
 
     /**
@@ -66,7 +67,7 @@ public class EventDriverFactoryTest
         catch (InvalidWebSocketException e)
         {
             // Validate that we have clear error message to the developer
-            Assert.assertThat(e.getMessage(),allOf(containsString(WebSocketListener.class.getSimpleName()),containsString(WebSocket.class.getSimpleName())));
+            assertThat(e.getMessage(),allOf(containsString(WebSocketListener.class.getSimpleName()),containsString(WebSocket.class.getSimpleName())));
         }
     }
 
@@ -81,6 +82,6 @@ public class EventDriverFactoryTest
         EventDriver driver = factory.wrap(socket);
 
         String classId = ListenerBasicSocket.class.getSimpleName();
-        Assert.assertThat("EventDriver for " + classId,driver,instanceOf(JettyListenerEventDriver.class));
+        assertThat("EventDriver for " + classId,driver,instanceOf(JettyListenerEventDriver.class));
     }
 }

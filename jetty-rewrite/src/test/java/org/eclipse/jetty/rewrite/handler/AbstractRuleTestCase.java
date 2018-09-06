@@ -33,7 +33,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 
 public abstract class AbstractRuleTestCase
 {
@@ -44,7 +44,7 @@ public abstract class AbstractRuleTestCase
     protected volatile CountDownLatch _latch;
     protected boolean _isSecure = false;
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         stop();

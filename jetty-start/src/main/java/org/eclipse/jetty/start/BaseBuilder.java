@@ -207,7 +207,7 @@ public class BaseBuilder
                     } 
                     else 
                     {
-                        // if (explictly added and ini file modified)
+                        // if (explicitly added and ini file modified)
                         if (startArgs.getStartModules().contains(module.getName()))
                         {
                             ini=builder.get().addModule(module, startArgs.getProperties());
@@ -246,7 +246,7 @@ public class BaseBuilder
 
         files.addAll(startArgs.getFiles());
         if (!files.isEmpty() && processFileResources(files))
-            modified.set(Boolean.TRUE);
+            modified.set(true);
         
         return modified.get();
     }

@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -35,6 +35,7 @@ import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -49,9 +50,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("serial")
 public class GzipHandlerTest
@@ -79,7 +80,7 @@ public class GzipHandlerTest
     private Server _server;
     private LocalConnector _connector;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         _server = new Server();
@@ -102,6 +103,7 @@ public class GzipHandlerTest
         servlets.addServletWithMapping(ForwardServlet.class,"/forward");
         servlets.addServletWithMapping(IncludeServlet.class,"/include");
         servlets.addServletWithMapping(EchoServlet.class,"/echo/*");
+        servlets.addServletWithMapping(DumpServlet.class,"/dump/*");
         
         _server.start();
     }
@@ -178,6 +180,20 @@ public class GzipHandlerTest
             doGet(req,response);
         }
     }
+    
+    public static class DumpServlet extends HttpServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentType("text/plain");
+            for (Enumeration<String> e = req.getParameterNames(); e.hasMoreElements(); )
+            {
+                String n = e.nextElement();
+                response.getWriter().printf("%s: %s\n",n,req.getParameter(n));
+            }
+        }
+    }
 
     public static class ForwardServlet extends HttpServlet
     {
@@ -199,7 +215,7 @@ public class GzipHandlerTest
         }
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         _server.stop();
@@ -491,6 +507,35 @@ public class GzipHandlerTest
         assertThat(response.getStatus(),is(200));
         assertThat(response.getContent(),is(data));
 
+    }
+    
+
+    @Test
+    public void testGzipFormRequest() throws Exception
+    {
+        String data = "name=value";
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GZIPOutputStream output = new GZIPOutputStream(baos);
+        output.write(data.getBytes(StandardCharsets.UTF_8));
+        output.close();
+        byte[] bytes = baos.toByteArray();
+        
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("POST");
+        request.setURI("/ctx/dump");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("Content-Type","application/x-www-form-urlencoded; charset=utf-8");
+        request.setHeader("Content-Encoding","gzip");
+        request.setContent(bytes);
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        assertThat(response.getStatus(),is(200));
+        assertThat(response.getContent(),is("name: value\n"));
     }
     
     @Test

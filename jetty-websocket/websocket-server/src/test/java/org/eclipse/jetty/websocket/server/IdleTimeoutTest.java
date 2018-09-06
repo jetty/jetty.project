@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
@@ -38,10 +39,9 @@ import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class IdleTimeoutTest
 {
@@ -64,20 +64,20 @@ public class IdleTimeoutTest
     private static BlockheadClient client;
     private static SimpleServletServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new TimeoutServlet());
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = new BlockheadClient();
@@ -85,7 +85,7 @@ public class IdleTimeoutTest
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopClient() throws Exception
     {
         client.stop();
@@ -120,10 +120,10 @@ public class IdleTimeoutTest
             // Expect server to have closed due to its own timeout
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            Assert.assertThat("frame opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            assertThat("frame opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
-            Assert.assertThat("close code",close.getStatusCode(),is(StatusCode.SHUTDOWN));
-            Assert.assertThat("close reason",close.getReason(),containsString("Timeout"));
+            assertThat("close code",close.getStatusCode(),is(StatusCode.SHUTDOWN));
+            assertThat("close reason",close.getReason(),containsString("Timeout"));
         }
     }
 }

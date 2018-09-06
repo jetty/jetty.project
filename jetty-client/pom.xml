@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.12-SNAPSHOT</version>
+    <version>9.4.13-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -37,7 +37,7 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-test-policy</artifactId>
-                  <version>${jetty-test-policy-version}</version>
+                  <version>${jetty-test-policy.version}</version>
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**/*.keystore,**/*.pem</includes>

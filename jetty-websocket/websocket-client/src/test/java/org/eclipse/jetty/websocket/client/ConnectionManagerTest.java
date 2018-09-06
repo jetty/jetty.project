@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.net.InetSocketAddress;
@@ -25,8 +26,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.eclipse.jetty.websocket.client.io.ConnectionManager;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class ConnectionManagerTest
 {
@@ -35,8 +36,8 @@ public class ConnectionManagerTest
         URI uri = new URI(uriStr);
 
         InetSocketAddress addr = ConnectionManager.toSocketAddress(uri);
-        Assert.assertThat("URI (" + uri + ").host",addr.getHostName(),is(expectedHost));
-        Assert.assertThat("URI (" + uri + ").port",addr.getPort(),is(expectedPort));
+        assertThat("URI (" + uri + ").host",addr.getHostName(),is(expectedHost));
+        assertThat("URI (" + uri + ").port",addr.getPort(),is(expectedPort));
     }
 
     @Test

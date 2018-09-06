@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.client.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -33,31 +36,26 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Promise;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 public class HttpSenderOverHTTPTest
 {
-    @Rule
-    public final TestTracker tracker = new TestTracker();
-
     private HttpClient client;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         client = new HttpClient();
         client.start();
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         client.stop();
@@ -90,14 +88,14 @@ public class HttpSenderOverHTTPTest
         connection.send(request, null);
 
         String requestString = endPoint.takeOutputString();
-        Assert.assertTrue(requestString.startsWith("GET "));
-        Assert.assertTrue(requestString.endsWith("\r\n\r\n"));
-        Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(requestString.startsWith("GET "));
+        assertTrue(requestString.endsWith("\r\n\r\n"));
+        assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Slow
     @Test
+    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void test_Send_NoRequestContent_IncompleteFlush() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
@@ -121,8 +119,8 @@ public class HttpSenderOverHTTPTest
         }
 
         String requestString = builder.toString();
-        Assert.assertTrue(requestString.startsWith("GET "));
-        Assert.assertTrue(requestString.endsWith("\r\n\r\n"));
+        assertTrue(requestString.startsWith("GET "));
+        assertTrue(requestString.endsWith("\r\n\r\n"));
     }
 
     @Test
@@ -149,12 +147,12 @@ public class HttpSenderOverHTTPTest
             @Override
             public void onComplete(Result result)
             {
-                Assert.assertTrue(result.isFailed());
+                assertTrue(result.isFailed());
                 failureLatch.countDown();
             }
         });
 
-        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -179,7 +177,7 @@ public class HttpSenderOverHTTPTest
             @Override
             public void onComplete(Result result)
             {
-                Assert.assertTrue(result.isFailed());
+                assertTrue(result.isFailed());
                 failureLatch.countDown();
             }
         });
@@ -190,7 +188,7 @@ public class HttpSenderOverHTTPTest
         // although it will fail because we shut down the output
         endPoint.takeOutputString();
 
-        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -222,10 +220,10 @@ public class HttpSenderOverHTTPTest
         connection.send(request, null);
 
         String requestString = endPoint.takeOutputString();
-        Assert.assertTrue(requestString.startsWith("GET "));
-        Assert.assertTrue(requestString.endsWith("\r\n\r\n" + content));
-        Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(requestString.startsWith("GET "));
+        assertTrue(requestString.endsWith("\r\n\r\n" + content));
+        assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -258,10 +256,10 @@ public class HttpSenderOverHTTPTest
         connection.send(request, null);
 
         String requestString = endPoint.takeOutputString();
-        Assert.assertTrue(requestString.startsWith("GET "));
-        Assert.assertThat(requestString,Matchers.endsWith("\r\n\r\n" + content1 + content2));
-        Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(requestString.startsWith("GET "));
+        assertThat(requestString,Matchers.endsWith("\r\n\r\n" + content1 + content2));
+        assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -301,12 +299,12 @@ public class HttpSenderOverHTTPTest
         connection.send(request, null);
 
         String requestString = endPoint.takeOutputString();
-        Assert.assertTrue(requestString.startsWith("GET "));
+        assertTrue(requestString.startsWith("GET "));
         String content = Integer.toHexString(content1.length()).toUpperCase(Locale.ENGLISH) + "\r\n" + content1 + "\r\n";
         content += Integer.toHexString(content2.length()).toUpperCase(Locale.ENGLISH) + "\r\n" + content2 + "\r\n";
         content += "0\r\n\r\n";
-        Assert.assertTrue(requestString.endsWith("\r\n\r\n" + content));
-        Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(requestString.endsWith("\r\n\r\n" + content));
+        assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
 }

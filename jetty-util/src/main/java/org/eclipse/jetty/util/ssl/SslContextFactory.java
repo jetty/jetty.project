@@ -212,7 +212,19 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         setTrustAll(trustAll);
         addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
+
+        // Exclude weak / insecure ciphers
         setExcludeCipherSuites("^.*_(MD5|SHA|SHA1)$");
+        // Exclude ciphers that don't support forward secrecy
+        addExcludeCipherSuites("^TLS_RSA_.*$");
+        // The following exclusions are present to cleanup known bad cipher
+        // suites that may be accidentally included via include patterns.
+        // The default enabled cipher list in Java will not include these
+        // (but they are available in the supported list).
+        addExcludeCipherSuites("^SSL_.*$");
+        addExcludeCipherSuites("^.*_NULL_.*$");
+        addExcludeCipherSuites("^.*_anon_.*$");
+
         if (keyStorePath != null)
             setKeyStorePath(keyStorePath);
     }
@@ -353,34 +365,40 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     
         try
         {
-            /* Use a pristine SSLEngine (not one from this SslContextFactory).
-             * This will allow for proper detection and identification
-             * of JRE/lib/security/java.security level disabled features
-             */
-            SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine();
-    
-            List<Object> selections = new ArrayList<>();
-            
-            // protocols
-            selections.add(new SslSelectionDump("Protocol",
-                    sslEngine.getSupportedProtocols(),
-                    sslEngine.getEnabledProtocols(),
-                    getExcludeProtocols(),
-                    getIncludeProtocols()));
-            
-            // ciphers
-            selections.add(new SslSelectionDump("Cipher Suite",
-                    sslEngine.getSupportedCipherSuites(),
-                    sslEngine.getEnabledCipherSuites(),
-                    getExcludeCipherSuites(),
-                    getIncludeCipherSuites()));
-            
+            List<SslSelectionDump> selections = selectionDump();
             ContainerLifeCycle.dump(out, indent, selections);
         }
         catch (NoSuchAlgorithmException ignore)
         {
             LOG.ignore(ignore);
         }
+    }
+
+    List<SslSelectionDump> selectionDump() throws NoSuchAlgorithmException
+    {
+        /* Use a pristine SSLEngine (not one from this SslContextFactory).
+         * This will allow for proper detection and identification
+         * of JRE/lib/security/java.security level disabled features
+         */
+        SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine();
+
+        List<SslSelectionDump> selections = new ArrayList<>();
+
+        // protocols
+        selections.add(new SslSelectionDump("Protocol",
+                sslEngine.getSupportedProtocols(),
+                sslEngine.getEnabledProtocols(),
+                getExcludeProtocols(),
+                getIncludeProtocols()));
+
+        // ciphers
+        selections.add(new SslSelectionDump("Cipher Suite",
+                sslEngine.getSupportedCipherSuites(),
+                sslEngine.getEnabledCipherSuites(),
+                getExcludeCipherSuites(),
+                getIncludeCipherSuites()));
+
+        return selections;
     }
     
     @Override
@@ -1082,10 +1100,14 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         String type = Objects.toString(getTrustStoreType(), getKeyStoreType());
         String provider = Objects.toString(getTrustStoreProvider(), getKeyStoreProvider());
-        String passwd = Objects.toString(_trustStorePassword, Objects.toString(_keyStorePassword, null));
-        if (resource == null)
+        Password passwd = _trustStorePassword;
+        if (resource == null || resource.equals(_keyStoreResource))
+        {
             resource = _keyStoreResource;
-        return CertificateUtils.getKeyStore(resource, type, provider, passwd);
+            if (passwd == null)
+                passwd = _keyStorePassword;
+        }
+        return CertificateUtils.getKeyStore(resource, type, provider, Objects.toString(passwd, null));
     }
 
     /**

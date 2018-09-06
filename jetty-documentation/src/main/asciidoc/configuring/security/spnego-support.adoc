@@ -153,21 +153,21 @@ The follows steps have been required to inform Firefox that it should use a nego
 The follows steps have been required to inform Internet Explorer that it should use a negotiation dialog to authenticate.
 
 1.  Tools -> Options -> Security -> Local Intranet -> Sites (everything should be checked here)
-2.  Tools -> Options -> Security -> Local Intranet -> Sites -> Advanced (add url to server (http:// and/or https:// use the hostname!)
+2.  Tools -> Options -> Security -> Local Intranet -> Sites -> Advanced (add url to server (`http://` and/or `https://` -- use the hostname, not the IP)
 3.  Tools -> Options -> Security -> Local Intranet -> Sites -> Advanced -> Close
 4.  Tools -> Options -> Security -> Local Intranet -> Sites -> Ok
 5.  Tools -> Options -> Advanced -> Security (in the checkbox list)
-6.  Locate and check 'Enable Integrated Windows Authentication'
+6.  Locate and select `Enable Integrated Windows Authentication`
 7.  Tools -> Options -> Advanced -> Security -> Ok
 8.  Close IE then reopen and browse to your Spengo protected resource
 
-____
-[NOTE]
-You must go to the hostname and not the IP.
-If you go to the IP it will default to NTLM authentication...the following conditions must be true for Spnego authentication to work:
+
+You *must* use hostname and not the IP.
+If you use the IP it will default to NTLM authentication.
+The following conditions must be true for Spnego authentication to work:
+
 * You must be within the Intranet Zone of the network
-* Accessing the server using a Hostname rather than IP
-* Integrated Windows Authentication in IE is enabled and the host is trusted in Firefox
-* The server is not local to the browser, it can't be running on localhost
+* Access the server using a Hostname rather than IP
+* Integrated Windows Authentication in IE is enabled and/or the host is trusted in Firefox
+* The server is not local to the browser; it can't be running on localhost
 * The client's Kerberos system is authenticated to a domain controller
-____

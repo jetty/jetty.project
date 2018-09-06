@@ -872,7 +872,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * 
      * @param path the path
      * @param methodMappings the method mappings
-     * @return true if ommision exist
+     * @return true if omission exist
      */
     protected boolean omissionsExist (String path, Map<String, RoleInfo> methodMappings)
     {

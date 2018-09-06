@@ -133,7 +133,9 @@ public class HttpStatus
         NOT_MODIFIED(NOT_MODIFIED_304, "Not Modified"),
         USE_PROXY(USE_PROXY_305, "Use Proxy"),
         TEMPORARY_REDIRECT(TEMPORARY_REDIRECT_307, "Temporary Redirect"),
+        // Keeping the typo for backward compatibility for a while
         PERMANET_REDIRECT(PERMANENT_REDIRECT_308, "Permanent Redirect"),
+        PERMANENT_REDIRECT(PERMANENT_REDIRECT_308, "Permanent Redirect"),
 
         BAD_REQUEST(BAD_REQUEST_400, "Bad Request"),
         UNAUTHORIZED(UNAUTHORIZED_401, "Unauthorized"),

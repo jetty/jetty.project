@@ -19,8 +19,8 @@
 
 package org.eclipse.jetty.server.session.remote;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.eclipse.jetty.server.session.SessionData;
 import org.infinispan.client.hotrod.RemoteCache;

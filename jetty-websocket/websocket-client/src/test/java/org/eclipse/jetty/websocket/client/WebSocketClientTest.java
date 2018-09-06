@@ -23,7 +23,9 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -48,26 +50,26 @@ import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class WebSocketClientTest
 {
     private static BlockheadServer server;
     private WebSocketClient client;
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new BlockheadServer();
@@ -76,19 +78,19 @@ public class WebSocketClientTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testAddExtension_NotInstalled() throws Exception
     {
         JettyTrackingSocket cliSock = new JettyTrackingSocket();
@@ -100,8 +102,10 @@ public class WebSocketClientTest
         request.setSubProtocols("echo");
         request.addExtensions("x-bad");
 
-        // Should trigger failure on bad extension
-        client.connect(cliSock,wsUri,request);
+        assertThrows(IllegalArgumentException.class, ()-> {
+            // Should trigger failure on bad extension
+            client.connect(cliSock, wsUri, request);
+        });
     }
 
     @Test
@@ -229,7 +233,7 @@ public class WebSocketClientTest
 
         future.get(30,TimeUnit.SECONDS);
 
-        Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
+        assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
 
         InetSocketAddress local = wsocket.getSession().getLocalAddress();
         InetSocketAddress remote = wsocket.getSession().getRemoteAddress();
@@ -292,7 +296,7 @@ public class WebSocketClientTest
 
             wsocket.assertMessage(msg);
 
-            Assert.assertTrue(wsocket.dataLatch.await(2, TimeUnit.SECONDS));
+            assertTrue(wsocket.dataLatch.await(2, TimeUnit.SECONDS));
         }
     }
 
@@ -306,7 +310,7 @@ public class WebSocketClientTest
 
         future.get(30,TimeUnit.SECONDS);
 
-        Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
+        assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
 
         Session session = wsocket.getSession();
         UpgradeRequest req = session.getUpgradeRequest();

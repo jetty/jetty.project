@@ -72,12 +72,12 @@ public class HttpField
 
     public int getIntValue()
     {
-        return Integer.valueOf(_value);
+        return Integer.parseInt(_value);
     }
 
     public long getLongValue()
     {
-        return Long.valueOf(_value);
+        return Long.parseLong(_value);
     }
 
     public String[] getValues()
@@ -348,7 +348,7 @@ public class HttpField
 
         public IntValueHttpField(HttpHeader header, String name, String value)
         {
-            this(header,name,value,Integer.valueOf(value));
+            this(header,name,value,Integer.parseInt(value));
         }
 
         public IntValueHttpField(HttpHeader header, String name, int intValue)
@@ -386,7 +386,7 @@ public class HttpField
 
         public LongValueHttpField(HttpHeader header, String name, String value)
         {
-            this(header,name,value,Long.valueOf(value));
+            this(header,name,value,Long.parseLong(value));
         }
 
         public LongValueHttpField(HttpHeader header, String name, long value)

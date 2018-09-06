@@ -22,7 +22,6 @@
           <Set name="host"><Property name="jetty.ssl.host" /></Set>
           <Set name="port"><Property name="jetty.ssl.port" default="443" /></Set>
           <Set name="idleTimeout"><Property name="jetty.ssl.idleTimeout" default="30000"/></Set>
-          <Set name="soLingerTime"><Property name="jetty.ssl.soLingerTime" default="-1"/></Set>
         </New>
     </Arg>
   </Call>

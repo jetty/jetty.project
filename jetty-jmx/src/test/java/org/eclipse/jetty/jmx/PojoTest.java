@@ -21,7 +21,7 @@ package org.eclipse.jetty.jmx;
 import java.util.Arrays;
 import java.util.List;
 import org.eclipse.jetty.util.log.jmx.LogMBean;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import com.openpojo.reflection.impl.PojoClassFactory;
 import com.openpojo.validation.Validator;
 import com.openpojo.validation.ValidatorBuilder;

@@ -27,14 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
-import org.eclipse.jetty.http2.frames.GoAwayFrame;
-import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.frames.PingFrame;
-import org.eclipse.jetty.http2.frames.PriorityFrame;
-import org.eclipse.jetty.http2.frames.PushPromiseFrame;
-import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -144,7 +136,8 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         }
         catch (IOException x)
         {
-            LOG.debug("Could not read from " + endPoint, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not read from " + endPoint, x);
             return -1;
         }
     }
@@ -218,14 +211,15 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
         private final Callback fillableCallback = new FillableCallback();
-        private NetworkBuffer buffer;
+        private NetworkBuffer networkBuffer;
         private boolean shutdown;
+        private boolean failed;
 
         private void setInputBuffer(ByteBuffer byteBuffer)
         {
-            if (buffer == null)
-                buffer = acquireNetworkBuffer();
-            buffer.put(byteBuffer);
+            if (networkBuffer == null)
+                networkBuffer = acquireNetworkBuffer();
+            networkBuffer.put(byteBuffer);
         }
 
         @Override
@@ -237,22 +231,35 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             if (task != null)
                 return task;
 
-            if (isFillInterested() || shutdown)
+            if (isFillInterested() || shutdown || failed)
                 return null;
 
-            if (buffer == null)
-                buffer = acquireNetworkBuffer();
-            boolean parse = buffer.hasRemaining();
+            if (networkBuffer == null)
+                networkBuffer = acquireNetworkBuffer();
+
+            boolean parse = networkBuffer.hasRemaining();
+
             while (true)
             {
                 if (parse)
                 {
-                    buffer.retain();
-
-                    while (buffer.hasRemaining())
-                        parser.parse(buffer.buffer);
-
-                    boolean released = buffer.tryRelease();
+                    boolean released;
+                    networkBuffer.retain();
+                    try
+                    {
+                        while (networkBuffer.hasRemaining())
+                        {
+                            parser.parse(networkBuffer.buffer);
+                            if (failed)
+                                return null;
+                        }
+                    }
+                    finally
+                    {
+                        released = networkBuffer.release();
+                        if (failed && released)
+                            releaseNetworkBuffer();
+                    }
 
                     task = pollTask();
                     if (LOG.isDebugEnabled())
@@ -262,37 +269,40 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                         if (released)
                             releaseNetworkBuffer();
                         else
-                            buffer = null;
+                            networkBuffer = null;
                         return task;
                     }
                     else
                     {
                         if (!released)
-                            buffer = acquireNetworkBuffer();
+                            networkBuffer = acquireNetworkBuffer();
                     }
                 }
 
-                int filled = fill(getEndPoint(), buffer.buffer);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Filled {} bytes in {}", filled, buffer);
+                // Here we know that this.buffer is not retained:
+                // either it has been released, or it's a new one.
 
-                if (filled == 0)
+                int filled = fill(getEndPoint(), networkBuffer.buffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Filled {} bytes in {}", filled, networkBuffer);
+
+                if (filled > 0)
+                {
+                    bytesIn.addAndGet(filled);
+                    parse = true;
+                }
+                else if (filled == 0)
                 {
                     releaseNetworkBuffer();
                     getEndPoint().fillInterested(fillableCallback);
                     return null;
                 }
-                else if (filled < 0)
+                else
                 {
                     releaseNetworkBuffer();
                     shutdown = true;
                     session.onShutdown();
                     return null;
-                }
-                else
-                {
-                    bytesIn.addAndGet(filled);
-                    parse = true;
                 }
             }
         }
@@ -307,14 +317,10 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
         private void releaseNetworkBuffer()
         {
-            if (!buffer.hasRemaining())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Released {}", buffer);
-                buffer.release();
-                byteBufferPool.release(buffer.buffer);
-                buffer = null;
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Released {}", networkBuffer);
+            networkBuffer.recycle();
+            networkBuffer = null;
         }
 
         @Override
@@ -345,76 +351,27 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         }
     }
 
-    private class ParserListener implements Parser.Listener
+    private class ParserListener extends Parser.Listener.Wrapper
     {
-        private final Parser.Listener listener;
-
         private ParserListener(Parser.Listener listener)
         {
-            this.listener = listener;
+            super(listener);
         }
 
         @Override
         public void onData(DataFrame frame)
         {
-            NetworkBuffer buffer = producer.buffer;
-            buffer.retain();
-            Callback callback = buffer;
+            NetworkBuffer networkBuffer = producer.networkBuffer;
+            networkBuffer.retain();
+            Callback callback = networkBuffer;
             session.onData(frame, callback);
-        }
-
-        @Override
-        public void onHeaders(HeadersFrame frame)
-        {
-            listener.onHeaders(frame);
-        }
-
-        @Override
-        public void onPriority(PriorityFrame frame)
-        {
-            listener.onPriority(frame);
-        }
-
-        @Override
-        public void onReset(ResetFrame frame)
-        {
-            listener.onReset(frame);
-        }
-
-        @Override
-        public void onSettings(SettingsFrame frame)
-        {
-            listener.onSettings(frame);
-        }
-
-        @Override
-        public void onPushPromise(PushPromiseFrame frame)
-        {
-            listener.onPushPromise(frame);
-        }
-
-        @Override
-        public void onPing(PingFrame frame)
-        {
-            listener.onPing(frame);
-        }
-
-        @Override
-        public void onGoAway(GoAwayFrame frame)
-        {
-            listener.onGoAway(frame);
-        }
-
-        @Override
-        public void onWindowUpdate(WindowUpdateFrame frame)
-        {
-            listener.onWindowUpdate(frame);
         }
 
         @Override
         public void onConnectionFailure(int error, String reason)
         {
-            listener.onConnectionFailure(error, reason);
+            producer.failed = true;
+            super.onConnectionFailure(error, reason);
         }
     }
 
@@ -444,16 +401,31 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             refCount.incrementAndGet();
         }
 
-        @Override
-        public void succeeded()
+        private boolean release()
         {
-            release();
+            return refCount.decrementAndGet() == 0;
         }
 
         @Override
-        public void failed(Throwable x)
+        public void succeeded()
         {
-            release();
+            if (release())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released retained {}", this);
+                recycle();
+            }
+        }
+
+        @Override
+        public void failed(Throwable failure)
+        {
+            if (release())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released retained " + this, failure);
+                recycle();
+            }
         }
 
         @Override
@@ -462,19 +434,9 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             return InvocationType.NON_BLOCKING;
         }
 
-        private void release()
+        private void recycle()
         {
-            if (tryRelease())
-            {
-                byteBufferPool.release(buffer);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Released retained {}", this);
-            }
-        }
-
-        private boolean tryRelease()
-        {
-            return refCount.decrementAndGet() == 0;
+            byteBufferPool.release(buffer);
         }
 
         @Override

@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeNoException;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
@@ -40,46 +42,45 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.PathResource;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.opentest4j.TestAbortedException;
 
-@RunWith(Parameterized.class)
 public class AllowSymLinkAliasCheckerTest
 {
-    @Parameterized.Parameters(name = "{0}")
-    public static List<Object[]> params()
+    public static Stream<Arguments> params()
     {
-        List<Object[]> data = new ArrayList<>();
+        List<Arguments> data = new ArrayList<>();
 
-        String dirs[] = {"/testdir/", "/testdirlnk/", "/testdirprefixlnk/", "/testdirsuffixlnk/",
+        String dirs[] = {"/workDir/", "/testdirlnk/", "/testdirprefixlnk/", "/testdirsuffixlnk/",
                 "/testdirwraplnk/"};
 
         for (String dirname : dirs)
         {
-            data.add(new Object[]{dirname, 200, "text/html", "Directory: " + dirname});
-            data.add(new Object[]{dirname + "testfile.txt", 200, "text/plain", "Hello TestFile"});
-            data.add(new Object[]{dirname + "testfilelnk.txt", 200, "text/plain", "Hello TestFile"});
-            data.add(new Object[]{dirname + "testfileprefixlnk.txt", 200, "text/plain", "Hello TestFile"});
+            data.add(Arguments.of(dirname, 200, "text/html", "Directory: " + dirname));
+            data.add(Arguments.of(dirname + "testfile.txt", 200, "text/plain", "Hello TestFile"));
+            data.add(Arguments.of(dirname + "testfilelnk.txt", 200, "text/plain", "Hello TestFile"));
+            data.add(Arguments.of(dirname + "testfileprefixlnk.txt", 200, "text/plain", "Hello TestFile"));
         }
 
-        return data;
+        return data.stream();
     }
 
     private Server server;
     private LocalConnector localConnector;
     private Path rootPath;
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception
     {
         setupRoot();
         setupServer();
     }
 
-    @After
+    @AfterEach
     public void teardown() throws Exception
     {
         if( server != null )
@@ -93,28 +94,28 @@ public class AllowSymLinkAliasCheckerTest
         rootPath = MavenTestingUtils.getTargetTestingPath(AllowSymLinkAliasCheckerTest.class.getSimpleName());
         FS.ensureEmpty(rootPath);
 
-        Path testdir = rootPath.resolve("testdir");
+        Path testdir = rootPath.resolve("workDir");
         FS.ensureDirExists(testdir);
 
         try
         {
-            // If we used testdir (Path) from above, these symlinks
+            // If we used workDir (Path) from above, these symlinks
             // would point to an absolute path.
 
-            // Create a relative symlink testdirlnk -> testdir
-            Files.createSymbolicLink(rootPath.resolve("testdirlnk"), new File("testdir").toPath());
-            // Create a relative symlink testdirprefixlnk -> ./testdir
-            Files.createSymbolicLink(rootPath.resolve("testdirprefixlnk"), new File("./testdir").toPath());
-            // Create a relative symlink testdirsuffixlnk -> testdir/
-            Files.createSymbolicLink(rootPath.resolve("testdirsuffixlnk"), new File("testdir/").toPath());
-            // Create a relative symlink testdirwraplnk -> ./testdir/
-            Files.createSymbolicLink(rootPath.resolve("testdirwraplnk"), new File("./testdir/").toPath());
+            // Create a relative symlink testdirlnk -> workDir
+            Files.createSymbolicLink(rootPath.resolve("testdirlnk"), new File("workDir").toPath());
+            // Create a relative symlink testdirprefixlnk -> ./workDir
+            Files.createSymbolicLink(rootPath.resolve("testdirprefixlnk"), new File("./workDir").toPath());
+            // Create a relative symlink testdirsuffixlnk -> workDir/
+            Files.createSymbolicLink(rootPath.resolve("testdirsuffixlnk"), new File("workDir/").toPath());
+            // Create a relative symlink testdirwraplnk -> ./workDir/
+            Files.createSymbolicLink(rootPath.resolve("testdirwraplnk"), new File("./workDir/").toPath());
         }
         catch (UnsupportedOperationException | FileSystemException e)
         {
             // If unable to create symlink, no point testing the rest.
             // This is the path that Microsoft Windows takes.
-            assumeNoException(e);
+            abortNotSupported(e);
         }
 
         Path testfileTxt = testdir.resolve("testfile.txt");
@@ -136,7 +137,7 @@ public class AllowSymLinkAliasCheckerTest
         {
             // If unable to create symlink, no point testing the rest.
             // This is the path that Microsoft Windows takes.
-            assumeNoException(e);
+            abortNotSupported(e);
         }
 
         try
@@ -151,8 +152,15 @@ public class AllowSymLinkAliasCheckerTest
         {
             // If unable to create symlink, no point testing the rest.
             // This is the path that Microsoft Windows takes.
-            assumeNoException(e);
+            abortNotSupported(e);
         }
+    }
+
+    private void abortNotSupported(Throwable t)
+    {
+        if (t == null)
+            return;
+        throw new TestAbortedException("Unsupported Behavior", t);
     }
 
     private void setupServer() throws Exception
@@ -180,21 +188,9 @@ public class AllowSymLinkAliasCheckerTest
         server.start();
     }
 
-    @Parameterized.Parameter(0)
-    public String requestURI;
-    @Parameterized.Parameter(1)
-    public int expectedResponseStatus;
-    @Parameterized.Parameter(2)
-    public String expectedResponseContentType;
-    @Parameterized.Parameter(3)
-    public String expectedResponseContentContains;
-
-    public AllowSymLinkAliasCheckerTest()
-    {
-    }
-
-    @Test(timeout = 5000)
-    public void testAccess() throws Exception
+    @ParameterizedTest
+    @MethodSource("params")
+    public void testAccess(String requestURI, int expectedResponseStatus, String expectedResponseContentType, String expectedResponseContentContains) throws Exception
     {
         HttpTester.Request request = HttpTester.newRequest();
 
@@ -202,9 +198,11 @@ public class AllowSymLinkAliasCheckerTest
         request.setHeader("Host", "tester");
         request.setURI(requestURI);
 
-        String responseString = localConnector.getResponse(BufferUtil.toString(request.generate()));
-        assertThat("Response status code", responseString, startsWith("HTTP/1.1 " + expectedResponseStatus + " "));
-        assertThat("Response Content-Type", responseString, containsString("\nContent-Type: " + expectedResponseContentType));
-        assertThat("Response", responseString, containsString(expectedResponseContentContains));
+        assertTimeoutPreemptively(ofSeconds(5), ()-> {
+            String responseString = localConnector.getResponse(BufferUtil.toString(request.generate()));
+            assertThat("Response status code", responseString, startsWith("HTTP/1.1 " + expectedResponseStatus + " "));
+            assertThat("Response Content-Type", responseString, containsString("\nContent-Type: " + expectedResponseContentType));
+            assertThat("Response", responseString, containsString(expectedResponseContentContains));
+        });
     }
 }

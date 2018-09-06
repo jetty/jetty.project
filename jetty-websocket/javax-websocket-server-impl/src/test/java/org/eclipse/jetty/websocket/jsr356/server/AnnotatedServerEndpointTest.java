@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
 import java.io.File;
@@ -38,10 +39,10 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.beans.DateDecoder;
 import org.eclipse.jetty.websocket.jsr356.server.samples.beans.TimeEncoder;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.ConfiguredEchoSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.EchoSocketConfigurator;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Example of an annotated echo server discovered via annotation scanning.
@@ -52,7 +53,7 @@ public class AnnotatedServerEndpointTest
 
     private static WSServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         File testdir = MavenTestingUtils.getTargetTestingDir(AnnotatedServerEndpointTest.class.getName());
@@ -69,7 +70,7 @@ public class AnnotatedServerEndpointTest
         server.deployWebapp(webapp);
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();
@@ -95,7 +96,7 @@ public class AnnotatedServerEndpointTest
             String response = msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             for (String expected : expectedTexts)
             {
-                Assert.assertThat("Expected message",response,containsString(expected));
+                assertThat("Expected message",response,containsString(expected));
             }
         }
         finally

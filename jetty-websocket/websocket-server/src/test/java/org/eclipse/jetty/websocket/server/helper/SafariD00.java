@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.helper;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -26,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -36,7 +36,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.junit.Assert;
+
 
 public class SafariD00
 {
@@ -115,7 +115,7 @@ public class SafariD00
         {
             line = br.readLine();
             // System.out.printf("RESP: %s%n",line);
-            Assert.assertThat(line, notNullValue());
+            assertThat(line, notNullValue());
             if (line.length() == 0)
             {
                 foundEnd = true;
@@ -127,7 +127,7 @@ public class SafariD00
         byte hixieHandshake[] = new byte[hixieHandshakeExpected.length];
 
         int readLen = in.read(hixieHandshake,0,hixieHandshake.length);
-        Assert.assertThat("Read hixie handshake bytes",readLen,is(hixieHandshake.length));
+        assertThat("Read hixie handshake bytes",readLen,is(hixieHandshake.length));
     }
 
     public void sendMessage(String... msgs) throws IOException

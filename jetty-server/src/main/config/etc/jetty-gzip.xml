@@ -16,6 +16,7 @@
         <Set name="checkGzExists"><Property name="jetty.gzip.checkGzExists" deprecated="gzip.checkGzExists" default="false"/></Set>
         <Set name="compressionLevel"><Property name="jetty.gzip.compressionLevel" deprecated="gzip.compressionLevel" default="-1"/></Set>
         <Set name="inflateBufferSize"><Property name="jetty.gzip.inflateBufferSize" default="0"/></Set>
+        <Set name="deflaterPoolCapacity"><Property name="jetty.gzip.deflaterPoolCapacity" default="-1"/></Set>
         <Set name="syncFlush"><Property name="jetty.gzip.syncFlush" default="false" /></Set>
 
         <Set name="excludedAgentPatterns">

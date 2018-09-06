@@ -19,7 +19,7 @@
 package org.eclipse.jetty.start;
 
 /**
- * A Usage Error has occured. Print the usage and exit with the appropriate exit code.
+ * A Usage Error has occurred. Print the usage and exit with the appropriate exit code.
  */
 @SuppressWarnings("serial")
 public class UsageException extends RuntimeException

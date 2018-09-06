@@ -57,9 +57,9 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     public static final String NULL_CONTEXT_PATH = "/";
     
     protected boolean _initialized = false;
-    private DatabaseAdaptor _dbAdaptor;
-    private SessionTableSchema _sessionTableSchema;
-    private boolean _schemaProvided;
+    protected DatabaseAdaptor _dbAdaptor;
+    protected SessionTableSchema _sessionTableSchema;
+    protected boolean _schemaProvided;
 
 
     
@@ -234,9 +234,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             
             String blobType = _dbAdaptor.getBlobType();
             String longType = _dbAdaptor.getLongType();
+            String stringType = _dbAdaptor.getStringType();
             
-            return "create table "+_tableName+" ("+_idColumn+" varchar(120), "+
-                    _contextPathColumn+" varchar(60), "+_virtualHostColumn+" varchar(60), "+_lastNodeColumn+" varchar(60), "+_accessTimeColumn+" "+longType+", "+
+            return "create table "+_tableName+" ("+_idColumn+" "+stringType+"(120), "+
+                    _contextPathColumn+" "+stringType+"(60), "+_virtualHostColumn+" "+stringType+"(60), "+_lastNodeColumn+" "+stringType+"(60), "+_accessTimeColumn+" "+longType+", "+
                     _lastAccessTimeColumn+" "+longType+", "+_createTimeColumn+" "+longType+", "+_cookieTimeColumn+" "+longType+", "+
                     _lastSavedTimeColumn+" "+longType+", "+_expiryTimeColumn+" "+longType+", "+_maxIntervalColumn+" "+longType+", "+
                     _mapColumn+" "+blobType+", primary key("+_idColumn+", "+_contextPathColumn+","+_virtualHostColumn+"))";
@@ -732,7 +733,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
 
 
-    private void doInsert (String id, SessionData data) 
+    protected void doInsert (String id, SessionData data) 
     throws Exception
     {
         String s = _sessionTableSchema.getInsertSessionStatementAsString();
@@ -777,7 +778,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
 
     
-    private void doUpdate (String id, SessionData data)
+    protected void doUpdate (String id, SessionData data)
             throws Exception
     {
         try (Connection connection = _dbAdaptor.getConnection())        

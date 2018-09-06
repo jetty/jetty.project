@@ -1,7 +1,7 @@
 DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enables JDBC peristent/distributed session storage.
+Enables JDBC persistent/distributed session storage.
 
 [tags]
 session
@@ -26,6 +26,10 @@ db-connection-type?=datasource
 
 #jetty.session.gracePeriod.seconds=3600
 #jetty.session.savePeriod.seconds=0
+
+#jetty.session.jdbc.blobType=
+#jetty.session.jdbc.longType=
+#jetty.session.jdbc.stringType=
 
 ## Connection type:Datasource
 db-connection-type=datasource

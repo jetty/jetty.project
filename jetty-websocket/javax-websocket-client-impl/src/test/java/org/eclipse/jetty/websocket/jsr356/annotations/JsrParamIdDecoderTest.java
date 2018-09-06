@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.lang.reflect.Method;
@@ -26,8 +27,8 @@ import java.util.Date;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 import org.eclipse.jetty.websocket.jsr356.decoders.DateDecoder;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class JsrParamIdDecoderTest
 {
@@ -52,6 +53,6 @@ public class JsrParamIdDecoderTest
         JsrCallable callable = getOnMessageCallableFrom(DateTextSocket.class,"onMessage");
         Param param = new Param(0,Date.class,null);
 
-        Assert.assertThat("Match for Decoder",paramId.process(param,callable),is(true));
+        assertThat("Match for Decoder",paramId.process(param,callable),is(true));
     }
 }

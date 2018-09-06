@@ -20,13 +20,15 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import javax.websocket.MessageHandler;
 
+import org.eclipse.jetty.util.BlockingArrayQueue;
+
 public class EchoCaptureHandler implements MessageHandler.Whole<String>
 {
-    public MessageQueue messageQueue = new MessageQueue();
+    public BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
 
     @Override
     public void onMessage(String message)
     {
-        messageQueue.offer(message);
+        messages.offer(message);
     }
 }

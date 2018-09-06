@@ -51,7 +51,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *  is assembled into a war, saving time during the development cycle.
  *  <p>
  *  The plugin forks a parallel lifecycle to ensure that the "compile" phase has been completed before invoking Jetty. This means
- *  that you do not need to explicity execute a "mvn compile" first. It also means that a "mvn clean jetty:run" will ensure that
+ *  that you do not need to explicitly execute a "mvn compile" first. It also means that a "mvn clean jetty:run" will ensure that
  *  a full fresh compile is done before invoking Jetty.
  *  <p>
  *  Once invoked, the plugin can be configured to run continuously, scanning for changes in the project and automatically performing a 

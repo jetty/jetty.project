@@ -24,14 +24,14 @@ import static org.eclipse.jetty.websocket.api.StatusCode.NO_CLOSE;
 import static org.eclipse.jetty.websocket.api.StatusCode.NO_CODE;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CloseInfoTest
 {

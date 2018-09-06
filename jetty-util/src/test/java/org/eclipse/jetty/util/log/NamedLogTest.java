@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.util.log;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class NamedLogTest
 {

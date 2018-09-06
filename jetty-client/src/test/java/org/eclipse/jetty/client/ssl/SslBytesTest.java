@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client.ssl;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,17 +35,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.Assert;
-import org.junit.Rule;
+
 
 public abstract class SslBytesTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     protected final Logger logger = Log.getLogger(getClass());
 
     public static class TLSRecord
@@ -340,7 +337,7 @@ public abstract class SslBytesTest
                     logger.debug("Automatic flow C <-- S finished");
                 }
             });
-            Assert.assertTrue(startLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(startLatch.await(5, TimeUnit.SECONDS));
             return new SslBytesServerTest.SimpleProxy.AutomaticFlow(stopLatch, clientToServer, serverToClient);
         }
 

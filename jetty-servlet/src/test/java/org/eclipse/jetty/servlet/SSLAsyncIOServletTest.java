@@ -18,13 +18,17 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.Collection;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
@@ -37,64 +41,40 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class SSLAsyncIOServletTest
 {
-    @Parameterized.Parameters(name = "ssl={0}")
-    public static Collection<SslContextFactory[]> parameters()
+    public static Stream<Arguments> scenarios()
     {
-        return Arrays.asList(new SslContextFactory[]{null}, new SslContextFactory[]{new SslContextFactory()});
+        ArrayList<Scenario> scenarios = new ArrayList<>();
+        scenarios.add(new NormalScenario());
+        scenarios.add(new SslScenario());
+        return scenarios.stream().map(Arguments::of);
     }
 
-    private Server server;
-    private ServerConnector connector;
-    private SslContextFactory sslContextFactory;
-    private String contextPath;
-    private String servletPath;
+    private Scenario activeScenario;
 
-    public SSLAsyncIOServletTest(SslContextFactory sslContextFactory)
+    private void prepare(Scenario scenario, HttpServlet servlet) throws Exception
     {
-        this.sslContextFactory = sslContextFactory;
-        if (sslContextFactory != null)
-        {
-            sslContextFactory.setEndpointIdentificationAlgorithm("");
-            sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
-            sslContextFactory.setKeyStorePassword("storepwd");
-            sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
-            sslContextFactory.setTrustStorePassword("storepwd");
-        }
+        activeScenario = scenario;
+        scenario.start(servlet);
     }
 
-    public void prepare(HttpServlet servlet) throws Exception
-    {
-        server = new Server();
-
-        connector = new ServerConnector(server, sslContextFactory);
-        server.addConnector(connector);
-
-        contextPath = "/context";
-        ServletContextHandler context = new ServletContextHandler(server, contextPath, true, false);
-        servletPath = "/servlet";
-        context.addServlet(new ServletHolder(servlet), servletPath);
-
-        server.start();
-    }
-
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
-        server.stop();
+        activeScenario.stop();
     }
 
-    @Test
-    public void testAsyncIOWritesWithAggregation() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testAsyncIOWritesWithAggregation(Scenario scenario) throws Exception
     {
         Random random = new Random();
         String chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -102,7 +82,7 @@ public class SSLAsyncIOServletTest
         for (int i = 0; i < content.length; ++i)
             content[i] = (byte)chars.charAt(random.nextInt(chars.length()));
 
-        prepare(new HttpServlet()
+        prepare(scenario, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -152,10 +132,10 @@ public class SSLAsyncIOServletTest
             }
         });
 
-        try (Socket client = newClient())
+        try (Socket client = scenario.newClient())
         {
             String request = "" +
-                    "GET " + contextPath + servletPath + " HTTP/1.1\r\n" +
+                    "GET " + scenario.getServletPath() + " HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Connection: close\r\n" +
                     "\r\n";
@@ -165,14 +145,112 @@ public class SSLAsyncIOServletTest
     
             InputStream inputStream = client.getInputStream();
             HttpTester.Response response = HttpTester.parseResponse(inputStream);
-            Assert.assertEquals(200, response.getStatus());
-            Assert.assertArrayEquals(content, response.getContent().getBytes("UTF-8"));
+            assertEquals(200, response.getStatus());
+            assertArrayEquals(content, response.getContent().getBytes("UTF-8"));
         }
     }
 
-    private Socket newClient() throws IOException
+    public interface Scenario
     {
-        return sslContextFactory == null ? new Socket("localhost", connector.getLocalPort())
-                : sslContextFactory.getSslContext().getSocketFactory().createSocket("localhost", connector.getLocalPort());
+        String getServletPath();
+
+        void start(HttpServlet servlet) throws Exception;
+
+        Socket newClient() throws IOException;
+
+        void stop() throws Exception;
+    }
+
+    public static class NormalScenario implements Scenario
+    {
+        private Server server;
+        private ServerConnector connector;
+        private String contextPath;
+        private String servletPath;
+
+        @Override
+        public String getServletPath()
+        {
+            return contextPath + servletPath;
+        }
+
+        public void start(HttpServlet servlet) throws Exception
+        {
+            server = new Server();
+
+            connector = new ServerConnector(server);
+            server.addConnector(connector);
+
+            contextPath = "/context";
+            ServletContextHandler context = new ServletContextHandler(server, contextPath, true, false);
+            servletPath = "/servlet";
+            context.addServlet(new ServletHolder(servlet), servletPath);
+
+            server.start();
+        }
+
+        @Override
+        public Socket newClient() throws IOException
+        {
+            return new Socket("localhost", connector.getLocalPort());
+        }
+
+        @Override
+        public void stop() throws Exception
+        {
+            server.stop();
+        }
+    }
+
+    public static class SslScenario implements Scenario
+    {
+        private Server server;
+        private ServerConnector connector;
+        private SslContextFactory sslContextFactory;
+        private String contextPath;
+        private String servletPath;
+
+        @Override
+        public String getServletPath()
+        {
+            return contextPath + servletPath;
+        }
+
+        public void start(HttpServlet servlet) throws Exception
+        {
+            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.jks");
+            Path truststorePath = MavenTestingUtils.getTestResourcePath("truststore.jks");
+
+            sslContextFactory = new SslContextFactory();
+            sslContextFactory.setEndpointIdentificationAlgorithm("");
+            sslContextFactory.setKeyStorePath(keystorePath.toString());
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setTrustStorePath(truststorePath.toString());
+            sslContextFactory.setTrustStorePassword("storepwd");
+
+            server = new Server();
+
+            connector = new ServerConnector(server, sslContextFactory);
+            server.addConnector(connector);
+
+            contextPath = "/context";
+            ServletContextHandler context = new ServletContextHandler(server, contextPath, true, false);
+            servletPath = "/servlet";
+            context.addServlet(new ServletHolder(servlet), servletPath);
+
+            server.start();
+        }
+
+        @Override
+        public Socket newClient() throws IOException
+        {
+            return sslContextFactory.getSslContext().getSocketFactory().createSocket("localhost", connector.getLocalPort());
+        }
+
+        @Override
+        public void stop() throws Exception
+        {
+            server.stop();
+        }
     }
 }

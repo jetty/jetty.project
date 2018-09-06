@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http2.client;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -38,8 +41,8 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class StreamCountTest extends AbstractTest
 {
@@ -89,7 +92,7 @@ public class StreamCountTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
@@ -111,18 +114,11 @@ public class StreamCountTest extends AbstractTest
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
         session.newStream(frame2, streamPromise2, new Stream.Listener.Adapter());
 
-        try
-        {
-            streamPromise2.get(5, TimeUnit.SECONDS);
-            Assert.fail();
-        }
-        catch (ExecutionException x)
-        {
-            // Expected
-        }
+        assertThrows(ExecutionException.class,
+                () -> streamPromise2.get(5, TimeUnit.SECONDS));
 
         stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
-        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -188,9 +184,9 @@ public class StreamCountTest extends AbstractTest
         });
 
         streamPromise2.get(5, TimeUnit.SECONDS);
-        Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
 
         stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
-        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 }

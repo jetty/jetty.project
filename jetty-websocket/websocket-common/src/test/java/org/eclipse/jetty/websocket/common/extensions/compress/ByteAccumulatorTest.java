@@ -22,20 +22,16 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 public class ByteAccumulatorTest
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void testCopyNormal()
     {
@@ -74,9 +70,8 @@ public class ByteAccumulatorTest
         assertThat("Length", accumulator.getLength(), is(length));
 
         ByteBuffer out = ByteBuffer.allocate(length - 2); // intentionally too small ByteBuffer
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage(containsString("Not enough space in ByteBuffer"));
-        accumulator.transferTo(out);
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, ()->accumulator.transferTo(out));
+        assertThat(e.getMessage(), containsString("Not enough space in ByteBuffer"));
     }
 
     @Test
@@ -93,8 +88,7 @@ public class ByteAccumulatorTest
         accumulator.copyChunk(hello, 0, hello.length);
         accumulator.copyChunk(space, 0, space.length);
 
-        expectedException.expect(MessageTooLargeException.class);
-        expectedException.expectMessage(containsString("too large for configured max"));
-        accumulator.copyChunk(world, 0, world.length);
+        MessageTooLargeException e = assertThrows(MessageTooLargeException.class, ()->accumulator.copyChunk(world, 0, world.length));
+        assertThat(e.getMessage(), containsString("too large for configured max"));
     }
 }

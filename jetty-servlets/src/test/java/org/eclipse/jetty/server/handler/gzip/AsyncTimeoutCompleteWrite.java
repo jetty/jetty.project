@@ -19,7 +19,7 @@
 package org.eclipse.jetty.server.handler.gzip;
 
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.IOException;
 

@@ -142,17 +142,42 @@ public class WebSocketPolicy
         }
     }
 
+    /**
+     * Make a copy of the policy, with current values.
+     * @return the cloned copy of the policy.
+     */
     public WebSocketPolicy clonePolicy()
     {
         WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
-        clone.idleTimeout = this.idleTimeout;
-        clone.maxTextMessageSize = this.maxTextMessageSize;
-        clone.maxTextMessageBufferSize = this.maxTextMessageBufferSize;
-        clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
-        clone.maxBinaryMessageBufferSize = this.maxBinaryMessageBufferSize;
-        clone.inputBufferSize = this.inputBufferSize;
-        clone.asyncWriteTimeout = this.asyncWriteTimeout;
+        clone.idleTimeout = this.getIdleTimeout();
+        clone.maxTextMessageSize = this.getMaxTextMessageSize();
+        clone.maxTextMessageBufferSize = this.getMaxTextMessageBufferSize();
+        clone.maxBinaryMessageSize = this.getMaxBinaryMessageSize();
+        clone.maxBinaryMessageBufferSize = this.getMaxBinaryMessageBufferSize();
+        clone.inputBufferSize = this.getInputBufferSize()   ;
+        clone.asyncWriteTimeout = this.getAsyncWriteTimeout();
         return clone;
+    }
+
+    /**
+     * Make a copy of the policy, with current values, but a different behavior.
+     *
+     * @param behavior the behavior to copy/clone
+     * @return the cloned policy with a new behavior.
+     * @deprecated use {@link #delegateAs(WebSocketBehavior)} instead
+     */
+    @Deprecated
+    public WebSocketPolicy clonePolicy(WebSocketBehavior behavior)
+    {
+        return delegateAs(behavior);
+    }
+
+    public WebSocketPolicy delegateAs(WebSocketBehavior behavior)
+    {
+        if(behavior == this.behavior)
+            return this;
+
+        return new WebSocketPolicy.Delegated(this, behavior);
     }
 
     /**
@@ -173,7 +198,7 @@ public class WebSocketPolicy
     }
 
     /**
-     * The time in ms (milliseconds) that a websocket connection mad by idle before being closed automatically.
+     * The time in ms (milliseconds) that a websocket connection may be idle before being closed automatically.
      * 
      * @return the timeout in milliseconds for idle timeout.
      */
@@ -364,16 +389,152 @@ public class WebSocketPolicy
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append("WebSocketPolicy@").append(Integer.toHexString(hashCode()));
-        builder.append("[behavior=").append(behavior);
-        builder.append(",maxTextMessageSize=").append(maxTextMessageSize);
-        builder.append(",maxTextMessageBufferSize=").append(maxTextMessageBufferSize);
-        builder.append(",maxBinaryMessageSize=").append(maxBinaryMessageSize);
-        builder.append(",maxBinaryMessageBufferSize=").append(maxBinaryMessageBufferSize);
-        builder.append(",asyncWriteTimeout=").append(asyncWriteTimeout);
-        builder.append(",idleTimeout=").append(idleTimeout);
-        builder.append(",inputBufferSize=").append(inputBufferSize);
+        builder.append(this.getClass().getSimpleName());
+        builder.append("@").append(Integer.toHexString(hashCode()));
+        builder.append("[behavior=").append(getBehavior());
+        builder.append(",maxTextMessageSize=").append(getMaxTextMessageSize());
+        builder.append(",maxTextMessageBufferSize=").append(getMaxTextMessageBufferSize());
+        builder.append(",maxBinaryMessageSize=").append(getMaxBinaryMessageSize());
+        builder.append(",maxBinaryMessageBufferSize=").append(getMaxTextMessageBufferSize());
+        builder.append(",asyncWriteTimeout=").append(getAsyncWriteTimeout());
+        builder.append(",idleTimeout=").append(getIdleTimeout());
+        builder.append(",inputBufferSize=").append(getInputBufferSize());
         builder.append("]");
         return builder.toString();
+    }
+
+    /**
+     * Allows Behavior to be changed, but the settings to delegated.
+     * <p>
+     *     This rears its ugly head when a JSR356 Server Container is used as a
+     *     JSR356 Client Container.
+     *     The JSR356 Server Container is Behavior SERVER, but its container
+     *     level Policy is shared with the JSR356 Client Container as well.
+     *     This allows a delegate to the policy with a different behavior.
+     * </p>
+     */
+    private class Delegated extends WebSocketPolicy
+    {
+        private final WebSocketPolicy delegated;
+
+        public Delegated(WebSocketPolicy policy, WebSocketBehavior behavior)
+        {
+            super(behavior);
+            this.delegated = policy;
+        }
+
+        @Override
+        public void assertValidBinaryMessageSize(int requestedSize)
+        {
+            delegated.assertValidBinaryMessageSize(requestedSize);
+        }
+
+        @Override
+        public void assertValidTextMessageSize(int requestedSize)
+        {
+            delegated.assertValidTextMessageSize(requestedSize);
+        }
+
+        @Override
+        public WebSocketPolicy clonePolicy()
+        {
+            return delegated.clonePolicy();
+        }
+
+        @Override
+        public WebSocketPolicy clonePolicy(WebSocketBehavior behavior)
+        {
+            return delegated.clonePolicy(behavior);
+        }
+
+        @Override
+        public WebSocketPolicy delegateAs(WebSocketBehavior behavior)
+        {
+            return delegated.delegateAs(behavior);
+        }
+
+        @Override
+        public long getAsyncWriteTimeout()
+        {
+            return delegated.getAsyncWriteTimeout();
+        }
+
+        @Override
+        public long getIdleTimeout()
+        {
+            return delegated.getIdleTimeout();
+        }
+
+        @Override
+        public int getInputBufferSize()
+        {
+            return delegated.getInputBufferSize();
+        }
+
+        @Override
+        public int getMaxBinaryMessageBufferSize()
+        {
+            return delegated.getMaxBinaryMessageBufferSize();
+        }
+
+        @Override
+        public int getMaxBinaryMessageSize()
+        {
+            return delegated.getMaxBinaryMessageSize();
+        }
+
+        @Override
+        public int getMaxTextMessageBufferSize()
+        {
+            return delegated.getMaxTextMessageBufferSize();
+        }
+
+        @Override
+        public int getMaxTextMessageSize()
+        {
+            return delegated.getMaxTextMessageSize();
+        }
+
+        @Override
+        public void setAsyncWriteTimeout(long ms)
+        {
+            delegated.setAsyncWriteTimeout(ms);
+        }
+
+        @Override
+        public void setIdleTimeout(long ms)
+        {
+            delegated.setIdleTimeout(ms);
+        }
+
+        @Override
+        public void setInputBufferSize(int size)
+        {
+            delegated.setInputBufferSize(size);
+        }
+
+        @Override
+        public void setMaxBinaryMessageBufferSize(int size)
+        {
+            delegated.setMaxBinaryMessageBufferSize(size);
+        }
+
+        @Override
+        public void setMaxBinaryMessageSize(int size)
+        {
+            delegated.setMaxBinaryMessageSize(size);
+        }
+
+        @Override
+        public void setMaxTextMessageBufferSize(int size)
+        {
+            delegated.setMaxTextMessageBufferSize(size);
+        }
+
+        @Override
+        public void setMaxTextMessageSize(int size)
+        {
+            delegated.setMaxTextMessageSize(size);
+        }
     }
 }

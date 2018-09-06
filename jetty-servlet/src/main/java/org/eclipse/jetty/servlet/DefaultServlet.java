@@ -123,7 +123,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *  otherGzipFileExtensions
  *                    Other file extensions that signify that a file is already compressed. Eg ".svgz"
  *
- *
+ *  encodingHeaderCacheSize
+ *                    Max entries in a cache of ACCEPT-ENCODING headers.
  * </pre>
  *
  */
@@ -455,7 +456,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException
     {
-        _resourceService.doGet(request,response);
+        if(!_resourceService.doGet(request,response))
+            response.sendError(404);
     }
 
     /* ------------------------------------------------------------ */

@@ -27,9 +27,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.util.annotation.Name;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
-@Ignore
+@Disabled
 public class TestConfiguration extends HashMap<String,Object>
 {
     public static int VALUE=77;

@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Stream;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
@@ -43,73 +42,39 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseReasonSoc
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseSessionReasonSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.endpoints.samples.close.CloseSocket;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class OnCloseTest
 {
-    private static class Case
+    public static Stream<Arguments> closeCases()
     {
-        public static Case add(List<Case[]> data, Class<?> closeClass)
-        {
-            Case tcase = new Case();
-            tcase.closeClass = closeClass;
-            data.add(new Case[]
-            { tcase });
-            return tcase;
-        }
-
-        Class<?> closeClass;
-        String expectedCloseEvent;
-
-        public Case expect(String expectedEvent)
-        {
-            this.expectedCloseEvent = expectedEvent;
-            return this;
-        }
+        return Stream.of(
+            Arguments.of(CloseSocket.class, "onClose()"),
+            Arguments.of(CloseReasonSocket.class, "onClose(CloseReason)"),
+            Arguments.of(CloseSessionSocket.class, "onClose(Session)"),
+            Arguments.of(CloseReasonSessionSocket.class, "onClose(CloseReason,Session)"),
+            Arguments.of(CloseSessionReasonSocket.class, "onClose(Session,CloseReason)"),
+            Arguments.of(CloseEndpointConfigSocket.class, "onClose(EndpointConfig)")
+        );
     }
 
     private static ClientContainer container = new ClientContainer();
 
-    @Parameters
-    public static Collection<Case[]> data() throws Exception
-    {
-        List<Case[]> data = new ArrayList<>();
-
-        Case.add(data,CloseSocket.class).expect("onClose()");
-        Case.add(data,CloseReasonSocket.class).expect("onClose(CloseReason)");
-        Case.add(data,CloseSessionSocket.class).expect("onClose(Session)");
-        Case.add(data,CloseReasonSessionSocket.class).expect("onClose(CloseReason,Session)");
-        Case.add(data,CloseSessionReasonSocket.class).expect("onClose(Session,CloseReason)");
-        Case.add(data,CloseEndpointConfigSocket.class).expect("onClose(EndpointConfig)");
-
-        return data;
-    }
-
-    private final Case testcase;
-
-    public OnCloseTest(Case testcase)
-    {
-        this.testcase = testcase;
-        System.err.printf("Testing @OnClose for %s%n",testcase.closeClass.getName());
-    }
-
-    @Test
-    public void testOnCloseCall() throws Exception
+    @ParameterizedTest
+    @MethodSource("closeCases")
+    public void testOnCloseCall(Class<?> closeClass, String expectedCloseEvent) throws Exception
     {
         // Scan annotations
-        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container,testcase.closeClass);
+        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container,closeClass);
         AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 
         // Build up EventDriver
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         ClientEndpointConfig config = metadata.getConfig();
-        TrackingSocket endpoint = (TrackingSocket)testcase.closeClass.getDeclaredConstructor().newInstance();
+        TrackingSocket endpoint = (TrackingSocket)closeClass.getDeclaredConstructor().newInstance();
         EndpointInstance ei = new EndpointInstance(endpoint,config,metadata);
         JsrEvents<ClientEndpoint, ClientEndpointConfig> jsrevents = new JsrEvents<>(metadata);
 
@@ -121,6 +86,6 @@ public class OnCloseTest
         // Test captured event
         LinkedBlockingQueue<String> events = endpoint.eventQueue;
         String closeEvent = events.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-        Assert.assertThat("Close Event",closeEvent,is(testcase.expectedCloseEvent));
+        assertThat("Close Event",closeEvent,is(expectedCloseEvent));
     }
 }

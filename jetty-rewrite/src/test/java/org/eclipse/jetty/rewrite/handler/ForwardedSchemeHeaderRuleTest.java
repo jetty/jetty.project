@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTestCase
 {
     private ForwardedSchemeHeaderRule _rule;
     private HttpFields _requestHeaderFields;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         start(false);

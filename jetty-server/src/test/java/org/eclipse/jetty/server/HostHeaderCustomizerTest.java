@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -29,19 +33,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AdvancedRunner.class)
+import org.junit.jupiter.api.Test;
+
 public class HostHeaderCustomizerTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
-
     @Test
     public void testHostHeaderCustomizer() throws Exception
     {
@@ -59,8 +55,8 @@ public class HostHeaderCustomizerTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                Assert.assertEquals(serverName, request.getServerName());
-                Assert.assertEquals(serverPort, request.getServerPort());
+                assertEquals(serverName, request.getServerName());
+                assertEquals(serverPort, request.getServerPort());
                 response.sendRedirect(redirectPath);
             }
         });
@@ -81,12 +77,12 @@ public class HostHeaderCustomizerTest
                     HttpTester.Response response = HttpTester.parseResponse(input);
     
                     String location = response.get("location");
-                    Assert.assertNotNull(location);
+                    assertNotNull(location);
                     String schemePrefix = "http://";
-                    Assert.assertTrue(location.startsWith(schemePrefix));
-                    Assert.assertTrue(location.endsWith(redirectPath));
+                    assertTrue(location.startsWith(schemePrefix));
+                    assertTrue(location.endsWith(redirectPath));
                     String hostPort = location.substring(schemePrefix.length(), location.length() - redirectPath.length());
-                    Assert.assertEquals(serverName + ":" + serverPort, hostPort);
+                    assertEquals(serverName + ":" + serverPort, hostPort);
                 }
             }
         }

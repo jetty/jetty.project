@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.not;
+
 import java.io.IOException;
 import java.util.EnumSet;
 
@@ -34,16 +38,15 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class IncludeExcludeBasedFilterTest
 {
     private ServletTester _tester;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _tester = new ServletTester();
@@ -53,7 +56,7 @@ public class IncludeExcludeBasedFilterTest
         _tester.start();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         _tester.stop();
@@ -73,7 +76,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertTrue(response.contains("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
     }
 
     @Test
@@ -90,7 +93,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertFalse(response.contains("X-Custom-Value","1"));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
     }
 
     @Test
@@ -107,7 +110,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertFalse(response.contains("X-Custom-Value","1"));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
     }
 
     @Test
@@ -124,7 +127,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertTrue(response.contains("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
     }
 
     @Test
@@ -142,7 +145,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertFalse(response.contains("X-Custom-Value","1"));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
     }
 
     @Test
@@ -159,7 +162,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertTrue(response.contains("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
     }
 
     @Test
@@ -176,7 +179,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertFalse(response.contains("X-Custom-Value","1"));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
     }
 
     @Test
@@ -193,7 +196,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertFalse(response.contains("X-Custom-Value","1"));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
     }
 
     @Test
@@ -210,7 +213,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertTrue(response.contains("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
     }
 
     @Test
@@ -227,7 +230,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/json.json");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertTrue(response.contains("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
     }
 
     @Test
@@ -244,7 +247,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/json.json?some=value");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertTrue(response.contains("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
     }
 
     @Test
@@ -261,7 +264,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/json.json");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertFalse(response.contains("X-Custom-Value","1"));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
     }
 
     @Test
@@ -278,7 +281,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/abcdef");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertFalse(response.contains("X-Custom-Value","1"));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
     }
 
     @Test
@@ -295,7 +298,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/json.json");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertFalse(response.contains("X-Custom-Value","1"));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
     }
 
     @Test
@@ -312,7 +315,7 @@ public class IncludeExcludeBasedFilterTest
         request.setURI("/context/test/json.json");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertTrue(response.contains("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
     }
 
     public static class MockIncludeExcludeFilter extends IncludeExcludeBasedFilter

@@ -19,10 +19,10 @@
 package org.eclipse.jetty.http.pathmap;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RegexPathSpecTest
 {
@@ -42,10 +42,10 @@ public class RegexPathSpecTest
     public void testExactSpec()
     {
         RegexPathSpec spec = new RegexPathSpec("^/a$");
-        assertEquals("Spec.pathSpec","^/a$",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/a$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",1,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.group);
+        assertEquals("^/a$", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/a$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(1, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.EXACT, spec.group, "Spec.group");
 
         assertMatches(spec,"/a");
 
@@ -57,10 +57,10 @@ public class RegexPathSpecTest
     public void testMiddleSpec()
     {
         RegexPathSpec spec = new RegexPathSpec("^/rest/([^/]*)/list$");
-        assertEquals("Spec.pathSpec","^/rest/([^/]*)/list$",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/rest/([^/]*)/list$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",3,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.group);
+        assertEquals("^/rest/([^/]*)/list$", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/rest/([^/]*)/list$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(3, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.group, "Spec.group");
 
         assertMatches(spec,"/rest/api/list");
         assertMatches(spec,"/rest/1.0/list");
@@ -78,10 +78,10 @@ public class RegexPathSpecTest
     public void testMiddleSpecNoGrouping()
     {
         RegexPathSpec spec = new RegexPathSpec("^/rest/[^/]+/list$");
-        assertEquals("Spec.pathSpec","^/rest/[^/]+/list$",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/rest/[^/]+/list$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",3,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.group);
+        assertEquals("^/rest/[^/]+/list$", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/rest/[^/]+/list$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(3, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.group, "Spec.group");
 
         assertMatches(spec,"/rest/api/list");
         assertMatches(spec,"/rest/1.0/list");
@@ -99,10 +99,10 @@ public class RegexPathSpecTest
     public void testPrefixSpec()
     {
         RegexPathSpec spec = new RegexPathSpec("^/a/(.*)$");
-        assertEquals("Spec.pathSpec","^/a/(.*)$",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/a/(.*)$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",2,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.PREFIX_GLOB,spec.group);
+        assertEquals("^/a/(.*)$", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/a/(.*)$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(2, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.PREFIX_GLOB, spec.group, "Spec.group");
 
         assertMatches(spec,"/a/");
         assertMatches(spec,"/a/b");
@@ -117,10 +117,10 @@ public class RegexPathSpecTest
     public void testSuffixSpec()
     {
         RegexPathSpec spec = new RegexPathSpec("^(.*).do$");
-        assertEquals("Spec.pathSpec","^(.*).do$",spec.getDeclaration());
-        assertEquals("Spec.pattern","^(.*).do$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",0,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.SUFFIX_GLOB,spec.group);
+        assertEquals("^(.*).do$", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^(.*).do$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(0, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.SUFFIX_GLOB, spec.group, "Spec.group");
 
         assertMatches(spec,"/a.do");
         assertMatches(spec,"/a/b/c.do");
