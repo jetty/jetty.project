@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -26,32 +30,25 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-@Ignore
+@Disabled
 public class ExternalSiteTest
 {
-    @Rule
-    public final TestTracker tracker = new TestTracker();
-
     private HttpClient client;
 
-    @Before
+    @BeforeEach
     public void prepare() throws Exception
     {
         client = new HttpClient(new SslContextFactory());
         client.start();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
         client.stop();
@@ -76,7 +73,7 @@ public class ExternalSiteTest
                     latch1.countDown();
             }
         });
-        Assert.assertTrue(latch1.await(10, TimeUnit.SECONDS));
+        assertTrue(latch1.await(10, TimeUnit.SECONDS));
 
         // Try again the same URI, but without specifying the port
         final CountDownLatch latch2 = new CountDownLatch(1);
@@ -85,12 +82,12 @@ public class ExternalSiteTest
             @Override
             public void onComplete(Result result)
             {
-                Assert.assertTrue(result.isSucceeded());
-                Assert.assertEquals(200, result.getResponse().getStatus());
+                assertTrue(result.isSucceeded());
+                assertEquals(200, result.getResponse().getStatus());
                 latch2.countDown();
             }
         });
-        Assert.assertTrue(latch2.await(10, TimeUnit.SECONDS));
+        assertTrue(latch2.await(10, TimeUnit.SECONDS));
     }
 
     @Test
@@ -116,7 +113,7 @@ public class ExternalSiteTest
                     latch.countDown();
             }
         });
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -151,11 +148,11 @@ public class ExternalSiteTest
                         @Override
                         public void onComplete(Result result)
                         {
-                            Assert.assertTrue(result.isFailed());
+                            assertTrue(result.isFailed());
                             latch.countDown();
                         }
                     });
-            Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
         }
     }
 
@@ -172,7 +169,7 @@ public class ExternalSiteTest
                 .scheme(HttpScheme.HTTPS.asString())
                 .path("/twitter")
                 .send();
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
     }
 
     protected void assumeCanConnectTo(String host, int port)
@@ -183,7 +180,7 @@ public class ExternalSiteTest
         }
         catch (Throwable x)
         {
-            Assume.assumeNoException(x);
+            assumeTrue(x == null, "Unable to connect");
         }
     }
 }

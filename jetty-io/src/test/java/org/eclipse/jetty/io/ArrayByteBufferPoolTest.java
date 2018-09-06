@@ -19,15 +19,15 @@
 package org.eclipse.jetty.io;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.eclipse.jetty.io.ByteBufferPool.Bucket;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("ReferenceEquality")
 public class ArrayByteBufferPoolTest

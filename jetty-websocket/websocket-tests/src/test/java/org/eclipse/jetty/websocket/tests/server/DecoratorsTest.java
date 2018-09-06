@@ -62,22 +62,22 @@ import org.junit.runners.Parameterized;
 public class DecoratorsTest
 {
     private static final Logger LOG = Log.getLogger(DecoratorsTest.class);
-    
+
     private static class DecoratorsSocket extends WebSocketAdapter
     {
         private final DecoratedObjectFactory objFactory;
-        
+
         public DecoratorsSocket(DecoratedObjectFactory objFactory)
         {
             this.objFactory = objFactory;
         }
-        
+
         @Override
         public void onWebSocketText(String message)
         {
             StringWriter str = new StringWriter();
             PrintWriter out = new PrintWriter(str);
-            
+
             if (objFactory != null)
             {
                 out.printf("Object is a DecoratedObjectFactory%n");
@@ -92,7 +92,7 @@ public class DecoratorsTest
             {
                 out.printf("DecoratedObjectFactory is NULL%n");
             }
-            
+
             LOG.debug(out.toString());
 
             getRemote().sendStringByFuture(str.toString());
@@ -126,7 +126,7 @@ public class DecoratorsTest
             factory.setCreator(this.creator);
         }
     }
-    
+
     private static class DummyUtilDecorator implements org.eclipse.jetty.util.Decorator
     {
         @Override
@@ -140,7 +140,7 @@ public class DecoratorsTest
         {
         }
     }
-    
+
     @SuppressWarnings("deprecation")
     private static class DummyLegacyDecorator implements org.eclipse.jetty.servlet.ServletContextHandler.Decorator
     {
@@ -149,50 +149,50 @@ public class DecoratorsTest
         {
             return o;
         }
-        
+
         @Override
         public void destroy(Object o)
         {
         }
     }
-    
+
     private interface Case
     {
         void customize(ServletContextHandler context);
     }
-    
+
     @SuppressWarnings("deprecation")
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data()
     {
         List<Object[]> cases = new ArrayList<>();
-        
+
         cases.add(new Object[] {
-                "Legacy Usage",
-                (Case) (context) -> {
-                    context.getObjectFactory().clear();
-                    // Add decorator in the legacy way
-                    context.addDecorator(new DummyLegacyDecorator());
-                },
-                DummyLegacyDecorator.class
+            "Legacy Usage",
+            (Case) (context) -> {
+                context.getObjectFactory().clear();
+                // Add decorator in the legacy way
+                context.addDecorator(new DummyLegacyDecorator());
+            },
+            DummyLegacyDecorator.class
         });
-    
+
         cases.add(new Object[] {
-                "Recommended Usage",
-                (Case) (context) -> {
-                    // Add decorator in the new util way
-                    context.getObjectFactory().clear();
-                    context.getObjectFactory().addDecorator(new DummyUtilDecorator());
-                },
-                DummyUtilDecorator.class
+            "Recommended Usage",
+            (Case) (context) -> {
+                // Add decorator in the new util way
+                context.getObjectFactory().clear();
+                context.getObjectFactory().addDecorator(new DummyUtilDecorator());
+            },
+            DummyUtilDecorator.class
         });
-        
+
         return cases;
     }
 
     private SimpleServletServer server;
     private Class<?> expectedDecoratorClass;
-    
+
     public DecoratorsTest(String testId, Case testcase, Class<?> expectedDecoratorClass) throws Exception
     {
         LOG.debug("Testing {}", testId);
@@ -214,22 +214,22 @@ public class DecoratorsTest
     {
         server.stop();
     }
-    
+
     @Test
     public void testAccessRequestCookies() throws Exception
     {
         try (LocalFuzzer session = server.newLocalFuzzer("/"))
         {
             session.sendFrames(
-                    new TextFrame().setPayload("info"),
-                    new CloseInfo(StatusCode.NORMAL).asFrame()
+                new TextFrame().setPayload("info"),
+                new CloseInfo(StatusCode.NORMAL).asFrame()
             );
-        
+
             BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
-        
+
             WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
-        
+
             String payload = frame.getPayloadAsUTF8();
             assertThat("Text - DecoratedObjectFactory", payload, containsString("Object is a DecoratedObjectFactory"));
             assertThat("Text - decorators.size", payload, containsString("Decorators.size = [1]"));

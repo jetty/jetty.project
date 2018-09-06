@@ -21,8 +21,7 @@ package org.eclipse.jetty.gcloud.session;
 
 import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.junit.AfterClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
 
 /**
  * ClusteredSessionScavengingTest
@@ -32,7 +31,7 @@ import org.junit.Test;
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
     
-    @AfterClass
+    @AfterAll
     public static void teardown () throws Exception
     {
         GCloudTestSuite.__testSupport.deleteSessions();

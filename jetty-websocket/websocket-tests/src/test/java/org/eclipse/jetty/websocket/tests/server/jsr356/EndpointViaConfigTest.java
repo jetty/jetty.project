@@ -18,20 +18,10 @@
 
 package org.eclipse.jetty.websocket.tests.server.jsr356;
 
-import java.net.URI;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.websocket.DeploymentException;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.server.ServerEndpointConfig;
-
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -41,14 +31,26 @@ import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.WSServer;
 import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingEndpoint;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.websocket.DeploymentException;
+import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
+import javax.websocket.server.ServerEndpointConfig;
+import java.net.URI;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Example of an {@link javax.websocket.Endpoint} extended echo server added programmatically via the
  * {@link ServerContainer#addEndpoint(javax.websocket.server.ServerEndpointConfig)}
  */
+@ExtendWith( WorkDirExtension.class)
 public class EndpointViaConfigTest
 {
     private static final Logger LOG = Log.getLogger(EndpointViaConfigTest.class);
@@ -99,9 +101,7 @@ public class EndpointViaConfigTest
             }
         }
     }
-    
-    @Rule
-    public TestingDir testdir = new TestingDir();
+    public WorkDir testdir;
 
     public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
 
@@ -134,7 +134,7 @@ public class EndpointViaConfigTest
                 clientSession.getRemote().sendString("Hello World");
                 
                 String incomingMessage = clientSocket.messageQueue.poll(1, TimeUnit.SECONDS);
-                Assert.assertEquals("Expected message","Hello World",incomingMessage);
+                assertEquals("Expected message","Hello World",incomingMessage);
                 
                 clientSession.close();
                 clientSocket.awaitCloseEvent("Client");

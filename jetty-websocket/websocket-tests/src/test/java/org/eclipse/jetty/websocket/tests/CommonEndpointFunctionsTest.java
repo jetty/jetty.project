@@ -27,6 +27,7 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -47,33 +48,30 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.function.CommonEndpointFunctions;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class CommonEndpointFunctionsTest
 {
     private static final Charset UTF8 = StandardCharsets.UTF_8;
     private static SimpleContainerScope containerScope;
     
-    @BeforeClass
+    @BeforeAll
     public static void startContainer() throws Exception
     {
         containerScope = new SimpleContainerScope(WebSocketPolicy.newServerPolicy());
         containerScope.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopContainer() throws Exception
     {
         containerScope.stop();
     }
 
-    @Rule
-    public TestName testname = new TestName();
-    
     private class CloseableEndpointFunctions extends CommonEndpointFunctions implements AutoCloseable
     {
         public CloseableEndpointFunctions(Object endpoint, WebSocketContainerScope containerScope) throws Exception
@@ -89,9 +87,9 @@ public class CommonEndpointFunctionsTest
         }
     }
 
-    public Session initSession(Object websocket)
+    public Session initSession( Object websocket, TestInfo testInfo )
     {
-        return new LocalWebSocketSession(containerScope, testname, websocket);
+        return new LocalWebSocketSession(containerScope, testInfo, websocket);
     }
 
     public static class ConnectionOnly implements WebSocketConnectionListener
@@ -118,11 +116,11 @@ public class CommonEndpointFunctionsTest
     }
 
     @Test
-    public void testWebSocketConnectionListener_OpenTextClose() throws Exception
+    public void testWebSocketConnectionListener_OpenTextClose(TestInfo testInfo) throws Exception
     {
         // Setup
         ConnectionOnly socket = new ConnectionOnly();
-        Session session = initSession(socket);
+        Session session = initSession(socket, testInfo);
         try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions(socket, containerScope))
         {
             // Trigger Events
@@ -153,11 +151,11 @@ public class CommonEndpointFunctionsTest
     }
 
     @Test
-    public void testWebSocketListener_OpenTextClose() throws Exception
+    public void testWebSocketListener_OpenTextClose(TestInfo testInfo) throws Exception
     {
         // Setup
         DataConnection socket = new DataConnection();
-        Session session = initSession(socket);
+        Session session = initSession(socket, testInfo);
         try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions(socket, containerScope))
         {
             // Trigger Events
@@ -197,50 +195,57 @@ public class CommonEndpointFunctionsTest
         }
     }
 
-    @Test(timeout = 1000)
-    public void testAnnotatedStreamedText_Single() throws Exception
+    @Test
+    public void testAnnotatedStreamedText_Single(TestInfo testInfo) throws Exception
     {
-        // Setup
-        StreamedText socket = new StreamedText(1);
-        Session session = initSession(socket);
-    
-        try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions(socket, containerScope))
-        {
-            // Trigger Events
-            endpointFunctions.onOpen(session);
-            endpointFunctions.onText(new TextFrame().setPayload("Hello Text Stream").setFin(true), new FrameCallback.Adapter());
-            endpointFunctions.onClose(new CloseInfo(StatusCode.NORMAL, "Normal"));
-        }
+        Assertions.assertTimeout( Duration.ofMillis( 1000 ),() -> {
+            // Setup
+            StreamedText socket = new StreamedText( 1 );
+            Session session = initSession( socket, testInfo );
 
-        // Await completion (of threads)
-        socket.streamLatch.await(2, TimeUnit.SECONDS);
+            try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions( socket, containerScope ))
+            {
+                // Trigger Events
+                endpointFunctions.onOpen( session );
+                endpointFunctions.onText( new TextFrame().setPayload( "Hello Text Stream" ).setFin( true ),
+                                          new FrameCallback.Adapter() );
+                endpointFunctions.onClose( new CloseInfo( StatusCode.NORMAL, "Normal" ) );
+            }
 
-        // Validate Events
-        socket.events.assertEvents("onTextStream\\(Hello Text Stream\\)");
+            // Await completion (of threads)
+            socket.streamLatch.await( 2, TimeUnit.SECONDS );
+
+            // Validate Events
+            socket.events.assertEvents( "onTextStream\\(Hello Text Stream\\)" );
+        });
     }
 
-    @Test(timeout = 1000)
-    public void testAnnotatedStreamedText_MultipleParts() throws Exception
+    @Test
+    public void testAnnotatedStreamedText_MultipleParts(TestInfo testInfo) throws Exception
     {
-        // Setup
-        StreamedText socket = new StreamedText(1);
-        Session session = initSession(socket);
-        try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions(socket, containerScope))
-        {
-            // Trigger Events
-            endpointFunctions.onOpen(session);
-            endpointFunctions.onText(new TextFrame().setPayload("Hel").setFin(false), new FrameCallback.Adapter());
-            endpointFunctions.onText(new ContinuationFrame().setPayload("lo ").setFin(false), new FrameCallback.Adapter());
-            endpointFunctions.onText(new ContinuationFrame().setPayload("Wor").setFin(false), new FrameCallback.Adapter());
-            endpointFunctions.onText(new ContinuationFrame().setPayload("ld").setFin(true), new FrameCallback.Adapter());
-            endpointFunctions.onClose(new CloseInfo(StatusCode.NORMAL, "Normal"));
-        }
+        Assertions.assertTimeout( Duration.ofMillis( 1000 ),() -> {
+            // Setup
+            StreamedText socket = new StreamedText( 1 ); Session session = initSession( socket, testInfo );
+            try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions( socket, containerScope ))
+            {
+                // Trigger Events
+                endpointFunctions.onOpen( session );
+                endpointFunctions.onText( new TextFrame().setPayload( "Hel" ).setFin( false ), new FrameCallback.Adapter() );
+                endpointFunctions.onText( new ContinuationFrame().setPayload( "lo " ).setFin( false ),
+                                          new FrameCallback.Adapter() );
+                endpointFunctions.onText( new ContinuationFrame().setPayload( "Wor" ).setFin( false ),
+                                          new FrameCallback.Adapter() );
+                endpointFunctions.onText( new ContinuationFrame().setPayload( "ld" ).setFin( true ),
+                                          new FrameCallback.Adapter() );
+                endpointFunctions.onClose( new CloseInfo( StatusCode.NORMAL, "Normal" ) );
+            }
 
-        // Await completion (of threads)
-        socket.streamLatch.await(2, TimeUnit.SECONDS);
+            // Await completion (of threads)
+            socket.streamLatch.await( 2, TimeUnit.SECONDS );
 
-        // Validate Events
-        socket.events.assertEvents("onTextStream\\(Hello World\\)");
+            // Validate Events
+            socket.events.assertEvents( "onTextStream\\(Hello World\\)" );
+        });
     }
 
     public static class PartialData extends ConnectionOnly implements WebSocketPartialListener
@@ -259,11 +264,11 @@ public class CommonEndpointFunctionsTest
     }
 
     @Test
-    public void testWebSocketPartialListener() throws Exception
+    public void testWebSocketPartialListener(TestInfo testInfo) throws Exception
     {
         // Setup
         PartialData socket = new PartialData();
-        Session session = initSession(socket);
+        Session session = initSession(socket, testInfo);
         try (CloseableEndpointFunctions endpointFunctions = new CloseableEndpointFunctions(socket, containerScope))
         {
             // Trigger Events

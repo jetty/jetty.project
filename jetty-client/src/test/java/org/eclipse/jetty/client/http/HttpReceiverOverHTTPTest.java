@@ -18,14 +18,22 @@
 
 package org.eclipse.jetty.client.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.EOFException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
@@ -39,42 +47,29 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.Promise;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class HttpReceiverOverHTTPTest
 {    
-    @Rule
-    public final TestTracker tracker = new TestTracker();
-
-    @Parameterized.Parameter(0)
-    public HttpCompliance compliance;
-    
     private HttpClient client;
     private HttpDestinationOverHTTP destination;
     private ByteArrayEndPoint endPoint;
     private HttpConnectionOverHTTP connection;
     
-    @Parameterized.Parameters
-    public static Collection<Object[]> parameters() throws Exception
+    public static Stream<Arguments> complianceModes() throws Exception
     {
-        return Arrays.asList(
-            new Object[] { HttpCompliance.LEGACY },
-            new Object[] { HttpCompliance.RFC2616_LEGACY },
-            new Object[] { HttpCompliance.RFC7230_LEGACY }
-        );
+        return Stream.of(
+            HttpCompliance.LEGACY,
+            HttpCompliance.RFC2616_LEGACY,
+            HttpCompliance.RFC7230_LEGACY
+        ).map(Arguments::of);
     }
     
-    @Before
-    public void init() throws Exception
+    public void init(HttpCompliance compliance) throws Exception
     {
         client = new HttpClient();
         client.setHttpCompliance(compliance);
@@ -86,7 +81,7 @@ public class HttpReceiverOverHTTPTest
         endPoint.setConnection(connection);
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         client.stop();
@@ -98,15 +93,17 @@ public class HttpReceiverOverHTTPTest
         FutureResponseListener listener = new FutureResponseListener(request);
         HttpExchange exchange = new HttpExchange(destination, request, Collections.<Response.ResponseListener>singletonList(listener));
         boolean associated = connection.getHttpChannel().associate(exchange);
-        Assert.assertTrue(associated);
+        assertTrue(associated);
         exchange.requestComplete(null);
         exchange.terminateRequest();
         return exchange;
     }
 
-    @Test
-    public void test_Receive_NoResponseContent() throws Exception
+    @ParameterizedTest
+    @MethodSource("complianceModes")
+    public void test_Receive_NoResponseContent(HttpCompliance compliance) throws Exception
     {
+        init(compliance);
         endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 0\r\n" +
@@ -116,19 +113,21 @@ public class HttpReceiverOverHTTPTest
         connection.getHttpChannel().receive();
 
         Response response = listener.get(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.getStatus());
-        Assert.assertEquals("OK", response.getReason());
-        Assert.assertSame(HttpVersion.HTTP_1_1, response.getVersion());
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
+        assertEquals("OK", response.getReason());
+        assertSame(HttpVersion.HTTP_1_1, response.getVersion());
         HttpFields headers = response.getHeaders();
-        Assert.assertNotNull(headers);
-        Assert.assertEquals(1, headers.size());
-        Assert.assertEquals("0", headers.get(HttpHeader.CONTENT_LENGTH));
+        assertNotNull(headers);
+        assertEquals(1, headers.size());
+        assertEquals("0", headers.get(HttpHeader.CONTENT_LENGTH));
     }
 
-    @Test
-    public void test_Receive_ResponseContent() throws Exception
+    @ParameterizedTest
+    @MethodSource("complianceModes")
+    public void test_Receive_ResponseContent(HttpCompliance compliance) throws Exception
     {
+        init(compliance);
         String content = "0123456789ABCDEF";
         endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
@@ -140,21 +139,23 @@ public class HttpReceiverOverHTTPTest
         connection.getHttpChannel().receive();
 
         Response response = listener.get(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.getStatus());
-        Assert.assertEquals("OK", response.getReason());
-        Assert.assertSame(HttpVersion.HTTP_1_1, response.getVersion());
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
+        assertEquals("OK", response.getReason());
+        assertSame(HttpVersion.HTTP_1_1, response.getVersion());
         HttpFields headers = response.getHeaders();
-        Assert.assertNotNull(headers);
-        Assert.assertEquals(1, headers.size());
-        Assert.assertEquals(String.valueOf(content.length()), headers.get(HttpHeader.CONTENT_LENGTH));
+        assertNotNull(headers);
+        assertEquals(1, headers.size());
+        assertEquals(String.valueOf(content.length()), headers.get(HttpHeader.CONTENT_LENGTH));
         String received = listener.getContentAsString(StandardCharsets.UTF_8);
-        Assert.assertEquals(content, received);
+        assertEquals(content, received);
     }
 
-    @Test
-    public void test_Receive_ResponseContent_EarlyEOF() throws Exception
+    @ParameterizedTest
+    @MethodSource("complianceModes")
+    public void test_Receive_ResponseContent_EarlyEOF(HttpCompliance compliance) throws Exception
     {
+        init(compliance);
         String content1 = "0123456789";
         String content2 = "ABCDEF";
         endPoint.addInput("" +
@@ -168,20 +169,15 @@ public class HttpReceiverOverHTTPTest
         endPoint.addInputEOF();
         connection.getHttpChannel().receive();
 
-        try
-        {
-            listener.get(5, TimeUnit.SECONDS);
-            Assert.fail();
-        }
-        catch (ExecutionException e)
-        {
-            Assert.assertTrue(e.getCause() instanceof EOFException);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, ()->listener.get(5, TimeUnit.SECONDS));
+        assertThat(e.getCause(), instanceOf(EOFException.class));
     }
 
-    @Test
-    public void test_Receive_ResponseContent_IdleTimeout() throws Exception
+    @ParameterizedTest
+    @MethodSource("complianceModes")
+    public void test_Receive_ResponseContent_IdleTimeout(HttpCompliance compliance) throws Exception
     {
+        init(compliance);
         endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 1\r\n" +
@@ -194,20 +190,15 @@ public class HttpReceiverOverHTTPTest
         Thread.sleep(100);
         connection.onIdleExpired();
 
-        try
-        {
-            listener.get(5, TimeUnit.SECONDS);
-            Assert.fail();
-        }
-        catch (ExecutionException e)
-        {
-            Assert.assertTrue(e.getCause() instanceof TimeoutException);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, ()->listener.get(5, TimeUnit.SECONDS));
+        assertThat(e.getCause(), instanceOf(TimeoutException.class));
     }
 
-    @Test
-    public void test_Receive_BadResponse() throws Exception
+    @ParameterizedTest
+    @MethodSource("complianceModes")
+    public void test_Receive_BadResponse(HttpCompliance compliance) throws Exception
     {
+        init(compliance);
         endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: A\r\n" +
@@ -216,20 +207,15 @@ public class HttpReceiverOverHTTPTest
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
 
-        try
-        {
-            listener.get(5, TimeUnit.SECONDS);
-            Assert.fail();
-        }
-        catch (ExecutionException e)
-        {
-            Assert.assertTrue(e.getCause() instanceof HttpResponseException);
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, ()->listener.get(5, TimeUnit.SECONDS));
+        assertThat(e.getCause(), instanceOf(HttpResponseException.class));
     }
 
-    @Test
-    public void test_FillInterested_RacingWith_BufferRelease() throws Exception
+    @ParameterizedTest
+    @MethodSource("complianceModes")
+    public void test_FillInterested_RacingWith_BufferRelease(HttpCompliance compliance) throws Exception
     {
+        init(compliance);
         connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<>())
         {
             @Override
@@ -247,7 +233,7 @@ public class HttpReceiverOverHTTPTest
                             {
                                 // Verify that the buffer has been released
                                 // before fillInterested() is called.
-                                Assert.assertNull(getResponseBuffer());
+                                assertNull(getResponseBuffer());
                                 // Fill the endpoint so receive is called again.
                                 endPoint.addInput("X");
                                 super.fillInterested();
@@ -270,7 +256,7 @@ public class HttpReceiverOverHTTPTest
         connection.getHttpChannel().receive();
 
         Response response = listener.get(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.getStatus());
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
     }
 }

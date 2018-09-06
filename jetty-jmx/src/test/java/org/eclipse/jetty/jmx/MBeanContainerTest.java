@@ -18,17 +18,23 @@
 
 package org.eclipse.jetty.jmx;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.acme.Managed;
+
 import java.lang.management.ManagementFactory;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import com.acme.Managed;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class MBeanContainerTest
 {
@@ -38,7 +44,7 @@ public class MBeanContainerTest
     private Managed managed;
     private ObjectName objectName;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         mbeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -55,7 +61,7 @@ public class MBeanContainerTest
         beanName = mbeanContainer.makeName(beanName);
 
         // then
-        Assert.assertEquals("Bean name should be mngd_bean", "mngd_bean", beanName);
+        assertEquals("mngd_bean", beanName, "Bean name should be mngd_bean");
     }
 
     @Test
@@ -66,11 +72,11 @@ public class MBeanContainerTest
 
         // when
         objectName = mbeanContainer.findMBean(managed);
-        Assert.assertNotNull(objectName);
+        assertNotNull(objectName);
 
         // then
-        Assert.assertEquals("Bean must be added", managed, mbeanContainer.findBean(objectName));
-        Assert.assertNull("It must return null as there is no bean with the name null", mbeanContainer.findBean(null));
+        assertEquals(managed, mbeanContainer.findBean(objectName), "Bean must be added");
+        assertNull(mbeanContainer.findBean(null), "It must return null as there is no bean with the name null");
     }
 
     private Managed getManaged()
@@ -86,13 +92,13 @@ public class MBeanContainerTest
     @Test
     public void testMBeanContainer()
     {
-        Assert.assertNotNull("Container shouldn't be null", mbeanContainer);
+        assertNotNull(mbeanContainer, "Container shouldn't be null");
     }
 
     @Test
     public void testGetMBeanServer()
     {
-        Assert.assertEquals("MBean server Instance must be equal", mbeanServer, mbeanContainer.getMBeanServer());
+        assertEquals(mbeanServer, mbeanContainer.getMBeanServer(), "MBean server Instance must be equal");
     }
 
     @Test
@@ -105,7 +111,7 @@ public class MBeanContainerTest
         mbeanContainer.setDomain(domain);
 
         // then
-        Assert.assertEquals("Domain name must be Test", domain, mbeanContainer.getDomain());
+        assertEquals(domain, mbeanContainer.getDomain(), "Domain name must be Test");
     }
 
     @Test
@@ -118,7 +124,7 @@ public class MBeanContainerTest
         objectName = mbeanContainer.findMBean(managed);
 
         // then
-        Assert.assertTrue("Bean must have been registered", mbeanServer.isRegistered(objectName));
+        assertTrue(mbeanServer.isRegistered(objectName), "Bean must have been registered");
     }
 
     @Test
@@ -132,7 +138,7 @@ public class MBeanContainerTest
         mbeanContainer.beanAdded(null, null);
 
         // then
-        Assert.assertEquals("MBean count must not change after beanAdded(null, null) call", mbeanCount, mbeanServer.getMBeanCount());
+        assertEquals(mbeanCount, mbeanServer.getMBeanCount(), "MBean count must not change after beanAdded(null, null) call");
     }
 
     private void setBeanAdded()
@@ -153,7 +159,7 @@ public class MBeanContainerTest
         mbeanContainer.beanRemoved(null, managed);
 
         // then
-        Assert.assertNull("Bean shouldn't be registered with container as we removed the bean", mbeanContainer.findMBean(managed));
+        assertNull(mbeanContainer.findMBean(managed), "Bean shouldn't be registered with container as we removed the bean");
     }
 
     private void setUpBeanRemoved()
@@ -174,7 +180,7 @@ public class MBeanContainerTest
         mbeanContainer.getMBeanServer().unregisterMBean(objectName);
 
         // then
-        Assert.assertFalse("Bean must not have been registered as we unregistered the bean", mbeanServer.isRegistered(objectName));
+        assertFalse(mbeanServer.isRegistered(objectName), "Bean must not have been registered as we unregistered the bean");
         // this flow covers InstanceNotFoundException. Actual code just eating
         // the exception. i.e Actual code just printing the stacktrace, whenever
         // an exception of type InstanceNotFoundException occurs.
@@ -184,7 +190,7 @@ public class MBeanContainerTest
     @Test
     public void testDump()
     {
-        Assert.assertNotNull("Dump operation shouldn't return null if operation is success", mbeanContainer.dump());
+        assertNotNull(mbeanContainer.dump(), "Dump operation shouldn't return null if operation is success");
     }
 
     private void setUpDestroy()
@@ -204,7 +210,7 @@ public class MBeanContainerTest
         mbeanContainer.destroy();
 
         // then
-        Assert.assertFalse("Unregistered bean - managed", mbeanContainer.getMBeanServer().isRegistered(objectName));
+        assertFalse(mbeanContainer.getMBeanServer().isRegistered(objectName), "Unregistered bean - managed");
     }
 
     @Test
@@ -218,7 +224,7 @@ public class MBeanContainerTest
         mbeanContainer.getMBeanServer().unregisterMBean(objectName);
 
         // then
-        Assert.assertFalse("Unregistered bean - managed", mbeanContainer.getMBeanServer().isRegistered(objectName));
+        assertFalse(mbeanContainer.getMBeanServer().isRegistered(objectName), "Unregistered bean - managed");
         // this flow covers InstanceNotFoundException. Actual code just eating
         // the exception. i.e Actual code just printing the stacktrace, whenever
         // an exception of type InstanceNotFoundException occurs.
@@ -252,6 +258,6 @@ public class MBeanContainerTest
 
         parent.removeBean(child);
 
-        Assert.assertNotNull(mbeanContainer.findMBean(lifeCycle));
+        assertNotNull(mbeanContainer.findMBean(lifeCycle));
     }
 }

@@ -48,35 +48,35 @@ public class SuspendResumeTest
     public static class BackPressureEchoSocket
     {
         private Session session;
-        
+
         @OnWebSocketConnect
         public void onConnect(Session session)
         {
             this.session = session;
         }
-        
+
         @OnWebSocketMessage
         public void onMessage(String message)
         {
             SuspendToken suspendToken = this.session.suspend();
             this.session.getRemote().sendString(message,
-                    new WriteCallback()
-                    {
-                        @Override
-                        public void writeSuccess()
-                        {
-                            suspendToken.resume();
-                        }
-                        
-                        @Override
-                        public void writeFailed(Throwable t)
-                        {
-                            Assert.fail(t.getMessage());
-                        }
-                    });
+                                                new WriteCallback()
+                                                {
+                                                    @Override
+                                                    public void writeSuccess()
+                                                    {
+                                                        suspendToken.resume();
+                                                    }
+
+                                                    @Override
+                                                    public void writeFailed(Throwable t)
+                                                    {
+                                                        Assert.fail(t.getMessage());
+                                                    }
+                                                });
         }
     }
-    
+
     public static class BackPressureEchoCreator implements WebSocketCreator
     {
         @Override
@@ -85,33 +85,33 @@ public class SuspendResumeTest
             return new BackPressureEchoSocket();
         }
     }
-    
+
     public static class BackPressureServlet extends WebSocketServlet
     {
         private static final long serialVersionUID = 1L;
-        
+
         @Override
         public void configure(WebSocketServletFactory factory)
         {
             factory.setCreator(new BackPressureEchoCreator());
         }
     }
-    
+
     private static SimpleServletServer server;
-    
+
     @BeforeClass
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new BackPressureServlet());
         server.start();
     }
-    
+
     @AfterClass
     public static void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Test(timeout = 10000)
     public void testSuspendResume_Bulk() throws Exception
     {
@@ -119,19 +119,19 @@ public class SuspendResumeTest
         send.add(new TextFrame().setPayload("echo1"));
         send.add(new TextFrame().setPayload("echo2"));
         send.add(new CloseFrame());
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("echo1"));
         expect.add(new TextFrame().setPayload("echo2"));
         expect.add(new CloseFrame());
-        
+
         try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     @Test(timeout = 10000)
     public void testSuspendResume_SmallBuffers() throws Exception
     {
@@ -139,12 +139,12 @@ public class SuspendResumeTest
         send.add(new TextFrame().setPayload("echo1"));
         send.add(new TextFrame().setPayload("echo2"));
         send.add(new CloseFrame());
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("echo1"));
         expect.add(new TextFrame().setPayload("echo2"));
         expect.add(new CloseFrame());
-        
+
         try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendSegmented(send, 2);

@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
-
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -38,19 +29,23 @@ import org.eclipse.jetty.websocket.common.io.FramePipes;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
 
 public class MessageOutputStreamTest
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStreamTest.class);
-    
-    @Rule
-    public TestName testname = new TestName();
 
     public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
     
@@ -58,8 +53,8 @@ public class MessageOutputStreamTest
     private TrackingEndpoint remoteSocket;
     private WebSocketSession session;
     private WebSocketSession remoteSession;
-    
-    @After
+
+    @AfterEach
     public void closeSession() throws Exception
     {
         session.close();
@@ -67,9 +62,9 @@ public class MessageOutputStreamTest
         remoteSession.close();
         remoteSession.stop();
     }
-    
-    @Before
-    public void setupSession() throws Exception
+
+    @BeforeEach
+    public void setupSession(TestInfo testInfo) throws Exception
     {
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
@@ -92,6 +87,7 @@ public class MessageOutputStreamTest
         LocalWebSocketConnection localConnection = new LocalWebSocketConnection(localURI, bufferPool);
         session = new WebSocketSession(containerScope, localURI, localSocket, localConnection);
         
+
         // talk to our remote socket
         session.setOutgoingHandler(FramePipes.to(remoteSession));
         session.connect();
@@ -101,7 +97,7 @@ public class MessageOutputStreamTest
         session.open();
     }
     
-    @Test(timeout = 2000)
+    @Test //(timeout = 2000)
     public void testMultipleWrites() throws Exception
     {
         try (MessageOutputStream stream = new MessageOutputStream(session))
@@ -110,28 +106,29 @@ public class MessageOutputStreamTest
             stream.write(" ".getBytes("UTF-8"));
             stream.write("World".getBytes("UTF-8"));
         }
-        
-        Assert.assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
+
+        assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
         ByteBuffer buffer = remoteSocket.bufferQueue.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
-        Assert.assertThat("Message", message, is("Hello World"));
+        assertThat("Message", message, is("Hello World"));
+
     }
     
-    @Test(timeout = 2000)
+    @Test // (timeout = 2000)
     public void testSingleWrite() throws Exception
     {
         try (MessageOutputStream stream = new MessageOutputStream(session))
         {
             stream.write("Hello World".getBytes("UTF-8"));
         }
-        
-        Assert.assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
+
+        assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
         ByteBuffer buffer = remoteSocket.bufferQueue.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
-        Assert.assertThat("Message", message, is("Hello World"));
+        assertThat("Message", message, is("Hello World"));
     }
     
-    @Test(timeout = 2000000)
+    @Test // (timeout = 2000000)
     public void testWriteMultipleBuffers() throws Exception
     {
         int bufsize = (int) (policy.getOutputBufferSize() * 2.5);
@@ -144,10 +141,10 @@ public class MessageOutputStreamTest
         {
             stream.write(buf);
         }
-        
-        Assert.assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
+
+        assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
         ByteBuffer buffer = remoteSocket.bufferQueue.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
-        Assert.assertThat("Message", message, endsWith("xxxxxo"));
+        assertThat("Message", message, endsWith("xxxxxo"));
     }
 }

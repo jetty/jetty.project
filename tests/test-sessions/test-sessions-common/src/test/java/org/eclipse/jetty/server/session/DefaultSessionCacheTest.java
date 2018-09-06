@@ -19,11 +19,13 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.Set;
@@ -34,7 +36,7 @@ import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * DefaultSessionCacheTest
@@ -498,10 +500,7 @@ public class DefaultSessionCacheTest
        store.store("567", data2);
        
        result = cache.checkExpiration(Collections.emptySet());
-       assertNotNull(result);
-       assertEquals(2, result.size());
-       assertTrue(result.contains("1234"));
-       assertTrue(result.contains("567"));
+       assertThat(result, containsInAnyOrder("1234", "567"));
    }
 
    @Test

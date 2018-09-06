@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,10 +35,11 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.toolchain.test.IO;
-import org.junit.Assert;
+
 
 /**
- * Calculate the sha1sum for various content 
+ * Calculate the sha1sum for various content
+ * @deprecated use {@link org.eclipse.jetty.toolchain.test.Sha1Sum} instead
  */
 public class Sha1Sum
 {
@@ -104,7 +107,7 @@ public class Sha1Sum
         String contents = IO.readToString(sha1File);
         Pattern pat = Pattern.compile("^[0-9A-Fa-f]*");
         Matcher mat = pat.matcher(contents);
-        Assert.assertTrue("Should have found HEX code in SHA1 file: " + sha1File,mat.find());
+        assertTrue(mat.find(), "Should have found HEX code in SHA1 file: " + sha1File);
         return mat.group();
     }
 

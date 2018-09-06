@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.tests.extensions;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -46,8 +46,8 @@ import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.tests.OutgoingFramesCapture;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Client side behavioral tests for permessage-deflate extension.
@@ -251,14 +251,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         capture.assertHasOpCount(OpCode.PING, 1);
         WebSocketFrame actual = capture.frames.poll();
 
-        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
-        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
-        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
+        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+        assertThat("Frame.fin", actual.isFin(), is(true));
+        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
-        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 
@@ -304,14 +304,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         {
             prefix = "Frame[" + i + "]";
 
-            Assert.assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
-            Assert.assertThat(prefix + ".fin", actual.isFin(), is(true));
-            Assert.assertThat(prefix + ".rsv1", actual.isRsv1(), is(false));
-            Assert.assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
-            Assert.assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
+            assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
+            assertThat(prefix + ".fin", actual.isFin(), is(true));
+            assertThat(prefix + ".rsv1", actual.isRsv1(), is(false));
+            assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
+            assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
 
             ByteBuffer expected = BufferUtil.toBuffer(quote.get(i), StandardCharsets.UTF_8);
-            Assert.assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+            assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
             ByteBufferAssert.assertEquals(prefix + ".payload", expected, actual.getPayload().slice());
             i++;
         }
@@ -346,14 +346,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         WebSocketFrame actual = capture.frames.poll();
 
-        Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
-        Assert.assertThat("Frame.fin", actual.isFin(), is(true));
-        Assert.assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        Assert.assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        Assert.assertThat("Frame.rsv3", actual.isRsv3(), is(false));
+        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+        assertThat("Frame.fin", actual.isFin(), is(true));
+        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
-        Assert.assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
+        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
         ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
     }
 

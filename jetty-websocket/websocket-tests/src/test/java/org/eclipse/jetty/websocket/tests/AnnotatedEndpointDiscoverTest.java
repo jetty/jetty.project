@@ -49,16 +49,16 @@ import org.junit.rules.TestName;
 public class AnnotatedEndpointDiscoverTest
 {
     private WebSocketContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newServerPolicy());
-    
+
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    
+
     @Rule
     public TestName testname = new TestName();
-    
+
     public LocalWebSocketSession createSession(Object endpoint) throws Exception
     {
-        LocalWebSocketSession session = new LocalWebSocketSession(containerScope, testname, endpoint);
+        LocalWebSocketSession session = new LocalWebSocketSession(containerScope, testname.getMethodName(), endpoint);
         session.start();
         return session;
     }

@@ -19,10 +19,10 @@
 
 package org.eclipse.jetty.webapp;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.util.Arrays;
@@ -32,8 +32,11 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
 /**
  * MetaInfConfigurationTest
@@ -146,10 +149,10 @@ public class MetaInfConfigurationTest
      * @throws Exception
      */
     @Test
+    @EnabledOnJre( JRE.JAVA_8 )
     public void testFindAndFilterContainerPaths()
     throws Exception
     {
-        Assume.assumeTrue(JavaVersion.VERSION.getMajor() < 9);
         MetaInfConfiguration config = new MetaInfConfiguration();
         WebAppContext context = new WebAppContext();
         context.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/");
@@ -167,11 +170,11 @@ public class MetaInfConfigurationTest
      * @throws Exception
      */
     @Test
+    @DisabledOnJre( JRE.JAVA_8 )
+    @EnabledIfSystemProperty(named = "jdk.module.path", matches = ".*")
     public void testFindAndFilterContainerPathsJDK9()
             throws Exception
     {
-        Assume.assumeTrue(JavaVersion.VERSION.getMajor() >= 9);
-        Assume.assumeTrue(System.getProperty("jdk.module.path") != null);
         MetaInfConfiguration config = new MetaInfConfiguration();
         WebAppContext context = new WebAppContext();
         context.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-util-[^/]*\\.jar$|.*/jetty-util/target/classes/$|.*/foo-bar-janb.jar");
@@ -196,11 +199,11 @@ public class MetaInfConfigurationTest
      * @throws Exception
      */
     @Test
+    @DisabledOnJre( JRE.JAVA_8 )
+    @EnabledIfSystemProperty(named = "jdk.module.path", matches = ".*")
     public void testFindAndFilterContainerPathsTarget8()
             throws Exception
     {
-        Assume.assumeTrue(JavaVersion.VERSION.getMajor() >= 9);
-        Assume.assumeTrue(System.getProperty("jdk.module.path") != null);
         MetaInfConfiguration config = new MetaInfConfiguration();
         WebAppContext context = new WebAppContext();
         context.setAttribute(JavaVersion.JAVA_TARGET_PLATFORM, "8");

@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.ProtocolException;
@@ -32,49 +27,49 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.PongFrame;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.nio.ByteBuffer;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test various invalid frame situations
  */
-@RunWith(value = Parameterized.class)
 public class GeneratorFrameFlagsTest
 {
     private static ByteBufferPool bufferPool = new MappedByteBufferPool();
     
-    @Parameters
-    public static Collection<WebSocketFrame[]> data()
+
+    public static Stream<Arguments> badFrames()
     {
-        List<WebSocketFrame[]> data = new ArrayList<>();
-        data.add(new WebSocketFrame[]{new PingFrame().setFin(false)});
-        data.add(new WebSocketFrame[]{new PingFrame().setRsv1(true)});
-        data.add(new WebSocketFrame[]{new PingFrame().setRsv2(true)});
-        data.add(new WebSocketFrame[]{new PingFrame().setRsv3(true)});
-        data.add(new WebSocketFrame[]{new PongFrame().setFin(false)});
-        data.add(new WebSocketFrame[]{new PingFrame().setRsv1(true)});
-        data.add(new WebSocketFrame[]{new PongFrame().setRsv2(true)});
-        data.add(new WebSocketFrame[]{new PongFrame().setRsv3(true)});
-        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setFin(false)});
-        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setRsv1(true)});
-        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setRsv2(true)});
-        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setRsv3(true)});
-        return data;
+        return Stream.of(
+                new PingFrame().setFin(false),
+                new PingFrame().setRsv1(true),
+                new PingFrame().setRsv2(true),
+                new PingFrame().setRsv3(true),
+                new PongFrame().setFin(false),
+                new PingFrame().setRsv1(true),
+                new PongFrame().setRsv2(true),
+                new PongFrame().setRsv3(true),
+                new CloseInfo().asFrame().setFin(false),
+                new CloseInfo().asFrame().setRsv1(true),
+                new CloseInfo().asFrame().setRsv2(true),
+                new CloseInfo().asFrame().setRsv3(true))
+                .map(Arguments::of);
     }
-    
-    private WebSocketFrame invalidFrame;
-    
-    public GeneratorFrameFlagsTest(WebSocketFrame invalidFrame)
+
+
+    @ParameterizedTest
+    @MethodSource("badFrames")
+    public void testGenerateInvalidControlFrame(WebSocketFrame invalidFrame)
     {
-        this.invalidFrame = invalidFrame;
-    }
-    
-    @Test(expected = ProtocolException.class)
-    public void testGenerateInvalidControlFrame()
-    {
-        ByteBuffer buffer = ByteBuffer.allocate(100);
-        new Generator(WebSocketPolicy.newServerPolicy(), bufferPool).generateWholeFrame(invalidFrame, buffer);
+        assertThrows(ProtocolException.class, () -> {
+            ByteBuffer buffer = ByteBuffer.allocate( 100);
+            new Generator( WebSocketPolicy.newServerPolicy(), bufferPool).generateWholeFrame( invalidFrame, buffer);
+        });
     }
 }

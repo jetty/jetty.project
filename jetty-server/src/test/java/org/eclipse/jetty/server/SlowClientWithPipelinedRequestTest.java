@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,13 +39,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
 
-@RunWith(AdvancedRunner.class)
+import org.junit.jupiter.api.Test;
+
 public class SlowClientWithPipelinedRequestTest
 {
     private final AtomicInteger handles = new AtomicInteger();
@@ -75,7 +75,7 @@ public class SlowClientWithPipelinedRequestTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         if (server != null)
@@ -124,7 +124,7 @@ public class SlowClientWithPipelinedRequestTest
         InputStream input = client.getInputStream();
 
         int read = input.read();
-        Assert.assertTrue(read >= 0);
+        assertTrue(read >= 0);
         // As soon as we can read the response, send a pipelined request
         // so it is a different read for the server and it will trigger NIO
         output.write(("" +
@@ -136,7 +136,7 @@ public class SlowClientWithPipelinedRequestTest
 
         // Simulate a slow reader
         Thread.sleep(1000);
-        Assert.assertThat(handles.get(), lessThan(10));
+        assertThat(handles.get(), lessThan(10));
 
         // We are sure we are not spinning, read the content
         StringBuilder lines = new StringBuilder().append((char)read);
@@ -152,7 +152,7 @@ public class SlowClientWithPipelinedRequestTest
             if (crlfs == 4)
                 break;
         }
-        Assert.assertTrue(lines.toString().contains(" 200 "));
+        assertThat(lines.toString(), containsString(" 200 "));
         // Read the body
         for (int i = 0; i < contentLength; ++i)
             input.read();
@@ -171,7 +171,7 @@ public class SlowClientWithPipelinedRequestTest
             if (crlfs == 4)
                 break;
         }
-        Assert.assertTrue(lines.toString().contains(" 200 "));
+        assertThat(lines.toString(), containsString(" 200 "));
 
         client.close();
     }

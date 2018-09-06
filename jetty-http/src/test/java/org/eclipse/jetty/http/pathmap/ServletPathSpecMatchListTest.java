@@ -18,37 +18,35 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests of {@link PathMappings#getMatches(String)}
  */
-@RunWith(Parameterized.class)
+@SuppressWarnings("Duplicates")
 public class ServletPathSpecMatchListTest
 {
-    @Parameters(name="{0} = {1}")
-    public static List<String[]> testCases()
+    public static Stream<Arguments> data()
     {
-        String data[][] = new String[][] { 
-            // From old PathMapTest
-            { "All matches",  "/animal/bird/path.tar.gz", "[/animal/bird/*=birds, /animal/*=animals, *.tar.gz=tarball, *.gz=gzipped, /=default]"},
-            { "Dir matches",  "/animal/fish/", "[/animal/fish/*=fishes, /animal/*=animals, /=default]"},
-            { "Dir matches",  "/animal/fish", "[/animal/fish/*=fishes, /animal/*=animals, /=default]"},
-            { "Root matches", "/", "[=root, /=default]"},
-            { "Dir matches",  "", "[/=default]"}
-        };
-        
-        return Arrays.asList(data);
+        ArrayList<Arguments> data = new ArrayList<>();
+
+        // From old PathMapTest
+        data.add(Arguments.of( "All matches",  "/animal/bird/path.tar.gz", "[/animal/bird/*=birds, /animal/*=animals, *.tar.gz=tarball, *.gz=gzipped, /=default]"));
+        data.add(Arguments.of( "Dir matches",  "/animal/fish/", "[/animal/fish/*=fishes, /animal/*=animals, /=default]"));
+        data.add(Arguments.of( "Dir matches",  "/animal/fish", "[/animal/fish/*=fishes, /animal/*=animals, /=default]"));
+        data.add(Arguments.of( "Root matches", "/", "[=root, /=default]"));
+        data.add(Arguments.of( "Dir matches",  "", "[/=default]"));
+
+        return data.stream();
     }
 
     private static PathMappings<String> mappings;
@@ -70,17 +68,9 @@ public class ServletPathSpecMatchListTest
         mappings.put(new ServletPathSpec("/\u20ACuro/*"),"money"); // 11
     }
     
-    @Parameter(0)
-    public String message;
-    
-    @Parameter(1)
-    public String inputPath;
-    
-    @Parameter(2)
-    public String expectedListing;
-    
-    @Test
-    public void testGetMatches()
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testGetMatches(String message, String inputPath, String expectedListing)
     {
         List<MappedResource<String>> matches = mappings.getMatches(inputPath);
 

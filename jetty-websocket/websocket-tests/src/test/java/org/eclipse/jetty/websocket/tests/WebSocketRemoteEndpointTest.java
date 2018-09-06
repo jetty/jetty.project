@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.ByteBuffer;
 
@@ -30,10 +32,8 @@ import org.eclipse.jetty.websocket.common.WebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.util.LifeCycleScope;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class WebSocketRemoteEndpointTest
 {
@@ -43,16 +43,14 @@ public class WebSocketRemoteEndpointTest
         /* does nothing */
     }
     
-    @Rule
-    public TestName testname = new TestName();
 
     public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
 
     @Test
-    public void testTextBinaryText() throws Exception
+    public void testTextBinaryText( TestInfo testInfo ) throws Exception
     {
         SimpleContainerScope container = new SimpleContainerScope(WebSocketPolicy.newServerPolicy());
-        WebSocketSession session = new LocalWebSocketSession(container, testname, new DummySocket());
+        WebSocketSession session = new LocalWebSocketSession(container, testInfo, new DummySocket());
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
         WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(session,outgoing);
         try(LifeCycleScope sessionScope = new LifeCycleScope(session))
@@ -68,12 +66,12 @@ public class WebSocketRemoteEndpointTest
                 // Attempt to start Binary Message
                 ByteBuffer bytes = ByteBuffer.wrap(new byte[] {0, 1, 2});
                 remote.sendPartialBytes(bytes, false);
-                Assert.fail("Expected " + IllegalStateException.class.getName());
+                fail("Expected " + IllegalStateException.class.getName());
             }
             catch (IllegalStateException e)
             {
                 // Expected path
-                Assert.assertThat("Exception", e.getMessage(), containsString("Cannot send"));
+                assertThat("Exception", e.getMessage(), containsString("Cannot send"));
             }
     
             // End text message
@@ -82,10 +80,10 @@ public class WebSocketRemoteEndpointTest
     }
 
     @Test
-    public void testTextPingText() throws Exception
+    public void testTextPingText(TestInfo testInfo) throws Exception
     {
         SimpleContainerScope container = new SimpleContainerScope(WebSocketPolicy.newServerPolicy());
-        WebSocketSession session = new LocalWebSocketSession(container, testname, new DummySocket());
+        WebSocketSession session = new LocalWebSocketSession(container, testInfo, new DummySocket());
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
         WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(session,outgoing);
         try(LifeCycleScope sessionScope = new LifeCycleScope(session))

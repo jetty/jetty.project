@@ -40,7 +40,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SSLCloseTest
 {

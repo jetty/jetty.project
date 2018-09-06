@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +31,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -54,20 +55,19 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for RequestLogHandler behavior.
  * <p>
  * Tests different request handler behavior against different server+error configurations
  */
-@RunWith(Parameterized.class)
-@Ignore
+@Tag("Unstable")
+@Disabled
 public class RequestLogHandlerTest
 {
     private static final Logger LOG = Log.getLogger(RequestLogHandlerTest.class);
@@ -347,8 +347,7 @@ public class RequestLogHandlerTest
         }
     }
 
-    @Parameters(name = "{0}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> data()
     {
         List<Object[]> data = new ArrayList<>();
 
@@ -363,24 +362,16 @@ public class RequestLogHandlerTest
         data.add(new Object[] { new IOExceptionHandler(), "/test/", "GET /test/ HTTP/1.1 500" });
         data.add(new Object[] { new RuntimeExceptionHandler(), "/test/", "GET /test/ HTTP/1.1 500" });
 
-        return data;
+        return data.stream().map(Arguments::of);
     }
-
-    @Parameter(0)
-    public Handler testHandler;
-
-    @Parameter(1)
-    public String requestPath;
-
-    @Parameter(2)
-    public String expectedLogEntry;
 
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection. all other configuration on server at defaults.
      * @throws Exception if test failure
      */
-    @Test(timeout = 4000)
-    public void testLogHandlerCollection() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testLogHandlerCollection(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -431,7 +422,7 @@ public class RequestLogHandlerTest
                 connection.disconnect();
             }
 
-            assertRequestLog(captureLog);
+            assertRequestLog(expectedLogEntry, captureLog);
         }
         finally
         {
@@ -439,8 +430,9 @@ public class RequestLogHandlerTest
         }
     }
 
-    @Test(timeout = 4000)
-    public void testMultipleLogHandlers() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMultipleLogHandlers(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -499,7 +491,7 @@ public class RequestLogHandlerTest
             }
 
             for (CaptureLog captureLog:captureLogs)
-                assertRequestLog(captureLog);
+                assertRequestLog(expectedLogEntry, captureLog);
         }
         finally
         {
@@ -511,8 +503,9 @@ public class RequestLogHandlerTest
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the default ErrorHandler as server bean in place.
      * @throws Exception if test failure
      */
-    @Test(timeout = 4000)
-    public void testLogHandlerCollection_ErrorHandler_ServerBean() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testLogHandlerCollection_ErrorHandler_ServerBean(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -566,7 +559,7 @@ public class RequestLogHandlerTest
                 connection.disconnect();
             }
 
-            assertRequestLog(captureLog);
+            assertRequestLog(expectedLogEntry, captureLog);
         }
         finally
         {
@@ -578,8 +571,9 @@ public class RequestLogHandlerTest
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the ErrorHandler in place.
      * @throws Exception if test failure
      */
-    @Test(timeout=4000)
-    public void testLogHandlerCollection_AltErrorHandler() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testLogHandlerCollection_AltErrorHandler(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -640,7 +634,7 @@ public class RequestLogHandlerTest
                 connection.disconnect();
             }
 
-            assertRequestLog(captureLog);
+            assertRequestLog(expectedLogEntry, captureLog);
         }
         finally
         {
@@ -652,8 +646,9 @@ public class RequestLogHandlerTest
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the ErrorHandler in place.
      * @throws Exception if test failure
      */
-    @Test(timeout=4000)
-    public void testLogHandlerCollection_OKErrorHandler() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testLogHandlerCollection_OKErrorHandler(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -714,7 +709,7 @@ public class RequestLogHandlerTest
                 connection.disconnect();
             }
 
-            assertRequestLog(captureLog);
+            assertRequestLog(expectedLogEntry, captureLog);
         }
         finally
         {
@@ -726,8 +721,9 @@ public class RequestLogHandlerTest
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the ErrorHandler in place.
      * @throws Exception if test failure
      */
-    @Test(timeout=4000)
-    public void testLogHandlerCollection_DispatchErrorHandler() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testLogHandlerCollection_DispatchErrorHandler(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -788,7 +784,7 @@ public class RequestLogHandlerTest
                 connection.disconnect();
             }
 
-            assertRequestLog(captureLog);
+            assertRequestLog(expectedLogEntry, captureLog);
         }
         finally
         {
@@ -796,8 +792,9 @@ public class RequestLogHandlerTest
         }
     }
 
-    @Test(timeout = 4000)
-    public void testLogHandlerWrapped() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testLogHandlerWrapped(Handler testHandler, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -813,7 +810,7 @@ public class RequestLogHandlerTest
 
         server.setHandler(requestLog);
         
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class,HttpChannelState.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class,HttpChannelState.class))
         {
             server.start();
 
@@ -848,7 +845,7 @@ public class RequestLogHandlerTest
                 connection.disconnect();
             }
 
-            assertRequestLog(captureLog);
+            assertRequestLog(expectedLogEntry, captureLog);
         }
         finally
         {
@@ -856,7 +853,7 @@ public class RequestLogHandlerTest
         }
     }
 
-    private void assertRequestLog(CaptureLog captureLog)
+    private void assertRequestLog(final String expectedLogEntry, CaptureLog captureLog)
     {
         int captureCount = captureLog.captured.size();
 

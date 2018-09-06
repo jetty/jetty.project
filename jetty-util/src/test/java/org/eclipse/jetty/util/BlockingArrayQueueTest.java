@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.HashSet;
 import java.util.ListIterator;
 import java.util.Random;
@@ -26,13 +31,10 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(AdvancedRunner.class)
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+
 public class BlockingArrayQueueTest
 {
     @Test
@@ -40,39 +42,39 @@ public class BlockingArrayQueueTest
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3);
 
-        Assert.assertEquals(0, queue.size());
+        assertEquals(0, queue.size());
 
         for (int i=0;i<queue.getMaxCapacity();i++)
         {
             queue.offer("one");
-            Assert.assertEquals(1, queue.size());
+            assertEquals(1, queue.size());
 
             queue.offer("two");
-            Assert.assertEquals(2, queue.size());
+            assertEquals(2, queue.size());
 
             queue.offer("three");
-            Assert.assertEquals(3, queue.size());
+            assertEquals(3, queue.size());
 
-            Assert.assertEquals("one", queue.get(0));
-            Assert.assertEquals("two", queue.get(1));
-            Assert.assertEquals("three", queue.get(2));
+            assertEquals("one", queue.get(0));
+            assertEquals("two", queue.get(1));
+            assertEquals("three", queue.get(2));
 
-            Assert.assertEquals("[one, two, three]", queue.toString());
+            assertEquals("[one, two, three]", queue.toString());
 
-            Assert.assertEquals("one", queue.poll());
-            Assert.assertEquals(2, queue.size());
+            assertEquals("one", queue.poll());
+            assertEquals(2, queue.size());
 
-            Assert.assertEquals("two", queue.poll());
-            Assert.assertEquals(1, queue.size());
+            assertEquals("two", queue.poll());
+            assertEquals(1, queue.size());
 
-            Assert.assertEquals("three", queue.poll());
-            Assert.assertEquals(0, queue.size());
+            assertEquals("three", queue.poll());
+            assertEquals(0, queue.size());
 
 
             queue.offer("xxx");
-            Assert.assertEquals(1, queue.size());
-            Assert.assertEquals("xxx", queue.poll());
-            Assert.assertEquals(0, queue.size());
+            assertEquals(1, queue.size());
+            assertEquals("xxx", queue.poll());
+            assertEquals(0, queue.size());
         }
     }
 
@@ -93,7 +95,7 @@ public class BlockingArrayQueueTest
         }
 
         for (int i=0;i<99;i++)
-            Assert.assertEquals(i + "!", queue.get(i));
+            assertEquals(i + "!", queue.get(i));
     }
 
     @Test
@@ -102,27 +104,27 @@ public class BlockingArrayQueueTest
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1,0,1);
 
         String element = "0";
-        Assert.assertTrue(queue.add(element));
-        Assert.assertFalse(queue.offer("1"));
+        assertTrue(queue.add(element));
+        assertFalse(queue.offer("1"));
 
-        Assert.assertEquals(element, queue.poll());
-        Assert.assertTrue(queue.add(element));
+        assertEquals(element, queue.poll());
+        assertTrue(queue.add(element));
     }
 
     @Test
     public void testGrow() throws Exception
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(3,2);
-        Assert.assertEquals(3, queue.getCapacity());
+        assertEquals(3, queue.getCapacity());
 
         queue.add("a");
         queue.add("a");
-        Assert.assertEquals(2, queue.size());
-        Assert.assertEquals(3, queue.getCapacity());
+        assertEquals(2, queue.size());
+        assertEquals(3, queue.getCapacity());
         queue.add("a");
         queue.add("a");
-        Assert.assertEquals(4, queue.size());
-        Assert.assertEquals(5, queue.getCapacity());
+        assertEquals(4, queue.size());
+        assertEquals(5, queue.getCapacity());
 
         int s=5;
         int c=5;
@@ -130,25 +132,25 @@ public class BlockingArrayQueueTest
 
         for (int t=0;t<100;t++)
         {
-            Assert.assertEquals(s, queue.size());
-            Assert.assertEquals(c, queue.getCapacity());
+            assertEquals(s, queue.size());
+            assertEquals(c, queue.getCapacity());
 
             for (int i=queue.size();i-->0;)
                 queue.poll();
-            Assert.assertEquals(0, queue.size());
-            Assert.assertEquals(c, queue.getCapacity());
+            assertEquals(0, queue.size());
+            assertEquals(c, queue.getCapacity());
 
             for (int i=queue.getCapacity();i-->0;)
                 queue.add("a");
             queue.add("a");
-            Assert.assertEquals(s + 1, queue.size());
-            Assert.assertEquals(c + 2, queue.getCapacity());
+            assertEquals(s + 1, queue.size());
+            assertEquals(c + 2, queue.getCapacity());
 
             queue.poll();
             queue.add("a");
             queue.add("a");
-            Assert.assertEquals(s + 2, queue.size());
-            Assert.assertEquals(c + 2, queue.getCapacity());
+            assertEquals(s + 2, queue.size());
+            assertEquals(c + 2, queue.getCapacity());
 
             s+=2;
             c+=2;
@@ -156,7 +158,7 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    @Slow
+    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testTake() throws Exception
     {
         final String[] data=new String[4];
@@ -179,7 +181,7 @@ public class BlockingArrayQueueTest
                 catch(Exception e)
                 {
                     e.printStackTrace();
-                    Assert.fail();
+                    fail("Should not had failed");
                 }
             }
         };
@@ -193,14 +195,14 @@ public class BlockingArrayQueueTest
         queue.offer("two");
         thread.join();
 
-        Assert.assertEquals("zero", data[0]);
-        Assert.assertEquals("one", data[1]);
-        Assert.assertEquals("two", data[2]);
-        Assert.assertEquals(null, data[3]);
+        assertEquals("zero", data[0]);
+        assertEquals("one", data[1]);
+        assertEquals("two", data[2]);
+        assertEquals(null, data[3]);
     }
 
     @Test
-    @Slow
+    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testConcurrentAccess() throws Exception
     {
         final int THREADS=50;
@@ -324,14 +326,14 @@ public class BlockingArrayQueueTest
         HashSet<Integer> prodSet = new HashSet<>(produced);
         HashSet<Integer> consSet = new HashSet<>(consumed);
 
-        Assert.assertEquals(prodSet, consSet);
+        assertEquals(prodSet, consSet);
     }
 
     @Test
     public void testRemoveObjectFromEmptyQueue()
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
-        Assert.assertFalse(queue.remove("SOMETHING"));
+        assertFalse(queue.remove("SOMETHING"));
     }
 
     @Test
@@ -344,14 +346,14 @@ public class BlockingArrayQueueTest
         // Advance the head
         queue.poll();
         // Remove from the middle
-        Assert.assertTrue(queue.remove("2"));
+        assertTrue(queue.remove("2"));
 
         // Advance the tail
-        Assert.assertTrue(queue.offer("A"));
-        Assert.assertTrue(queue.offer("B"));
+        assertTrue(queue.offer("A"));
+        assertTrue(queue.offer("B"));
         queue.poll();
         // Remove from the middle
-        Assert.assertTrue(queue.remove("3"));
+        assertTrue(queue.remove("3"));
     }
 
     @Test
@@ -360,8 +362,8 @@ public class BlockingArrayQueueTest
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(4,0,4);
 
         String element1 = "A";
-        Assert.assertTrue(queue.offer(element1));
-        Assert.assertTrue(queue.remove(element1));
+        assertTrue(queue.offer(element1));
+        assertTrue(queue.remove(element1));
 
         for (int i = 0; i < queue.getMaxCapacity() - 1; ++i)
         {
@@ -369,21 +371,21 @@ public class BlockingArrayQueueTest
             queue.poll();
         }
         String element2 = "B";
-        Assert.assertTrue(queue.offer(element2));
-        Assert.assertTrue(queue.offer(element1));
-        Assert.assertTrue(queue.remove(element1));
+        assertTrue(queue.offer(element2));
+        assertTrue(queue.offer(element1));
+        assertTrue(queue.remove(element1));
 
-        Assert.assertFalse(queue.remove("NOT_PRESENT"));
+        assertFalse(queue.remove("NOT_PRESENT"));
 
-        Assert.assertTrue(queue.remove(element2));
-        Assert.assertFalse(queue.remove("NOT_PRESENT"));
+        assertTrue(queue.remove(element2));
+        assertFalse(queue.remove("NOT_PRESENT"));
 
         queue.clear();
 
         for (int i = 0; i < queue.getMaxCapacity(); ++i)
             queue.offer("" + i);
 
-        Assert.assertTrue(queue.remove("" + (queue.getMaxCapacity() - 1)));
+        assertTrue(queue.remove("" + (queue.getMaxCapacity() - 1)));
     }
 
     @Test
@@ -392,11 +394,11 @@ public class BlockingArrayQueueTest
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<>(1);
 
         String element = "A";
-        Assert.assertTrue(queue.offer(element));
-        Assert.assertTrue(queue.remove(element));
+        assertTrue(queue.offer(element));
+        assertTrue(queue.remove(element));
 
-        Assert.assertTrue(queue.offer(element));
-        Assert.assertEquals(element, queue.remove(0));
+        assertTrue(queue.offer(element));
+        assertEquals(element, queue.remove(0));
     }
 
     @Test
@@ -415,8 +417,8 @@ public class BlockingArrayQueueTest
             queue.remove(element);
         }
 
-        Assert.assertEquals(count, sum);
-        Assert.assertTrue(queue.isEmpty());
+        assertEquals(count, sum);
+        assertTrue(queue.isEmpty());
     }
 
     @Test
@@ -429,28 +431,28 @@ public class BlockingArrayQueueTest
         queue.offer(element2);
 
         ListIterator<String> iterator = queue.listIterator();
-        Assert.assertTrue(iterator.hasNext());
-        Assert.assertFalse(iterator.hasPrevious());
+        assertTrue(iterator.hasNext());
+        assertFalse(iterator.hasPrevious());
 
         String element = iterator.next();
-        Assert.assertEquals(element1, element);
-        Assert.assertTrue(iterator.hasNext());
-        Assert.assertTrue(iterator.hasPrevious());
+        assertEquals(element1, element);
+        assertTrue(iterator.hasNext());
+        assertTrue(iterator.hasPrevious());
 
         element = iterator.next();
-        Assert.assertEquals(element2, element);
-        Assert.assertFalse(iterator.hasNext());
-        Assert.assertTrue(iterator.hasPrevious());
+        assertEquals(element2, element);
+        assertFalse(iterator.hasNext());
+        assertTrue(iterator.hasPrevious());
 
         element = iterator.previous();
-        Assert.assertEquals(element2, element);
-        Assert.assertTrue(iterator.hasNext());
-        Assert.assertTrue(iterator.hasPrevious());
+        assertEquals(element2, element);
+        assertTrue(iterator.hasNext());
+        assertTrue(iterator.hasPrevious());
 
         element = iterator.previous();
-        Assert.assertEquals(element1, element);
-        Assert.assertTrue(iterator.hasNext());
-        Assert.assertFalse(iterator.hasPrevious());
+        assertEquals(element1, element);
+        assertTrue(iterator.hasNext());
+        assertFalse(iterator.hasPrevious());
     }
 
     @Test
@@ -469,27 +471,27 @@ public class BlockingArrayQueueTest
         String element2 = queue.get(1);
 
         ListIterator<String> iterator = queue.listIterator();
-        Assert.assertTrue(iterator.hasNext());
-        Assert.assertFalse(iterator.hasPrevious());
+        assertTrue(iterator.hasNext());
+        assertFalse(iterator.hasPrevious());
 
         String element = iterator.next();
-        Assert.assertEquals(element1, element);
-        Assert.assertTrue(iterator.hasNext());
-        Assert.assertTrue(iterator.hasPrevious());
+        assertEquals(element1, element);
+        assertTrue(iterator.hasNext());
+        assertTrue(iterator.hasPrevious());
 
         element = iterator.next();
-        Assert.assertEquals(element2, element);
-        Assert.assertFalse(iterator.hasNext());
-        Assert.assertTrue(iterator.hasPrevious());
+        assertEquals(element2, element);
+        assertFalse(iterator.hasNext());
+        assertTrue(iterator.hasPrevious());
 
         element = iterator.previous();
-        Assert.assertEquals(element2, element);
-        Assert.assertTrue(iterator.hasNext());
-        Assert.assertTrue(iterator.hasPrevious());
+        assertEquals(element2, element);
+        assertTrue(iterator.hasNext());
+        assertTrue(iterator.hasPrevious());
 
         element = iterator.previous();
-        Assert.assertEquals(element1, element);
-        Assert.assertTrue(iterator.hasNext());
-        Assert.assertFalse(iterator.hasPrevious());
+        assertEquals(element1, element);
+        assertTrue(iterator.hasNext());
+        assertFalse(iterator.hasPrevious());
     }
 }

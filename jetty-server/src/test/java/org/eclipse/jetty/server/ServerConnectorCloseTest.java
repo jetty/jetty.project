@@ -18,25 +18,19 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 
-/* ------------------------------------------------------------ */
-@RunWith(AdvancedRunner.class)
 public class ServerConnectorCloseTest extends ConnectorCloseTestBase
 {
-    
-    /* ------------------------------------------------------------ */
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         startServer(new ServerConnector(_server));
     }
     
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         _server.stop();

@@ -18,22 +18,8 @@
 
 package org.eclipse.jetty.http.jmh;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.http.Part;
-
-import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.http.MultiPartCaptureTest.MultipartExpectations;
+import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -52,13 +38,25 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.http.Part;
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
 @State(Scope.Benchmark)
 @Threads(4)
 @Warmup(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 public class MultiPartBenchmark
 {
-    
     public static final int MAX_FILE_SIZE = Integer.MAX_VALUE;
     public static final int MAX_REQUEST_SIZE = Integer.MAX_VALUE;
     public static final int FILE_SIZE_THRESHOLD = 50;

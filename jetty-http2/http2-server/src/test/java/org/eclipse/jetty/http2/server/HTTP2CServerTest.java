@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.http2.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -55,18 +61,13 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class HTTP2CServerTest extends AbstractServerTest
 {
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         server = new HTTP2CServer(0);
@@ -74,7 +75,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         connector = (ServerConnector)server.getConnectors()[0];
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         server.stop();
@@ -171,15 +172,15 @@ public class HTTP2CServerTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            Assert.assertTrue(latchRef.get().await(5, TimeUnit.SECONDS));
+            assertTrue(latchRef.get().await(5, TimeUnit.SECONDS));
 
             HeadersFrame response = headersRef.get();
-            Assert.assertNotNull(response);
+            assertNotNull(response);
             MetaData.Response responseMetaData = (MetaData.Response)response.getMetaData();
-            Assert.assertEquals(200, responseMetaData.getStatus());
+            assertEquals(200, responseMetaData.getStatus());
 
             DataFrame responseData = dataRef.get();
-            Assert.assertNotNull(responseData);
+            assertNotNull(responseData);
 
             String content = BufferUtil.toString(responseData.getData());
 
@@ -202,15 +203,15 @@ public class HTTP2CServerTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            Assert.assertTrue(latchRef.get().await(5, TimeUnit.SECONDS));
+            assertTrue(latchRef.get().await(5, TimeUnit.SECONDS));
 
             response = headersRef.get();
-            Assert.assertNotNull(response);
+            assertNotNull(response);
             responseMetaData = (MetaData.Response)response.getMetaData();
-            Assert.assertEquals(200, responseMetaData.getStatus());
+            assertEquals(200, responseMetaData.getStatus());
 
             responseData = dataRef.get();
-            Assert.assertNotNull(responseData);
+            assertNotNull(responseData);
 
             content = BufferUtil.toString(responseData.getData());
 
@@ -269,15 +270,15 @@ public class HTTP2CServerTest extends AbstractServerTest
 
             parseResponse(client, parser);
 
-            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             HeadersFrame response = headersRef.get();
-            Assert.assertNotNull(response);
+            assertNotNull(response);
             MetaData.Response responseMetaData = (MetaData.Response)response.getMetaData();
-            Assert.assertEquals(200, responseMetaData.getStatus());
+            assertEquals(200, responseMetaData.getStatus());
 
             DataFrame responseData = dataRef.get();
-            Assert.assertNotNull(responseData);
+            assertNotNull(responseData);
 
             String s = BufferUtil.toString(responseData.getData());
 
@@ -337,7 +338,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             InputStream input = client.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
             String responseLine = reader.readLine();
-            Assert.assertThat(responseLine, Matchers.containsString(" 426 "));
+            assertThat(responseLine, Matchers.containsString(" 426 "));
             while (true)
             {
                 if (reader.read() < 0)
@@ -347,6 +348,6 @@ public class HTTP2CServerTest extends AbstractServerTest
 
         // Make sure we did not spin.
         Thread.sleep(1000);
-        Assert.assertThat(fills.get(), Matchers.lessThan(5L));
+        assertThat(fills.get(), Matchers.lessThan(5L));
     }
 }

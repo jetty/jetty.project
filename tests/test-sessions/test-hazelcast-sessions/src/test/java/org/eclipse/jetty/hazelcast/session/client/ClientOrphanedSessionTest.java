@@ -19,19 +19,11 @@
 
 package org.eclipse.jetty.hazelcast.session.client;
 
-import com.hazelcast.config.Config;
-import com.hazelcast.config.MapConfig;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
-
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory;
 import org.eclipse.jetty.hazelcast.session.HazelcastTestHelper;
 import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 public class ClientOrphanedSessionTest
     extends AbstractClusteredOrphanedSessionTest
@@ -45,13 +37,13 @@ public class ClientOrphanedSessionTest
         return _testHelper.createSessionDataStoreFactory(true);
     }
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _testHelper = new HazelcastTestHelper();
     }
 
-    @After
+    @AfterEach
     public void shutdown()
     {
         _testHelper.tearDown();

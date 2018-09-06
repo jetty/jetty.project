@@ -27,7 +27,7 @@ import javax.management.ObjectName;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class DeploymentManagerLifeCyclePathTest
 {

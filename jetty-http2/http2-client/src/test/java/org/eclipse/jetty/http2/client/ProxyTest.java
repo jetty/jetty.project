@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2.client;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
@@ -47,20 +49,15 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 public class ProxyTest
 {
-    @Rule
-    public final TestTracker tracker = new TestTracker();
     private HTTP2Client client;
     private Server proxy;
     private ServerConnector proxyConnector;
@@ -132,7 +129,7 @@ public class ProxyTest
         return new MetaData.Request(method, HttpScheme.HTTP, new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields);
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
         client.stop();
@@ -190,7 +187,7 @@ public class ProxyTest
             }
         });
 
-        Assert.assertTrue(serverLatch.await(15, TimeUnit.SECONDS));
-        Assert.assertTrue(clientLatch.await(15, TimeUnit.SECONDS));
+        assertTrue(serverLatch.await(15, TimeUnit.SECONDS));
+        assertTrue(clientLatch.await(15, TimeUnit.SECONDS));
     }
 }

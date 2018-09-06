@@ -23,18 +23,27 @@ import java.net.URI;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.function.CommonEndpointFunctions;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.TestInfo;
 
 public class LocalWebSocketSession extends WebSocketSession
 {
     private String id;
     private OutgoingFramesCapture outgoingCapture;
-    
-    public LocalWebSocketSession(WebSocketContainerScope containerScope, TestName testname, Object websocket)
+
+    public LocalWebSocketSession( WebSocketContainerScope containerScope, String testId, Object websocket)
     {
-        super(containerScope,URI.create("ws://localhost/LocalWebSocketSesssion/" + testname.getMethodName()),websocket,
-                new LocalWebSocketConnection(testname,containerScope));
-        this.id = testname.getMethodName();
+        super(containerScope,URI.create("ws://localhost/LocalWebSocketSesssion/" + testId),websocket,
+              new LocalWebSocketConnection(testId,containerScope.getBufferPool()));
+        this.id = testId;
+        outgoingCapture = new OutgoingFramesCapture();
+        setOutgoingHandler(outgoingCapture);
+    }
+
+    public LocalWebSocketSession( WebSocketContainerScope containerScope, TestInfo testInfo, Object websocket)
+    {
+        super(containerScope,URI.create("ws://localhost/LocalWebSocketSesssion/" + testInfo.getTestMethod().get().getName()),websocket,
+                new LocalWebSocketConnection(testInfo,containerScope));
+        this.id = testInfo.getTestMethod().get().getName();
         outgoingCapture = new OutgoingFramesCapture();
         setOutgoingHandler(outgoingCapture);
     }

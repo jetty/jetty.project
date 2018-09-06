@@ -19,7 +19,7 @@
 
 package org.eclipse.jetty.jaas;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;

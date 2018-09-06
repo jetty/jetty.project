@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
@@ -33,19 +34,15 @@ import org.eclipse.jetty.websocket.common.io.FramePipes;
 import org.eclipse.jetty.websocket.common.message.MessageWriter;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class MessageWriterTest
 {
     private static final Logger LOG = Log.getLogger(MessageWriterTest.class);
 
-    @Rule
-    public TestName testname = new TestName();
 
     public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
 
@@ -54,7 +51,7 @@ public class MessageWriterTest
     private WebSocketSession session;
     private WebSocketSession remoteSession;
 
-    @After
+    @AfterEach
     public void closeSession() throws Exception
     {
         session.close();
@@ -63,8 +60,8 @@ public class MessageWriterTest
         remoteSession.stop();
     }
 
-    @Before
-    public void setupSession() throws Exception
+    @BeforeEach
+    public void setupSession(TestInfo testInfo) throws Exception
     {
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
@@ -87,12 +84,13 @@ public class MessageWriterTest
         LocalWebSocketConnection localConnection = new LocalWebSocketConnection(localURI, bufferPool);
         session = new WebSocketSession(localContainerScope, localURI, localSocket, localConnection);
         session.setOutgoingHandler(FramePipes.to(remoteSession));
+
         session.start();
         session.connect();
         session.open();
     }
     
-    @Test(timeout = 2000)
+    @Test //(timeout = 2000)
     public void testMultipleWrites() throws Exception
     {
         try (MessageWriter stream = new MessageWriter(session))
@@ -102,12 +100,12 @@ public class MessageWriterTest
             stream.write("World");
         }
 
-        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
+        assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
         String msg = remoteSocket.messageQueue.poll();
-        Assert.assertThat("Message",msg,is("Hello World"));
+        assertThat("Message",msg,is("Hello World"));
     }
     
-    @Test(timeout = 20000)
+    @Test // (timeout = 20000)
     public void testSingleWrite() throws Exception
     {
         try (MessageWriter stream = new MessageWriter(session))
@@ -115,12 +113,12 @@ public class MessageWriterTest
             stream.append("Hello World");
         }
 
-        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
+        assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
         String msg = remoteSocket.messageQueue.poll();
-        Assert.assertThat("Message",msg,is("Hello World"));
+        assertThat("Message",msg,is("Hello World"));
     }
     
-    @Test(timeout = 20000)
+    @Test // (timeout = 20000)
     public void testWriteMultipleBuffers() throws Exception
     {
         int size = (int)(policy.getOutputBufferSize() * 2.5);
@@ -135,9 +133,9 @@ public class MessageWriterTest
             stream.write(buf);
         }
 
-        Assert.assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
+        assertThat("Socket.messageQueue.size",remoteSocket.messageQueue.size(),is(1));
         String msg = remoteSocket.messageQueue.poll();
         String expected = new String(buf);
-        Assert.assertThat("Message",msg,is(expected));
+        assertThat("Message",msg,is(expected));
     }
 }

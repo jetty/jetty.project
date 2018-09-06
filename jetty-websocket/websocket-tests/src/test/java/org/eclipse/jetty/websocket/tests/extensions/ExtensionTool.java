@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests.extensions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -43,6 +43,7 @@ import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.tests.IncomingFramesCapture;
 
+
 public class ExtensionTool
 {
     public class Tester
@@ -59,13 +60,13 @@ public class ExtensionTool
             this.extConfig = ExtensionConfig.parse(parameterizedExtension);
             Class<?> extClass = factory.getExtension(extConfig.getName());
             assertThat("extClass", extClass, notNullValue());
-    
             this.capture = new IncomingFramesCapture();
             this.parser = new Parser(policy, new MappedByteBufferPool(), frame ->
             {
                 ext.incomingFrame(frame, new FrameCallback.Adapter());
                 return true;
             });
+
         }
 
         public String getRequestedExtParams()

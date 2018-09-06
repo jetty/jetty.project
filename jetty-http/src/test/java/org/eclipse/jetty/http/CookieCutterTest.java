@@ -18,20 +18,16 @@
 
 package org.eclipse.jetty.http;
 
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
-@RunWith(AdvancedRunner.class)
 public class CookieCutterTest
 {
     private Cookie[] parseCookieHeaders(CookieCompliance compliance,String... headers)
@@ -144,7 +140,7 @@ public class CookieCutterTest
      * Example from RFC2965
      */
     @Test
-    @Ignore("comma separation no longer supported by new RFC6265")
+    @Disabled("comma separation no longer supported by new RFC6265")
     public void testRFC2965_CookieSpoofingExample()
     {
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +

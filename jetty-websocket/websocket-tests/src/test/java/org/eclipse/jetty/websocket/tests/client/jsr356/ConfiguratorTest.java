@@ -18,26 +18,25 @@
 
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.is;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import org.eclipse.jetty.websocket.tests.SimpleServletServer;
+import org.eclipse.jetty.websocket.tests.jsr356.JsrTrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.websocket.tests.SimpleServletServer;
-import org.eclipse.jetty.websocket.tests.jsr356.JsrTrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Tests of {@link javax.websocket.ClientEndpointConfig.Configurator}
@@ -64,14 +63,14 @@ public class ConfiguratorTest
 
     private static SimpleServletServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();

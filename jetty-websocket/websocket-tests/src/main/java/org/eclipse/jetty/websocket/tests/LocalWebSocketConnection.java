@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.TestInfo;
 
 public class LocalWebSocketConnection implements LogicalConnection
 {
@@ -63,9 +63,9 @@ public class LocalWebSocketConnection implements LogicalConnection
         this.policy = WebSocketPolicy.newServerPolicy();
     }
 
-    public LocalWebSocketConnection(TestName testname, WebSocketContainerScope containerScope)
+    public LocalWebSocketConnection( TestInfo testInfo, WebSocketContainerScope containerScope)
     {
-        this(testname.getMethodName(), containerScope.getBufferPool());
+        this(testInfo.getTestMethod().get().getName(), containerScope.getBufferPool());
         this.policy = containerScope.getPolicy();
     }
     

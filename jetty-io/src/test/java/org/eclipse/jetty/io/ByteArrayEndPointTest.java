@@ -18,46 +18,42 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-@RunWith(AdvancedRunner.class)
 public class ByteArrayEndPointTest
 {
     private Scheduler _scheduler;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         _scheduler = new TimerScheduler();
         _scheduler.start();
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         _scheduler.stop();
@@ -91,7 +87,7 @@ public class ByteArrayEndPointTest
         try
         {
             endp.fill(buffer);
-            fail();
+            fail("Expected IOException");
         }
         catch(IOException e)
         {
@@ -204,10 +200,11 @@ public class ByteArrayEndPointTest
 
         fcb = new FutureCallback();
         endp.fillInterested(fcb);
+
         try
         {
             fcb.get(1000,TimeUnit.MILLISECONDS);
-            fail();
+            fail("Expected ExecutionException");
         }
         catch (ExecutionException e)
         {
@@ -264,7 +261,6 @@ public class ByteArrayEndPointTest
         }
     }
 
-    @Slow
     @Test
     public void testIdle() throws Exception
     {
@@ -299,7 +295,7 @@ public class ByteArrayEndPointTest
         try
         {
             fcb.get();
-            fail();
+            fail("Expected ExecutionException");
         }
         catch (ExecutionException t)
         {

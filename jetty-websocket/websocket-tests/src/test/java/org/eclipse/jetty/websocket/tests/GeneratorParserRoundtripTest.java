@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.Matchers.is;
-
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -33,8 +26,15 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GeneratorParserRoundtripTest
 {
@@ -72,7 +72,8 @@ public class GeneratorParserRoundtripTest
 
         // Validate
         TextFrame txt = (TextFrame)capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
+        assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
+
     }
 
     @Test
@@ -113,7 +114,8 @@ public class GeneratorParserRoundtripTest
 
         // Validate
         TextFrame txt = (TextFrame)capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertTrue("Text.isMasked",txt.isMasked());
-        Assert.assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
+        assertTrue(txt.isMasked(), "Text.isMasked");
+        assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
+
     }
 }

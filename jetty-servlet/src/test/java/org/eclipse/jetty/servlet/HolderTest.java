@@ -38,17 +38,17 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Collections;
 import java.util.Set;
 
 import javax.servlet.ServletRegistration;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @version $Rev$ $Date$
@@ -81,7 +81,7 @@ public class HolderTest
         assertFalse(reg.setInitParameter("foo", "foo"));
 
         Set<String> clash = reg.setInitParameters(Collections.singletonMap("foo", "bax"));
-        assertTrue("should be one clash", clash != null && clash.size() == 1);
+        assertTrue(clash != null && clash.size() == 1, "should be one clash");
 
         try
         {
@@ -101,8 +101,8 @@ public class HolderTest
         }
 
         Set<String> clash2 = reg.setInitParameters(Collections.singletonMap("FOO", "bax"));
-        assertTrue("should be no clash", clash2.isEmpty());
-        assertEquals("setInitParameters should not replace existing non-clashing init parameters", 2, reg.getInitParameters().size());
+        assertTrue(clash2.isEmpty(), "should be no clash");
+        assertEquals(2, reg.getInitParameters().size(), "setInitParameters should not replace existing non-clashing init parameters");
 
     }
 }

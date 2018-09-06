@@ -20,13 +20,13 @@ package org.eclipse.jetty.util.statistic;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
 /* ------------------------------------------------------------ */

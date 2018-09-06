@@ -18,30 +18,33 @@
 
 package org.eclipse.jetty.websocket.tests.server.jsr356;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.WSServer;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.websocket.OnMessage;
+import javax.websocket.server.ServerEndpoint;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import javax.websocket.OnMessage;
-import javax.websocket.server.ServerEndpoint;
-
-import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.WSServer;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Test Echo of Large messages, targeting the {@link javax.websocket.Session#setMaxTextMessageBufferSize(int)} functionality
  */
+@Disabled
+@ExtendWith(WorkDirExtension.class)
 public class LargeAnnotatedTest
 {
     @ServerEndpoint(value = "/echo/large")
@@ -53,9 +56,8 @@ public class LargeAnnotatedTest
             return msg;
         }
     }
-    
-    @Rule
-    public TestingDir testdir = new TestingDir();
+
+    public WorkDir testdir;
 
     @Test
     public void testEcho() throws Exception
@@ -95,6 +97,7 @@ public class LargeAnnotatedTest
                 assertThat("Expected message",incomingMessage,is(msg));
                 
                 clientSession.close();
+
             }
             finally
             {

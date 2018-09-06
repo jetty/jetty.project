@@ -22,8 +22,8 @@ package org.eclipse.jetty.server.session.remote;
 import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 /**
  * ClusteredSessionScavengingTest
@@ -35,14 +35,14 @@ public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessi
 
     public static RemoteInfinispanTestSupport __testSupport;
     
-    @BeforeClass
+    @BeforeAll
     public static void setup () throws Exception
     {
         __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
         __testSupport.setup();
     }
     
-    @AfterClass
+    @AfterAll
     public static void teardown () throws Exception
     {
        __testSupport.teardown();
