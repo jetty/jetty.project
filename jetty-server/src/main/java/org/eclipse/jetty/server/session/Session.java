@@ -845,6 +845,8 @@ public class Session implements SessionHandler.SessionIf
                     case VALID:
                         _state = State.CHANGING;
                         break;
+                    default:
+                        throw new IllegalStateException();
                 }
                 break;
             }
@@ -991,6 +993,8 @@ public class Session implements SessionHandler.SessionIf
                         _state = State.INVALIDATING;
                         break;
                     }
+                    default:
+                        throw new IllegalStateException();
                 }
                 break;
             }
