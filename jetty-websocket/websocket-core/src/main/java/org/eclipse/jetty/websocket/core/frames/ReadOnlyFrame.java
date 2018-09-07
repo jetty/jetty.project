@@ -65,12 +65,6 @@ public class ReadOnlyFrame extends Frame
     }
 
     @Override
-    public Frame setMasked(boolean mask)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     protected Frame setOpCode(byte op)
     {
         throw new UnsupportedOperationException();

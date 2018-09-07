@@ -25,9 +25,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.io.SuspendToken;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.io.SuspendToken;
 
 public class WebSocketSessionImpl implements Session
 {

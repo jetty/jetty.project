@@ -23,6 +23,8 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 
 /**
@@ -86,7 +88,6 @@ public class Frame
      * </pre>
      */
     protected byte finRsvOp;
-    protected boolean masked = false;
     protected byte[] mask;
     
     /**
@@ -137,7 +138,6 @@ public class Frame
     public Frame(byte finRsvOp, byte[] mask, ByteBuffer payload)
     {
         this.finRsvOp = finRsvOp;
-        this.masked = mask!=null;
         this.mask = mask;
         this.payload = payload;
     }
@@ -151,38 +151,6 @@ public class Frame
     {
         return !isControlFrame();
     }
-    
-    public void assertValid()
-    {
-        if (isControlFrame())
-        {
-            if (getPayloadLength() > MAX_CONTROL_PAYLOAD)
-            {
-                throw new ProtocolException("Desired payload length [" + getPayloadLength() + "] exceeds maximum control payload length ["
-                        + MAX_CONTROL_PAYLOAD + "]");
-            }
-
-            if ((finRsvOp & 0x80) == 0)
-            {
-                throw new ProtocolException("Cannot have FIN==false on Control frames");
-            }
-
-            if ((finRsvOp & 0x40) != 0)
-            {
-                throw new ProtocolException("Cannot have RSV1==true on Control frames");
-            }
-
-            if ((finRsvOp & 0x20) != 0)
-            {
-                throw new ProtocolException("Cannot have RSV2==true on Control frames");
-            }
-
-            if ((finRsvOp & 0x10) != 0)
-            {
-                throw new ProtocolException("Cannot have RSV3==true on Control frames");
-            }
-        }
-    }
 
     protected void copyHeaders(Frame frame)
     {
@@ -193,9 +161,7 @@ public class Frame
         finRsvOp |= frame.isRsv2()?0x20:0x00;
         finRsvOp |= frame.isRsv3()?0x10:0x00;
         finRsvOp |= opCode;
-
-        masked = frame.isMasked();
-        if (masked)
+        if (frame.isMasked())
             mask = Arrays.copyOf(frame.getMask(), frame.getMask().length);
         else
             mask = null;
@@ -232,10 +198,6 @@ public class Frame
         {
             return false;
         }
-        if (masked != other.masked)
-        {
-            return false;
-        }
         if (!Arrays.equals(mask,other.mask))
         {
             return false;
@@ -250,7 +212,7 @@ public class Frame
 
     public byte getOpCode()
     {
-        return (byte)(finRsvOp & 0x0F);
+        return OpCode.getOpCode(finRsvOp);
     }
 
     /**
@@ -301,7 +263,7 @@ public class Frame
 
     public boolean isMasked()
     {
-        return masked;
+        return mask!=null;
     }
 
     public boolean isRsv1()
@@ -322,7 +284,6 @@ public class Frame
     public void reset()
     {
         finRsvOp = (byte)0x80; // FIN (!RSV, opcode 0)
-        masked = false;
         payload = null;
         mask = null;
     }
@@ -337,13 +298,6 @@ public class Frame
     public Frame setMask(byte[] maskingKey)
     {
         this.mask = maskingKey;
-        this.masked = (mask != null);
-        return this;
-    }
-
-    public Frame setMasked(boolean mask)
-    {
-        this.masked = mask;
         return this;
     }
 
@@ -411,11 +365,47 @@ public class Frame
         return (finRsvOp & 0x70) !=0;
     }
 
+    public void demask()
+    {
+        if (isMasked() && hasPayload())
+        {
+            int maskInt = 0;
+            for (byte maskByte : mask)
+                maskInt = (maskInt << 8) + (maskByte & 0xFF);
+            
+            int maskOffset = 0;
+            
+            int start = payload.position();
+            int end = payload.limit();
+            int offset = maskOffset;
+            int remaining;
+            while ((remaining = end - start) > 0)
+            {
+                if (remaining >= 4 && (offset & 3) == 0)
+                {
+                    payload.putInt(start,payload.getInt(start) ^ maskInt);
+                    start += 4;
+                    offset += 4;
+                }
+                else
+                {
+                    payload.put(start,(byte)(payload.get(start) ^ mask[offset & 3]));
+                    ++start;
+                    ++offset;
+                }
+            }
+            
+            // TODO Should the mask be cleared?
+            Arrays.fill(mask,(byte)0);
+        }
+    }
+    
+    
     @Override
     public String toString()
     {
         StringBuilder b = new StringBuilder();
-        b.append(OpCode.name((byte)(finRsvOp & 0x0F)));
+        b.append(OpCode.name(OpCode.getOpCode(finRsvOp)));
         b.append('@');
         b.append(Integer.toHexString(super.hashCode()));
         b.append('[');
@@ -425,8 +415,10 @@ public class Frame
         b.append(((finRsvOp & 0x40) != 0)?'1':'0');
         b.append(((finRsvOp & 0x20) != 0)?'1':'0');
         b.append(((finRsvOp & 0x10) != 0)?'1':'0');
-        b.append(",masked=").append(masked);
+        b.append(",m=").append(mask==null?"null":TypeUtil.toHexString(mask));
         b.append(']');
+        if (payload!=null)
+            b.append(BufferUtil.toDetailString(payload));
         return b.toString();
     }
 }

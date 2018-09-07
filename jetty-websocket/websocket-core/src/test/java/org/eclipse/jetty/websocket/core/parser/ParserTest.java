@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.ReferencedBuffer;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
@@ -43,6 +46,7 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.generator.UnitGenerator;
 import org.eclipse.jetty.websocket.core.util.MaskedByteBuffer;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -54,7 +58,12 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class ParserTest
 {
@@ -63,10 +72,43 @@ public class ParserTest
     
     private ParserCapture parse(WebSocketPolicy policy, ByteBuffer buffer)
     {
-        ParserCapture capture = new ParserCapture(new Parser(policy, new MappedByteBufferPool()));
+       return parse(policy, buffer, true);
+    }
+    
+    private ParserCapture parse(WebSocketPolicy policy, ByteBuffer buffer, boolean copy)
+    {
+        Parser parser = new Parser(new MappedByteBufferPool())
+        {
+            @Override
+            protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
+            {
+                super.checkFrameSize(opcode,payloadLength);
+                if (payloadLength > policy.getMaxAllowedFrameSize())
+                    throw new MessageTooLargeException("Cannot handle payload lengths larger than " + policy.getMaxAllowedFrameSize());
+            }
+        };
+        ParserCapture capture = new ParserCapture(parser,copy);
         capture.parse(buffer);
         return capture;
     }
+        
+    ByteBuffer generate(byte opcode, String payload)
+    {
+        byte[] messageBytes = payload.getBytes(StandardCharsets.UTF_8);
+        if (messageBytes.length>125)
+            throw new IllegalArgumentException();
+        
+        ByteBuffer buffer = ByteBuffer.allocate(messageBytes.length+2);
+        
+        buffer.put((byte)(0x80 | opcode));
+        byte b = 0x00; // no masking
+        b |= messageBytes.length & 0x7F;
+        buffer.put(b);
+        buffer.put(messageBytes);
+        buffer.flip();
+        return buffer;
+    }
+    
     
     /**
      * From Autobahn WebSocket Server Testcase 1.2.2
@@ -300,7 +342,7 @@ public class ParserTest
     
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         expectedException.expect(ProtocolException.class);
-        expectedException.expectMessage(CoreMatchers.containsString("Invalid close frame payload length"));
+        expectedException.expectMessage(CoreMatchers.containsString("Invalid CLOSE payload"));
         parse(policy, expected);
     }
     
@@ -362,7 +404,7 @@ public class ParserTest
     
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         expectedException.expect(ProtocolException.class);
-        expectedException.expectMessage(CoreMatchers.containsString("Invalid control frame payload length"));
+        expectedException.expectMessage(CoreMatchers.containsString("Invalid control frame length"));
         parse(policy, expected);
     }
     
@@ -494,12 +536,11 @@ public class ParserTest
         int textCount = 0;
         int continuationCount = 0;
         int len = msg.length;
-        boolean continuation = false;
         byte mini[];
         for (int i = 0; i < len; i++)
         {
             Frame frame;
-            if (continuation)
+            if (i>0)
             {
                 frame = new Frame(OpCode.CONTINUATION);
                 continuationCount++;
@@ -515,7 +556,6 @@ public class ParserTest
             boolean isLast = (i >= (len - 1));
             frame.setFin(isLast);
             send.add(frame);
-            continuation = true;
         }
         send.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
     
@@ -902,7 +942,7 @@ public class ParserTest
     public void testParse_RFC6455_FragmentedUnmaskedTextMessage() throws InterruptedException
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        ParserCapture capture = new ParserCapture(new Parser(policy, new MappedByteBufferPool()));
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()));
         
         ByteBuffer buf = ByteBuffer.allocate(16);
         BufferUtil.clearToFill(buf);
@@ -1053,7 +1093,7 @@ public class ParserTest
         buf.flip();
         
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        ParserCapture capture = new ParserCapture(new Parser(policy, new MappedByteBufferPool()));
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()));
         capture.parse(buf);
         
         capture.assertHasFrame(OpCode.BINARY,1);
@@ -1449,7 +1489,7 @@ public class ParserTest
         ByteBuffer networkBytes = new UnitGenerator(clientPolicy).asBuffer(frames);
 
         // Parse, in 4096 sized windows
-        ParserCapture capture = new ParserCapture(new Parser(serverPolicy, new MappedByteBufferPool()));
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()));
 
         while (networkBytes.remaining() > 0)
         {
@@ -1588,8 +1628,8 @@ public class ParserTest
         ByteBuffer buf = BufferUtil.toBuffer(TypeUtil.fromHexString("8882c2887e61c164"));
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         expectedException.expect(ProtocolException.class);
-        expectedException.expectMessage("Invalid Close Code: 1004");
-        ParserCapture capture = parse(policy, buf);
+        expectedException.expectMessage("Invalid CLOSE Code: ");
+        parse(policy, buf);
     }
 
     @Test
@@ -1604,4 +1644,111 @@ public class ParserTest
         Assert.assertThat("CloseFrame",frame.getOpCode(),is(OpCode.CLOSE));
         Assert.assertThat(new CloseStatus(frame.getPayload()).getCode(),is(1014));
     }
+    
+    @Test
+    public void testCompleteDirect() throws Exception
+    {
+        ByteBuffer data = generate(OpCode.TEXT,"Hello World");
+        ByteBuffer buffer = BufferUtil.allocateDirect(32);
+        BufferUtil.append(buffer,data);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        ParserCapture capture = parse(policy, buffer, false);
+
+        capture.assertHasFrame(OpCode.TEXT,1);
+        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
+        assertEquals("Hello World",text.getPayloadAsUTF8());
+        assertFalse(text.getPayload().isDirect());
+        assertTrue(text.isReleaseable());
+    }
+    
+    @Test
+    public void testComplete() throws Exception
+    {
+        ByteBuffer data = generate(OpCode.TEXT,"Hello World");
+        ByteBuffer buffer = BufferUtil.allocate(32);
+        BufferUtil.append(buffer,data);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        ParserCapture capture = parse(policy, buffer, false);
+
+        capture.assertHasFrame(OpCode.TEXT,1);
+        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
+        assertEquals("Hello World",text.getPayloadAsUTF8());
+        assertThat(text.getPayload().array(),sameInstance(buffer.array()));
+        assertFalse(text.isReleaseable());
+        
+    }
+    
+    @Test
+    public void testPartialSpace() throws Exception
+    {
+        ByteBuffer data = generate(OpCode.TEXT,"Hello World");
+        int limit = data.limit();
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        ByteBuffer buffer = BufferUtil.allocate(32);
+        
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()),false);
+        
+        data.limit(5);
+        BufferUtil.append(buffer,data);
+        capture.parse(buffer);
+        assertEquals(0,capture.framesQueue.size());
+        assertEquals(5-2,buffer.remaining());
+
+        data.limit(6);
+        BufferUtil.append(buffer,data);
+        capture.parse(buffer);
+        assertEquals(0,capture.framesQueue.size());
+        assertEquals(6-2,buffer.remaining());
+        
+        data.limit(limit);
+        BufferUtil.append(buffer,data);
+        capture.parse(buffer);
+        assertEquals(1,capture.framesQueue.size());
+        assertEquals(0,buffer.remaining());
+        
+        capture.assertHasFrame(OpCode.TEXT,1);
+        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
+        assertEquals("Hello World",text.getPayloadAsUTF8());
+        assertThat(text.getPayload().array(),sameInstance(buffer.array()));
+        assertFalse(text.isReleaseable());
+    }
+    
+    
+    @Test
+    public void testPartialNoSpace() throws Exception
+    {
+
+        ByteBuffer data = generate(OpCode.TEXT,"Hello World");
+        int limit = data.limit();
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        ByteBuffer buffer = BufferUtil.allocate(8);
+        
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()),false);
+        
+        data.limit(5);
+        BufferUtil.append(buffer,data);
+        capture.parse(buffer);
+        assertEquals(0,capture.framesQueue.size());
+        assertEquals(0,buffer.remaining());
+
+        data.limit(6);
+        BufferUtil.append(buffer,data);
+        capture.parse(buffer);
+        assertEquals(0,capture.framesQueue.size());
+        assertEquals(0,buffer.remaining());
+        
+        data.limit(limit);
+        BufferUtil.append(buffer,data);
+        capture.parse(buffer);
+        assertEquals(1,capture.framesQueue.size());
+        assertEquals(0,buffer.remaining());
+        
+        capture.assertHasFrame(OpCode.TEXT,1);
+        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
+        assertEquals("Hello World",text.getPayloadAsUTF8());
+        assertThat(text.getPayload().array(),not(sameInstance(buffer.array())));
+        assertTrue(text.isReleaseable());
+    }
+    
+    
 }

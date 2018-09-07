@@ -76,6 +76,40 @@ public class WebSocketTest
     {
     }
 
+
+
+    @Test
+    public void testHello() throws Exception
+    {
+        TestFrameHandler serverHandler = new TestFrameHandler();
+        TestFrameHandler clientHandler = new TestFrameHandler();
+
+        server = new WebSocketServer(0, serverHandler);
+        server.start();
+        client = new WebSocketClient("localhost", server.getLocalPort(), clientHandler);
+        client.start();
+
+        String message = "hello world";
+        client.sendText(message);
+        Frame recv = server.getFrames().poll(5, TimeUnit.SECONDS);
+        assertNotNull(recv);
+        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+
+        message = "back at ya!";
+        server.sendText(message);
+        recv = client.getFrames().poll(5, TimeUnit.SECONDS);
+        assertNotNull(recv);
+        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+        
+        client.close();
+    
+        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
+
+    }
+    
+    
+    
     @Test
     @Ignore
     public void testClientSocketClosedInCloseHandshake() throws Exception

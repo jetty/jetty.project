@@ -80,7 +80,7 @@ public class ParsePayloadLengthTest
     @Test
     public void testPayloadLength() throws InterruptedException
     {
-        Parser parser = new Parser(policy, bufferPool);
+        Parser parser = new Parser(bufferPool);
         ParserCapture capture = new ParserCapture(parser);
 
         ByteBuffer raw = BufferUtil.allocate(size + Generator.MAX_HEADER_LENGTH);

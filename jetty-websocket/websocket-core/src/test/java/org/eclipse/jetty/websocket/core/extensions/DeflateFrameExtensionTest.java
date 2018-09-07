@@ -77,7 +77,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         // Wire up stack
         ext.setNextIncomingFrames(capture);
 
-        Parser parser = new Parser(policy, bufferPool);
+        Parser parser = new Parser(bufferPool);
         ByteBuffer buffer = ByteBuffer.wrap(raw);
         while (BufferUtil.hasContent(buffer))
         {

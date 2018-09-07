@@ -34,11 +34,6 @@ public class BadFrame extends Frame
     }
     
     @Override
-    public void assertValid()
-    {
-    }
-    
-    @Override
     public boolean isControlFrame()
     {
         return false;

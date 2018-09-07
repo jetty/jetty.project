@@ -132,6 +132,22 @@ public class BufferUtil
         return buf;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Deep copy of a buffer
+     * @param buffer The buffer to copy
+     * @return A copy of the buffer
+     */
+    public static ByteBuffer copy(ByteBuffer buffer)
+    {
+        if (buffer==null)
+            return null;
+        int p = buffer.position();
+        ByteBuffer clone = buffer.isDirect()?ByteBuffer.allocateDirect(buffer.remaining()):ByteBuffer.allocate(buffer.remaining());
+        clone.put(buffer);
+        clone.flip();
+        buffer.position(p);
+        return clone;
+    }
 
     /* ------------------------------------------------------------ */
     /** Clear the buffer to be empty in flush mode.
@@ -386,6 +402,20 @@ public class BufferUtil
         {
             flipToFlush(to, pos);
         }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Append bytes to a buffer.
+     * @param to Buffer is flush mode
+     * @param s String to append as UTF8
+     * @param off offset into byte
+     * @param len length to append
+     * @throws BufferOverflowException if unable to append buffer due to space limits
+     */
+    public static void append(ByteBuffer to, String s) throws BufferOverflowException
+    {
+        byte[] b = s.getBytes(StandardCharsets.UTF_8);
+        append(to,b,0,b.length);
     }
 
     /* ------------------------------------------------------------ */

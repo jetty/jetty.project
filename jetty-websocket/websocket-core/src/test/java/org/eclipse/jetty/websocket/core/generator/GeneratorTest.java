@@ -1231,7 +1231,7 @@ public class GeneratorTest
 
         // Parse complete buffer.
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        ParserCapture capture = new ParserCapture(new Parser(policy, new MappedByteBufferPool()));
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()));
 
         capture.parse(completeBuffer);
 

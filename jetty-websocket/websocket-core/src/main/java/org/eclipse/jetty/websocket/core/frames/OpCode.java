@@ -69,6 +69,11 @@ public final class OpCode
      */
     public static final byte UNDEFINED = (byte) -1;
 
+    public static byte getOpCode(byte firstByte)
+    {
+        return (byte)(firstByte & 0x0F);
+    }
+    
     public static boolean isControlFrame(byte opcode)
     {
         switch(opcode)
@@ -180,4 +185,5 @@ public final class OpCode
            }
         }
     }
+
 }

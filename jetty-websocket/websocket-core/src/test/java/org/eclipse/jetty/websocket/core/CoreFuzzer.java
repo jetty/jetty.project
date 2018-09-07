@@ -114,7 +114,7 @@ public class CoreFuzzer implements AutoCloseable
 
         WebSocketPolicy clientPolicy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         this.fuzzGenerator = new FuzzGenerator(clientPolicy, bufferPool);
-        this.clientParser = new Parser(clientPolicy, bufferPool);
+        this.clientParser = new Parser(bufferPool);
         this.frameCapture = new FrameCapture(this.clientParser);
     }
 

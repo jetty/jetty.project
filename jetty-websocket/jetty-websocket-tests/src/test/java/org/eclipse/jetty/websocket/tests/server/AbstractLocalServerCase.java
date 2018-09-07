@@ -141,7 +141,7 @@ public abstract class AbstractLocalServerCase
     
     public Parser newClientParser()
     {
-        return new Parser(WebSocketPolicy.newClientPolicy(), new MappedByteBufferPool());
+        return new Parser(new MappedByteBufferPool());
     }
     
     public ParsedResponse performUpgrade(LocalConnector.LocalEndPoint endPoint, ByteBuffer buf) throws Exception

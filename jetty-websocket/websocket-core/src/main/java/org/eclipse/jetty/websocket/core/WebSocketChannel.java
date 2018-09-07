@@ -86,7 +86,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
         int payloadLength = (frame.getPayload()==null) ? 0 : frame.getPayload().remaining(); // TODO is this accurately getting length of payload
 
-        // Sane Payload Length //
+        // Sane Payload Length // TODO have we already checked this for incoming in the parser/connection?
         if (payloadLength > policy.getMaxAllowedFrameSize())
             throw new MessageTooLargeException("Cannot handle payload lengths larger than " + policy.getMaxAllowedFrameSize());
 
@@ -116,6 +116,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
              */
             if (frame.getOpCode() == OpCode.CLOSE)
             {
+                // TODO access Parser.ParsedFrame.getCloseStatus
                 new CloseStatus(frame.getPayload());
             }
         }

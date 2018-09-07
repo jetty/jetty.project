@@ -16,11 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.io;
+package org.eclipse.jetty.websocket.common.io;
 
 /**
  * Connection suspend token
  */
+@Deprecated
 public interface SuspendToken
 {
     /**

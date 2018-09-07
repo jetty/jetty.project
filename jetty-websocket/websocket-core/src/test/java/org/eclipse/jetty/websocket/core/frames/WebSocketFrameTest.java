@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.LeakTrackingBufferPoolRule;
@@ -33,6 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 
 public class WebSocketFrameTest
 {
@@ -135,4 +137,18 @@ public class WebSocketFrameTest
         String expected = "91024869";
         assertFrameHex("Lax Text Frame with RSV3",expected,actual);
     }
+    
+    @Test 
+    public void testDemask()
+    {
+        for (int i=0; i<=8; i++)
+        {
+            Frame frame = new Frame(OpCode.BINARY);
+            frame.setPayload(TypeUtil.fromHexString("0000FFFF000FFFF0".substring(0,i*2)));
+            frame.setMask(TypeUtil.fromHexString("FF00FF00"));
+            frame.demask();
+            assertEquals("len="+i,"Ff0000FfFf0f00F0".substring(0,i*2),BufferUtil.toHexString(frame.getPayload()));
+        }
+    }
+    
 }

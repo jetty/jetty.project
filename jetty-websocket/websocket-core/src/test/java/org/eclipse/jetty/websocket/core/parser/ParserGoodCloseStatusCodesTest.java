@@ -84,7 +84,7 @@ public class ParserGoodCloseStatusCodesTest
     @Test
     public void testGoodCloseCode() throws InterruptedException
     {
-        ParserCapture capture = new ParserCapture(new Parser(policy, bufferPool));
+        ParserCapture capture = new ParserCapture(new Parser(bufferPool));
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);
@@ -107,7 +107,7 @@ public class ParserGoodCloseStatusCodesTest
     @Test
     public void testGoodCloseCode_WithReasonPhrase() throws InterruptedException
     {
-        ParserCapture capture = new ParserCapture(new Parser(policy, bufferPool));
+        ParserCapture capture = new ParserCapture(new Parser(bufferPool));
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);

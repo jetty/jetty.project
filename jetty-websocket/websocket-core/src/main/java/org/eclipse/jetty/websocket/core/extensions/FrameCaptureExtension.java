@@ -115,7 +115,7 @@ public class FrameCaptureExtension extends AbstractExtension
         try
         {
             Frame f = Frame.copy(frame);
-            f.setMasked(false);
+            f.setMask(null); // TODO is this needed?
             generator.generateHeaderBytes(f,buf);
             channel.write(buf);
             if (frame.hasPayload())

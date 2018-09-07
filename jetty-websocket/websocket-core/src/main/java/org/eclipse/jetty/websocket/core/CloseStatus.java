@@ -51,9 +51,11 @@ public class CloseStatus
     public static final int FAILED_TLS_HANDSHAKE = 1015;
     
     public static final int MAX_REASON_PHRASE = Frame.MAX_CONTROL_PAYLOAD - 2;
+    
+    public static final CloseStatus NO_CODE_STATUS = new CloseStatus(NO_CODE);
 
-    private int code;
-    private String reason;
+    private final int code;
+    private final String reason;
 
     /**
      * Creates a reason for closing a web socket connection with the no given status code.
@@ -220,7 +222,7 @@ public class CloseStatus
         ByteBuffer data = payload.slice();
         if (data.remaining() == 1)
         {
-            throw new ProtocolException("Invalid 1 byte payload");
+            throw new ProtocolException("Invalid CLOSE payload");
         }
 
         if (data.remaining() > Frame.MAX_CONTROL_PAYLOAD)
@@ -237,7 +239,7 @@ public class CloseStatus
 
             if (!isTransmittableStatusCode(statusCode))
             {
-                throw new ProtocolException("Invalid Close Code: " + statusCode);
+                throw new ProtocolException("Invalid CLOSE Code: " + statusCode);
             }
 
             if (data.remaining() > 0)
@@ -261,7 +263,7 @@ public class CloseStatus
                 }
                 catch (Utf8Appendable.NotUtf8Exception e)
                 {
-                    throw new BadPayloadException("Invalid Close Reason", e);
+                    throw new BadPayloadException("Invalid CLOSE Reason", e);
                 }
             }
         }
@@ -283,10 +285,9 @@ public class CloseStatus
 
     public static Frame toFrame(int closeStatus, String reason)
     {
-        Frame frame = new Frame(OpCode.CLOSE);
         if (isTransmittableStatusCode(closeStatus))
-            frame.setPayload(asPayloadBuffer(closeStatus, reason));
-        return frame;
+            return new Frame(OpCode.CLOSE,true,asPayloadBuffer(closeStatus, reason));
+        return new Frame(OpCode.CLOSE);
     }
 
 

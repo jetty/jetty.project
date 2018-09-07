@@ -38,8 +38,11 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Generator;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.Parser;
+import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.ReferencedBuffer;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
@@ -49,7 +52,7 @@ import org.eclipse.jetty.websocket.core.frames.Frame;
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
-public class WebSocketConnection extends AbstractConnection implements SuspendToken, Connection.UpgradeTo, Dumpable, OutgoingFrames
+public class WebSocketConnection extends AbstractConnection implements Connection.UpgradeTo, Dumpable, OutgoingFrames
 {
     private final Logger LOG = Log.getLogger(this.getClass());
 
@@ -61,18 +64,16 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
     private final ByteBufferPool bufferPool;
     private final Generator generator;
     private final Parser parser;
+    private final WebSocketChannel channel;
 
     // Connection level policy (before the session and local endpoint has been created)
     private final WebSocketPolicy policy;
-    private final AtomicBoolean suspendToken;
     private final Flusher flusher;
     private final Random random;
 
-    private WebSocketChannel channel;
 
     // Read / Parse variables
-    private AtomicBoolean fillAndParseScope = new AtomicBoolean(false);
-    private ByteBuffer networkBuffer;
+    private ReferencedBuffer networkBuffer;
 
     /**
      * Create a WSConnection.
@@ -115,8 +116,17 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
         this.channel = channel;
 
         this.generator = new Generator(policy, bufferPool);
-        this.parser = new Parser(policy, bufferPool);
-        this.suspendToken = new AtomicBoolean(false);
+        this.parser = new Parser(bufferPool)
+        {
+            @Override
+            protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
+            {
+                super.checkFrameSize(opcode,payloadLength);
+                if (payloadLength > policy.getMaxAllowedFrameSize())
+                    throw new MessageTooLargeException("Cannot handle payload lengths larger than " + policy.getMaxAllowedFrameSize());
+            }
+            
+        };
         this.flusher = new Flusher(policy.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
@@ -191,13 +201,17 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
         return true;
     }
 
-    protected boolean onFrame(org.eclipse.jetty.websocket.core.frames.Frame frame)
+    protected boolean onFrame(Parser.ParsedFrame frame)
     {
         AtomicBoolean result = new AtomicBoolean(false);
 
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
 
+        final ReferencedBuffer referenced = frame.isReleaseable()?null:networkBuffer;
+        if (referenced!=null)
+            referenced.reference();
+        
         channel.assertValid(frame, true);
         channel.onReceiveFrame(frame, new Callback()
         {
@@ -207,7 +221,10 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
                 if (LOG.isDebugEnabled())
                     LOG.debug("onFrame({}).succeed()", frame);
 
-                parser.release(frame);
+                frame.close();
+                if (referenced!=null)
+                    referenced.dereference();
+                
                 if (!result.compareAndSet(false, true))
                 {
                     // callback has been notified asynchronously
@@ -220,7 +237,10 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("onFrame(" + frame + ").fail()", cause);
-                parser.release(frame);
+                
+                frame.close();
+                if (referenced!=null)
+                    referenced.dereference();
 
                 // notify session & endpoint
                 channel.processError(cause);
@@ -236,25 +256,28 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
         return true;
     }
 
-    private ByteBuffer getNetworkBuffer()
+    private ReferencedBuffer getNetworkBuffer()
     {
         synchronized (this)
         {
             if (networkBuffer == null)
-            {
-                networkBuffer = bufferPool.acquire(getInputBufferSize(), true);
-            }
+                networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize()); 
+            else 
+                networkBuffer.reference();
+            
             return networkBuffer;
         }
     }
 
-    private void releaseNetworkBuffer(ByteBuffer buffer)
+    private void releaseNetworkBuffer()
     {
         synchronized (this)
         {
-            assert (!buffer.hasRemaining());
-            bufferPool.release(buffer);
-            networkBuffer = null;
+            if (networkBuffer!=null && !networkBuffer.getBuffer().hasRemaining())
+            {
+                networkBuffer.dereference();
+                networkBuffer = null;
+            }
         }
     }
 
@@ -271,7 +294,7 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
     {
         // Handle situation where prefill buffer (from upgrade) has created network buffer,
         // but there is no actual read interest (yet)
-        if (BufferUtil.hasContent(networkBuffer))
+        if (networkBuffer!=null && BufferUtil.hasContent(networkBuffer.getBuffer()))
         {
             fillAndParse();
         }
@@ -284,31 +307,20 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
     private void fillAndParse()
     {
         boolean interested = false;
-        
-        // TODO get rid of this
-        if(!fillAndParseScope.compareAndSet(false,true))
-        {
-            LOG.warn("fillAndParseScope failure!!!!!!!!!");
-            return;
-        }
-        
+                
         try
         {
             while (getEndPoint().isOpen())
             {
-                if (suspendToken.get())
-                {
-                    return;
-                }
-
-                ByteBuffer nBuffer = getNetworkBuffer();
+                ByteBuffer buffer = getNetworkBuffer().getBuffer();
                 
                 // Parse and handle frames
-                while(BufferUtil.hasContent(nBuffer))
+                while(BufferUtil.hasContent(buffer))
                 {
-                    Frame frame = parser.parse(nBuffer);
+                    Parser.ParsedFrame frame = parser.parse(buffer);
                     if (frame==null)
                         break;
+                                        
                     if (!onFrame(frame))
                         return;
                 }
@@ -317,21 +329,19 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
                 if (getEndPoint().isInputShutdown())
                     return;
 
-                int filled = getEndPoint().fill(nBuffer);
+                int filled = getEndPoint().fill(buffer);
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("endpointFill() filled={}: {}", filled, BufferUtil.toDetailString(nBuffer));
+                    LOG.debug("endpointFill() filled={}: {}", filled, BufferUtil.toDetailString(buffer));
 
                 if (filled < 0)
                 {
-                    releaseNetworkBuffer(nBuffer);
                     channel.onClosed(null);
                     return;
                 }
 
                 if (filled == 0)
                 {
-                    releaseNetworkBuffer(nBuffer);
                     interested = true;
                     return;
                 }
@@ -343,7 +353,7 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
         }
         finally
         {
-            fillAndParseScope.set(false);
+            releaseNetworkBuffer();
             if (interested)
                 fillInterested();
         }
@@ -366,10 +376,10 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
 
         if ((prefilled != null) && (prefilled.hasRemaining()))
         {
-            networkBuffer = bufferPool.acquire(prefilled.remaining(), true);
-            BufferUtil.clearToFill(networkBuffer);
-            BufferUtil.put(prefilled, networkBuffer);
-            BufferUtil.flipToFlush(networkBuffer, 0);
+            ByteBuffer buffer = getNetworkBuffer().getBuffer();
+            BufferUtil.clearToFill(buffer);
+            BufferUtil.put(prefilled, buffer);
+            BufferUtil.flipToFlush(buffer, 0);
         }
     }
 
@@ -405,24 +415,6 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
         return false;
     }
 
-    @Override
-    public void resume()
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("resume()");
-        }
-
-        if (suspendToken.compareAndSet(true, false))
-        {
-            // Do not fillAndParse again, if we are actively in a fillAndParse
-            // TODO this is a race!
-            if (!fillAndParseScope.get())
-            {
-                fillAndParse();
-            }
-        }
-    }
 
     @Override
     public void setInputBufferSize(int inputBufferSize)
@@ -440,17 +432,6 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
         {
             getEndPoint().setIdleTimeout(ms);
         }
-    }
-
-    public SuspendToken suspend()
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("suspend()");
-        }
-
-        suspendToken.set(true);
-        return this;
     }
 
     @Override
@@ -536,14 +517,12 @@ public class WebSocketConnection extends AbstractConnection implements SuspendTo
         if (getPolicy().getBehavior()==WebSocketBehavior.CLIENT)
         {
             Frame wsf = (Frame)frame;
-            wsf.setMasked(true);
             byte[] mask = new byte[4];
             random.nextBytes(mask);
             wsf.setMask(mask);
         }
         flusher.enqueue(frame,callback,batchMode);
     }
-
 
     private class Flusher extends FrameFlusher
     {

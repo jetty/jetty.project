@@ -56,7 +56,7 @@ public class ParserReservedBitTest
 
     private void expectProtocolException(List<Frame> frames)
     {
-        ParserCapture parserCapture = new ParserCapture(new Parser(policy, bufferPool));
+        ParserCapture parserCapture = new ParserCapture(new Parser(bufferPool));
 
         // generate raw bytebuffer of provided frames
         int size = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();

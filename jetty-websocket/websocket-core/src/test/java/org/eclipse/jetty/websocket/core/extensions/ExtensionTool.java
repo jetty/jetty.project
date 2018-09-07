@@ -56,7 +56,7 @@ public class ExtensionTool
             assertThat("extClass", extClass, notNullValue());
     
             this.capture = new IncomingFramesCapture();
-            this.parser = new Parser(policy, new MappedByteBufferPool());
+            this.parser = new Parser(new MappedByteBufferPool());
         }
 
         public String getRequestedExtParams()

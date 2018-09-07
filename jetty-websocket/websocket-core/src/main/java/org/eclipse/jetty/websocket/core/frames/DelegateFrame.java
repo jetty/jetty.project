@@ -42,12 +42,6 @@ public class DelegateFrame extends Frame
     }
 
     @Override
-    public void assertValid()
-    {
-        delegate.assertValid();
-    }
-
-    @Override
     protected void copyHeaders(Frame frame)
     {
         delegate.copyHeaders(frame);
@@ -141,12 +135,6 @@ public class DelegateFrame extends Frame
     public Frame setMask(byte[] maskingKey)
     {
         return delegate.setMask(maskingKey);
-    }
-
-    @Override
-    public Frame setMasked(boolean mask)
-    {
-        return delegate.setMasked(mask);
     }
 
     @Override

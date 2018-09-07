@@ -87,7 +87,7 @@ public class ParserBadCloseStatusCodesTest
     @Test
     public void testBadStatusCode()
     {
-        ParserCapture capture = new ParserCapture(new Parser(policy, bufferPool));
+        ParserCapture capture = new ParserCapture(new Parser(bufferPool));
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);
@@ -110,7 +110,7 @@ public class ParserBadCloseStatusCodesTest
     @Test
     public void testBadStatusCode_WithReasonPhrase()
     {
-        ParserCapture capture = new ParserCapture(new Parser(policy, bufferPool));
+        ParserCapture capture = new ParserCapture(new Parser(bufferPool));
 
         ByteBuffer raw = BufferUtil.allocate(256);
         BufferUtil.clearToFill(raw);
