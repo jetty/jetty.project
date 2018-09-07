@@ -65,7 +65,7 @@ public class CheckReverseProxyHeadersTest
             @Override
             public void validate(HttpServletRequest request)
             {
-                assertEquals("::1", request.getServerName());
+                assertEquals("[::1]", request.getServerName());
                 assertEquals(80, request.getServerPort());
                 assertEquals("10.20.30.40", request.getRemoteAddr());
                 assertEquals("10.20.30.40", request.getRemoteHost());
@@ -83,7 +83,7 @@ public class CheckReverseProxyHeadersTest
             @Override
             public void validate(HttpServletRequest request)
             {
-                assertEquals("::1", request.getServerName());
+                assertEquals("[::1]", request.getServerName());
                 assertEquals(8888, request.getServerPort());
                 assertEquals("10.20.30.40", request.getRemoteAddr());
                 assertEquals("10.20.30.40", request.getRemoteHost());

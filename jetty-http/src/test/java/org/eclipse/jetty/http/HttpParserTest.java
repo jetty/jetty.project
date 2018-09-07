@@ -2057,7 +2057,7 @@ public class HttpParserTest
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
-        assertEquals("::1", _host);
+        assertEquals("[::1]", _host);
         assertEquals(0, _port);
     }
 
@@ -2138,7 +2138,7 @@ public class HttpParserTest
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
-        assertEquals("::1", _host);
+        assertEquals("[::1]", _host);
         assertEquals(8888, _port);
     }
 

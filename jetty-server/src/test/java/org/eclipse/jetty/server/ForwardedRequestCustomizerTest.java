@@ -111,7 +111,7 @@ public class ForwardedRequestCustomizerTest
         assertEquals("http",_results.poll());
         assertEquals("myhost",_results.poll());
         assertEquals("80",_results.poll());
-        assertEquals("2001:db8:cafe::17",_results.poll());
+        assertEquals("[2001:db8:cafe::17]",_results.poll());
         assertEquals("4711",_results.poll());
     }
     
@@ -183,7 +183,7 @@ public class ForwardedRequestCustomizerTest
         assertEquals("192.0.2.43",_results.poll());
         assertEquals("0",_results.poll());
     }
-    
+
     @Test
     public void testRFC7239_IPv6() throws Exception
     {
@@ -194,9 +194,9 @@ public class ForwardedRequestCustomizerTest
             "\n");
 
         assertEquals("http",_results.poll());
-        assertEquals("2001:db8:cafe::3",_results.poll());
+        assertEquals("[2001:db8:cafe::3]",_results.poll());
         assertEquals("8888",_results.poll());
-        assertEquals("2001:db8:cafe::1",_results.poll());
+        assertEquals("[2001:db8:cafe::1]",_results.poll());
         assertEquals("0",_results.poll());
     }
 
