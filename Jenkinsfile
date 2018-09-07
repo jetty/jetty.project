@@ -13,7 +13,6 @@ for (def os in oss) {
 
 parallel builds
 
-
 def getFullBuild(jdk, os) {
   return {
     node(os) {
@@ -23,81 +22,10 @@ def getFullBuild(jdk, os) {
       def settingsName = 'oss-settings.xml'
       def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
-      checkout scm
-
-      timeout(time: 15, unit: 'MINUTES') {
-        withMaven(
-                maven: mvnName,
-                jdk: "$jdk",
-                publisherStrategy: 'EXPLICIT',
-                globalMavenSettingsConfig: settingsName,
-                mavenOpts: mavenOpts,
-                mavenLocalRepo: localRepo) {
-          sh "mvn -V -B clean install -DskipTests -T6 -e"
-        }
-      }
-
-      timeout(time: 20, unit: 'MINUTES') {
-        withMaven(
-                maven: mvnName,
-                jdk: "$jdk",
-                publisherStrategy: 'EXPLICIT',
-                globalMavenSettingsConfig: settingsName,
-                mavenOpts: mavenOpts,
-                mavenLocalRepo: localRepo) {
-          sh "mvn -V -B javadoc:javadoc -T6 -e"
-        }
-      }
-
-      timeout(time: 90, unit: 'MINUTES') {
-        // Run test phase / ignore test failures
-        withMaven(
-                maven: mvnName,
-                jdk: "$jdk",
-                publisherStrategy: 'EXPLICIT',
-                globalMavenSettingsConfig: settingsName,
-                //options: [invokerPublisher(disabled: false)],
-                mavenOpts: mavenOpts,
-                mavenLocalRepo: localRepo) {
-          sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -Dunix.socket.tmp="+env.JENKINS_HOME
-        }
-        // withMaven doesn't label..
-        // Report failures in the jenkins UI
-        junit testResults:'**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
-        consoleParsers = [[parserName: 'JavaDoc'],
-                          [parserName: 'JavaC']];
-        if (isMainBuild( jdk )) {
-          // Collect up the jacoco execution results
-          def jacocoExcludes =
-                  // build tools
-                  "**/org/eclipse/jetty/ant/**" + ",**/org/eclipse/jetty/maven/**" +
-                          ",**/org/eclipse/jetty/jspc/**" +
-                          // example code / documentation
-                          ",**/org/eclipse/jetty/embedded/**" + ",**/org/eclipse/jetty/asyncrest/**" +
-                          ",**/org/eclipse/jetty/demo/**" +
-                          // special environments / late integrations
-                          ",**/org/eclipse/jetty/gcloud/**" + ",**/org/eclipse/jetty/infinispan/**" +
-                          ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +
-                          ",**/org/eclipse/jetty/http/spi/**" +
-                          // test classes
-                          ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
-          jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                 exclusionPattern: jacocoExcludes,
-                 execPattern     : '**/target/jacoco.exec',
-                 classPattern    : '**/target/classes',
-                 sourcePattern   : '**/src/main/java'
-          consoleParsers = [[parserName: 'Maven'],
-                            [parserName: 'JavaDoc'],
-                            [parserName: 'JavaC']];
-        }
-
-        // Report on Maven and Javadoc warnings
-        step( [$class        : 'WarningsPublisher',
-               consoleParsers: consoleParsers] )
-      }
-
-      if(isMainBuild($jdk)) {
-        timeout(time: 20, unit: 'MINUTES') {
+      stage("Build / Test - ${jdk}") {
+        timeout(time: 90, unit: 'MINUTES') {
+          // Checkout
+          checkout scm
           withMaven(
               maven: mvnName,
               jdk: "$jdk",
@@ -105,9 +33,53 @@ def getFullBuild(jdk, os) {
               globalMavenSettingsConfig: settingsName,
               mavenOpts: mavenOpts,
               mavenLocalRepo: localRepo) {
-            sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
+            // Compile only
+            sh "mvn -V -B clean install -DskipTests -T6 -e"
+            // Javadoc only
+            sh "mvn -V -B javadoc:javadoc -T6 -e"
+            // Testing
+            sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -Dunix.socket.tmp=" + env.JENKINS_HOME
+
+            // Compact 3 build
+            if (isMainBuild(jdk)) {
+              sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
+            }
           }
         }
+
+        // Report failures in the jenkins UI
+        junit testResults: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
+        consoleParsers = [[parserName: 'JavaDoc'],
+                          [parserName: 'JavaC']];
+
+        if (isMainBuild(jdk)) {
+          // Collect up the jacoco execution results
+          def jacocoExcludes =
+              // build tools
+              "**/org/eclipse/jetty/ant/**" + ",**/org/eclipse/jetty/maven/**" +
+                  ",**/org/eclipse/jetty/jspc/**" +
+                  // example code / documentation
+                  ",**/org/eclipse/jetty/embedded/**" + ",**/org/eclipse/jetty/asyncrest/**" +
+                  ",**/org/eclipse/jetty/demo/**" +
+                  // special environments / late integrations
+                  ",**/org/eclipse/jetty/gcloud/**" + ",**/org/eclipse/jetty/infinispan/**" +
+                  ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +
+                  ",**/org/eclipse/jetty/http/spi/**" +
+                  // test classes
+                  ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
+          jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+              exclusionPattern: jacocoExcludes,
+              execPattern: '**/target/jacoco.exec',
+              classPattern: '**/target/classes',
+              sourcePattern: '**/src/main/java'
+          consoleParsers = [[parserName: 'Maven'],
+                            [parserName: 'JavaDoc'],
+                            [parserName: 'JavaC']];
+        }
+
+        // Report on Maven and Javadoc warnings
+        step([$class        : 'WarningsPublisher',
+              consoleParsers: consoleParsers])
       }
     }
   }
