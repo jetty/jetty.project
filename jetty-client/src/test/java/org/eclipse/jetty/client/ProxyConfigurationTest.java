@@ -75,7 +75,7 @@ public class ProxyConfigurationTest
         proxy.getExcludedAddresses().add("[1::2:3:4]:5");
 
         assertFalse(proxy.matches(new Origin("http", "any", 0)));
-        assertTrue(proxy.matches(new Origin("http", "1::2:3:4", 0)));
-        assertFalse(proxy.matches(new Origin("http", "1::2:3:4", 5)));
+        assertTrue(proxy.matches(new Origin("http", "[1::2:3:4]", 0)));
+        assertFalse(proxy.matches(new Origin("http", "[1::2:3:4]", 5)));
     }
 }
