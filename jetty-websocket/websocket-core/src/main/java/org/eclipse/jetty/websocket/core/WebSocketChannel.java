@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Parser.ParsedFrame;
 import org.eclipse.jetty.websocket.core.extensions.Extension;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
@@ -116,8 +117,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
              */
             if (frame.getOpCode() == OpCode.CLOSE)
             {
-                // TODO access Parser.ParsedFrame.getCloseStatus
-                new CloseStatus(frame.getPayload());
+                if (!(frame instanceof ParsedFrame)) // already check in parser
+                    new CloseStatus(frame.getPayload());
             }
         }
 
@@ -505,7 +506,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                     // Handle inbound close
                     if (frame.getOpCode() == OpCode.CLOSE)
                     {
-                        CloseStatus closeStatus = new CloseStatus(frame.getPayload());
+                        
+                        CloseStatus closeStatus = ((Parser.ParsedFrame)frame).getCloseStatus();
                         if (state.onCloseIn(closeStatus))
                         {
                             handler.onReceiveFrame(frame, callback); // handler should know about received frame
