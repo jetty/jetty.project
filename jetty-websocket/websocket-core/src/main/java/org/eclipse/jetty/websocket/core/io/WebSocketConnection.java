@@ -262,7 +262,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             if (networkBuffer == null)
                 networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize()); 
-            else 
+            else if (BufferUtil.isEmpty(networkBuffer.getBuffer()) && networkBuffer.getReferences()>0)
+                networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize()); // don't fill empty referenced buffer
+            else
                 networkBuffer.reference();
             
             return networkBuffer;

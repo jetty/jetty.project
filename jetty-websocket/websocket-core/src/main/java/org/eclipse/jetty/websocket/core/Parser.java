@@ -323,7 +323,7 @@ public class Parser
     @Override
     public String toString()
     {
-        return String.format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%]",hashCode(),state,cursor,firstByte,mask==null?"-":TypeUtil.toHexString(mask),payloadLength);
+        return String.format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]",hashCode(),state,cursor,firstByte,mask==null?"-":TypeUtil.toHexString(mask),payloadLength);
     }    
     
     public class ParsedFrame extends Frame implements Closeable
