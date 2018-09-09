@@ -51,7 +51,7 @@ import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
  * The Core WebSocket Session.
  *
  */
-public class WebSocketChannel implements IncomingFrames, FrameHandler.DemandableSession, Dumpable
+public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSession, Dumpable
 {
     private Logger LOG = Log.getLogger(this.getClass());
     private final static CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
@@ -62,6 +62,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Demandable
     private final ExtensionStack extensionStack;
     private final String subprotocol;
     private final AttributesMap attributes = new AttributesMap();
+    private final boolean demanding;
 
     
     private WebSocketConnection connection;
@@ -75,9 +76,18 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Demandable
         this.policy = policy;
         this.extensionStack = extensionStack;
         this.subprotocol = subprotocol;
+        this.demanding = handler.isDemanding();
         extensionStack.connect(new IncomingState(),new OutgoingState());
     }
 
+    
+    /**
+     * @return True if the channels handling is demanding.
+     */
+    public boolean isDemanding()
+    {
+        return demanding;
+    }
 
     public void assertValid(Frame frame, boolean incoming)
     {
@@ -420,10 +430,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Demandable
                 // Open connection and handler
                 state.onOpen();
                 handler.onOpen((FrameHandler.CoreSession)this);
-                if (handler instanceof FrameHandler.Demanding)
-                    handler.onOpen((FrameHandler.DemandableSession)this);
-                else
-                    connection.demand();
+                if (!demanding)
+                    connection.demand(1);
                     
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
@@ -441,9 +449,11 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.Demandable
     }
 
     @Override
-    public void demand()
+    public void demand(int n)
     {
-        connection.demand();
+        if (!demanding)
+            throw new IllegalStateException();
+        connection.demand(n);
     }
     
     public WebSocketConnection getConnection()

@@ -52,8 +52,10 @@ public interface FrameHandler extends IncomingFrames
     void onOpen(CoreSession coreSession) throws Exception;
 
     /**
-     * Receiver of all DATA Frames (Text, Binary, Continuation), and all CONTROL Frames (Ping, Pong, Close)
-
+     * Receiver of all Frames.
+     * This method will never be called in parallel for the same session and will be called 
+     * sequentially to satisfy all outstanding demand signaled by calls to 
+     * {@link CoreSession#demand(int)}. 
      * @param frame the raw frame
      * @param callback the callback to indicate success in processing frame (or failure)
      */
@@ -78,6 +80,19 @@ public interface FrameHandler extends IncomingFrames
      * @throws Exception if unable to process the error. TODO: what happens if an exception occurs here?  does any error means a connection is (or will be) closed?
      */
     void onError(Throwable cause) throws Exception;
+    
+
+    /**
+     * Does the FrameHandler manage it's own demand?
+     * @return true iff the FrameHandler will manage its own flow control by calling {@link CoreSession#demand(int)} when it 
+     * is willing to receive new Frames.  Otherwise the demand will be managed by an automatic call to demand(1) after every
+     * succeeded callback passed to {@link #onReceiveFrame(Frame, Callback)}.
+     */
+    default boolean isDemanding()
+    {
+        return false;
+    }
+    
     
     /**
      * Represents the outgoing Frames.
@@ -202,19 +217,19 @@ public interface FrameHandler extends IncomingFrames
          * TODO: what is the expected reaction to Callback.failed() ?
          */
         void close(int statusCode, String reason, Callback callback);
+        
+
+        /**
+         * Manage flow control by indicating demand for handling Frames.  A call to 
+         * {@link FrameHandler#onReceiveFrame(Frame, Callback)} will only be made if a 
+         * corresponding demand has been signaled.   It is an error to call this method
+         * if {@link FrameHandler#isDemanding()} returns false.
+         * @param n The number of frames that can be handled (in sequential calls to 
+         * {@link FrameHandler#onReceiveFrame(Frame, Callback)}).  May not be negative.
+         */
+        void demand(int n);
     }
 
     // TODO: Want access to common Executor used by core for reuse in APIs (either read-only, or pushed into core) - connection has Executor now
-    
-    
-    public interface DemandableSession extends CoreSession
-    {
-        void demand();
-    }
-    
-    public interface Demanding extends FrameHandler
-    {
-        void onOpen(DemandableSession coreSession) throws Exception;
-    }
     
 }

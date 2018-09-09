@@ -227,9 +227,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (referenced!=null)
                     referenced.dereference();
                 
-                // TODO yuck ?
-                if (!(channel.getHandler() instanceof FrameHandler.Demanding))
-                    demand();
+                if (!channel.isDemanding())                    
+                    demand(1);
             }
 
             @Override
@@ -291,9 +290,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         fillAndParse();
     }
        
-    public void demand()
+    public void demand(int n)
     {
-        boolean execute = false;
+        if (n<0)
+            throw new IllegalArgumentException("Negative demand");
+        if (n==0)
+            return;
+        
         while (true)
         {
             long d = demand.get();
@@ -302,21 +305,18 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             
             if (handling==0)
             {
-                if (demand.compareAndSet(d,1,requested+1))
+                if (demand.compareAndSet(d,1,requested+n))
                 {
-                    execute = true;
-                    break;
+                    getExecutor().execute(this);
+                    return;
                 }
             }
             else
             {
-                if (demand.compareAndSet(d,1,requested+1))
-                    break;
+                if (demand.compareAndSet(d,1,requested+n))
+                    return;
             }
         }
-        
-        if (execute)
-            getExecutor().execute(this);
     }
 
     public void meetDemand()

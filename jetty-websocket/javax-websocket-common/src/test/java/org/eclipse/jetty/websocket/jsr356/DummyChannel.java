@@ -137,4 +137,9 @@ public class DummyChannel implements FrameHandler.CoreSession
         attributes.clearAttributes();
     }
 
+    @Override
+    public void demand(int n)
+    {        
+    }
+
 }
