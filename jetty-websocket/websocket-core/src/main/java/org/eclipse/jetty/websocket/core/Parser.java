@@ -234,9 +234,9 @@ public class Parser
             throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
     }
     
-    protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean release)
+    protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
     {
-        ParsedFrame frame = new ParsedFrame(firstByte, mask, payload, release);
+        ParsedFrame frame = new ParsedFrame(firstByte, mask, payload, releaseable);
         firstByte = 0;
         mask = null;
         cursor = 0;
@@ -255,69 +255,95 @@ public class Parser
 
         int available = buffer.remaining();
         
-        // If we already have a payload, we are aggregating
+        // If we already have a partial payload, so we need to aggregate to it
         if (partialPayload != null)
         {
             int aggregated = partialPayload.remaining();
             int expecting = payloadLength - aggregated;
 
-            if (available < expecting)
-            {
-                // All the available data is for this frame
-                BufferUtil.append(partialPayload,buffer);
-                return null;
-            }
-            
             if (available == expecting)
             {
-                // All the available data is for this frame
+                // All the available data is for this frame and completes it
                 BufferUtil.append(partialPayload,buffer);
                 return newFrame(firstByte,mask,partialPayload,true);
             }
+            
+            if (available < expecting)
+            {
+                // All the available data is for this frame, but not enough to complete it
+                BufferUtil.append(partialPayload,buffer);
+                return null;
+            }
 
-            // Copy the last part of the frame
+            // The buffer contains data for this frame and subsequent frames
+            // Copy the just the last part of the frame
             int limit = buffer.limit();
             buffer.limit(buffer.position() + expecting);
             BufferUtil.append(partialPayload,buffer);
             buffer.limit(limit);
             return newFrame(firstByte,mask,partialPayload,true);
         }
-        
-        // Do we have the entire payload in the buffer?
-        if (available>=payloadLength)
-        {          
-            int limit = buffer.limit();
-            int end = buffer.position() + payloadLength;
-            buffer.limit(end);
+
+        if (available==payloadLength)
+        {         
+            // All the available data is for this frame and completes it 
             try
             {
                 if (buffer.isDirect())
                 {
+                    // Copy to indirect, as more efficient for demasking etc.
                     ByteBuffer copy = bufferPool.acquire(buffer.remaining(),false);
                     BufferUtil.append(copy,buffer);
                     return newFrame(firstByte,mask,copy,true);
                 }
 
+                // Create a frame that shares the underlying buffer
                 return newFrame(firstByte,mask,buffer.duplicate(),false);
             }
             finally
             {
-                buffer.position(end);
-                buffer.limit(limit);
+                buffer.position(buffer.limit());
             }
         }
-            
-        // Is there enough space in the buffer for the payload?
-        if (BufferUtil.space(buffer)>=payloadLength)
+        
+        if (available<payloadLength)
         {
-            // yes, so let's not consume anything for now.
+            // All the available data is for this frame, but not enough to complete it
+            // Is there enough space in the buffer for the rest of the payload?
+            if (BufferUtil.space(buffer)>=payloadLength)
+                // yes, so let's not consume anything for now and the next fill
+                // will add to the existing buffer
+                return null;
+
+            // No space in the buffer, so we have to copy the partial payload
+            partialPayload = bufferPool.acquire(payloadLength,false);
+            BufferUtil.append(partialPayload,buffer);
             return null;
         }
 
-        // Copy the partial payload
-        partialPayload = bufferPool.acquire(payloadLength,false);
-        BufferUtil.append(partialPayload,buffer);
-        return null;
+        // The buffer contains data for this frame and subsequent frames
+        // Copy the just the last part of the frame
+        int limit = buffer.limit();
+        int end = buffer.position() + payloadLength;
+        buffer.limit(end);
+        try
+        {
+            if (buffer.isDirect())
+            {
+                // Copy to indirect, as more efficient for demasking etc.
+                ByteBuffer copy = bufferPool.acquire(buffer.remaining(),false);
+                BufferUtil.append(copy,buffer);
+                return newFrame(firstByte,mask,copy,true);
+            }
+
+            // Create a frame that shares the underlying buffer
+            return newFrame(firstByte,mask,buffer.duplicate(),false);
+        }
+        finally
+        {
+            buffer.position(end);
+            buffer.limit(limit);
+        }   
     }
     
     @Override
@@ -329,13 +355,13 @@ public class Parser
     public class ParsedFrame extends Frame implements Closeable
     {
         final CloseStatus closeStatus;
-        final boolean release;
+        final boolean releaseable;
         
-        public ParsedFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean release)
+        public ParsedFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
         {
             super(firstByte,mask,payload);
             demask();
-            this.release = release;
+            this.releaseable = releaseable;
             if (getOpCode()==OpCode.CLOSE)
             {
                 if (hasPayload())
@@ -352,7 +378,7 @@ public class Parser
         @Override
         public void close()
         {
-            if (release)
+            if (releaseable)
                 bufferPool.release(getPayload());
         }
         
@@ -363,7 +389,7 @@ public class Parser
 
         public boolean isReleaseable()
         {
-            return release;
+            return releaseable;
         }
     }
 }

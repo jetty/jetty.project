@@ -253,8 +253,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             if (networkBuffer == null)
                 networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize()); 
-            else if (BufferUtil.isEmpty(networkBuffer.getBuffer()) && networkBuffer.getReferences()>0)
-                networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize()); // don't fill empty referenced buffer
             else
                 networkBuffer.reference();
             
@@ -262,6 +260,28 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
     }
 
+    private ReferencedBuffer checkNetworkBuffer()
+    {
+        synchronized (this)
+        {
+            if (networkBuffer == null)
+                throw new IllegalStateException();
+            
+            if (networkBuffer.getBuffer().hasRemaining())
+                return networkBuffer;
+            
+            if (networkBuffer.getReferences()>1)
+            {
+                networkBuffer.dereference();
+                networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize()); 
+                return networkBuffer;
+            }
+            
+            return networkBuffer;
+        }
+    }
+    
+    
     private void releaseNetworkBuffer()
     {
         synchronized (this)
@@ -360,13 +380,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private void fillAndParse()
     {
         boolean interested = false;
+
+        ByteBuffer buffer = getNetworkBuffer().getBuffer();
                 
         try
         {
             while (getEndPoint().isOpen())
             {
-                ByteBuffer buffer = getNetworkBuffer().getBuffer();
-                
                 // Parse and handle frames
                 while(BufferUtil.hasContent(buffer))
                 {
@@ -384,6 +404,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (getEndPoint().isInputShutdown())
                     return;
 
+                buffer = checkNetworkBuffer().getBuffer();
                 int filled = getEndPoint().fill(buffer);
 
                 if (LOG.isDebugEnabled())
