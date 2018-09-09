@@ -85,12 +85,12 @@ public class CoreFuzzer implements AutoCloseable
     private final FuzzGenerator fuzzGenerator;
     private final Parser clientParser;
 
-    public CoreFuzzer()
+    public CoreFuzzer() throws Exception
     {
         this(new RemoteWholeEchoHandler());
     }
 
-    public CoreFuzzer(FrameHandler remoteFrameHandler)
+    public CoreFuzzer(FrameHandler remoteFrameHandler) throws Exception
     {
         this.remoteFrameHandler = remoteFrameHandler;
 
@@ -106,7 +106,9 @@ public class CoreFuzzer implements AutoCloseable
 
         this.remoteEndPoint = new ByteArrayEndPoint();
         this.remoteEndPoint.setGrowOutput(true);
-        Executor executor = new QueuedThreadPool();
+        QueuedThreadPool executor = new QueuedThreadPool();
+        executor.start(); // TODO are there other components that need to be started?
+        
         boolean validating = true;
         this.connection = new WebSocketConnection(remoteEndPoint, executor, bufferPool, channel, validating);
         this.channel.setWebSocketConnection(connection);

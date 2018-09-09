@@ -78,7 +78,7 @@ public interface FrameHandler extends IncomingFrames
      * @throws Exception if unable to process the error. TODO: what happens if an exception occurs here?  does any error means a connection is (or will be) closed?
      */
     void onError(Throwable cause) throws Exception;
-
+    
     /**
      * Represents the outgoing Frames.
      */
@@ -205,4 +205,16 @@ public interface FrameHandler extends IncomingFrames
     }
 
     // TODO: Want access to common Executor used by core for reuse in APIs (either read-only, or pushed into core) - connection has Executor now
+    
+    
+    public interface DemandableSession extends CoreSession
+    {
+        void demand();
+    }
+    
+    public interface Demanding extends FrameHandler
+    {
+        void onOpen(DemandableSession coreSession) throws Exception;
+    }
+    
 }

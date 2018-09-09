@@ -25,18 +25,19 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
@@ -52,7 +53,7 @@ import org.eclipse.jetty.websocket.core.frames.Frame;
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
-public class WebSocketConnection extends AbstractConnection implements Connection.UpgradeTo, Dumpable, OutgoingFrames
+public class WebSocketConnection extends AbstractConnection implements Connection.UpgradeTo, Dumpable, OutgoingFrames, Runnable
 {
     private final Logger LOG = Log.getLogger(this.getClass());
 
@@ -65,6 +66,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final Generator generator;
     private final Parser parser;
     private final WebSocketChannel channel;
+    private final AtomicBiInteger demand;
 
     // Connection level policy (before the session and local endpoint has been created)
     private final WebSocketPolicy policy;
@@ -134,6 +136,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         this.generator.configureFromExtensions(channel.getExtensionStack().getExtensions());
 
         this.random = this.policy.getBehavior() == WebSocketBehavior.CLIENT ? new Random(endp.hashCode()) : null;
+        
+        this.demand = new AtomicBiInteger();
     }
 
     @Override
@@ -201,10 +205,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return true;
     }
 
-    protected boolean onFrame(Parser.ParsedFrame frame)
+    protected void onFrame(Parser.ParsedFrame frame)
     {
-        AtomicBoolean result = new AtomicBoolean(false);
-
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
 
@@ -225,11 +227,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (referenced!=null)
                     referenced.dereference();
                 
-                if (!result.compareAndSet(false, true))
-                {
-                    // callback has been notified asynchronously
-                    fillAndParse(); // TODO dispatch?
-                }
+                // TODO yuck ?
+                if (!(channel.getHandler() instanceof FrameHandler.Demanding))
+                    demand();
             }
 
             @Override
@@ -246,14 +246,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 channel.processError(cause);
             }
         });
-
-        if (result.compareAndSet(false, true))
-        {
-            // callback hasn't been notified yet
-            return false;
-        }
-
-        return true;
     }
 
     private ReferencedBuffer getNetworkBuffer()
@@ -290,22 +282,81 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onFillable()");
         fillAndParse();
     }
-
+    
     @Override
-    public void fillInterested()
+    public void run()
     {
-        // Handle situation where prefill buffer (from upgrade) has created network buffer,
-        // but there is no actual read interest (yet)
-        if (networkBuffer!=null && BufferUtil.hasContent(networkBuffer.getBuffer()))
+        if(LOG.isDebugEnabled())
+            LOG.debug("run()");
+        fillAndParse();
+    }
+       
+    public void demand()
+    {
+        boolean execute = false;
+        while (true)
         {
-            fillAndParse();
+            long d = demand.get();
+            int handling = AtomicBiInteger.getHi(d);
+            int requested = AtomicBiInteger.getLo(d);
+            
+            if (handling==0)
+            {
+                if (demand.compareAndSet(d,1,requested+1))
+                {
+                    execute = true;
+                    break;
+                }
+            }
+            else
+            {
+                if (demand.compareAndSet(d,1,requested+1))
+                    break;
+            }
         }
-        else
-        {
-            super.fillInterested();
-        }
+        
+        if (execute)
+            getExecutor().execute(this);
     }
 
+    public void meetDemand()
+    {
+        while (true)
+        {
+            long d = demand.get();
+            int handling = AtomicBiInteger.getHi(d);
+            int requested = AtomicBiInteger.getLo(d);
+            
+            if (handling==0)
+                throw new IllegalStateException();
+            if (requested==0)
+                throw new IllegalStateException();
+            
+            if (demand.compareAndSet(d,1,requested-1))
+                return;
+        }
+    }
+    
+    public boolean moreDemand()
+    {
+        while (true)
+        {
+            long d = demand.get();
+            int handling = AtomicBiInteger.getHi(d);
+            int requested = AtomicBiInteger.getLo(d);
+            
+            if (handling==0)
+                throw new IllegalStateException();
+            
+            if (requested>0)
+                return true;
+            
+            if (demand.compareAndSet(d,0,requested))
+                return false;
+        }
+    }
+    
+    
     private void fillAndParse()
     {
         boolean interested = false;
@@ -322,8 +373,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     Parser.ParsedFrame frame = parser.parse(buffer);
                     if (frame==null)
                         break;
-                                        
-                    if (!onFrame(frame))
+                             
+                    meetDemand();
+                    onFrame(frame);
+                    if (!moreDemand())
                         return;
                 }
 

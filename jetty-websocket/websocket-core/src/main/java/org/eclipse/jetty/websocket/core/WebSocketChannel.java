@@ -51,7 +51,7 @@ import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
  * The Core WebSocket Session.
  *
  */
-public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSession, Dumpable
+public class WebSocketChannel implements IncomingFrames, FrameHandler.DemandableSession, Dumpable
 {
     private Logger LOG = Log.getLogger(this.getClass());
     private final static CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
@@ -419,7 +419,12 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             {
                 // Open connection and handler
                 state.onOpen();
-                handler.onOpen(this);
+                handler.onOpen((FrameHandler.CoreSession)this);
+                if (handler instanceof FrameHandler.Demanding)
+                    handler.onOpen((FrameHandler.DemandableSession)this);
+                else
+                    connection.demand();
+                    
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
             }
@@ -428,9 +433,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                 LOG.warn("Error during OPEN", t);
                 processError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
             }
-
-            // TODO what if we are going to start without read interest?  (eg reactive stream???)
-            connection.fillInterested();
         }
         catch (Throwable t)
         {
@@ -438,6 +440,12 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
     }
 
+    @Override
+    public void demand()
+    {
+        connection.demand();
+    }
+    
     public WebSocketConnection getConnection()
     {
         return this.connection;
