@@ -281,12 +281,14 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
     }
     
-    
     private void releaseNetworkBuffer()
     {
         synchronized (this)
         {
-            if (networkBuffer!=null && !networkBuffer.getBuffer().hasRemaining())
+            if (networkBuffer == null)
+                throw new IllegalStateException();
+            
+            if (BufferUtil.isEmpty(networkBuffer.getBuffer()))
             {
                 networkBuffer.dereference();
                 networkBuffer = null;
