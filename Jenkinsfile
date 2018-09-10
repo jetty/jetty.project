@@ -3,7 +3,7 @@
 // in case of change update method isMainBuild
 // def jdks = ["jdk8","jdk9","jdk10","jdk11"]
 // def jdks = ["jdk-11-ea+18"]
-def jdks = ["jdk-11"]
+def jdks = ["jdk11"]
 def oss = ["linux"]
 def builds = [:]
 for (def os in oss) {
