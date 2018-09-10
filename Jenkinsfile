@@ -23,7 +23,7 @@ def getFullBuild(jdk, os) {
       def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
       stage("Build / Test - ${jdk}") {
-        timeout(time: 90, unit: 'MINUTES') {
+        timeout(time: 120, unit: 'MINUTES') {
           // Checkout
           checkout scm
           withMaven(
