@@ -53,6 +53,7 @@ public class CloseStatus
     public static final int MAX_REASON_PHRASE = Frame.MAX_CONTROL_PAYLOAD - 2;
     
     public static final CloseStatus NO_CODE_STATUS = new CloseStatus(NO_CODE);
+    public static final CloseStatus NORMAL_STATUS = new CloseStatus(NORMAL);
 
     private final int code;
     private final String reason;
@@ -105,7 +106,6 @@ public class CloseStatus
     {
         return asPayloadBuffer(code, reason);
     }
-
 
 
     public static ByteBuffer asPayloadBuffer(int statusCode, String reason)
@@ -292,10 +292,29 @@ public class CloseStatus
 
 
 
+    public static String codeString(int closeStatus)
+    {
+        switch(closeStatus)
+        {
+            case NORMAL : return "NORMAL";
+            case SHUTDOWN: return "SHUTDOWN";
+            case PROTOCOL: return "PROTOCOL";
+            case BAD_DATA: return "BAD_DATA";
+            case NO_CODE: return "NO_CODE";
+            case NO_CLOSE: return "NO_CLOSE";
+            case BAD_PAYLOAD: return "BAD_PAYLOAD";
+            case POLICY_VIOLATION: return "POLICY_VIOLATION";
+            case MESSAGE_TOO_LARGE: return "MESSAGE_TOO_LARGE";
+            case EXTENSION_ERROR: return "EXTENSION_ERROR";
+            case SERVER_ERROR: return "SERVER_ERROR";
+            case FAILED_TLS_HANDSHAKE: return "FAILED_TLS_HANDSHAKE";
+            default: return "UNKNOWN";
+        }
+    }
 
     @Override
     public String toString()
     {
-        return String.format("{%03d,%s}",code,reason);
+        return String.format("{%04d=%s,%s}",code,codeString(code),reason);
     }
 }

@@ -21,7 +21,12 @@ package org.eclipse.jetty.websocket.core;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.junit.Assert;
 
 public class RawFrameBuilder
@@ -51,17 +56,12 @@ public class RawFrameBuilder
         }
     }
 
-    public static byte[] mask(final byte[] data, final byte mask[])
+    public static void mask(final byte[] data, final byte mask[])
     {
         Assert.assertThat("Mask.length",mask.length,is(4));
         int len = data.length;
-        byte ret[] = new byte[len];
-        System.arraycopy(data,0,ret,0,len);
         for (int i = 0; i < len; i++)
-        {
-            ret[i] ^= mask[i % 4];
-        }
-        return ret;
+            data[i] ^= mask[i % 4];
     }
 
     public static void putLength(ByteBuffer buf, int length, boolean masked)
@@ -102,9 +102,50 @@ public class RawFrameBuilder
         Assert.assertThat("Mask.length",mask.length,is(4));
         buf.put(mask);
     }
-
+    
     public static void putPayloadLength(ByteBuffer buf, int length)
     {
         putLength(buf,length,true);
     }
+    
+    public static byte[] buildTextFrame(String message, boolean masked)
+    {
+        ByteBuffer buffer = BufferUtil.allocate(2048);
+        BufferUtil.clearToFill(buffer);
+        byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
+        RawFrameBuilder.putOpFin(buffer,OpCode.TEXT,true);
+        putLength(buffer,bytes.length,masked);
+        if (masked)
+        {
+            byte[] mask = new byte[4];
+            ThreadLocalRandom.current().nextBytes(mask);
+            buffer.put(mask);
+            mask(bytes,mask);
+        }
+        buffer.put(bytes);
+        BufferUtil.flipToFlush(buffer,0);
+        return BufferUtil.toArray(buffer);
+    }
+    
+    public static byte[] buildClose(CloseStatus status,boolean masked)
+    {
+        ByteBuffer buffer = BufferUtil.allocate(2048);
+        BufferUtil.clearToFill(buffer);
+        
+        byte[] bytes = status==null?null:BufferUtil.toArray(status.asPayloadBuffer());
+        RawFrameBuilder.putOpFin(buffer,OpCode.CLOSE,true);
+        putLength(buffer,bytes==null?0:bytes.length,masked);
+        if (masked)
+        {
+            byte[] mask = new byte[4];
+            ThreadLocalRandom.current().nextBytes(mask);
+            buffer.put(mask);
+            mask(bytes,mask);
+        }
+        if (bytes!=null)
+            buffer.put(bytes);
+        BufferUtil.flipToFlush(buffer,0);
+        return BufferUtil.toArray(buffer);
+    }
+    
 }

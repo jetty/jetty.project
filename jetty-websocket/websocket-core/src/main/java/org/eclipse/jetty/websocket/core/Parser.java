@@ -75,12 +75,12 @@ public class Parser
     {
         try
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} Parsing {}", this, BufferUtil.toDetailString(buffer));
-           
             // parse through
             while (buffer.hasRemaining())
-            {
+            {            
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} Parsing {}", this, BufferUtil.toDetailString(buffer));
+
                 switch (state)
                 {
                     case START:
@@ -237,12 +237,18 @@ public class Parser
     protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
     {
         ParsedFrame frame = new ParsedFrame(firstByte, mask, payload, releaseable);
+        reset();
+        return frame;
+    }
+    
+    public void reset()
+    {
+        state = State.START;
         firstByte = 0;
         mask = null;
         cursor = 0;
         partialPayload = null;
-        
-        return frame;
+        payloadLength = -1;
     }
     
     private ParsedFrame parsePayload(ByteBuffer buffer)
