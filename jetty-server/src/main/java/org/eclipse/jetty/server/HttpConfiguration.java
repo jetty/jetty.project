@@ -72,7 +72,7 @@ public class HttpConfiguration
     private long _minRequestDataRate;
     private long _minResponseDataRate;
     private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
-    private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.LEGACY; // TODO change default in jetty-10
+    private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.RFC7578;
     private boolean _notifyRemoteAsyncErrors = true;
 
     /**
@@ -569,8 +569,7 @@ public class HttpConfiguration
      */
     public void setMultiPartFormDataCompliance(MultiPartFormDataCompliance multiPartCompliance)
     {
-        // TODO change default in jetty-10 
-        _multiPartCompliance = multiPartCompliance==null?MultiPartFormDataCompliance.LEGACY:multiPartCompliance;
+        _multiPartCompliance = multiPartCompliance==null?MultiPartFormDataCompliance.RFC7578:multiPartCompliance;
     }
 
     public MultiPartFormDataCompliance getMultipartFormDataCompliance()
