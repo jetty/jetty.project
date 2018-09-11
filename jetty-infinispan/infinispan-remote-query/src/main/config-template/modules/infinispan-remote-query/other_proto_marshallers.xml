@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+ <Ref refid="serial_context">
+     <!--
+    <Call name="registerProtoFiles">
+      <Arg>
+        <New class="org.infinispan.protostream.FileDescriptorSource">
+          <Call name="addProtoFile">
+           <Arg>my.proto</Arg>
+           <Arg>
+             <New class="java.io.File">
+                 <Arg><Property name="jetty.base" default="."/>/etc/my.proto</Arg>
+             </New>
+           </Arg>
+         </Call>
+        </New>
+      </Arg>
+    </Call>
+
+     -->
+     <!--
+     <Call name="registerMarshaller">
+       <Arg>
+         <New class="com.acme.MyMarshaller"/>
+       </Arg>
+     </Call>
+     -->
+ </Ref>
+</Configure>

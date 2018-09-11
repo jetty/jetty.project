@@ -51,7 +51,7 @@
     <Arg><Ref refid="config"/></Arg>
   </New>
   
-  <Call class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller" name="getSerializationContext">
+  <Call id="serial_context" class="org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller" name="getSerializationContext">
     <Arg>
       <Ref refid="remoteCacheManager"/>
     </Arg>
