@@ -22,8 +22,6 @@ import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
@@ -108,12 +106,13 @@ public class RawFrameBuilder
         putLength(buf,length,true);
     }
     
-    public static byte[] buildTextFrame(String message, boolean masked)
+
+    public static byte[] buildFrame(byte opcode, String message, boolean masked)
     {
         ByteBuffer buffer = BufferUtil.allocate(2048);
         BufferUtil.clearToFill(buffer);
         byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
-        RawFrameBuilder.putOpFin(buffer,OpCode.TEXT,true);
+        RawFrameBuilder.putOpFin(buffer,opcode,true);
         putLength(buffer,bytes.length,masked);
         if (masked)
         {
@@ -127,6 +126,11 @@ public class RawFrameBuilder
         return BufferUtil.toArray(buffer);
     }
     
+    public static byte[] buildText(String message, boolean masked)
+    {
+        return buildFrame(OpCode.TEXT,message,masked);
+    }
+    
     public static byte[] buildClose(CloseStatus status,boolean masked)
     {
         ByteBuffer buffer = BufferUtil.allocate(2048);
@@ -138,7 +142,7 @@ public class RawFrameBuilder
         if (masked)
         {
             byte[] mask = new byte[4];
-            ThreadLocalRandom.current().nextBytes(mask);
+            // ThreadLocalRandom.current().nextBytes(mask);
             buffer.put(mask);
             mask(bytes,mask);
         }

@@ -64,7 +64,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private final AttributesMap attributes = new AttributesMap();
     private final boolean demanding;
 
-    
     private WebSocketConnection connection;
 
     public WebSocketChannel(FrameHandler handler,
@@ -645,4 +644,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         attributes.clearAttributes();
     }
     
+    @Override
+    public String toString()
+    {
+        return String.format("WSChannel@%x{%s,x=%d}->%s",hashCode(),state,extensionStack.getExtensions().size(),handler);
+    }
 }

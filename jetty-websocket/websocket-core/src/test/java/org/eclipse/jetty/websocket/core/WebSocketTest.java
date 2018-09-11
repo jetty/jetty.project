@@ -111,7 +111,6 @@ public class WebSocketTest
     
     
     @Test
-    @Ignore
     public void testClientSocketClosedInCloseHandshake() throws Exception
     {
         TestFrameHandler serverHandler = new TestFrameHandler();
@@ -178,32 +177,7 @@ public class WebSocketTest
 //        assertNotNull(recv);
 //        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
     }
-
-
-    @Test
-    public void testInvalidOpCode() throws Exception
-    {
-        TestFrameHandler serverHandler = new TestFrameHandler();
-        TestFrameHandler clientHandler = new TestFrameHandler();
-
-        server = new WebSocketServer(0, serverHandler);
-        server.start();
-        client = new WebSocketClient("localhost", server.getLocalPort(), clientHandler);
-        client.start();
-
-        try
-        {
-            client.sendFrame(new Frame((byte)4));
-        }
-        catch (ProtocolException e)
-        {
-            assertThat(e.getMessage(), Matchers.containsString("Unknown opcode"));
-        }
-
-        assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
-        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
-    }
-
+    
 
     static class WebSocketClient
     {

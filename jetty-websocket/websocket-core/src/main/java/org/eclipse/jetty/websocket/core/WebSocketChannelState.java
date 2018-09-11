@@ -69,7 +69,7 @@ public class WebSocketChannelState
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", this.getClass().getSimpleName(), state.get());
+        return state.get().toString();
     }
     
     public boolean isClosed()
