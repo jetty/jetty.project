@@ -23,8 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Retainable;
 
-public class ReferencedBuffer
+public class ReferencedBuffer implements Retainable
 {
     private final ByteBufferPool pool;
     private final ByteBuffer buffer;
@@ -52,7 +53,8 @@ public class ReferencedBuffer
         return references.get();
     }
     
-    public void reference()
+    @Override
+    public void retain()
     {
         while(true)
         {
@@ -64,10 +66,12 @@ public class ReferencedBuffer
         }
     }
     
-    public void dereference()
+    public int release()
     {
-        if (references.decrementAndGet()==0)
+        int ref = references.decrementAndGet();
+        if (ref==0)
             pool.release(buffer);
+        return ref;
     }
     
     @Override

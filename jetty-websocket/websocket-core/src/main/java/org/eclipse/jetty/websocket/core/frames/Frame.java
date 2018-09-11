@@ -393,10 +393,7 @@ public class Frame
                     ++start;
                     ++offset;
                 }
-            }
-            
-            // TODO Should the mask be cleared?
-            Arrays.fill(mask,(byte)0);
+            }            
         }
     }
     

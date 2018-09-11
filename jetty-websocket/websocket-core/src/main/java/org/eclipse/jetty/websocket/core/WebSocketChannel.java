@@ -504,6 +504,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void abort()
     {
+        // TODO stop demand!
         connection.getEndPoint().close();
     }
     

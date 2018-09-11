@@ -49,6 +49,7 @@ public class Parser
 
     private static final Logger LOG = Log.getLogger(Parser.class);
     private final ByteBufferPool bufferPool;
+    private final boolean autoFragment;
 
     // State specific
     private State state = State.START;
@@ -62,6 +63,7 @@ public class Parser
     public Parser(ByteBufferPool bufferPool)
     {
         this.bufferPool = bufferPool;
+        this.autoFragment = true; // TODO set in constructor
     }
 
     /**
@@ -261,95 +263,75 @@ public class Parser
 
         int available = buffer.remaining();
         
-        // If we already have a partial payload, so we need to aggregate to it
-        if (partialPayload != null)
+        
+        if (partialPayload == null)
+        {
+            if (available<payloadLength)
+            {
+                // not enough to complete this frame 
+               
+                // Can we auto-fragment
+                if (autoFragment && OpCode.isDataFrame(OpCode.getOpCode(firstByte)))
+                {
+                    ParsedFrame frame = newFrame((byte)(firstByte&0x7F),mask,buffer.slice(),false);
+                    buffer.position(buffer.limit());
+                    return frame;
+                }
+                    
+                // No space in the buffer, so we have to copy the partial payload
+                partialPayload = bufferPool.acquire(payloadLength,false);
+                BufferUtil.append(partialPayload,buffer);
+                return null;
+            }
+            
+            if (available==payloadLength)
+            {         
+                // All the available data is for this frame and completes it 
+                ParsedFrame frame = newFrame(firstByte,mask,buffer.slice(),false);
+                buffer.position(buffer.limit());
+                return frame;
+            }
+            
+            // The buffer contains all the data for this frame and for subsequent frames
+            // Copy the just the first part of the buffer as frame payload
+            int limit = buffer.limit();
+            int end = buffer.position() + payloadLength;
+            buffer.limit(end);
+            ParsedFrame frame = newFrame(firstByte,mask,buffer.slice(),false);
+            buffer.position(end);
+            buffer.limit(limit);
+            return frame;
+            
+        }
+        else
         {
             int aggregated = partialPayload.remaining();
             int expecting = payloadLength - aggregated;
+            
 
+            if (available < expecting)
+            {
+                // not enough data to complete this frame, just copy it
+                BufferUtil.append(partialPayload,buffer);
+                return null;
+            }
+            
             if (available == expecting)
             {
                 // All the available data is for this frame and completes it
                 BufferUtil.append(partialPayload,buffer);
                 return newFrame(firstByte,mask,partialPayload,true);
             }
-            
-            if (available < expecting)
-            {
-                // All the available data is for this frame, but not enough to complete it
-                BufferUtil.append(partialPayload,buffer);
-                return null;
-            }
+
 
             // The buffer contains data for this frame and subsequent frames
-            // Copy the just the last part of the frame
+            // Copy the first part of the buffer to the frame and complete it
             int limit = buffer.limit();
             buffer.limit(buffer.position() + expecting);
             BufferUtil.append(partialPayload,buffer);
             buffer.limit(limit);
             return newFrame(firstByte,mask,partialPayload,true);
         }
-
-        if (available==payloadLength)
-        {         
-            // All the available data is for this frame and completes it 
-            try
-            {
-                if (buffer.isDirect())
-                {
-                    // Copy to indirect, as more efficient for demasking etc.
-                    ByteBuffer copy = bufferPool.acquire(buffer.remaining(),false);
-                    BufferUtil.append(copy,buffer);
-                    return newFrame(firstByte,mask,copy,true);
-                }
-
-                // Create a frame that shares the underlying buffer
-                return newFrame(firstByte,mask,buffer.duplicate(),false);
-            }
-            finally
-            {
-                buffer.position(buffer.limit());
-            }
-        }
-        
-        if (available<payloadLength)
-        {
-            // All the available data is for this frame, but not enough to complete it
-            // Is there enough space in the buffer for the rest of the payload?
-            if (BufferUtil.space(buffer)>=payloadLength)
-                // yes, so let's not consume anything for now and the next fill
-                // will add to the existing buffer
-                return null;
-
-            // No space in the buffer, so we have to copy the partial payload
-            partialPayload = bufferPool.acquire(payloadLength,false);
-            BufferUtil.append(partialPayload,buffer);
-            return null;
-        }
-
-        // The buffer contains data for this frame and subsequent frames
-        // Copy the just the last part of the frame
-        int limit = buffer.limit();
-        int end = buffer.position() + payloadLength;
-        buffer.limit(end);
-        try
-        {
-            if (buffer.isDirect())
-            {
-                // Copy to indirect, as more efficient for demasking etc.
-                ByteBuffer copy = bufferPool.acquire(buffer.remaining(),false);
-                BufferUtil.append(copy,buffer);
-                return newFrame(firstByte,mask,copy,true);
-            }
-
-            // Create a frame that shares the underlying buffer
-            return newFrame(firstByte,mask,buffer.duplicate(),false);
-        }
-        finally
-        {
-            buffer.position(end);
-            buffer.limit(limit);
-        }   
     }
     
     @Override

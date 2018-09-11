@@ -1657,8 +1657,8 @@ public class ParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
         Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
         assertEquals("Hello World",text.getPayloadAsUTF8());
-        assertFalse(text.getPayload().isDirect());
-        assertTrue(text.isReleaseable());
+        assertTrue(text.getPayload().isDirect());
+        assertFalse(text.isReleaseable());
     }
     
     @Test
@@ -1679,11 +1679,10 @@ public class ParserTest
     }
     
     @Test
-    public void testPartialSpace() throws Exception
+    public void testPartialData() throws Exception
     {
         ByteBuffer data = generate(OpCode.TEXT,"Hello World");
         int limit = data.limit();
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         ByteBuffer buffer = BufferUtil.allocate(32);
         
         ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()),false);
@@ -1715,12 +1714,11 @@ public class ParserTest
     
     
     @Test
-    public void testPartialNoSpace() throws Exception
+    public void testPartialControl() throws Exception
     {
 
         ByteBuffer data = generate(OpCode.TEXT,"Hello World");
         int limit = data.limit();
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         ByteBuffer buffer = BufferUtil.allocate(8);
         
         ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()),false);

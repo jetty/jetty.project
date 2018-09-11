@@ -66,13 +66,14 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final Generator generator;
     private final Parser parser;
     private final WebSocketChannel channel;
-    private final AtomicBiInteger demand;
 
     // Connection level policy (before the session and local endpoint has been created)
     private final WebSocketPolicy policy;
     private final Flusher flusher;
     private final Random random;
 
+    private long demand;
+    private boolean fillingAndParsing;
 
     // Read / Parse variables
     private ReferencedBuffer networkBuffer;
@@ -135,9 +136,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
         this.generator.configureFromExtensions(channel.getExtensionStack().getExtensions());
 
-        this.random = this.policy.getBehavior() == WebSocketBehavior.CLIENT ? new Random(endp.hashCode()) : null;
-        
-        this.demand = new AtomicBiInteger();
+        this.random = this.policy.getBehavior() == WebSocketBehavior.CLIENT ? new Random(endp.hashCode()) : null;        
     }
 
     @Override
@@ -210,9 +209,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
 
-        final ReferencedBuffer referenced = frame.isReleaseable()?null:networkBuffer;
+        final ReferencedBuffer referenced = frame.hasPayload() && !frame.isReleaseable()?networkBuffer:null;
         if (referenced!=null)
-            referenced.reference();
+            referenced.retain();
         
         channel.assertValid(frame, true);
         channel.onReceiveFrame(frame, new Callback()
@@ -225,7 +224,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
                 frame.close();
                 if (referenced!=null)
-                    referenced.dereference();
+                    referenced.release();
                 
                 if (!channel.isDemanding())                    
                     demand(1);
@@ -239,7 +238,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 
                 frame.close();
                 if (referenced!=null)
-                    referenced.dereference();
+                    referenced.release();
 
                 // notify session & endpoint
                 channel.processError(cause);
@@ -253,33 +252,11 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             if (networkBuffer == null)
                 networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize()); 
-            else
-                networkBuffer.reference();
             
             return networkBuffer;
         }
     }
 
-    private ReferencedBuffer checkNetworkBuffer()
-    {
-        synchronized (this)
-        {
-            if (networkBuffer == null)
-                throw new IllegalStateException();
-            
-            if (networkBuffer.getBuffer().hasRemaining())
-                return networkBuffer;
-            
-            if (networkBuffer.getReferences()>1)
-            {
-                networkBuffer.dereference();
-                networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize()); 
-                return networkBuffer;
-            }
-            
-            return networkBuffer;
-        }
-    }
     
     private void releaseNetworkBuffer()
     {
@@ -288,11 +265,11 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (networkBuffer == null)
                 throw new IllegalStateException();
             
-            if (BufferUtil.isEmpty(networkBuffer.getBuffer()))
-            {
-                networkBuffer.dereference();
-                networkBuffer = null;
-            }
+            if (networkBuffer.getBuffer().hasRemaining())
+                throw new IllegalStateException();
+
+            networkBuffer.release();
+            networkBuffer = null;
         }
     }
 
@@ -312,83 +289,87 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         fillAndParse();
     }
        
+    // TODO move demand methods to separate class and test!!!
+    // TODO demand should be a long!
     public void demand(int n)
     {
-        if (n<0)
-            throw new IllegalArgumentException("Negative demand");
-        if (n==0)
-            return;
+        if (n<=0)
+            throw new IllegalArgumentException("Demand must be positive");
         
-        while (true)
+        boolean fillAndParse = false;
+        synchronized (this)
         {
-            long d = demand.get();
-            int handling = AtomicBiInteger.getHi(d);
-            int requested = AtomicBiInteger.getLo(d);
-            
-            if (handling==0)
+            try
             {
-                if (demand.compareAndSet(d,1,requested+n))
-                {
-                    getExecutor().execute(this);
-                    return;
-                }
+                demand = Math.addExact(demand,n);
             }
-            else
+            catch(ArithmeticException e)
             {
-                if (demand.compareAndSet(d,1,requested+n))
-                    return;
+                demand = Long.MAX_VALUE;
+            }
+            
+            if (!fillingAndParsing)
+            {
+                fillingAndParsing = true;
+                fillAndParse = true;
             }
         }
-    }
-
-    public void meetDemand()
-    {
-        while (true)
+        
+        if (fillAndParse)
         {
-            long d = demand.get();
-            int handling = AtomicBiInteger.getHi(d);
-            int requested = AtomicBiInteger.getLo(d);
-            
-            if (handling==0)
-                throw new IllegalStateException();
-            if (requested==0)
-                throw new IllegalStateException();
-            
-            if (demand.compareAndSet(d,1,requested-1))
-                return;
+            // TODO can we just fillAndParse();
+            getExecutor().execute(this);
         }
     }
     
     public boolean moreDemand()
     {
-        while (true)
+        synchronized (this)
         {
-            long d = demand.get();
-            int handling = AtomicBiInteger.getHi(d);
-            int requested = AtomicBiInteger.getLo(d);
-            
-            if (handling==0)
+            if (!fillingAndParsing)
                 throw new IllegalStateException();
             
-            if (requested>0)
+            if (demand>0)
                 return true;
             
-            if (demand.compareAndSet(d,0,requested))
-                return false;
+            fillingAndParsing = false;
+            return false;
+        }
+    }
+
+    public void meetDemand()
+    {
+        synchronized (this)
+        {
+            if (demand==0)
+                throw new IllegalStateException();
+                
+            if (!fillingAndParsing)
+                throw new IllegalStateException();
+                
+            demand--;
         }
     }
     
-    
     private void fillAndParse()
     {
-        boolean interested = false;
-
-        ByteBuffer buffer = getNetworkBuffer().getBuffer();
+        
+        getNetworkBuffer();
+        
+        
+        // We have a networkBuffer that is referenced by us (the connection!)
+        ByteBuffer buffer = networkBuffer.getBuffer();
                 
         try
         {
-            while (getEndPoint().isOpen())
+            while (true)
             {
+                if (!getEndPoint().isOpen())
+                {
+                    releaseNetworkBuffer();
+                    return;
+                }
+                
                 // Parse and handle frames
                 while(BufferUtil.hasContent(buffer))
                 {
@@ -398,42 +379,45 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                              
                     meetDemand();
                     onFrame(frame);
-                    if (!moreDemand())
-                        return;
+                    
+                    synchronized (this)
+                    {
+                        if (!moreDemand())
+                        {
+                            if (BufferUtil.isEmpty(networkBuffer.getBuffer()))
+                                releaseNetworkBuffer();
+                            return; 
+                        }
+                    }
                 }
 
-                // The handling of a close frame may have closed the end point
-                if (getEndPoint().isInputShutdown())
-                    return;
-
-                buffer = checkNetworkBuffer().getBuffer();
-                int filled = getEndPoint().fill(buffer);
+                // buffer must be empty here because parser is fully consuming
+                
+                int filled = getEndPoint().fill(buffer); // TODO check if compact is possible.
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("endpointFill() filled={}: {}", filled, BufferUtil.toDetailString(buffer));
+                    LOG.debug("endpointFill() filled={}: {}", filled, buffer);
 
                 if (filled < 0)
                 {
+                    releaseNetworkBuffer();
                     channel.onClosed(null);
                     return;
                 }
 
                 if (filled == 0)
                 {
-                    interested = true;
+                    releaseNetworkBuffer();
+                    fillInterested();
                     return;
                 }
             }
         }
         catch (Throwable t)
         {
-            channel.processError(t);
-        }
-        finally
-        {
+            BufferUtil.clear(buffer);
             releaseNetworkBuffer();
-            if (interested)
-                fillInterested();
+            channel.processError(t);
         }
     }
 

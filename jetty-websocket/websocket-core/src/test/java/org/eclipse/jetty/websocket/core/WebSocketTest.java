@@ -169,8 +169,6 @@ public class WebSocketTest
         assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
 
         ((WebSocketChannel)client.handler.channel).getConnection().getEndPoint().close();
-        Thread.sleep(100);
-        
         
         assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
