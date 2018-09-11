@@ -15,6 +15,14 @@
     <param-value>a context value</param-value>
   </context-param>
 
+  <!-- Add or override servlet init parameter -->
+  <servlet>
+    <servlet-name>default</servlet-name>
+    <init-param>
+      <param-name>precompressed</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </servlet>
 
   <!-- Add or override servlet init parameter -->
   <servlet>

@@ -19,20 +19,18 @@
 package org.eclipse.jetty.util;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.stream.Stream;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class URIUtilCanonicalPathTest
 {
-    @Parameterized.Parameters(name = "{0}")
-    public static List<String[]> data()
+    public static Stream<Arguments> data()
     {
         String[][] canonical =
         {
@@ -117,17 +115,18 @@ public class URIUtilCanonicalPathTest
             // canonicalPath() is not responsible for decoding characters
             {"%2e%2e/", "%2e%2e/"},
         };
-        return Arrays.asList(canonical);
+
+        ArrayList<Arguments> ret = new ArrayList<>();
+        for(String[] args: canonical)
+        {
+            ret.add(Arguments.of(args));
+        }
+        return ret.stream();
     }
     
-    @Parameterized.Parameter(0)
-    public String input;
-    
-    @Parameterized.Parameter(1)
-    public String expectedResult;
-    
-    @Test
-    public void testCanonicalPath()
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testCanonicalPath(String input, String expectedResult)
     {
         assertThat("Canonical", URIUtil.canonicalPath(input), is(expectedResult));
     }

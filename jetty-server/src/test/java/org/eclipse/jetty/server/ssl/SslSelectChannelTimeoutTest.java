@@ -29,7 +29,7 @@ import javax.net.ssl.TrustManagerFactory;
 import org.eclipse.jetty.server.ConnectorTimeoutTest;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
 {
@@ -41,7 +41,7 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
         return __sslContext.getSocketFactory().createSocket(host,port);
     }
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.util.regex.Matcher;
@@ -27,21 +27,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class RegexRuleTest
 {
     private RegexRule _rule;
 
-    @Before
+    @BeforeEach
     public void init()
     {
         _rule = new TestRegexRule();
     }
 
-    @After
+    @AfterEach
     public void destroy()
     {
         _rule = null;
@@ -107,7 +107,7 @@ public class RegexRuleTest
         }, null
         );
 
-        assertEquals("regex: " + matchCase[0] + " uri: " + matchCase[1], flag, result!=null);
+        assertEquals(flag, result!=null, "regex: " + matchCase[0] + " uri: " + matchCase[1]);
     }
 
     private class TestRegexRule extends RegexRule

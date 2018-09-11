@@ -49,7 +49,7 @@ public class UnitParser extends Parser
     /**
      * Parse a buffer, but do so in a quiet fashion, squelching stacktraces if encountered.
      * <p>
-     * Use if you know the parse will cause an exception and just don't wnat to make the test console all noisy.
+     * Use if you know the parse will cause an exception and just don't want to make the test console all noisy.
      * @param buf the buffer to parse
      */
     public void parseQuietly(ByteBuffer buf)

@@ -19,9 +19,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import java.nio.ByteBuffer;
-import java.util.Iterator;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
@@ -30,14 +27,17 @@ import org.eclipse.jetty.http2.hpack.HpackException.CompressionException;
 import org.eclipse.jetty.http2.hpack.HpackException.StreamException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+
+import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 public class HpackDecoderTest
 {
@@ -178,14 +178,14 @@ public class HpackDecoderTest
 
         assertThat(response.getStatus(),is(200));
         assertThat(response.getFields().size(),is(6));
-        assertTrue(response.getFields().contains(new HttpField(HttpHeader.DATE,"Fri, 15 Jul 2016 02:36:20 GMT")));
-        assertTrue(response.getFields().contains(new HttpField(HttpHeader.CONTENT_TYPE,"text/html")));
-        assertTrue(response.getFields().contains(new HttpField(HttpHeader.CONTENT_ENCODING,"")));
-        assertTrue(response.getFields().contains(new HttpField(HttpHeader.CONTENT_LENGTH,"42")));
-        assertTrue(response.getFields().contains(new HttpField(HttpHeader.SERVER,"nghttpx nghttp2/1.12.0")));
-        assertTrue(response.getFields().contains(new HttpField(HttpHeader.VIA,"1.1 nghttpx")));
+        assertThat(response.getFields(), containsHeaderValue(HttpHeader.DATE,"Fri, 15 Jul 2016 02:36:20 GMT"));
+        assertThat(response.getFields(), containsHeaderValue(HttpHeader.CONTENT_TYPE,"text/html"));
+        assertThat(response.getFields(), containsHeaderValue(HttpHeader.CONTENT_ENCODING,""));
+        assertThat(response.getFields(), containsHeaderValue(HttpHeader.CONTENT_LENGTH,"42"));
+        assertThat(response.getFields(), containsHeaderValue(HttpHeader.SERVER,"nghttpx nghttp2/1.12.0"));
+        assertThat(response.getFields(), containsHeaderValue(HttpHeader.VIA,"1.1 nghttpx"));
     }
-    
+
     @Test
     public void testResize() throws Exception
     {
@@ -219,14 +219,14 @@ public class HpackDecoderTest
         try
         {
             decoder.decode(buffer);
-            Assert.fail();
+            fail();
         }
         catch(CompressionException e)
         {
-            Assert.assertThat(e.getMessage(),Matchers.containsString("Dynamic table resize after fields"));
+            assertThat(e.getMessage(),Matchers.containsString("Dynamic table resize after fields"));
         }
     }
-    
+
     @Test
     public void testTooBigToIndex() throws Exception
     {
@@ -235,7 +235,7 @@ public class HpackDecoderTest
 
         HpackDecoder decoder = new HpackDecoder(128,8192);
         MetaData metaData = decoder.decode(buffer);
-        
+
         assertThat(decoder.getHpackContext().getDynamicTableSize(),is(0));
         assertThat(metaData.getFields().get("host"),Matchers.startsWith("This is a very large field"));
     }
@@ -247,10 +247,11 @@ public class HpackDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
         HpackDecoder decoder = new HpackDecoder(128,8192);
+
         try
         {
             decoder.decode(buffer);
-            Assert.fail();
+            fail();
         }
         catch (HpackException.SessionException e)
         {
@@ -269,11 +270,11 @@ public class HpackDecoderTest
         try
         {
             mdb.build();
-            Assert.fail();
+            fail();
         }
         catch(StreamException ex)
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("Unknown pseudo header"));
+            assertThat(ex.getMessage(),Matchers.containsString("Unknown pseudo header"));
         }
         
         // 2: Sends a HEADERS frame that contains the pseudo-header field defined for response
@@ -285,11 +286,11 @@ public class HpackDecoderTest
         try
         {
             mdb.build();
-            Assert.fail();
+            fail();
         }
         catch(StreamException ex)
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("Request and Response headers"));
+            assertThat(ex.getMessage(),Matchers.containsString("Request and Response headers"));
         }
 
         // 3: Sends a HEADERS frame that contains a pseudo-header field as trailers
@@ -304,11 +305,11 @@ public class HpackDecoderTest
         try
         {
             mdb.build();
-            Assert.fail();
+            fail();
         }
         catch(StreamException ex)
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("Pseudo header :authority after fields"));
+            assertThat(ex.getMessage(),Matchers.containsString("Pseudo header :authority after fields"));
         }
     }
     
@@ -323,11 +324,11 @@ public class HpackDecoderTest
         try
         {
             mdb.build();
-            Assert.fail();
+            fail();
         }
         catch(StreamException ex)
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("Connection specific field 'Connection'"));
+            assertThat(ex.getMessage(),Matchers.containsString("Connection specific field 'Connection'"));
         }
 
         // 2: Sends a HEADERS frame that contains the TE header field with any value other than "trailers"
@@ -336,130 +337,102 @@ public class HpackDecoderTest
         try
         {
             mdb.build();
-            Assert.fail();
+            fail();
         }
         catch(StreamException ex)
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("Unsupported TE value 'not_trailers'"));
+            assertThat(ex.getMessage(),Matchers.containsString("Unsupported TE value 'not_trailers'"));
         }
 
 
         mdb = new MetaDataBuilder(4096);
         mdb.emit(new HttpField(HttpHeader.CONNECTION,"TE"));
         mdb.emit(new HttpField(HttpHeader.TE,"trailers"));
-        Assert.assertNotNull(mdb.build());
+        assertNotNull(mdb.build());
     }
 
 
     @Test()
     public void test8_1_2_3_RequestPseudoHeaderFields() throws Exception
     {
-        MetaDataBuilder mdb;
+        {
+            MetaDataBuilder mdb = new MetaDataBuilder( 4096 );
+            mdb.emit( new HttpField( HttpHeader.C_METHOD, "GET" ) );
+            mdb.emit( new HttpField( HttpHeader.C_SCHEME, "http" ) );
+            mdb.emit( new HttpField( HttpHeader.C_AUTHORITY, "localhost:8080" ) );
+            mdb.emit( new HttpField( HttpHeader.C_PATH, "/" ) );
+            assertThat( mdb.build(), Matchers.instanceOf( MetaData.Request.class ) );
+        }
 
-        mdb = new MetaDataBuilder(4096);
-        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
-        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
-        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
-        mdb.emit(new HttpField(HttpHeader.C_PATH,"/"));
-        Assert.assertThat(mdb.build(),Matchers.instanceOf(MetaData.Request.class));
+        {
+            // 1: Sends a HEADERS frame with empty ":path" pseudo-header field
+            final MetaDataBuilder mdb = new MetaDataBuilder( 4096 );
+            mdb.emit( new HttpField( HttpHeader.C_METHOD, "GET" ) );
+            mdb.emit( new HttpField( HttpHeader.C_SCHEME, "http" ) );
+            mdb.emit( new HttpField( HttpHeader.C_AUTHORITY, "localhost:8080" ) );
+            mdb.emit( new HttpField( HttpHeader.C_PATH, "" ) );
+            StreamException ex = assertThrows( StreamException.class, () -> mdb.build() );
+            assertThat( ex.getMessage(), Matchers.containsString( "No Path" ) );
 
-        
-        // 1: Sends a HEADERS frame with empty ":path" pseudo-header field
-        mdb = new MetaDataBuilder(4096);
-        mdb = new MetaDataBuilder(4096);
-        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
-        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
-        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
-        mdb.emit(new HttpField(HttpHeader.C_PATH,""));
-        try
-        {
-            mdb.build();
-            Assert.fail();
         }
-        catch(StreamException ex)
+
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("No Path"));
-        }        
-        
-        // 2: Sends a HEADERS frame that omits ":method" pseudo-header field
-        mdb = new MetaDataBuilder(4096);
-        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
-        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
-        mdb.emit(new HttpField(HttpHeader.C_PATH,"/"));
-        try
-        {
-            mdb.build();
-            Assert.fail();
+            // 2: Sends a HEADERS frame that omits ":method" pseudo-header field
+            final MetaDataBuilder mdb = new MetaDataBuilder( 4096 );
+            mdb.emit( new HttpField( HttpHeader.C_SCHEME, "http" ) );
+            mdb.emit( new HttpField( HttpHeader.C_AUTHORITY, "localhost:8080" ) );
+            mdb.emit( new HttpField( HttpHeader.C_PATH, "/" ) );
+            StreamException ex = assertThrows( StreamException.class, () -> mdb.build() );
+            assertThat( ex.getMessage(), Matchers.containsString( "No Method" ) );
+
         }
-        catch(StreamException ex)
+
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("No Method"));
-        }        
-        
-        
-        // 3: Sends a HEADERS frame that omits ":scheme" pseudo-header field
-        mdb = new MetaDataBuilder(4096);
-        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
-        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
-        mdb.emit(new HttpField(HttpHeader.C_PATH,"/"));
-        try
-        {
-            mdb.build();
-            Assert.fail();
+            // 3: Sends a HEADERS frame that omits ":scheme" pseudo-header field
+            final MetaDataBuilder mdb = new MetaDataBuilder( 4096 );
+            mdb.emit( new HttpField( HttpHeader.C_METHOD, "GET" ) );
+            mdb.emit( new HttpField( HttpHeader.C_AUTHORITY, "localhost:8080" ) );
+            mdb.emit( new HttpField( HttpHeader.C_PATH, "/" ) );
+            StreamException ex = assertThrows( StreamException.class, () -> mdb.build() );
+            assertThat( ex.getMessage(), Matchers.containsString( "No Scheme" ) );
+
         }
-        catch(StreamException ex)
+
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("No Scheme"));
-        }        
-        
-        // 4: Sends a HEADERS frame that omits ":path" pseudo-header field
-        mdb = new MetaDataBuilder(4096);
-        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
-        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
-        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
-        try
-        {
-            mdb.build();
-            Assert.fail();
+            // 4: Sends a HEADERS frame that omits ":path" pseudo-header field
+            final MetaDataBuilder mdb = new MetaDataBuilder( 4096 );
+            mdb.emit( new HttpField( HttpHeader.C_METHOD, "GET" ) );
+            mdb.emit( new HttpField( HttpHeader.C_SCHEME, "http" ) );
+            mdb.emit( new HttpField( HttpHeader.C_AUTHORITY, "localhost:8080" ) );
+            StreamException ex = assertThrows( StreamException.class, () -> mdb.build() );
+            assertThat( ex.getMessage(), Matchers.containsString( "No Path" ) );
+
         }
-        catch(StreamException ex)
+
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("No Path"));
-        }        
-        
-        // 5: Sends a HEADERS frame with duplicated ":method" pseudo-header field
-        mdb = new MetaDataBuilder(4096);
-        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
-        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
-        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
-        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
-        mdb.emit(new HttpField(HttpHeader.C_PATH,"/"));
-        try
-        {
-            mdb.build();
-            Assert.fail();
+            // 5: Sends a HEADERS frame with duplicated ":method" pseudo-header field
+            final MetaDataBuilder mdb = new MetaDataBuilder( 4096 );
+            mdb.emit( new HttpField( HttpHeader.C_METHOD, "GET" ) );
+            mdb.emit( new HttpField( HttpHeader.C_METHOD, "GET" ) );
+            mdb.emit( new HttpField( HttpHeader.C_SCHEME, "http" ) );
+            mdb.emit( new HttpField( HttpHeader.C_AUTHORITY, "localhost:8080" ) );
+            mdb.emit( new HttpField( HttpHeader.C_PATH, "/" ) );
+            StreamException ex = assertThrows( StreamException.class, () -> mdb.build() );
+            assertThat( ex.getMessage(), Matchers.containsString( "Duplicate" ) );
         }
-        catch(StreamException ex)
+
         {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("Duplicate"));
-        }        
-        
-        // 6: Sends a HEADERS frame with duplicated ":scheme" pseudo-header field
-        mdb = new MetaDataBuilder(4096);
-        mdb.emit(new HttpField(HttpHeader.C_METHOD,"GET"));
-        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
-        mdb.emit(new HttpField(HttpHeader.C_SCHEME,"http"));
-        mdb.emit(new HttpField(HttpHeader.C_AUTHORITY,"localhost:8080"));
-        mdb.emit(new HttpField(HttpHeader.C_PATH,"/"));
-        try
-        {
-            mdb.build();
-            Assert.fail();
+            // 6: Sends a HEADERS frame with duplicated ":scheme" pseudo-header field
+            final MetaDataBuilder mdb = new MetaDataBuilder( 4096 );
+            mdb.emit( new HttpField( HttpHeader.C_METHOD, "GET" ) );
+            mdb.emit( new HttpField( HttpHeader.C_SCHEME, "http" ) );
+            mdb.emit( new HttpField( HttpHeader.C_SCHEME, "http" ) );
+            mdb.emit( new HttpField( HttpHeader.C_AUTHORITY, "localhost:8080" ) );
+            mdb.emit( new HttpField( HttpHeader.C_PATH, "/" ) );
+
+            StreamException ex = assertThrows( StreamException.class, () -> mdb.build() );
+            assertThat( ex.getMessage(), Matchers.containsString( "Duplicate" ) );
         }
-        catch(StreamException ex)
-        {
-            Assert.assertThat(ex.getMessage(),Matchers.containsString("Duplicate"));
-        }        
     }
 
 
@@ -489,16 +462,8 @@ public class HpackDecoderTest
 
         String encoded = "82868441" + "84" + "49509FFF";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-
-        try
-        {
-            decoder.decode(buffer);
-            Assert.fail();
-        }
-        catch (CompressionException ex)
-        {
-            Assert.assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
-        }
+        CompressionException ex = assertThrows( CompressionException.class, () -> decoder.decode(buffer));
+        assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
     }
 
 
@@ -511,15 +476,9 @@ public class HpackDecoderTest
         String encoded = "82868441" + "83" + "495090";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        try
-        {
-            decoder.decode(buffer);
-            Assert.fail();
-        }
-        catch (CompressionException ex)
-        {
-            Assert.assertThat(ex.getMessage(), Matchers.containsString("Incorrect padding"));
-        }
+        CompressionException ex = assertThrows( CompressionException.class, () -> decoder.decode(buffer));
+        assertThat(ex.getMessage(), Matchers.containsString("Incorrect padding"));
+
     }
 
 
@@ -532,15 +491,9 @@ public class HpackDecoderTest
         String encoded = "82868441" + "87" + "497FFFFFFF427F";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        try
-        {
-            decoder.decode(buffer);
-            Assert.fail();
-        }
-        catch (CompressionException ex)
-        {
-            Assert.assertThat(ex.getMessage(), Matchers.containsString("EOS in content"));
-        }
+        CompressionException ex = assertThrows( CompressionException.class, () -> decoder.decode(buffer));
+        assertThat(ex.getMessage(), Matchers.containsString("EOS in content"));
+
     }
 
 
@@ -552,15 +505,9 @@ public class HpackDecoderTest
         String encoded = "82868441" + "81" + "FE";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        try
-        {
-            decoder.decode(buffer);
-            Assert.fail();
-        }
-        catch (CompressionException ex)
-        {
-            Assert.assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
-        }
+        CompressionException ex = assertThrows( CompressionException.class, () -> decoder.decode(buffer));
+        assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
+
     }
 
 
@@ -572,14 +519,9 @@ public class HpackDecoderTest
         String encoded = "82868441" + "82" + "FFFE";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
 
-        try
-        {
-            decoder.decode(buffer);
-            Assert.fail();
-        }
-        catch (CompressionException ex)
-        {
-            Assert.assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
-        }
+
+        CompressionException ex = assertThrows( CompressionException.class, () -> decoder.decode(buffer));
+        assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
+
     }
 }

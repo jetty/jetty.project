@@ -42,11 +42,12 @@
     </dependency>
 
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>@junit.version@</version>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
 
   <build>
@@ -67,7 +68,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>@surefireVersion@</version>
+        <version>@surefire.version@</version>
         <configuration>
           <skip>true</skip>
         </configuration>
@@ -75,7 +76,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>@surefireVersion@</version>
+        <version>@surefire.version@</version>
         <configuration>
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>

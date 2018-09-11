@@ -19,7 +19,7 @@
 
 package org.eclipse.jetty.jsp;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.net.URL;
@@ -32,7 +32,7 @@ import org.apache.tomcat.util.descriptor.tld.TldResourcePath;
 import org.eclipse.jetty.apache.jsp.JettyTldPreScanned;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * TestJettyTldPreScanned

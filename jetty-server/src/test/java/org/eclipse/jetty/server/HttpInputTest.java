@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Queue;
@@ -26,16 +34,11 @@ import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ReadListener;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
-import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-@RunWith(AdvancedRunner.class)
 public class HttpInputTest
 {
     private final Queue<String> _history = new LinkedBlockingQueue<>();
@@ -87,7 +90,7 @@ public class HttpInputTest
         }
     }
 
-    @Before
+    @BeforeEach
     public void before()
     {
         _in = new HttpInput(new HttpChannelState(new HttpChannel(null, new HttpConfiguration(), null, null)
@@ -151,22 +154,22 @@ public class HttpInputTest
         };
     }
 
-    @After
+    @AfterEach
     public void after()
     {
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
     public void testEmpty() throws Exception
     {
-        Assert.assertThat(_in.available(), Matchers.equalTo(0));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.available(), equalTo(0));
+        assertThat(_history.poll(), equalTo("produceContent 0"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isFinished(), equalTo(false));
+        assertThat(_in.isReady(), equalTo(true));
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
@@ -176,41 +179,41 @@ public class HttpInputTest
         _in.addContent(new TContent("CD"));
         _fillAndParseSimulate.offer("EF");
         _fillAndParseSimulate.offer("GH");
-        Assert.assertThat(_in.available(), Matchers.equalTo(2));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
+        assertThat(_in.available(), equalTo(2));
+        assertThat(_in.isFinished(), equalTo(false));
+        assertThat(_in.isReady(), equalTo(true));
 
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(0L));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'A'));
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(1L));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'B'));
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(2L));
+        assertThat(_in.getContentConsumed(), equalTo(0L));
+        assertThat(_in.read(), equalTo((int)'A'));
+        assertThat(_in.getContentConsumed(), equalTo(1L));
+        assertThat(_in.read(), equalTo((int)'B'));
+        assertThat(_in.getContentConsumed(), equalTo(2L));
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded AB"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("Content succeeded AB"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'C'));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'D'));
+        assertThat(_in.read(), equalTo((int)'C'));
+        assertThat(_in.read(), equalTo((int)'D'));
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded CD"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("Content succeeded CD"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'E'));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'F'));
+        assertThat(_in.read(), equalTo((int)'E'));
+        assertThat(_in.read(), equalTo((int)'F'));
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 2"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded EF"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("produceContent 2"));
+        assertThat(_history.poll(), equalTo("Content succeeded EF"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'G'));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'H'));
+        assertThat(_in.read(), equalTo((int)'G'));
+        assertThat(_in.read(), equalTo((int)'H'));
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded GH"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("Content succeeded GH"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(8L));
+        assertThat(_in.getContentConsumed(), equalTo(8L));
 
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
@@ -229,16 +232,16 @@ public class HttpInputTest
             }
         }).start();
 
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'A'));
+        assertThat(_in.read(), equalTo((int)'A'));
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("blockForContent"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("produceContent 0"));
+        assertThat(_history.poll(), equalTo("blockForContent"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'B'));
+        assertThat(_in.read(), equalTo((int)'B'));
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded AB"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("Content succeeded AB"));
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
@@ -248,26 +251,26 @@ public class HttpInputTest
         _in.addContent(new TContent("CD"));
         _in.eof();
 
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_in.available(), Matchers.equalTo(2));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
+        assertThat(_in.isFinished(), equalTo(false));
+        assertThat(_in.available(), equalTo(2));
+        assertThat(_in.isFinished(), equalTo(false));
 
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'A'));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'B'));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded AB"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.read(), equalTo((int)'A'));
+        assertThat(_in.read(), equalTo((int)'B'));
+        assertThat(_history.poll(), equalTo("Content succeeded AB"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'C'));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'D'));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded CD"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
+        assertThat(_in.read(), equalTo((int)'C'));
+        assertThat(_in.isFinished(), equalTo(false));
+        assertThat(_in.read(), equalTo((int)'D'));
+        assertThat(_history.poll(), equalTo("Content succeeded CD"));
+        assertThat(_history.poll(), nullValue());
+        assertThat(_in.isFinished(), equalTo(false));
 
-        Assert.assertThat(_in.read(), Matchers.equalTo(-1));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(true));
+        assertThat(_in.read(), equalTo(-1));
+        assertThat(_in.isFinished(), equalTo(true));
 
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
@@ -277,30 +280,23 @@ public class HttpInputTest
         _in.addContent(new TContent("CD"));
         _in.earlyEOF();
 
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_in.available(), Matchers.equalTo(2));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
+        assertThat(_in.isFinished(), equalTo(false));
+        assertThat(_in.available(), equalTo(2));
+        assertThat(_in.isFinished(), equalTo(false));
 
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'A'));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'B'));
+        assertThat(_in.read(), equalTo((int)'A'));
+        assertThat(_in.read(), equalTo((int)'B'));
 
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'C'));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'D'));
+        assertThat(_in.read(), equalTo((int)'C'));
+        assertThat(_in.isFinished(), equalTo(false));
+        assertThat(_in.read(), equalTo((int)'D'));
 
-        try
-        {
-            _in.read();
-            Assert.fail();
-        }
-        catch (EOFException eof)
-        {
-            Assert.assertThat(_in.isFinished(), Matchers.equalTo(true));
-        }
+        assertThrows(EOFException.class, ()-> _in.read());
+        assertTrue(_in.isFinished());
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded AB"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded CD"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("Content succeeded AB"));
+        assertThat(_history.poll(), equalTo("Content succeeded CD"));
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
@@ -319,174 +315,168 @@ public class HttpInputTest
             }
         }).start();
 
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_in.read(), Matchers.equalTo(-1));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(true));
+        assertThat(_in.isFinished(), equalTo(false));
+        assertThat(_in.read(), equalTo(-1));
+        assertThat(_in.isFinished(), equalTo(true));
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("blockForContent"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("produceContent 0"));
+        assertThat(_history.poll(), equalTo("blockForContent"));
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
     public void testAsyncEmpty() throws Exception
     {
         _in.setReadListener(_listener);
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("produceContent 0"));
+        assertThat(_history.poll(), equalTo("s.onReadUnready"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isReady(), equalTo(false));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isReady(), equalTo(false));
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
     public void testAsyncRead() throws Exception
     {
         _in.setReadListener(_listener);
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("produceContent 0"));
+        assertThat(_history.poll(), equalTo("s.onReadUnready"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isReady(), equalTo(false));
+        assertThat(_history.poll(), nullValue());
 
         _in.addContent(new TContent("AB"));
         _fillAndParseSimulate.add("CD");
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("s.onDataAvailable"));
+        assertThat(_history.poll(), nullValue());
         _in.run();
-        Assert.assertThat(_history.poll(), Matchers.equalTo("l.onDataAvailable"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("l.onDataAvailable"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'A'));
+        assertThat(_in.isReady(), equalTo(true));
+        assertThat(_in.read(), equalTo((int)'A'));
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'B'));
+        assertThat(_in.isReady(), equalTo(true));
+        assertThat(_in.read(), equalTo((int)'B'));
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded AB"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("Content succeeded AB"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 1"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isReady(), equalTo(true));
+        assertThat(_history.poll(), equalTo("produceContent 1"));
+        assertThat(_history.poll(), equalTo("s.onDataAvailable"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'C'));
+        assertThat(_in.read(), equalTo((int)'C'));
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'D'));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded CD"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isReady(), equalTo(true));
+        assertThat(_in.read(), equalTo((int)'D'));
+        assertThat(_history.poll(), equalTo("Content succeeded CD"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isReady(), equalTo(false));
+        assertThat(_history.poll(), equalTo("produceContent 0"));
+        assertThat(_history.poll(), equalTo("s.onReadUnready"));
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
     public void testAsyncEOF() throws Exception
     {
         _in.setReadListener(_listener);
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("produceContent 0"));
+        assertThat(_history.poll(), equalTo("s.onReadUnready"));
+        assertThat(_history.poll(), nullValue());
 
         _in.eof();
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isReady(), equalTo(true));
+        assertThat(_in.isFinished(), equalTo(false));
+        assertThat(_history.poll(), equalTo("s.onDataAvailable"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.read(), Matchers.equalTo(-1));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(true));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.read(), equalTo(-1));
+        assertThat(_in.isFinished(), equalTo(true));
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
     public void testAsyncReadEOF() throws Exception
     {
         _in.setReadListener(_listener);
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("produceContent 0"));
+        assertThat(_history.poll(), equalTo("s.onReadUnready"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isReady(), equalTo(false));
+        assertThat(_history.poll(), nullValue());
 
         _in.addContent(new TContent("AB"));
         _fillAndParseSimulate.add("_EOF_");
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("s.onDataAvailable"));
+        assertThat(_history.poll(), nullValue());
 
         _in.run();
-        Assert.assertThat(_history.poll(), Matchers.equalTo("l.onDataAvailable"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("l.onDataAvailable"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'A'));
+        assertThat(_in.isReady(), equalTo(true));
+        assertThat(_in.read(), equalTo((int)'A'));
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'B'));
+        assertThat(_in.isReady(), equalTo(true));
+        assertThat(_in.read(), equalTo((int)'B'));
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded AB"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("Content succeeded AB"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 1"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isFinished(), equalTo(false));
+        assertThat(_in.isReady(), equalTo(true));
+        assertThat(_history.poll(), equalTo("produceContent 1"));
+        assertThat(_history.poll(), equalTo("s.onDataAvailable"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_in.read(), Matchers.equalTo(-1));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(true));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isFinished(), equalTo(false));
+        assertThat(_in.read(), equalTo(-1));
+        assertThat(_in.isFinished(), equalTo(true));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isReady(), equalTo(true));
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
     public void testAsyncError() throws Exception
     {
         _in.setReadListener(_listener);
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("produceContent 0"));
+        assertThat(_history.poll(), equalTo("s.onReadUnready"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isReady(), equalTo(false));
+        assertThat(_history.poll(), nullValue());
 
         _in.failed(new TimeoutException());
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("s.onDataAvailable"));
+        assertThat(_history.poll(), nullValue());
 
         _in.run();
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(true));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("l.onError:java.util.concurrent.TimeoutException"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_in.isFinished(), equalTo(true));
+        assertThat(_history.poll(), equalTo("l.onError:java.util.concurrent.TimeoutException"));
+        assertThat(_history.poll(), nullValue());
 
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-        try
-        {
-            _in.read();
-            Assert.fail();
-        }
-        catch (IOException e)
-        {
-            Assert.assertThat(e.getCause(), Matchers.instanceOf(TimeoutException.class));
-            Assert.assertThat(_in.isFinished(), Matchers.equalTo(true));
-        }
+        assertThat(_in.isReady(), equalTo(true));
 
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        IOException e = assertThrows(IOException.class, ()->_in.read());
+        assertThat(e.getCause(), instanceOf(TimeoutException.class));
+        assertThat(_in.isFinished(), equalTo(true));
+
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
@@ -506,18 +496,18 @@ public class HttpInputTest
         _in.addContent(new TContent("CD"));
         _fillAndParseSimulate.offer("EF");
         _fillAndParseSimulate.offer("GH");
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'A'));
+        assertThat(_in.read(), equalTo((int)'A'));
 
-        Assert.assertFalse(_in.consumeAll());
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(8L));
+        assertFalse(_in.consumeAll());
+        assertThat(_in.getContentConsumed(), equalTo(8L));
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded AB"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded CD"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 2"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded EF"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded GH"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("Content succeeded AB"));
+        assertThat(_history.poll(), equalTo("Content succeeded CD"));
+        assertThat(_history.poll(), equalTo("produceContent 2"));
+        assertThat(_history.poll(), equalTo("Content succeeded EF"));
+        assertThat(_history.poll(), equalTo("Content succeeded GH"));
+        assertThat(_history.poll(), equalTo("produceContent 0"));
+        assertThat(_history.poll(), nullValue());
     }
 
     @Test
@@ -528,16 +518,16 @@ public class HttpInputTest
         _fillAndParseSimulate.offer("EF");
         _fillAndParseSimulate.offer("GH");
         _fillAndParseSimulate.offer("_EOF_");
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'A'));
+        assertThat(_in.read(), equalTo((int)'A'));
 
-        Assert.assertTrue(_in.consumeAll());
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(8L));
+        assertTrue(_in.consumeAll());
+        assertThat(_in.getContentConsumed(), equalTo(8L));
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded AB"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded CD"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 3"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded EF"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded GH"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
+        assertThat(_history.poll(), equalTo("Content succeeded AB"));
+        assertThat(_history.poll(), equalTo("Content succeeded CD"));
+        assertThat(_history.poll(), equalTo("produceContent 3"));
+        assertThat(_history.poll(), equalTo("Content succeeded EF"));
+        assertThat(_history.poll(), equalTo("Content succeeded GH"));
+        assertThat(_history.poll(), nullValue());
     }
 }

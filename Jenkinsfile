@@ -2,7 +2,7 @@
 
 // in case of change update method isMainBuild
 def jdks = ["jdk8","jdk9","jdk10","jdk11"]
-def oss = ["linux"] 
+def oss = ["linux"]
 def builds = [:]
 for (def os in oss) {
   for (def jdk in jdks) {
@@ -17,20 +17,13 @@ def getFullBuild(jdk, os) {
   return {
     node(os) {
       // System Dependent Locations
-      def mvntool = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
-      def mvntoolInvoker = tool name: 'maven3.5', type: 'hudson.tasks.Maven$MavenInstallation'
-      def jdktool = tool name: "$jdk", type: 'hudson.model.JDK'
       def mvnName = 'maven3.5'
-      def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" // 
+      def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}" // ".repository" //
       def settingsName = 'oss-settings.xml'
       def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
-      // Environment
-      List mvnEnv = ["PATH+MVN=${mvntool}/bin", "PATH+JDK=${jdktool}/bin", "JAVA_HOME=${jdktool}/", "MAVEN_HOME=${mvntool}"]
-      mvnEnv.add("MAVEN_OPTS=$mavenOpts")
 
-      try
-      {
+      try {
         stage("Checkout - ${jdk}") {
           checkout scm
         }
@@ -39,21 +32,17 @@ def getFullBuild(jdk, os) {
         throw e
       }
 
-      try
-      {
+      try {
         stage("Compile - ${jdk}") {
-          withEnv(mvnEnv) {
-            timeout(time: 15, unit: 'MINUTES') {
-              withMaven(
-                      maven: mvnName,
-                      jdk: "$jdk",
-                      publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: settingsName,
-                      mavenOpts: mavenOpts,
-                      mavenLocalRepo: localRepo) {
-                sh "mvn -V -B clean install -DskipTests -T6 -e"
-              }
-
+          timeout(time: 15, unit: 'MINUTES') {
+            withMaven(
+                    maven: mvnName,
+                    jdk: "$jdk",
+                    publisherStrategy: 'EXPLICIT',
+                    globalMavenSettingsConfig: settingsName,
+                    mavenOpts: mavenOpts,
+                    mavenLocalRepo: localRepo) {
+              sh "mvn -V -B clean install -DskipTests -T6 -e"
             }
           }
         }
@@ -62,20 +51,17 @@ def getFullBuild(jdk, os) {
         throw e
       }
 
-      try
-      {
+      try {
         stage("Javadoc - ${jdk}") {
-          withEnv(mvnEnv) {
-            timeout(time: 20, unit: 'MINUTES') {
-              withMaven(
-                      maven: mvnName,
-                      jdk: "$jdk",
-                      publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: settingsName,
-                      mavenOpts: mavenOpts,
-                      mavenLocalRepo: localRepo) {
-                sh "mvn -V -B javadoc:javadoc -T6 -e"
-              }
+          timeout(time: 20, unit: 'MINUTES') {
+            withMaven(
+                    maven: mvnName,
+                    jdk: "$jdk",
+                    publisherStrategy: 'EXPLICIT',
+                    globalMavenSettingsConfig: settingsName,
+                    mavenOpts: mavenOpts,
+                    mavenLocalRepo: localRepo) {
+              sh "mvn -V -B javadoc:javadoc -T6 -e"
             }
           }
         }
@@ -84,61 +70,56 @@ def getFullBuild(jdk, os) {
         throw e
       }
 
-      try
-      {
+      try {
         stage("Test - ${jdk}") {
-          withEnv(mvnEnv) {
-            timeout(time: 90, unit: 'MINUTES') {
-              // Run test phase / ignore test failures
-              withMaven(
-                      maven: mvnName,
-                      jdk: "$jdk",
-                      publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: settingsName,
-                      //options: [invokerPublisher(disabled: false)],
-                      mavenOpts: mavenOpts,
-                      mavenLocalRepo: localRepo) {
-                sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -DmavenHome=${mvntoolInvoker} -Dunix.socket.tmp="+env.JENKINS_HOME
-              }
-              // withMaven doesn't label..
-              // Report failures in the jenkins UI
-              junit testResults:'**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
-              consoleParsers = [[parserName: 'JavaDoc'],
+          timeout(time: 90, unit: 'MINUTES') {
+            // Run test phase / ignore test failures
+            withMaven(
+                    maven: mvnName,
+                    jdk: "$jdk",
+                    publisherStrategy: 'EXPLICIT',
+                    globalMavenSettingsConfig: settingsName,
+                    //options: [invokerPublisher(disabled: false)],
+                    mavenOpts: mavenOpts,
+                    mavenLocalRepo: localRepo) {
+              sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -Dunix.socket.tmp="+env.JENKINS_HOME
+            }
+            // withMaven doesn't label..
+            // Report failures in the jenkins UI
+            junit testResults:'**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
+            consoleParsers = [[parserName: 'JavaDoc'],
+                              [parserName: 'JavaC']];
+            if (isMainBuild( jdk )) {
+              // Collect up the jacoco execution results
+              def jacocoExcludes =
+                      // build tools
+                      "**/org/eclipse/jetty/ant/**" + ",**/org/eclipse/jetty/maven/**" +
+                              ",**/org/eclipse/jetty/jspc/**" +
+                              // example code / documentation
+                              ",**/org/eclipse/jetty/embedded/**" + ",**/org/eclipse/jetty/asyncrest/**" +
+                              ",**/org/eclipse/jetty/demo/**" +
+                              // special environments / late integrations
+                              ",**/org/eclipse/jetty/gcloud/**" + ",**/org/eclipse/jetty/infinispan/**" +
+                              ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +
+                              ",**/org/eclipse/jetty/http/spi/**" +
+                              // test classes
+                              ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
+              jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+                     exclusionPattern: jacocoExcludes,
+                     execPattern     : '**/target/jacoco.exec',
+                     classPattern    : '**/target/classes',
+                     sourcePattern   : '**/src/main/java'
+              consoleParsers = [[parserName: 'Maven'],
+                                [parserName: 'JavaDoc'],
                                 [parserName: 'JavaC']];
-              if (isMainBuild( jdk )) {
-                // Collect up the jacoco execution results
-                def jacocoExcludes =
-                        // build tools
-                        "**/org/eclipse/jetty/ant/**" + ",**/org/eclipse/jetty/maven/**" +
-                                ",**/org/eclipse/jetty/jspc/**" +
-                                // example code / documentation
-                                ",**/org/eclipse/jetty/embedded/**" + ",**/org/eclipse/jetty/asyncrest/**" +
-                                ",**/org/eclipse/jetty/demo/**" +
-                                // special environments / late integrations
-                                ",**/org/eclipse/jetty/gcloud/**" + ",**/org/eclipse/jetty/infinispan/**" +
-                                ",**/org/eclipse/jetty/osgi/**" + ",**/org/eclipse/jetty/spring/**" +
-                                ",**/org/eclipse/jetty/http/spi/**" +
-                                // test classes
-                                ",**/org/eclipse/jetty/tests/**" + ",**/org/eclipse/jetty/test/**";
-                step( [$class          : 'JacocoPublisher',
-                       inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                       exclusionPattern: jacocoExcludes,
-                       execPattern     : '**/target/jacoco.exec',
-                       classPattern    : '**/target/classes',
-                       sourcePattern   : '**/src/main/java'] )
-                consoleParsers = [[parserName: 'Maven'],
-                                  [parserName: 'JavaDoc'],
-                                  [parserName: 'JavaC']];
-              }
+            }
 
-              // Report on Maven and Javadoc warnings
-              step( [$class        : 'WarningsPublisher',
-                     consoleParsers: consoleParsers] )
-            }
-            if(isUnstable())
-            {
-              notifyBuild("Unstable / Test Errors", jdk)
-            }
+            // Report on Maven and Javadoc warnings
+            step( [$class        : 'WarningsPublisher',
+                   consoleParsers: consoleParsers] )
+          }
+          if(isUnstable()) {
+            notifyBuild("Unstable / Test Errors", jdk)
           }
         }
       } catch(Exception e) {
@@ -149,16 +130,14 @@ def getFullBuild(jdk, os) {
       try
       {
         stage ("Compact3 - ${jdk}") {
-          withEnv(mvnEnv) {
-            withMaven(
-                    maven: mvnName,
-                    jdk: "$jdk",
-                    publisherStrategy: 'EXPLICIT',
-                    globalMavenSettingsConfig: settingsName,
-                    mavenOpts: mavenOpts,
-                    mavenLocalRepo: localRepo) {
-              sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
-            }
+          withMaven(
+                  maven: mvnName,
+                  jdk: "$jdk",
+                  publisherStrategy: 'EXPLICIT',
+                  globalMavenSettingsConfig: settingsName,
+                  mavenOpts: mavenOpts,
+                  mavenLocalRepo: localRepo) {
+            sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
           }
         }
       } catch(Exception e) {
@@ -177,8 +156,7 @@ def isMainBuild(jdk) {
 
 // True if this build is part of the "active" branches
 // for Jetty.
-def isActiveBranch()
-{
+def isActiveBranch() {
   def branchName = "${env.BRANCH_NAME}"
   return ( branchName == "master" ||
           ( branchName.startsWith("jetty-") && branchName.endsWith(".x") ) );
@@ -186,16 +164,13 @@ def isActiveBranch()
 
 // Test if the Jenkins Pipeline or Step has marked the
 // current build as unstable
-def isUnstable()
-{
+def isUnstable() {
   return currentBuild.result == "UNSTABLE"
 }
 
 // Send a notification about the build status
-def notifyBuild(String buildStatus, String jdk)
-{
-  if ( !isActiveBranch() )
-  {
+def notifyBuild(String buildStatus, String jdk) {
+  if ( !isActiveBranch() ) {
     // don't send notifications on transient branches
     return
   }

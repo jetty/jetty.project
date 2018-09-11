@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -38,16 +40,11 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.Hex;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+
+import org.junit.jupiter.api.Test;
 
 public class TestABCase7_3
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
@@ -86,17 +83,17 @@ public class TestABCase7_3
         capture.assertHasFrame(OpCode.CLOSE,1);
 
         Frame pActual = capture.getFrames().poll();
-        Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(0));
+        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(0));
     }
 
 
-    @Test(expected = ProtocolException.class)
+    @Test
     public void testCase7_3_2Generate1BytePayloadClose()
     {
         CloseFrame closeFrame = new CloseFrame();
         closeFrame.setPayload(Hex.asByteBuffer("00"));
 
-        UnitGenerator.generate(closeFrame);
+        assertThrows(ProtocolException.class, () -> UnitGenerator.generate(closeFrame));
     }
 
     @Test
@@ -107,8 +104,7 @@ public class TestABCase7_3
         UnitParser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
-        expectedException.expect(ProtocolException.class);
-        parser.parseQuietly(expected);
+        assertThrows(ProtocolException.class, () -> parser.parseQuietly(expected));
     }
 
     @Test
@@ -147,7 +143,7 @@ public class TestABCase7_3
         capture.assertHasFrame(OpCode.CLOSE,1);
 
         Frame pActual = capture.getFrames().poll();
-        Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(2));
+        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(2));
 
     }
 
@@ -204,7 +200,7 @@ public class TestABCase7_3
         capture.assertHasFrame(OpCode.CLOSE,1);
 
         Frame pActual = capture.getFrames().poll();
-        Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(messageBytes.length + 2));
+        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(messageBytes.length + 2));
 
     }
 
@@ -273,11 +269,11 @@ public class TestABCase7_3
         capture.assertHasFrame(OpCode.CLOSE,1);
 
         Frame pActual = capture.getFrames().poll();
-        Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(125));
+        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(125));
 
     }
 
-    @Test(expected = ProtocolException.class)
+    @Test
     public void testCase7_3_6GenerateCloseWithInvalidStatusReason()
     {
         StringBuilder message = new StringBuilder();
@@ -297,9 +293,10 @@ public class TestABCase7_3
 
         BufferUtil.flipToFlush(bb,0);
 
-        closeFrame.setPayload(bb);
-
-        UnitGenerator.generate(closeFrame);
+        assertThrows(ProtocolException.class, () -> {
+            closeFrame.setPayload(bb);
+            UnitGenerator.generate(closeFrame);
+        });
     }
 
     @Test
@@ -336,7 +333,6 @@ public class TestABCase7_3
         UnitParser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
-        expectedException.expect(ProtocolException.class);
-        parser.parseQuietly(expected);
+        assertThrows(ProtocolException.class, () -> parser.parseQuietly(expected));
     }
 }

@@ -207,7 +207,7 @@ public class BaseBuilder
                     } 
                     else 
                     {
-                        // if (explictly added and ini file modified)
+                        // if (explicitly added and ini file modified)
                         if (startArgs.getStartModules().contains(module.getName()))
                         {
                             ini=builder.get().addModule(module, startArgs.getProperties());

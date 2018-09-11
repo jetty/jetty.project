@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
@@ -29,40 +31,43 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(WorkDirExtension.class)
 public class MessageInputStreamTest
 {
-    @Rule
-    public TestName testname = new TestName();
+    public WorkDir testdir;
 
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
-    @Test(timeout=10000)
+    @Test
     public void testBasicAppendRead() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
         {
-            // Append a single message (simple, short)
-            ByteBuffer payload = BufferUtil.toBuffer("Hello World",StandardCharsets.UTF_8);
-            boolean fin = true;
-            stream.appendFrame(payload,fin);
+            Assertions.assertTimeoutPreemptively(ofSeconds(5), ()-> {
+                // Append a single message (simple, short)
+                ByteBuffer payload = BufferUtil.toBuffer("Hello World", StandardCharsets.UTF_8);
+                boolean fin = true;
+                stream.appendFrame(payload, fin);
 
-            // Read entire message it from the stream.
-            byte buf[] = new byte[32];
-            int len = stream.read(buf);
-            String message = new String(buf,0,len,StandardCharsets.UTF_8);
+                // Read entire message it from the stream.
+                byte buf[] = new byte[32];
+                int len = stream.read(buf);
+                String message = new String(buf, 0, len, StandardCharsets.UTF_8);
 
-            // Test it
-            Assert.assertThat("Message",message,is("Hello World"));
+                // Test it
+                assertThat("Message", message, is("Hello World"));
+            });
         }
     }
 
-    @Test(timeout=5000)
+    @Test
     public void testBlockOnRead() throws Exception
     {
         try (MessageInputStream stream = new MessageInputStream())
@@ -97,21 +102,23 @@ public class MessageInputStreamTest
                 }
             }).start();
 
-            // wait for thread to start
-            startLatch.await();
-            
-            // Read it from the stream.
-            byte buf[] = new byte[32];
-            int len = stream.read(buf);
-            String message = new String(buf,0,len,StandardCharsets.UTF_8);
+            Assertions.assertTimeoutPreemptively(ofSeconds(5), ()-> {
+                // wait for thread to start
+                startLatch.await();
 
-            // Test it
-            Assert.assertThat("Error when appending",hadError.get(),is(false));
-            Assert.assertThat("Message",message,is("Saved by Zero"));
+                // Read it from the stream.
+                byte buf[] = new byte[32];
+                int len = stream.read(buf);
+                String message = new String(buf, 0, len, StandardCharsets.UTF_8);
+
+                // Test it
+                assertThat("Error when appending", hadError.get(), is(false));
+                assertThat("Message", message, is("Saved by Zero"));
+            });
         }
     }
 
-    @Test(timeout=10000)
+    @Test
     public void testBlockOnReadInitial() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
@@ -138,17 +145,19 @@ public class MessageInputStreamTest
                 }
             }).start();
 
-            // Read byte from stream.
-            int b = stream.read();
-            // Should be a byte, blocking till byte received.
+            Assertions.assertTimeoutPreemptively(ofSeconds(10), ()-> {
+                // Read byte from stream.
+                int b = stream.read();
+                // Should be a byte, blocking till byte received.
 
-            // Test it
-            Assert.assertThat("Error when appending",hadError.get(),is(false));
-            Assert.assertThat("Initial byte",b,is((int)'I'));
+                // Test it
+                assertThat("Error when appending", hadError.get(), is(false));
+                assertThat("Initial byte", b, is((int) 'I'));
+            });
         }
     }
 
-    @Test(timeout=10000)
+    @Test
     public void testReadByteNoBuffersClosed() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
@@ -174,61 +183,67 @@ public class MessageInputStreamTest
                 }
             }).start();
 
-            // Read byte from stream.
-            int b = stream.read();
-            // Should be a -1, indicating the end of the stream.
+            Assertions.assertTimeoutPreemptively(ofSeconds(10), ()-> {
+                // Read byte from stream.
+                int b = stream.read();
+                // Should be a -1, indicating the end of the stream.
 
-            // Test it
-            Assert.assertThat("Error when appending",hadError.get(),is(false));
-            Assert.assertThat("Initial byte",b,is(-1));
+                // Test it
+                assertThat("Error when appending", hadError.get(), is(false));
+                assertThat("Initial byte", b, is(-1));
+            });
         }
     }
     
-    @Test(timeout=10000)
+    @Test
     public void testAppendEmptyPayloadRead() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
         {
-            // Append parts of message
-            ByteBuffer msg1 = BufferUtil.toBuffer("Hello ",StandardCharsets.UTF_8);
-            ByteBuffer msg2 = ByteBuffer.allocate(0); // what is being tested
-            ByteBuffer msg3 = BufferUtil.toBuffer("World",StandardCharsets.UTF_8);
-            
-            stream.appendFrame(msg1,false);
-            stream.appendFrame(msg2,false);
-            stream.appendFrame(msg3,true);
+            Assertions.assertTimeoutPreemptively(ofSeconds(10), ()-> {
+                // Append parts of message
+                ByteBuffer msg1 = BufferUtil.toBuffer("Hello ", StandardCharsets.UTF_8);
+                ByteBuffer msg2 = ByteBuffer.allocate(0); // what is being tested
+                ByteBuffer msg3 = BufferUtil.toBuffer("World", StandardCharsets.UTF_8);
 
-            // Read entire message it from the stream.
-            byte buf[] = new byte[32];
-            int len = stream.read(buf);
-            String message = new String(buf,0,len,StandardCharsets.UTF_8);
+                stream.appendFrame(msg1, false);
+                stream.appendFrame(msg2, false);
+                stream.appendFrame(msg3, true);
 
-            // Test it
-            Assert.assertThat("Message",message,is("Hello World"));
+                // Read entire message it from the stream.
+                byte buf[] = new byte[32];
+                int len = stream.read(buf);
+                String message = new String(buf, 0, len, StandardCharsets.UTF_8);
+
+                // Test it
+                assertThat("Message", message, is("Hello World"));
+            });
         }
     }
     
-    @Test(timeout=10000)
+    @Test
     public void testAppendNullPayloadRead() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
         {
-            // Append parts of message
-            ByteBuffer msg1 = BufferUtil.toBuffer("Hello ",StandardCharsets.UTF_8);
-            ByteBuffer msg2 = null; // what is being tested
-            ByteBuffer msg3 = BufferUtil.toBuffer("World",StandardCharsets.UTF_8);
-            
-            stream.appendFrame(msg1,false);
-            stream.appendFrame(msg2,false);
-            stream.appendFrame(msg3,true);
+            Assertions.assertTimeoutPreemptively(ofSeconds(10), ()-> {
+                // Append parts of message
+                ByteBuffer msg1 = BufferUtil.toBuffer("Hello ", StandardCharsets.UTF_8);
+                ByteBuffer msg2 = null; // what is being tested
+                ByteBuffer msg3 = BufferUtil.toBuffer("World", StandardCharsets.UTF_8);
 
-            // Read entire message it from the stream.
-            byte buf[] = new byte[32];
-            int len = stream.read(buf);
-            String message = new String(buf,0,len,StandardCharsets.UTF_8);
+                stream.appendFrame(msg1, false);
+                stream.appendFrame(msg2, false);
+                stream.appendFrame(msg3, true);
 
-            // Test it
-            Assert.assertThat("Message",message,is("Hello World"));
+                // Read entire message it from the stream.
+                byte buf[] = new byte[32];
+                int len = stream.read(buf);
+                String message = new String(buf, 0, len, StandardCharsets.UTF_8);
+
+                // Test it
+                assertThat("Message", message, is("Hello World"));
+            });
         }
     }
 }

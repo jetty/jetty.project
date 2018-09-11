@@ -21,9 +21,9 @@ package org.eclipse.jetty;
 
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,10 +46,10 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class JdbcLoginServiceTest
 {
@@ -77,7 +77,7 @@ public class JdbcLoginServiceTest
     
  
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception
     {
         _docRoot = MavenTestingUtils.getTargetTestingDir("loginservice-test");
@@ -110,7 +110,7 @@ public class JdbcLoginServiceTest
         _baseUri = _testServer.getBaseUri();
      }
 
-     @AfterClass
+     @AfterAll
      public static void tearDown()
          throws Exception
      {
@@ -177,7 +177,7 @@ public class JdbcLoginServiceTest
      }
 
      //Head requests to jetty-client are not working: see https://bugs.eclipse.org/bugs/show_bug.cgi?id=394552
-     @Ignore
+     @Disabled
      public void testHead() throws Exception
      {
          try

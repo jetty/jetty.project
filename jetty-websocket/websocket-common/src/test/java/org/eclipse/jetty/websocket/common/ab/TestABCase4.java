@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -27,15 +29,10 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 public class TestABCase4
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
@@ -53,8 +50,7 @@ public class TestABCase4
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            expectedException.expect(ProtocolException.class);
-            parser.parse(expected);
+            assertThrows(ProtocolException.class, () -> parser.parse(expected));
         }
     }
 
@@ -73,8 +69,7 @@ public class TestABCase4
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            expectedException.expect(ProtocolException.class);
-            parser.parse(expected);
+            assertThrows(ProtocolException.class, () -> parser.parse(expected));
         }
     }
 
@@ -93,8 +88,7 @@ public class TestABCase4
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            expectedException.expect(ProtocolException.class);
-            parser.parse(expected);
+            assertThrows(ProtocolException.class, () -> parser.parse(expected));
         }
     }
 
@@ -113,8 +107,7 @@ public class TestABCase4
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            expectedException.expect(ProtocolException.class);
-            parser.parse(expected);
+            assertThrows(ProtocolException.class, () -> parser.parse(expected));
         }
     }
 }

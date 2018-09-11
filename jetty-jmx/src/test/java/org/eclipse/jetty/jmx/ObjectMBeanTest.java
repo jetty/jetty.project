@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.jmx;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.acme.Derived;
+
 import java.lang.management.ManagementFactory;
 
 import javax.management.Attribute;
@@ -28,13 +34,10 @@ import javax.management.MBeanParameterInfo;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import com.acme.Derived;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class ObjectMBeanTest
 {
@@ -42,13 +45,13 @@ public class ObjectMBeanTest
 
     private static MBeanContainer container;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         container = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         container.destroy();
@@ -73,12 +76,12 @@ public class ObjectMBeanTest
 
         MBeanInfo toss = managed.getMBeanInfo();
 
-        Assert.assertNotNull(mbean.getMBeanInfo());
+        assertNotNull(mbean.getMBeanInfo());
 
         MBeanInfo info = mbean.getMBeanInfo();
 
-        Assert.assertEquals("name does not match","com.acme.Derived",info.getClassName());
-        Assert.assertEquals("description does not match","Test the mbean stuff",info.getDescription());
+        assertEquals("com.acme.Derived", info.getClassName(), "name does not match");
+        assertEquals("Test the mbean stuff", info.getDescription(), "description does not match");
 
         // for ( MBeanAttributeInfo i : info.getAttributes())
         // {
@@ -88,15 +91,15 @@ public class ObjectMBeanTest
         /*
          * 2 attributes from lifecycle and 2 from Derived and 1 from MBean
          */
-        Assert.assertEquals("attribute count does not match",6,info.getAttributes().length);
+        assertEquals(6, info.getAttributes().length, "attribute count does not match");
 
-        Assert.assertEquals("attribute values does not match","Full Name",mbean.getAttribute("fname"));
+        assertEquals("Full Name", mbean.getAttribute("fname"), "attribute values does not match");
 
         mbean.setAttribute(new Attribute("fname","Fuller Name"));
 
-        Assert.assertEquals("set attribute value does not match","Fuller Name",mbean.getAttribute("fname"));
+        assertEquals("Fuller Name", mbean.getAttribute("fname"), "set attribute value does not match");
 
-        Assert.assertEquals("proxy attribute values do not match","goop",mbean.getAttribute("goop"));
+        assertEquals("goop", mbean.getAttribute("goop"), "proxy attribute values do not match");
 
         // Thread.sleep(100000);
     }
@@ -113,7 +116,7 @@ public class ObjectMBeanTest
 
         MBeanInfo info = mbean.getMBeanInfo();
 
-        Assert.assertEquals("operation count does not match",5,info.getOperations().length);
+        assertEquals(5, info.getOperations().length, "operation count does not match");
 
         MBeanOperationInfo[] opinfos = info.getOperations();
         boolean publish = false;
@@ -126,18 +129,18 @@ public class ObjectMBeanTest
             if ("publish".equals(opinfo.getName()))
             {
                 publish = true;
-                Assert.assertEquals("description doesn't match","publish something",opinfo.getDescription());
+                assertEquals("publish something", opinfo.getDescription(), "description doesn't match");
             }
 
             if ("doodle".equals(opinfo.getName()))
             {
                 doodle = true;
-                Assert.assertEquals("description doesn't match","Doodle something",opinfo.getDescription());
+                assertEquals("Doodle something", opinfo.getDescription(), "description doesn't match");
 
                 MBeanParameterInfo[] pinfos = opinfo.getSignature();
 
-                Assert.assertEquals("parameter description doesn't match","A description of the argument",pinfos[0].getDescription());
-                Assert.assertEquals("parameter name doesn't match","doodle",pinfos[0].getName());
+                assertEquals("A description of the argument", pinfos[0].getDescription(), "parameter description doesn't match");
+                assertEquals("doodle", pinfos[0].getName(), "parameter name doesn't match");
             }
 
             // This is a proxied operation on the JMX wrapper
@@ -145,14 +148,14 @@ public class ObjectMBeanTest
             {
                 good = true;
 
-                Assert.assertEquals("description does not match","test of proxy operations",opinfo.getDescription());
-                Assert.assertEquals("execution contexts wrong","not bad",mbean.invoke("good",new Object[] {},new String[] {}));
+                assertEquals("test of proxy operations", opinfo.getDescription(), "description does not match");
+                assertEquals("not bad",mbean.invoke("good",new Object[] {}, new String[] {}), "execution contexts wrong");
             }
         }
 
-        Assert.assertTrue("publish operation was not not found",publish);
-        Assert.assertTrue("doodle operation was not not found",doodle);
-        Assert.assertTrue("good operation was not not found",good);
+        assertTrue(publish, "publish operation was not not found");
+        assertTrue(doodle, "doodle operation was not not found");
+        assertTrue(good, "good operation was not not found");
 
     }
 
@@ -166,7 +169,7 @@ public class ObjectMBeanTest
         mbean.setMBeanContainer(container);
         managed.setMBeanContainer(container);
 
-        Assert.assertNotNull(mbean.getMBeanInfo());
+        assertNotNull(mbean.getMBeanInfo());
 
         container.beanAdded(null,derived);
         container.beanAdded(null,derived.getManagedInstance());
@@ -174,13 +177,13 @@ public class ObjectMBeanTest
         container.beanAdded(null,managed);
 
         // Managed managedInstance = (Managed)mbean.getAttribute("managedInstance");
-        // Assert.assertNotNull(managedInstance);
-        // Assert.assertEquals("managed instance returning nonsense", "foo", managedInstance.getManaged());
+        // assertNotNull(managedInstance);
+        // assertEquals("foo", managedInstance.getManaged(), "managed instance returning nonsense");
 
     }
 
     @Test
-    @Ignore("ignore, used in testing jconsole atm")
+    @Disabled("ignore, used in testing jconsole atm")
     public void testThreadPool() throws Exception
     {
 
@@ -212,14 +215,14 @@ public class ObjectMBeanTest
     {
         ObjectMBean mbean = new ObjectMBean(new Derived());
 
-        Assert.assertEquals("fullName",mbean.toVariableName("getFullName"));
-        Assert.assertEquals("fullName",mbean.toVariableName("getfullName"));
-        Assert.assertEquals("fullName",mbean.toVariableName("isFullName"));
-        Assert.assertEquals("fullName",mbean.toVariableName("isfullName"));
-        Assert.assertEquals("fullName",mbean.toVariableName("setFullName"));
-        Assert.assertEquals("fullName",mbean.toVariableName("setfullName"));
-        Assert.assertEquals("fullName",mbean.toVariableName("FullName"));
-        Assert.assertEquals("fullName",mbean.toVariableName("fullName"));
+        assertEquals("fullName",mbean.toVariableName("getFullName"));
+        assertEquals("fullName",mbean.toVariableName("getfullName"));
+        assertEquals("fullName",mbean.toVariableName("isFullName"));
+        assertEquals("fullName",mbean.toVariableName("isfullName"));
+        assertEquals("fullName",mbean.toVariableName("setFullName"));
+        assertEquals("fullName",mbean.toVariableName("setfullName"));
+        assertEquals("fullName",mbean.toVariableName("FullName"));
+        assertEquals("fullName",mbean.toVariableName("fullName"));
     }
 
 }

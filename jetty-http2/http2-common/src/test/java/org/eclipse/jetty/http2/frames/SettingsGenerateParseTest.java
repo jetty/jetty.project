@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,8 +36,8 @@ import org.eclipse.jetty.http2.generator.SettingsGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class SettingsGenerateParseTest
 {
@@ -43,11 +46,12 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseNoSettings()
     {
-        List<SettingsFrame> frames = testGenerateParse(Collections.emptyMap());
-        Assert.assertEquals(1, frames.size());
+
+        List<SettingsFrame> frames = testGenerateParse(Collections.<Integer, Integer>emptyMap());
+        assertEquals(1, frames.size());
         SettingsFrame frame = frames.get(0);
-        Assert.assertEquals(0, frame.getSettings().size());
-        Assert.assertTrue(frame.isReply());
+        assertEquals(0, frame.getSettings().size());
+        assertTrue(frame.isReply());
     }
 
     @Test
@@ -61,12 +65,12 @@ public class SettingsGenerateParseTest
         Integer value2 = 23;
         settings1.put(key2, value2);
         List<SettingsFrame> frames = testGenerateParse(settings1);
-        Assert.assertEquals(1, frames.size());
+        assertEquals(1, frames.size());
         SettingsFrame frame = frames.get(0);
         Map<Integer, Integer> settings2 = frame.getSettings();
-        Assert.assertEquals(2, settings2.size());
-        Assert.assertEquals(value1, settings2.get(key1));
-        Assert.assertEquals(value2, settings2.get(key2));
+        assertEquals(2, settings2.size());
+        assertEquals(value1, settings2.get(key1));
+        assertEquals(value2, settings2.get(key2));
     }
 
     private List<SettingsFrame> testGenerateParse(Map<Integer, Integer> settings)
@@ -135,7 +139,7 @@ public class SettingsGenerateParseTest
             }
         }
 
-        Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, errorRef.get());
+        assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, errorRef.get());
     }
 
     @Test
@@ -174,17 +178,17 @@ public class SettingsGenerateParseTest
                 }
             }
 
-            Assert.assertEquals(1, frames.size());
+            assertEquals(1, frames.size());
             SettingsFrame frame = frames.get(0);
             Map<Integer, Integer> settings2 = frame.getSettings();
-            Assert.assertEquals(1, settings2.size());
-            Assert.assertEquals(value, settings2.get(key));
-            Assert.assertTrue(frame.isReply());
+            assertEquals(1, settings2.size());
+            assertEquals(value, settings2.get(key));
+            assertTrue(frame.isReply());
         }
     }
 
     @Test
-    public void testGenerateParseTooManySettingsInOneFrame()
+    public void testGenerateParseTooManyDifferentSettingsInOneFrame()
     {
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
@@ -214,7 +218,48 @@ public class SettingsGenerateParseTest
                 parser.parse(buffer);
         }
 
-        Assert.assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
+        assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
+    }
+
+    @Test
+    public void testGenerateParseTooManySameSettingsInOneFrame() throws Exception
+    {
+        int keyValueLength = 6;
+        int pairs = Frame.DEFAULT_MAX_LENGTH / keyValueLength;
+        int maxSettingsKeys = pairs / 2;
+
+        AtomicInteger errorRef = new AtomicInteger();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter(), 4096, 8192);
+        parser.setMaxSettingsKeys(maxSettingsKeys);
+        parser.setMaxFrameLength(Frame.DEFAULT_MAX_LENGTH);
+        parser.init(listener -> new Parser.Listener.Wrapper(listener)
+        {
+            @Override
+            public void onConnectionFailure(int error, String reason)
+            {
+                errorRef.set(error);
+            }
+        });
+
+        int length = pairs * keyValueLength;
+        ByteBuffer buffer = ByteBuffer.allocate(1 + 9 + length);
+        buffer.putInt(length);
+        buffer.put((byte)FrameType.SETTINGS.getType());
+        buffer.put((byte)0); // Flags.
+        buffer.putInt(0); // Stream ID.
+        // Add the same setting over and over again.
+        for (int i = 0; i < pairs; ++i)
+        {
+            buffer.putShort((short)SettingsFrame.MAX_CONCURRENT_STREAMS);
+            buffer.putInt(i);
+        }
+        // Only 3 bytes for the length, skip the first.
+        buffer.flip().position(1);
+
+        while (buffer.hasRemaining())
+            parser.parse(buffer);
+
+        assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }
 
     @Test
@@ -248,6 +293,6 @@ public class SettingsGenerateParseTest
                 parser.parse(buffer);
         }
 
-        Assert.assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
+        assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }
 }

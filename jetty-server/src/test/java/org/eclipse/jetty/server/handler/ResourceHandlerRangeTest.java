@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStream;
@@ -30,21 +33,18 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.is;
-
-@Ignore("Unfixed range bug - Issue #107")
+@Disabled("Unfixed range bug - Issue #107")
 public class ResourceHandlerRangeTest
 {
     private static Server server;
     private static URI serverUri;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new Server();
@@ -83,7 +83,7 @@ public class ResourceHandlerRangeTest
         serverUri = new URI(String.format("http://%s:%d/",host,port));
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -106,7 +106,7 @@ public class ResourceHandlerRangeTest
             response = IO.toString(is);
         }
 
-        Assert.assertThat("Content Length",contentLength,is(5));
-        Assert.assertThat("Response Content",response,is("56789"));
+        assertThat("Content Length",contentLength,is(5));
+        assertThat("Response Content",response,is("56789"));
     }
 }

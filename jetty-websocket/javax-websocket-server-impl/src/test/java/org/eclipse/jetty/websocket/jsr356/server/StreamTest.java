@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 
@@ -62,11 +63,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.util.Sha1Sum;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class StreamTest
 {
@@ -78,7 +77,7 @@ public class StreamTest
     private static Server server;
     private static URI serverUri;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new Server();
@@ -114,7 +113,7 @@ public class StreamTest
             LOG.debug("Server started on {}",serverUri);
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -164,18 +163,18 @@ public class StreamTest
      * 
      * @param file
      *            the file to validate
-     * @param shaFile
+     * @param sha1File
      *            the sha1sum file to verify against
      */
     private void assertFileUpload(File file, File sha1File) throws IOException, NoSuchAlgorithmException
     {
-        Assert.assertThat("Path should exist: " + file,file.exists(),is(true));
-        Assert.assertThat("Path should not be a directory:" + file,file.isDirectory(),is(false));
+        assertThat("Path should exist: " + file,file.exists(),is(true));
+        assertThat("Path should not be a directory:" + file,file.isDirectory(),is(false));
 
         String expectedSha1 = Sha1Sum.loadSha1(sha1File);
         String actualSha1 = Sha1Sum.calculate(file);
 
-        Assert.assertThat("SHA1Sum of content: " + file,expectedSha1,equalToIgnoringCase(actualSha1));
+        assertThat("SHA1Sum of content: " + file,expectedSha1,equalToIgnoringCase(actualSha1));
     }
 
     @ClientEndpoint
@@ -203,7 +202,7 @@ public class StreamTest
 
         public void awaitClose() throws InterruptedException
         {
-            Assert.assertThat("Wait for ClientSocket close success",closeLatch.await(5,TimeUnit.SECONDS),is(true));
+            assertThat("Wait for ClientSocket close success",closeLatch.await(5,TimeUnit.SECONDS),is(true));
         }
 
         @OnError

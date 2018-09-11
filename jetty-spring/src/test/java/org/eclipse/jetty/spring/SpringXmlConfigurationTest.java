@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.spring;
 
-import static junit.framework.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.net.URL;
 import java.util.HashMap;
@@ -30,14 +30,14 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.xml.XmlConfiguration;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class SpringXmlConfigurationTest
 {
     protected String _configure="org/eclipse/jetty/spring/configure.xml";
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         // Jetty's XML configuration will make use of java.util.ServiceLoader

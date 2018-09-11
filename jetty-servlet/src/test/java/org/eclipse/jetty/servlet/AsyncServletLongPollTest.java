@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -34,16 +37,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 public class AsyncServletLongPollTest
 {
-    @Rule
-    public TestTracker tracker = new TestTracker();
     private Server server;
     private ServerConnector connector;
     private ServletContextHandler context;
@@ -63,7 +61,7 @@ public class AsyncServletLongPollTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception
     {
         server.stop();
@@ -124,7 +122,7 @@ public class AsyncServletLongPollTest
             output1.write(request1.getBytes(StandardCharsets.UTF_8));
             output1.flush();
 
-            Assert.assertTrue(asyncLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(asyncLatch.await(5, TimeUnit.SECONDS));
 
             int error = 408;
             try (Socket socket2 = new Socket("localhost", connector.getLocalPort()))
@@ -138,14 +136,14 @@ public class AsyncServletLongPollTest
 
                 HttpTester.Input input2 = HttpTester.from(socket2.getInputStream());
                 HttpTester.Response response2 = HttpTester.parseResponse(input2);
-                Assert.assertEquals(200, response2.getStatus());
+                assertEquals(200, response2.getStatus());
             }
 
             socket1.setSoTimeout(2 * wait);
             
             HttpTester.Input input1 = HttpTester.from(socket1.getInputStream());
             HttpTester.Response response1 = HttpTester.parseResponse(input1);
-            Assert.assertEquals(error, response1.getStatus());
+            assertEquals(error, response1.getStatus());
 
             // Now try to make another request on the first connection
             // to verify that we set correctly the read interest (#409842)
@@ -156,7 +154,7 @@ public class AsyncServletLongPollTest
             output1.flush();
 
             HttpTester.Response response3 = HttpTester.parseResponse(input1);
-            Assert.assertEquals(200, response3.getStatus());
+            assertEquals(200, response3.getStatus());
         }
     }
 }

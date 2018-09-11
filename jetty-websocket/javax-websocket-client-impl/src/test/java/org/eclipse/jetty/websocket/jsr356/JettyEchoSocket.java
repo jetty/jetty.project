@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
 /**
@@ -76,6 +77,16 @@ public class JettyEchoSocket extends WebSocketAdapter
         catch (IOException x)
         {
             throw new RuntimeIOException(x);
+        }
+    }
+
+    @Override
+    public void onWebSocketClose(int statusCode, String reason)
+    {
+        super.onWebSocketClose(statusCode, reason);
+        if (statusCode != StatusCode.NORMAL)
+        {
+            LOG.warn("Closed {} {}", statusCode, reason);
         }
     }
 }

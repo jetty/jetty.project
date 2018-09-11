@@ -18,70 +18,46 @@
 
 package org.eclipse.jetty.http.pathmap;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.stream.Stream;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for bad path specs on ServerEndpoint Path Param / URI Template
  */
-@RunWith(Parameterized.class)
 public class UriTemplatePathSpecBadSpecsTest
 {
-    private static void bad(List<String[]> data, String str)
+    public static Stream<Arguments> data()
     {
-        data.add(new String[]
-        { str });
+        String badSpecs[] = new String[]{
+            "/a/b{var}", // bad syntax - variable does not encompass whole path segment
+            "a/{var}", // bad syntax - no start slash
+            "/a/{var/b}", // path segment separator in variable name
+            "/{var}/*", // bad syntax - no globs allowed
+            "/{var}.do", // bad syntax - variable does not encompass whole path segment
+            "/a/{var*}", // use of glob character not allowed in variable name
+            "/a/{}", // bad syntax - no variable name
+            // MIGHT BE ALLOWED "/a/{---}", // no alpha in variable name
+            "{var}", // bad syntax - no start slash
+            "/a/{my special variable}", // bad syntax - space in variable name
+            "/a/{var}/{var}", // variable name duplicate
+            // MIGHT BE ALLOWED "/a/{var}/{Var}/{vAR}", // variable name duplicated (diff case)
+            "/a/../../../{var}", // path navigation not allowed
+            "/a/./{var}", // path navigation not allowed
+            "/a//{var}" // bad syntax - double path slash (no path segment)
+        };
+
+        return Stream.of(badSpecs).map(Arguments::of);
     }
 
-    @Parameters
-    public static Collection<String[]> data()
+    @ParameterizedTest(name="[{index}] {0}")
+    @MethodSource("data")
+    public void testBadPathSpec(String pathSpec)
     {
-        List<String[]> data = new ArrayList<>();
-        bad(data,"/a/b{var}"); // bad syntax - variable does not encompass whole path segment
-        bad(data,"a/{var}"); // bad syntax - no start slash
-        bad(data,"/a/{var/b}"); // path segment separator in variable name
-        bad(data,"/{var}/*"); // bad syntax - no globs allowed
-        bad(data,"/{var}.do"); // bad syntax - variable does not encompass whole path segment
-        bad(data,"/a/{var*}"); // use of glob character not allowed in variable name
-        bad(data,"/a/{}"); // bad syntax - no variable name
-        // MIGHT BE ALLOWED bad(data,"/a/{---}"); // no alpha in variable name
-        bad(data,"{var}"); // bad syntax - no start slash
-        bad(data,"/a/{my special variable}"); // bad syntax - space in variable name
-        bad(data,"/a/{var}/{var}"); // variable name duplicate
-        // MIGHT BE ALLOWED bad(data,"/a/{var}/{Var}/{vAR}"); // variable name duplicated (diff case)
-        bad(data,"/a/../../../{var}"); // path navigation not allowed
-        bad(data,"/a/./{var}"); // path navigation not allowed
-        bad(data,"/a//{var}"); // bad syntax - double path slash (no path segment)
-        return data;
-    }
-
-    private String pathSpec;
-
-    public UriTemplatePathSpecBadSpecsTest(String pathSpec)
-    {
-        this.pathSpec = pathSpec;
-    }
-
-    @Test
-    public void testBadPathSpec()
-    {
-        try
-        {
-            new UriTemplatePathSpec(this.pathSpec);
-            fail("Expected IllegalArgumentException for a bad PathParam pathspec on: " + pathSpec);
-        }
-        catch (IllegalArgumentException e)
-        {
-            // expected path
-            System.out.println(e.getMessage());
-        }
+        assertThrows(IllegalArgumentException.class, ()-> new UriTemplatePathSpec(pathSpec));
     }
 }

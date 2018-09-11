@@ -19,8 +19,8 @@
 
 package org.eclipse.jetty.server.session.remote;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -53,9 +53,9 @@ import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * RemoteInfinispanSessionDataStoreTest
@@ -70,14 +70,14 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
    
     
     
-    @Before
+    @BeforeEach
     public void setup () throws Exception
     {
       __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
       __testSupport.setup();
     }
     
-    @After
+    @AfterEach
     public void teardown () throws Exception
     {
        __testSupport.teardown();

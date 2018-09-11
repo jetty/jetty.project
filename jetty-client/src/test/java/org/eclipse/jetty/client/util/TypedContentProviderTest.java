@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.client.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -34,20 +38,15 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 public class TypedContentProviderTest extends AbstractHttpClientServerTest
 {
-    public TypedContentProviderTest(SslContextFactory sslContextFactory)
-    {
-        super(sslContextFactory);
-    }
-
-    @Test
-    public void testFormContentProvider() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testFormContentProvider(Scenario scenario) throws Exception
     {
         final String name1 = "a";
         final String value1 = "1";
@@ -55,19 +54,19 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         final String value2 = "2";
         final String value3 = "\u20AC";
 
-        start(new AbstractHandler()
+        start(scenario, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                Assert.assertEquals("POST", request.getMethod());
-                Assert.assertEquals(MimeTypes.Type.FORM_ENCODED.asString(), request.getContentType());
-                Assert.assertEquals(value1, request.getParameter(name1));
+                assertEquals("POST", request.getMethod());
+                assertEquals(MimeTypes.Type.FORM_ENCODED.asString(), request.getContentType());
+                assertEquals(value1, request.getParameter(name1));
                 String[] values = request.getParameterValues(name2);
-                Assert.assertNotNull(values);
-                Assert.assertEquals(2, values.length);
-                Assert.assertThat(values, Matchers.arrayContainingInAnyOrder(value2, value3));
+                assertNotNull(values);
+                assertEquals(2, values.length);
+                assertThat(values, Matchers.arrayContainingInAnyOrder(value2, value3));
             }
         });
 
@@ -75,13 +74,14 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         fields.put(name1, value1);
         fields.add(name2, value2);
         fields.add(name2, value3);
-        ContentResponse response = client.FORM(scheme + "://localhost:" + connector.getLocalPort(), fields);
+        ContentResponse response = client.FORM(scenario.getScheme() + "://localhost:" + connector.getLocalPort(), fields);
 
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
     }
 
-    @Test
-    public void testFormContentProviderWithDifferentContentType() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testFormContentProviderWithDifferentContentType(Scenario scenario) throws Exception
     {
         final String name1 = "a";
         final String value1 = "1";
@@ -93,50 +93,51 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         final String content = FormContentProvider.convert(fields);
         final String contentType = "text/plain;charset=UTF-8";
 
-        start(new AbstractHandler()
+        start(scenario, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                Assert.assertEquals("POST", request.getMethod());
-                Assert.assertEquals(contentType, request.getContentType());
-                Assert.assertEquals(content, IO.toString(request.getInputStream()));
+                assertEquals("POST", request.getMethod());
+                assertEquals(contentType, request.getContentType());
+                assertEquals(content, IO.toString(request.getInputStream()));
             }
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(scenario.getScheme())
                 .method(HttpMethod.POST)
                 .content(new FormContentProvider(fields))
                 .header(HttpHeader.CONTENT_TYPE, contentType)
                 .send();
 
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
     }
 
-    @Test
-    public void testTypedContentProviderWithNoContentType() throws Exception
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testTypedContentProviderWithNoContentType(Scenario scenario) throws Exception
     {
         final String content = "data";
 
-        start(new AbstractHandler()
+        start(scenario, new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                Assert.assertEquals("GET", request.getMethod());
-                Assert.assertNotNull(request.getContentType());
-                Assert.assertEquals(content, IO.toString(request.getInputStream()));
+                assertEquals("GET", request.getMethod());
+                assertNotNull(request.getContentType());
+                assertEquals(content, IO.toString(request.getInputStream()));
             }
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
+                .scheme(scenario.getScheme())
                 .content(new StringContentProvider(null, content, StandardCharsets.UTF_8))
                 .send();
 
-        Assert.assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus());
     }
 }

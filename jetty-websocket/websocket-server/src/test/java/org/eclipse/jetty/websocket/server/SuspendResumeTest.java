@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -42,10 +43,9 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class SuspendResumeTest
 {
@@ -77,7 +77,7 @@ public class SuspendResumeTest
                         @Override
                         public void writeFailed(Throwable t)
                         {
-                            Assert.fail(t.getMessage());
+                            fail(t);
                         }
                     });
         }
@@ -106,14 +106,14 @@ public class SuspendResumeTest
     private static SimpleServletServer server;
     private static BlockheadClient client;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = new BlockheadClient();
@@ -121,13 +121,13 @@ public class SuspendResumeTest
         client.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopClient() throws Exception
     {
         client.stop();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();

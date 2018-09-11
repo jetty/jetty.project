@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.security;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
@@ -42,20 +42,17 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Some requests for static data that is served by ResourceHandler, but some is secured.
  * <p>
  * This is mainly here to test security bypass techniques using aliased names that should be caught.
  */
-@RunWith(Parameterized.class)
 public class AliasedConstraintTest
 {
     private static final String TEST_REALM = "TestRealm";
@@ -63,8 +60,7 @@ public class AliasedConstraintTest
     private static LocalConnector connector;
     private static ConstraintSecurityHandler security;
 
-
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new Server();
@@ -116,14 +112,13 @@ public class AliasedConstraintTest
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
 
-    @Parameters(name = "{0}: {1}")
-    public static Collection<Object[]> data()
+    public static Stream<Arguments> data()
     {
         List<Object[]> data = new ArrayList<>();
 
@@ -137,20 +132,12 @@ public class AliasedConstraintTest
         data.add(new Object[] { "/ctx/all/../forbid/index.txt", HttpStatus.FORBIDDEN_403, null });
         data.add(new Object[] { "/ctx/FoRbId/index.txt", HttpStatus.NOT_FOUND_404, null });
 
-        return data;
+        return data.stream().map(Arguments::of);
     }
 
-    @Parameter(value = 0)
-    public String uri;
-
-    @Parameter(value = 1)
-    public int expectedStatusCode;
-
-    @Parameter(value = 2)
-    public String expectedContent;
-
-    @Test
-    public void testAccess() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testAccess(String uri, int expectedStatusCode, String expectedContent) throws Exception
     {
         StringBuilder request = new StringBuilder();
         request.append("GET ").append(uri).append(" HTTP/1.1\r\n");

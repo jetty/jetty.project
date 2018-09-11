@@ -220,7 +220,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
 
         BundleContext bundleContext = FrameworkUtil.getBundle(this.getClass()).getBundleContext();
 
-        //Start a tracker to find webapps that are osgi services that are targetted to my server name
+        //Start a tracker to find webapps that are osgi services that are targeted to my server name
         _tracker = new ContextTracker (bundleContext, 
                                        Util.createFilter(bundleContext, ContextHandler.class.getName(), getServerInstanceWrapper().getManagedServerName()));
         _tracker.open();

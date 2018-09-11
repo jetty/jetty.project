@@ -57,6 +57,7 @@ public class DatabaseAdaptor
     
     protected String _blobType; //if not set, is deduced from the type of the database at runtime
     protected String _longType; //if not set, is deduced from the type of the database at runtime
+    protected String _stringType; //if not set defaults to 'varchar'
     private String _driverClassName;
     private String _connectionUrl;
     private Driver _driver;
@@ -120,6 +121,19 @@ public class DatabaseAdaptor
         return "bigint";
     }
     
+    public void setStringType (String stringType)
+    {
+        _stringType = stringType;
+    }
+    
+    
+    public String getStringType ()
+    {
+        if (_stringType != null)
+            return _stringType;
+        
+        return "varchar";
+    }
 
     /**
      * Convert a camel case identifier into either upper or lower

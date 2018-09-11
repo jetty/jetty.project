@@ -24,9 +24,10 @@
 package org.eclipse.jetty.server.ssl;
 
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -58,9 +59,9 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -104,7 +105,7 @@ public class SSLEngineTest
     private ServerConnector connector;
 
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
@@ -124,7 +125,7 @@ public class SSLEngineTest
         server.addConnector(connector);
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
@@ -236,7 +237,7 @@ public class SSLEngineTest
                         // Read the response.
                         String responses=readResponse(client[i]);
                         // Check the responses
-                        assertEquals(String.format("responses loop=%d connection=%d",l,i),RESPONSE0+RESPONSE0+RESPONSE1,responses);
+                        assertThat(String.format("responses loop=%d connection=%d",l,i),RESPONSE0+RESPONSE0+RESPONSE1,is(responses));
                     }
                 }
                 finally
@@ -247,7 +248,7 @@ public class SSLEngineTest
                         {
                             try
                             {
-                                assertEquals(-1,client[i].getInputStream().read());
+                                assertThat("Client should read EOF", client[i].getInputStream().read(), is(-1));
                             }
                             catch(SocketException e)
                             {

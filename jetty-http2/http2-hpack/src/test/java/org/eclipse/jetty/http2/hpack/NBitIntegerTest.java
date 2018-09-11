@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class NBitIntegerTest
 {
@@ -129,7 +129,7 @@ public class NBitIntegerTest
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         buf.position(n==8?0:1);
-        Assert.assertEquals(expected,NBitInteger.decode(buf,n));
+        assertEquals(expected,NBitInteger.decode(buf,n));
     }
     
     @Test
@@ -154,7 +154,7 @@ public class NBitIntegerTest
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("77EaFF"));
         buf.position(2);
         
-        Assert.assertEquals(10,NBitInteger.decode(buf,5));
+        assertEquals(10,NBitInteger.decode(buf,5));
     }
     
 
@@ -170,7 +170,7 @@ public class NBitIntegerTest
         
         String r=TypeUtil.toHexString(BufferUtil.toArray(buf));
         
-        Assert.assertEquals("881f9a0a",r);
+        assertEquals("881f9a0a",r);
         
     }
     
@@ -180,7 +180,7 @@ public class NBitIntegerTest
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("881f9a0aff"));
         buf.position(2);
         
-        Assert.assertEquals(1337,NBitInteger.decode(buf,5));
+        assertEquals(1337,NBitInteger.decode(buf,5));
     }
     
     
@@ -196,7 +196,7 @@ public class NBitIntegerTest
         
         String r=TypeUtil.toHexString(BufferUtil.toArray(buf));
         
-        Assert.assertEquals("88Ff2a",r);
+        assertEquals("88Ff2a",r);
         
     }
 
@@ -207,7 +207,7 @@ public class NBitIntegerTest
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("882aFf"));
         buf.position(1);
         
-        Assert.assertEquals(42,NBitInteger.decode(buf,8));
+        assertEquals(42,NBitInteger.decode(buf,8));
     }
     
 

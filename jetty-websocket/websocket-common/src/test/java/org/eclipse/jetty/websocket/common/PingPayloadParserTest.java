@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
@@ -28,8 +29,8 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class PingPayloadParserTest
 {
@@ -53,6 +54,6 @@ public class PingPayloadParserTest
         PingFrame ping = (PingFrame)capture.getFrames().poll();
 
         String actual = BufferUtil.toUTF8String(ping.getPayload());
-        Assert.assertThat("PingFrame.payload",actual,is("Hello"));
+        assertThat("PingFrame.payload",actual,is("Hello"));
     }
 }

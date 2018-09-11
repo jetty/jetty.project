@@ -19,24 +19,22 @@
 package org.eclipse.jetty.servlets;
 
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
-import java.util.Map;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -58,15 +56,11 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.ReadLineInputStream;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.util.log.StdErrLog;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class MultipartFilterTest
 {
@@ -166,7 +160,7 @@ public class MultipartFilterTest
 
 
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _dir = File.createTempFile("testmultupart",null);
@@ -185,7 +179,7 @@ public class MultipartFilterTest
         tester.start();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         tester.stop();
@@ -860,7 +854,7 @@ public class MultipartFilterTest
 
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-        assertTrue(response.getContent().contains("aaaa,bbbbb"));
+        assertThat(response.getContent(), containsString("aaaa,bbbbb"));
     }
     @Test
     public void testLeadingWhitespaceBodyWithoutCRLF()
@@ -892,7 +886,7 @@ public class MultipartFilterTest
 
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-        assertTrue(response.getContent().contains("aaaa,bbbbb"));
+        assertThat(response.getContent(), containsString("aaaa,bbbbb"));
     }
     
     public void testContentTypeWithCharSet() throws Exception
@@ -921,7 +915,7 @@ public class MultipartFilterTest
 
         response = HttpTester.parseResponse(tester.getResponses(request.generate()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-        assertTrue(response.getContent().indexOf("brown cow")>=0);
+        assertThat(response.getContent(), containsString("brown cow"));
     }
     
     
@@ -953,10 +947,10 @@ public class MultipartFilterTest
         }
         request.setContent(baos.toString());
 
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
+        try(StacklessLogging ignored = new StacklessLogging(ServletHandler.class, HttpChannel.class))
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-            assertTrue(response.getContent().contains("Buffer size exceeded"));
+            assertThat(response.getContent(), containsString("Buffer size exceeded"));
             assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
         }
     }

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
@@ -28,15 +29,15 @@ import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(WorkDirExtension.class)
 public class ModuleGraphWriterTest
 {
-    @Rule
-    public TestingDir testdir = new TestingDir();
+    public WorkDir testdir;
 
     @Test
     public void testGenerate_NothingEnabled() throws IOException
@@ -67,6 +68,6 @@ public class ModuleGraphWriterTest
         ModuleGraphWriter writer = new ModuleGraphWriter();
         writer.write(modules,outputFile);
 
-        Assert.assertThat("Output File Exists",FS.exists(outputFile),is(true));
+        assertThat("Output File Exists",FS.exists(outputFile),is(true));
     }
 }

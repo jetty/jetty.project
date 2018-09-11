@@ -19,9 +19,9 @@
 package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,22 +41,19 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-@RunWith(AdvancedRunner.class)
 public class AsyncRequestReadTest
 {
     private static Server server;
     private static ServerConnector connector;
     private final static BlockingQueue<Long> __total=new BlockingArrayQueue<>();
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new Server();
@@ -66,7 +63,7 @@ public class AsyncRequestReadTest
         server.addConnector(connector);
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
@@ -169,10 +166,10 @@ public class AsyncRequestReadTest
 
             InputStream in = socket.getInputStream();
             String response = IO.toString(in);
-            assertTrue(tst,response.indexOf("200 OK")>0);
+            assertThat(response, containsString("200 OK"));
 
             long total=__total.poll(30,TimeUnit.SECONDS);
-            assertEquals(tst,content.length, total);
+            assertEquals(content.length, total, tst);
         }
     }
 

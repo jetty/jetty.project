@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.MultiPartInputStreamParser.NonCompliance;
 
 /*
  * Used to switch between the old and new implementation of MultiPart Form InputStream Parsing.
- * The new implementation is prefered will be used as default unless specified otherwise constructor.
+ * The new implementation is preferred will be used as default unless specified otherwise constructor.
  */
 public interface MultiParts extends Closeable
 {   

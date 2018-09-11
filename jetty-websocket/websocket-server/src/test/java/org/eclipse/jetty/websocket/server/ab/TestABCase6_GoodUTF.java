@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.server.ab;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -31,28 +31,24 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.Fuzzer;
 import org.eclipse.jetty.websocket.common.util.Hex;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests of Known Good UTF8 sequences.
  * <p>
  * Should be preserved / echoed back, with normal close code.
  */
-@RunWith(Parameterized.class)
 public class TestABCase6_GoodUTF extends AbstractABCase
 {
     private static final Logger LOG = Log.getLogger(TestABCase6_GoodUTF.class);
 
-    @Parameters
-    public static Collection<String[]> data()
+    public static Stream<Arguments> utfSequences()
     {
         // The various Good UTF8 sequences as a String (hex form)
         List<String[]> data = new ArrayList<>();
 
-        // @formatter:off
         // - combination of simple 1 byte characters and unicode code points
         data.add(new String[]{ "6.2.1", "48656C6C6F2DC2B540C39FC3B6C3A4C3BCC3A0C3A12D5554462D382121" });
         // - simple valid UTF8 sequence
@@ -115,22 +111,16 @@ public class TestABCase6_GoodUTF extends AbstractABCase
         data.add(new String[]{ "6.22.34", "F48FBFBF" });
         // - unicode replacement character
         data.add(new String[]{ "6.23.1", "EFBFBD" });
-        // @formatter:on
 
-        return data;
+        return data.stream().map(Arguments::of);
     }
 
-    private final ByteBuffer msg;
-
-    public TestABCase6_GoodUTF(String testId, String hexMsg)
+    @ParameterizedTest
+    @MethodSource("utfSequences")
+    public void assertEchoTextMessage(String testId, String hexMsg) throws Exception
     {
-        LOG.debug("Test ID: {}",testId);
-        this.msg = Hex.asByteBuffer(hexMsg);
-    }
+        ByteBuffer msg = Hex.asByteBuffer(hexMsg);
 
-    @Test
-    public void assertEchoTextMessage() throws Exception
-    {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(msg));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());

@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.isIn;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -49,15 +53,14 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-@Ignore("Not working atm")
+@Disabled("Not working atm")
 public class DecoderReaderManySmallTest
 {
     public static class EventId
@@ -122,26 +125,26 @@ public class DecoderReaderManySmallTest
     private static BlockheadServer server;
     private WebSocketContainer client;
 
-    @Before
+    @BeforeEach
     public void initClient()
     {
         client = ContainerProvider.getWebSocketContainer();
     }
     
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         ((LifeCycle)client).stop();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new BlockheadServer();
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -190,14 +193,14 @@ public class DecoderReaderManySmallTest
             {
                 EventId id = ids.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
                 // validate that ids don't repeat.
-                Assert.assertFalse("Already saw ID: " + id.eventId, seen.contains(id.eventId));
+                assertFalse(seen.contains(id.eventId), "Already saw ID: " + id.eventId);
                 seen.add(id.eventId);
             }
 
             // validate that all expected ids have been seen (order is irrelevant here)
             for (int expected = from; expected < to; expected++)
             {
-                Assert.assertTrue("Has expected id:" + expected, seen.contains(expected));
+                assertThat("Has expected id:" + expected, expected, isIn(seen));
             }
         }
     }

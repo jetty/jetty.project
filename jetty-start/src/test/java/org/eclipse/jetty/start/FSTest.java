@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.start;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 public class FSTest
 {
@@ -31,28 +34,28 @@ public class FSTest
     public void testCanReadDirectory()
     {
         File targetDir = MavenTestingUtils.getTargetDir();
-        Assert.assertTrue("Can read dir: " + targetDir,FS.canReadDirectory(targetDir.toPath()));
+        assertTrue(FS.canReadDirectory(targetDir.toPath()),"Can read dir: " + targetDir);
     }
 
     @Test
     public void testCanReadDirectory_NotDir()
     {
         File bogusFile = MavenTestingUtils.getTestResourceFile("bogus.xml");
-        Assert.assertFalse("Can read dir: " + bogusFile,FS.canReadDirectory(bogusFile.toPath()));
+        assertFalse(FS.canReadDirectory(bogusFile.toPath()),"Can read dir: " + bogusFile);
     }
 
     @Test
     public void testCanReadFile()
     {
         File pom = MavenTestingUtils.getProjectFile("pom.xml");
-        Assert.assertTrue("Can read file: " + pom,FS.canReadFile(pom.toPath()));
+        assertTrue(FS.canReadFile(pom.toPath()),"Can read file: " + pom);
     }
     
     /**
      * Utility method used by other test cases
      * @param expected the expected String paths to be converted (in place)
      */
-    public static void toOsSeparators(List<String> expected)
+    public static void toFsSeparators(List<String> expected)
     {
         for (int i = 0; i < expected.size(); i++)
         {

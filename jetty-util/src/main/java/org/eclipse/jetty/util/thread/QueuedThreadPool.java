@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -117,7 +118,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         }
         _jobs=queue;
         _threadGroup=threadGroup;
-        setThreadPoolBudget(new ThreadPoolBudget(this,_minThreads));
+        setThreadPoolBudget(new ThreadPoolBudget(this));
     }
 
     @Override
@@ -257,6 +258,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @Override
     public void setMaxThreads(int maxThreads)
     {
+        if (_budget!=null)
+            _budget.check(maxThreads);
         _maxThreads = maxThreads;
         if (_minThreads > _maxThreads)
             _minThreads = _maxThreads;

@@ -72,7 +72,6 @@ public class Parser
     private ByteBuffer payload;
     private int payloadLength;
     private PayloadProcessor maskProcessor = new DeMaskProcessor();
-    // private PayloadProcessor strictnessProcessor;
 
     /** 
      * Is there an extension using RSV flag?

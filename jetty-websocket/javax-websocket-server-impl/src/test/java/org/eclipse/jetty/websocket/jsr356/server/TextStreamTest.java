@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -38,10 +41,10 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class TextStreamTest
 {
@@ -52,7 +55,7 @@ public class TextStreamTest
     private ServerConnector connector;
     private WebSocketContainer wsClient;
 
-    @Before
+    @BeforeEach
     public void prepare() throws Exception
     {
         server = new Server();
@@ -69,7 +72,7 @@ public class TextStreamTest
         wsClient = ContainerProvider.getWebSocketContainer();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception
     {
         server.stop();
@@ -99,8 +102,8 @@ public class TextStreamTest
              output.write(data);
         }
 
-        Assert.assertTrue(client.await(5, TimeUnit.SECONDS));
-        Assert.assertArrayEquals(data, client.getEcho());
+        assertTrue(client.await(5, TimeUnit.SECONDS));
+        assertArrayEquals(data, client.getEcho());
     }
 
     @Test
@@ -118,8 +121,8 @@ public class TextStreamTest
                 output.write(data[i]);
         }
 
-        Assert.assertTrue(client.await(5, TimeUnit.SECONDS));
-        Assert.assertArrayEquals(data, client.getEcho());
+        assertTrue(client.await(5, TimeUnit.SECONDS));
+        assertArrayEquals(data, client.getEcho());
     }
 
     private char[] randomChars(int size)

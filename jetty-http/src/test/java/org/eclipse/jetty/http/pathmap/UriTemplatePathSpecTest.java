@@ -20,12 +20,12 @@ package org.eclipse.jetty.http.pathmap;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for URI Template Path Specs
@@ -35,11 +35,11 @@ public class UriTemplatePathSpecTest
     private void assertDetectedVars(UriTemplatePathSpec spec, String... expectedVars)
     {
         String prefix = String.format("Spec(\"%s\")",spec.getDeclaration());
-        assertEquals(prefix + ".variableCount",expectedVars.length,spec.getVariableCount());
-        assertEquals(prefix + ".variable.length",expectedVars.length,spec.getVariables().length);
+        assertEquals(expectedVars.length, spec.getVariableCount(), prefix + ".variableCount");
+        assertEquals(expectedVars.length, spec.getVariables().length, prefix + ".variable.length");
         for (int i = 0; i < expectedVars.length; i++)
         {
-            assertEquals(String.format("%s.variable[%d]",prefix,i),expectedVars[i],spec.getVariables()[i]);
+            assertThat(String.format("%s.variable[%d]",prefix,i),spec.getVariables()[i],is(expectedVars[i]));
         }
     }
 
@@ -59,60 +59,60 @@ public class UriTemplatePathSpecTest
     public void testDefaultPathSpec()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/");
-        assertEquals("Spec.pathSpec","/",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",1,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.getGroup());
+        assertEquals("/", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(1, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.EXACT, spec.getGroup(), "Spec.group");
 
-        assertEquals("Spec.variableCount",0,spec.getVariableCount());
-        assertEquals("Spec.variable.length",0,spec.getVariables().length);
+        assertEquals(0, spec.getVariableCount(), "Spec.variableCount");
+        assertEquals(0, spec.getVariables().length, "Spec.variable.length");
     }
 
     @Test
     public void testExactOnePathSpec()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/a");
-        assertEquals("Spec.pathSpec","/a",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/a$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",1,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.getGroup());
+        assertEquals("/a", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/a$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(1, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.EXACT, spec.getGroup(), "Spec.group");
         
         assertMatches(spec,"/a");
         assertMatches(spec,"/a?type=other");
         assertNotMatches(spec,"/a/b");
         assertNotMatches(spec,"/a/");
 
-        assertEquals("Spec.variableCount",0,spec.getVariableCount());
-        assertEquals("Spec.variable.length",0,spec.getVariables().length);
+        assertEquals(0, spec.getVariableCount(), "Spec.variableCount");
+        assertEquals(0, spec.getVariables().length, "Spec.variable.length");
     }
     
     @Test
     public void testExactPathSpec_TestWebapp()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/deep.thought/");
-        assertEquals("Spec.pathSpec","/deep.thought/",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/deep\\.thought/$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",1,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.getGroup());
+        assertEquals("/deep.thought/", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/deep\\.thought/$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(1, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.EXACT, spec.getGroup(), "Spec.group");
         
         assertMatches(spec,"/deep.thought/");
         assertNotMatches(spec,"/deep.thought");
 
-        assertEquals("Spec.variableCount",0,spec.getVariableCount());
-        assertEquals("Spec.variable.length",0,spec.getVariables().length);
+        assertEquals(0, spec.getVariableCount(), "Spec.variableCount");
+        assertEquals(0, spec.getVariables().length, "Spec.variable.length");
     }
     
     @Test
     public void testExactTwoPathSpec()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/a/b");
-        assertEquals("Spec.pathSpec","/a/b",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/a/b$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",2,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.EXACT,spec.getGroup());
+        assertEquals("/a/b", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/a/b$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(2, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.EXACT, spec.getGroup(), "Spec.group");
 
-        assertEquals("Spec.variableCount",0,spec.getVariableCount());
-        assertEquals("Spec.variable.length",0,spec.getVariables().length);
+        assertEquals(0, spec.getVariableCount(), "Spec.variableCount");
+        assertEquals(0, spec.getVariables().length, "Spec.variable.length");
 
         assertMatches(spec,"/a/b");
 
@@ -125,10 +125,10 @@ public class UriTemplatePathSpecTest
     public void testMiddleVarPathSpec()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/a/{var}/c");
-        assertEquals("Spec.pathSpec","/a/{var}/c",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/a/([^/]+)/c$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",3,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.getGroup());
+        assertEquals("/a/{var}/c", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/a/([^/]+)/c$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(3, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.getGroup(), "Spec.group");
 
         assertDetectedVars(spec,"var");
 
@@ -142,17 +142,17 @@ public class UriTemplatePathSpecTest
         Map<String, String> mapped = spec.getPathParams("/a/b/c");
         assertThat("Spec.pathParams",mapped,notNullValue());
         assertThat("Spec.pathParams.size",mapped.size(),is(1));
-        assertEquals("Spec.pathParams[var]","b",mapped.get("var"));
+        assertEquals("b", mapped.get("var"), "Spec.pathParams[var]");
     }
 
     @Test
     public void testOneVarPathSpec()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/a/{foo}");
-        assertEquals("Spec.pathSpec","/a/{foo}",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/a/([^/]+)$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",2,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.PREFIX_GLOB,spec.getGroup());
+        assertEquals("/a/{foo}", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/a/([^/]+)$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(2, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.PREFIX_GLOB, spec.getGroup(), "Spec.group");
 
         assertDetectedVars(spec,"foo");
 
@@ -163,17 +163,17 @@ public class UriTemplatePathSpecTest
         Map<String, String> mapped = spec.getPathParams("/a/b");
         assertThat("Spec.pathParams",mapped,notNullValue());
         assertThat("Spec.pathParams.size",mapped.size(),is(1));
-        assertEquals("Spec.pathParams[foo]","b",mapped.get("foo"));
+        assertEquals("b", mapped.get("foo"), "Spec.pathParams[foo]");
     }
 
     @Test
     public void testOneVarSuffixPathSpec()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/{var}/b/c");
-        assertEquals("Spec.pathSpec","/{var}/b/c",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/([^/]+)/b/c$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",3,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.SUFFIX_GLOB,spec.getGroup());
+        assertEquals("/{var}/b/c", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/([^/]+)/b/c$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(3, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.SUFFIX_GLOB, spec.getGroup(), "Spec.group");
 
         assertDetectedVars(spec,"var");
 
@@ -187,17 +187,17 @@ public class UriTemplatePathSpecTest
         Map<String, String> mapped = spec.getPathParams("/a/b/c");
         assertThat("Spec.pathParams",mapped,notNullValue());
         assertThat("Spec.pathParams.size",mapped.size(),is(1));
-        assertEquals("Spec.pathParams[var]","a",mapped.get("var"));
+        assertEquals("a", mapped.get("var"), "Spec.pathParams[var]");
     }
 
     @Test
     public void testTwoVarComplexInnerPathSpec()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/a/{var1}/c/{var2}/e");
-        assertEquals("Spec.pathSpec","/a/{var1}/c/{var2}/e",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/a/([^/]+)/c/([^/]+)/e$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",5,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.getGroup());
+        assertEquals("/a/{var1}/c/{var2}/e", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/a/([^/]+)/c/([^/]+)/e$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(5, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.getGroup(), "Spec.group");
 
         assertDetectedVars(spec,"var1","var2");
 
@@ -209,18 +209,18 @@ public class UriTemplatePathSpecTest
         Map<String, String> mapped = spec.getPathParams("/a/b/c/d/e");
         assertThat("Spec.pathParams",mapped,notNullValue());
         assertThat("Spec.pathParams.size",mapped.size(),is(2));
-        assertEquals("Spec.pathParams[var1]","b",mapped.get("var1"));
-        assertEquals("Spec.pathParams[var2]","d",mapped.get("var2"));
+        assertEquals("b", mapped.get("var1"), "Spec.pathParams[var1]");
+        assertEquals("d", mapped.get("var2"), "Spec.pathParams[var2]");
     }
 
     @Test
     public void testTwoVarComplexOuterPathSpec()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/{var1}/b/{var2}/{var3}");
-        assertEquals("Spec.pathSpec","/{var1}/b/{var2}/{var3}",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/([^/]+)/b/([^/]+)/([^/]+)$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",4,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.MIDDLE_GLOB,spec.getGroup());
+        assertEquals("/{var1}/b/{var2}/{var3}", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/([^/]+)/b/([^/]+)/([^/]+)$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(4, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.getGroup(), "Spec.group");
 
         assertDetectedVars(spec,"var1","var2","var3");
 
@@ -232,19 +232,19 @@ public class UriTemplatePathSpecTest
         Map<String, String> mapped = spec.getPathParams("/a/b/c/d");
         assertThat("Spec.pathParams",mapped,notNullValue());
         assertThat("Spec.pathParams.size",mapped.size(),is(3));
-        assertEquals("Spec.pathParams[var1]","a",mapped.get("var1"));
-        assertEquals("Spec.pathParams[var2]","c",mapped.get("var2"));
-        assertEquals("Spec.pathParams[var3]","d",mapped.get("var3"));
+        assertEquals("a", mapped.get("var1"), "Spec.pathParams[var1]");
+        assertEquals("c", mapped.get("var2"), "Spec.pathParams[var2]");
+        assertEquals("d", mapped.get("var3"), "Spec.pathParams[var3]");
     }
 
     @Test
     public void testTwoVarPrefixPathSpec()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/a/{var1}/{var2}");
-        assertEquals("Spec.pathSpec","/a/{var1}/{var2}",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/a/([^/]+)/([^/]+)$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",3,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.PREFIX_GLOB,spec.getGroup());
+        assertEquals("/a/{var1}/{var2}", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/a/([^/]+)/([^/]+)$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(3, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.PREFIX_GLOB, spec.getGroup(), "Spec.group");
 
         assertDetectedVars(spec,"var1","var2");
 
@@ -256,18 +256,18 @@ public class UriTemplatePathSpecTest
         Map<String, String> mapped = spec.getPathParams("/a/b/c");
         assertThat("Spec.pathParams",mapped,notNullValue());
         assertThat("Spec.pathParams.size",mapped.size(),is(2));
-        assertEquals("Spec.pathParams[var1]","b",mapped.get("var1"));
-        assertEquals("Spec.pathParams[var2]","c",mapped.get("var2"));
+        assertEquals("b", mapped.get("var1"), "Spec.pathParams[var1]");
+        assertEquals("c", mapped.get("var2"), "Spec.pathParams[var2]");
     }
 
     @Test
     public void testVarOnlyPathSpec()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/{var1}");
-        assertEquals("Spec.pathSpec","/{var1}",spec.getDeclaration());
-        assertEquals("Spec.pattern","^/([^/]+)$",spec.getPattern().pattern());
-        assertEquals("Spec.pathDepth",1,spec.getPathDepth());
-        assertEquals("Spec.group",PathSpecGroup.PREFIX_GLOB,spec.getGroup());
+        assertEquals("/{var1}", spec.getDeclaration(), "Spec.pathSpec");
+        assertEquals("^/([^/]+)$", spec.getPattern().pattern(), "Spec.pattern");
+        assertEquals(1, spec.getPathDepth(), "Spec.pathDepth");
+        assertEquals(PathSpecGroup.PREFIX_GLOB, spec.getGroup(), "Spec.group");
 
         assertDetectedVars(spec,"var1");
 
@@ -279,6 +279,6 @@ public class UriTemplatePathSpecTest
         Map<String, String> mapped = spec.getPathParams("/a");
         assertThat("Spec.pathParams",mapped,notNullValue());
         assertThat("Spec.pathParams.size",mapped.size(),is(1));
-        assertEquals("Spec.pathParams[var1]","a",mapped.get("var1"));
+        assertEquals("a", mapped.get("var1"), "Spec.pathParams[var1]");
     }
 }

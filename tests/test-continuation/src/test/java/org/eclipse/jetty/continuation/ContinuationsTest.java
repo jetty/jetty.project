@@ -18,8 +18,14 @@
 
 package org.eclipse.jetty.continuation;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Stream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -49,29 +56,15 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class ContinuationsTest
 {
-    @SuppressWarnings("serial")
-    public static class SneakyList extends ArrayList<String> {
-        @Override
-        public boolean add(String e)
-        {
-            // System.err.printf("add(%s)%n",e);
-            return super.add(e);
-        }
-    };
-    
-    @Parameters(name="{0}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> setups()
     {
-        List<Object[]> setup = new ArrayList<>();
+        List<Arguments> setup = new ArrayList<>();
         
         // Servlet3 / AsyncContext Setup
         {
@@ -85,12 +78,12 @@ public class ContinuationsTest
             servlet3Setup.setHandler(servletContext);
         
             ServletHandler servletHandler=servletContext.getServletHandler();
-            List<String> history = new SneakyList();
+            List<String> history = new ArrayList<>();
             Listener listener = new Listener(history);
             ServletHolder holder=new ServletHolder(new SuspendServlet(history, listener));
             holder.setAsyncSupported(true);
             servletHandler.addServletWithMapping(holder, "/");
-            setup.add(new Object[]{description,servlet3Setup,history,listener,expectedImplClass,log});
+            setup.add(Arguments.of(new Scenario(description, servlet3Setup, history, listener, expectedImplClass, log)));
         }
         
         // Faux Continuations Setup
@@ -103,7 +96,7 @@ public class ContinuationsTest
             
             ServletContextHandler fauxSetup = new ServletContextHandler();
             ServletHandler servletHandler=fauxSetup.getServletHandler();
-            List<String> history = new SneakyList();
+            List<String> history = new ArrayList<>();
             Listener listener = new Listener(history);
             ServletHolder holder=new ServletHolder(new SuspendServlet(history, listener));
             servletHandler.addServletWithMapping(holder,"/");
@@ -111,215 +104,214 @@ public class ContinuationsTest
             FilterHolder filter= servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",null);
             filter.setInitParameter("debug","true");
             filter.setInitParameter("faux","true");
-            setup.add(new Object[]{description,fauxSetup,history,listener,expectedImplClass,log});
+            setup.add(Arguments.of(new Scenario(description, fauxSetup, history, listener, expectedImplClass, log)));
         }
         
-        return setup;
+        return setup.stream();
     }
     
-    @Parameter(0)
-    public String setupDescription;
-    
-    @Parameter(1)
-    public Handler setupHandler;
-    
-    @Parameter(2)
-    public List<String> history;
-    
-    @Parameter(3)
-    public Listener listener;
-    
-    @Parameter(4)
-    public Class<? extends Continuation> expectedImplClass;
-    
-    @Parameter(5)
-    public List<String> log;
-
-    @Test
-    public void testNormal() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testNormal(Scenario scenario) throws Exception
     {
-        String response = process(null, null);
+        String response = process(scenario, null, null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("NORMAL"));
-        assertThat(history, hasItem(expectedImplClass.getName()));
-        assertThat(history, not(hasItem("onTimeout")));
-        assertThat(history, not(hasItem("onComplete")));
+        assertThat(scenario.history, hasItem(scenario.expectedImplClass.getName()));
+        assertThat(scenario.history, not(hasItem("onTimeout")));
+        assertThat(scenario.history, not(hasItem("onComplete")));
     }
 
-    @Test
-    public void testSleep() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSleep(Scenario scenario) throws Exception
     {
-        String response = process("sleep=200", null);
+        String response = process(scenario, "sleep=200", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("SLEPT"));
-        assertThat(history, not(hasItem("onTimeout")));
-        assertThat(history, not(hasItem("onComplete")));
+        assertThat(scenario.history, not(hasItem("onTimeout")));
+        assertThat(scenario.history, not(hasItem("onComplete")));
     }
 
-    @Test
-    public void testSuspend() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspend(Scenario scenario) throws Exception
     {
-        String response = process("suspend=200", null);
+        String response = process(scenario, "suspend=200", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("TIMEOUT"));
-        assertThat(history, hasItem("onTimeout"));
-        assertThat(history, hasItem("onComplete"));
+        assertThat(scenario.history, hasItem("onTimeout"));
+        assertThat(scenario.history, hasItem("onComplete"));
     }
 
-    @Test
-    public void testSuspendWaitResume() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendWaitResume(Scenario scenario) throws Exception
     {
-        String response = process("suspend=200&resume=10", null);
+        String response = process(scenario, "suspend=200&resume=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertThat(history, not(hasItem("onTimeout")));
-        assertThat(history, hasItem("onComplete"));
+        assertThat(scenario.history, not(hasItem("onTimeout")));
+        assertThat(scenario.history, hasItem("onComplete"));
     }
 
-    @Test
-    public void testSuspendResume() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendResume(Scenario scenario) throws Exception
     {
-        String response = process("suspend=200&resume=0", null);
+        String response = process(scenario, "suspend=200&resume=0", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertThat(history, not(hasItem("onTimeout")));
-        assertThat(history, hasItem("onComplete"));
+        assertThat(scenario.history, not(hasItem("onTimeout")));
+        assertThat(scenario.history, hasItem("onComplete"));
     }
 
-    @Test
-    public void testSuspendWaitComplete() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendWaitComplete(Scenario scenario) throws Exception
     {
-        String response = process("suspend=200&complete=50", null);
+        String response = process(scenario, "suspend=200&complete=50", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertThat(history, hasItem("initial"));
-        assertThat(history, not(hasItem("!initial")));
-        assertThat(history, not(hasItem("onTimeout")));
-        assertThat(history, hasItem("onComplete"));
+        assertThat(scenario.history, hasItem("initial"));
+        assertThat(scenario.history, not(hasItem("!initial")));
+        assertThat(scenario.history, not(hasItem("onTimeout")));
+        assertThat(scenario.history, hasItem("onComplete"));
     }
 
-    @Test
-    public void testSuspendComplete() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendComplete(Scenario scenario) throws Exception
     {
-        String response = process("suspend=200&complete=0", null);
+        String response = process(scenario, "suspend=200&complete=0", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertThat(history, hasItem("initial"));
-        assertThat(history, not(hasItem("!initial")));
-        assertThat(history, not(hasItem("onTimeout")));
-        assertThat(history, hasItem("onComplete"));
+        assertThat(scenario.history, hasItem("initial"));
+        assertThat(scenario.history, not(hasItem("!initial")));
+        assertThat(scenario.history, not(hasItem("onTimeout")));
+        assertThat(scenario.history, hasItem("onComplete"));
     }
 
-    @Test
-    public void testSuspendWaitResumeSuspendWaitResume() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendWaitResumeSuspendWaitResume(Scenario scenario) throws Exception
     {
-        String response = process("suspend=1000&resume=10&suspend2=1000&resume2=10", null);
+        String response = process(scenario, "suspend=1000&resume=10&suspend2=1000&resume2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertEquals(2, count(history, "suspend"));
-        assertEquals(2, count(history, "resume"));
-        assertEquals(0, count(history, "onTimeout"));
-        assertEquals(1, count(history, "onComplete"));
+        assertEquals(2, count(scenario.history, "suspend"));
+        assertEquals(2, count(scenario.history, "resume"));
+        assertEquals(0, count(scenario.history, "onTimeout"));
+        assertEquals(1, count(scenario.history, "onComplete"));
     }
 
-    @Test
-    public void testSuspendWaitResumeSuspendComplete() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendWaitResumeSuspendComplete(Scenario scenario) throws Exception
     {
-        String response = process("suspend=1000&resume=10&suspend2=1000&complete2=10", null);
+        String response = process(scenario, "suspend=1000&resume=10&suspend2=1000&complete2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertEquals(2, count(history, "suspend"));
-        assertEquals(1, count(history, "resume"));
-        assertEquals(0, count(history, "onTimeout"));
-        assertEquals(1, count(history, "onComplete"));
+        assertEquals(2, count(scenario.history, "suspend"));
+        assertEquals(1, count(scenario.history, "resume"));
+        assertEquals(0, count(scenario.history, "onTimeout"));
+        assertEquals(1, count(scenario.history, "onComplete"));
     }
 
-    @Test
-    public void testSuspendWaitResumeSuspend() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendWaitResumeSuspend(Scenario scenario) throws Exception
     {
-        String response = process("suspend=1000&resume=10&suspend2=10", null);
+        String response = process(scenario, "suspend=1000&resume=10&suspend2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("TIMEOUT"));
-        assertEquals(2, count(history, "suspend"));
-        assertEquals(1, count(history, "resume"));
-        assertEquals(1, count(history, "onTimeout"));
-        assertEquals(1, count(history, "onComplete"));
+        assertEquals(2, count(scenario.history, "suspend"));
+        assertEquals(1, count(scenario.history, "resume"));
+        assertEquals(1, count(scenario.history, "onTimeout"));
+        assertEquals(1, count(scenario.history, "onComplete"));
     }
 
-    @Test
-    public void testSuspendTimeoutSuspendResume() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendTimeoutSuspendResume(Scenario scenario) throws Exception
     {
-        String response = process("suspend=10&suspend2=1000&resume2=10", null);
+        String response = process(scenario, "suspend=10&suspend2=1000&resume2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertEquals(2, count(history, "suspend"));
-        assertEquals(1, count(history, "resume"));
-        assertEquals(1, count(history, "onTimeout"));
-        assertEquals(1, count(history, "onComplete"));
+        assertEquals(2, count(scenario.history, "suspend"));
+        assertEquals(1, count(scenario.history, "resume"));
+        assertEquals(1, count(scenario.history, "onTimeout"));
+        assertEquals(1, count(scenario.history, "onComplete"));
     }
 
-    @Test
-    public void testSuspendTimeoutSuspendComplete() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendTimeoutSuspendComplete(Scenario scenario) throws Exception
     {
-        String response = process("suspend=10&suspend2=1000&complete2=10", null);
+        String response = process(scenario, "suspend=10&suspend2=1000&complete2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertEquals(2, count(history, "suspend"));
-        assertEquals(0, count(history, "resume"));
-        assertEquals(1, count(history, "onTimeout"));
-        assertEquals(1, count(history, "onComplete"));
+        assertEquals(2, count(scenario.history, "suspend"));
+        assertEquals(0, count(scenario.history, "resume"));
+        assertEquals(1, count(scenario.history, "onTimeout"));
+        assertEquals(1, count(scenario.history, "onComplete"));
     }
 
-    @Test
-    public void testSuspendTimeoutSuspend() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendTimeoutSuspend(Scenario scenario) throws Exception
     {
-        String response = process("suspend=10&suspend2=10", null);
+        String response = process(scenario, "suspend=10&suspend2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("TIMEOUT"));
-        assertEquals(2, count(history, "suspend"));
-        assertEquals(0, count(history, "resume"));
-        assertEquals(2, count(history, "onTimeout"));
-        assertEquals(1, count(history, "onComplete"));
+        assertEquals(2, count(scenario.history, "suspend"));
+        assertEquals(0, count(scenario.history, "resume"));
+        assertEquals(2, count(scenario.history, "onTimeout"));
+        assertEquals(1, count(scenario.history, "onComplete"));
     }
 
-    @Test
-    public void testSuspendThrowResume() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendThrowResume(Scenario scenario) throws Exception
     {
-        String response = process("suspend=200&resume=10&undispatch=true", null);
+        String response = process(scenario, "suspend=200&resume=10&undispatch=true", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertThat(history, not(hasItem("onTimeout")));
-        assertThat(history, hasItem("onComplete"));
+        assertThat(scenario.history, not(hasItem("onTimeout")));
+        assertThat(scenario.history, hasItem("onComplete"));
     }
 
-    @Test
-    public void testSuspendResumeThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendResumeThrow(Scenario scenario) throws Exception
     {
-        String response = process("suspend=200&resume=0&undispatch=true", null);
+        String response = process(scenario, "suspend=200&resume=0&undispatch=true", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertThat(history, not(hasItem("onTimeout")));
-        assertThat(history, hasItem("onComplete"));
+        assertThat(scenario.history, not(hasItem("onTimeout")));
+        assertThat(scenario.history, hasItem("onComplete"));
     }
 
-    @Test
-    public void testSuspendThrowComplete() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendThrowComplete(Scenario scenario) throws Exception
     {
-        String response = process("suspend=200&complete=10&undispatch=true", null);
+        String response = process(scenario, "suspend=200&complete=10&undispatch=true", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertThat(history, not(hasItem("onTimeout")));
-        assertThat(history, hasItem("onComplete"));
+        assertThat(scenario.history, not(hasItem("onTimeout")));
+        assertThat(scenario.history, hasItem("onComplete"));
     }
 
-    @Test
-    public void testSuspendCompleteThrow() throws Exception
+    @ParameterizedTest
+    @MethodSource("setups")
+    public void testSuspendCompleteThrow(Scenario scenario) throws Exception
     {
-        String response = process("suspend=200&complete=0&undispatch=true", null);
+        String response = process(scenario, "suspend=200&complete=0&undispatch=true", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertThat(history, not(hasItem("onTimeout")));
-        assertThat(history, hasItem("onComplete"));
+        assertThat(scenario.history, not(hasItem("onTimeout")));
+        assertThat(scenario.history, hasItem("onComplete"));
     }
 
     private long count(List<String> history, String value)
@@ -329,7 +321,7 @@ public class ContinuationsTest
                 .count();
     }
 
-    private String process(String query, String content) throws Exception
+    private String process(Scenario scenario, String query, String content) throws Exception
     {
         Server server = new Server();
         server.setStopTimeout(20000);
@@ -337,14 +329,14 @@ public class ContinuationsTest
         {
             ServerConnector connector = new ServerConnector(server);
             server.addConnector(connector);
-            if(log != null) 
+            if(scenario.log != null)
             {
-                log.clear();
+                scenario.log.clear();
             }
-            history.clear();
+            scenario.history.clear();
             StatisticsHandler stats = new StatisticsHandler();
             server.setHandler(stats);
-            stats.setHandler(this.setupHandler);
+            stats.setHandler(scenario.setupHandler);
         
             server.start();
             int port=connector.getLocalPort();
@@ -357,20 +349,19 @@ public class ContinuationsTest
             request.append(" HTTP/1.1\r\n")
                     .append("Host: localhost\r\n")
                     .append("Connection: close\r\n");
-    
-            if (content == null)
-            {
-                request.append("\r\n");
-            }
-            else
-            {
+
+            if (content != null)
                 request.append("Content-Length: ").append(content.length()).append("\r\n");
-                request.append("\r\n").append(content);
-            }
-    
+
+            request.append("\r\n"); // end of header
+
+            if (content != null)
+                request.append(content);
+
             try (Socket socket = new Socket("localhost", port))
             {
                 socket.setSoTimeout(10000);
+                System.err.println("request: " + request);
                 socket.getOutputStream().write(request.toString().getBytes(StandardCharsets.UTF_8));
                 socket.getOutputStream().flush();
                 return toString(socket.getInputStream());
@@ -378,14 +369,14 @@ public class ContinuationsTest
         } 
         finally 
         {
-            if (log != null)
+            if (scenario.log != null)
             {
-                for (int i=0;log.isEmpty()&&i<60;i++)
+                for (int i=0;scenario.log.isEmpty()&&i<60;i++)
                 {
                     Thread.sleep(100);
                 }
-                assertThat("Log.size", log.size(),is(1));
-                String entry = log.get(0);
+                assertThat("Log.size", scenario.log.size(),is(1));
+                String entry = scenario.log.get(0);
                 assertThat("Log entry", entry, startsWith("200 "));
                 assertThat("Log entry", entry, endsWith(" /"));
             }
@@ -661,6 +652,32 @@ public class ContinuationsTest
             int status = response.getCommittedMetaData().getStatus();
             long written = response.getHttpChannel().getBytesWritten();
             log.add(status+" "+written+" "+request.getRequestURI());
+        }
+    }
+
+    public static class Scenario
+    {
+        public String setupDescription;
+        public Handler setupHandler;
+        public List<String> history;
+        public Listener listener;
+        public Class<? extends Continuation> expectedImplClass;
+        public List<String> log;
+
+        public Scenario(String description, Handler handler, List<String> history, Listener listener, Class<? extends Continuation> expectedImplClass, List<String> log)
+        {
+            this.setupDescription = description;
+            this.setupHandler = handler;
+            this.history = history;
+            this.listener = listener;
+            this.expectedImplClass = expectedImplClass;
+            this.log = log;
+        }
+
+        @Override
+        public String toString()
+        {
+            return this.setupDescription;
         }
     }
 }

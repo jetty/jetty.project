@@ -23,29 +23,35 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.IOException;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.DispatcherType;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class ErrorHandlerTest
 {
     static Server server;
     static LocalConnector connector;
     
-    @BeforeClass
+    @BeforeAll
     public static void before() throws Exception
     {
         server = new Server();
@@ -86,25 +92,66 @@ public class ErrorHandlerTest
                     default:
                         super.generateAcceptableResponse(baseRequest,request,response,code,message,mimeType);
                 }
+            }    
+        });
+        
+        server.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                if (baseRequest.getDispatcherType()==DispatcherType.ERROR)
+                {
+                    baseRequest.setHandled(true);
+                    response.sendError(((Integer)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE)).intValue());
+                    return;
+                }
+                
+                if(target.startsWith("/charencoding/"))
+                {
+                    baseRequest.setHandled(true);
+                    response.setCharacterEncoding("utf-8");
+                    response.sendError(404);
+                    return;
+                }
+                
+                if(target.startsWith("/badmessage/"))
+                {
+                    throw new ServletException(new BadMessageException(Integer.valueOf(target.substring(12))));
+                }
             }
-            
         });
         server.setHandler(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
+                
+                if (baseRequest.getDispatcherType()==DispatcherType.ERROR)
+                {
+                    baseRequest.setHandled(true);
+                    response.sendError(((Integer)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE)).intValue());
+                    return;
+                }
+                
                 if(target.startsWith("/charencoding/"))
                 {
+                    baseRequest.setHandled(true);
                     response.setCharacterEncoding("utf-8");
                     response.sendError(404);
+                    return;
+                }
+                
+                if(target.startsWith("/badmessage/"))
+                {
+                    throw new ServletException(new BadMessageException(Integer.valueOf(target.substring(12))));
                 }
             }
         });
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void after() throws Exception
     {
         server.stop();
@@ -297,5 +344,17 @@ public class ErrorHandlerTest
         HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
         assertThat("Response Content-Type", contentType, is(notNullValue()));
         assertThat("Response Content-Type value", contentType.getValue(), not(containsString("null")));
+    }
+
+    @Test
+    public void testBadMessage() throws Exception
+    {
+        String rawResponse = connector.getResponse(
+                "GET /badmessage/444 HTTP/1.1\r\n"+
+                        "Host: Localhost\r\n"+
+                        "\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(444));
     }
 }

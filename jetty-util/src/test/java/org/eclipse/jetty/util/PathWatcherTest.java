@@ -21,11 +21,11 @@ package org.eclipse.jetty.util;
 import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.ADDED;
 import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.DELETED;
 import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.MODIFIED;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,8 +34,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.DosFileAttributes;
-import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -44,21 +42,18 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
-import org.eclipse.jetty.toolchain.test.OS;
-import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEventType;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.Assume;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-@Ignore
-@RunWith(AdvancedRunner.class)
+@Disabled
+@ExtendWith(WorkDirExtension.class)
 public class PathWatcherTest
 {
     public static final int QUIET_TIME;
@@ -67,9 +62,9 @@ public class PathWatcherTest
     
     static
     {
-        if (OS.IS_LINUX)
+        if (org.junit.jupiter.api.condition.OS.LINUX.isCurrentOs())
             QUIET_TIME = 300;
-        else if (OS.IS_OSX)
+        else if (org.junit.jupiter.api.condition.OS.MAC.isCurrentOs())
             QUIET_TIME = 5000;
         else
             QUIET_TIME = 1000;
@@ -263,8 +258,6 @@ public class PathWatcherTest
      * 
      * @param path
      *            the file to update / create
-     * @param fileSize
-     *            the ultimate file size to create
      * @param timeDuration
      *            the time duration to take to create the file (approximate, not 100% accurate)
      * @param timeUnit
@@ -323,9 +316,7 @@ public class PathWatcherTest
     private static final int KB = 1024;
     private static final int MB = KB * KB;
 
-    @Rule
-    public TestingDir testdir = new TestingDir();
-
+    public WorkDir testdir;
 
     @Test
     public void testSequence() throws Exception
@@ -409,7 +400,7 @@ public class PathWatcherTest
             capture.assertEvents(expected);
 
             // Check move directory
-            if (OS.IS_LINUX)
+            if (org.junit.jupiter.api.condition.OS.LINUX.isCurrentOs())
             {
                 capture.reset(5);
                 expected.clear();
@@ -528,9 +519,11 @@ public class PathWatcherTest
         // Files we don't care about
         Files.createFile(dir.resolve("foo.war.backup"));
 
-        String hidden_war = OS.IS_WINDOWS ? "hidden.war" : ".hidden.war";
+        String hidden_war = ".hidden.war";
+        if(org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
+            hidden_war = "hidden.war";
         Files.createFile(dir.resolve(hidden_war));
-        if (OS.IS_WINDOWS)
+        if(org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
             Files.setAttribute(dir.resolve(hidden_war),"dos:hidden",Boolean.TRUE);
         Files.createDirectories(dir.resolve(".wat/WEB-INF"));
         Files.createFile(dir.resolve(".wat/huh.war"));
@@ -744,7 +737,6 @@ public class PathWatcherTest
 
             capture.assertEvents(expected);
             TimeUnit.MILLISECONDS.sleep(WAIT_TIME);
-            Assume.assumeFalse(OS.IS_OSX); // TODO fix this
             capture.assertEvents(expected);
         }
         finally

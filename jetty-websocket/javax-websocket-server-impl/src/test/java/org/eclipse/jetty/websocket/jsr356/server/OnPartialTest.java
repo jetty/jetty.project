@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -43,16 +44,10 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.server.samples.partial.PartialTrackingSocket;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.Test;
 
 public class OnPartialTest
 {
-    @Rule
-    public TestName testname = new TestName();
-
     public EventDriver toEventDriver(Object websocket) throws Throwable
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
@@ -65,7 +60,7 @@ public class OnPartialTest
         EventDriverImpl driverImpl = new JsrServerEndpointImpl();
         Class<?> endpoint = websocket.getClass();
         ServerEndpoint anno = endpoint.getAnnotation(ServerEndpoint.class);
-        Assert.assertThat("Endpoint: " + endpoint + " should be annotated with @ServerEndpoint",anno,notNullValue());
+        assertThat("Endpoint: " + endpoint + " should be annotated with @ServerEndpoint",anno,notNullValue());
         
         WebSocketContainerScope containerScope = new SimpleContainerScope(policy);
         // Event Driver Factory
@@ -78,10 +73,10 @@ public class OnPartialTest
         scanner.scan();
         EndpointInstance ei = new EndpointInstance(websocket,config,metadata);
         EventDriver driver = driverImpl.create(ei,policy);
-        Assert.assertThat("EventDriver",driver,notNullValue());
+        assertThat("EventDriver",driver,notNullValue());
 
         // Create Local JsrSession
-        String id = testname.getMethodName();
+        String id = "testSession";
         URI requestURI = URI.create("ws://localhost/" + id);
         DummyConnection connection = new DummyConnection();
         ClientContainer container = new ClientContainer();
@@ -112,9 +107,9 @@ public class OnPartialTest
             driver.incomingFrame(frame);
         }
 
-        Assert.assertThat("Captured Event Queue size",socket.eventQueue.size(),is(3));
-        Assert.assertThat("Event[0]",socket.eventQueue.poll(),is("onPartial(\"Saved\",false)"));
-        Assert.assertThat("Event[1]",socket.eventQueue.poll(),is("onPartial(\" by \",false)"));
-        Assert.assertThat("Event[2]",socket.eventQueue.poll(),is("onPartial(\"zero\",true)"));
+        assertThat("Captured Event Queue size",socket.eventQueue.size(),is(3));
+        assertThat("Event[0]",socket.eventQueue.poll(),is("onPartial(\"Saved\",false)"));
+        assertThat("Event[1]",socket.eventQueue.poll(),is("onPartial(\" by \",false)"));
+        assertThat("Event[2]",socket.eventQueue.poll(),is("onPartial(\"zero\",true)"));
     }
 }
