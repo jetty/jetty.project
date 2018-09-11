@@ -113,6 +113,8 @@ public class WebSocketPolicy
      * Behavior of the websockets
      */
     private final WebSocketBehavior behavior;
+
+    private boolean autoFragment = true;
     
     public WebSocketPolicy(WebSocketBehavior behavior)
     {
@@ -462,6 +464,23 @@ public class WebSocketPolicy
         this.maxTextMessageSize = Math.max(-1, size);
     }
     
+    
+    /**
+     * @return true if core can automatically fragment data frames
+     */
+    public boolean isAutoFragment()
+    {
+        return autoFragment;
+    }
+
+    /**
+     * @param autoFragment true if core can automatically fragment data frames
+     */
+    public void setAutoFragment(boolean autoFragment)
+    {
+        this.autoFragment = autoFragment;
+    }
+
     @SuppressWarnings("StringBufferReplaceableByString")
     @Override
     public String toString()

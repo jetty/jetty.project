@@ -1675,11 +1675,10 @@ public class ParserTest
         assertEquals("Hello World",text.getPayloadAsUTF8());
         assertThat(text.getPayload().array(),sameInstance(buffer.array()));
         assertFalse(text.isReleaseable());
-        
     }
     
     @Test
-    public void testPartialData() throws Exception
+    public void testPartialDataAutoFragment() throws Exception
     {
         ByteBuffer data = generate(OpCode.TEXT,"Hello World");
         int limit = data.limit();
@@ -1687,41 +1686,49 @@ public class ParserTest
         
         ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()),false);
         
-        data.limit(5);
+        data.limit(7);
         BufferUtil.append(buffer,data);
         capture.parse(buffer);
-        assertEquals(0,capture.framesQueue.size());
-        assertEquals(5-2,buffer.remaining());
+        assertEquals(1,capture.framesQueue.size());
+        assertEquals(0,buffer.remaining());
+        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
+        assertFalse(text.isFin());
+        assertEquals("Hello",text.getPayloadAsUTF8());
+        assertThat(text.getPayload().array(),sameInstance(buffer.array()));
+        assertFalse(text.isReleaseable());
 
-        data.limit(6);
+        data.limit(8);
         BufferUtil.append(buffer,data);
         capture.parse(buffer);
-        assertEquals(0,capture.framesQueue.size());
-        assertEquals(6-2,buffer.remaining());
+        assertEquals(1,capture.framesQueue.size());
+        assertEquals(0,buffer.remaining());
+        text = (Parser.ParsedFrame)capture.framesQueue.take();
+        assertFalse(text.isFin());
+        assertEquals(" ",text.getPayloadAsUTF8());
+        assertThat(text.getPayload().array(),sameInstance(buffer.array()));
+        assertFalse(text.isReleaseable());
         
         data.limit(limit);
         BufferUtil.append(buffer,data);
         capture.parse(buffer);
         assertEquals(1,capture.framesQueue.size());
         assertEquals(0,buffer.remaining());
-        
         capture.assertHasFrame(OpCode.TEXT,1);
-        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
-        assertEquals("Hello World",text.getPayloadAsUTF8());
+        text = (Parser.ParsedFrame)capture.framesQueue.take();
+        assertTrue(text.isFin());
+        assertEquals("World",text.getPayloadAsUTF8());
         assertThat(text.getPayload().array(),sameInstance(buffer.array()));
         assertFalse(text.isReleaseable());
     }
     
-    
     @Test
-    public void testPartialControl() throws Exception
+    public void testPartialDataNoAutoFragment() throws Exception
     {
-
         ByteBuffer data = generate(OpCode.TEXT,"Hello World");
         int limit = data.limit();
-        ByteBuffer buffer = BufferUtil.allocate(8);
+        ByteBuffer buffer = BufferUtil.allocate(32);
         
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()),false);
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(),false),false);
         
         data.limit(5);
         BufferUtil.append(buffer,data);
@@ -1748,5 +1755,37 @@ public class ParserTest
         assertTrue(text.isReleaseable());
     }
     
-    
+    @Test
+    public void testPartialControl() throws Exception
+    {
+        ByteBuffer data = generate(OpCode.PING,"Hello World");
+        int limit = data.limit();
+        ByteBuffer buffer = BufferUtil.allocate(32);
+        
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(),true),false);
+        
+        data.limit(5);
+        BufferUtil.append(buffer,data);
+        capture.parse(buffer);
+        assertEquals(0,capture.framesQueue.size());
+        assertEquals(0,buffer.remaining());
+
+        data.limit(6);
+        BufferUtil.append(buffer,data);
+        capture.parse(buffer);
+        assertEquals(0,capture.framesQueue.size());
+        assertEquals(0,buffer.remaining());
+        
+        data.limit(limit);
+        BufferUtil.append(buffer,data);
+        capture.parse(buffer);
+        assertEquals(1,capture.framesQueue.size());
+        assertEquals(0,buffer.remaining());
+        
+        capture.assertHasFrame(OpCode.PING,1);
+        Parser.ParsedFrame text = (Parser.ParsedFrame)capture.framesQueue.take();
+        assertEquals("Hello World",text.getPayloadAsUTF8());
+        assertThat(text.getPayload().array(),not(sameInstance(buffer.array())));
+        assertTrue(text.isReleaseable());
+    }
 }

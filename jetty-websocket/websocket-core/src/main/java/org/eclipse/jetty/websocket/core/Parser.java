@@ -19,16 +19,13 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.extensions.Extension;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 
@@ -62,10 +59,25 @@ public class Parser
     
     public Parser(ByteBufferPool bufferPool)
     {
-        this.bufferPool = bufferPool;
-        this.autoFragment = true; // TODO set in constructor
+        this(bufferPool,true);
     }
 
+    public Parser(ByteBufferPool bufferPool, boolean autoFragment)
+    {
+        this.bufferPool = bufferPool;
+        this.autoFragment = autoFragment;
+    }
+    
+    public void reset()
+    {
+        state = State.START;
+        firstByte = 0;
+        mask = null;
+        cursor = 0;
+        partialPayload = null;
+        payloadLength = -1;
+    }
+    
     /**
      * Parse the buffer.
      *
@@ -198,8 +210,6 @@ public class Parser
                         if (partialPayload==null)
                             checkFrameSize(OpCode.getOpCode(firstByte),payloadLength);
                         ParsedFrame frame = parsePayload(buffer);
-                        if (frame!=null)
-                            state = State.START;
                         return frame;
                     }
                 }
@@ -223,8 +233,11 @@ public class Parser
         }
         finally
         {
+            if (state==State.START)
+                reset();
             if (LOG.isDebugEnabled())
                 LOG.debug("{} Parse exit", this);
+            
         }
         
         return null;
@@ -238,19 +251,7 @@ public class Parser
     
     protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
     {
-        ParsedFrame frame = new ParsedFrame(firstByte, mask, payload, releaseable);
-        reset();
-        return frame;
-    }
-    
-    public void reset()
-    {
-        state = State.START;
-        firstByte = 0;
-        mask = null;
-        cursor = 0;
-        partialPayload = null;
-        payloadLength = -1;
+        return new ParsedFrame(firstByte, mask, payload, releaseable);
     }
     
     private ParsedFrame parsePayload(ByteBuffer buffer)
@@ -273,6 +274,7 @@ public class Parser
                 // Can we auto-fragment
                 if (autoFragment && OpCode.isDataFrame(OpCode.getOpCode(firstByte)))
                 {
+                    payloadLength-=available;
                     ParsedFrame frame = newFrame((byte)(firstByte&0x7F),mask,buffer.slice(),false);
                     buffer.position(buffer.limit());
                     return frame;
@@ -289,6 +291,7 @@ public class Parser
                 // All the available data is for this frame and completes it 
                 ParsedFrame frame = newFrame(firstByte,mask,buffer.slice(),false);
                 buffer.position(buffer.limit());
+                state = State.START;
                 return frame;
             }
             
@@ -300,6 +303,7 @@ public class Parser
             ParsedFrame frame = newFrame(firstByte,mask,buffer.slice(),false);
             buffer.position(end);
             buffer.limit(limit);
+            state = State.START;
             return frame;
             
         }
@@ -320,6 +324,7 @@ public class Parser
             {
                 // All the available data is for this frame and completes it
                 BufferUtil.append(partialPayload,buffer);
+                state = State.START;
                 return newFrame(firstByte,mask,partialPayload,true);
             }
 
@@ -330,6 +335,7 @@ public class Parser
             buffer.limit(buffer.position() + expecting);
             BufferUtil.append(partialPayload,buffer);
             buffer.limit(limit);
+            state = State.START;
             return newFrame(firstByte,mask,partialPayload,true);
         }
     }

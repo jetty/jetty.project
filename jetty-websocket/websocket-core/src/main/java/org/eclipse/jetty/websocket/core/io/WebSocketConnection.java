@@ -30,14 +30,12 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
@@ -119,7 +117,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         this.channel = channel;
 
         this.generator = new Generator(policy, bufferPool);
-        this.parser = new Parser(bufferPool)
+        this.parser = new Parser(bufferPool,policy.isAutoFragment())
         {
             @Override
             protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
@@ -130,6 +128,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             }
             
         };
+       
         this.flusher = new Flusher(policy.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
