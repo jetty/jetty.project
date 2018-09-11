@@ -18,21 +18,31 @@
 
 package org.eclipse.jetty.websocket.core.parser;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.core.AbstractTestFrameHandler;
 import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.ReferencedBuffer;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class ParserCapture
 {
     private final Parser parser;
+    private final WebSocketChannel channel;
     public BlockingQueue<Frame> framesQueue = new LinkedBlockingDeque<>();
     public boolean closed = false;
     public boolean copy;
@@ -41,11 +51,22 @@ public class ParserCapture
     {
         this(parser,true);
     }
-    
+
     public ParserCapture(Parser parser, boolean copy)
+    {
+        this(parser, copy, WebSocketBehavior.CLIENT);
+    }
+    
+    public ParserCapture(Parser parser, boolean copy, WebSocketBehavior behavior)
     {
         this.parser = parser;
         this.copy = copy;
+
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
+        WebSocketPolicy policy = new WebSocketPolicy(behavior);
+        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
+        exStack.negotiate(new DecoratedObjectFactory(), policy, bufferPool, new LinkedList<>());
+        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), policy, exStack, "");
     }
     
     public void parse(ByteBuffer buffer)
@@ -55,6 +76,9 @@ public class ParserCapture
             Frame frame = parser.parse(buffer);
             if (frame==null)
                 break;
+
+            channel.assertValidIncoming(frame);
+
             if (!onFrame(frame))
                 break;
         }

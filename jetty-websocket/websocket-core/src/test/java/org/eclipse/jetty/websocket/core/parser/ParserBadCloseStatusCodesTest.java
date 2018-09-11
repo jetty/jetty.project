@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.parser;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.Matchers.containsString;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +36,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.Matchers.containsString;
 
 /**
  * Test behavior of Parser when encountering bad / forbidden close status codes (per RFC6455)
@@ -102,7 +102,7 @@ public class ParserBadCloseStatusCodesTest
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             expectedException.expect(ProtocolException.class);
-            expectedException.expectMessage(containsString("Invalid Close Code: " + closeCode));
+            expectedException.expectMessage(containsString("Invalid CLOSE Code: " + closeCode));
             capture.parse(raw);
         }
     }
@@ -126,7 +126,7 @@ public class ParserBadCloseStatusCodesTest
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             expectedException.expect(ProtocolException.class);
-            expectedException.expectMessage(containsString("Invalid Close Code: " + closeCode));
+            expectedException.expectMessage(containsString("Invalid CLOSE Code: " + closeCode));
             capture.parse(raw);
         }
     }

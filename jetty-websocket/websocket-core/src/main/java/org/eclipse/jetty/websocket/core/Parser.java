@@ -237,7 +237,6 @@ public class Parser
                 reset();
             if (LOG.isDebugEnabled())
                 LOG.debug("{} Parse exit", this);
-            
         }
         
         return null;
@@ -251,6 +250,16 @@ public class Parser
     
     protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
     {
+        // Validate OpCode
+        byte opcode = OpCode.getOpCode(firstByte);
+        if (!OpCode.isKnown(opcode))
+            throw new ProtocolException("Unknown opcode: " + opcode);
+
+        // Validate Control Frame
+        boolean fin = ((firstByte & 0x80) != 0);
+        if (OpCode.isControlFrame(opcode) && !fin)
+            throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(opcode) + "]");
+
         return new ParsedFrame(firstByte, mask, payload, releaseable);
     }
     
