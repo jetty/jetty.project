@@ -30,39 +30,11 @@
 
   <dependencyManagement>
     <dependencies>
-
       <dependency>
         <groupId>org.eclipse.jetty.its.jetty-run-war-exploded-mojo-it</groupId>
         <artifactId>jetty-simple-base</artifactId>
         <version>${project.version}</version>
       </dependency>
-
-      <dependency>
-        <groupId>javax.servlet</groupId>
-        <artifactId>javax.servlet-api</artifactId>
-        <version>3.1.0</version>
-        <type>jar</type>
-        <scope>provided</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>1.7.21</version>
-      </dependency>
-
-      <dependency>
-        <groupId>commons-io</groupId>
-        <artifactId>commons-io</artifactId>
-        <version>2.5</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlet</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-
     </dependencies>
   </dependencyManagement>
 

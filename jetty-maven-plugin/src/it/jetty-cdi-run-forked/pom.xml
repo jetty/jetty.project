@@ -16,7 +16,6 @@
   <packaging>war</packaging>
 
   <properties>
-    <weld.version>2.4.5.Final</weld.version>
     <jetty.port.file>${project.build.directory}/jetty-cdi-run-forked-port.txt</jetty.port.file>
   </properties>
 
@@ -24,12 +23,10 @@
     <dependency>
       <groupId>org.jboss.weld.servlet</groupId>
       <artifactId>weld-servlet</artifactId>
-      <version>${weld.version}</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
-      <version>3.1.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -40,13 +37,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>@project.version@</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-maven-plugin</artifactId>
-      <version>@project.version@</version>
       <classifier>tests</classifier>
       <type>test-jar</type>
       <scope>test</scope>

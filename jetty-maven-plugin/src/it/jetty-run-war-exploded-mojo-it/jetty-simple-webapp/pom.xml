@@ -19,34 +19,27 @@
   </properties>
 
   <dependencies>
-
     <dependency>
       <groupId>org.eclipse.jetty.its.jetty-run-war-exploded-mojo-it</groupId>
       <artifactId>jetty-simple-base</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
       <scope>provided</scope>
     </dependency>
-
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-maven-plugin</artifactId>
-      <version>@project.version@</version>
       <classifier>tests</classifier>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>

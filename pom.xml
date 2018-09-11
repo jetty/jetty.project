@@ -33,6 +33,9 @@
     <cbi-plugins.version>1.1.5</cbi-plugins.version>
     <junit.version>5.3.0</junit.version>
     <maven.version>3.5.0</maven.version>
+    <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
+    <weld.version>2.4.5.Final</weld.version>
+    <jetty.perf-helper.version>1.0.5</jetty.perf-helper.version>
     <unix.socket.tmp></unix.socket.tmp>
 
     <!-- some maven plugins versions -->
@@ -43,6 +46,7 @@
     <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.2.2</maven.war.plugin.version>
     <maven-plugin-tools.version>3.5.2</maven-plugin-tools.version>
+
 
     <!-- testing -->
     <jetty.test.version>5.0</jetty.test.version>
@@ -932,7 +936,7 @@
       <dependency>
          <groupId>javax.servlet</groupId>
          <artifactId>javax.servlet-api</artifactId>
-         <version>3.1.0</version>
+         <version>${javax.servlet.api.version}</version>
       </dependency>
       <dependency>
          <groupId>javax.websocket</groupId>
@@ -1040,7 +1044,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-perf-helper</artifactId>
-        <version>1.0.5</version>
+        <version>${jetty.perf-helper.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
