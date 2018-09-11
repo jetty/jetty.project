@@ -135,7 +135,7 @@ public class Parser
                         else if (payloadLength==0)
                         {
                             state = State.START;
-                            return newFrame(firstByte,null,null,false);
+                            return newFrame(firstByte,mask,null,false);
                         }
                         else
                         {
@@ -158,7 +158,7 @@ public class Parser
                             else if (payloadLength==0)
                             {
                                 state = State.START;
-                                return newFrame(firstByte,null,null,false);
+                                return newFrame(firstByte,mask,null,false);
                             }
                             else
                             {
@@ -176,7 +176,7 @@ public class Parser
                             if (payloadLength==0)
                             {
                                 state = State.START;
-                                return newFrame(firstByte,null,null,false);
+                                return newFrame(firstByte,mask,null,false);
                             }
                             state = State.PAYLOAD;
                         }
@@ -286,6 +286,7 @@ public class Parser
                     payloadLength-=available;
                     ParsedFrame frame = newFrame((byte)(firstByte&0x7F),mask,buffer.slice(),false);
                     buffer.position(buffer.limit());
+                    firstByte=(byte)(0xFF&(firstByte&0xF0 | OpCode.CONTINUATION));
                     return frame;
                 }
                     

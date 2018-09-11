@@ -207,7 +207,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
-
+        
         final ReferencedBuffer referenced = frame.hasPayload() && !frame.isReleaseable()?networkBuffer:null;
         if (referenced!=null)
             referenced.retain();
