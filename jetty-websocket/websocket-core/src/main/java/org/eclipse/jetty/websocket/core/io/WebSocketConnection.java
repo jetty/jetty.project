@@ -219,7 +219,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             public void succeeded()
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("onFrame({}).succeed()", frame);
+                    LOG.debug("succeeded onFrame({})", frame);
 
                 frame.close();
                 if (referenced!=null)
@@ -233,7 +233,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             public void failed(Throwable cause)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("onFrame(" + frame + ").fail()", cause);
+                    LOG.debug("failed onFrame(" + frame + ")", cause);
                 
                 frame.close();
                 if (referenced!=null)
@@ -308,6 +308,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         boolean fillAndParse = false;
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("demand {} d={} fp={} {} {}",n,demand,fillingAndParsing,networkBuffer,this);
+            
             if (demand<0)
                 return;
             
@@ -324,7 +327,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             {
                 fillingAndParsing = true;
                 fillAndParse = true;
-            }
+            }            
         }
         
         if (fillAndParse)
@@ -338,6 +341,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("moreDemand? d={} fp={} {} {}",demand,fillingAndParsing,networkBuffer,this);
+            
             if (!fillingAndParsing)
                 throw new IllegalStateException();
             if (demand>0)
@@ -357,6 +363,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("meetDemand d={} fp={} {} {}",demand,fillingAndParsing,networkBuffer,this);
+            
             if (demand==0)
                 throw new IllegalStateException();
             if (!fillingAndParsing)
@@ -374,6 +383,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         synchronized (this)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("cancelDemand d={} fp={} {} {}",demand,fillingAndParsing,networkBuffer,this);
+            
             demand = -1;
         }
     }

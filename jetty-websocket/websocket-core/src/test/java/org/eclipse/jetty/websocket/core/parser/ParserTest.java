@@ -91,20 +91,33 @@ public class ParserTest
         capture.parse(buffer);
         return capture;
     }
-        
+
     ByteBuffer generate(byte opcode, String payload)
+    {
+        return generate(opcode,payload,false);
+    }
+        
+    ByteBuffer generate(byte opcode, String payload, boolean masked)
     {
         byte[] messageBytes = payload.getBytes(StandardCharsets.UTF_8);
         if (messageBytes.length>125)
             throw new IllegalArgumentException();
         
-        ByteBuffer buffer = ByteBuffer.allocate(messageBytes.length+2);
+        ByteBuffer buffer = ByteBuffer.allocate(messageBytes.length+8);
         
         buffer.put((byte)(0x80 | opcode));
-        byte b = 0x00; // no masking
+        byte b = (byte)(masked?0x80:0x00); 
         b |= messageBytes.length & 0x7F;
         buffer.put(b);
-        buffer.put(messageBytes);
+        if (masked)
+        {
+            MaskedByteBuffer.putMask(buffer);
+            MaskedByteBuffer.putPayload(buffer,messageBytes);
+        }
+        else
+        {
+            buffer.put(messageBytes);
+        }
         buffer.flip();
         return buffer;
     }
@@ -1677,13 +1690,13 @@ public class ParserTest
     @Test
     public void testPartialDataAutoFragment() throws Exception
     {
-        ByteBuffer data = generate(OpCode.TEXT,"Hello World");
+        ByteBuffer data = generate(OpCode.TEXT,"Hello World",true);
         int limit = data.limit();
         ByteBuffer buffer = BufferUtil.allocate(32);
         
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()),false);
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()),false,WebSocketBehavior.SERVER);
         
-        data.limit(7);
+        data.limit(6+5);
         BufferUtil.append(buffer,data);
         capture.parse(buffer);
         assertEquals(1,capture.framesQueue.size());
@@ -1694,7 +1707,7 @@ public class ParserTest
         assertThat(text.getPayload().array(),sameInstance(buffer.array()));
         assertFalse(text.isReleaseable());
 
-        data.limit(8);
+        data.limit(6+6);
         BufferUtil.append(buffer,data);
         capture.parse(buffer);
         assertEquals(1,capture.framesQueue.size());
@@ -1710,7 +1723,7 @@ public class ParserTest
         capture.parse(buffer);
         assertEquals(1,capture.framesQueue.size());
         assertEquals(0,buffer.remaining());
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.CONTINUATION,1);
         text = (Parser.ParsedFrame)capture.framesQueue.take();
         assertTrue(text.isFin());
         assertEquals("World",text.getPayloadAsUTF8());

@@ -391,7 +391,7 @@ public class Frame
                     ++start;
                     ++offset;
                 }
-            }            
+            }
         }
     }
     
