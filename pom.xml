@@ -31,11 +31,18 @@
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.2.0</tycho-version>
     <cbi-plugins.version>1.1.5</cbi-plugins.version>
-    <surefire.version>2.22.0</surefire.version>
     <junit.version>5.3.0</junit.version>
-    <maven-plugin-tools.version>3.5.2</maven-plugin-tools.version>
     <maven.version>3.5.0</maven.version>
     <unix.socket.tmp></unix.socket.tmp>
+
+    <!-- some maven plugins versions -->
+    <surefire.version>2.22.0</surefire.version>
+    <maven.compiler.plugin.version>3.8.0</maven.compiler.plugin.version>
+    <maven.dependency.plugin.version>3.1.1</maven.dependency.plugin.version>
+    <maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>
+    <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
+    <maven.war.plugin.version>3.2.2</maven.war.plugin.version>
+    <maven-plugin-tools.version>3.5.2</maven-plugin-tools.version>
 
     <!-- testing -->
     <jetty.test.version>5.0</jetty.test.version>
@@ -262,6 +269,7 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-remote-resources-plugin</artifactId>
         <executions>
           <execution>
@@ -279,6 +287,7 @@
       </plugin>
       <!-- The source maven plugin creates the source bundle and adds manifest -->
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <inherited>true</inherited>
         <executions>
@@ -421,7 +430,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.0</version>
+          <version>${maven.compiler.plugin.version}</version>
           <configuration>
             <source>1.8</source>
             <target>1.8</target>
@@ -430,7 +439,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>${maven.dependency.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -597,7 +606,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>${maven.resources.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -619,7 +628,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>${maven.source.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -640,7 +649,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
-          <version>3.2.2</version>
+          <version>${maven.war.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
