@@ -83,7 +83,7 @@ public class ParserTest
                     throw new MessageTooLargeException("Cannot handle payload lengths larger than " + policy.getMaxAllowedFrameSize());
             }
         };
-        ParserCapture capture = new ParserCapture(parser,copy);
+        ParserCapture capture = new ParserCapture(parser,copy, policy.getBehavior());
         capture.parse(buffer);
         return capture;
     }
@@ -1475,14 +1475,14 @@ public class ParserTest
         text.setMask(Hex.asByteArray("11223344"));
         frames.add(text);
         frames.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
-    
+
         WebSocketPolicy clientPolicy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        
+
         // Build up raw (network bytes) buffer
         ByteBuffer networkBytes = new UnitGenerator(clientPolicy).asBuffer(frames);
 
         // Parse, in 4096 sized windows
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(),false));
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(),false), true, WebSocketBehavior.SERVER);
 
         while (networkBytes.remaining() > 0)
         {
