@@ -39,7 +39,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 
 /**
@@ -70,7 +69,7 @@ public class ParserReservedBitTest
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             expectedException.expect(ProtocolException.class);
-            expectedException.expectMessage(allOf(containsString("RSV bits"),containsString("not in use")));
+            expectedException.expectMessage(containsString("RSV"));
             parserCapture.parse(raw);
         }
     }

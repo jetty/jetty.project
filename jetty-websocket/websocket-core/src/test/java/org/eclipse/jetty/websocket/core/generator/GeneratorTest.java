@@ -21,22 +21,30 @@ package org.eclipse.jetty.websocket.core.generator;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.AbstractTestFrameHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.parser.ParserCapture;
@@ -50,12 +58,22 @@ import static org.junit.Assert.assertThat;
 
 public class GeneratorTest
 {
-    private static final Logger LOG = Log.getLogger(GeneratorTest.WindowHelper.class);
+    private static final Logger LOG = Log.getLogger(Helper.class);
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     private static UnitGenerator unitGenerator = new UnitGenerator(WebSocketPolicy.newServerPolicy(), true);
+    private static WebSocketChannel channel = newChannel(WebSocketBehavior.SERVER);
+
+    private static WebSocketChannel newChannel(WebSocketBehavior behavior)
+    {
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
+        WebSocketPolicy policy = new WebSocketPolicy(behavior);
+        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
+        exStack.negotiate(new DecoratedObjectFactory(), policy, bufferPool, new LinkedList<>());
+        return new WebSocketChannel(new AbstractTestFrameHandler(), policy, exStack, "");
+    }
 
     /**
      * From Autobahn WebSocket Client Testcase 1.2.2
@@ -410,6 +428,7 @@ public class GeneratorTest
 
         expectedException.expect(ProtocolException.class);
         closeFrame.setPayload(bb);
+        channel.assertValidOutgoing(closeFrame);
     }
 
     /**
@@ -650,7 +669,8 @@ public class GeneratorTest
 
         expectedException.expect(WebSocketException.class);
         Frame pingFrame = new Frame(OpCode.PING);
-        pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
+        pingFrame.setPayload(ByteBuffer.wrap(bytes));
+        channel.assertValidOutgoing(pingFrame);
     }
 
     /**
@@ -664,7 +684,8 @@ public class GeneratorTest
 
         expectedException.expect(WebSocketException.class);
         Frame pingFrame = new Frame(OpCode.PONG);
-        pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
+        pingFrame.setPayload(ByteBuffer.wrap(bytes));
+        channel.assertValidOutgoing(pingFrame);
     }
 
     /**
@@ -835,7 +856,7 @@ public class GeneratorTest
 
         ByteBuffer expected = ByteBuffer.allocate(10);
         expected.put(new byte[]
-                {(byte) 0x89, (byte) 0x05, (byte) 0x48, (byte) 0x65, (byte) 0x6c, (byte) 0x6c, (byte) 0x6f});
+                {(byte) 0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
         expected.flip(); // make readable
 
         ByteBufferAssert.assertEquals("Ping buffers", expected, actual);
@@ -1184,8 +1205,8 @@ public class GeneratorTest
 
         // Generate
         int windowSize = 1024;
-        WindowHelper helper = new WindowHelper(windowSize);
-        ByteBuffer completeBuffer = helper.generateWindowed(frame);
+        Helper helper = new Helper();
+        ByteBuffer completeBuffer = helper.generate(frame);
 
         // Validate
         int expectedHeaderSize = 4;
@@ -1202,22 +1223,21 @@ public class GeneratorTest
      * This is to prevent a regression in the masking of many frames.
      */
     @Test
-    public void testGenerate_WindowedWithMasking() throws Exception
+    public void testGenerate_WithMasking() throws Exception
     {
         // A decent sized frame, with masking
         byte payload[] = new byte[10240];
         Arrays.fill(payload, (byte) 0x55);
 
         byte mask[] = new byte[]
-                {0x2A, (byte) 0xF0, 0x0F, 0x00};
+                {0x2A, (byte)0xF0, 0x0F, 0x00};
 
         Frame frame = new Frame(OpCode.BINARY).setPayload(payload);
         frame.setMask(mask); // masking!
 
         // Generate
-        int windowSize = 2929;
-        WindowHelper helper = new WindowHelper(windowSize);
-        ByteBuffer completeBuffer = helper.generateWindowed(frame);
+        Helper helper = new Helper();
+        ByteBuffer completeBuffer = helper.generate(frame);
 
         // Validate
         int expectedHeaderSize = 8;
@@ -1225,13 +1245,12 @@ public class GeneratorTest
         int expectedParts = 1;
 
         helper.assertTotalParts(expectedParts);
-        helper.assertTotalBytes(payload.length + expectedHeaderSize);
+        helper.assertTotalBytes(expectedSize);
 
         assertThat("Generated Buffer", completeBuffer.remaining(), is(expectedSize));
 
         // Parse complete buffer.
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()));
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()), true, WebSocketBehavior.SERVER);
 
         capture.parse(completeBuffer);
 
@@ -1249,15 +1268,13 @@ public class GeneratorTest
         }
     }
 
-    public static class WindowHelper
+    public static class Helper
     {
-        final int windowSize;
         int totalParts;
         int totalBytes;
 
-        public WindowHelper(int windowSize)
+        public Helper()
         {
-            this.windowSize = windowSize;
             this.totalParts = 0;
             this.totalBytes = 0;
         }
@@ -1272,7 +1289,7 @@ public class GeneratorTest
             assertThat("Generated Parts", totalParts, is(expectedParts));
         }
 
-        public ByteBuffer generateWindowed(org.eclipse.jetty.websocket.core.frames.Frame... frames)
+        public ByteBuffer generate(org.eclipse.jetty.websocket.core.frames.Frame... frames)
         {
             // Create Buffer to hold all generated frames in a single buffer
             int completeBufSize = 0;

@@ -21,13 +21,19 @@ package org.eclipse.jetty.websocket.core.generator;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.core.AbstractTestFrameHandler;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.junit.Test;
@@ -42,7 +48,8 @@ import org.junit.runners.Parameterized.Parameters;
 public class GeneratorFrameFlagsTest
 {
     private static ByteBufferPool bufferPool = new MappedByteBufferPool();
-    
+    private final WebSocketChannel channel;
+
     @Parameters
     public static Collection<Frame[]> data()
     {
@@ -67,12 +74,19 @@ public class GeneratorFrameFlagsTest
     public GeneratorFrameFlagsTest(Frame invalidFrame)
     {
         this.invalidFrame = invalidFrame;
+
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+        ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
+        exStack.negotiate(new DecoratedObjectFactory(), policy, bufferPool, new LinkedList<>());
+        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), policy, exStack, "");
     }
     
     @Test(expected = ProtocolException.class)
     public void testGenerateInvalidControlFrame()
     {
         ByteBuffer buffer = ByteBuffer.allocate(100);
+        channel.assertValidOutgoing(invalidFrame);
         new Generator(WebSocketPolicy.newServerPolicy(), bufferPool).generateWholeFrame(invalidFrame, buffer);
     }
 }

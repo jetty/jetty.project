@@ -88,19 +88,37 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         return demanding;
     }
 
-    public void assertValid(Frame frame, boolean incoming)
-    {
 
+    public void assertValidIncoming(Frame frame)
+    {
+        assertValid(frame);
+
+        // Assert Behavior Required by RFC-6455 / Section 5.1
+        if (policy.getBehavior() == WebSocketBehavior.SERVER)
+        {
+            if (!frame.isMasked())
+                throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
+        }
+        else if (policy.getBehavior() == WebSocketBehavior.CLIENT)
+        {
+            if (frame.isMasked())
+                throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
+        }
+    }
+
+    public void assertValidOutgoing(Frame frame)
+    {
         if (!OpCode.isKnown(frame.getOpCode()))
             throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
 
+        assertValid(frame);
+
         int payloadLength = (frame.getPayload()==null) ? 0 : frame.getPayload().remaining(); // TODO is this accurately getting length of payload
 
-        // Sane Payload Length // TODO have we already checked this for incoming in the parser/connection?
+        // Sane Payload Length
         if (payloadLength > policy.getMaxAllowedFrameSize())
             throw new MessageTooLargeException("Cannot handle payload lengths larger than " + policy.getMaxAllowedFrameSize());
 
-        // Control Frame Validation
         if (frame.isControlFrame())
         {
             if (!frame.isFin())
@@ -108,7 +126,15 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
             if (payloadLength > Frame.MAX_CONTROL_PAYLOAD)
                 throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
+        }
+    }
 
+    private void assertValid(Frame frame)
+    {
+
+        // Control Frame Validation
+        if (frame.isControlFrame())
+        {
             if (frame.isRsv1())
                 throw new ProtocolException("Cannot have RSV1==true on Control frames");
 
@@ -121,7 +147,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
             /*
              * RFC 6455 Section 5.5.1
-             *
              * close frame payload is specially formatted which is checked in CloseStatus
              */
             if (frame.getOpCode() == OpCode.CLOSE)
@@ -130,23 +155,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                     new CloseStatus(frame.getPayload());
             }
         }
-
-        // Checks for incoming frames only
-        if(incoming)
-        {
-            // Assert Behavior Required by RFC-6455 / Section 5.1
-            if (policy.getBehavior() == WebSocketBehavior.SERVER)
-            {
-                if (!frame.isMasked())
-                    throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
-            }
-            else if (policy.getBehavior() == WebSocketBehavior.CLIENT)
-            {
-                if (frame.isMasked())
-                    throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
-            }
-        }
-        // TODO what do we need to validate only for outgoing frames
 
         /*
          * RFC 6455 Section 5.2
@@ -293,7 +301,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
 
         Frame frame = closeStatus.toFrame();
-        assertValid(frame, false);
+        assertValidOutgoing(frame);
         extensionStack.sendFrame(frame,callback,batchMode);
     }
     
@@ -488,7 +496,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             close(new CloseStatus(frame.getPayload()),callback, batchMode);
         else
         {
-            assertValid(frame, false);
+            assertValidOutgoing(frame);
             extensionStack.sendFrame(frame, callback, batchMode);
         }
     }

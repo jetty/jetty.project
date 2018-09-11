@@ -212,7 +212,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (referenced!=null)
             referenced.retain();
         
-        channel.assertValid(frame, true);
+        channel.assertValidIncoming(frame);
         channel.onReceiveFrame(frame, new Callback()
         {
             @Override
