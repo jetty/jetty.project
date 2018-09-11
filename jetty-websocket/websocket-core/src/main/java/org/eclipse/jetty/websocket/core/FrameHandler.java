@@ -227,7 +227,7 @@ public interface FrameHandler extends IncomingFrames
          * @param n The number of frames that can be handled (in sequential calls to 
          * {@link FrameHandler#onReceiveFrame(Frame, Callback)}).  May not be negative.
          */
-        void demand(int n);        
+        void demand(long n);        
     }
 
     // TODO: Want access to common Executor used by core for reuse in APIs (either read-only, or pushed into core) - connection has Executor now

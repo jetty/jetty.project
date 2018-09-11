@@ -245,17 +245,29 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         });
     }
 
-    private ReferencedBuffer getNetworkBuffer()
+    private void acquireNetworkBuffer()
     {
         synchronized (this)
         {
             if (networkBuffer == null)
-                networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize()); 
-            
-            return networkBuffer;
+                networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize());             
         }
     }
+    
+    private void reacquireNetworkBuffer()
+    {
+        synchronized (this)
+        {
+            if (networkBuffer == null)
+                throw new IllegalStateException();
+            
+            if (networkBuffer.getBuffer().hasRemaining())
+                throw new IllegalStateException();
 
+            networkBuffer.release();
+            networkBuffer = new ReferencedBuffer(bufferPool,getInputBufferSize());             
+        }
+    }
     
     private void releaseNetworkBuffer()
     {
@@ -288,9 +300,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         fillAndParse();
     }
        
-    // TODO move demand methods to separate class and test!!!
-    // TODO demand should be a long!
-    public void demand(int n)
+    public void demand(long n)
     {
         if (n<=0)
             throw new IllegalArgumentException("Demand must be positive");
@@ -298,6 +308,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         boolean fillAndParse = false;
         synchronized (this)
         {
+            if (demand<0)
+                return;
+            
             try
             {
                 demand = Math.addExact(demand,n);
@@ -327,38 +340,51 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             if (!fillingAndParsing)
                 throw new IllegalStateException();
-            
             if (demand>0)
                 return true;
             
-            fillingAndParsing = false;
-            return false;
+            if (demand==0)
+                fillingAndParsing = false;
+
+            if (networkBuffer.isEmpty())
+                releaseNetworkBuffer();
+            
+            return false;            
         }
     }
 
-    public void meetDemand()
+    public boolean meetDemand()
     {
         synchronized (this)
         {
             if (demand==0)
                 throw new IllegalStateException();
-                
             if (!fillingAndParsing)
                 throw new IllegalStateException();
                 
+            if (demand<0)
+                return false;
+                
             demand--;
+            return true;
+        }
+    }
+
+    public void cancelDemand()
+    {
+        synchronized (this)
+        {
+            demand = -1;
         }
     }
     
+    
+    
+    
     private void fillAndParse()
     {
-        
-        getNetworkBuffer();
-        
-        
-        // We have a networkBuffer that is referenced by us (the connection!)
-        ByteBuffer buffer = networkBuffer.getBuffer();
-                
+        acquireNetworkBuffer();   
+                        
         try
         {
             while (true)
@@ -370,32 +396,35 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 }
                 
                 // Parse and handle frames
-                while(BufferUtil.hasContent(buffer))
+                while(!networkBuffer.isEmpty())
                 {
-                    Parser.ParsedFrame frame = parser.parse(buffer);
+                    Parser.ParsedFrame frame = parser.parse(networkBuffer.getBuffer());
                     if (frame==null)
                         break;
                              
-                    meetDemand();
-                    onFrame(frame);
+                   if(meetDemand())
+                       onFrame(frame);
                     
                     synchronized (this)
                     {
                         if (!moreDemand())
                         {
-                            if (BufferUtil.isEmpty(networkBuffer.getBuffer()))
-                                releaseNetworkBuffer();
                             return; 
                         }
                     }
                 }
 
                 // buffer must be empty here because parser is fully consuming
+                assert(networkBuffer.isEmpty());
                 
-                int filled = getEndPoint().fill(buffer); // TODO check if compact is possible.
+                // If more references that 1(us), don't refill into buffer and risk compaction.
+                if (networkBuffer.getReferences()>1)
+                    reacquireNetworkBuffer();
+                
+                int filled = getEndPoint().fill(networkBuffer.getBuffer()); // TODO check if compact is possible.
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("endpointFill() filled={}: {}", filled, buffer);
+                    LOG.debug("endpointFill() filled={}: {}", filled, networkBuffer);
 
                 if (filled < 0)
                 {
@@ -414,7 +443,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
         catch (Throwable t)
         {
-            BufferUtil.clear(buffer);
+            BufferUtil.clear(networkBuffer.getBuffer());
             releaseNetworkBuffer();
             channel.processError(t);
         }
@@ -437,7 +466,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
         if ((prefilled != null) && (prefilled.hasRemaining()))
         {
-            ByteBuffer buffer = getNetworkBuffer().getBuffer();
+            acquireNetworkBuffer();
+            ByteBuffer buffer = networkBuffer.getBuffer();
             BufferUtil.clearToFill(buffer);
             BufferUtil.put(prefilled, buffer);
             BufferUtil.flipToFlush(buffer, 0);

@@ -449,7 +449,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     }
 
     @Override
-    public void demand(int n)
+    public void demand(long n)
     {
         if (!demanding)
             throw new IllegalStateException();
@@ -504,7 +504,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void abort()
     {
-        // TODO stop demand!
+        connection.cancelDemand();
         connection.getEndPoint().close();
     }
     

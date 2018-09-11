@@ -73,6 +73,11 @@ public class ReferencedBuffer implements Retainable
             pool.release(buffer);
         return ref;
     }
+
+    public boolean isEmpty()
+    {
+        return BufferUtil.isEmpty(buffer);
+    }
     
     @Override
     public String toString()

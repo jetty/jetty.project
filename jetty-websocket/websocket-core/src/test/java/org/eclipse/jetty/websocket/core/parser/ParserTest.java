@@ -315,11 +315,9 @@ public class ParserTest
     @Test
     public void testParse_Binary_Empty() throws InterruptedException
     {
-        
         ByteBuffer expected = ByteBuffer.allocate(5);
         
-        expected.put(new byte[]
-                { (byte)0x82, (byte)0x00 });
+        expected.put(new byte[]{ (byte)0x82, (byte)0x00 });
         
         expected.flip();
     
@@ -1469,7 +1467,7 @@ public class ParserTest
     }
     
     @Test
-    public void testParse_Text_ManySmallBuffers() throws InterruptedException
+    public void testParse_Text_ManySmallBuffers_NoAutoFragmentation() throws InterruptedException
     {
         // Create frames
         byte payload[] = new byte[65536];
@@ -1482,14 +1480,13 @@ public class ParserTest
         frames.add(text);
         frames.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
     
-        WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         WebSocketPolicy clientPolicy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         
         // Build up raw (network bytes) buffer
         ByteBuffer networkBytes = new UnitGenerator(clientPolicy).asBuffer(frames);
 
         // Parse, in 4096 sized windows
-        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool()));
+        ParserCapture capture = new ParserCapture(new Parser(new MappedByteBufferPool(),false));
 
         while (networkBytes.remaining() > 0)
         {
