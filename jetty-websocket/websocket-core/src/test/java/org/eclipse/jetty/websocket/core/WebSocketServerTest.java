@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
@@ -75,10 +76,14 @@ import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class WebSocketServerTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+    
     private static Logger LOG = Log.getLogger(WebSocketServerTest.class);
     private static String NON_RANDOM_KEY = new String(B64Code.encode("0123456701234567".getBytes()));
 

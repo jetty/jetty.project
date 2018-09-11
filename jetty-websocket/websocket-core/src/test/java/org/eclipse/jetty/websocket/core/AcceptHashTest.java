@@ -24,8 +24,10 @@ import static org.junit.Assert.assertThat;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.TypeUtil;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -33,6 +35,9 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class AcceptHashTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+    
     private static String hexAsKey(String hex)
     {
         byte key[] = TypeUtil.fromHexString(hex);

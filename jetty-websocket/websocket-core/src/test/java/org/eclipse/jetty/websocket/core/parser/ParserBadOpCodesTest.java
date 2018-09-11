@@ -27,6 +27,7 @@ import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.core.Parser;
@@ -46,6 +47,9 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class ParserBadOpCodesTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     @Parameterized.Parameters(name = "opcode={0} {1}")
     public static List<Object[]> data()
     {

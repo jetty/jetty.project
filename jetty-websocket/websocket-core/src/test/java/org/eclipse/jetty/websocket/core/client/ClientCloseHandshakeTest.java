@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -25,6 +28,9 @@ import org.junit.Test;
  */
 public class ClientCloseHandshakeTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+    
     /**
      * Client Initiated - no data
      * <pre>
@@ -48,7 +54,7 @@ public class ClientCloseHandshakeTest
     @Test
     public void testClientInitiated_NoData() throws Exception
     {
-
+        Assert.fail();
     }
 
     /**
@@ -76,7 +82,7 @@ public class ClientCloseHandshakeTest
     @Test
     public void testClientInitiated_NoData_ChangeClose() throws Exception
     {
-
+        Assert.fail();
     }
 
     /**
@@ -102,7 +108,7 @@ public class ClientCloseHandshakeTest
     @Test
     public void testServerInitiated_NoData() throws Exception
     {
-
+        Assert.fail();
     }
 
     /**
@@ -128,6 +134,7 @@ public class ClientCloseHandshakeTest
     @Test
     public void testClient_Read_IOException()
     {
+        Assert.fail();
         // TODO: somehow?
     }
 
@@ -156,7 +163,7 @@ public class ClientCloseHandshakeTest
     @Test
     public void testClient_IdleTimeout() throws Exception
     {
-
+        Assert.fail();
     }
 
     /**
@@ -181,7 +188,7 @@ public class ClientCloseHandshakeTest
     @Test
     public void testClient_ProtocolViolation_Received() throws Exception
     {
-
+        Assert.fail();
     }
 
     /**
@@ -208,6 +215,6 @@ public class ClientCloseHandshakeTest
     @Test
     public void testWriteException() throws Exception
     {
-
+        Assert.fail();
     }
 }

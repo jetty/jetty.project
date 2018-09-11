@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
@@ -35,12 +38,14 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 public class FragmentExtensionTest extends AbstractExtensionTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     /**
      * Verify that incoming frames are passed thru without modification
      */

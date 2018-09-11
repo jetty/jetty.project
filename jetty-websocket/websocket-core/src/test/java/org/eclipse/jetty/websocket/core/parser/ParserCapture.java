@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.parser;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.concurrent.BlockingQueue;
@@ -35,9 +38,6 @@ import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 public class ParserCapture
 {

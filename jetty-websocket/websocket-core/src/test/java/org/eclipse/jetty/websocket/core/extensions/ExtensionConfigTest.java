@@ -26,11 +26,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class ExtensionConfigTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     private void assertConfig(ExtensionConfig cfg, String expectedName, Map<String, String> expectedParams)
     {
         String prefix = "ExtensionConfig";

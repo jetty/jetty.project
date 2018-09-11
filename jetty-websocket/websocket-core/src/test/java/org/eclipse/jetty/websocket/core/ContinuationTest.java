@@ -21,9 +21,11 @@ package org.eclipse.jetty.websocket.core;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -31,6 +33,9 @@ import org.junit.Test;
  */
 public class ContinuationTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+    
     /**
      * Send continuation+!fin, then text+fin
      * <p>

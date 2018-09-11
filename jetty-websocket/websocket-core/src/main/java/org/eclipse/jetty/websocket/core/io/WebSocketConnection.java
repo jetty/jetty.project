@@ -389,12 +389,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             while (true)
             {
-                if (!getEndPoint().isOpen())
-                {
-                    releaseNetworkBuffer();
-                    return;
-                }
-                
                 // Parse and handle frames
                 while(!networkBuffer.isEmpty())
                 {
@@ -416,6 +410,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
                 // buffer must be empty here because parser is fully consuming
                 assert(networkBuffer.isEmpty());
+                
+                if (!getEndPoint().isOpen())
+                {
+                    releaseNetworkBuffer();
+                    return;
+                }
                 
                 // If more references that 1(us), don't refill into buffer and risk compaction.
                 if (networkBuffer.getReferences()>1)
@@ -443,6 +443,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
         catch (Throwable t)
         {
+            LOG.warn(t.toString());
             BufferUtil.clear(networkBuffer.getBuffer());
             releaseNetworkBuffer();
             channel.processError(t);

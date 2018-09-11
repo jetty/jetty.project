@@ -39,13 +39,13 @@ import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPartialSoc
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPingPongSocket;
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeRequest;
 import org.eclipse.jetty.websocket.common.handshake.DummyUpgradeResponse;
+import org.eclipse.jetty.websocket.common.test.EventQueue;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.util.EventQueue;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;

@@ -18,9 +18,13 @@
 
 package org.eclipse.jetty.websocket.core.frames;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -33,11 +37,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-
 public class WebSocketFrameTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     @Rule
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule(WebSocketFrameTest.class);
 

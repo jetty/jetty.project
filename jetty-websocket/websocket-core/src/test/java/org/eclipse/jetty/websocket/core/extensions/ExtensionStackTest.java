@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -35,10 +36,14 @@ import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class ExtensionStackTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     private static final Logger LOG = Log.getLogger(ExtensionStackTest.class);
 
     private static DecoratedObjectFactory objectFactory;

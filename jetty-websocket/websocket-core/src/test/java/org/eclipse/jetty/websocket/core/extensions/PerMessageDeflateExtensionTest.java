@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
@@ -37,10 +41,8 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * Client side behavioral tests for permessage-deflate extension.
@@ -49,6 +51,9 @@ import static org.junit.Assert.assertThat;
  */
 public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     private void assertEndsWithTail(String hexStr, boolean expectedResult)
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString(hexStr));

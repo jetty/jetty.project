@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,6 +35,7 @@ import java.util.zip.Inflater;
 
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
@@ -49,15 +55,14 @@ import org.eclipse.jetty.websocket.core.io.CapturedHexPayloads;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.io.OutgoingNetworkBytesCapture;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     private static final Logger LOG = Log.getLogger(DeflateFrameExtensionTest.class);
     
     private void assertIncoming(byte[] raw, String... expectedTextDatas)

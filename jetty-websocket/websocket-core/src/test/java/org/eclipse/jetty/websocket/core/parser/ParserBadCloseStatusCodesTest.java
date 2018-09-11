@@ -18,12 +18,16 @@
 
 package org.eclipse.jetty.websocket.core.parser;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.Matchers.containsString;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.core.Parser;
@@ -37,15 +41,15 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.Matchers.containsString;
-
 /**
  * Test behavior of Parser when encountering bad / forbidden close status codes (per RFC6455)
  */
 @RunWith(Parameterized.class)
 public class ParserBadCloseStatusCodesTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     @Parameterized.Parameters(name = "closeCode={0} {1}")
     public static List<Object[]> data()
     {

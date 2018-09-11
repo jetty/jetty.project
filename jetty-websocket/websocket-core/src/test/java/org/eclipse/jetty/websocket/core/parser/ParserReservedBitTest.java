@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.core.parser;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +27,7 @@ import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -39,13 +42,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static org.hamcrest.Matchers.containsString;
-
 /**
  * Test various RSV violations
  */
 public class ParserReservedBitTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 

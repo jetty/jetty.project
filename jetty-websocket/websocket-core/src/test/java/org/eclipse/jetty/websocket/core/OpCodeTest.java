@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.hamcrest.Matchers;
-import org.junit.Test;
-
 import static org.eclipse.jetty.websocket.core.frames.OpCode.BINARY;
 import static org.eclipse.jetty.websocket.core.frames.OpCode.CLOSE;
 import static org.eclipse.jetty.websocket.core.frames.OpCode.CONTINUATION;
@@ -30,8 +26,17 @@ import static org.eclipse.jetty.websocket.core.frames.OpCode.PONG;
 import static org.eclipse.jetty.websocket.core.frames.OpCode.TEXT;
 import static org.junit.Assert.assertThat;
 
+import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.hamcrest.Matchers;
+import org.junit.Rule;
+import org.junit.Test;
+
 public class OpCodeTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+    
     @Test
     public void testIsControl()
     {

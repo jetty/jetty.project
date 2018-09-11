@@ -23,8 +23,8 @@ import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.frames.Frame;
 
 public class CapturedHexPayloads implements OutgoingFrames
 {
