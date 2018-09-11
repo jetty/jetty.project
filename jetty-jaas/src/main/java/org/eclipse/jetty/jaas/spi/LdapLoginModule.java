@@ -329,9 +329,16 @@ public class LdapLoginModule extends AbstractLoginModule
             }
         }
 
-        String userDn = _userRdnAttribute + "=" + rdnValue + "," + _userBaseDn;
+        String filter = "({0}={1})";
 
-        return getUserRolesByDn(dirContext, userDn);
+        Object[] filterArguments = new Object[]{
+                _userRdnAttribute,
+                rdnValue
+        };
+
+        SearchResult searchResult = findUser(dirContext, filter, filterArguments);
+
+        return getUserRolesByDn(dirContext, searchResult.getNameInNamespace());
     }
 
     private List<String> getUserRolesByDn(DirContext dirContext, String userDn) throws NamingException
@@ -547,11 +554,6 @@ public class LdapLoginModule extends AbstractLoginModule
 
     private SearchResult findUser(String username) throws LoginException
     {
-        SearchControls ctls = new SearchControls();
-        ctls.setCountLimit(1);
-        ctls.setDerefLinkFlag(true);
-        ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-
         String filter = "(&(objectClass={0})({1}={2}))";
 
         if (LOG.isDebugEnabled())
@@ -563,24 +565,36 @@ public class LdapLoginModule extends AbstractLoginModule
                 username
         };
 
+        return findUser(_rootContext, filter, filterArguments);
+    }
+
+    private SearchResult findUser(DirContext dirContext, String filter, Object[] filterArguments) throws LoginException
+    {
+        SearchControls ctls = new SearchControls();
+        ctls.setDerefLinkFlag(true);
+        ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+
+        NamingEnumeration<SearchResult> results;
         try
         {
-            NamingEnumeration<SearchResult> results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Found user?: " + results.hasMoreElements());
-
-            if (!results.hasMoreElements())
-            {
-                throw new FailedLoginException("User not found.");
-            }
-
-            return results.nextElement();
+            results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
         }
         catch (NamingException ne)
         {
             throw new FailedLoginException(ne.getMessage());
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Found user?: " + results.hasMoreElements());
+
+        if (!results.hasMoreElements())
+            throw new FailedLoginException("User not found.");
+
+        SearchResult searchResult = (SearchResult)results.nextElement();
+        if (results.hasMoreElements())
+            throw new FailedLoginException("Search result contains ambiguous entries");
+
+        return searchResult;
     }
 
 

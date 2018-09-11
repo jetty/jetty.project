@@ -58,13 +58,13 @@ import static org.junit.Assert.*;
     "objectClass: top",
     "ou: people",
     // Entry # 2
-    "dn:uid=someone, ou=people,dc=jetty,dc=org",
+    "dn:uid=someone,ou=people,dc=jetty,dc=org",
     "objectClass: inetOrgPerson",
     "cn: someone",
     "sn: sn test",
     "userPassword: complicatedpassword",
     // Entry # 3
-    "dn:uid=someoneelse, ou=people,dc=jetty,dc=org",
+    "dn:uid=someoneelse,ou=people,dc=jetty,dc=org",
     "objectClass: inetOrgPerson",
     "cn: someoneelse",
     "sn: sn test",
@@ -75,26 +75,66 @@ import static org.junit.Assert.*;
     "objectClass: top",
     "ou: groups",
     // Entry 5
+    "dn: ou=subdir,ou=people,dc=jetty,dc=org",
+    "objectClass: organizationalunit",
+    "objectClass: top",
+    "ou: subdir",
+    // Entry # 6
+    "dn:uid=uniqueuser,ou=subdir,ou=people,dc=jetty,dc=org",
+    "objectClass: inetOrgPerson",
+    "cn: uniqueuser",
+    "sn: unique user",
+    "userPassword: hello123",
+    // Entry # 7
+    "dn:uid=ambiguousone,ou=people,dc=jetty,dc=org",
+    "objectClass: inetOrgPerson",
+    "cn: ambiguous1",
+    "sn: ambiguous user",
+    "userPassword: foobar",
+    // Entry # 8
+    "dn:uid=ambiguousone,ou=subdir,ou=people,dc=jetty,dc=org",
+    "objectClass: inetOrgPerson",
+    "cn: ambiguous2",
+    "sn: ambiguous subdir user",
+    "userPassword: barfoo",
+    // Entry 9
     "dn: cn=developers,ou=groups,dc=jetty,dc=org",
     "objectClass: groupOfUniqueNames",
     "objectClass: top",
     "ou: groups",
     "description: People who try to build good software",
-    "uniquemember: uid=someone, ou=people, dc=jetty,dc=org",
+    "uniquemember: uid=someone,ou=people,dc=jetty,dc=org",
+    "uniquemember: uid=uniqueuser,ou=subdir,ou=people,dc=jetty,dc=org",
     "cn: developers",
-    // Entry 6
+    // Entry 10
     "dn: cn=admin,ou=groups,dc=jetty,dc=org",
     "objectClass: groupOfUniqueNames",
     "objectClass: top",
     "ou: groups",
     "description: People who try to run software build by developers",
-    "uniquemember: uid=someone, ou=people, dc=jetty,dc=org",
-    "uniquemember: uid=someoneelse, ou=people, dc=jetty,dc=org",
+    "uniquemember: uid=someone,ou=people,dc=jetty,dc=org",
+    "uniquemember: uid=someoneelse,ou=people,dc=jetty,dc=org",
+    "uniquemember: uid=uniqueuser,ou=subdir,ou=people,dc=jetty,dc=org",
     "cn: admin"
 })
 public class JAASLdapLoginServiceTest
 {
     private static LdapServer _ldapServer;
+
+    private JAASLoginService jaasLoginService(String name) {
+      JAASLoginService ls = new JAASLoginService("foo");
+      ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
+      ls.setIdentityService(new DefaultIdentityService());
+      ls.setConfiguration(new TestConfiguration(true));
+      return ls;
+    }
+
+    private UserIdentity doLogin(String username, String password) throws Exception
+    {
+        JAASLoginService ls = jaasLoginService("foo");
+        Request request = new Request(null, null);
+        return ls.login( username, password, request);
+    }
 
     public static LdapServer getLdapServer() {
         return _ldapServer;
@@ -174,4 +214,27 @@ public class JAASLdapLoginServiceTest
 
     }
 
+    @Test
+    public void testLdapBindingSubdirUniqueUserName() throws Exception
+    {
+        UserIdentity userIdentity = doLogin("uniqueuser", "hello123");
+        assertNotNull( userIdentity );
+        assertTrue( userIdentity.isUserInRole( "developers", null) );
+        assertTrue( userIdentity.isUserInRole( "admin", null) );
+        assertFalse( userIdentity.isUserInRole( "blabla", null) );
+    }
+
+    @Test
+    public void testLdapBindingAmbiguousUserName() throws Exception
+    {
+        UserIdentity userIdentity = doLogin( "ambiguousone", "foobar");
+        assertNull( userIdentity );
+    }
+
+    @Test
+    public void testLdapBindingSubdirAmbiguousUserName() throws Exception
+    {
+        UserIdentity userIdentity = doLogin( "ambiguousone", "barfoo");
+        assertNull( userIdentity );
+    }
 }
