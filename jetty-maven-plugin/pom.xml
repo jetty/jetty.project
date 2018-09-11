@@ -82,7 +82,7 @@
           <scriptVariables>
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
-            <surefire.version>${surefire.version}</surefire.version>
+            <maven.surefire.version>${maven.surefire.version}</maven.surefire.version>
           </scriptVariables>
           <skipInvocation>${skipTests}</skipInvocation>
           <goals>

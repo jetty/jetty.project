@@ -112,7 +112,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>@surefire.version@</version>
+          <version>@maven.surefire.version@</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -132,7 +132,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>@surefire.version@</version>
+          <version>@maven.surefire.version@</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
