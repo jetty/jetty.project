@@ -118,7 +118,7 @@ public class RawFrameBuilder
         if (masked)
         {
             byte[] mask = new byte[4];
-            ThreadLocalRandom.current().nextBytes(mask);
+            // ThreadLocalRandom.current().nextBytes(mask);
             buffer.put(mask);
             mask(bytes,mask);
         }

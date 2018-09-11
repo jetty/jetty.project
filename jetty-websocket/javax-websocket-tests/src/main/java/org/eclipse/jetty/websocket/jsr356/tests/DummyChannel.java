@@ -139,7 +139,7 @@ public class DummyChannel implements FrameHandler.CoreSession
     }
 
     @Override
-    public void demand(int n)
+    public void demand(long n)
     {        
     }
 }
