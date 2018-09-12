@@ -60,7 +60,7 @@ public class StartArgs
         if (ver == null)
         {
             Package pkg = StartArgs.class.getPackage();
-            if ((pkg != null) && "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) && (pkg.getImplementationVersion() != null))
+            if ((pkg != null) && "Eclipse Jetty Project".equals(pkg.getImplementationVendor()) && (pkg.getImplementationVersion() != null))
             {
                 ver = pkg.getImplementationVersion();
                 if (tag == null)
