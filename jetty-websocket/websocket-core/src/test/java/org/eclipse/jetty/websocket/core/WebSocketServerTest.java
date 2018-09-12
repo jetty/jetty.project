@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -460,6 +461,83 @@ public class WebSocketServerTest
             assertTrue(serverHandler.closed.await(10,TimeUnit.SECONDS));
         }
     }
+    
+
+    @Test
+    public void testHandlerClosed() throws Exception
+    {
+        BlockingQueue<Callback> receivedCallbacks = new BlockingArrayQueue<>();
+        AtomicReference<CloseStatus> closedStatus = new AtomicReference<>();
+        
+        TestFrameHandler serverHandler = new TestFrameHandler()
+        {            
+            @Override
+            public void onOpen(CoreSession coreSession) throws Exception
+            {
+                super.onOpen(coreSession);
+                coreSession.demand(2);
+            }
+
+            @Override
+            public void onClosed(CloseStatus closeStatus)
+            {
+                closedStatus.set(closeStatus);
+                super.onClosed(closeStatus);
+            }
+
+            @Override
+            public boolean isDemanding()
+            {
+                return true;
+            }
+
+            @Override
+            public void onReceiveFrame(Frame frame, Callback callback)
+            {
+                LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+                receivedFrames.offer(frame); 
+                receivedCallbacks.offer(callback);
+            }
+        };
+
+        server = new WebSocketServer(0, serverHandler);
+        server.start();
+
+        try (Socket client = newClient())
+        {
+            ByteBuffer buffer = BufferUtil.allocate(4096);
+            BufferUtil.append(buffer,RawFrameBuilder.buildText("Hello",true));
+            BufferUtil.append(buffer,RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS,true));
+            client.getOutputStream().write(BufferUtil.toArray(buffer));
+
+            long end = System.nanoTime()+TimeUnit.SECONDS.toNanos(10);
+            while (serverHandler.receivedFrames.size()<2)
+            {
+                assertThat(System.nanoTime(),Matchers.lessThan(end));
+                Thread.sleep(10);
+            }
+            assertThat(serverHandler.receivedFrames.size(),is(2));
+            assertThat(receivedCallbacks.size(),is(2));
+            
+            assertThat(serverHandler.receivedFrames.poll().getPayloadAsUTF8(),is("Hello"));
+            receivedCallbacks.poll().succeeded();
+            
+            serverHandler.getCoreSession().sendFrame(CloseStatus.toFrame(CloseStatus.SHUTDOWN,"Test Close"),Callback.NOOP,BatchMode.OFF);
+            
+            Frame frame = receiveFrame(client.getInputStream());
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(),is(OpCode.CLOSE));
+            assertThat(new CloseStatus(frame.getPayload()).getCode(),is(CloseStatus.SHUTDOWN));
+
+            assertTrue(serverHandler.closed.await(10,TimeUnit.SECONDS));
+            assertThat(closedStatus.get().getCode(),is(CloseStatus.SHUTDOWN));
+
+            assertThat(serverHandler.receivedFrames.poll().getOpCode(),is(OpCode.CLOSE));
+            receivedCallbacks.poll().succeeded();
+            
+        }
+    }
+
     
 
     @Test
