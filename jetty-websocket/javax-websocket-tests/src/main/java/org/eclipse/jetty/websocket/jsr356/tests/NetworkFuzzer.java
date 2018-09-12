@@ -234,7 +234,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         }
 
         @Override
-        public void onClosed(CloseStatus closeStatus) throws Exception
+        public void onClosed(CloseStatus closeStatus)
         {
         }
 

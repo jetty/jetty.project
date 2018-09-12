@@ -134,7 +134,7 @@ public class ChatWebSocketClient implements FrameHandler
     }
 
     @Override
-    public void onClosed(CloseStatus closeStatus) throws Exception
+    public void onClosed(CloseStatus closeStatus)
     {
         Callback callback = new Callback()
         {

@@ -117,7 +117,7 @@ public class ChatWebSocketServer implements FrameHandler
 
 
     @Override
-    public void onClosed(CloseStatus closeStatus) throws Exception
+    public void onClosed(CloseStatus closeStatus)
     {
         LOG.info("onClosed {}",closeStatus);
         channel.close(Callback.NOOP);

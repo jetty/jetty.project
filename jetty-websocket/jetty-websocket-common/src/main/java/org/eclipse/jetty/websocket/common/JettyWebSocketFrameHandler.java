@@ -110,7 +110,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onClosed(CloseStatus closeStatus) throws Exception
+    public void onClosed(CloseStatus closeStatus)
     {
         // TODO: FrameHandler cleanup?
     }

@@ -100,7 +100,7 @@ public class TrackingFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onClosed(CloseStatus close) throws Exception
+    public void onClosed(CloseStatus close)
     {
         if(LOG.isDebugEnabled())
         {

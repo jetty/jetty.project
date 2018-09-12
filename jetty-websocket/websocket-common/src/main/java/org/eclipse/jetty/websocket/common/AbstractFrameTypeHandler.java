@@ -90,7 +90,7 @@ public abstract class AbstractFrameTypeHandler implements FrameHandler
     }
 
     @Override
-    public void onClosed(CloseStatus closeStatus) throws Exception
+    public void onClosed(CloseStatus closeStatus)
     {
         this.closeStatus = closeStatus;
     }

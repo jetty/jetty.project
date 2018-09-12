@@ -495,7 +495,7 @@ public class WebSocketServerTest
         }
 
         @Override
-        public void onClosed(CloseStatus closeStatus) throws Exception
+        public void onClosed(CloseStatus closeStatus)
         {
             LOG.info("onClosed {}",closeStatus);
             closed.countDown();

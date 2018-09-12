@@ -177,7 +177,7 @@ public class JavaxWebSocketFrameHandler extends AbstractPartialFrameHandler
     }
 
     @Override
-    public void onClosed(CloseStatus closeStatus) throws Exception
+    public void onClosed(CloseStatus closeStatus)
     {
         // TODO: FrameHandler cleanup?
     }
