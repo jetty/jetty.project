@@ -58,7 +58,6 @@ public class InfinispanTestSupport
         try
         {
             _manager = new DefaultCacheManager(new GlobalConfigurationBuilder().globalJmxStatistics().allowDuplicateDomains(true).build());
-            System.err.println(_manager);
         }
         catch (Exception e)
         {
@@ -100,6 +99,8 @@ public class InfinispanTestSupport
         mapping.entity(SessionData.class).indexed().providedId().property("expiry", ElementType.FIELD).field();
         Properties properties = new Properties();
         properties.put(Environment.MODEL_MAPPING, mapping);
+        properties.put(Environment.INDEX_BASE_PROP_NAME, "/tmp/foosearch");
+        properties.put("sourceBase", "/tmp/foosearch");
         
         if (_useFileStore)
         {      

@@ -20,6 +20,8 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +30,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 
-import org.junit.Test;
 
 import org.infinispan.Cache;
 import org.infinispan.query.Search;
@@ -37,6 +38,7 @@ import org.infinispan.query.dsl.QueryFactory;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * InfinispanSessionDataStoreTest
@@ -172,12 +174,17 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         Cache<String, SessionData> cache = __testSupport.getCache();
         
-        cache.put("session1", new SessionData("sd1", "", "", 0, 0, 0, 0));
-        cache.put("session2", new SessionData("sd2", "", "", 0, 0, 0, 1000));
-        cache.put("session3", new SessionData("sd3", "", "", 0, 0, 0, 0));
+        SessionData sd1 = new SessionData("sd1", "", "", 0, 0, 0, 0);
+        SessionData sd2 = new SessionData("sd2", "", "", 0, 0, 0, 1000);
+        sd2.setExpiry(100L); //long ago
+        SessionData sd3 = new SessionData("sd3", "", "", 0, 0, 0, 0);
+        
+        cache.put("session1", sd1);
+        cache.put("session2", sd2);
+        cache.put("session3", sd3);
         
         QueryFactory qf = Search.getQueryFactory(cache);
-        Query q = qf.from(SessionData.class).select("id").having("expiry").lte(System.currentTimeMillis()).toBuilder().build();
+        Query q = qf.from(SessionData.class).select("id").having("expiry").lte(System.currentTimeMillis()).and().having("expiry").gt(0).toBuilder().build();
         
         List<Object[]> list = q.list(); 
         
@@ -185,6 +192,8 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         for(Object[] sl : list)
             ids.add((String)sl[0]);
         
-        System.out.println(ids);
+        assertFalse(ids.isEmpty());
+        assertTrue(1==ids.size());
+        assertTrue(ids.contains("sd2"));
     }
 }

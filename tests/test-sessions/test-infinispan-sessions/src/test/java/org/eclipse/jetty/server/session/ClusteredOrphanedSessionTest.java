@@ -22,6 +22,7 @@ package org.eclipse.jetty.server.session;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * ClusteredOrphanedSessionTest
