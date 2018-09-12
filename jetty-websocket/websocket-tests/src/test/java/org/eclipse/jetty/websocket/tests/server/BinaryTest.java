@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Binary message / frame tests

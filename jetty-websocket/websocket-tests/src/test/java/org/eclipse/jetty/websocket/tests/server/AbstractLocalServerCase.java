@@ -43,10 +43,8 @@ import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.UnitGenerator;
 import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 /**
  * Testing against local websocket server using {@link org.eclipse.jetty.server.LocalConnector}
@@ -68,8 +66,6 @@ public abstract class AbstractLocalServerCase
     protected static SimpleServletServer server;
     protected final Logger LOG;
     
-    @Rule
-    public TestName testname = new TestName();
     public UnitGenerator generator = new UnitGenerator(WebSocketPolicy.newClientPolicy());
     
     public AbstractLocalServerCase()
@@ -77,14 +73,14 @@ public abstract class AbstractLocalServerCase
         LOG = Log.getLogger(this.getClass().getName());
     }
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
