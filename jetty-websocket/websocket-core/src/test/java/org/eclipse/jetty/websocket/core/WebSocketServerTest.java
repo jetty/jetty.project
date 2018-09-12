@@ -79,6 +79,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+
+/**
+ * Tests of a core server with a fake client
+ *
+ */
 public class WebSocketServerTest
 {
     @Rule
@@ -86,7 +91,6 @@ public class WebSocketServerTest
     
     private static Logger LOG = Log.getLogger(WebSocketServerTest.class);
     private static String NON_RANDOM_KEY = new String(B64Code.encode("0123456701234567".getBytes()));
-
    
     private WebSocketServer server;
     private ByteBufferPool bufferPool;
@@ -397,6 +401,66 @@ public class WebSocketServerTest
             assertThat(new CloseStatus(frame.getPayload()).getCode(),is(CloseStatus.PROTOCOL));
         }
     }
+    
+    
+
+    @Test
+    public void testTcpCloseNoDemand() throws Exception
+    {
+        BlockingQueue<Callback> receivedCallbacks = new BlockingArrayQueue<>();
+        
+        TestFrameHandler serverHandler = new TestFrameHandler()
+        {            
+            @Override
+            public void onOpen(CoreSession coreSession) throws Exception
+            {
+                super.onOpen(coreSession);
+                coreSession.demand(3);
+            }
+
+            @Override
+            public boolean isDemanding()
+            {
+                return true;
+            }
+
+            @Override
+            public void onReceiveFrame(Frame frame, Callback callback)
+            {
+                LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+                receivedFrames.offer(frame); 
+                receivedCallbacks.offer(callback);
+            }
+        };
+
+        server = new WebSocketServer(0, serverHandler);
+        server.start();
+
+        try (Socket client = newClient())
+        {
+            ByteBuffer buffer = BufferUtil.allocate(4096);
+            BufferUtil.append(buffer,RawFrameBuilder.buildText("Hello",true),0,6+5);
+            BufferUtil.append(buffer,RawFrameBuilder.buildText("Cruel",true),0,6+5);
+            BufferUtil.append(buffer,RawFrameBuilder.buildText("World",true),0,6+5);
+            client.getOutputStream().write(BufferUtil.toArray(buffer));
+
+            long end = System.nanoTime()+TimeUnit.SECONDS.toNanos(10);
+            while (serverHandler.receivedFrames.size()<3)
+            {
+                assertThat(System.nanoTime(),Matchers.lessThan(end));
+                Thread.sleep(10);
+            }
+            assertThat(serverHandler.receivedFrames.size(),is(3));
+            assertThat(receivedCallbacks.size(),is(3));
+            
+            client.close();
+            
+            assertFalse(serverHandler.closed.await(250,TimeUnit.MILLISECONDS));
+            serverHandler.getCoreSession().demand(1);
+            assertTrue(serverHandler.closed.await(10,TimeUnit.SECONDS));
+        }
+    }
+
 
     static class TestFrameHandler implements FrameHandler
     {

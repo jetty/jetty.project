@@ -56,6 +56,10 @@ public interface FrameHandler extends IncomingFrames
      * This method will never be called in parallel for the same session and will be called 
      * sequentially to satisfy all outstanding demand signaled by calls to 
      * {@link CoreSession#demand(int)}. 
+     * Control and Data frames are passed to this method. 
+     * Control frames that require a response (eg PING and CLOSE) may be responded to by the 
+     * the handler, but if an appropriate response is not sent once the callback is succeeded, 
+     * then a response will be generated and sent.
      * @param frame the raw frame
      * @param callback the callback to indicate success in processing frame (or failure)
      */
@@ -69,12 +73,13 @@ public interface FrameHandler extends IncomingFrames
      * </p>
      *
      * @param closeStatus the close status received from remote, or in the case of abnormal closure from local.
-     * @throws Exception if unable to complete the closure. TODO: what happens if an exception occurs here?
      */
-    void onClosed(CloseStatus closeStatus) throws Exception;
+    void onClosed(CloseStatus closeStatus);
 
     /**
      * An error has occurred or been detected in websocket-core and being reported to FrameHandler.
+     * A call to onError will be followed by a call to {@link #onClosed(CloseStatus)} giving the close status
+     * derived from the error.
      *
      * @param cause the reason for the error
      * @throws Exception if unable to process the error. TODO: what happens if an exception occurs here?  does any error means a connection is (or will be) closed?
