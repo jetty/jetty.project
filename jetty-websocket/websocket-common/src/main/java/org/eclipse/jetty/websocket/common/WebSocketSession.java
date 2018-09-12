@@ -620,7 +620,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("open -> {}",dump());
+                LOG.debug("[{}] open -> {}",getPolicy().getBehavior(),dump());
             }
             
             if(openFuture != null)
