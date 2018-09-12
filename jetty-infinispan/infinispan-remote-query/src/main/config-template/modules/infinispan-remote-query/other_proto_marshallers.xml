@@ -1,6 +1,15 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+ <!-- ============================================================= -->
+ <!-- If your sessions contain any objects of classes from your     -->
+ <!-- from your application, you need to describe each class in a   -->
+ <!-- .proto file, and supply a marshaller for each to read/write   -->
+ <!-- instances. These classes will need to exist on the server's   -->
+ <!-- classpath because they are referenced BEFORE your webapp is   -->
+ <!-- started.                                                      -->
+ <!-- ============================================================= -->
  <Ref refid="serial_context">
      <!--
     <Call name="registerProtoFiles">
