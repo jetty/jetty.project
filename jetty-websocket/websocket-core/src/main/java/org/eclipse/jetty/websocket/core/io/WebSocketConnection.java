@@ -441,7 +441,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 if (filled < 0)
                 {
                     releaseNetworkBuffer();
-                    channel.onClosed(null);
+                    channel.onClosed(new IOException("Read EOF"));
                     return;
                 }
 

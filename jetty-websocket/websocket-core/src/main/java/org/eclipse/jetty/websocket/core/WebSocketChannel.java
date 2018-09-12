@@ -313,7 +313,12 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     public void onClosed(Throwable cause)
     {
-        if (state.onClosed(cause))
+        onClosed(cause, new CloseStatus(CloseStatus.NO_CLOSE, cause==null?null:cause.toString()));
+    }
+
+    public void onClosed(Throwable cause, CloseStatus closeStatus)
+    {
+        if (state.onClosed(closeStatus))
         {
             // Forward Errors to Local WebSocket EndPoint
             try
@@ -328,14 +333,13 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
             try
             {
-                handler.onClosed(new CloseStatus(CloseStatus.NO_CLOSE, cause==null?null:cause.toString()));
+                handler.onClosed(closeStatus);
             }
             catch (Exception e)
             {
                 LOG.warn(e);
             }
         }
-
     }
 
 
@@ -346,35 +350,26 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
      */
     public void processError(Throwable cause)
     {
-        // Forward Errors to Local WebSocket EndPoint
-        try
-        {
-            handler.onError(cause);
-        }
-        catch(Throwable e)
-        {
-            cause.addSuppressed(e);
-            LOG.warn(cause);
-        }
+        CloseStatus closeStatus;
 
-        //TODO review everything below
+        //TODO review everything below (at the moment we have no non terminal error handling)
         if (cause instanceof Utf8Appendable.NotUtf8Exception)
         {
-            close(WebSocketConstants.BAD_PAYLOAD, cause.getMessage(), Callback.NOOP);
+            closeStatus = new CloseStatus(WebSocketConstants.BAD_PAYLOAD, cause.getMessage());
         }
         else if (cause instanceof SocketTimeoutException)
         {
             // A path often seen in Windows
-            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), Callback.NOOP);
+            closeStatus = new CloseStatus(WebSocketConstants.SHUTDOWN, cause.getMessage());
         }
         else if (cause instanceof IOException)
         {
-            close(WebSocketConstants.PROTOCOL, cause.getMessage(), Callback.NOOP);
+            closeStatus = new CloseStatus(WebSocketConstants.PROTOCOL, cause.getMessage());
         }
         else if (cause instanceof SocketException)
         {
             // A path unique to Unix
-            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), Callback.NOOP);
+            closeStatus = new CloseStatus(WebSocketConstants.SHUTDOWN, cause.getMessage());
         }
         else if (cause instanceof CloseException)
         {
@@ -391,15 +386,16 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                 case WebSocketConstants.POLICY_VIOLATION:
                 case WebSocketConstants.SERVER_ERROR:
                 {
-                    callback = Callback.NOOP;
+                    callback = Callback.NOOP; // TODO remove?
                 }
             }
 
-            close(ce.getStatusCode(), ce.getMessage(), callback);
+            closeStatus = new CloseStatus(ce.getStatusCode(), ce.getMessage());
+
         }
         else if (cause instanceof WebSocketTimeoutException)
         {
-            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), Callback.NOOP);
+            closeStatus = new CloseStatus(WebSocketConstants.SHUTDOWN, cause.getMessage());
         }
         else
         {
@@ -412,8 +408,12 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             {
                 statusCode = WebSocketConstants.POLICY_VIOLATION;
             }
-            close(statusCode, cause.getMessage(), Callback.NOOP);
+
+            closeStatus = new CloseStatus(statusCode, cause.getMessage());
         }
+
+        close(closeStatus, Callback.NOOP, BatchMode.OFF);
+        onClosed(cause, closeStatus);
     }
 
     /**
@@ -436,7 +436,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             {
                 // Open connection and handler
                 state.onOpen();
-                handler.onOpen((FrameHandler.CoreSession)this);
+                handler.onOpen(this);
                 if (!demanding)
                     connection.demand(1);
                     

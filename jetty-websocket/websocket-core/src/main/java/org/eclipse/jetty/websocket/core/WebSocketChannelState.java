@@ -141,14 +141,23 @@ public class WebSocketChannelState
         }
     }
 
+    public boolean onClosed(CloseStatus closeStatus)
+    {
+        while(true)
+        {
+            State s = state.get();
+            if (!s.outOpen && !s.inOpen)
+                return false;
+
+            State newState = new State("CLOSED", false, false, closeStatus);
+            if (state.compareAndSet(s, newState))
+                return true;
+        }
+    }
+
     public boolean onClosed(Throwable cause)
     {
-        State s = state.get();
-        if (!s.outOpen && !s.inOpen)
-            return false;
-
-        state.set(new State("CLOSED",false,false, new CloseStatus(CloseStatus.NO_CLOSE, cause==null?null:cause.toString())));
-        return true;
+        return onClosed(new CloseStatus(CloseStatus.NO_CLOSE, cause == null ? null : cause.toString()));
     }
 
 }

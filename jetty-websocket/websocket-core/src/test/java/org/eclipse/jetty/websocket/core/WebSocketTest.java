@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
@@ -29,7 +25,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -65,6 +60,10 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class WebSocketTest
 {
@@ -110,7 +109,6 @@ public class WebSocketTest
     
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
-
     }
     
     
@@ -125,6 +123,7 @@ public class WebSocketTest
             public void onReceiveFrame(Frame frame, Callback callback)
             {
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+                super.receivedFrames.offer(Frame.copy(frame));
                 if(frame.getOpCode() == OpCode.CLOSE)
                 {
                     LOG.info("channel aborted");
@@ -144,13 +143,14 @@ public class WebSocketTest
 
         String message = "hello world";
         server.sendText(message);
-        Frame recv = client.getFrames().poll(2, TimeUnit.SECONDS);
+        Frame recv = client.getFrames().poll(5, TimeUnit.SECONDS);
         assertNotNull(recv);
         assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
 
         server.close();
 
-        client.sendText("yolo");
+        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
     }
 
 
@@ -176,11 +176,6 @@ public class WebSocketTest
         
         assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
-//        message = "E";
-//        client.sendText(message);
-//        recv = server.getFrames().poll(2, TimeUnit.SECONDS);
-//        assertNotNull(recv);
-//        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
     }
     
 
@@ -294,7 +289,7 @@ public class WebSocketTest
         @Override
         public void onError(Throwable cause) throws Exception
         {
-            LOG.info("onError {} ",cause==null?null:cause.toString());
+            LOG.info("onError {} ", cause.toString());
         }
     }
 
