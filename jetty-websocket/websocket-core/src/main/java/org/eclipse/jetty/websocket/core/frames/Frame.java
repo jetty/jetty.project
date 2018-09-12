@@ -392,7 +392,10 @@ public class Frame
                     ++offset;
                 }
             }
+            
+            Arrays.fill(mask,(byte)0);
         }
+        
     }
     
     

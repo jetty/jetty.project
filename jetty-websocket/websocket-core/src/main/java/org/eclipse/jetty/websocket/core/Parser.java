@@ -284,20 +284,21 @@ public class Parser
                 if (autoFragment && OpCode.isDataFrame(OpCode.getOpCode(firstByte)))
                 {
                     payloadLength-=available;
+                    
+                    byte[] next_mask = null;
+                    if (mask!=null)
+                    {
+                        int shift = available%4;
+                        next_mask = new byte[4];
+                        next_mask[0] = mask[(0+shift)%4];
+                        next_mask[1] = mask[(1+shift)%4];
+                        next_mask[2] = mask[(2+shift)%4];
+                        next_mask[3] = mask[(3+shift)%4];
+                    }
                     ParsedFrame frame = newFrame((byte)(firstByte&0x7F),mask,buffer.slice(),false);
                     buffer.position(buffer.limit());
+                    mask = next_mask;
                     firstByte=(byte)(0xFF&(firstByte&0xF0 | OpCode.CONTINUATION));
-                    
-                    int shift = available%4;
-                    if (mask!=null && shift!=0)
-                    {
-                        byte[] new_mask = new byte[4];
-                        new_mask[0] = mask[(0+shift)%4];
-                        new_mask[1] = mask[(1+shift)%4];
-                        new_mask[2] = mask[(2+shift)%4];
-                        new_mask[3] = mask[(3+shift)%4];
-                        mask = new_mask;
-                    }
                     
                     return frame;
                 }
