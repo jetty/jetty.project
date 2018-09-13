@@ -26,6 +26,7 @@ import java.io.File;
 import java.lang.annotation.ElementType;
 import java.util.Properties;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
@@ -94,13 +95,16 @@ public class InfinispanTestSupport
     
     public void setup () throws Exception
     {
+        File testdir = MavenTestingUtils.getTargetTestingDir();
+        File tmp = new File (testdir, "indexes");
+        IO.delete(tmp);
+        tmp.mkdirs();
         
         SearchMapping mapping = new SearchMapping();
         mapping.entity(SessionData.class).indexed().providedId().property("expiry", ElementType.FIELD).field();
         Properties properties = new Properties();
         properties.put(Environment.MODEL_MAPPING, mapping);
-        properties.put(Environment.INDEX_BASE_PROP_NAME, "/tmp/foosearch");
-        properties.put("sourceBase", "/tmp/foosearch");
+        properties.put("hibernate.search.default.indexBase", tmp.getAbsolutePath());
         
         if (_useFileStore)
         {      
@@ -123,9 +127,9 @@ public class InfinispanTestSupport
         else
         {
             _manager.defineConfiguration(_name, _builder.indexing()
+                                                        .withProperties(properties)
                                                         .index(Index.ALL)
                                                         .addIndexedEntity(SessionData.class)
-                                                        .withProperties(properties)
                                                         .build());
         }
         _cache = _manager.getCache(_name);
