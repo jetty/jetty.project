@@ -151,39 +151,41 @@ public final class OpCode
         
         public void check(byte opcode, boolean fin) throws ProtocolException
         {
-            if (state==CLOSE)
-                throw new ProtocolException(name(opcode) + " after CLOSE");
-            
-            switch (opcode)
+            synchronized (this)
             {
-                case UNDEFINED:
-                    throw new ProtocolException("UNDEFINED OpCode: " + name(opcode));
-                    
-                case CONTINUATION:
-                    if (state==UNDEFINED)
-                        throw new ProtocolException("CONTINUATION after fin==true");
-                    if (fin)
-                        state = UNDEFINED;
-                    return;
-                    
-                case CLOSE:
-                    state = CLOSE;
-                    return;
-                    
-                case PING:
-                case PONG:
-                    return;
-                    
-                case TEXT:
-                case BINARY:
-                default:
-                    if (state!=UNDEFINED)
-                        throw new ProtocolException("DataFrame before fin==true");
-                    if (!fin)
-                        state = opcode;
-                    return;
-           }
+                if (state == CLOSE)
+                    throw new ProtocolException(name(opcode) + " after CLOSE");
+
+                switch (opcode)
+                {
+                    case UNDEFINED:
+                        throw new ProtocolException("UNDEFINED OpCode: " + name(opcode));
+
+                    case CONTINUATION:
+                        if (state == UNDEFINED)
+                            throw new ProtocolException("CONTINUATION after fin==true");
+                        if (fin)
+                            state = UNDEFINED;
+                        return;
+
+                    case CLOSE:
+                        state = CLOSE;
+                        return;
+
+                    case PING:
+                    case PONG:
+                        return;
+
+                    case TEXT:
+                    case BINARY:
+                    default:
+                        if (state != UNDEFINED)
+                            throw new ProtocolException("DataFrame before fin==true");
+                        if (!fin)
+                            state = opcode;
+                        return;
+                }
+            }
         }
     }
-
 }

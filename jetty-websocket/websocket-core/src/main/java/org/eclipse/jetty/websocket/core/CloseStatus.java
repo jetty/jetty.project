@@ -92,6 +92,78 @@ public class CloseStatus
         }
     }
 
+    public CloseStatus(Frame frame)
+    {
+        this(frame.getPayload());
+    }
+
+    public CloseStatus(ByteBuffer payload)
+    {
+        // RFC-6455 Spec Required Close Frame validation.
+        int statusCode = WebSocketConstants.NO_CODE;
+
+        if ((payload == null) || (payload.remaining() == 0))
+        {
+            this.code = statusCode;
+            this.reason = null;
+            return;
+        }
+
+        ByteBuffer data = payload.slice();
+        if (data.remaining() == 1)
+        {
+            throw new ProtocolException("Invalid CLOSE payload");
+        }
+
+        if (data.remaining() > Frame.MAX_CONTROL_PAYLOAD)
+        {
+            throw new ProtocolException("Invalid control frame length of " + data.remaining() + " bytes");
+        }
+
+        if (data.remaining() >= 2)
+        {
+            // Status Code
+            statusCode = 0; // start with 0
+            statusCode |= (data.get() & 0xFF) << 8;
+            statusCode |= (data.get() & 0xFF);
+
+            if (!isTransmittableStatusCode(statusCode))
+            {
+                throw new ProtocolException("Invalid CLOSE Code: " + statusCode);
+            }
+
+            if (data.remaining() > 0)
+            {
+                // Reason (trimmed to max reason size)
+                int len = Math.min(data.remaining(), CloseStatus.MAX_REASON_PHRASE);
+                byte reasonBytes[] = new byte[len];
+                data.get(reasonBytes, 0, len);
+
+                // Spec Requirement : throw BadPayloadException on invalid UTF8
+                try
+                {
+                    Utf8StringBuilder utf = new Utf8StringBuilder();
+                    // if this throws, we know we have bad UTF8
+                    utf.append(reasonBytes, 0, reasonBytes.length);
+                    String reason = utf.toString();
+
+                    this.code = statusCode;
+                    this.reason = reason;
+                    return;
+                }
+                catch (Utf8Appendable.NotUtf8Exception e)
+                {
+                    throw new BadPayloadException("Invalid CLOSE Reason", e);
+                }
+            }
+        }
+
+        this.code = statusCode;
+        this.reason = null;
+        return;
+    }
+
+
     public int getCode()
     {
         return code;
@@ -207,71 +279,6 @@ public class CloseStatus
         return true;
     }
 
-    public CloseStatus(ByteBuffer payload)
-    {
-        // RFC-6455 Spec Required Close Frame validation.
-        int statusCode = WebSocketConstants.NO_CODE;
-
-        if ((payload == null) || (payload.remaining() == 0))
-        {
-            this.code = statusCode;
-            this.reason = null;
-            return;
-        }
-
-        ByteBuffer data = payload.slice();
-        if (data.remaining() == 1)
-        {
-            throw new ProtocolException("Invalid CLOSE payload");
-        }
-
-        if (data.remaining() > Frame.MAX_CONTROL_PAYLOAD)
-        {
-            throw new ProtocolException("Invalid control frame length of " + data.remaining() + " bytes");
-        }
-
-        if (data.remaining() >= 2)
-        {
-            // Status Code
-            statusCode = 0; // start with 0
-            statusCode |= (data.get() & 0xFF) << 8;
-            statusCode |= (data.get() & 0xFF);
-
-            if (!isTransmittableStatusCode(statusCode))
-            {
-                throw new ProtocolException("Invalid CLOSE Code: " + statusCode);
-            }
-
-            if (data.remaining() > 0)
-            {
-                // Reason (trimmed to max reason size)
-                int len = Math.min(data.remaining(), CloseStatus.MAX_REASON_PHRASE);
-                byte reasonBytes[] = new byte[len];
-                data.get(reasonBytes, 0, len);
-
-                // Spec Requirement : throw BadPayloadException on invalid UTF8
-                try
-                {
-                    Utf8StringBuilder utf = new Utf8StringBuilder();
-                    // if this throws, we know we have bad UTF8
-                    utf.append(reasonBytes, 0, reasonBytes.length);
-                    String reason = utf.toString();
-
-                    this.code = statusCode;
-                    this.reason = reason;
-                    return;
-                }
-                catch (Utf8Appendable.NotUtf8Exception e)
-                {
-                    throw new BadPayloadException("Invalid CLOSE Reason", e);
-                }
-            }
-        }
-
-        this.code = statusCode;
-        this.reason = null;
-        return;
-    }
 
     public Frame toFrame()
     {

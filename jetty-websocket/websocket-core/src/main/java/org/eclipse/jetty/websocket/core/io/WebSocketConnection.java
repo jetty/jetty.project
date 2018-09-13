@@ -212,7 +212,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (referenced!=null)
             referenced.retain();
         
-        channel.assertValidIncoming(frame);
         channel.onReceiveFrame(frame, new Callback()
         {
             @Override
@@ -616,11 +615,11 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     }
 
     @Override
-    public void sendFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         if (getPolicy().getBehavior()==WebSocketBehavior.CLIENT)
         {
-            Frame wsf = (Frame)frame;
+            Frame wsf = frame;
             byte[] mask = new byte[4];
             random.nextBytes(mask);
             wsf.setMask(mask);

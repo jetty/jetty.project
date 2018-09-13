@@ -63,6 +63,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private final String subprotocol;
     private final AttributesMap attributes = new AttributesMap();
     private final boolean demanding;
+    OpCode.Sequence outgoingSequence = new OpCode.Sequence();
 
     private WebSocketConnection connection;
 
@@ -106,7 +107,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
     }
 
-    public void assertValidOutgoing(Frame frame)
+    public void assertValidOutgoing(Frame frame) throws CloseException
     {
         if (!OpCode.isKnown(frame.getOpCode()))
             throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
@@ -262,8 +263,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     }
 
     private void close(CloseStatus closeStatus, Callback callback, BatchMode batchMode)
-    {        
-        // TODO guard for multiple closes?
+    {
         if (state.onCloseOut(closeStatus))
         {
             callback = new Callback.Nested(callback)
@@ -301,7 +301,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
 
         Frame frame = closeStatus.toFrame();
-        assertValidOutgoing(frame);
         extensionStack.sendFrame(frame,callback,batchMode);
     }
     
@@ -412,7 +411,18 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             closeStatus = new CloseStatus(statusCode, cause.getMessage());
         }
 
-        close(closeStatus, Callback.NOOP, BatchMode.OFF);
+        // TODO can we avoid the illegal state exception in outClosed
+        try
+        {
+            close(closeStatus, Callback.NOOP, BatchMode.OFF);
+        }
+        catch(IllegalStateException e)
+        {
+            if (cause==null)
+                cause=e;
+            else
+                cause.addSuppressed(e);
+        }
         onClosed(cause, closeStatus);
     }
 
@@ -481,6 +491,20 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     @Override
     public void onReceiveFrame(Frame frame, Callback callback)
     {
+        try
+        {
+            assertValidIncoming(frame);
+        }
+        catch (CloseException ce)
+        {
+            callback.failed(ce);
+        }
+
+        if (frame.getOpCode() == OpCode.PING)
+        {
+            // TODO remember we have received this ping and need to send a pong
+        }
+
         extensionStack.onReceiveFrame(frame, callback);
     }
 
@@ -492,11 +516,28 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             LOG.debug("sendFrame({}, {}, {})", frame, callback, batchMode);
         }
 
-        if (frame.getOpCode() == OpCode.CLOSE)
-            close(new CloseStatus(frame.getPayload()),callback, batchMode);
-        else
+        if (frame.getOpCode() == OpCode.PONG)
+        {
+            // TODO try to mark one of our ping frames as responded to if payload matches
+        }
+        // TODO do we also need to verify that outgoing ping frames are responded too
+
+        try
         {
             assertValidOutgoing(frame);
+            outgoingSequence.check(frame.getOpCode(),frame.isFin());
+        }
+        catch (CloseException ce)
+        {
+            callback.failed(ce);
+        }
+
+        if (frame.getOpCode() == OpCode.CLOSE)
+        {
+            close(new CloseStatus(frame.getPayload()), callback, batchMode);
+        }
+        else
+        {
             extensionStack.sendFrame(frame, callback, batchMode);
         }
     }
@@ -578,14 +619,13 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
     }
 
-    private class OutgoingState extends OpCode.Sequence implements OutgoingFrames
+    private class OutgoingState implements OutgoingFrames
     {
         @Override
         public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
         {
             try
             {
-                check(frame.getOpCode(),frame.isFin());
                 connection.sendFrame(frame,callback,batchMode);
             }
             catch (ProtocolException e)
