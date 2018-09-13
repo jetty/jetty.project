@@ -20,6 +20,8 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.Utf8StringBuilder;
+
 public class Huffman
 {
 
@@ -352,7 +354,7 @@ public class Huffman
 
     public static String decode(ByteBuffer buffer,int length) throws HpackException.CompressionException
     {        
-        StringBuilder out = new StringBuilder(length*2);
+        Utf8StringBuilder utf8 = new Utf8StringBuilder(length*2);
         int node = 0;
         int current = 0;
         int bits = 0;
@@ -379,7 +381,7 @@ public class Huffman
                         throw new HpackException.CompressionException("EOS in content");
 
                     // terminal node
-                    out.append(rowsym[node]);
+                    utf8.append((byte)(0xFF&rowsym[node]));
                     bits -= rowbits[node];
                     node = 0;
                 } 
@@ -410,7 +412,7 @@ public class Huffman
                 break;
             }
 
-            out.append(rowsym[node]);
+            utf8.append((byte)(0xFF&rowsym[node]));
             bits -= rowbits[node];
             node = 0;
         }
@@ -418,7 +420,7 @@ public class Huffman
         if(node != 0)
             throw new HpackException.CompressionException("Bad termination");
 
-        return out.toString();
+        return utf8.toString();
     }
 
     public static int octetsNeeded(String s)
@@ -426,9 +428,19 @@ public class Huffman
         return octetsNeeded(CODES,s);
     }
     
+    public static int octetsNeeded(byte[] b)
+    {   
+        return octetsNeeded(CODES,b);
+    }
+    
     public static void encode(ByteBuffer buffer,String s)
     {
         encode(CODES,buffer,s);
+    }
+    
+    public static void encode(ByteBuffer buffer,byte[] b)
+    {
+        encode(CODES,buffer,b);
     }
     
     public static int octetsNeededLC(String s)
@@ -453,6 +465,18 @@ public class Huffman
             needed += table[c][1];
         }
 
+        return (needed+7) / 8;
+    }
+
+    private static int octetsNeeded(final int[][] table,byte[] b)
+    {   
+        int needed=0;
+        int len = b.length;
+        for (int i=0;i<len;i++)
+        {
+            int c=0xFF&b[i];
+            needed += table[c][1];
+        }
         return (needed+7) / 8;
     }
 
@@ -494,4 +518,39 @@ public class Huffman
         buffer.position(p-buffer.arrayOffset());
     }
 
+    private static void encode(final int[][] table,ByteBuffer buffer,byte[] b)
+    {
+        long current = 0;
+        int n = 0;
+
+        byte[] array = buffer.array();
+        int p=buffer.arrayOffset()+buffer.position();
+
+        int len = b.length;
+        for (int i=0;i<len;i++)
+        {
+            int c=0xFF&b[i];
+            int code = table[c][0];
+            int bits = table[c][1];
+
+            current <<= bits;
+            current |= code;
+            n += bits;
+
+            while (n >= 8) 
+            {
+                n -= 8;
+                array[p++]=(byte)(current >> n);
+            }
+        }
+
+        if (n > 0) 
+        {
+          current <<= (8 - n);
+          current |= (0xFF >>> n); 
+          array[p++]=(byte)current;
+        }
+        
+        buffer.position(p-buffer.arrayOffset());
+    }
 }
