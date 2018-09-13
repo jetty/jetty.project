@@ -1,9 +1,8 @@
 #!groovy
 
-// in case of change update method isMainBuild
 // def jdks = ["jdk8","jdk9","jdk10","jdk11"]
-// def jdks = ["jdk-11-ea+18"]
-def jdks = ["jdk11"]
+def mainJdk = "jdk11"
+def jdks = [mainJdk]
 def oss = ["linux"]
 def builds = [:]
 for (def os in oss) {
@@ -39,7 +38,7 @@ def getFullBuild(jdk, os) {
             // Javadoc only
             sh "mvn -V -B javadoc:javadoc -T6 -e"
             // Testing
-            sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -Dunix.socket.tmp=" + env.JENKINS_HOME
+            sh "mvn -V -B install -Dmaven.test.failure.ignore=true -T5 -e -Pmongodb -Dunix.socket.tmp=" + env.JENKINS_HOME
 
             // Compact 3 build
             if (isMainBuild(jdk)) {
@@ -87,7 +86,7 @@ def getFullBuild(jdk, os) {
 }
 
 def isMainBuild(jdk) {
-  return jdk == "jdk8"
+  return jdk == mainJdk
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
