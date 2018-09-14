@@ -19,6 +19,8 @@
 package org.eclipse.jetty.websocket.core.generator;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -42,11 +44,11 @@ public class UnitGenerator extends Generator
         super(policy, new MappedByteBufferPool());
         applyMask = (getBehavior() == WebSocketBehavior.CLIENT);
     }
-    
+
+    @Deprecated
     public UnitGenerator(WebSocketPolicy policy, boolean validating)
     {
-        super(policy, new MappedByteBufferPool());
-        applyMask = (getBehavior() == WebSocketBehavior.CLIENT);
+        this(policy);
     }
     
     public ByteBuffer asBuffer(List<Frame> frames)
@@ -65,16 +67,7 @@ public class UnitGenerator extends Generator
     
     public ByteBuffer asBuffer(Frame... frames)
     {
-        int bufferLength = 0;
-        for (org.eclipse.jetty.websocket.core.frames.Frame f : frames)
-        {
-            bufferLength += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
-        }
-        
-        ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
-        generate(buffer, frames);
-        BufferUtil.flipToFlush(buffer, 0);
-        return buffer;
+        return asBuffer(Arrays.asList(frames));
     }
     
     public void generate(ByteBuffer buffer, List<Frame> frames)
@@ -103,13 +96,7 @@ public class UnitGenerator extends Generator
     
     public ByteBuffer generate(Frame frame)
     {
-        int bufferLength = frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
-        ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
-        if (applyMask)
-            frame.setMask(MASK);
-        generateWholeFrame(frame, buffer);
-        BufferUtil.flipToFlush(buffer, 0);
-        return buffer;
+        return asBuffer(Collections.singletonList(frame));
     }
     
     public void generate(ByteBuffer buffer, Frame frame)

@@ -481,54 +481,28 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 7.3.4
      */
     @Test
-    public void testParse_Close_WithStatusReason() throws InterruptedException
-    {
+    public void testParse_Close_WithStatusReason() throws InterruptedException {
         String message = "bad cough";
         byte[] messageBytes = message.getBytes();
-        
+
         ByteBuffer expected = ByteBuffer.allocate(32);
-        
+
         expected.put(new byte[]
-                { (byte)0x88 });
+                {(byte) 0x88});
         byte b = 0x00; // no masking
         b |= (messageBytes.length + 2) & 0x7F;
         expected.put(b);
-        expected.putShort((short)1000); // status code
+        expected.putShort((short) 1000); // status code
         expected.put(messageBytes); // status reason
         expected.flip();
-    
+
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
-        
-        capture.assertHasFrame(OpCode.CLOSE,1);
-        
+
+        capture.assertHasFrame(OpCode.CLOSE, 1);
+
         org.eclipse.jetty.websocket.core.frames.Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(messageBytes.length + 2));
-    }
-    
-    /**
-     * From Autobahn WebSocket Server Testcase 5.15
-     * <p>
-     * A normal 2 fragment text text message, followed by another continuation.
-     * </p>
-     */
-    // TODO this check is done in WebSocketChannel.IncomingState not parser; was catching another exception because the frames weren't masked
-    @Ignore
-    @Test
-    public void testParse_Continuation_BadFinState()
-    {
-        List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload("fragment1").setFin(false));
-        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment2").setFin(true));
-        send.add(new Frame(OpCode.CONTINUATION).setPayload("fragment3").setFin(false)); // bad frame
-        send.add(new Frame(OpCode.TEXT).setPayload("fragment4").setFin(true));
-        send.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
-    
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        ByteBuffer completeBuf = new UnitGenerator(policy).asBuffer(send);
-        
-        expectedException.expect(ProtocolException.class);
-        parse(policy, completeBuf);
+        Assert.assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(messageBytes.length + 2));
     }
     
     /**
@@ -1375,29 +1349,6 @@ public class ParserTest
         
         org.eclipse.jetty.websocket.core.frames.Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         Assert.assertThat("Frame.payloadLength",pActual.getPayloadLength(),is(length));
-    }
-    
-    /**
-     * From Autobahn WebSocket Server Testcase 5.18
-     * <p>
-     * Text message fragmented as 2 frames, both as opcode=TEXT
-     * </p>
-     */
-    // TODO this check is done in WebSocketChannel.IncomingState not parser; was catching another exception because the frames weren't masked
-    @Ignore
-    @Test
-    public void testParse_Text_BadFinState()
-    {
-        List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload("fragment1").setFin(false));
-        send.add(new Frame(OpCode.TEXT).setPayload("fragment2").setFin(true)); // bad frame, must be continuation
-        send.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
-
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        ByteBuffer completeBuf = new UnitGenerator(policy).asBuffer(send);
-        
-        expectedException.expect(ProtocolException.class);
-        parse(policy, completeBuf);
     }
     
     /**
