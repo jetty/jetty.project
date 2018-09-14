@@ -38,7 +38,7 @@ def getFullBuild(jdk, os, mainJdk) {
             // Javadoc only
             sh "mvn -V -B javadoc:javadoc -T6 -e"
             // Testing
-            sh "mvn -V -B install -Dmaven.test.failure.ignore=true -T5 -e -Pmongodb -Dunix.socket.tmp=" + env.JENKINS_HOME
+            sh "mvn -V -B install -Dmaven.test.failure.ignore=true -T5 -e -Pmongodb -Djunit.jupiter.execution.parallel.enabled=true -Djunit.jupiter.execution.parallel.config.fixed.parallelism=8 -Dunix.socket.tmp=" + env.JENKINS_HOME
 
             // Compact 3 build
             if (mainJdk) {
