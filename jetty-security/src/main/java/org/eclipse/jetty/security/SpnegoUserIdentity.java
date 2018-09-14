@@ -19,7 +19,6 @@
 package org.eclipse.jetty.security;
 
 import java.security.Principal;
-import java.util.List;
 
 import javax.security.auth.Subject;
 
@@ -27,17 +26,16 @@ import org.eclipse.jetty.server.UserIdentity;
 
 public class SpnegoUserIdentity implements UserIdentity
 {
-    private Subject _subject;
-    private Principal _principal;
-    private List<String> _roles;
+    private final Subject _subject;
+    private final Principal _principal;
+    private final UserIdentity _delegate;
 
-    public SpnegoUserIdentity( Subject subject, Principal principal, List<String> roles )
+    public SpnegoUserIdentity(Subject subject, Principal principal, UserIdentity delegate)
     {
         _subject = subject;
         _principal = principal;
-        _roles = roles;
+        _delegate = delegate;
     }
-
 
     @Override
     public Subject getSubject()
@@ -54,7 +52,11 @@ public class SpnegoUserIdentity implements UserIdentity
     @Override
     public boolean isUserInRole(String role, Scope scope)
     {
-        return _roles.contains(role);
+        return _delegate != null && _delegate.isUserInRole(role, scope);
     }
 
+    public boolean isEstablished()
+    {
+        return _delegate != null;
+    }
 }

@@ -1,0 +1,320 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.client.util;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Path;
+import java.security.PrivilegedAction;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.ietf.jgss.GSSContext;
+import org.ietf.jgss.GSSException;
+import org.ietf.jgss.GSSManager;
+import org.ietf.jgss.GSSName;
+import org.ietf.jgss.Oid;
+
+public class SPNEGOAuthentication extends AbstractAuthentication
+{
+    private static final Logger LOG = Log.getLogger(SPNEGOAuthentication.class);
+    private static final String NEGOTIATE = HttpHeader.NEGOTIATE.asString();
+
+    private final GSSManager gssManager = GSSManager.getInstance();
+    private String userName;
+    private String userPassword;
+    private Path userKeyTabPath;
+    private String serviceName;
+    private boolean useTicketCache;
+    private Path ticketCachePath;
+    private boolean renewTGT;
+
+    public SPNEGOAuthentication(URI uri)
+    {
+        super(uri, ANY_REALM);
+    }
+
+    @Override
+    public String getType()
+    {
+        return NEGOTIATE;
+    }
+
+    public String getUserName()
+    {
+        return userName;
+    }
+
+    public void setUserName(String userName)
+    {
+        this.userName = userName;
+    }
+
+    public String getUserPassword()
+    {
+        return userPassword;
+    }
+
+    public void setUserPassword(String userPassword)
+    {
+        this.userPassword = userPassword;
+    }
+
+    public Path getUserKeyTabPath()
+    {
+        return userKeyTabPath;
+    }
+
+    public void setUserKeyTabPath(Path userKeyTabPath)
+    {
+        this.userKeyTabPath = userKeyTabPath;
+    }
+
+    public String getServiceName()
+    {
+        return serviceName;
+    }
+
+    public void setServiceName(String serviceName)
+    {
+        this.serviceName = serviceName;
+    }
+
+    public boolean isUseTicketCache()
+    {
+        return useTicketCache;
+    }
+
+    public void setUseTicketCache(boolean useTicketCache)
+    {
+        this.useTicketCache = useTicketCache;
+    }
+
+    public Path getTicketCachePath()
+    {
+        return ticketCachePath;
+    }
+
+    public void setTicketCachePath(Path ticketCachePath)
+    {
+        this.ticketCachePath = ticketCachePath;
+    }
+
+    public boolean isRenewTGT()
+    {
+        return renewTGT;
+    }
+
+    public void setRenewTGT(boolean renewTGT)
+    {
+        this.renewTGT = renewTGT;
+    }
+
+    @Override
+    public Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context)
+    {
+        SPNEGOContext spnegoContext = (SPNEGOContext)context.getAttribute(SPNEGOContext.ATTRIBUTE);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Authenticate with context {}", spnegoContext);
+        if (spnegoContext == null)
+        {
+            spnegoContext = login();
+            context.setAttribute(SPNEGOContext.ATTRIBUTE, spnegoContext);
+        }
+
+        String b64Input = headerInfo.getBase64();
+        byte[] input = b64Input == null ? new byte[0] : Base64.getDecoder().decode(b64Input);
+        byte[] output = Subject.doAs(spnegoContext.subject, initGSSContext(spnegoContext, request.getHost(), input));
+        String b64Output = output == null ? null : new String(Base64.getEncoder().encode(output));
+
+        // The result cannot be used for subsequent requests,
+        // so it always has a null URI to avoid being cached.
+        return new SPNEGOResult(null, b64Output);
+    }
+
+    private SPNEGOContext login()
+    {
+        try
+        {
+            // First login via JAAS using the Kerberos AS_REQ call, with a client user.
+            // This will populate the Subject with the client user principal and the TGT.
+            // TODO: allow to use a keyTab.
+            String user = getUserName();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Logging in user {}", user);
+            CallbackHandler callbackHandler = new PasswordCallbackHandler();
+            LoginContext loginContext = new LoginContext("", null, callbackHandler, new SPNEGOConfiguration());
+            loginContext.login();
+            Subject subject = loginContext.getSubject();
+
+            SPNEGOContext spnegoContext = new SPNEGOContext();
+            spnegoContext.subject = subject;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Initialized {}", spnegoContext);
+            return spnegoContext;
+        }
+        catch (LoginException x)
+        {
+            throw new RuntimeException(x);
+        }
+    }
+
+    private PrivilegedAction<byte[]> initGSSContext(SPNEGOContext spnegoContext, String host, byte[] bytes)
+    {
+        return () ->
+        {
+            try
+            {
+                // The call to initSecContext with the service name will
+                // trigger the Kerberos TGS_REQ call, asking for the SGT,
+                // which will be added to the Subject credentials because
+                // initSecContext() is called from within Subject.doAs().
+                GSSContext gssContext = spnegoContext.gssContext;
+                if (gssContext == null)
+                {
+                    String principal = getServiceName() + "@" + host;
+                    GSSName serviceName = gssManager.createName(principal, GSSName.NT_HOSTBASED_SERVICE);
+                    Oid spnegoOid = new Oid("1.3.6.1.5.5.2");
+                    gssContext = gssManager.createContext(serviceName, spnegoOid, null, GSSContext.INDEFINITE_LIFETIME);
+                    spnegoContext.gssContext = gssContext;
+                    gssContext.requestMutualAuth(true);
+                }
+                byte[] result = gssContext.initSecContext(bytes, 0, bytes.length);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} {}", gssContext.isEstablished() ? "Initialized" : "Initializing", gssContext);
+                return result;
+            }
+            catch (GSSException x)
+            {
+                throw new RuntimeException(x);
+            }
+        };
+    }
+
+    public static class SPNEGOResult implements Result
+    {
+        private final URI uri;
+        private final HttpHeader header;
+        private final String value;
+
+        public SPNEGOResult(URI uri, String token)
+        {
+            this(uri, HttpHeader.AUTHORIZATION, token);
+        }
+
+        public SPNEGOResult(URI uri, HttpHeader header, String token)
+        {
+            this.uri = uri;
+            this.header = header;
+            this.value = NEGOTIATE + (token == null ? "" : " " + token);
+        }
+
+        @Override
+        public URI getURI()
+        {
+            return uri;
+        }
+
+        @Override
+        public void apply(Request request)
+        {
+            request.header(header, value);
+        }
+    }
+
+    private static class SPNEGOContext
+    {
+        private static final String ATTRIBUTE = SPNEGOContext.class.getName();
+
+        private Subject subject;
+        private GSSContext gssContext;
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[context=%s]", getClass().getSimpleName(), hashCode(), gssContext);
+        }
+    }
+
+    private class PasswordCallbackHandler implements CallbackHandler
+    {
+        @Override
+        public void handle(Callback[] callbacks) throws IOException
+        {
+            PasswordCallback callback = Arrays.stream(callbacks)
+                    .filter(PasswordCallback.class::isInstance)
+                    .map(PasswordCallback.class::cast)
+                    .findAny()
+                    .filter(c -> c.getPrompt().contains(getUserName()))
+                    .orElseThrow(IOException::new);
+            callback.setPassword(getUserPassword().toCharArray());
+        }
+    }
+
+    private class SPNEGOConfiguration extends Configuration
+    {
+        @Override
+        public AppConfigurationEntry[] getAppConfigurationEntry(String name)
+        {
+            Map<String, Object> options = new HashMap<>();
+            if (LOG.isDebugEnabled())
+                options.put("debug", "true");
+            options.put("principal", getUserName());
+            options.put("isInitiator", "true");
+            Path keyTabPath = getUserKeyTabPath();
+            if (keyTabPath != null)
+            {
+                options.put("doNotPrompt", "true");
+                options.put("useKeyTab", "true");
+                options.put("keyTab", keyTabPath.toAbsolutePath().toString());
+                options.put("storeKey", "true");
+            }
+            boolean useTicketCache = isUseTicketCache();
+            if (useTicketCache)
+            {
+                options.put("useTicketCache", "true");
+                Path ticketCachePath = getTicketCachePath();
+                if (ticketCachePath != null)
+                    options.put("ticketCache", ticketCachePath.toAbsolutePath().toString());
+                options.put("renewTGT", String.valueOf(isRenewTGT()));
+            }
+
+            String moduleClass = "com.sun.security.auth.module.Krb5LoginModule";
+            AppConfigurationEntry config = new AppConfigurationEntry(moduleClass, AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, options);
+            return new AppConfigurationEntry[]{config};
+        }
+    }
+}
