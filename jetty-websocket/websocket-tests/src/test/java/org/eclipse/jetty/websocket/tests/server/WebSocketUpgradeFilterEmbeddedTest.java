@@ -166,6 +166,7 @@ public class WebSocketUpgradeFilterEmbeddedTest
         server.stop();
     }
 
+    @SuppressWarnings("Duplicates")
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("scenarios")
     public void testNormalConfiguration(String testId, ContextProvider serverProvider) throws Exception
@@ -190,6 +191,7 @@ public class WebSocketUpgradeFilterEmbeddedTest
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("scenarios")
     public void testStopStartOfHandler(String testId, ContextProvider serverProvider) throws Exception
@@ -243,13 +245,15 @@ public class WebSocketUpgradeFilterEmbeddedTest
             @Override
             protected Handler createRootHandler(Server server) throws Exception
             {
-                return contextProvider.configureRootHandler(server);
+                servletContextHandler = contextProvider.newServletContextHandler(server);
+                return servletContextHandler;
             }
         };
+        this.server.start();
     }
 
     interface ContextProvider
     {
-        Handler configureRootHandler(Server server) throws Exception;
+        ServletContextHandler newServletContextHandler(Server server) throws Exception;
     }
 }

@@ -52,7 +52,7 @@ public class WebSocketUpgradeFilterWebappTest
 
     private static File getNewTestDir()
     {
-        File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml-" + uniqTestDirId.getAndIncrement());
+        File testDir = MavenTestingUtils.getTargetTestingDir("tests/WSUF-webxml-" + uniqTestDirId.getAndIncrement());
         FS.ensureDirExists(testDir);
         return testDir;
     }
@@ -66,61 +66,37 @@ public class WebSocketUpgradeFilterWebappTest
     {
         List<Arguments> cases = new ArrayList<>();
 
-        // WSUF from web.xml, SCI active, apply app-ws configuration via ServletContextListener
-
-        cases.add(Arguments.of("wsuf/WebAppContext/web.xml/ServletContextListener", (ServerConfiguration) (server) ->
-        {
-            server.copyWebInf("wsuf-config-via-listener.xml");
-            server.copyClass(InfoSocket.class);
-            server.copyClass(InfoContextAttributeListener.class);
-            server.start();
-
-            WebAppContext webapp = server.createWebAppContext();
-            server.deployWebapp(webapp);
-        }));
-
-        // WSUF from web.xml, SCI active, apply app-ws configuration via ServletContextListener with WEB-INF/lib/jetty-http.jar
-
-        cases.add(Arguments.of("wsuf/WebAppContext/web.xml/ServletContextListener/jetty-http.jar", (ServerConfiguration) (server) ->
-        {
-            server.copyWebInf("wsuf-config-via-listener.xml");
-            server.copyClass(InfoSocket.class);
-            server.copyClass(InfoContextAttributeListener.class);
-            // Add a jetty-http.jar to ensure that the classloader constraints
-            // and the WebAppClassloader setup is sane and correct
-            // The odd version string is present to capture bad regex behavior in Jetty
-            server.copyLib(PathSpec.class, "jetty-http-9.99.999.jar");
-            server.start();
-
-            WebAppContext webapp = server.createWebAppContext();
-            server.deployWebapp(webapp);
-        }));
-
         // WSUF from web.xml, SCI active, apply app-ws configuration via Servlet.init
 
-        cases.add(Arguments.of("wsuf/WebAppContext/web.xml/Servlet.init", (ServerConfiguration) (server) ->
-        {
-            server.copyWebInf("wsuf-config-via-servlet-init.xml");
-            server.copyClass(InfoSocket.class);
-            server.copyClass(InfoServlet.class);
-            server.start();
+        cases.add(Arguments.of(
+                "wsuf/WebAppContext/web.xml/Servlet.init",
+                (ServerConfiguration) (server) ->
+                {
+                    server.copyWebInf("wsuf-config-via-servlet-init.xml");
+                    server.copyClass(InfoSocket.class);
+                    server.copyClass(InfoServlet.class);
+                    server.start();
 
-            WebAppContext webapp = server.createWebAppContext();
-            server.deployWebapp(webapp);
-        }));
+                    WebAppContext webapp = server.createWebAppContext();
+                    server.deployWebapp(webapp);
+                }
+        ));
 
         // xml based, wsuf, on alternate url-pattern and config attribute location
 
-        cases.add(Arguments.of("wsuf/WebAppContext/web.xml/ServletContextListener/alt-config", (ServerConfiguration) (server) ->
-        {
-            server.copyWebInf("wsuf-alt-config-via-listener.xml");
-            server.copyClass(InfoSocket.class);
-            server.copyClass(InfoContextAltAttributeListener.class);
-            server.start();
+        cases.add(Arguments.of(
+                "wsuf/WebAppContext/web.xml/ServletContextListener/alt-config",
+                (ServerConfiguration) (server) ->
+                {
+                    server.copyWebInf("wsuf-alt-config-via-listener.xml");
+                    server.copyClass(InfoSocket.class);
+                    server.copyClass(InfoContextAltAttributeListener.class);
+                    server.start();
 
-            WebAppContext webapp = server.createWebAppContext();
-            server.deployWebapp(webapp);
-        }));
+                    WebAppContext webapp = server.createWebAppContext();
+                    server.deployWebapp(webapp);
+                }
+        ));
         
         // WSUF from web.xml, SCI active, apply app-ws configuration via ServletContextListener
         
@@ -132,6 +108,9 @@ public class WebSocketUpgradeFilterWebappTest
                     server.copyClass(InfoSocket.class);
                     server.copyClass(InfoContextAttributeListener.class);
                     server.start();
+
+                    WebAppContext webapp = server.createWebAppContext();
+                    server.deployWebapp(webapp);
                 }
         ));
         
@@ -149,6 +128,9 @@ public class WebSocketUpgradeFilterWebappTest
                     // The odd version string is present to capture bad regex behavior in Jetty
                     server.copyLib(PathSpec.class, "jetty-http-9.99.999.jar");
                     server.start();
+
+                    WebAppContext webapp = server.createWebAppContext();
+                    server.deployWebapp(webapp);
                 }
         ));
 
@@ -157,7 +139,7 @@ public class WebSocketUpgradeFilterWebappTest
     
     private void startServer(ServerConfiguration serverConfiguration) throws Exception
     {
-        WSServer server = new WSServer(getNewTestDir(), "/");
+        server = new WSServer(getNewTestDir(), "app");
         serverConfiguration.configure(server);
     }
 
@@ -169,13 +151,14 @@ public class WebSocketUpgradeFilterWebappTest
         server.stop();
     }
 
+    @SuppressWarnings("Duplicates")
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("scenarios")
     public void testNormalConfiguration(String testId, ServerConfiguration serverConfiguration) throws Exception
     {
         startServer(serverConfiguration);
 
-        try (LocalFuzzer session = server.newLocalFuzzer("/info/"))
+        try (LocalFuzzer session = server.newLocalFuzzer("/app/info/"))
         {
             session.sendFrames(
                     new TextFrame().setPayload("hello"),
@@ -193,13 +176,14 @@ public class WebSocketUpgradeFilterWebappTest
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("scenarios")
     public void testStopStartOfHandler(String testId, ServerConfiguration serverConfiguration) throws Exception
     {
         startServer(serverConfiguration);
 
-        try (LocalFuzzer session = server.newLocalFuzzer("/info/"))
+        try (LocalFuzzer session = server.newLocalFuzzer("/app/info/"))
         {
             session.sendFrames(
                     new TextFrame().setPayload("hello 1"),
@@ -216,12 +200,12 @@ public class WebSocketUpgradeFilterWebappTest
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
         }
 
-        server.getServletContextHandler().stop();
-        server.getServletContextHandler().start();
+        server.getContexts().stop();
+        server.getContexts().start();
 
         // Make request again (server should have retained websocket configuration)
 
-        try (LocalFuzzer session = server.newLocalFuzzer("/info/"))
+        try (LocalFuzzer session = server.newLocalFuzzer("/app/info/"))
         {
             session.sendFrames(
                     new TextFrame().setPayload("hello 2"),

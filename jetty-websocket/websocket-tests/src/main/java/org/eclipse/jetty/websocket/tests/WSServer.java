@@ -148,7 +148,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
     {
         copyWebInf("empty-web.xml");
     }
-    
+
     public void deployWebapp(WebAppContext webapp) throws Exception
     {
         contexts.addHandler(webapp);
@@ -160,7 +160,12 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             LOG.debug("{}", webapp.dump());
         }
     }
-    
+
+    public ContextHandlerCollection getContexts()
+    {
+        return contexts;
+    }
+
     public Path getWebAppDir()
     {
         return this.contextDir;

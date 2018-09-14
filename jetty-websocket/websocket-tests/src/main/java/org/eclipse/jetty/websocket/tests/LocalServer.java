@@ -50,7 +50,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     private Server server;
     private ServerConnector connector;
     private LocalConnector localConnector;
-    private ServletContextHandler servletContextHandler;
+    protected ServletContextHandler servletContextHandler;
     private URI serverUri;
     private boolean ssl = false;
     private SslContextFactory sslContextFactory;
