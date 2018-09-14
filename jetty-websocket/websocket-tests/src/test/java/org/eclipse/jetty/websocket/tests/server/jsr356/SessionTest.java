@@ -86,7 +86,7 @@ public class SessionTest
         server.copyClass(SessionInfoSocket.class);
         server.copyClass(SessionAltConfig.class);
         server.start();
-        serverUri = server.getServerUri().resolve("/");
+        serverUri = server.getServerUri().resolve("/app/");
 
         WebAppContext webapp = server.createWebAppContext();
         scenario.customizer.accept(webapp);

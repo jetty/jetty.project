@@ -169,7 +169,6 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
     @Override
     protected Handler createRootHandler(Server server) throws Exception
     {
-        HandlerCollection handlers = new HandlerCollection();
         contexts = new ContextHandlerCollection();
         return contexts;
     }
