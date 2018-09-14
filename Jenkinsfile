@@ -86,7 +86,7 @@ def getFullBuild(jdk, os) {
 }
 
 def isMainBuild(jdk) {
-  return jdk == mainJdk
+  return jdk == "${mainJdk}"
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
