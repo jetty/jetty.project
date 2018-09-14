@@ -7,13 +7,13 @@ def oss = ["linux"]
 def builds = [:]
 for (def os in oss) {
   for (def jdk in jdks) {
-    builds[os+"_"+jdk] = getFullBuild( jdk, os )
+    builds[os+"_"+jdk] = getFullBuild( jdk, os, mainJdk == jdk )
   }
 }
 
 parallel builds
 
-def getFullBuild(jdk, os) {
+def getFullBuild(jdk, os, mainJdk) {
   return {
     node(os) {
       // System Dependent Locations
@@ -22,7 +22,7 @@ def getFullBuild(jdk, os) {
       def settingsName = 'oss-settings.xml'
       def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
 
-      stage("Build / Test - ${jdk}") {
+      stage("Build / Test - $jdk") {
         timeout(time: 120, unit: 'MINUTES') {
           // Checkout
           checkout scm
@@ -41,7 +41,7 @@ def getFullBuild(jdk, os) {
             sh "mvn -V -B install -Dmaven.test.failure.ignore=true -T5 -e -Pmongodb -Dunix.socket.tmp=" + env.JENKINS_HOME
 
             // Compact 3 build
-            if (isMainBuild(jdk)) {
+            if (mainJdk) {
               sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
             }
           }
@@ -52,7 +52,7 @@ def getFullBuild(jdk, os) {
         consoleParsers = [[parserName: 'JavaDoc'],
                           [parserName: 'JavaC']];
 
-        if (isMainBuild(jdk)) {
+        if (mainJdk) {
           // Collect up the jacoco execution results
           def jacocoExcludes =
               // build tools
@@ -83,10 +83,6 @@ def getFullBuild(jdk, os) {
       }
     }
   }
-}
-
-def isMainBuild(jdk) {
-  return jdk == "${mainJdk}"
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
