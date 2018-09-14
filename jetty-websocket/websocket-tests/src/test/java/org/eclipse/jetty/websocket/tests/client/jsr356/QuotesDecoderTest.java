@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 import java.net.URI;
 import java.util.List;
@@ -44,11 +44,10 @@ import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.Quotes;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.QuotesUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class QuotesDecoderTest
 {
@@ -93,38 +92,35 @@ public class QuotesDecoderTest
     
     private static final Logger LOG = Log.getLogger(QuotesDecoderTest.class);
     
-    @Rule
-    public TestName testname = new TestName();
-    
     private UntrustedWSServer server;
     private WebSocketContainer client;
     
-    @Before
+    @BeforeEach
     public void initClient()
     {
         client = ContainerProvider.getWebSocketContainer();
     }
     
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new UntrustedWSServer();
         server.start();
     }
     
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
     
     @Test
-    public void testSingleQuotes() throws Exception
+    public void testSingleQuotes(TestInfo testInfo) throws Exception
     {
         server.registerWebSocket("/quoter", new QuoteServingCreator());
         
         URI wsUri = server.getWsUri().resolve("/quoter");
-        QuotesSocket clientSocket = new QuotesSocket(testname.getMethodName());
+        QuotesSocket clientSocket = new QuotesSocket(testInfo.getDisplayName());
         Session clientSession = client.connectToServer(clientSocket, wsUri);
         
         clientSession.getAsyncRemote().sendText("quotes-ben.txt");
@@ -136,12 +132,12 @@ public class QuotesDecoderTest
     }
     
     @Test
-    public void testTwoQuotes() throws Exception
+    public void testTwoQuotes(TestInfo testInfo) throws Exception
     {
         server.registerWebSocket("/quoter", new QuoteServingCreator());
         
         URI wsUri = server.getWsUri().resolve("/quoter");
-        QuotesSocket clientSocket = new QuotesSocket(testname.getMethodName());
+        QuotesSocket clientSocket = new QuotesSocket(testInfo.getDisplayName());
         Session clientSession = client.connectToServer(clientSocket, wsUri);
         
         clientSession.getAsyncRemote().sendText("quotes-ben.txt");

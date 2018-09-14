@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -40,8 +40,8 @@ import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.FutureFrameCallback;
 import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
-import org.junit.AfterClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 
 public class ReaderMessageSinkTest
 {
@@ -49,7 +49,7 @@ public class ReaderMessageSinkTest
     private static ThreadPoolExecutor executor = new ThreadPoolExecutor(5, 5, 0L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<>());
     
-    @AfterClass
+    @AfterAll
     public static void stopExecutor()
     {
         executor.shutdown();

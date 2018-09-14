@@ -18,12 +18,13 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -51,213 +52,204 @@ import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class WebSocketClientTest
 {
-    @Rule
-    public TestName testname = new TestName();
-    
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-    
     private UntrustedWSServer server;
     private WebSocketClient client;
-    
-    @Before
+
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
-    
-    @Before
+
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new UntrustedWSServer();
         server.start();
     }
-    
-    @After
+
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
-    
-    @After
+
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
-    
+
     @Test
-    public void testAddExtension_NotInstalled() throws Exception
+    public void testAddExtension_NotInstalled(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
-        
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo.getDisplayName());
+
         client.getPolicy().setIdleTimeout(10000);
-        
+
         URI wsUri = server.getWsUri();
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setSubProtocols("echo");
         request.addExtensions("x-bad"); // extension that doesn't exist
-        
+
         // Should trigger failure on bad extension
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage(containsString("x-bad"));
-        client.connect(clientEndpoint, wsUri, request);
+        IllegalArgumentException x = assertThrows(IllegalArgumentException.class, () ->
+                client.connect(clientEndpoint, wsUri, request));
+        assertThat(x.getMessage(), containsString("x-bad"));
     }
-    
+
     @Test
-    public void testBasicEcho() throws IOException, InterruptedException, ExecutionException, TimeoutException
+    public void testBasicEcho(TestInfo testInfo) throws IOException, InterruptedException, ExecutionException, TimeoutException
     {
         // Set client timeout
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
-        
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
         server.registerOnOpenFuture(wsUri, serverSessionFut);
-        
+
         // Client connects
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo.getDisplayName());
         ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
         clientUpgradeRequest.setSubProtocols("echo");
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri, clientUpgradeRequest);
-        
+
         // Verify Client Session
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         assertThat("Client Session", clientSession, notNullValue());
         assertThat("Client Session.open", clientSession.isOpen(), is(true));
         assertThat("Client Session.upgradeRequest", clientSession.getUpgradeRequest(), notNullValue());
         assertThat("Client Session.upgradeRequest", clientSession.getUpgradeResponse(), notNullValue());
-        
+
         // Verify Client Session Tracking
         Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
-        Assert.assertThat("client.beans[session].size", sessions.size(), is(1));
-        
+        assertThat("client.beans[session].size", sessions.size(), is(1));
+
         // Server accepts connect
         UntrustedWSSession serverSession = serverSessionFut.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         UntrustedWSEndpoint serverEndpoint = serverSession.getUntrustedEndpoint();
-        
+
         // client confirms connection via echo
         clientEndpoint.awaitOpenEvent("Client");
-        
+
         // client sends message
         clientEndpoint.getRemote().sendString("Hello Echo");
-        
+
         // Wait for response to echo
         String message = clientEndpoint.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("message", message, is("Hello Echo"));
-        
+
         // client closes
         clientEndpoint.close(StatusCode.NORMAL, "Normal Close");
-        
+
         // Server close event
         serverEndpoint.awaitCloseEvent("Server");
         serverEndpoint.assertCloseInfo("Server", StatusCode.NORMAL, containsString("Normal Close"));
-        
+
         // client triggers close event on client ws-endpoint
         clientEndpoint.awaitCloseEvent("Client");
         clientEndpoint.assertCloseInfo("Client", StatusCode.NORMAL, containsString("Normal Close"));
     }
-    
+
     @Test
-    public void testBasicEcho_UsingCallback() throws Exception
+    public void testBasicEcho_UsingCallback(TestInfo testInfo) throws Exception
     {
         client.setMaxIdleTimeout(160000);
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo.getDisplayName());
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setSubProtocols("echo");
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri, request);
-        
+
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         assertThat("Client session", clientSession, notNullValue());
-        
+
         FutureWriteCallback callback = new FutureWriteCallback();
         clientEndpoint.session.getRemote().sendString("Hello World!", callback);
         callback.get(5, TimeUnit.SECONDS);
     }
-    
+
     @Test
-    public void testLocalRemoteAddress() throws Exception
+    public void testLocalRemoteAddress(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri);
-        
+
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        
+
         InetSocketAddress local = clientSession.getLocalAddress();
         InetSocketAddress remote = clientSession.getRemoteAddress();
-        
-        Assert.assertThat("Local Socket Address", local, notNullValue());
-        Assert.assertThat("Remote Socket Address", remote, notNullValue());
-        
+
+        assertThat("Local Socket Address", local, notNullValue());
+        assertThat("Remote Socket Address", remote, notNullValue());
+
         // Hard to validate (in a portable unit test) the local address that was used/bound in the low level Jetty Endpoint
-        Assert.assertThat("Local Socket Address / Host", local.getAddress().getHostAddress(), notNullValue());
-        Assert.assertThat("Local Socket Address / Port", local.getPort(), greaterThan(0));
-        
-        Assert.assertThat("Remote Socket Address / Host", remote.getAddress().getHostAddress(), is(wsUri.getHost()));
-        Assert.assertThat("Remote Socket Address / Port", remote.getPort(), greaterThan(0));
+        assertThat("Local Socket Address / Host", local.getAddress().getHostAddress(), notNullValue());
+        assertThat("Local Socket Address / Port", local.getPort(), greaterThan(0));
+
+        assertThat("Remote Socket Address / Host", remote.getAddress().getHostAddress(), is(wsUri.getHost()));
+        assertThat("Remote Socket Address / Port", remote.getPort(), greaterThan(0));
     }
-    
+
     /**
      * Ensure that <code>@WebSocket(maxTextMessageSize = 100*1024)</code> behaves as expected.
      *
      * @throws Exception on test failure
      */
     @Test
-    public void testMaxMessageSize() throws Exception
+    public void testMaxMessageSize(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
         client.getPolicy().setMaxTextMessageSize(100 * 1024);
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri, upgradeRequest);
-        
+
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        
+
         // Create string that is larger than default size of 64k
         // but smaller than maxMessageSize of 100k
         byte buf[] = new byte[80 * 1024];
         Arrays.fill(buf, (byte) 'x');
         String outgoingMessage = StringUtil.toUTF8String(buf, 0, buf.length);
-        
+
         clientSession.getRemote().sendStringByFuture(outgoingMessage);
-        
+
         String incomingMessage = clientEndpoint.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Message received", incomingMessage, is(outgoingMessage));
         clientSession.close();
     }
-    
+
     @Test
-    public void testParameterMap() throws Exception
+    public void testParameterMap(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname).resolve("?snack=cashews&amount=handful&brand=off");
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo).resolve("?snack=cashews&amount=handful&brand=off");
         assertThat("wsUri has query", wsUri.getQuery(), notNullValue());
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri);
-        
+
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        
+
         UpgradeRequest req = clientSession.getUpgradeRequest();
-        Assert.assertThat("Upgrade Request", req, notNullValue());
-        
+        assertThat("Upgrade Request", req, notNullValue());
+
         Map<String, List<String>> parameterMap = req.getParameterMap();
-        Assert.assertThat("Parameter Map", parameterMap, notNullValue());
-        
-        Assert.assertThat("Parameter[snack]", parameterMap.get("snack"), is(Arrays.asList(new String[]{"cashews"})));
-        Assert.assertThat("Parameter[amount]", parameterMap.get("amount"), is(Arrays.asList(new String[]{"handful"})));
-        Assert.assertThat("Parameter[brand]", parameterMap.get("brand"), is(Arrays.asList(new String[]{"off"})));
-        Assert.assertThat("Parameter[cost]", parameterMap.get("cost"), nullValue());
+        assertThat("Parameter Map", parameterMap, notNullValue());
+
+        assertThat("Parameter[snack]", parameterMap.get("snack"), is(Arrays.asList(new String[]{"cashews"})));
+        assertThat("Parameter[amount]", parameterMap.get("amount"), is(Arrays.asList(new String[]{"handful"})));
+        assertThat("Parameter[brand]", parameterMap.get("brand"), is(Arrays.asList(new String[]{"off"})));
+        assertThat("Parameter[cost]", parameterMap.get("cost"), nullValue());
     }
 }

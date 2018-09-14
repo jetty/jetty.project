@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.tests.servlets.BiConsumerServiceServlet;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.TestInfo;
 
 public class UntrustedWSServer extends ContainerLifeCycle implements UntrustedWSSessionFactory.Listener
 {
@@ -157,9 +157,9 @@ public class UntrustedWSServer extends ContainerLifeCycle implements UntrustedWS
         return wsUri;
     }
 
-    public URI getUntrustedWsUri(Class<?> clazz, TestName testname)
+    public URI getUntrustedWsUri(Class<?> clazz, TestInfo testInfo)
     {
-        return wsUri.resolve("/untrusted/" + clazz.getSimpleName() + "/" + testname.getMethodName());
+        return wsUri.resolve("/untrusted/" + clazz.getSimpleName() + "/" + testInfo.getDisplayName());
     }
 
     public void registerHttpService(String urlPattern, BiConsumer<HttpServletRequest, HttpServletResponse> serviceConsumer)

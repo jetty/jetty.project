@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.tests.server.jsr356;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -37,16 +38,14 @@ import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.LocalServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.Arguments;
 
 /**
  * Test various {@link javax.websocket.Decoder.Text Decoder.Text} / {@link javax.websocket.Encoder.Text Encoder.Text} echo behavior of Java Primitives
  */
-@RunWith(Parameterized.class)
 public class PrimitivesTextEchoTest
 {
     private static final Logger LOG = Log.getLogger(PrimitivesTextEchoTest.class);
@@ -235,8 +234,7 @@ public class PrimitivesTextEchoTest
         data.add(new Object[]{endpointClass.getSimpleName(), endpointClass, sendText, expectText});
     }
     
-    @Parameterized.Parameters(name = "{0}: {2}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> data()
     {
         List<Object[]> data = new ArrayList<>();
         
@@ -341,12 +339,13 @@ public class PrimitivesTextEchoTest
         addCase(data, LongObjEchoSocket.class, Long.toString(Long.MIN_VALUE), Long.toString(Long.MIN_VALUE));
     
         addCase(data, StringEchoSocket.class, "Hello World", "Hello World");
-        return data;
+
+        return data.stream().map(Arguments::of);
     }
     
     private static LocalServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer()
@@ -378,26 +377,14 @@ public class PrimitivesTextEchoTest
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Parameterized.Parameter
-    public String endpointClassname;
-    
-    @Parameterized.Parameter(1)
-    public Class<?> endpointClass;
-    
-    @Parameterized.Parameter(2)
-    public String sendText;
-    
-    @Parameterized.Parameter(3)
-    public String expectText;
-    
     @Test
-    public void testPrimitiveEcho() throws Exception
+    public void testPrimitiveEcho(String endpointClassname, Class<?> endpointClass, String sendText, String expectText) throws Exception
     {
         String requestPath = endpointClass.getAnnotation(ServerEndpoint.class).value();
         

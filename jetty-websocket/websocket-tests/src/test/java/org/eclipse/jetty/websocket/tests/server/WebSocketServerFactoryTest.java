@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class WebSocketServerFactoryTest
 {

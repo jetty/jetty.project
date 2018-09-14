@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -51,14 +53,11 @@ import org.eclipse.jetty.websocket.tests.UntrustedWSClient;
 import org.eclipse.jetty.websocket.tests.UntrustedWSConnection;
 import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
@@ -67,7 +66,7 @@ public class WebSocketServletRFCTest
 {
     private static SimpleServletServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new WebSocketServlet()
@@ -81,25 +80,22 @@ public class WebSocketServletRFCTest
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Rule
-    public TestName testname = new TestName();
-    
     private UntrustedWSClient client;
     
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new UntrustedWSClient();
         client.start();
     }
     
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
@@ -182,7 +178,7 @@ public class WebSocketServletRFCTest
                     ccCount++;
                     break;
                 default:
-                    Assert.fail(String.format("Encountered invalid byte 0x%02X", (byte) (0xFF & b)));
+                    fail(String.format("Encountered invalid byte 0x%02X", (byte) (0xFF & b)));
             }
         }
         
@@ -193,14 +189,16 @@ public class WebSocketServletRFCTest
         clientSession.close();
     }
     
-    @Test(expected = NotUtf8Exception.class)
+    @Test
     public void testDetectBadUTF8()
     {
         byte buf[] = new byte[]
                 {(byte) 0xC2, (byte) 0xC3};
-        
-        Utf8StringBuilder utf = new Utf8StringBuilder();
-        utf.append(buf, 0, buf.length);
+
+        assertThrows(NotUtf8Exception.class, ()->{
+            Utf8StringBuilder utf = new Utf8StringBuilder();
+            utf.append(buf, 0, buf.length);
+        });
     }
     
     /**

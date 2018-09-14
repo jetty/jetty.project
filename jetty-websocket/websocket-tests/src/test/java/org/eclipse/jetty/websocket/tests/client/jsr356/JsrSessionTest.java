@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -50,9 +50,9 @@ import org.eclipse.jetty.websocket.tests.jsr356.handlers.ByteBufferPartialHandle
 import org.eclipse.jetty.websocket.tests.jsr356.handlers.LongMessageHandler;
 import org.eclipse.jetty.websocket.tests.jsr356.handlers.StringWholeHandler;
 import org.eclipse.jetty.websocket.tests.jsr356.endpoints.DummyEndpoint;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class JsrSessionTest
 {
@@ -62,7 +62,7 @@ public class JsrSessionTest
     private ClientContainer container;
     private JsrSession session;
     
-    @Before
+    @BeforeEach
     public void initSession() throws Exception
     {
         String id = JsrSessionTest.class.getSimpleName();
@@ -84,7 +84,7 @@ public class JsrSessionTest
         session.start();
     }
     
-    @After
+    @AfterEach
     public void stopSession() throws Exception
     {
         session.stop();

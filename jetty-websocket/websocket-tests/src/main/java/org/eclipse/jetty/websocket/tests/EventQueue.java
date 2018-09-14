@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.tests;
 
 import static org.eclipse.jetty.toolchain.test.matchers.RegexMatcher.matchesPattern;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Iterator;
 import java.util.concurrent.LinkedBlockingDeque;

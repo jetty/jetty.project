@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -30,37 +31,35 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class PayloadLengthTest extends AbstractLocalServerCase
 {
-    @Parameterized.Parameters(name = "{0} bytes")
-    public static List<Object[]> data()
+
+    public static Stream<Arguments> data()
     {
-        List<Object[]> cases = new ArrayList<>();
+        List<Arguments> cases = new ArrayList<>();
+
         // Uses small 7-bit payload length format
-        cases.add(new Object[]{0}); // From Autobahn WebSocket Server Testcase 1.1.1
-        cases.add(new Object[]{1});
-        cases.add(new Object[]{125}); // From Autobahn WebSocket Server Testcase 1.1.2
+        cases.add(Arguments.of(0)); // From Autobahn WebSocket Server Testcase 1.1.1
+        cases.add(Arguments.of(1));
+        cases.add(Arguments.of(125)); // From Autobahn WebSocket Server Testcase 1.1.2
         // Uses medium 2 byte payload length format
-        cases.add(new Object[]{126}); // From Autobahn WebSocket Server Testcase 1.1.3
-        cases.add(new Object[]{127}); // From Autobahn WebSocket Server Testcase 1.1.4
-        cases.add(new Object[]{128}); // From Autobahn WebSocket Server Testcase 1.1.5
-        cases.add(new Object[]{65535}); // From Autobahn WebSocket Server Testcase 1.1.6
+        cases.add(Arguments.of(126)); // From Autobahn WebSocket Server Testcase 1.1.3
+        cases.add(Arguments.of(127)); // From Autobahn WebSocket Server Testcase 1.1.4
+        cases.add(Arguments.of(128)); // From Autobahn WebSocket Server Testcase 1.1.5
+        cases.add(Arguments.of(65535)); // From Autobahn WebSocket Server Testcase 1.1.6
         // Uses large 8 byte payload length
-        cases.add(new Object[]{65536}); // From Autobahn WebSocket Server Testcase 1.1.7
-        cases.add(new Object[]{500 * 1024});
-        return cases;
+        cases.add(Arguments.of(65536)); // From Autobahn WebSocket Server Testcase 1.1.7
+        cases.add(Arguments.of(500 * 1024));
+        return cases.stream();
     }
     
-    @Parameterized.Parameter
-    public int size;
-    
-    @Test
-    public void testTextPayloadLength() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testTextPayloadLength(int size) throws Exception
     {
         byte payload[] = new byte[size];
         Arrays.fill(payload, (byte) 'x');
@@ -80,9 +79,10 @@ public class PayloadLengthTest extends AbstractLocalServerCase
             session.expect(expect);
         }
     }
-    
-    @Test
-    public void testTextPayloadLength_SmallBuffers() throws Exception
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testTextPayloadLength_SmallBuffers(int size) throws Exception
     {
         byte payload[] = new byte[size];
         Arrays.fill(payload, (byte) 'x');
@@ -102,9 +102,10 @@ public class PayloadLengthTest extends AbstractLocalServerCase
             session.expect(expect);
         }
     }
-    
-    @Test
-    public void testBinaryPayloadLength() throws Exception
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testBinaryPayloadLength(int size) throws Exception
     {
         byte payload[] = new byte[size];
         Arrays.fill(payload, (byte) 0xFE);
@@ -124,9 +125,10 @@ public class PayloadLengthTest extends AbstractLocalServerCase
             session.expect(expect);
         }
     }
-    
-    @Test
-    public void testBinaryPayloadLength_SmallBuffers() throws Exception
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testBinaryPayloadLength_SmallBuffers(int size) throws Exception
     {
         byte payload[] = new byte[size];
         Arrays.fill(payload, (byte) 0xFE);

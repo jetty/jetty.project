@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.tests.client;
 
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 
 import java.net.CookieManager;
 import java.net.HttpCookie;
@@ -40,53 +40,49 @@ import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class CookieTest
 {
     private static final Logger LOG = Log.getLogger(CookieTest.class);
     
-    @Rule
-    public TestName testname = new TestName();
-    
     private UntrustedWSServer server;
     private WebSocketClient client;
     
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
     
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new UntrustedWSServer();
         server.start();
     }
     
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
     
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
     
     @Test
-    public void testViaCookieManager() throws Exception
+    public void testViaCookieManager(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
         server.registerOnOpenFuture(wsUri, serverSessionFut);
         
@@ -119,10 +115,10 @@ public class CookieTest
     }
     
     @Test
-    public void testViaServletUpgradeRequest() throws Exception
+    public void testViaServletUpgradeRequest(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
         server.registerOnOpenFuture(wsUri, serverSessionFut);
         

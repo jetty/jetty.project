@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.tests.server.jsr356;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.net.URI;
@@ -54,9 +54,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.tests.WSServer;
 import org.eclipse.jetty.websocket.tests.client.jsr356.JsrClientEchoTrackingSocket;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class PingPongTest
 {
@@ -145,7 +145,7 @@ public class PingPongTest
     private static URI serverUri;
     private static WebSocketContainer client;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         Path testdir = MavenTestingUtils.getTargetTestingPath(PingPongTest.class.getName());
@@ -163,13 +163,13 @@ public class PingPongTest
         server.deployWebapp(webapp);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void startClient() throws Exception
     {
         client = ContainerProvider.getWebSocketContainer();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -207,7 +207,7 @@ public class PingPongTest
         }
     }
 
-    @Test(timeout = 6000)
+    @Test
     public void testPongEndpoint() throws Exception
     {
         assertEcho("/app/pong", (session) -> {
@@ -222,7 +222,7 @@ public class PingPongTest
         }, "PongMessageEndpoint.onMessage(PongMessage):[/pong]:hello");
     }
     
-    @Test(timeout = 6000)
+    @Test
     public void testPongSocket() throws Exception
     {
         assertEcho("/app/pong-socket", (session) -> {

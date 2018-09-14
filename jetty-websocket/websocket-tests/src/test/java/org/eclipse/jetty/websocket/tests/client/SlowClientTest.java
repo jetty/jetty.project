@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.util.concurrent.Future;
@@ -33,22 +33,18 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class SlowClientTest
 {
-    @Rule
-    public TestName testname = new TestName();
-    
     private UntrustedWSServer server;
     private WebSocketClient client;
     
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
@@ -56,33 +52,33 @@ public class SlowClientTest
         client.start();
     }
     
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new UntrustedWSServer();
         server.start();
     }
     
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
     
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
     
     @Test
-    @Ignore("Not working yet")
-    public void testClientSlowToSend() throws Exception
+    @Disabled("Not working yet")
+    public void testClientSlowToSend(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testInfo);
         client.getPolicy().setIdleTimeout(60000);
         
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri);
@@ -113,7 +109,7 @@ public class SlowClientTest
         
         // Close
         clientSession.close();
-        assertTrue("Client close event", clientEndpoint.closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(clientEndpoint.closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "Client close event");
         clientEndpoint.assertCloseInfo("Client", StatusCode.NORMAL, is("Done"));
     }
 }

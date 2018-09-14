@@ -21,10 +21,11 @@ package org.eclipse.jetty.websocket.tests.client;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -50,12 +51,10 @@ import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 /**
  * Various connect condition testing
@@ -64,9 +63,6 @@ public class ClientConnectTest
 {
     private static final Logger LOG = Log.getLogger(ClientConnectTest.class);
     
-    @Rule
-    public TestName testname = new TestName();
-
     public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
     
     private final int timeout = 500;
@@ -89,7 +85,7 @@ public class ClientConnectTest
         assertThat("UpgradeException message", actualCause.getMessage(), messageMatcher);
     }
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
@@ -98,7 +94,7 @@ public class ClientConnectTest
         client.start();
     }
     
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new UntrustedWSServer();
@@ -106,13 +102,13 @@ public class ClientConnectTest
         server.start();
     }
     
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
     
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         LOG.info("Ignore the stop thread warnings (this is expected for these tests)");
@@ -120,11 +116,11 @@ public class ClientConnectTest
     }
     
     @Test
-    public void testUpgradeRequest() throws Exception
+    public void testUpgradeRequest(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
         
         Session sess = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -138,10 +134,10 @@ public class ClientConnectTest
     }
     
     @Test
-    public void testAltConnect() throws Exception
+    public void testAltConnect(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         
         HttpClient httpClient = new HttpClient();
         httpClient.start();
@@ -160,10 +156,10 @@ public class ClientConnectTest
     }
     
     @Test
-    public void testUpgradeWithAuthorizationHeader() throws Exception
+    public void testUpgradeWithAuthorizationHeader(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<UntrustedWSSession>()
         {
             @Override
@@ -195,9 +191,9 @@ public class ClientConnectTest
     }
     
     @Test
-    public void testBadHandshake() throws Exception
+    public void testBadHandshake(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         server.registerHttpService("/empty-404", (req, resp) ->
         {
             resp.setStatus(404);
@@ -207,23 +203,16 @@ public class ClientConnectTest
         Future<Session> future = client.connect(clientSocket, wsUri);
         
         // The attempt to get upgrade response future should throw error
-        try
-        {
-            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            Assert.fail("Expected ExecutionException");
-        }
-        catch (ExecutionException e)
-        {
-            // Expected Path
-            assertExecutionException(e, instanceOf(HttpResponseException.class),
-                    containsString("Not a 101 Switching Protocols Response: 404 Not Found"));
-        }
+        ExecutionException x = assertThrows(ExecutionException.class, ()->
+                future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertExecutionException(x, instanceOf(HttpResponseException.class),
+                containsString("Not a 101 Switching Protocols Response: 404 Not Found"));
     }
     
     @Test
-    public void testBadHandshake_GetOK() throws Exception
+    public void testBadHandshake_GetOK(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         server.registerHttpService("/empty-200", (req, resp) ->
         {
             resp.setStatus(200);
@@ -234,23 +223,16 @@ public class ClientConnectTest
         Future<Session> future = client.connect(clientSocket, wsUri);
         
         // The attempt to get upgrade response future should throw error
-        try
-        {
-            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            Assert.fail("Expected ExecutionException");
-        }
-        catch (ExecutionException e)
-        {
-            // Expected Path
-            assertExecutionException(e, instanceOf(HttpResponseException.class),
-                    containsString("Not a 101 Switching Protocols Response: 200 OK"));
-        }
+        ExecutionException x = assertThrows(ExecutionException.class, ()->
+            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertExecutionException(x, instanceOf(HttpResponseException.class),
+                containsString("Not a 101 Switching Protocols Response: 200 OK"));
     }
     
     @Test
-    public void testBadHandshake_GetOK_WithSecWebSocketAccept() throws Exception
+    public void testBadHandshake_GetOK_WithSecWebSocketAccept(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         server.registerHttpService("/bad-accept-200", (req, resp) ->
         {
             // Simulate a bad server that doesn't follow RFC6455 completely.
@@ -264,24 +246,16 @@ public class ClientConnectTest
         Future<Session> future = client.connect(clientSocket, wsUri);
         
         // The attempt to get upgrade response future should throw error
-        try
-        {
-            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            Assert.fail("Expected ExecutionException -> UpgradeException");
-        }
-        catch (ExecutionException e)
-        {
-            // Expected Path
-            assertExecutionException(e, instanceOf(HttpResponseException.class),
-                    containsString("Not a 101 Switching Protocols Response: 200 OK"));
-    
-        }
+        ExecutionException x = assertThrows(ExecutionException.class, ()->
+            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertExecutionException(x, instanceOf(HttpResponseException.class),
+                containsString("Not a 101 Switching Protocols Response: 200 OK"));
     }
     
     @Test
-    public void testBadHandshake_SwitchingProtocols_InvalidConnectionHeader() throws Exception
+    public void testBadHandshake_SwitchingProtocols_InvalidConnectionHeader(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         server.registerHttpService("/bad-connection-header", (req, resp) ->
         {
             // Simulate a bad server that doesn't follow RFC6455 completely.
@@ -295,23 +269,16 @@ public class ClientConnectTest
         Future<Session> future = client.connect(clientSocket, wsUri);
         
         // The attempt to get upgrade response future should throw error
-        try
-        {
-            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            Assert.fail("Expected ExecutionException -> UpgradeException");
-        }
-        catch (ExecutionException e)
-        {
-            // Expected Path
-            assertExecutionException(e, instanceOf(HttpResponseException.class),
-                    containsString("101 Switching Protocols without Connection: Upgrade not supported"));
-        }
+        ExecutionException x = assertThrows(ExecutionException.class, ()->
+            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertExecutionException(x, instanceOf(HttpResponseException.class),
+                containsString("101 Switching Protocols without Connection: Upgrade not supported"));
     }
     
     @Test
-    public void testBadHandshake_SwitchingProtocols_NoConnectionHeader() throws Exception
+    public void testBadHandshake_SwitchingProtocols_NoConnectionHeader(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         server.registerHttpService("/bad-switching-protocols-no-connection-header", (req, resp) ->
         {
             // Simulate a bad server that doesn't follow RFC6455 completely.
@@ -325,23 +292,16 @@ public class ClientConnectTest
         Future<Session> future = client.connect(clientSocket, wsUri);
         
         // The attempt to get upgrade response future should throw error
-        try
-        {
-            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            Assert.fail("Expected ExecutionException");
-        }
-        catch (ExecutionException e)
-        {
-            // Expected Path
-            assertExecutionException(e, instanceOf(HttpResponseException.class),
-                    containsString("101 Switching Protocols without Connection: Upgrade not supported"));
-        }
+        ExecutionException x = assertThrows(ExecutionException.class, ()->
+            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertExecutionException(x, instanceOf(HttpResponseException.class),
+                containsString("101 Switching Protocols without Connection: Upgrade not supported"));
     }
     
     @Test
-    public void testBadHandshake_InvalidWsAccept() throws Exception
+    public void testBadHandshake_InvalidWsAccept(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         server.registerHttpService("/bad-switching-protocols-invalid-ws-accept", (req, resp) ->
         {
             // Simulate a bad server that doesn't follow RFC6455 completely.
@@ -355,17 +315,10 @@ public class ClientConnectTest
         Future<Session> future = client.connect(clientSocket, wsUri);
         
         // The attempt to get upgrade response future should throw error
-        try
-        {
-            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            Assert.fail("Expected ExecutionException");
-        }
-        catch (ExecutionException e)
-        {
-            // Expected Path
-            assertExecutionException(e, instanceOf(HttpResponseException.class),
-                    containsString("Invalid Sec-WebSocket-Accept hash"));
-        }
+        ExecutionException x = assertThrows(ExecutionException.class, ()->
+            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertExecutionException(x, instanceOf(HttpResponseException.class),
+                containsString("Invalid Sec-WebSocket-Accept hash"));
     }
     
     /**
@@ -378,9 +331,9 @@ public class ClientConnectTest
      * @throws Exception on test failure
      */
     @Test
-    public void testHandshakeQuirk_TransferEncoding() throws Exception
+    public void testHandshakeQuirk_TransferEncoding(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         server.registerWebSocket("/quirk/tomcat", (upgradeRequest, upgradeResponse) ->
         {
             // Extra header that Tomcat 7.x returns
@@ -403,41 +356,38 @@ public class ClientConnectTest
     }
     
     @Test
-    public void testConnection_Refused() throws Exception
+    public void testConnection_Refused(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         // This should be a ws:// uri to a machine that exists, but to a port
         // that isn't listening.
         // Intentionally bad port with nothing listening on it
         URI wsUri = new URI("ws://127.0.0.1:1");
-        
-        try
+
+        ExecutionException x = assertThrows(ExecutionException.class, ()->
         {
             Future<Session> future = client.connect(clientSocket, wsUri);
-            
+
             // The attempt to get upgrade response future should throw error
             future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            Assert.fail("Expected ExecutionException");
-        }
-        catch (ExecutionException e)
-        {
-            assertExecutionException(e,
-                    anyOf(
-                            instanceOf(java.net.SocketTimeoutException.class), // seen on windows
-                            instanceOf(java.net.ConnectException.class) // seen everywhere else
-                    ),
-                    anyOf(
-                            containsString("Connect"),
-                            containsString("Timeout")
-                    )
-            );
-        }
+        });
+
+        assertExecutionException(x,
+                anyOf(
+                        instanceOf(java.net.SocketTimeoutException.class), // seen on windows
+                        instanceOf(java.net.ConnectException.class) // seen everywhere else
+                ),
+                anyOf(
+                        containsString("Connect"),
+                        containsString("Timeout")
+                )
+        );
     }
     
     @Test
-    public void testConnectionTimeout_AcceptNoUpgradeResponse() throws Exception
+    public void testConnectionTimeout_AcceptNoUpgradeResponse(TestInfo testInfo) throws Exception
     {
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         server.registerHttpService("/accept-no-upgrade-timeout", (req, resp) ->
         {
             // Intentionally take a long time here
@@ -455,16 +405,11 @@ public class ClientConnectTest
         client.setMaxIdleTimeout(500); // we do connect, just sit idle for the upgrade step
         Future<Session> future = client.connect(clientSocket, wsUri);
         
-        try
-        {
-            // The attempt to get upgrade response future should throw error
-            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            Assert.fail("Expected ExecutionException");
-        }
-        catch (ExecutionException e)
-        {
-            assertUpgradeException(e, instanceOf(java.util.concurrent.TimeoutException.class), containsString("timeout"));
-        }
+        // The attempt to get upgrade response future should throw error
+        ExecutionException x = assertThrows(ExecutionException.class, ()->
+            future.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertUpgradeException(x, instanceOf(java.util.concurrent.TimeoutException.class),
+                containsString("timeout"));
     }
     
 }

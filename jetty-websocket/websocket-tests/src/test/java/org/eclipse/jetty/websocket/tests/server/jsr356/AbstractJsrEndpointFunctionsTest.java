@@ -34,10 +34,8 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 public abstract class AbstractJsrEndpointFunctionsTest
 {
@@ -45,7 +43,7 @@ public abstract class AbstractJsrEndpointFunctionsTest
     protected static SimpleContainerScope containerScope;
     protected static ClientContainer container;
     
-    @BeforeClass
+    @BeforeAll
     public static void initContainer() throws Exception
     {
         containerScope = new SimpleContainerScope(clientPolicy);
@@ -54,15 +52,12 @@ public abstract class AbstractJsrEndpointFunctionsTest
         container.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopClientContainer() throws Exception
     {
         container.stop();
         containerScope.stop();
     }
-    
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
     
     protected AvailableEncoders encoders;
     protected AvailableDecoders decoders;

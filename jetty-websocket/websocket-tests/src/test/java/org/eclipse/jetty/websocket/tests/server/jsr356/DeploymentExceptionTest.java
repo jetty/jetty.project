@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.websocket.tests.server.jsr356;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerEndpoint;
@@ -30,6 +31,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
+import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.InvalidCloseIntSocket;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.InvalidErrorErrorSocket;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.InvalidErrorExceptionSocket;
@@ -37,56 +40,42 @@ import org.eclipse.jetty.websocket.tests.jsr356.sockets.InvalidErrorIntSocket;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.InvalidOpenCloseReasonSocket;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.InvalidOpenIntSocket;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.InvalidOpenSessionIntSocket;
-import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Deploy various {@link ServerEndpoint} annotated classes with invalid signatures,
  * check for {@link DeploymentException}
  */
-@RunWith(Parameterized.class)
 public class DeploymentExceptionTest
 {
-    @Parameters(name = "{0}")
-    public static Collection<Class<?>[]> data()
+    public static Stream<Arguments> data()
     {
-        List<Class<?>[]> data = new ArrayList<>();
-        
-        data.add(new Class<?>[]{InvalidCloseIntSocket.class});
-        data.add(new Class<?>[]{InvalidErrorErrorSocket.class});
-        data.add(new Class<?>[]{InvalidErrorExceptionSocket.class});
-        data.add(new Class<?>[]{InvalidErrorIntSocket.class});
-        data.add(new Class<?>[]{InvalidOpenCloseReasonSocket.class});
-        data.add(new Class<?>[]{InvalidOpenIntSocket.class});
-        data.add(new Class<?>[]{InvalidOpenSessionIntSocket.class});
-        
+        Class<?> invalidSockets[] = new Class[] {
+                InvalidCloseIntSocket.class,
+                InvalidErrorErrorSocket.class,
+                InvalidErrorExceptionSocket.class,
+                InvalidErrorIntSocket.class,
+                InvalidOpenCloseReasonSocket.class,
+                InvalidOpenIntSocket.class,
+                InvalidOpenSessionIntSocket.class
+        };
+
         // TODO: invalid return types
         // TODO: static methods
         // TODO: private or protected methods
         // TODO: abstract methods
         
-        return data;
+        return Arrays.stream(invalidSockets).map(Arguments::of);
     }
-    
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-    
-    /** The pojo to test */
-    @Parameterized.Parameter(0)
-    public Class<?> pojo;
     
     private Server server;
     private HandlerCollection contexts;
     
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new Server(0);
@@ -95,14 +84,15 @@ public class DeploymentExceptionTest
         server.start();
     }
     
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Test
-    public void testDeploy_InvalidSignature() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testDeploy_InvalidSignature(Class<?> pojo) throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
         
@@ -116,8 +106,7 @@ public class DeploymentExceptionTest
         try
         {
             context.start();
-            expectedException.expect(DeploymentException.class);
-            container.addEndpoint(pojo);
+            assertThrows(DeploymentException.class, () -> container.addEndpoint(pojo));
         }
         finally
         {

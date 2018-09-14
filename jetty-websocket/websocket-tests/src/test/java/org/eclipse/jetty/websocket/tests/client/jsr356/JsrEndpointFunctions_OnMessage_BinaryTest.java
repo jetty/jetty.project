@@ -19,7 +19,8 @@
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +36,7 @@ import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.TrackingSocket;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class JsrEndpointFunctions_OnMessage_BinaryTest extends AbstractJsrEndpointFunctionsTest
 {
@@ -78,8 +79,9 @@ public class JsrEndpointFunctions_OnMessage_BinaryTest extends AbstractJsrEndpoi
     @Test
     public void testInvokeMessage() throws Exception
     {
-        expectedException.expect(InvalidSignatureException.class);
-        assertOnMessageInvocation(new MessageSocket(), "onMessage()");
+        assertThrows(InvalidSignatureException.class, ()->
+            assertOnMessageInvocation(new MessageSocket(), "onMessage()")
+        );
     }
     
     @ClientEndpoint
@@ -112,10 +114,10 @@ public class JsrEndpointFunctions_OnMessage_BinaryTest extends AbstractJsrEndpoi
     @Test
     public void testInvokeMessageSession() throws Exception
     {
-        expectedException.expect(InvalidSignatureException.class);
+        assertThrows(InvalidSignatureException.class, ()->
         assertOnMessageInvocation(new MessageSessionSocket(),
                 "onMessage(JsrSession[CLIENT,%s,DummyConnection])",
-                MessageSessionSocket.class.getName());
+                MessageSessionSocket.class.getName()));
     }
     
     @ClientEndpoint

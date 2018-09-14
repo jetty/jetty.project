@@ -37,10 +37,9 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class SuspendResumeTest
 {
@@ -71,7 +70,7 @@ public class SuspendResumeTest
                                                     @Override
                                                     public void writeFailed(Throwable t)
                                                     {
-                                                        Assert.fail(t.getMessage());
+                                                        fail(t);
                                                     }
                                                 });
         }
@@ -99,20 +98,20 @@ public class SuspendResumeTest
 
     private static SimpleServletServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new BackPressureServlet());
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
 
-    @Test(timeout = 10000)
+    @Test
     public void testSuspendResume_Bulk() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
@@ -132,7 +131,7 @@ public class SuspendResumeTest
         }
     }
 
-    @Test(timeout = 10000)
+    @Test
     public void testSuspendResume_SmallBuffers() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
@@ -152,7 +151,7 @@ public class SuspendResumeTest
         }
     }
 
-    @Test(timeout = 10000)
+    @Test
     public void testSuspendResume_AsFrames() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();

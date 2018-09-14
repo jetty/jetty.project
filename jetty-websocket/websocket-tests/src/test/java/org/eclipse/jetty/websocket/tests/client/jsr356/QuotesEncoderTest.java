@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
 import java.io.BufferedReader;
@@ -41,12 +42,10 @@ import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingSocket;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.Quotes;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.QuotesEncoder;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class QuotesEncoderTest
 {
@@ -75,26 +74,23 @@ public class QuotesEncoderTest
         }
     }
     
-    @Rule
-    public TestName testname = new TestName();
-    
     private UntrustedWSServer server;
     private WebSocketContainer client;
     
-    @Before
+    @BeforeEach
     public void initClient()
     {
         client = ContainerProvider.getWebSocketContainer();
     }
     
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new UntrustedWSServer();
         server.start();
     }
     
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
@@ -102,10 +98,10 @@ public class QuotesEncoderTest
     
     private void assertReceivedQuotes(String result, Quotes quotes)
     {
-        Assert.assertThat("Quote Author", result, containsString("Author: " + quotes.getAuthor()));
+        assertThat("Quote Author", result, containsString("Author: " + quotes.getAuthor()));
         for (String quote : quotes.getQuotes())
         {
-            Assert.assertThat("Quote", result, containsString("Quote: " + quote));
+            assertThat("Quote", result, containsString("Quote: " + quote));
         }
     }
     
@@ -145,10 +141,10 @@ public class QuotesEncoderTest
     }
     
     @Test
-    public void testSingleQuotes() throws Exception
+    public void testSingleQuotes(TestInfo testInfo) throws Exception
     {
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
-        QuotesSocket quoter = new QuotesSocket(testname.getMethodName());
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
+        QuotesSocket quoter = new QuotesSocket(testInfo.getDisplayName());
         
         Session session = null;
         try
@@ -168,10 +164,10 @@ public class QuotesEncoderTest
     }
     
     @Test
-    public void testTwoQuotes() throws Exception
+    public void testTwoQuotes(TestInfo testInfo) throws Exception
     {
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
-        QuotesSocket quoter = new QuotesSocket(testname.getMethodName());
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
+        QuotesSocket quoter = new QuotesSocket(testInfo.getDisplayName());
     
         Session session = null;
         try

@@ -21,7 +21,8 @@ package org.eclipse.jetty.websocket.tests.client.jsr356;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,23 +46,18 @@ import org.eclipse.jetty.websocket.tests.jsr356.coders.DateEncoder;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.DateTimeEncoder;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.TimeEncoder;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.ValidDualEncoder;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class AvailableEncodersTest
 {
     private static EndpointConfig testConfig;
     
-    @BeforeClass
+    @BeforeAll
     public static void initConfig()
     {
         testConfig = new EmptyClientEndpointConfig();
     }
-    
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
     
     private AvailableEncoders encoders = new AvailableEncoders(testConfig);
     
@@ -288,9 +284,9 @@ public class AvailableEncodersTest
     public void testCustomEncoder_Register_Duplicate()
     {
         // has duplicated support for the same target Type
-        expectedException.expect(InvalidWebSocketException.class);
-        expectedException.expectMessage(containsString("Duplicate"));
-        encoders.register(BadDualEncoder.class);
+        InvalidWebSocketException x = assertThrows(InvalidWebSocketException.class,
+                () -> encoders.register(BadDualEncoder.class));
+        assertThat(x.getMessage(), containsString("Duplicate"));
     }
     
     @Test
@@ -300,8 +296,8 @@ public class AvailableEncodersTest
         encoders.register(DateEncoder.class);
         
         // Register TimeEncoder (which also wants to decode java.util.Date)
-        expectedException.expect(InvalidWebSocketException.class);
-        expectedException.expectMessage(containsString("Duplicate"));
-        encoders.register(TimeEncoder.class);
+        InvalidWebSocketException x = assertThrows(InvalidWebSocketException.class,
+                () -> encoders.register(TimeEncoder.class));
+        assertThat(x.getMessage(), containsString("Duplicate"));
     }
 }

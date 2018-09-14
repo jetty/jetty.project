@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests.server.jsr356;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assume.assumeThat;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;

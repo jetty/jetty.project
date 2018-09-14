@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.tests.server;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -30,21 +30,18 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests of Known Good UTF8 sequences.
  * <p>
  * Should be preserved / echoed back, with normal close code.
  */
-@RunWith(Parameterized.class)
 public class Text_GoodUtf8Test extends AbstractLocalServerCase
 {
-    @Parameters(name = "{0} - {1}")
-    public static Collection<String[]> data()
+    public static Stream<Arguments> data()
     {
         // The various Good UTF8 sequences as a String (hex form)
         List<String[]> data = new ArrayList<>();
@@ -114,20 +111,15 @@ public class Text_GoodUtf8Test extends AbstractLocalServerCase
         data.add(new String[]{"6.23.1", "EFBFBD"});
         // @formatter:on
         
-        return data;
+        return data.stream().map(Arguments::of);
     }
     
-    private final ByteBuffer msg;
-    
-    public Text_GoodUtf8Test(String testId, String hexMsg)
+    @ParameterizedTest
+    @MethodSource("data")
+    public void assertEchoTextMessage(String testId, String hexMsg) throws Exception
     {
-        LOG.debug("Test ID: {}", testId);
-        this.msg = Hex.asByteBuffer(hexMsg);
-    }
-    
-    @Test
-    public void assertEchoTextMessage() throws Exception
-    {
+        ByteBuffer msg = Hex.asByteBuffer(hexMsg);
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(msg));
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());

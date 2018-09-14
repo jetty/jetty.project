@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.tests.server.jsr356;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -42,9 +42,9 @@ import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.Quotes;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.QuotesDecoder;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.QuotesUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests a {@link javax.websocket.Decoder.TextStream} automatic decoding to a Socket onMessage parameter
@@ -70,7 +70,7 @@ public class QuotesDecoderTextStreamTest
     
     private static LocalServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer()
@@ -85,7 +85,7 @@ public class QuotesDecoderTextStreamTest
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();

@@ -21,9 +21,10 @@ package org.eclipse.jetty.websocket.tests.client;
 import static org.hamcrest.CoreMatchers.anything;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.net.URI;
@@ -38,7 +39,6 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -52,13 +52,10 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 /**
  * Tests various early disconnected connection situations
@@ -217,36 +214,30 @@ public class ClientDisconnectedTest
         }
     }
 
-    @Rule
-    public TestName testname = new TestName();
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     private SimpleServletServer server;
     private WebSocketClient client;
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new SimpleServletServer(new EarlyCloseServlet());
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         client = new WebSocketClient();
         client.start();
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
@@ -258,20 +249,21 @@ public class ClientDisconnectedTest
      * @throws Exception on test failure
      */
     @Test
-    public void immediateDrop() throws Exception
+    public void immediateDrop(TestInfo testInfo) throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("openclose");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getDisplayName());
 
         URI wsUri = server.getServerUri().resolve("/");
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
 
-        expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(instanceOf(HttpResponseException.class));
-        expectedException.expectMessage(containsString("503 Endpoint Creation Failed"));
-        clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        ExecutionException ee = assertThrows(ExecutionException.class, () -> {
+            clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        });
+        assertThat(ee, instanceOf(HttpResponseException.class));
+        assertThat(ee.getMessage(), containsString("503 Endpoint Creation Failed"));
     }
 
     /**
@@ -280,12 +272,12 @@ public class ClientDisconnectedTest
      * @throws Exception on test failure
      */
     @Test
-    public void remoteOpenFailure() throws Exception
+    public void remoteOpenFailure(TestInfo testInfo) throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("openfail");
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getDisplayName());
 
         URI wsUri = server.getServerUri().resolve("/");
 
@@ -310,132 +302,6 @@ public class ClientDisconnectedTest
             {
                 session.close();
             }
-        }
-    }
-
-    /**
-     * The connection has performed handshake successfully.
-     * <p>
-     *     Send of message to remote results in dropped connection on server side.
-     * </p>
-     *
-     * @throws Exception on test failure
-     */
-    @Test
-    @Ignore("Needs review")
-    public void messageDrop() throws Exception
-    {
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.setSubProtocols("msgdrop");
-
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-
-        URI wsUri = server.getServerUri().resolve("/");
-        client.setMaxIdleTimeout(3000);
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-
-        Session session = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-
-        try
-        {
-            clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-
-            assertThat("OnOpen.UpgradeRequest", clientSocket.openUpgradeRequest, notNullValue());
-            assertThat("OnOpen.UpgradeResponse", clientSocket.openUpgradeResponse, notNullValue());
-            assertThat("Negotiated SubProtocol", clientSocket.openUpgradeResponse.getAcceptedSubProtocol(), is("msgdrop"));
-
-            session.getRemote().sendString("drop-me");
-
-            clientSocket.awaitErrorEvent("Client");
-            clientSocket.assertErrorEvent("Client", instanceOf(WebSocketTimeoutException.class), containsString("Connection Idle Timeout"));
-        }
-        finally
-        {
-            session.close();
-        }
-    }
-
-    /**
-     * The connection has performed handshake successfully.
-     * <p>
-     *     Client sends close handshake, remote drops connection with no reply
-     * </p>
-     *
-     * @throws Exception on test failure
-     */
-    @Test
-    @Ignore("Needs review")
-    public void closeDrop() throws Exception
-    {
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.setSubProtocols("closedrop");
-
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-
-        URI wsUri = server.getServerUri().resolve("/");
-        client.setMaxIdleTimeout(3000);
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-
-        Session session = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-
-        try
-        {
-            clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-
-            assertThat("OnOpen.UpgradeRequest", clientSocket.openUpgradeRequest, notNullValue());
-            assertThat("OnOpen.UpgradeResponse", clientSocket.openUpgradeResponse, notNullValue());
-            assertThat("Negotiated SubProtocol", clientSocket.openUpgradeResponse.getAcceptedSubProtocol(), is("closedrop"));
-
-            clientSocket.close(StatusCode.NORMAL, "All Done");
-
-            clientSocket.awaitErrorEvent("Client");
-            clientSocket.assertErrorEvent("Client", instanceOf(WebSocketTimeoutException.class), containsString("Connection Idle Timeout"));
-        }
-        finally
-        {
-            session.close();
-        }
-    }
-
-    /**
-     * The connection has performed handshake successfully.
-     * <p>
-     *     Client sends close handshake, remote never replies (but leaves connection open)
-     * </p>
-     *
-     * @throws Exception on test failure
-     */
-    @Test
-    @Ignore("Needs review")
-    public void closeNoReply() throws Exception
-    {
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.setSubProtocols("closenoreply");
-
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-
-        URI wsUri = server.getServerUri().resolve("/");
-        client.setMaxIdleTimeout(3000);
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-
-        Session session = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-
-        try
-        {
-            clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-
-            assertThat("OnOpen.UpgradeRequest", clientSocket.openUpgradeRequest, notNullValue());
-            assertThat("OnOpen.UpgradeResponse", clientSocket.openUpgradeResponse, notNullValue());
-            assertThat("Negotiated SubProtocol", clientSocket.openUpgradeResponse.getAcceptedSubProtocol(), is("closenoreply"));
-
-            clientSocket.close(StatusCode.NORMAL, "All Done");
-
-            clientSocket.awaitErrorEvent("Client");
-            clientSocket.assertErrorEvent("Client", instanceOf(WebSocketTimeoutException.class), containsString("Connection Idle Timeout"));
-        }
-        finally
-        {
-            session.close();
         }
     }
 }

@@ -20,9 +20,9 @@ package org.eclipse.jetty.websocket.tests.jsr356;
 
 
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
@@ -84,27 +84,27 @@ public abstract class AbstractJsrTrackingEndpoint extends Endpoint
     
     public void assertNoErrorEvents(String prefix)
     {
-        assertTrue(prefix + " error event should not have occurred", error.get() == null);
+        assertTrue(error.get() == null, prefix + " error event should not have occurred");
     }
     
     public void assertNotClosed(String prefix)
     {
-        assertTrue(prefix + " close event should not have occurred", closeLatch.getCount() > 0);
+        assertTrue(closeLatch.getCount() > 0, prefix + " close event should not have occurred");
     }
     
     public void assertNotOpened(String prefix)
     {
-        assertTrue(prefix + " open event should not have occurred", openLatch.getCount() > 0);
+        assertTrue(openLatch.getCount() > 0, prefix + " open event should not have occurred");
     }
     
     public void awaitCloseEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onClose event", closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), prefix + " onClose event");
     }
     
     public void awaitOpenEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onOpen event", openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), prefix + " onOpen event");
     }
     
     @Override
@@ -135,7 +135,7 @@ public abstract class AbstractJsrTrackingEndpoint extends Endpoint
         CloseInfo close = new CloseInfo(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());
         boolean closeTracked = closeInfo.compareAndSet(null, close);
         this.closeLatch.countDown();
-        assertTrue("Close only happened once", closeTracked);
+        assertTrue(closeTracked, "Close only happened once");
     }
     
     @Override

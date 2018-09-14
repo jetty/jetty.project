@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.tests.server;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -32,39 +33,35 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.BadFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.servlets.EchoSocket;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test various bad / forbidden opcodes (per spec)
  */
-@RunWith(Parameterized.class)
 public class BadOpCodesTest extends AbstractLocalServerCase
 {
-    @Parameterized.Parameters(name = "opcode={0}")
-    public static List<Object[]> data()
+    public static Stream<Arguments> data()
     {
-        List<Object[]> data = new ArrayList<>();
-        data.add(new Object[]{3}); // From Autobahn WebSocket Server Testcase 4.1.1
-        data.add(new Object[]{4}); // From Autobahn WebSocket Server Testcase 4.1.2
-        data.add(new Object[]{5}); // From Autobahn WebSocket Server Testcase 4.1.3
-        data.add(new Object[]{6}); // From Autobahn WebSocket Server Testcase 4.1.4
-        data.add(new Object[]{7}); // From Autobahn WebSocket Server Testcase 4.1.5
-        data.add(new Object[]{11}); // From Autobahn WebSocket Server Testcase 4.2.1
-        data.add(new Object[]{12}); // From Autobahn WebSocket Server Testcase 4.2.2
-        data.add(new Object[]{13}); // From Autobahn WebSocket Server Testcase 4.2.3
-        data.add(new Object[]{14}); // From Autobahn WebSocket Server Testcase 4.2.4
-        data.add(new Object[]{15}); // From Autobahn WebSocket Server Testcase 4.2.5
+        List<Arguments> data = new ArrayList<>();
+        data.add(Arguments.of(3)); // From Autobahn WebSocket Server Testcase 4.1.1
+        data.add(Arguments.of(4)); // From Autobahn WebSocket Server Testcase 4.1.2
+        data.add(Arguments.of(5)); // From Autobahn WebSocket Server Testcase 4.1.3
+        data.add(Arguments.of(6)); // From Autobahn WebSocket Server Testcase 4.1.4
+        data.add(Arguments.of(7)); // From Autobahn WebSocket Server Testcase 4.1.5
+        data.add(Arguments.of(11)); // From Autobahn WebSocket Server Testcase 4.2.1
+        data.add(Arguments.of(12)); // From Autobahn WebSocket Server Testcase 4.2.2
+        data.add(Arguments.of(13)); // From Autobahn WebSocket Server Testcase 4.2.3
+        data.add(Arguments.of(14)); // From Autobahn WebSocket Server Testcase 4.2.4
+        data.add(Arguments.of(15)); // From Autobahn WebSocket Server Testcase 4.2.5
         
-        return data;
+        return data.stream();
     }
     
-    @Parameterized.Parameter
-    public int opcode;
-    
-    @Test
-    public void testBadOpCode() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testBadOpCode(int opcode) throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new BadFrame((byte) opcode)); // intentionally bad
@@ -79,9 +76,10 @@ public class BadOpCodesTest extends AbstractLocalServerCase
             session.expect(expect);
         }
     }
-    
-    @Test
-    public void testText_BadOpCode_Ping() throws Exception
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testText_BadOpCode_Ping(int opcode) throws Exception
     {
         ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
         

@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -45,12 +48,10 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingSocket;
 import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class DecoderReaderManySmallTest
 {
@@ -91,10 +92,10 @@ public class DecoderReaderManySmallTest
     public static class EventIdSocket extends AbstractJsrTrackingSocket
     {
         public BlockingQueue<EventId> messageQueue = new LinkedBlockingDeque<>();
-        
-        public EventIdSocket(String id)
+
+        public EventIdSocket(TestInfo testInfo)
         {
-            super(id);
+            super(testInfo.getDisplayName());
         }
         
         @SuppressWarnings("unused")
@@ -144,38 +145,35 @@ public class DecoderReaderManySmallTest
         }
     }
     
-    @Rule
-    public TestName testname = new TestName();
-    
     private UntrustedWSServer server;
     private WebSocketContainer client;
     
-    @Before
+    @BeforeEach
     public void initClient()
     {
         client = ContainerProvider.getWebSocketContainer();
     }
     
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new UntrustedWSServer();
         server.start();
     }
     
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
     
     @Test
-    public void testManyIds() throws Exception
+    public void testManyIds(TestInfo testInfo) throws Exception
     {
         server.registerWebSocket("/eventids", new EventIdServerCreator());
         
         URI wsUri = server.getWsUri().resolve("/eventids");
-        EventIdSocket clientSocket = new EventIdSocket(testname.getMethodName());
+        EventIdSocket clientSocket = new EventIdSocket(testInfo);
         Session clientSession = client.connectToServer(clientSocket, wsUri);
         
         final int from = 1000;
@@ -189,14 +187,14 @@ public class DecoderReaderManySmallTest
         {
             // validate that ids don't repeat.
             EventId receivedId = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-            Assert.assertFalse("Already saw ID: " + receivedId.eventId, seen.contains(receivedId.eventId));
+            assertFalse(seen.contains(receivedId.eventId),"Already saw ID: " + receivedId.eventId);
             seen.add(receivedId.eventId);
         }
         
         // validate that all expected ids have been seen (order is irrelevant here)
         for (int expected = from; expected < to; expected++)
         {
-            Assert.assertTrue("Has expected id:" + expected, seen.contains(expected));
+            assertTrue(seen.contains(expected), "Has expected id:" + expected);
         }
     }
 }

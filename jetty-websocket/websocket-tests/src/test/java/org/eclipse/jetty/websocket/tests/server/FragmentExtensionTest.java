@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,24 +40,23 @@ import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.UnitExtensionStack;
 import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class FragmentExtensionTest
 {
     private static SimpleServletServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
@@ -82,7 +81,8 @@ public class FragmentExtensionTest
     {
         ExtensionFactory extensionFactory = server.getWebSocketServletFactory().getExtensionFactory();
         assertThat("Extension Factory", extensionFactory, notNullValue());
-        Assume.assumeTrue("Server has fragment registered", extensionFactory.isAvailable("fragment"));
+        Assumptions.assumeTrue(extensionFactory.isAvailable("fragment"),
+                "Server has fragment registered");
         
         int fragSize = 4;
         
@@ -113,7 +113,7 @@ public class FragmentExtensionTest
             for (int i = 0; i < parts.length; i++)
             {
                 WebSocketFrame frame = incomingFrames.poll();
-                Assert.assertThat("text[" + i + "].payload", frame.getPayloadAsUTF8(), is(parts[i]));
+                assertThat("text[" + i + "].payload", frame.getPayloadAsUTF8(), is(parts[i]));
             }
         }
     }

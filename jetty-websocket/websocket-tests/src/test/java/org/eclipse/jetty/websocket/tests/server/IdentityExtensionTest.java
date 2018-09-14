@@ -21,7 +21,8 @@ package org.eclipse.jetty.websocket.tests.server;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,35 +42,33 @@ import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.UnitExtensionStack;
 import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class IdentityExtensionTest
 {
     private static SimpleServletServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new EchoServlet());
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Test(timeout = 60000)
+    @Test
     public void testIdentityExtension() throws Exception
     {
         ExtensionFactory extensionFactory = server.getWebSocketServletFactory().getExtensionFactory();
         assertThat("Extension Factory", extensionFactory, notNullValue());
-        Assume.assumeTrue("Server has identity registered", extensionFactory.isAvailable("identity"));
+        assumeTrue(extensionFactory.isAvailable("identity"), "Server has identity registered");
         
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("Hello Identity"));
@@ -94,8 +93,8 @@ public class IdentityExtensionTest
             BlockingQueue<WebSocketFrame> incomingFrames = extensionStack.processIncoming(framesQueue);
             
             WebSocketFrame frame = incomingFrames.poll();
-            Assert.assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
-            Assert.assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), is("Hello Identity"));
+            assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
+            assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), is("Hello Identity"));
         }
     }
 }

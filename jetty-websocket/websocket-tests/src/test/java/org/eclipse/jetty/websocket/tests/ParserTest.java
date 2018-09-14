@@ -23,7 +23,9 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -55,16 +57,10 @@ import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 public class ParserTest
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-    
     private ParserCapture parse(WebSocketPolicy policy, ByteBuffer buffer)
     {
         ParserCapture capture = new ParserCapture();
@@ -100,7 +96,7 @@ public class ParserTest
         ParserCapture capture = parse(policy, expected);
         
         BinaryFrame pActual = (BinaryFrame) capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
     }
 
     /**
@@ -133,7 +129,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.BINARY,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
     }
 
@@ -165,7 +161,7 @@ public class ParserTest
         ParserCapture capture = parse(policy, expected);
         
         BinaryFrame pActual = (BinaryFrame) capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // .assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
     }
 
@@ -199,7 +195,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.BINARY,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
     }
 
     /**
@@ -233,7 +229,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.BINARY,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
     }
 
     /**
@@ -267,7 +263,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.BINARY,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
     }
 
     /**
@@ -290,7 +286,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.BINARY,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(0));
+        assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(0));
     }
     
     /**
@@ -302,9 +298,9 @@ public class ParserTest
         ByteBuffer expected = Hex.asByteBuffer("880100");
     
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        expectedException.expect(ProtocolException.class);
-        expectedException.expectMessage(CoreMatchers.containsString("Invalid close frame payload length"));
-        parse(policy, expected);
+        ProtocolException x = assertThrows(ProtocolException.class, () -> parse(policy, expected));
+        assertThat(x.getMessage(), containsString("Invalid close frame payload length"));
+
     }
     
     /**
@@ -326,7 +322,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.CLOSE,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(0));
+        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(0));
     }
     
     /**
@@ -364,9 +360,8 @@ public class ParserTest
         expected.flip();
     
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        expectedException.expect(ProtocolException.class);
-        expectedException.expectMessage(CoreMatchers.containsString("Invalid control frame payload length"));
-        parse(policy, expected);
+        ProtocolException x = assertThrows(ProtocolException.class, () -> parse(policy, expected));
+        assertThat(x.getMessage(), containsString("Invalid control frame payload length"));
     }
     
     /**
@@ -388,7 +383,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.CLOSE,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(2));
+        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(2));
     }
     
     /**
@@ -424,7 +419,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.CLOSE,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(125));
+        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(125));
     }
     
     /**
@@ -453,7 +448,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.CLOSE,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(messageBytes.length + 2));
+        assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(messageBytes.length + 2));
     }
     
     /**
@@ -475,8 +470,7 @@ public class ParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(policy).asBuffer(send);
         
-        expectedException.expect(ProtocolException.class);
-        parse(policy, completeBuf);
+        assertThrows(ProtocolException.class, ()-> parse(policy, completeBuf));
     }
     
     /**
@@ -590,9 +584,9 @@ public class ParserTest
         
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
     
-        expectedException.expect(ProtocolException.class);
-        expectedException.expectMessage(containsString("Unknown opcode: 11"));
-        parse(policy, expected);
+        ProtocolException x = assertThrows(ProtocolException.class, () -> parse(policy, expected));
+        assertThat(x.getMessage(), containsString("Unknown opcode: 11"));
+
     }
     
     /**
@@ -608,10 +602,9 @@ public class ParserTest
         expected.flip();
     
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        
-        expectedException.expect(ProtocolException.class);
-        expectedException.expectMessage(containsString("Unknown opcode: 12"));
-        parse(policy, expected);
+
+        ProtocolException x = assertThrows(ProtocolException.class, () -> parse(policy, expected));
+        assertThat(x.getMessage(), containsString("Unknown opcode: 12"));
     }
     
     /**
@@ -627,10 +620,9 @@ public class ParserTest
         expected.flip();
     
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        
-        expectedException.expect(ProtocolException.class);
-        expectedException.expectMessage(containsString("Unknown opcode: 3"));
-        parse(policy, expected);
+
+        ProtocolException x = assertThrows(ProtocolException.class, () -> parse(policy, expected));
+        assertThat(x.getMessage(), containsString("Unknown opcode: 3"));
     }
     
     /**
@@ -646,10 +638,9 @@ public class ParserTest
         expected.flip();
     
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        
-        expectedException.expect(ProtocolException.class);
-        expectedException.expectMessage(containsString("Unknown opcode: 4"));
-        parse(policy, expected);
+
+        ProtocolException x = assertThrows(ProtocolException.class, () -> parse(policy, expected));
+        assertThat(x.getMessage(), containsString("Unknown opcode: 4"));
     }
     
     /**
@@ -683,8 +674,8 @@ public class ParserTest
         capture.assertHasFrame(OpCode.PING,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(bytes.length));
-        Assert.assertEquals("PingFrame.payload",bytes.length,pActual.getPayloadLength());
+        assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(bytes.length));
+        assertEquals(bytes.length,pActual.getPayloadLength(),"PingFrame.payload");
     }
     
     @Test
@@ -703,7 +694,7 @@ public class ParserTest
         PingFrame ping = (PingFrame)capture.framesQueue.poll(1, TimeUnit.SECONDS);
         
         String actual = BufferUtil.toUTF8String(ping.getPayload());
-        Assert.assertThat("PingFrame.payload",actual,is("Hello"));
+        assertThat("PingFrame.payload",actual,is("Hello"));
     }
     
     /**
@@ -732,8 +723,8 @@ public class ParserTest
         capture.assertHasFrame(OpCode.PING,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(bytes.length));
-        Assert.assertEquals("PingFrame.payload",bytes.length,pActual.getPayloadLength());
+        assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(bytes.length));
+        assertEquals(bytes.length,pActual.getPayloadLength(),"PingFrame.payload");
     }
     
     /**
@@ -755,8 +746,8 @@ public class ParserTest
         capture.assertHasFrame(OpCode.PING,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(0));
-        Assert.assertEquals("PingFrame.payload",0,pActual.getPayloadLength());
+        assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(0));
+        assertEquals(0,pActual.getPayloadLength(),"PingFrame.payload");
     }
     
     /**
@@ -786,8 +777,8 @@ public class ParserTest
         capture.assertHasFrame(OpCode.PING,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(message.length()));
-        Assert.assertEquals("PingFrame.payload",message.length(),pActual.getPayloadLength());
+        assertThat("PingFrame.payloadLength",pActual.getPayloadLength(),is(message.length()));
+        assertEquals(message.length(),pActual.getPayloadLength(),"PingFrame.payload");
     }
     
     /**
@@ -825,8 +816,7 @@ public class ParserTest
     
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         
-        expectedException.expect(ProtocolException.class);
-        parse(policy, expected);
+        assertThrows(ProtocolException.class, () -> parse(policy, expected));
     }
     
     /**
@@ -889,8 +879,7 @@ public class ParserTest
         
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         
-        expectedException.expect(ProtocolException.class);
-        parse(policy, expected);
+        assertThrows(ProtocolException.class, () -> parse(policy, expected));
     }
     
     /**
@@ -1154,7 +1143,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
     
@@ -1188,7 +1177,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
     
@@ -1222,7 +1211,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
     
@@ -1256,7 +1245,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
         // .assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
     
@@ -1291,7 +1280,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
     }
     
     /**
@@ -1326,7 +1315,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
+        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
     }
     
     /**
@@ -1346,8 +1335,7 @@ public class ParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(policy).asBuffer(send);
         
-        expectedException.expect(ProtocolException.class);
-        parse(policy, completeBuf);
+        assertThrows(ProtocolException.class, () -> parse(policy, completeBuf));
     }
     
     /**
@@ -1369,7 +1357,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
         
         Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(0));
+        assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(0));
     }
     
     @Test
@@ -1383,7 +1371,7 @@ public class ParserTest
         byte utf[] = new byte[2048];
         Arrays.fill(utf,(byte)'a');
         
-        Assert.assertThat("Must be a medium length payload",utf.length,allOf(greaterThan(0x7E),lessThan(0xFFFF)));
+        assertThat("Must be a medium length payload",utf.length,allOf(greaterThan(0x7E),lessThan(0xFFFF)));
         
         ByteBuffer buf = ByteBuffer.allocate(utf.length + 8);
         buf.put((byte)0x81); // text frame, fin = true
@@ -1393,8 +1381,7 @@ public class ParserTest
         MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
         
-        expectedException.expect(MessageTooLargeException.class);
-        parse(policy, buf);
+        assertThrows(MessageTooLargeException.class, () -> parse(policy, buf));
     }
     
     @Test
@@ -1410,7 +1397,7 @@ public class ParserTest
         String expectedText = sb.toString();
         byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
         
-        Assert.assertThat("Must be a long length payload",utf.length,greaterThan(0xFFFF));
+        assertThat("Must be a long length payload",utf.length,greaterThan(0xFFFF));
         
         ByteBuffer buf = ByteBuffer.allocate(utf.length + 32);
         buf.put((byte)0x81); // text frame, fin = true
@@ -1426,7 +1413,7 @@ public class ParserTest
         
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
+        assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
     
     @Test
@@ -1487,7 +1474,7 @@ public class ParserTest
         String expectedText = sb.toString();
         byte utf[] = expectedText.getBytes(StandardCharsets.UTF_8);
         
-        Assert.assertThat("Must be a medium length payload",utf.length,allOf(greaterThan(0x7E),lessThan(0xFFFF)));
+        assertThat("Must be a medium length payload",utf.length,allOf(greaterThan(0x7E),lessThan(0xFFFF)));
         
         ByteBuffer buf = ByteBuffer.allocate(utf.length + 10);
         buf.put((byte)0x81);
@@ -1502,7 +1489,7 @@ public class ParserTest
         
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
+        assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
     
     @Test
@@ -1523,7 +1510,7 @@ public class ParserTest
         
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
+        assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
     
     @Test
@@ -1557,9 +1544,9 @@ public class ParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CONTINUATION,1);
         WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame[0].data",txt.getPayloadAsUTF8(),is(part1));
+        assertThat("TextFrame[0].data",txt.getPayloadAsUTF8(),is(part1));
         txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame[1].data",txt.getPayloadAsUTF8(),is(part2));
+        assertThat("TextFrame[1].data",txt.getPayloadAsUTF8(),is(part2));
     }
     
     @Test
@@ -1581,6 +1568,6 @@ public class ParserTest
         
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
+        assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
 }

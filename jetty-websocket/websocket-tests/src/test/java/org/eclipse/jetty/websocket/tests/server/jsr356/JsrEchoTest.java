@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import javax.websocket.CloseReason;
 import javax.websocket.OnMessage;
@@ -38,16 +39,15 @@ import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.LocalServer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests various ways to echo with JSR356
  */
-@RunWith(Parameterized.class)
 public class JsrEchoTest
 {
     @SuppressWarnings("unused")
@@ -158,22 +158,15 @@ public class JsrEchoTest
             EchoAsyncStatelessSocket.class,
             EchoReturnTextSocket.class);
     
-    @Parameterized.Parameters(name = "{0}")
-    public static List<Object[]> data()
+
+    public static Stream<Arguments> data()
     {
-        List<Object[]> data = new ArrayList<>();
-        
-        for (Class<?> clazz : TESTCLASSES)
-        {
-            data.add(new Object[]{clazz.getSimpleName(), clazz});
-        }
-        
-        return data;
+        return TESTCLASSES.stream().map(Arguments::of);
     }
     
     private static LocalServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new LocalServer()
@@ -192,20 +185,15 @@ public class JsrEchoTest
         server.start();
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Parameterized.Parameter
-    public String endpointClassname;
-    
-    @Parameterized.Parameter(1)
-    public Class<?> endpointClass;
-    
-    @Test
-    public void testTextEcho() throws Exception
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testTextEcho(Class<?> endpointClass) throws Exception
     {
         String requestPath = endpointClass.getAnnotation(ServerEndpoint.class).value();
         

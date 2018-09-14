@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.concurrent.TimeUnit;
 
@@ -29,7 +29,7 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.TrackingSocket;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class JsrEndpointFunctions_OnErrorTest extends AbstractJsrEndpointFunctionsTest
 {

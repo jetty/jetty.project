@@ -39,9 +39,9 @@ import org.eclipse.jetty.websocket.tests.jsr356.coders.DateDecoder;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.TimeEncoder;
 import org.eclipse.jetty.websocket.tests.server.jsr356.configs.EchoSocketConfigurator;
 import org.eclipse.jetty.websocket.tests.server.jsr356.sockets.ConfiguredEchoSocket;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Example of an annotated echo server discovered via annotation scanning.
@@ -52,7 +52,7 @@ public class AnnotatedServerEndpointTest
     
     private static WSServer server;
     
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         Path testdir = MavenTestingUtils.getTargetTestingPath(AnnotatedServerEndpointTest.class.getName());
@@ -69,7 +69,7 @@ public class AnnotatedServerEndpointTest
         server.deployWebapp(webapp);
     }
     
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();

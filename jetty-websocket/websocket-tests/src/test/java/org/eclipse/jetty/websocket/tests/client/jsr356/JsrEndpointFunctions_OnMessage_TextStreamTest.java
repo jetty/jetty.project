@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
 import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.TrackingSocket;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class JsrEndpointFunctions_OnMessage_TextStreamTest extends AbstractJsrEndpointFunctionsTest
 {

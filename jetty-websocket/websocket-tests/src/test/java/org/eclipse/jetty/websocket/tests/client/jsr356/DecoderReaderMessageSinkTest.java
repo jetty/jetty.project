@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,15 +41,15 @@ import org.eclipse.jetty.websocket.common.io.CompletableFutureFrameCallback;
 import org.eclipse.jetty.websocket.common.io.FutureFrameCallback;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedReaderMessageSink;
-import org.junit.AfterClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 
 public class DecoderReaderMessageSinkTest
 {
     private static ThreadPoolExecutor executor = new ThreadPoolExecutor(5, 5, 0L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<>());
     
-    @AfterClass
+    @AfterAll
     public static void stopExecutor()
     {
         executor.shutdown();

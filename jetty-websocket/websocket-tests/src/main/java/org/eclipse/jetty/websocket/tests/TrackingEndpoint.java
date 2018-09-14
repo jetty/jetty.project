@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.tests;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
@@ -38,6 +38,7 @@ import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
+import org.junit.jupiter.api.TestInfo;
 
 public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSession> implements WebSocketListener, WebSocketFrameListener
 {
@@ -47,7 +48,13 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSession>
     public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> bufferQueue = new LinkedBlockingDeque<>();
-    
+
+    public TrackingEndpoint(TestInfo testInfo)
+    {
+        super(testInfo.getDisplayName());
+    }
+
+    // TODO: remove
     public TrackingEndpoint(String id)
     {
         super(id);

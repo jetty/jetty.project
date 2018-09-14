@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.tests.jsr356.coders;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Test various {@link javax.websocket.Encoder.Text} scenarios

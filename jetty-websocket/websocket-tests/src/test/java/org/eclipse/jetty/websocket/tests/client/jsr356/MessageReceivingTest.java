@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.tests.client.jsr356;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.net.URI;
@@ -60,11 +60,11 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.DataUtils;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * This class tests receiving of messages by different types of {@link MessageHandler}
@@ -185,7 +185,7 @@ public class MessageReceivingTest
     private static URI serverUri;
     private WebSocketContainer container;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws Exception
     {
         server = new Server();
@@ -204,19 +204,19 @@ public class MessageReceivingTest
         serverUri = WSURI.toWebsocket(server.getURI()).resolve("/");
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() throws Exception
     {
         server.stop();
     }
 
-    @Before
+    @BeforeEach
     public void initClient()
     {
         container = ContainerProvider.getWebSocketContainer();
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         ((LifeCycle) container).stop();

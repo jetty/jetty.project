@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.reflect.Arg;
 import org.eclipse.jetty.websocket.common.reflect.UnorderedSignature;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class UnorderedSignatureTest
 {

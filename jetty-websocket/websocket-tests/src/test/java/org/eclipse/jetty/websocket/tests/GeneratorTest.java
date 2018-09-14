@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -50,16 +51,11 @@ import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 public class GeneratorTest
 {
     private static final Logger LOG = Log.getLogger(GeneratorTest.WindowHelper.class);
-    
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
     
     private static UnitGenerator unitGenerator = new UnitGenerator(WebSocketPolicy.newServerPolicy(), true);
 
@@ -363,9 +359,9 @@ public class GeneratorTest
     {
         CloseFrame closeFrame = new CloseFrame();
         closeFrame.setPayload(Hex.asByteBuffer("00"));
-        
-        expectedException.expect(ProtocolException.class);
-        unitGenerator.generate(closeFrame);
+
+        assertThrows(ProtocolException.class, ()->
+        unitGenerator.generate(closeFrame));
     }
 
     @Test
@@ -416,9 +412,9 @@ public class GeneratorTest
         bb.put(messageBytes);
         
         BufferUtil.flipToFlush(bb,0);
-    
-        expectedException.expect(ProtocolException.class);
-        closeFrame.setPayload(bb);
+
+        assertThrows(ProtocolException.class, ()->
+        closeFrame.setPayload(bb));
     }
     
     /**
@@ -656,10 +652,11 @@ public class GeneratorTest
     {
         byte[] bytes = new byte[126];
         Arrays.fill(bytes,(byte)0x00);
-        
-        expectedException.expect(WebSocketException.class);
-        PingFrame pingFrame = new PingFrame();
-        pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
+
+        assertThrows(WebSocketException.class, () -> {
+            PingFrame pingFrame = new PingFrame();
+            pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
+        });
     }
     
     /**
@@ -671,9 +668,10 @@ public class GeneratorTest
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte)0x00);
     
-        expectedException.expect(WebSocketException.class);
-        PongFrame pingFrame = new PongFrame();
-        pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
+        assertThrows(WebSocketException.class, () ->{
+            PongFrame pingFrame = new PongFrame();
+            pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
+        });
     }
     
     /**

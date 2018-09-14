@@ -57,18 +57,14 @@ import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class ClientCloseTest
 {
     private static final Logger LOG = Log.getLogger(ClientCloseTest.class);
-
-    @Rule
-    public TestName testname = new TestName();
 
     private UntrustedWSServer server;
     private WebSocketClient client;
@@ -146,7 +142,7 @@ public class ClientCloseTest
         }
     }
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         HttpClient httpClient = new HttpClient(new TestClientTransportOverHTTP(), null);
@@ -155,38 +151,38 @@ public class ClientCloseTest
         client.start();
     }
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new UntrustedWSServer();
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
 
     @Test
-    public void testNetworkCongestion() throws Exception
+    public void testNetworkCongestion(TestInfo testInfo) throws Exception
     {
         // Set client timeout
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
         server.registerOnOpenFuture(wsUri, serverSessionFut);
 
         // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo.getDisplayName());
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
 
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -227,8 +223,8 @@ public class ClientCloseTest
         }
     }
 
-    @Test(timeout = 5000L)
-    public void testStopLifecycle() throws Exception
+    @Test
+    public void testStopLifecycle(TestInfo testInfo) throws Exception
     {
         // Set client timeout
         final int timeout = 1000;
@@ -242,12 +238,12 @@ public class ClientCloseTest
         // Connect Multiple Clients
         for (int i = 0; i < clientCount; i++)
         {
-            URI wsUri = server.getUntrustedWsUri(this.getClass(), testname).resolve(Integer.toString(i));
+            URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo).resolve(Integer.toString(i));
             CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
             server.registerOnOpenFuture(wsUri, serverSessionFut);
 
             // Client Request Upgrade
-            clientSockets[i] = new TrackingEndpoint(testname.getMethodName() + "[" + i + "]");
+            clientSockets[i] = new TrackingEndpoint(testInfo.getDisplayName() + "[" + i + "]");
             Future<Session> clientConnectFuture = client.connect(clientSockets[i], wsUri);
 
             // Server accepts connection

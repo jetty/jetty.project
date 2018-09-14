@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.tests.server;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.ParserCapture;
 import org.eclipse.jetty.websocket.tests.UpgradeUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test simulating a client that talks too quickly.
@@ -53,7 +53,7 @@ import org.junit.Test;
  */
 public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
 {
-    @Test(timeout = 10000)
+    @Test
     public void testUpgradeWithSmallFrames() throws Exception
     {
         ByteBuffer buf = ByteBuffer.allocate(4096);

@@ -20,8 +20,9 @@ package org.eclipse.jetty.websocket.tests;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -41,24 +42,15 @@ import org.eclipse.jetty.websocket.tests.sockets.annotations.MyEchoBinarySocket;
 import org.eclipse.jetty.websocket.tests.sockets.annotations.MyEchoSocket;
 import org.eclipse.jetty.websocket.tests.sockets.annotations.MyStatelessEchoSocket;
 import org.eclipse.jetty.websocket.tests.sockets.annotations.NoopSocket;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.Test;
 
 public class AnnotatedEndpointDiscoverTest
 {
     private WebSocketContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newServerPolicy());
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @Rule
-    public TestName testname = new TestName();
-
     public LocalWebSocketSession createSession(Object endpoint) throws Exception
     {
-        LocalWebSocketSession session = new LocalWebSocketSession(containerScope, testname.getMethodName(), endpoint);
+        LocalWebSocketSession session = new LocalWebSocketSession(containerScope, "test", endpoint);
         session.start();
         return session;
     }
@@ -67,48 +59,51 @@ public class AnnotatedEndpointDiscoverTest
      * Test Case for bad declaration (duplicate OnWebSocketBinary declarations)
      */
     @Test
-    public void testAnnotatedBadDuplicateBinarySocket() throws Exception
+    public void testAnnotatedBadDuplicateBinarySocket()
     {
         // Should toss exception
-        thrown.expect(InvalidWebSocketException.class);
-        thrown.expectMessage(allOf(containsString("Cannot replace previously assigned"), containsString("BINARY Handler")));
-        createSession(new BadDuplicateBinarySocket());
+        InvalidWebSocketException x = assertThrows(InvalidWebSocketException.class, () ->
+            createSession(new BadDuplicateBinarySocket())
+        );
+        assertThat(x.getMessage(), allOf(containsString("Cannot replace previously assigned"),
+                containsString("BINARY Handler")));
+
     }
     
     /**
      * Test Case for bad declaration (duplicate frame type methods)
      */
     @Test
-    public void testAnnotatedBadDuplicateFrameSocket() throws Exception
+    public void testAnnotatedBadDuplicateFrameSocket()
     {
         // Should toss exception
-        thrown.expect(InvalidWebSocketException.class);
-        thrown.expectMessage(containsString("Duplicate @OnWebSocketFrame"));
-        createSession(new BadDuplicateFrameSocket());
+        InvalidWebSocketException x = assertThrows(InvalidWebSocketException.class, () ->
+                createSession(new BadDuplicateFrameSocket()));
+        assertThat(x.getMessage(), containsString("Duplicate @OnWebSocketFrame"));
     }
     
     /**
      * Test Case for bad declaration a method with a non-void return type
      */
     @Test
-    public void testAnnotatedBadSignature_NonVoidReturn() throws Exception
+    public void testAnnotatedBadSignature_NonVoidReturn()
     {
         // Should toss exception
-        thrown.expect(InvalidWebSocketException.class);
-        thrown.expectMessage(containsString("must be void"));
-        createSession(new BadBinarySignatureSocket());
+        InvalidWebSocketException x = assertThrows(InvalidWebSocketException.class, () ->
+                createSession(new BadBinarySignatureSocket()));
+        assertThat(x.getMessage(), containsString("must be void"));
     }
     
     /**
      * Test Case for bad declaration a method with a public static method
      */
     @Test
-    public void testAnnotatedBadSignature_Static() throws Exception
+    public void testAnnotatedBadSignature_Static()
     {
         // Should toss exception
-        thrown.expect(InvalidWebSocketException.class);
-        thrown.expectMessage(containsString("must not be static"));
-        createSession(new BadTextSignatureSocket());
+        InvalidWebSocketException x = assertThrows(InvalidWebSocketException.class, () ->
+                createSession(new BadTextSignatureSocket()));
+        assertThat(x.getMessage(), containsString("must not be static"));
     }
     
     /**

@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
@@ -29,7 +31,7 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class JsrEndpointFunctions_BadSignaturesTest extends AbstractJsrEndpointFunctionsTest
 {
@@ -45,9 +47,9 @@ public class JsrEndpointFunctions_BadSignaturesTest extends AbstractJsrEndpointF
                 endpointConfig
         );
 
-        expectedException.expect(InvalidSignatureException.class);
-        expectedException.expectMessage(containsString(expectedString));
-        functions.start();
+        InvalidSignatureException x = assertThrows(InvalidSignatureException.class,
+                () -> functions.start());
+        assertThat(x.getMessage(), containsString(expectedString));
     }
 
     @SuppressWarnings("UnusedParameters")

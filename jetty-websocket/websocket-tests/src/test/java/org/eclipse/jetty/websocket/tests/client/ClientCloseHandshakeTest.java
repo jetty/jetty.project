@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -46,24 +46,20 @@ import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class ClientCloseHandshakeTest
 {
     private static final Logger LOG = Log.getLogger(ClientCloseHandshakeTest.class);
 
-    @Rule
-    public TestName testname = new TestName();
-
     private UntrustedWSServer server;
     private WebSocketClient client;
 
-    @Before
+    @BeforeEach
     public void startClient() throws Exception
     {
         HttpClient httpClient = new HttpClient();
@@ -72,7 +68,7 @@ public class ClientCloseHandshakeTest
         client.start();
     }
 
-    @Before
+    @BeforeEach
     public void startServer() throws Exception
     {
         server = new UntrustedWSServer();
@@ -80,13 +76,13 @@ public class ClientCloseHandshakeTest
         server.start();
     }
 
-    @After
+    @AfterEach
     public void stopClient() throws Exception
     {
         client.stop();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
@@ -113,18 +109,18 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
-    public void testClientInitiated_NoData() throws Exception
+    public void testClientInitiated_NoData(TestInfo testInfo) throws Exception
     {
         // Set client timeout
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
         server.registerOnOpenFuture(wsUri, serverSessionFut);
 
         // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
 
         // Wait for client connect on via future
@@ -136,7 +132,7 @@ public class ClientCloseHandshakeTest
             clientSession.getRemote().setBatchMode(BatchMode.OFF);
 
             // Wait for client connect via client websocket
-            assertTrue("Client WebSocket is Open", clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+            assertTrue(clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "Client WebSocket is Open");
 
             // client should not have received close message (yet)
             clientSocket.assertNotClosed("Client");
@@ -177,18 +173,18 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
-    public void testClientInitiated_NoData_ChangeClose() throws Exception
+    public void testClientInitiated_NoData_ChangeClose(TestInfo testInfo) throws Exception
     {
         // Set client timeout
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
         server.registerOnOpenFuture(wsUri, serverSessionFut);
 
         // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
 
         // Server accepts connect
@@ -206,7 +202,7 @@ public class ClientCloseHandshakeTest
             clientSession.getRemote().setBatchMode(BatchMode.OFF);
 
             // Wait for client connect via client websocket
-            assertTrue("Client WebSocket is Open", clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+            assertTrue(clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "Client WebSocket is Open");
 
             // client should not have received close message (yet)
             clientSocket.assertNotClosed("Client");
@@ -245,18 +241,18 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
-    public void testServerInitiated_NoData() throws Exception
+    public void testServerInitiated_NoData(TestInfo testInfo) throws Exception
     {
         // Set client timeout
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
         server.registerOnOpenFuture(wsUri, serverSessionFut);
 
         // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
 
         // Wait for server connect
@@ -271,7 +267,7 @@ public class ClientCloseHandshakeTest
             clientSession.getRemote().setBatchMode(BatchMode.OFF);
 
             // Wait for client connect via client websocket
-            assertTrue("Client WebSocket is Open", clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+            assertTrue(clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "Client WebSocket is Open");
 
             // client should not have received close message (yet)
             clientSocket.assertNotClosed("Client");
@@ -338,19 +334,19 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
-    @Ignore("Needs review")
-    public void testClient_IdleTimeout() throws Exception
+    @Disabled("Needs review")
+    public void testClient_IdleTimeout(TestInfo testInfo) throws Exception
     {
         // Set client timeout
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
         server.registerOnOpenFuture(wsUri, serverSessionFut);
 
         // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
 
         // Server accepts connect
@@ -365,7 +361,7 @@ public class ClientCloseHandshakeTest
             clientSession.getRemote().setBatchMode(BatchMode.OFF);
 
             // Wait for client connect via client websocket
-            assertTrue("Client WebSocket is Open", clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+            assertTrue(clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "Client WebSocket is Open");
 
             // client should not have received close message (yet)
             clientSocket.assertNotClosed("Client");
@@ -417,7 +413,7 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
-    public void testClient_ProtocolViolation_Received() throws Exception
+    public void testClient_ProtocolViolation_Received(TestInfo testInfo) throws Exception
     {
         // Set client timeout
         final int timeout = 1000;
@@ -426,7 +422,7 @@ public class ClientCloseHandshakeTest
         URI wsUri = server.getWsUri().resolve("/badclose");
 
         // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
 
         // Wait for client connect on via future
@@ -476,15 +472,15 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
-    @Ignore("Needs review")
-    public void testWriteException() throws Exception
+    @Disabled("Needs review")
+    public void testWriteException(TestInfo testInfo) throws Exception
     {
         // Set client timeout
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
 
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testInfo);
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testInfo);
         CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
         server.registerOnOpenFuture(wsUri, serverSessionFut);
 
@@ -513,6 +509,6 @@ public class ClientCloseHandshakeTest
         // client triggers close event on client ws-endpoint
         // assert - close code==1006 (abnormal)
         // assert - close reason message contains (write failure)
-        assertTrue("Client onClose not called", clientSocket.closeLatch.getCount() > 0);
+        assertTrue(clientSocket.closeLatch.getCount() > 0, "Client onClose not called");
     }
 }

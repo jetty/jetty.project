@@ -18,351 +18,251 @@
 
 package org.eclipse.jetty.websocket.tests.server.jsr356;
 
-import java.io.IOException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.OnMessage;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.eclipse.jetty.websocket.tests.LocalFuzzer;
-import org.eclipse.jetty.websocket.tests.LocalServer;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.tests.WSServer;
+import org.eclipse.jetty.websocket.tests.server.jsr356.sockets.SessionAltConfig;
+import org.eclipse.jetty.websocket.tests.server.jsr356.sockets.SessionInfoSocket;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class SessionTest
 {
-    @ServerEndpoint(value = "/info/")
-    public static class SessionInfoSocket
+    public static Stream<Arguments> scenarios()
     {
-        @OnMessage
-        public String onMessage(javax.websocket.Session session, String message)
-        {
-            if ("pathParams".equalsIgnoreCase(message))
-            {
-                StringBuilder ret = new StringBuilder();
-                ret.append("pathParams");
-                Map<String, String> pathParams = session.getPathParameters();
-                if (pathParams == null)
-                {
-                    ret.append("=<null>");
-                }
-                else
-                {
-                    ret.append('[').append(pathParams.size()).append(']');
-                    List<String> keys = new ArrayList<>();
-                    for (String key : pathParams.keySet())
-                    {
-                        keys.add(key);
-                    }
-                    Collections.sort(keys);
-                    for (String key : keys)
-                    {
-                        String value = pathParams.get(key);
-                        ret.append(": '").append(key).append("'=").append(value);
-                    }
-                }
-                return ret.toString();
-            }
-            
-            if ("requestUri".equalsIgnoreCase(message))
-            {
-                StringBuilder ret = new StringBuilder();
-                ret.append("requestUri=");
-                URI uri = session.getRequestURI();
-                if (uri == null)
-                {
-                    ret.append("=<null>");
-                }
-                else
-                {
-                    ret.append(uri.toASCIIString());
-                }
-                return ret.toString();
-            }
-            
-            // simple echo
-            return "echo:'" + message + "'";
-        }
-    }
-    
-    public static class SessionInfoEndpoint extends Endpoint implements MessageHandler.Whole<String>
-    {
-        private javax.websocket.Session session;
-        
-        @Override
-        public void onOpen(javax.websocket.Session session, EndpointConfig config)
-        {
-            this.session = session;
-            this.session.addMessageHandler(this);
-        }
-        
-        @Override
-        public void onMessage(String message)
-        {
-            try
-            {
-                if ("pathParams".equalsIgnoreCase(message))
-                {
-                    StringBuilder ret = new StringBuilder();
-                    ret.append("pathParams");
-                    Map<String, String> pathParams = session.getPathParameters();
-                    if (pathParams == null)
-                    {
-                        ret.append("=<null>");
-                    }
-                    else
-                    {
-                        ret.append('[').append(pathParams.size()).append(']');
-                        List<String> keys = new ArrayList<>();
-                        for (String key : pathParams.keySet())
-                        {
-                            keys.add(key);
-                        }
-                        Collections.sort(keys);
-                        for (String key : keys)
-                        {
-                            String value = pathParams.get(key);
-                            ret.append(": '").append(key).append("'=").append(value);
-                        }
-                    }
-                    session.getBasicRemote().sendText(ret.toString());
-                    return;
-                }
-                
-                if ("requestUri".equalsIgnoreCase(message))
-                {
-                    StringBuilder ret = new StringBuilder();
-                    ret.append("requestUri=");
-                    URI uri = session.getRequestURI();
-                    if (uri == null)
-                    {
-                        ret.append("=<null>");
-                    }
-                    else
-                    {
-                        ret.append(uri.toASCIIString());
-                    }
-                    session.getBasicRemote().sendText(ret.toString());
-                    return;
-                }
-                
-                // simple echo
-                session.getBasicRemote().sendText("echo:'" + message + "'");
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace(System.err);
-            }
-        }
-    }
-    
-    private interface Case
-    {
-        void customize(ServletContextHandler context);
+        List<Scenario> cases = new ArrayList<>();
+
+        cases.add(new Scenario("no customization", (context) -> {
+            // no customization here
+        }));
+
+        cases.add(new Scenario("with DefaultServlet only",
+                (context) -> context.addServlet(DefaultServlet.class, "/")
+        ));
+
+
+        cases.add(new Scenario("with Servlet mapped to root-glob",
+                (context) -> context.addServlet(DefaultServlet.class, "/*")
+        ));
+
+        cases.add(new Scenario("with Servlet mapped to info-glob",
+                // this tests the overlap of websocket paths and servlet paths
+                // the SessionInfoSocket below is also mapped to "/info/"
+                (context) -> context.addServlet(DefaultServlet.class, "/info/*")
+        ));
+
+        return cases.stream().map(Arguments::of);
     }
 
-    @Parameters
-    public static Collection<Case[]> data()
+    private final static AtomicInteger ID = new AtomicInteger(0);
+    private WSServer server;
+    private URI serverUri;
+
+    public void startServer(Scenario scenario) throws Exception
     {
-        List<Case[]> cases = new ArrayList<>();
-        cases.add(new Case[]
-        {context ->
-        {
-            // no customization
-        }});
-        cases.add(new Case[]
-        {context ->
-        {
-            // Test with DefaultServlet only
-            context.addServlet(DefaultServlet.class,"/");
-        }});
-        cases.add(new Case[]
-        {context ->
-        {
-            // Test with Servlet mapped to "/*"
-            context.addServlet(DefaultServlet.class,"/*");
-        }});
-        cases.add(new Case[]
-        {context ->
-        {
-            // Test with Servlet mapped to "/info/*"
-            context.addServlet(DefaultServlet.class,"/info/*");
-        }});
-        return cases;
+        server = new WSServer(MavenTestingUtils.getTargetTestingDir(
+                SessionTest.class.getSimpleName() + "-" + ID.incrementAndGet()),"app");
+        server.copyWebInf("empty-web.xml");
+        server.copyClass(SessionInfoSocket.class);
+        server.copyClass(SessionAltConfig.class);
+        server.start();
+        serverUri = server.getServerUri().resolve("/");
+
+        WebAppContext webapp = server.createWebAppContext();
+        scenario.customizer.accept(webapp);
+        server.deployWebapp(webapp);
     }
-    
-    private LocalServer server;
-    
-    @After
+
+    @AfterEach
     public void stopServer() throws Exception
     {
         server.stop();
     }
 
-    public SessionTest(final Case testcase) throws Exception
+    private void assertResponse(String requestPath, String requestMessage, String expectedResponse) throws Exception
     {
-        server = new LocalServer()
+        WebSocketClient client = new WebSocketClient();
+        try
         {
-            @Override
-            protected void configureServletContextHandler(ServletContextHandler context) throws Exception
-            {
-                testcase.customize(context);
-                
-                ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
-            
-                container.addEndpoint(SessionInfoSocket.class); // default behavior
-                Class<?> endpointClass = SessionInfoSocket.class;
-                container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/info/{a}/").build());
-                container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/info/{a}/{b}/").build());
-                container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/info/{a}/{b}/{c}/").build());
-                container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/info/{a}/{b}/{c}/{d}/").build());
-                endpointClass = SessionInfoEndpoint.class;
-                container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/").build());
-                container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/{a}/").build());
-                container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/{a}/{b}/").build());
-                container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/{a}/{b}/{c}/").build());
-                container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass,"/einfo/{a}/{b}/{c}/{d}/").build());
-            }
-        };
-        server.start();
-    }
-    
-    private void assertResponse(String requestPath, String requestMessage,
-                                String expectedResponse) throws Exception
-    {
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(requestMessage));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-    
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(expectedResponse));
-        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-    
-        try (LocalFuzzer session = server.newLocalFuzzer(requestPath))
+            client.start();
+            ClientEchoSocket clientEcho = new ClientEchoSocket();
+            Future<Session> future = client.connect(clientEcho,serverUri.resolve(requestPath));
+            Session session = future.get(1, TimeUnit.SECONDS);
+            session.getRemote().sendString(requestMessage);
+            String msg = clientEcho.messages.poll(5, TimeUnit.SECONDS);
+            assertThat("Expected message",msg,is(expectedResponse));
+        }
+        finally
         {
-            session.sendBulk(send);
-            session.expect(expect);
+            client.stop();
         }
     }
 
-    @Test
-    public void testPathParams_Annotated_Empty() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testPathParams_Annotated_Empty(Scenario scenario) throws Exception
     {
-        assertResponse("/info/","pathParams",
-                "pathParams[0]");
+        startServer(scenario);
+        assertResponse("info/","pathParams","pathParams[0]");
     }
 
-    @Test
-    public void testPathParams_Annotated_Single() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testPathParams_Annotated_Single(Scenario scenario) throws Exception
     {
-        assertResponse("/info/apple/","pathParams",
-                "pathParams[1]: 'a'=apple");
+        startServer(scenario);
+        assertResponse("info/apple/","pathParams","pathParams[1]: 'a'=apple");
     }
 
-    @Test
-    public void testPathParams_Annotated_Double() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testPathParams_Annotated_Double(Scenario scenario) throws Exception
     {
-        assertResponse("/info/apple/pear/","pathParams",
-                "pathParams[2]: 'a'=apple: 'b'=pear");
+        startServer(scenario);
+        assertResponse("info/apple/pear/","pathParams","pathParams[2]: 'a'=apple: 'b'=pear");
     }
 
-    @Test
-    public void testPathParams_Annotated_Triple() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testPathParams_Annotated_Triple(Scenario scenario) throws Exception
     {
-        assertResponse("/info/apple/pear/cherry/","pathParams",
-                "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
+        startServer(scenario);
+        assertResponse("info/apple/pear/cherry/","pathParams","pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
     }
 
-    @Test
-    public void testPathParams_Endpoint_Empty() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testPathParams_Endpoint_Empty(Scenario scenario) throws Exception
     {
-        assertResponse("/einfo/","pathParams",
-                "pathParams[0]");
+        startServer(scenario);
+        assertResponse("einfo/","pathParams","pathParams[0]");
     }
 
-    @Test
-    public void testPathParams_Endpoint_Single() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testPathParams_Endpoint_Single(Scenario scenario) throws Exception
     {
-        assertResponse("/einfo/apple/","pathParams",
-                "pathParams[1]: 'a'=apple");
+        startServer(scenario);
+        assertResponse("einfo/apple/","pathParams","pathParams[1]: 'a'=apple");
     }
 
-    @Test
-    public void testPathParams_Endpoint_Double() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testPathParams_Endpoint_Double(Scenario scenario) throws Exception
     {
-        assertResponse("/einfo/apple/pear/","pathParams",
-                "pathParams[2]: 'a'=apple: 'b'=pear");
+        startServer(scenario);
+        assertResponse("einfo/apple/pear/","pathParams","pathParams[2]: 'a'=apple: 'b'=pear");
     }
 
-    @Test
-    public void testPathParams_Endpoint_Triple() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testPathParams_Endpoint_Triple(Scenario scenario) throws Exception
     {
-        assertResponse("/einfo/apple/pear/cherry/","pathParams",
-                "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
+        startServer(scenario);
+        assertResponse("einfo/apple/pear/cherry/","pathParams","pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
     }
 
-    @Test
-    public void testRequestUri_Annotated_Basic() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testRequestUri_Annotated_Basic(Scenario scenario) throws Exception
     {
-        assertResponse("/info/","requestUri",
-                "requestUri=ws://local/info/");
+        startServer(scenario);
+        URI expectedUri = serverUri.resolve("info/");
+        assertResponse("info/","requestUri","requestUri=" + expectedUri.toASCIIString());
     }
 
-    @Test
-    public void testRequestUri_Annotated_WithPathParam() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testRequestUri_Annotated_WithPathParam(Scenario scenario) throws Exception
     {
-        assertResponse("/info/apple/banana/","requestUri",
-                "requestUri=ws://local/info/apple/banana/");
+        startServer(scenario);
+        URI expectedUri = serverUri.resolve("info/apple/banana/");
+        assertResponse("info/apple/banana/","requestUri","requestUri=" + expectedUri.toASCIIString());
     }
 
-    @Test
-    public void testRequestUri_Annotated_WithPathParam_WithQuery() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testRequestUri_Annotated_WithPathParam_WithQuery(Scenario scenario) throws Exception
     {
-        assertResponse("/info/apple/banana/?fruit=fresh&store=grandmasfarm",
-                "requestUri",
-                "requestUri=ws://local/info/apple/banana/?fruit=fresh&store=grandmasfarm");
+        startServer(scenario);
+        URI expectedUri = serverUri.resolve("info/apple/banana/?fruit=fresh&store=grandmasfarm");
+        assertResponse("info/apple/banana/?fruit=fresh&store=grandmasfarm","requestUri","requestUri=" + expectedUri.toASCIIString());
     }
 
-    @Test
-    public void testRequestUri_Endpoint_Basic() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testRequestUri_Endpoint_Basic(Scenario scenario) throws Exception
     {
-        assertResponse("/einfo/","requestUri",
-                "requestUri=ws://local/einfo/");
+        startServer(scenario);
+        URI expectedUri = serverUri.resolve("einfo/");
+        assertResponse("einfo/","requestUri","requestUri=" + expectedUri.toASCIIString());
     }
 
-    @Test
-    public void testRequestUri_Endpoint_WithPathParam() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testRequestUri_Endpoint_WithPathParam(Scenario scenario) throws Exception
     {
-        assertResponse("/einfo/apple/banana/","requestUri",
-                "requestUri=ws://local/einfo/apple/banana/");
+        startServer(scenario);
+        URI expectedUri = serverUri.resolve("einfo/apple/banana/");
+        assertResponse("einfo/apple/banana/","requestUri","requestUri=" + expectedUri.toASCIIString());
     }
 
-    @Test
-    public void testRequestUri_Endpoint_WithPathParam_WithQuery() throws Exception
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testRequestUri_Endpoint_WithPathParam_WithQuery(Scenario scenario) throws Exception
     {
-        assertResponse("/einfo/apple/banana/?fruit=fresh&store=grandmasfarm",
-                "requestUri",
-                "requestUri=ws://local/einfo/apple/banana/?fruit=fresh&store=grandmasfarm");
+        startServer(scenario);
+        URI expectedUri = serverUri.resolve("einfo/apple/banana/?fruit=fresh&store=grandmasfarm");
+        assertResponse("einfo/apple/banana/?fruit=fresh&store=grandmasfarm","requestUri","requestUri=" + expectedUri.toASCIIString());
+    }
+
+    @WebSocket
+    public static class ClientEchoSocket
+    {
+        public LinkedBlockingQueue<String> messages = new LinkedBlockingQueue<>();
+
+        @OnWebSocketMessage
+        public void onText(String msg)
+        {
+            messages.offer(msg);
+        }
+    }
+
+    private static class Scenario
+    {
+        public final String description;
+        public final Consumer<WebAppContext> customizer;
+
+        public Scenario(String desc, Consumer<WebAppContext> consumer)
+        {
+            this.description = desc;
+            this.customizer = consumer;
+        }
+
+        @Override
+        public String toString()
+        {
+            return description;
+        }
     }
 }
