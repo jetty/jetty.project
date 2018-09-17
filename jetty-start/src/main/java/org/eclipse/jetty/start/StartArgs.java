@@ -36,12 +36,14 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.jar.Manifest;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
 import org.eclipse.jetty.util.JavaVersion;
+import org.eclipse.jetty.util.ManifestUtils;
 
 /**
  * The Arguments required to start Jetty.
@@ -59,15 +61,11 @@ public class StartArgs
         // Use META-INF/MANIFEST.MF versions
         if (ver == null)
         {
-            Package pkg = StartArgs.class.getPackage();
-            if ((pkg != null) && "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) && (pkg.getImplementationVersion() != null))
-            {
-                ver = pkg.getImplementationVersion();
-                if (tag == null)
-                {
-                    tag = "jetty-" + ver;
-                }
-            }
+            ver = ManifestUtils.getManifest(StartArgs.class)
+                    .map(Manifest::getMainAttributes)
+                    .filter(attributes -> "Eclipse.org - Jetty".equals(attributes.getValue("Implementation-Vendor")))
+                    .map(attributes -> attributes.getValue("Implementation-Version"))
+                    .orElse(null);
         }
 
         // Use jetty-version.properties values
@@ -82,9 +80,9 @@ public class StartArgs
                     props.load(in);
                     ver = props.getProperty("jetty.version");
                 }
-                catch (IOException ignore)
+                catch (IOException x)
                 {
-                    StartLog.debug(ignore);
+                    StartLog.debug(x);
                 }
             }
         }
@@ -94,20 +92,21 @@ public class StartArgs
         {
             ver = "0.0";
             if (tag == null)
-            {
                 tag = "master";
-            }
+        }
+        else
+        {
+            if (tag == null)
+                tag = "jetty-" + ver;
         }
 
         // Set Tag Defaults
-        if (tag == null || tag.contains("-SNAPSHOT"))
-        {
+        if (tag.contains("-SNAPSHOT"))
             tag = "master";
-        }
 
         VERSION = ver;
-        System.setProperty("jetty.version",VERSION);
-        System.setProperty("jetty.tag.version",tag);
+        System.setProperty("jetty.version", VERSION);
+        System.setProperty("jetty.tag.version", tag);
     }
 
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";

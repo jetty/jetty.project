@@ -59,7 +59,7 @@ import org.eclipse.jetty.start.Props.Prop;
  */
 public class Module implements Comparable<Module>
 {
-    private static final String VERSION_UNSPECIFIED = "9.2";
+    private static final String VERSION_UNSPECIFIED = "0.0";
     static Pattern MOD_NAME = Pattern.compile("^(.*)\\.mod",Pattern.CASE_INSENSITIVE);
     static Pattern SET_PROPERTY = Pattern.compile("^(#?)\\s*([^=\\s]+)=(.*)$");
 
