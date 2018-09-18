@@ -47,6 +47,7 @@ import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
@@ -211,7 +212,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         final ReferencedBuffer referenced = frame.hasPayload() && !frame.isReleaseable()?networkBuffer:null;
         if (referenced!=null)
             referenced.retain();
-        
+
         channel.onReceiveFrame(frame, new Callback()
         {
             @Override
@@ -390,8 +391,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     }
     
     
-    
-    
     private void fillAndParse()
     {
         acquireNetworkBuffer();   
@@ -409,13 +408,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                              
                    if(meetDemand())
                        onFrame(frame);
-                    
-                    synchronized (this)
+
+                    if (!moreDemand())
                     {
-                        if (!moreDemand())
-                        {
-                            return; 
-                        }
+                        return;
                     }
                 }
 

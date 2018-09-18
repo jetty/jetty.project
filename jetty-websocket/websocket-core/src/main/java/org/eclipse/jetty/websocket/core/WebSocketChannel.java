@@ -319,6 +319,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     {
         if (state.onClosed(closeStatus))
         {
+            connection.cancelDemand();
+
             // Forward Errors to Local WebSocket EndPoint
             try
             {
@@ -573,7 +575,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                     // Handle inbound close
                     if (frame.getOpCode() == OpCode.CLOSE)
                     {
-                        
+                        connection.cancelDemand();
                         CloseStatus closeStatus = ((Parser.ParsedFrame)frame).getCloseStatus();
                         if (state.onCloseIn(closeStatus))
                         {

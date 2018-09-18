@@ -296,7 +296,11 @@ public class WebSocketCloseTest
         client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.PONG, "pong frame not masked", false));
         assertFalse(server.handler.closed.await(1, TimeUnit.SECONDS));
         server.handler.getCoreSession().demand(1);
-        assertFalse(server.handler.closed.await(5, TimeUnit.SECONDS));
+        assertFalse(server.handler.closed.await(1, TimeUnit.SECONDS));
+
+        server.close();
+        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NORMAL));
     }
 
     /* ------------------------------------------------------------------------------------------- */
@@ -340,8 +344,7 @@ public class WebSocketCloseTest
         assertFalse(server.handler.closed.await(1, TimeUnit.SECONDS));
         server.close();
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
-        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NO_CLOSE));
-        assertThat(server.handler.closeStatus.getReason(), containsString("Read EOF"));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NORMAL));
     }
 
 

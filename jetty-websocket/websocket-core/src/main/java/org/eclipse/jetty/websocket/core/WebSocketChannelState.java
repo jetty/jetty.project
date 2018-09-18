@@ -154,10 +154,4 @@ public class WebSocketChannelState
                 return true;
         }
     }
-
-    public boolean onClosed(Throwable cause)
-    {
-        return onClosed(new CloseStatus(CloseStatus.NO_CLOSE, cause == null ? null : cause.toString()));
-    }
-
 }
