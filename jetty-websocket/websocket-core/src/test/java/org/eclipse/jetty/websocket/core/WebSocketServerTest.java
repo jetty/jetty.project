@@ -18,32 +18,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -51,10 +34,8 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.B64Code;
@@ -70,7 +51,6 @@ import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
@@ -79,6 +59,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -243,7 +234,7 @@ public class WebSocketServerTest
             Frame frame = serverHandler.receivedFrames.poll(250,TimeUnit.MILLISECONDS);
             assertNull(frame);
             
-            serverHandler.session.demand(2);
+            serverHandler.getCoreSession().demand(2);
             
             frame = serverHandler.receivedFrames.poll(10,TimeUnit.SECONDS);
             assertNotNull(frame);
@@ -257,7 +248,7 @@ public class WebSocketServerTest
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS,true));
             assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
             
-            serverHandler.session.demand(1);
+            serverHandler.getCoreSession().demand(1);
             assertTrue(server.handler.closed.await(10, TimeUnit.SECONDS));
             frame = serverHandler.receivedFrames.poll(10,TimeUnit.SECONDS);
             assertNotNull(frame);
@@ -607,52 +598,6 @@ public class WebSocketServerTest
     }
 
 
-    static class TestFrameHandler implements FrameHandler
-    {
-        private CoreSession session;
-
-        protected BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
-        protected CountDownLatch closed = new CountDownLatch(1);
-
-        public CoreSession getCoreSession()
-        {
-            return session;
-        }
-
-        public BlockingQueue<Frame> getFrames()
-        {
-            return receivedFrames;
-        }
-
-        @Override
-        public void onOpen(CoreSession coreSession) throws Exception
-        {
-            LOG.info("onOpen {}", coreSession);
-            this.session = coreSession;
-        }
-
-        @Override
-        public void onReceiveFrame(Frame frame, Callback callback)
-        {
-            LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
-            receivedFrames.offer(Frame.copy(frame)); //needs to copy because frame is no longer valid after callback.succeeded();
-            callback.succeeded();
-        }
-
-        @Override
-        public void onClosed(CloseStatus closeStatus)
-        {
-            LOG.info("onClosed {}",closeStatus);
-            closed.countDown();
-        }
-
-        @Override
-        public void onError(Throwable cause) throws Exception
-        {
-            LOG.info("onError {} ",cause==null?null:cause.toString());
-        }
-    }
-
     static class WebSocketServer extends AbstractLifeCycle
     {
         private static Logger LOG = Log.getLogger(WebSocketServer.class);
@@ -691,19 +636,8 @@ public class WebSocketServerTest
             server.setHandler(context);
             WebSocketNegotiator negotiator =  new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool(), frameHandler);
 
-            WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(negotiator);
+            WebSocketUpgradeHandler upgradeHandler = new TestWebSocketUpgradeHandler(negotiator);
             context.setHandler(upgradeHandler);
-            upgradeHandler.setHandler(new AbstractHandler()
-            {
-                @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-                {
-                    response.setStatus(200);
-                    response.setContentType("text/plain");
-                    response.getOutputStream().println("Hello World!");
-                    baseRequest.setHandled(true);
-                }
-            });
         }
 
         public void sendFrame(Frame frame)
@@ -734,56 +668,6 @@ public class WebSocketServerTest
         public boolean isOpen()
         {
             return handler.getCoreSession().isOpen();
-        }
-    }
-
-    static class TestWebSocketNegotiator implements WebSocketNegotiator
-    {
-        final DecoratedObjectFactory objectFactory;
-        final WebSocketExtensionRegistry extensionRegistry;
-        final ByteBufferPool bufferPool;
-        private final FrameHandler frameHandler;
-
-        public TestWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool, FrameHandler frameHandler)
-        {
-            this.objectFactory = objectFactory;
-            this.extensionRegistry = extensionRegistry;
-            this.bufferPool = bufferPool;
-            this.frameHandler = frameHandler;
-        }
-
-        @Override
-        public FrameHandler negotiate(Negotiation negotiation) throws IOException
-        {
-            List<String> offeredSubprotocols = negotiation.getOfferedSubprotocols();
-            if (!offeredSubprotocols.contains("test"))
-                return null;
-            negotiation.setSubprotocol("test");
-            return frameHandler;
-        }
-
-        @Override
-        public WebSocketPolicy getCandidatePolicy()
-        {
-            return null;
-        }
-
-        @Override
-        public WebSocketExtensionRegistry getExtensionRegistry()
-        {
-            return extensionRegistry;
-        }
-
-        @Override
-        public DecoratedObjectFactory getObjectFactory()
-        {
-            return objectFactory;
-        }
-
-        @Override
-        public ByteBufferPool getByteBufferPool()
-        {
-            return bufferPool;
         }
     }
 }

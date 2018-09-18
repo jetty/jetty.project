@@ -18,28 +18,18 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -52,7 +42,6 @@ import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
@@ -132,7 +121,7 @@ public class WebSocketTest
                 if(frame.getOpCode() == OpCode.CLOSE)
                 {
                     LOG.info("channel aborted");
-                    getChannel().abort();
+                    getCoreSession().abort();
                 }
                 else
                 {
@@ -177,7 +166,7 @@ public class WebSocketTest
         assertNotNull(recv);
         assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
 
-        ((WebSocketChannel)client.handler.channel).getConnection().getEndPoint().close();
+        ((WebSocketChannel)client.handler.getCoreSession()).getConnection().getEndPoint().close();
         
         assertTrue(client.handler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
@@ -221,7 +210,7 @@ public class WebSocketTest
 
         public void sendFrame(Frame frame)
         {
-            handler.getChannel().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+            handler.getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
         }
 
 
@@ -232,7 +221,7 @@ public class WebSocketTest
             frame.setFin(true);
             frame.setPayload(line);
 
-            handler.getChannel().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+            handler.getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
         }
 
         public BlockingQueue<Frame> getFrames()
@@ -242,61 +231,15 @@ public class WebSocketTest
 
         public void close()
         {
-            handler.getChannel().close(CloseStatus.NORMAL, "WebSocketClient Initiated Close", Callback.NOOP);
+            handler.getCoreSession().close(CloseStatus.NORMAL, "WebSocketClient Initiated Close", Callback.NOOP);
         }
 
         public boolean isOpen()
         {
-            return handler.getChannel().isOpen();
+            return handler.getCoreSession().isOpen();
         }
     }
 
-
-    static class TestFrameHandler implements FrameHandler
-    {
-        private CoreSession channel;
-
-        private BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
-        private CountDownLatch closed = new CountDownLatch(1);
-
-        public CoreSession getChannel()
-        {
-            return channel;
-        }
-
-        public BlockingQueue<Frame> getFrames()
-        {
-            return receivedFrames;
-        }
-
-        @Override
-        public void onOpen(CoreSession coreSession) throws Exception
-        {
-            LOG.info("onOpen {}", coreSession);
-            this.channel = coreSession;
-        }
-
-        @Override
-        public void onReceiveFrame(Frame frame, Callback callback)
-        {
-            LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
-            receivedFrames.offer(Frame.copy(frame)); //needs to copy because frame is no longer valid after callback.succeeded();
-            callback.succeeded();
-        }
-
-        @Override
-        public void onClosed(CloseStatus closeStatus)
-        {
-            LOG.info("onClosed {}",closeStatus);
-            closed.countDown();
-        }
-
-        @Override
-        public void onError(Throwable cause) throws Exception
-        {
-            LOG.info("onError {} ", cause.toString());
-        }
-    }
 
 
 
@@ -332,26 +275,15 @@ public class WebSocketTest
 
             ContextHandler context = new ContextHandler("/");
             server.setHandler(context);
-            WebSocketNegotiator negotiator =  new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool(), port, frameHandler);
+            WebSocketNegotiator negotiator =  new TestWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool(), frameHandler);
 
-            WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(negotiator);
+            WebSocketUpgradeHandler upgradeHandler = new TestWebSocketUpgradeHandler(negotiator);
             context.setHandler(upgradeHandler);
-            upgradeHandler.setHandler(new AbstractHandler()
-            {
-                @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-                {
-                    response.setStatus(200);
-                    response.setContentType("text/plain");
-                    response.getOutputStream().println("Hello World!");
-                    baseRequest.setHandled(true);
-                }
-            });
         }
 
         public void sendFrame(Frame frame)
         {
-            handler.getChannel().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+            handler.getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
         }
 
         public void sendText(String line)
@@ -361,7 +293,7 @@ public class WebSocketTest
             frame.setFin(true);
             frame.setPayload(line);
 
-            handler.getChannel().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
+            handler.getCoreSession().sendFrame(frame, Callback.NOOP, BatchMode.AUTO);
         }
 
         public BlockingQueue<Frame> getFrames()
@@ -371,66 +303,13 @@ public class WebSocketTest
 
         public void close()
         {
-            handler.getChannel().close(CloseStatus.NORMAL, "WebSocketServer Initiated Close", Callback.NOOP);
+            handler.getCoreSession().close(CloseStatus.NORMAL, "WebSocketServer Initiated Close", Callback.NOOP);
         }
 
         public boolean isOpen()
         {
-            return handler.getChannel().isOpen();
+            return handler.getCoreSession().isOpen();
         }
 
-    }
-
-
-    static class TestWebSocketNegotiator implements WebSocketNegotiator
-    {
-        final DecoratedObjectFactory objectFactory;
-        final WebSocketExtensionRegistry extensionRegistry;
-        final ByteBufferPool bufferPool;
-        private final int port;
-        private final FrameHandler frameHandler;
-
-        public TestWebSocketNegotiator(DecoratedObjectFactory objectFactory, WebSocketExtensionRegistry extensionRegistry, ByteBufferPool bufferPool, int port, FrameHandler frameHandler)
-        {
-            this.objectFactory = objectFactory;
-            this.extensionRegistry = extensionRegistry;
-            this.bufferPool = bufferPool;
-            this.port = port;
-            this.frameHandler = frameHandler;
-        }
-
-        @Override
-        public FrameHandler negotiate(Negotiation negotiation) throws IOException
-        {
-            List<String> offeredSubprotocols = negotiation.getOfferedSubprotocols();
-            if (!offeredSubprotocols.contains("test"))
-                return null;
-            negotiation.setSubprotocol("test");
-            return frameHandler;
-        }
-
-        @Override
-        public WebSocketPolicy getCandidatePolicy()
-        {
-            return null;
-        }
-
-        @Override
-        public WebSocketExtensionRegistry getExtensionRegistry()
-        {
-            return extensionRegistry;
-        }
-
-        @Override
-        public DecoratedObjectFactory getObjectFactory()
-        {
-            return objectFactory;
-        }
-
-        @Override
-        public ByteBufferPool getByteBufferPool()
-        {
-            return bufferPool;
-        }
     }
 }

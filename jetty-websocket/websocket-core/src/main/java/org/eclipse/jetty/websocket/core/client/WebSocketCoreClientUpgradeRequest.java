@@ -118,6 +118,8 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
         this.fut = new CompletableFuture<>();
         method(HttpMethod.GET);
         version(HttpVersion.HTTP_1_1);
+
+        getConversation().setAttribute(HttpConnectionUpgrader.class.getName(), this);
     }
 
     public void addListener(UpgradeListener listener)
@@ -228,7 +230,8 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            handleException(new HttpResponseException("Not a 101 Switching Protocols Response: " + responseLine, response));
+            //handleException(new HttpResponseException("Not a 101 Switching Protocols Response: " + responseLine, response));
+            handleException(new UpgradeException(requestURI,responseStatusCode,"Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
     }
 
