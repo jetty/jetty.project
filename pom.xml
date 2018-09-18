@@ -1801,6 +1801,52 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>snapshots</id>
+
+      <repositories>
+        <repository>
+          <id>jetty-snapshots</id>
+          <name>jetty-snapshots</name>
+          <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>apache.snapshots</id>
+          <url>https://repository.apache.org/content/repositories/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>oss.snapshots</id>
+          <name>OSS Snapshots</name>
+          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>jetty.snapshots</id>
+          <name>Jetty Snapshots</name>
+          <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+    </profile>
   </profiles>
 
   <issueManagement>
@@ -1898,55 +1944,6 @@
     <url>https://webtide.com</url>
   </organization>
 
-  <!-- SNAPSHOT Repository is only for temporary usage.
-       This configuration should not be checked in, as it
-       can result in bad success on CI. -->
-  <!--
-  <repositories>
-    <repository>
-      <id>jetty-snapshots</id>
-      <name>jetty-snapshots</name>
-      <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-   -->
-  <repositories>
-    <repository>
-      <id>apache.snapshots</id>
-      <url>https://repository.apache.org/content/repositories/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>oss.snapshots</id>
-      <name>OSS Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>jetty.snapshots</id>
-      <name>Jetty Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
   <pluginRepositories>
     <pluginRepository>
         <id>cbi-releases</id>
