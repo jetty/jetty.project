@@ -196,6 +196,8 @@ public class WebSocketCloseTest
                 server.start();
                 client = newClient();
 
+                Thread.sleep(100);
+
                 assertThat(server.handler.getCoreSession().toString(), containsString("OPEN"));
                 LOG.info("Server: OPEN");
 
@@ -221,6 +223,8 @@ public class WebSocketCloseTest
                 server = new WebSocketServer(0, serverHandler);
                 server.start();
                 client = newClient();
+
+                Thread.sleep(100);
 
                 server.handler.getCoreSession().demand(1);
                 client.getOutputStream().write(RawFrameBuilder.buildClose(new CloseStatus(CloseStatus.NORMAL), true));
