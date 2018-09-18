@@ -1802,8 +1802,10 @@
       </build>
     </profile>
     <profile>
-      <id>snapshots</id>
-
+      <id>snapshot-repositories</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
       <repositories>
         <repository>
           <id>jetty-snapshots</id>
@@ -1846,6 +1848,21 @@
           </snapshots>
         </repository>
       </repositories>
+    </profile>
+    <profile>
+      <id>cbi-repository</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>cbi-releases</id>
+          <url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
     </profile>
   </profiles>
 
@@ -1943,16 +1960,6 @@
     <name>Webtide</name>
     <url>https://webtide.com</url>
   </organization>
-
-  <pluginRepositories>
-    <pluginRepository>
-        <id>cbi-releases</id>
-        <url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
-        <snapshots>
-            <enabled>false</enabled>
-        </snapshots>
-    </pluginRepository>
-  </pluginRepositories>
 
   <distributionManagement>
     <repository>
