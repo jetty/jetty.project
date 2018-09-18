@@ -55,9 +55,7 @@ public class UnitGenerator extends Generator
     {
         int bufferLength = 0;
         for (org.eclipse.jetty.websocket.core.frames.Frame f : frames)
-        {
             bufferLength += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
-        }
         
         ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
         generate(buffer, frames);

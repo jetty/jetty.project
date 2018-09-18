@@ -36,10 +36,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
@@ -65,19 +62,8 @@ public class ChatWebSocketServer implements FrameHandler
         server.setHandler(context);
         WebSocketNegotiator negotiator =  new ChatWebSocketNegotiator(new DecoratedObjectFactory(), new WebSocketExtensionRegistry(), connector.getByteBufferPool());
 
-        WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler(negotiator);
+        WebSocketUpgradeHandler handler = new TestUpgradeHandler(negotiator);
         context.setHandler(handler);
-        handler.setHandler(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                response.setStatus(200);
-                response.setContentType("text/plain");
-                response.getOutputStream().println("Hello World!");
-                baseRequest.setHandled(true);
-            }
-        });
 
         server.start();
         server.join();

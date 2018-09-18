@@ -48,6 +48,7 @@ import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.generator.UnitGenerator;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
