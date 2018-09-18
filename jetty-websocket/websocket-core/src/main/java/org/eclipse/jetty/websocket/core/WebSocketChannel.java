@@ -579,9 +579,16 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
                         CloseStatus closeStatus = ((Parser.ParsedFrame)frame).getCloseStatus();
                         if (state.onCloseIn(closeStatus))
                         {
-                            handler.onReceiveFrame(frame, callback); // handler should know about received frame
-                            handler.onClosed(state.getCloseStatus());
-                            connection.close();
+                            callback = new Callback.Nested(callback)
+                            {
+                                @Override
+                                public void completed()
+                                {
+                                    handler.onClosed(state.getCloseStatus());
+                                    connection.close();
+                                }
+                            };
+                            handler.onReceiveFrame(frame, callback);
                             return;
                         }
 
