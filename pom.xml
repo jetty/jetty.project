@@ -1935,7 +1935,7 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
-    <repository>
+    <!--repository>
       <id>jetty.snapshots</id>
       <name>Jetty Snapshots</name>
       <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
@@ -1945,7 +1945,7 @@
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
-    </repository>
+    </repository-->
   </repositories>
   <pluginRepositories>
     <pluginRepository>
