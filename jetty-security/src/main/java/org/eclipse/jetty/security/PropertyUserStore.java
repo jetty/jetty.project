@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -44,33 +43,33 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;
 
 /**
- * PropertyUserStore
- * <p>
- * This class monitors a property file of the format mentioned below and notifies registered listeners of the changes to the the given file.
+ * <p>This class monitors a property file of the format mentioned below
+ * and notifies registered listeners of the changes to the the given file.</p>
  *
  * <pre>
  *  username: password [,rolename ...]
  * </pre>
  *
- * Passwords may be clear text, obfuscated or checksummed. The class com.eclipse.Util.Password should be used to generate obfuscated passwords or password
- * checksums.
+ * <p>Passwords may be clear text, obfuscated or checksummed.
+ * The class {@link org.eclipse.jetty.util.security.Password} should be used
+ * to generate obfuscated passwords or password checksums.</p>
  *
- * If DIGEST Authentication is used, the password must be in a recoverable format, either plain text or OBF:.
+ * <p>If DIGEST Authentication is used, the password must be in a recoverable
+ * format, either plain text or obfuscated.</p>
  */
 public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 {
     private static final Logger LOG = Log.getLogger(PropertyUserStore.class);
 
     protected Path _configPath;
-    
     protected PathWatcher _pathWatcher;
     protected boolean _hotReload = false; // default is not to reload
-
     protected boolean _firstLoad = true; // true if first load, false from that point on
     protected List<UserListener> _listeners;
 
     /**
      * Get the config (as a string)
+     *
      * @return the config path as a string
      */
     public String getConfig()
@@ -82,6 +81,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 
     /**
      * Set the Config Path from a String reference to a file
+     *
      * @param config the config file
      */
     public void setConfig(String config)
@@ -91,11 +91,11 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             _configPath = null;
             return;
         }
-        
+
         try
         {
             Resource configResource = Resource.newResource(config);
-            
+
             if (configResource instanceof JarFileResource)
                 _configPath = extractPackedFile((JarFileResource)configResource);
             else if (configResource instanceof PathResource)
@@ -110,11 +110,11 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             _configPath = null;
             throw new IllegalStateException(e);
         }
-
     }
-    
+
     /**
      * Get the Config {@link Path} reference.
+     *
      * @return the config path
      */
     public Path getConfigPath()
@@ -124,7 +124,8 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 
     /**
      * Set the Config Path from a String reference to a file
-     * @param configFile the config file can a be a file path or a reference to a file within a jar file <code>jar:file:</code>
+     *
+     * @param configFile the config file can a be a file path or a reference to a file within a jar file {@code jar:file:}
      */
     @Deprecated
     public void setConfigPath(String configFile)
@@ -132,25 +133,24 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         setConfig(configFile);
     }
 
-    private Path extractPackedFile( JarFileResource configResource )
-        throws IOException
+    private Path extractPackedFile(JarFileResource configResource) throws IOException
     {
         String uri = configResource.getURI().toASCIIString();
         int colon = uri.lastIndexOf(":");
         int bang_slash = uri.indexOf("!/");
-        if (colon<0 || bang_slash<0 || colon>bang_slash)
-            throw new IllegalArgumentException("Not resolved JarFile resource: "+uri);        
-        String entry_path = uri.substring(colon+2).replace("!/","__").replace('/','_').replace('.','_');
+        if (colon < 0 || bang_slash < 0 || colon > bang_slash)
+            throw new IllegalArgumentException("Not resolved JarFile resource: " + uri);
+        String entry_path = uri.substring(colon + 2).replace("!/", "__").replace('/', '_').replace('.', '_');
 
-        Path tmpDirectory = Files.createTempDirectory( "users_store" );
+        Path tmpDirectory = Files.createTempDirectory("users_store");
         tmpDirectory.toFile().deleteOnExit();
         Path extractedPath = Paths.get(tmpDirectory.toString(), entry_path);
-        Files.deleteIfExists( extractedPath );
+        Files.deleteIfExists(extractedPath);
         extractedPath.toFile().deleteOnExit();
-        IO.copy(configResource.getInputStream(),new FileOutputStream(extractedPath.toFile()));
+        IO.copy(configResource.getInputStream(), new FileOutputStream(extractedPath.toFile()));
         if (isHotReload())
         {
-            LOG.warn("Cannot hot reload from packed configuration: {}",configResource);
+            LOG.warn("Cannot hot reload from packed configuration: {}", configResource);
             setHotReload(false);
         }
         return extractedPath;
@@ -158,6 +158,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 
     /**
      * Set the Config Path from a {@link File} reference
+     *
      * @param configFile the config file
      */
     @Deprecated
@@ -165,24 +166,23 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     {
         setConfigFile(configFile);
     }
-    
+
     /**
      * Set the Config Path from a {@link File} reference
+     *
      * @param configFile the config file
      */
     public void setConfigFile(File configFile)
     {
-        if(configFile == null)
-        {
+        if (configFile == null)
             _configPath = null;
-            return;
-        }
-        
-        _configPath = configFile.toPath();
+        else
+            _configPath = configFile.toPath();
     }
 
     /**
      * Set the Config Path
+     *
      * @param configPath the config path
      */
     public void setConfigPath(Path configPath)
@@ -192,18 +192,17 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 
     /**
      * @return the resource associated with the configured properties file, creating it if necessary
-     * @throws IOException if unable to get the resource
      */
-    public Resource getConfigResource() throws IOException
+    public Resource getConfigResource()
     {
-        if (_configPath==null)
+        if (_configPath == null)
             return null;
         return new PathResource(_configPath);
     }
-    
+
     /**
      * Is hot reload enabled on this user store
-     * 
+     *
      * @return true if hot reload was enabled before startup
      */
     public boolean isHotReload()
@@ -213,7 +212,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 
     /**
      * Enable Hot Reload of the Property File
-     * 
+     *
      * @param enable true to enable, false to disable
      */
     public void setHotReload(boolean enable)
@@ -225,33 +224,27 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         this._hotReload = enable;
     }
 
-   
-    
+
     @Override
     public String toString()
     {
-        StringBuilder s = new StringBuilder();
-        s.append(this.getClass().getName());
-        s.append("[");
-        s.append("users.count=").append(this.getKnownUserIdentities().size());
-        s.append("identityService=").append(this.getIdentityService());
-        s.append("]");
-        return s.toString();
+        return String.format("%s@%x[users.count=%d,identityService=%s]", getClass().getSimpleName(), hashCode(), getKnownUserIdentities().size(), getIdentityService());
     }
 
     /* ------------------------------------------------------------ */
     protected void loadUsers() throws IOException
     {
         if (_configPath == null)
-            throw new IllegalStateException ("No config path set");
+            throw new IllegalStateException("No config path set");
 
-        if (LOG.isDebugEnabled()) LOG.debug("Loading {} from {}",this, _configPath);
-        
+        if (LOG.isDebugEnabled())
+            LOG.debug("Loading {} from {}", this, _configPath);
+
         Resource config = getConfigResource();
-        
+
         if (!config.exists())
-            throw new IllegalStateException ("Config does not exist: "+ config);
-        
+            throw new IllegalStateException("Config does not exist: " + config);
+
         Properties properties = new Properties();
         properties.load(config.getInputStream());
 
@@ -263,63 +256,50 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             String credentials = ((String)entry.getValue()).trim();
             String roles = null;
             int c = credentials.indexOf(',');
-            if (c > 0)
+            if (c >= 0)
             {
                 roles = credentials.substring(c + 1).trim();
-                credentials = credentials.substring(0,c).trim();
+                credentials = credentials.substring(0, c).trim();
             }
 
-            if (username != null && username.length() > 0 && credentials != null && credentials.length() > 0)
+            if (username.length() > 0)
             {
                 String[] roleArray = IdentityService.NO_ROLES;
                 if (roles != null && roles.length() > 0)
-                {
                     roleArray = StringUtil.csvSplit(roles);
-                }
                 known.add(username);
                 Credential credential = Credential.getCredential(credentials);
-                addUser( username, credential, roleArray );
-                notifyUpdate(username,credential,roleArray);
+                addUser(username, credential, roleArray);
+                notifyUpdate(username, credential, roleArray);
             }
         }
 
-        final List<String> currentlyKnownUsers = new ArrayList<String>(getKnownUserIdentities().keySet());
-        /*
-         * 
-         * if its not the initial load then we want to process removed users
-         */
+        List<String> currentlyKnownUsers = new ArrayList<>(getKnownUserIdentities().keySet());
+        // if its not the initial load then we want to process removed users
         if (!_firstLoad)
         {
-            Iterator<String> users = currentlyKnownUsers.iterator();
-            while (users.hasNext())
+            for (String user : currentlyKnownUsers)
             {
-                String user = users.next();
                 if (!known.contains(user))
                 {
-                    removeUser( user );
+                    removeUser(user);
                     notifyRemove(user);
                 }
             }
         }
 
-        /*
-         * set initial load to false as there should be no more initial loads
-         */
+        // set initial load to false as there should be no more initial loads
         _firstLoad = false;
 
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("Loaded " + this + " from " + _configPath);
-        }
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
-     * Depending on the value of the refresh interval, this method will either start up a scanner thread that will monitor the properties file for changes after
-     * it has initially loaded it. Otherwise the users will be loaded and there will be no active monitoring thread so changes will not be detected.
-     *
-     *
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
+     * Depending on the value of the refresh interval, this method will either start
+     * up a scanner thread that will monitor the properties file for changes after
+     * it has initially loaded it. Otherwise the users will be loaded and there will
+     * be no active monitoring thread so changes will not be detected.
      */
     @Override
     protected void doStart() throws Exception
@@ -327,7 +307,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         super.doStart();
 
         loadUsers();
-        if ( isHotReload() && (_configPath != null) )
+        if (isHotReload() && (_configPath != null))
         {
             this._pathWatcher = new PathWatcher();
             this._pathWatcher.watch(_configPath);
@@ -335,18 +315,15 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             this._pathWatcher.setNotifyExistingOnStart(false);
             this._pathWatcher.start();
         }
-       
     }
-    
+
     @Override
     public void onPathWatchEvent(PathWatchEvent event)
     {
         try
         {
             if (LOG.isDebugEnabled())
-            {
-                LOG.debug( "PATH WATCH EVENT: {}", event.getType() );
-            }
+                LOG.debug("Path watch event: {}", event.getType());
             loadUsers();
         }
         catch (IOException e)
@@ -355,10 +332,6 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {
@@ -371,53 +344,45 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     /**
      * Notifies the registered listeners of potential updates to a user
      *
-     * @param username
-     * @param credential
-     * @param roleArray
+     * @param username the user that was updated
+     * @param credential the updated credentials
+     * @param roleArray the updated roles
      */
     private void notifyUpdate(String username, Credential credential, String[] roleArray)
     {
         if (_listeners != null)
         {
-            for (Iterator<UserListener> i = _listeners.iterator(); i.hasNext();)
-            {
-                i.next().update(username,credential,roleArray);
-            }
+            for (UserListener _listener : _listeners)
+                _listener.update(username, credential, roleArray);
         }
     }
 
     /**
-     * notifies the registered listeners that a user has been removed.
+     * Notifies the registered listeners that a user has been removed.
      *
-     * @param username
+     * @param username the user that was removed
      */
     private void notifyRemove(String username)
     {
         if (_listeners != null)
         {
-            for (Iterator<UserListener> i = _listeners.iterator(); i.hasNext();)
-            {
-                i.next().remove(username);
-            }
+            for (UserListener _listener : _listeners)
+                _listener.remove(username);
         }
     }
 
     /**
-     * registers a listener to be notified of the contents of the property file
+     * Registers a listener to be notified of the contents of the property file
+     *
      * @param listener the user listener
      */
     public void registerUserListener(UserListener listener)
     {
         if (_listeners == null)
-        {
-            _listeners = new ArrayList<UserListener>();
-        }
+            _listeners = new ArrayList<>();
         _listeners.add(listener);
     }
 
-    /**
-     * UserListener
-     */
     public interface UserListener
     {
         public void update(String username, Credential credential, String[] roleArray);
