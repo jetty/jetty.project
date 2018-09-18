@@ -18,16 +18,10 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.zip.Deflater;
@@ -57,6 +51,11 @@ import org.eclipse.jetty.websocket.core.io.OutgoingNetworkBytesCapture;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
@@ -123,8 +122,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         ExtensionConfig config = ExtensionConfig.parse("deflate-frame");
         ext.setConfig(config);
 
-        Generator generator = new Generator(policy, bufferPool);
-        generator.configureFromExtensions(Collections.singletonList(ext));
+        Generator generator = new Generator(bufferPool);
 
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
@@ -305,8 +303,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         ext.setPolicy(policy);
         ext.setConfig(new ExtensionConfig(ext.getName()));
 
-        Generator generator = new Generator(policy, bufferPool);
-        generator.configureFromExtensions(Collections.singletonList(ext));
+        Generator generator = new Generator(bufferPool);
 
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);

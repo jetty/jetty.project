@@ -19,11 +19,9 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.extensions.Extension;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 
 /**
@@ -57,71 +55,30 @@ public class Generator
      */
     public static final int MAX_HEADER_LENGTH = 28;
 
-    private final WebSocketBehavior behavior;
     private final ByteBufferPool bufferPool;
     private final boolean readOnly;
 
     /**
-     * Are any flags in use
-     * <p>
-     * 
-     * <pre>
-     *   0100_0000 (0x40) = rsv1
-     *   0010_0000 (0x20) = rsv2
-     *   0001_0000 (0x10) = rsv3
-     * </pre>
-     */
-    private byte flagsInUse = 0x00;
-
-    /**
      * Construct Generator with provided policy and bufferPool
-     * 
-     * @param policy
-     *            the policy to use
+     *
      * @param bufferPool
      *            the buffer pool to use
      */
-    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public Generator(ByteBufferPool bufferPool)
     {
-        this(policy,bufferPool, false);
+        this(bufferPool, false);
     }
 
     /**
      * Construct Generator with provided policy and bufferPool
-     *  @param policy
-     *            the policy to use
      * @param bufferPool
      *            the buffer pool to use
      * @param readOnly
      */
-    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean readOnly)
+    public Generator(ByteBufferPool bufferPool, boolean readOnly)
     {
-        this.behavior = policy.getBehavior();
         this.bufferPool = bufferPool;
         this.readOnly = readOnly;
-    }
-
-    public void configureFromExtensions(List<? extends Extension> exts)
-    {
-        // default
-        flagsInUse = 0x00;
-
-        // configure from list of extensions in use
-        for (Extension ext : exts)
-        {
-            if (ext.isRsv1User())
-            {
-                flagsInUse = (byte)(flagsInUse | 0x40);
-            }
-            if (ext.isRsv2User())
-            {
-                flagsInUse = (byte)(flagsInUse | 0x20);
-            }
-            if (ext.isRsv3User())
-            {
-                flagsInUse = (byte)(flagsInUse | 0x10);
-            }
-        }
     }
 
     public ByteBuffer generateHeaderBytes(Frame frame)
@@ -267,77 +224,8 @@ public class Generator
         }
     }
 
-    public WebSocketBehavior getBehavior()
-    {
-        return behavior;
-    }
-
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;
-    }
-    
-    public void setRsv1InUse(boolean rsv1InUse)
-    {
-        if (readOnly)
-        {
-            throw new RuntimeException("Not allowed to modify read-only frame");
-        }
-        flagsInUse = (byte)((flagsInUse & 0xBF) | (rsv1InUse?0x40:0x00));
-    }
-
-    public void setRsv2InUse(boolean rsv2InUse)
-    {
-        if (readOnly)
-        {
-            throw new RuntimeException("Not allowed to modify read-only frame");
-        }
-        flagsInUse = (byte)((flagsInUse & 0xDF) | (rsv2InUse?0x20:0x00));
-    }
-
-    public void setRsv3InUse(boolean rsv3InUse)
-    {
-        if (readOnly)
-        {
-            throw new RuntimeException("Not allowed to modify read-only frame");
-        }
-        flagsInUse = (byte)((flagsInUse & 0xEF) | (rsv3InUse?0x10:0x00));
-    }
-    
-    public boolean isRsv1InUse()
-    {
-        return (flagsInUse & 0x40) != 0;
-    }
-
-    public boolean isRsv2InUse()
-    {
-        return (flagsInUse & 0x20) != 0;
-    }
-
-    public boolean isRsv3InUse()
-    {
-        return (flagsInUse & 0x10) != 0;
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuilder builder = new StringBuilder();
-        builder.append("Generator[");
-        builder.append(behavior);
-        if (isRsv1InUse())
-        {
-            builder.append(",+rsv1");
-        }
-        if (isRsv2InUse())
-        {
-            builder.append(",+rsv2");
-        }
-        if (isRsv3InUse())
-        {
-            builder.append(",+rsv3");
-        }
-        builder.append("]");
-        return builder.toString();
     }
 }

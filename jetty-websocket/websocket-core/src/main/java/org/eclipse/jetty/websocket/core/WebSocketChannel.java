@@ -63,7 +63,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private final String subprotocol;
     private final AttributesMap attributes = new AttributesMap();
     private final boolean demanding;
-    OpCode.Sequence outgoingSequence = new OpCode.Sequence();
+    private final OpCode.Sequence outgoingSequence = new OpCode.Sequence();
 
     private WebSocketConnection connection;
 
@@ -536,6 +536,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
         if (frame.getOpCode() == OpCode.CLOSE)
         {
+            //todo CloseStatus throws if invalid payload, will this be handled properly
             close(new CloseStatus(frame.getPayload()), callback, batchMode);
         }
         else

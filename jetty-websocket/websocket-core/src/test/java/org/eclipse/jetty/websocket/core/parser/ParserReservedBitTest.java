@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.parser;
 
-import static org.hamcrest.Matchers.containsString;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +39,8 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import static org.hamcrest.Matchers.containsString;
 
 /**
  * Test various RSV violations
@@ -65,7 +65,7 @@ public class ParserReservedBitTest
         int size = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
         ByteBuffer raw = BufferUtil.allocate(size);
         BufferUtil.clearToFill(raw);
-        Generator generator = new Generator(policy, bufferPool);
+        Generator generator = new Generator(bufferPool);
         frames.forEach(frame -> generator.generateWholeFrame(frame, raw));
         BufferUtil.flipToFlush(raw, 0);
 

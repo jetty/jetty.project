@@ -41,8 +41,8 @@ public class UnitGenerator extends Generator
     
     public UnitGenerator(WebSocketPolicy policy)
     {
-        super(policy, new MappedByteBufferPool());
-        applyMask = (getBehavior() == WebSocketBehavior.CLIENT);
+        super(new MappedByteBufferPool());
+        applyMask = (policy.getBehavior() == WebSocketBehavior.CLIENT);
     }
 
     @Deprecated

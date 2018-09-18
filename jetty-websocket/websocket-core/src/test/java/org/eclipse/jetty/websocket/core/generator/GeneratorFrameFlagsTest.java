@@ -92,6 +92,6 @@ public class GeneratorFrameFlagsTest
     {
         ByteBuffer buffer = ByteBuffer.allocate(100);
         channel.assertValidOutgoing(invalidFrame);
-        new Generator(WebSocketPolicy.newServerPolicy(), bufferPool).generateWholeFrame(invalidFrame, buffer);
+        new Generator(bufferPool).generateWholeFrame(invalidFrame, buffer);
     }
 }

@@ -47,7 +47,6 @@ import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
@@ -117,7 +116,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         this.policy = channel.getPolicy();
         this.channel = channel;
 
-        this.generator = new Generator(policy, bufferPool);
+        this.generator = new Generator(bufferPool);
         this.parser = new Parser(bufferPool,policy.isAutoFragment())
         {
             @Override
@@ -133,8 +132,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         this.flusher = new Flusher(policy.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
-
-        this.generator.configureFromExtensions(channel.getExtensionStack().getExtensions());
 
         this.random = this.policy.getBehavior() == WebSocketBehavior.CLIENT ? new Random(endp.hashCode()) : null;        
     }
