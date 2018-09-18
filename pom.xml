@@ -33,7 +33,7 @@
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.2.0</tycho-version>
     <cbi-plugins.version>1.1.5</cbi-plugins.version>
-    <junit.version>5.3.0</junit.version>
+    <junit.version>5.3.1</junit.version>
     <maven.version>3.5.0</maven.version>
     <weld.version>2.4.5.Final</weld.version>
     <jetty.perf-helper.version>1.0.5</jetty.perf-helper.version>
