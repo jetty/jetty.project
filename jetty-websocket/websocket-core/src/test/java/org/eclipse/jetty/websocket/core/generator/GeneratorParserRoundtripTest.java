@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.generator;
 
-import static org.hamcrest.Matchers.is;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +37,8 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
+
 public class GeneratorParserRoundtripTest
 {
     @Rule
@@ -50,7 +50,7 @@ public class GeneratorParserRoundtripTest
     public void testParserAndGenerator() throws Exception
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        Generator gen = new Generator(policy,bufferPool);
+        Generator gen = new Generator(bufferPool);
         ParserCapture capture = new ParserCapture(new Parser(bufferPool));
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
@@ -83,7 +83,7 @@ public class GeneratorParserRoundtripTest
     @Test
     public void testParserAndGeneratorMasked() throws Exception
     {
-        Generator gen = new Generator(WebSocketPolicy.newClientPolicy(),bufferPool);
+        Generator gen = new Generator(bufferPool);
         ParserCapture capture = new ParserCapture(new Parser(bufferPool), true, WebSocketBehavior.SERVER);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
