@@ -26,6 +26,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -2591,26 +2592,22 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             {
                 // check to see if the classloader of the caller is the same as the context
                 // classloader, or a parent of it, as required by the javadoc specification.
-                try
-                {
-                    Class<?> caller = new Caller().getCallerClass(2);
-                    boolean ok = false;
-                    ClassLoader callerLoader = caller == null ? null : caller.getClassLoader();
-                    while (!ok && callerLoader != null)
-                    {
-                        if (callerLoader == _classLoader)
-                            ok = true;
-                        else
-                            callerLoader = callerLoader.getParent();
-                    }
 
-                    if (ok)
-                        return _classLoader;
-                }
-                catch (Exception e)
+                // Wrap so that only Jetty code requires the "createSecurityManager" permission.
+                Caller caller = AccessController.doPrivileged((PrivilegedAction<Caller>)Caller::new);
+                Class<?> callerClass = caller.getCallerClass(2);
+                boolean ok = false;
+                ClassLoader callerLoader = callerClass == null ? null : callerClass.getClassLoader();
+                while (!ok && callerLoader != null)
                 {
-                    LOG.warn("Unable to check classloader of caller",e);
+                    if (callerLoader == _classLoader)
+                        ok = true;
+                    else
+                        callerLoader = callerLoader.getParent();
                 }
+
+                if (ok)
+                    return _classLoader;
 
                 AccessController.checkPermission(new RuntimePermission("getClassLoader"));
                 return _classLoader;
