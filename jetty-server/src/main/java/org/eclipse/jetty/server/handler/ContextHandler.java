@@ -2593,21 +2593,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 // check to see if the classloader of the caller is the same as the context
                 // classloader, or a parent of it, as required by the javadoc specification.
 
-                // Wrap so that only Jetty code requires the "createSecurityManager" permission.
-                boolean ok = false;
+                // Wrap in a PrivilegedAction so that only Jetty code will require the
+                // "createSecurityManager" permission, not also application code that calls this method.
                 Caller caller = AccessController.doPrivileged((PrivilegedAction<Caller>)Caller::new);
                 ClassLoader callerLoader = caller.getCallerClassLoader(2);
-                while (!ok && callerLoader != null)
+                while (callerLoader != null)
                 {
                     if (callerLoader == _classLoader)
-                        ok = true;
+                        return _classLoader;
                     else
                         callerLoader = callerLoader.getParent();
                 }
-
-                if (ok)
-                    return _classLoader;
-
                 AccessController.checkPermission(new RuntimePermission("getClassLoader"));
                 return _classLoader;
             }
