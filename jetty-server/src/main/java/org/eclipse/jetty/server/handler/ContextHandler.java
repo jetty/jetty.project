@@ -2594,10 +2594,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 // classloader, or a parent of it, as required by the javadoc specification.
 
                 // Wrap so that only Jetty code requires the "createSecurityManager" permission.
-                Caller caller = AccessController.doPrivileged((PrivilegedAction<Caller>)Caller::new);
-                Class<?> callerClass = caller.getCallerClass(2);
                 boolean ok = false;
-                ClassLoader callerLoader = callerClass == null ? null : callerClass.getClassLoader();
+                Caller caller = AccessController.doPrivileged((PrivilegedAction<Caller>)Caller::new);
+                ClassLoader callerLoader = caller.getCallerClassLoader(2);
                 while (!ok && callerLoader != null)
                 {
                     if (callerLoader == _classLoader)
@@ -3081,14 +3080,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private static class Caller extends SecurityManager
     {
-        public Class<?> getCallerClass(int depth)
+        public ClassLoader getCallerClassLoader(int depth)
         {
             if (depth < 0)
                 return null;
             Class<?>[] classContext = getClassContext();
             if (classContext.length <= depth)
                 return null;
-            return classContext[depth];
+            return classContext[depth].getClassLoader();
         }
     }
 }
