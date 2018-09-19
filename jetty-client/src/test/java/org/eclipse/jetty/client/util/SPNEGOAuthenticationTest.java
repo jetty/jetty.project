@@ -28,7 +28,6 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -124,7 +123,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         server = new Server();
         server.setSessionIdManager(new DefaultSessionIdManager(server));
         HashLoginService authorizationService = new HashLoginService(realm, realmPropsPath.toString());
-        SpnegoLoginService2 loginService = new SpnegoLoginService2(realm, AuthorizationService.from(authorizationService));
+        SpnegoLoginService2 loginService = new SpnegoLoginService2(realm, AuthorizationService.from(authorizationService, ""));
         loginService.addBean(authorizationService);
         loginService.setKeyTabPath(serviceKeyTabPath);
         loginService.setServiceName(serviceName);
@@ -222,7 +221,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         startSPNEGO(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 IO.readBytes(request.getInputStream());
             }

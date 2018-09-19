@@ -28,13 +28,13 @@ public class SpnegoUserIdentity implements UserIdentity
 {
     private final Subject _subject;
     private final Principal _principal;
-    private final UserIdentity _delegate;
+    private final UserIdentity _roleDelegate;
 
-    public SpnegoUserIdentity(Subject subject, Principal principal, UserIdentity delegate)
+    public SpnegoUserIdentity(Subject subject, Principal principal, UserIdentity roleDelegate)
     {
         _subject = subject;
         _principal = principal;
-        _delegate = delegate;
+        _roleDelegate = roleDelegate;
     }
 
     @Override
@@ -52,11 +52,11 @@ public class SpnegoUserIdentity implements UserIdentity
     @Override
     public boolean isUserInRole(String role, Scope scope)
     {
-        return _delegate != null && _delegate.isUserInRole(role, scope);
+        return _roleDelegate != null && _roleDelegate.isUserInRole(role, scope);
     }
 
     public boolean isEstablished()
     {
-        return _delegate != null;
+        return _roleDelegate != null;
     }
 }

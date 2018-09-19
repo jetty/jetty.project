@@ -165,7 +165,7 @@ public class SpnegoLoginService2 extends ContainerLifeCycle implements LoginServ
             if (httpSession != null)
                 httpSession.removeAttribute(GSSContextHolder.ATTRIBUTE);
 
-            UserIdentity roles = _authorizationService.getUserIdentity(request, userName, "");
+            UserIdentity roles = _authorizationService.getUserIdentity(request, userName);
             return new SpnegoUserIdentity(subject, principal, roles);
         }
         else

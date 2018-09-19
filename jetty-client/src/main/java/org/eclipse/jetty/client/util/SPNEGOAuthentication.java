@@ -171,7 +171,6 @@ public class SPNEGOAuthentication extends AbstractAuthentication
         {
             // First login via JAAS using the Kerberos AS_REQ call, with a client user.
             // This will populate the Subject with the client user principal and the TGT.
-            // TODO: allow to use a keyTab.
             String user = getUserName();
             if (LOG.isDebugEnabled())
                 LOG.debug("Logging in user {}", user);

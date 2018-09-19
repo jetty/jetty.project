@@ -26,24 +26,25 @@ import org.eclipse.jetty.server.UserIdentity;
 /**
  * <p>A service to query for user roles.</p>
  */
+@FunctionalInterface
 public interface AuthorizationService
 {
     /**
      * @param request the current HTTP request
      * @param name the user name
-     * @param credentials the user credentials
      * @return a {@link UserIdentity} to query for roles of the given user
      */
-    UserIdentity getUserIdentity(HttpServletRequest request, String name, Object credentials);
+    UserIdentity getUserIdentity(HttpServletRequest request, String name);
 
     /**
      * <p>Wraps a {@link LoginService} as an AuthorizationService</p>
      *
      * @param loginService the {@link LoginService} to wrap
+     * @param credentials
      * @return an AuthorizationService that delegates the query for roles to the given {@link LoginService}
      */
-    public static AuthorizationService from(LoginService loginService)
+    public static AuthorizationService from(LoginService loginService, Object credentials)
     {
-        return (request, name, credentials) -> loginService.login(name, credentials, request);
+        return (request, name) -> loginService.login(name, credentials, request);
     }
 }

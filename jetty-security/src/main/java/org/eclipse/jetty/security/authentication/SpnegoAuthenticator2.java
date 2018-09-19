@@ -130,10 +130,13 @@ public class SpnegoAuthenticator2 extends LoginAuthenticator
             {
                 if (identity.isEstablished())
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Sending final challenge");
-                    SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
-                    setSpnegoToken(response, principal.getEncodedToken());
+                    if (!DeferredAuthentication.isDeferred(response))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Sending final challenge");
+                        SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
+                        setSpnegoToken(response, principal.getEncodedToken());
+                    }
 
                     Duration authnDuration = getAuthenticationDuration();
                     if (!authnDuration.isNegative())
