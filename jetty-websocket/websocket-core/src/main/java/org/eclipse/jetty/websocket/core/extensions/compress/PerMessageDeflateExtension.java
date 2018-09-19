@@ -23,10 +23,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
@@ -131,7 +133,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    public void setConfig(final ExtensionConfig config)
+    public void init(final ExtensionConfig config, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         configRequested = new ExtensionConfig(config);
         Map<String,String> params_negotiated = new HashMap<>();
@@ -151,7 +153,7 @@ public class PerMessageDeflateExtension extends CompressExtension
                 case "client_no_context_takeover":
                 {
                     params_negotiated.put("client_no_context_takeover",null);
-                    switch (getPolicy().getBehavior())
+                    switch (policy.getBehavior())
                     {
                         case CLIENT:
                             incomingContextTakeover = false;
@@ -165,7 +167,7 @@ public class PerMessageDeflateExtension extends CompressExtension
                 case "server_no_context_takeover":
                 {
                     params_negotiated.put("client_no_context_takeover",null);
-                    switch (getPolicy().getBehavior())
+                    switch (policy.getBehavior())
                     {
                         case CLIENT:
                             outgoingContextTakeover = false;
@@ -186,7 +188,7 @@ public class PerMessageDeflateExtension extends CompressExtension
         configNegotiated = new ExtensionConfig(config.getName(),params_negotiated);
         LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
-        super.setConfig(configNegotiated);
+        super.init(configNegotiated, policy, bufferPool);
     }
 
     @Override

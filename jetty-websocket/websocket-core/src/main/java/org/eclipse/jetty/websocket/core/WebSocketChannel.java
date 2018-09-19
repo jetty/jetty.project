@@ -77,7 +77,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         this.extensionStack = extensionStack;
         this.subprotocol = subprotocol;
         this.demanding = handler.isDemanding();
-        extensionStack.connect(new IncomingState(),new OutgoingState());
+        extensionStack.connect(new IncomingState(),new OutgoingState(), this);
     }
 
     

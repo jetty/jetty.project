@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 
 /**
@@ -29,6 +32,9 @@ import org.eclipse.jetty.websocket.core.frames.Frame;
  */
 public interface Extension extends IncomingFrames, OutgoingFrames
 {
+
+    void init(ExtensionConfig config, WebSocketPolicy policy, ByteBufferPool bufferPool);
+
     /**
      * The active configuration for this extension.
      * 
@@ -86,4 +92,10 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      *            the next outgoing extension
      */
     void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
+
+    /**
+     * Set the {@link WebSocketChannel} for this Extension
+     * @param webSocketChannel
+     */
+    void setWebSocketChannel(WebSocketChannel webSocketChannel);
 }

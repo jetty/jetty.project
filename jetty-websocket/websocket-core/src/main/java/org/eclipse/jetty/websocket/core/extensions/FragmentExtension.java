@@ -23,10 +23,12 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
@@ -73,9 +75,9 @@ public class FragmentExtension extends AbstractExtension
     }
 
     @Override
-    public void setConfig(ExtensionConfig config)
+    public void init(ExtensionConfig config, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        super.setConfig(config);
+        super.init(config, policy, bufferPool);
         maxLength = config.getParameter("maxLength", -1);
     }
 

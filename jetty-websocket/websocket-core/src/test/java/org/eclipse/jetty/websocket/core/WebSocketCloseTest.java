@@ -54,7 +54,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
@@ -63,12 +62,19 @@ import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests of a core server with a fake client
@@ -392,7 +398,7 @@ public class WebSocketCloseTest
         setup(State.OCLOSED);
 
         client.close();
-        assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
+        assertFalse(server.handler.closed.await(1000, TimeUnit.MILLISECONDS));
         server.handler.getCoreSession().demand(1);
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
         assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NO_CLOSE));

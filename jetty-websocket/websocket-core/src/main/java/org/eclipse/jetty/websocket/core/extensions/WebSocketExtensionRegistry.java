@@ -95,12 +95,8 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
         try
         {
             Extension ext = objectFactory.createInstance(extClass);
-            if (ext instanceof AbstractExtension)
-            {
-                AbstractExtension aext = (AbstractExtension)ext;
-                aext.init(policy, bufferPool);
-                aext.setConfig(config);
-            }
+            ext.init(config, policy, bufferPool);
+
             return ext;
         }
         catch (Throwable t)

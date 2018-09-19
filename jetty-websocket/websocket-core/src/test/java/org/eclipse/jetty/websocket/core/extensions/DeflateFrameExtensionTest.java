@@ -63,17 +63,11 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     public TestTracker tracker = new TestTracker();
 
     private static final Logger LOG = Log.getLogger(DeflateFrameExtensionTest.class);
-    
+
     private void assertIncoming(byte[] raw, String... expectedTextDatas)
     {
-        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-
         DeflateFrameExtension ext = new DeflateFrameExtension();
-        ext.setBufferPool(bufferPool);
-        ext.setPolicy(policy);
-
-        ExtensionConfig config = ExtensionConfig.parse("deflate-frame");
-        ext.setConfig(config);
+        init(ext);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -113,14 +107,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     private void assertOutgoing(String text, String expectedHex) throws IOException
     {
-        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-
         DeflateFrameExtension ext = new DeflateFrameExtension();
-        ext.setBufferPool(bufferPool);
-        ext.setPolicy(policy);
-
-        ExtensionConfig config = ExtensionConfig.parse("deflate-frame");
-        ext.setConfig(config);
+        init(ext);
 
         Generator generator = new Generator(bufferPool);
 
@@ -246,8 +234,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     private void init(DeflateFrameExtension ext)
     {
-        ext.setConfig(new ExtensionConfig(ext.getName()));
-        ext.setBufferPool(bufferPool);
+        ext.init(new ExtensionConfig(ext.getName()), WebSocketPolicy.newClientPolicy(), bufferPool);
     }
 
     @Test
@@ -299,9 +286,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         DeflateFrameExtension ext = new DeflateFrameExtension();
-        ext.setBufferPool(bufferPool);
-        ext.setPolicy(policy);
-        ext.setConfig(new ExtensionConfig(ext.getName()));
+        init(ext);
 
         Generator generator = new Generator(bufferPool);
 
@@ -389,16 +374,12 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         int maxMessageSize = (1024 * 1024) + 8192;
         
         DeflateFrameExtension clientExtension = new DeflateFrameExtension();
-        clientExtension.setBufferPool(bufferPool);
-        clientExtension.setPolicy(WebSocketPolicy.newClientPolicy());
+        init(clientExtension);
         clientExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
-        clientExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
 
         final DeflateFrameExtension serverExtension = new DeflateFrameExtension();
-        serverExtension.setBufferPool(bufferPool);
-        serverExtension.setPolicy(WebSocketPolicy.newServerPolicy());
+        init(serverExtension);
         serverExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
-        serverExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
 
         // Chain the next element to decompress.
         clientExtension.setNextOutgoingFrames(new OutgoingFrames()

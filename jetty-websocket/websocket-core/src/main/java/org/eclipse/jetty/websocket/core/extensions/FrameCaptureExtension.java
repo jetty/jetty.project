@@ -27,12 +27,14 @@ import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Generator;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
@@ -135,10 +137,11 @@ public class FrameCaptureExtension extends AbstractExtension
         }
     }
 
+
     @Override
-    public void setConfig(ExtensionConfig config)
+    public void init(ExtensionConfig config, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        super.setConfig(config);
+        super.init(config, policy, bufferPool);
 
         String cfgOutputDir = config.getParameter("output-dir",null);
         if (StringUtil.isNotBlank(cfgOutputDir))

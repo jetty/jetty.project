@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -44,6 +41,9 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 /**
  * Client side behavioral tests for permessage-deflate extension.
  * <p>
@@ -53,6 +53,11 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
     @Rule
     public TestTracker tracker = new TestTracker();
+
+    private void init(PerMessageDeflateExtension ext)
+    {
+        ext.init(new ExtensionConfig(ext.getName()), WebSocketPolicy.newServerPolicy(), bufferPool);
+    }
 
     private void assertEndsWithTail(String hexStr, boolean expectedResult)
     {
@@ -228,10 +233,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     public void testIncomingPing()
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
-        ext.setBufferPool(bufferPool);
-        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.setConfig(config);
+        ext.init(config, WebSocketPolicy.newServerPolicy(), bufferPool);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -265,10 +268,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     public void testIncomingUncompressedFrames()
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
-        ext.setBufferPool(bufferPool);
-        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.setConfig(config);
+        ext.init(config, WebSocketPolicy.newServerPolicy(), bufferPool);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -321,10 +322,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     public void testOutgoingPing() throws IOException
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
-        ext.setBufferPool(bufferPool);
-        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.setConfig(config);
+        ext.init(config, WebSocketPolicy.newServerPolicy(), bufferPool);
 
         // Setup capture of outgoing frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();

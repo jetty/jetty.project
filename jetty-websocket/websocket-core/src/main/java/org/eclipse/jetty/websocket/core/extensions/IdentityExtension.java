@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
@@ -55,9 +57,10 @@ public class IdentityExtension extends AbstractExtension
     }
 
     @Override
-    public void setConfig(ExtensionConfig config)
+    public void init(ExtensionConfig config, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        super.setConfig(config);
+        super.init(config, policy, bufferPool);
+
         StringBuilder s = new StringBuilder();
         s.append(config.getName());
         s.append("@").append(Integer.toHexString(hashCode()));

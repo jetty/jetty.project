@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +39,8 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
+
 public class FragmentExtensionTest extends AbstractExtensionTest
 {
     @Rule
@@ -55,10 +55,8 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(bufferPool);
-        ext.setPolicy(WebSocketPolicy.newClientPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
-        ext.setConfig(config);
+        ext.init(config, WebSocketPolicy.newClientPolicy(), bufferPool);
 
         ext.setNextIncomingFrames(capture);
 
@@ -106,10 +104,8 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(bufferPool);
-        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
-        ext.setConfig(config);
+        ext.init(config, WebSocketPolicy.newServerPolicy(), bufferPool);
 
         ext.setNextIncomingFrames(capture);
 
@@ -142,10 +138,8 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(bufferPool);
-        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=20");
-        ext.setConfig(config);
+        ext.init(config, WebSocketPolicy.newServerPolicy(), bufferPool);
 
         ext.setNextOutgoingFrames(capture);
 
@@ -215,10 +209,8 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(bufferPool);
-        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment");
-        ext.setConfig(config);
+        ext.init(config, WebSocketPolicy.newServerPolicy(), bufferPool);
 
         ext.setNextOutgoingFrames(capture);
 
@@ -280,10 +272,8 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
 
         FragmentExtension ext = new FragmentExtension();
-        ext.setBufferPool(bufferPool);
-        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
-        ext.setConfig(config);
+        ext.init(config, WebSocketPolicy.newServerPolicy(), bufferPool);
 
         ext.setNextOutgoingFrames(capture);
 

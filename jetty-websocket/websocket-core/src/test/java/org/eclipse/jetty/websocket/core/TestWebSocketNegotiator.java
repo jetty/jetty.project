@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core;
 import java.io.IOException;
 import java.util.List;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
@@ -49,6 +50,7 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
         if (!offeredSubprotocols.contains("test"))
             return null;
         negotiation.setSubprotocol("test");
+        negotiation.getResponse().addHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),"@validation");
         return frameHandler;
     }
 

@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
@@ -206,7 +207,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         flusher.iterate();
     }
 
-    public void connect(IncomingFrames incoming, OutgoingFrames outgoing)
+    public void connect(IncomingFrames incoming, OutgoingFrames outgoing, WebSocketChannel webSocketChannel)
     {
         if (extensions==null)
             throw new IllegalStateException();
@@ -220,6 +221,9 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             extensions.get(0).setNextOutgoingFrames(outgoing);
             extensions.get(extensions.size()-1).setNextIncomingFrames(incoming);
         }
+
+        for (Extension extension : extensions)
+            extension.setWebSocketChannel(webSocketChannel);
     }
 
     public void setPolicy(WebSocketPolicy policy)
@@ -421,5 +425,4 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             return "ExtensionStack$Flusher[" + (extensions==null?-1:extensions.size()) + "]";
         }
     }
-
 }

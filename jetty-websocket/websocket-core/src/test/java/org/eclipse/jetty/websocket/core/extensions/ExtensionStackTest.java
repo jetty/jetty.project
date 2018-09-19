@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import static org.hamcrest.Matchers.is;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +36,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 public class ExtensionStackTest
 {
@@ -82,7 +82,7 @@ public class ExtensionStackTest
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
         OutgoingFrames connection = new OutgoingFramesCapture();
-        stack.connect(session,connection);
+        stack.connect(session,connection, null);
 
         // Dump
         LOG.debug("{}",stack.dump());
@@ -106,7 +106,7 @@ public class ExtensionStackTest
         // Setup Listeners
         IncomingFrames session = new IncomingFramesCapture();
         OutgoingFrames connection = new OutgoingFramesCapture();
-        stack.connect(session,connection);
+        stack.connect(session,connection, null);
 
         // Dump
         LOG.debug("{}",stack.dump());
