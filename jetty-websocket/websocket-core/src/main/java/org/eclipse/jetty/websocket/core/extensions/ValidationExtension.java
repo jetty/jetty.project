@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.core.extensions;
 
 import java.util.List;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
@@ -36,6 +38,11 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
 public class ValidationExtension extends AbstractExtension
 {
     private static final Logger LOG = Log.getLogger(ValidationExtension.class);
+
+    private OpCode.Sequence incomingSequence = null;
+    private OpCode.Sequence outgoingSequence = null;
+    private boolean incomingFrameValidation = false;
+    private boolean outgoingFrameValidation = false;
 
     @Override
     public String getName()
@@ -46,19 +53,40 @@ public class ValidationExtension extends AbstractExtension
     @Override
     public void onReceiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
     {
-        System.out.println("INCOMING");
-        assertValidIncoming(frame);
-        nextIncomingFrame(frame, callback);
+        try
+        {
+            if (incomingSequence != null)
+                incomingSequence.check(frame.getOpCode(), frame.isFin());
+
+            if (incomingFrameValidation)
+                assertValidIncoming(frame);
+
+            nextIncomingFrame(frame, callback);
+        }
+        catch (CloseException e)
+        {
+            callback.failed(e);
+        }
     }
 
     @Override
     public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
-        System.out.println("OUTGOING");
-        assertValidOutgoing(frame);
-        nextOutgoingFrame(frame,callback,batchMode);
-    }
+        try
+        {
+            if (outgoingSequence != null)
+                outgoingSequence.check(frame.getOpCode(), frame.isFin());
 
+            if (outgoingFrameValidation)
+                assertValidOutgoing(frame);
+
+            nextOutgoingFrame(frame, callback, batchMode);
+        }
+        catch (CloseException e)
+        {
+            callback.failed(e);
+        }
+    }
 
 
     public void assertValidIncoming(Frame frame)
@@ -70,8 +98,7 @@ public class ValidationExtension extends AbstractExtension
         {
             if (!frame.isMasked())
                 throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
-        }
-        else if (getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
+        } else if (getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
         {
             if (frame.isMasked())
                 throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
@@ -85,7 +112,7 @@ public class ValidationExtension extends AbstractExtension
 
         assertValid(frame);
 
-        int payloadLength = (frame.getPayload()==null) ? 0 : frame.getPayload().remaining(); // TODO is this accurately getting length of payload
+        int payloadLength = (frame.getPayload() == null) ? 0 : frame.getPayload().remaining();
 
         // Sane Payload Length
         if (payloadLength > getPolicy().getMaxAllowedFrameSize())
@@ -134,7 +161,7 @@ public class ValidationExtension extends AbstractExtension
          * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
          * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
          */
-        List<? extends Extension > exts = getWebSocketChannel().getExtensionStack().getExtensions();
+        List<? extends Extension> exts = getWebSocketChannel().getExtensionStack().getExtensions();
 
         boolean isRsv1InUse = false;
         boolean isRsv2InUse = false;
@@ -157,5 +184,36 @@ public class ValidationExtension extends AbstractExtension
 
         if (frame.isRsv3() && !isRsv3InUse)
             throw new ProtocolException("RSV3 not allowed to be set");
+    }
+
+
+    @Override
+    public void init(ExtensionConfig config, WebSocketPolicy policy, ByteBufferPool bufferPool)
+    {
+        super.init(config, policy, bufferPool);
+
+        String param = config.getParameter("outgoing-sequence", "false");
+        if ("true".equals(param))
+        {
+            outgoingSequence = new OpCode.Sequence();
+        }
+
+        param = config.getParameter("incoming-sequence", "false");
+        if ("true".equals(param))
+        {
+            incomingSequence = new OpCode.Sequence();
+        }
+
+        param = config.getParameter("incoming-frame", "false");
+        if ("true".equals(param))
+        {
+            incomingFrameValidation = true;
+        }
+
+        param = config.getParameter("outgoing-frame", "false");
+        if ("true".equals(param))
+        {
+            outgoingFrameValidation = true;
+        }
     }
 }

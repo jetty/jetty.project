@@ -50,7 +50,7 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
         if (!offeredSubprotocols.contains("test"))
             return null;
         negotiation.setSubprotocol("test");
-        negotiation.getResponse().addHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),"@validation");
+        negotiation.getResponse().addHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),"@validation; outgoing-sequence=true; incoming-sequence=true; outgoing-frame=true; incoming-frame=true");
         return frameHandler;
     }
 
