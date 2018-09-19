@@ -72,11 +72,10 @@ import org.eclipse.jetty.util.log.Logger;
 public class ObjectMBean implements DynamicMBean
 {
     private static final Logger LOG = Log.getLogger(ObjectMBean.class);
-    private static final Class<?>[] OBJ_ARG = new Class[]{Object.class};
     private static final String OBJECT_NAME_CLASS = ObjectName.class.getName();
     private static final String OBJECT_NAME_ARRAY_CLASS = ObjectName[].class.getName();
 
-    protected Object _managed;
+    protected final Object _managed;
     private MBeanInfo _info;
     private Map<String, Method> _getters = new HashMap<>();
     private Map<String, Method> _setters = new HashMap<>();
@@ -88,102 +87,6 @@ public class ObjectMBean implements DynamicMBean
     private Set<String> _convert = new HashSet<>();
     private ClassLoader _loader;
     private MBeanContainer _mbeanContainer;
-
-    /**
-     * <p>Creates an ObjectMBean for the given object.</p>
-     * <p>Attempts to create an ObjectMBean for the object by searching the package
-     * and class name space. For example an object of the type:</p>
-     * <pre>
-     * class com.acme.MyClass extends com.acme.util.BaseClass implements com.acme.Iface
-     * </pre>
-     * <p>then this method would look for the following classes:</p>
-     * <ul>
-     * <li>com.acme.jmx.MyClassMBean</li>
-     * <li>com.acme.util.jmx.BaseClassMBean</li>
-     * <li>org.eclipse.jetty.jmx.ObjectMBean</li>
-     * </ul>
-     *
-     * @param o The object
-     * @return A new instance of an MBean for the object or null.
-     */
-    public static Object mbeanFor(Object o)
-    {
-        try
-        {
-            Class<?> oClass = o.getClass();
-            while (oClass != null)
-            {
-                String pName = oClass.getPackage().getName();
-                String cName = oClass.getName().substring(pName.length() + 1);
-                String mName = pName + ".jmx." + cName + "MBean";
-
-                try
-                {
-                    Class<?> mClass;
-                    try
-                    {
-                        // Look for an MBean class from the same loader that loaded the original class
-                        mClass = (Object.class.equals(oClass)) ? oClass = ObjectMBean.class : Loader.loadClass(oClass, mName);
-                    }
-                    catch (ClassNotFoundException e)
-                    {
-                        // Not found, so if not the same as the thread context loader, try that.
-                        if (Thread.currentThread().getContextClassLoader() == oClass.getClassLoader())
-                            throw e;
-                        LOG.ignore(e);
-                        mClass = Loader.loadClass(oClass, mName);
-                    }
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("ObjectMBean: mbeanFor {} mClass={}", o, mClass);
-
-                    Object mbean = null;
-                    try
-                    {
-                        Constructor<?> constructor = mClass.getConstructor(OBJ_ARG);
-                        mbean = constructor.newInstance(o);
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.ignore(e);
-                        if (ModelMBean.class.isAssignableFrom(mClass))
-                        {
-                            mbean = mClass.getDeclaredConstructor().newInstance();
-                            ((ModelMBean)mbean).setManagedResource(o, "objectReference");
-                        }
-                    }
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("mbeanFor {} is {}", o, mbean);
-
-                    return mbean;
-                }
-                catch (ClassNotFoundException e)
-                {
-                    // The code below was modified to fix bugs 332200 and JETTY-1416
-                    // The issue was caused by additional information added to the
-                    // message after the class name when running in Apache Felix,
-                    // as well as before the class name when running in JBoss.
-                    if (e.getMessage().contains(mName))
-                        LOG.ignore(e);
-                    else
-                        LOG.warn(e);
-                }
-                catch (Throwable e)
-                {
-                    LOG.warn(e);
-                }
-
-                oClass = oClass.getSuperclass();
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.ignore(e);
-        }
-
-        return null;
-    }
 
     /**
      * Creates a new ObjectMBean wrapping the given {@code managedObject}.
@@ -260,92 +163,8 @@ public class ObjectMBean implements DynamicMBean
     @Override
     public MBeanInfo getMBeanInfo()
     {
-        try
-        {
-            if (_info == null)
-            {
-                String desc = null;
-                List<MBeanAttributeInfo> attributes = new ArrayList<>();
-                List<MBeanOperationInfo> operations = new ArrayList<>();
-
-                // Find list of classes that can influence the mbean
-                Class<?> o_class = _managed.getClass();
-                List<Class<?>> influences = new ArrayList<>();
-                influences.add(this.getClass()); // always add MBean itself
-                influences = findInfluences(influences, _managed.getClass());
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Influence Count: {}", influences.size());
-
-                // Process Type Annotations
-                ManagedObject primary = o_class.getAnnotation(ManagedObject.class);
-
-                if (primary != null)
-                {
-                    desc = primary.value();
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("No @ManagedObject declared on {}", _managed.getClass());
-                }
-
-                // For each influence
-                for (Class<?> oClass : influences)
-                {
-                    ManagedObject typeAnnotation = oClass.getAnnotation(ManagedObject.class);
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Influenced by: " + oClass.getCanonicalName());
-
-                    if (typeAnnotation == null)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Annotations not found for: {}", oClass.getCanonicalName());
-                        continue;
-                    }
-
-                    // Process Method Annotations
-
-                    for (Method method : oClass.getDeclaredMethods())
-                    {
-                        ManagedAttribute methodAttributeAnnotation = method.getAnnotation(ManagedAttribute.class);
-
-                        if (methodAttributeAnnotation != null)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Attribute Annotation found for: {}", method.getName());
-                            MBeanAttributeInfo mai = defineAttribute(method, methodAttributeAnnotation);
-                            if (mai != null)
-                                attributes.add(mai);
-                        }
-
-                        ManagedOperation methodOperationAnnotation = method.getAnnotation(ManagedOperation.class);
-
-                        if (methodOperationAnnotation != null)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Method Annotation found for: {}", method.getName());
-                            MBeanOperationInfo oi = defineOperation(method, methodOperationAnnotation);
-                            if (oi != null)
-                                operations.add(oi);
-                        }
-                    }
-                }
-
-                _info = new MBeanInfo(o_class.getName(),
-                        desc,
-                        attributes.toArray(new MBeanAttributeInfo[attributes.size()]),
-                        new MBeanConstructorInfo[0],
-                        operations.toArray(new MBeanOperationInfo[operations.size()]),
-                        new MBeanNotificationInfo[0]);
-            }
-        }
-        catch (RuntimeException e)
-        {
-            LOG.warn(e);
-            throw e;
-        }
+        if (_info==null)
+            _info = _mbeanContainer.getMBeanInfo(this);
         return _info;
     }
 
@@ -573,27 +392,6 @@ public class ObjectMBean implements DynamicMBean
         }
     }
 
-    private static List<Class<?>> findInfluences(List<Class<?>> influences, Class<?> aClass)
-    {
-        if (aClass != null)
-        {
-            if (!influences.contains(aClass))
-            {
-                // This class is a new influence
-                influences.add(aClass);
-            }
-
-            // So are the super classes
-            influences = findInfluences(influences, aClass.getSuperclass());
-
-            // So are the interfaces
-            Class<?>[] ifs = aClass.getInterfaces();
-            for (int i = 0; ifs != null && i < ifs.length; i++)
-                influences = findInfluences(influences, ifs[i]);
-        }
-        return influences;
-    }
-
     /**
      * <p>Defines an attribute for the managed object using the annotation attributes.</p>
      *
@@ -601,7 +399,7 @@ public class ObjectMBean implements DynamicMBean
      * @param attributeAnnotation the annotation with the attribute metadata
      * @return an MBeanAttributeInfo with the attribute metadata
      */
-    private MBeanAttributeInfo defineAttribute(Method method, ManagedAttribute attributeAnnotation)
+    MBeanAttributeInfo defineAttribute(Method method, ManagedAttribute attributeAnnotation)
     {
         // determine the name of the managed attribute
         String name = attributeAnnotation.name();
@@ -735,7 +533,7 @@ public class ObjectMBean implements DynamicMBean
      * @param methodAnnotation the annotation with the operation metadata
      * @return an MBeanOperationInfo with the operation metadata
      */
-    private MBeanOperationInfo defineOperation(Method method, ManagedOperation methodAnnotation)
+    MBeanOperationInfo defineOperation(Method method, ManagedOperation methodAnnotation)
     {
         String description = methodAnnotation.value();
         boolean onMBean = methodAnnotation.proxied();
