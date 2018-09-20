@@ -37,6 +37,7 @@
     <weld.version>2.4.5.Final</weld.version>
     <jetty.perf-helper.version>1.0.5</jetty.perf-helper.version>
     <unix.socket.tmp></unix.socket.tmp>
+    <jetty.testtracker.log>false</jetty.testtracker.log>
 
     <!-- some maven plugins versions -->
     <maven.surefire.version>2.22.0</maven.surefire.version>
@@ -49,7 +50,7 @@
 
 
     <!-- testing -->
-    <jetty.test.version>5.0</jetty.test.version>
+    <jetty.test.version>5.1-SNAPSHOT</jetty.test.version>
   </properties>
 
   <licenses>
@@ -647,6 +648,8 @@
             <systemPropertyVariables>
               <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
               <unix.socket.tmp>${unix.socket.tmp}</unix.socket.tmp>
+              <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
+              <jetty.testtracker.log>${jetty.testtracker.log}</jetty.testtracker.log>
             </systemPropertyVariables>
           </configuration>
         </plugin>
@@ -1804,7 +1807,7 @@
     <profile>
       <id>snapshot-repositories</id>
       <activation>
-        <activeByDefault>false</activeByDefault>
+        <activeByDefault>true</activeByDefault>
       </activation>
       <repositories>
         <repository>
