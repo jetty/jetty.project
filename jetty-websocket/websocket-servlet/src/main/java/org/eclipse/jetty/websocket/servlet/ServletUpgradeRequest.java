@@ -40,7 +40,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketCore;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
 /**
@@ -225,7 +225,7 @@ public class ServletUpgradeRequest implements HandshakeRequest
         String version = request.getHeader(HttpHeader.SEC_WEBSOCKET_VERSION.asString());
         if (version == null)
         {
-            return Integer.toString(WebSocketConstants.SPEC_VERSION);
+            return Integer.toString(WebSocketCore.SPEC_VERSION);
         }
         return version;
     }

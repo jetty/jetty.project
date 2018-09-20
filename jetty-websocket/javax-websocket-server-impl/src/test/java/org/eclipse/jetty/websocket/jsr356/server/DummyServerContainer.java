@@ -26,7 +26,7 @@ public class DummyServerContainer extends JavaxWebSocketServerContainer implemen
 {
     public DummyServerContainer()
     {
-        super(new DummyContainer(WebSocketPolicy.newServerPolicy()), new DummyMappedNegotiator(), new HttpClient());
+        super(new DummyContainer(new WebSocketPolicy()), new DummyMappedNegotiator(), new HttpClient());
         addBean(getHttpClient());
     }
 }

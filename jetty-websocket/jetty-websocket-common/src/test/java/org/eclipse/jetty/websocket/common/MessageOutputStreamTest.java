@@ -54,7 +54,7 @@ public class MessageOutputStreamTest
     @BeforeEach
     public void setupTest() throws Exception
     {
-        policy = WebSocketPolicy.newServerPolicy();
+        policy = new WebSocketPolicy();
         policy.setInputBufferSize(1024);
 
         channelCapture = new OutgoingMessageCapture(policy);

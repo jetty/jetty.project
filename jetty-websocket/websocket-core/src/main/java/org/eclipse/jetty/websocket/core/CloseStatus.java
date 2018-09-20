@@ -48,10 +48,10 @@ public class CloseStatus
     public static final int SERVER_ERROR = 1011;
     public static final int FAILED_TLS_HANDSHAKE = 1015;
     
-    public static final int MAX_REASON_PHRASE = Frame.MAX_CONTROL_PAYLOAD - 2;
-    
     public static final CloseStatus NO_CODE_STATUS = new CloseStatus(NO_CODE);
     public static final CloseStatus NORMAL_STATUS = new CloseStatus(NORMAL);
+
+    static final int MAX_REASON_PHRASE = Frame.MAX_CONTROL_PAYLOAD - 2;
 
     private final int code;
     private final String reason;

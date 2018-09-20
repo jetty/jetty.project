@@ -61,7 +61,7 @@ public class ParsePayloadLengthTest
         );
     }
 
-    private WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+    private WebSocketPolicy policy = new WebSocketPolicy();
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     @ParameterizedTest(name = "size={0} {1}")

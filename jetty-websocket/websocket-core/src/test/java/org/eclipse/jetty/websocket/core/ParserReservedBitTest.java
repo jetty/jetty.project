@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(TestTrackerExtension.class)
 public class ParserReservedBitTest
 {
-    private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+    private WebSocketPolicy policy = new WebSocketPolicy();
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
     private boolean validatingGenerator = false;
 

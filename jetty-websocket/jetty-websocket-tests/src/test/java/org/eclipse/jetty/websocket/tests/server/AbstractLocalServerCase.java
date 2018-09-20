@@ -28,10 +28,8 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.UnitGenerator;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
@@ -62,7 +60,7 @@ public abstract class AbstractLocalServerCase
     protected static SimpleServletServer server;
     protected final Logger LOG;
     
-    public UnitGenerator generator = new UnitGenerator(WebSocketPolicy.newClientPolicy());
+    public UnitGenerator generator = new UnitGenerator(WebSocketCore.Behavior.CLIENT);
     
     public AbstractLocalServerCase()
     {

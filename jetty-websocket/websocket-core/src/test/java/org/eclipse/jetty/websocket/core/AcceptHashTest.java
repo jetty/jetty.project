@@ -60,7 +60,7 @@ public class AcceptHashTest
     @MethodSource("data")
     public void testHashKey(String clientKey, String expectedHash)
     {
-        String serverAccept = AcceptHash.hashKey(clientKey);
+        String serverAccept = WebSocketCore.hashKey(clientKey);
         assertThat("Hashed Key", serverAccept, is(expectedHash));
     }
 }

@@ -74,7 +74,7 @@ public class SessionAddMessageHandlerTest
     @BeforeEach
     public void initSession() throws Exception
     {
-        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+        WebSocketPolicy policy = new WebSocketPolicy();
 
         // Container
         container = new JavaxWebSocketClientContainer();

@@ -64,7 +64,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
 
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
     private final JavaxWebSocketContainer container;
-    private final FrameHandler.CoreSession channel;
+    private final FrameHandler.CoreSession coreSession;
     private final HandshakeRequest handshakeRequest;
     private final HandshakeResponse upgradeResponse;
     private final JavaxWebSocketFrameHandler frameHandler;
@@ -81,7 +81,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     private JavaxWebSocketBasicRemote basicRemote;
 
     public JavaxWebSocketSession(JavaxWebSocketContainer container,
-                                 FrameHandler.CoreSession channel,
+                                 FrameHandler.CoreSession coreSession,
                                  JavaxWebSocketFrameHandler frameHandler,
                                  HandshakeRequest handshakeRequest,
                                  HandshakeResponse handshakeResponse,
@@ -89,7 +89,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
                                  EndpointConfig endpointConfig)
     {
         this.container = container;
-        this.channel = channel;
+        this.coreSession = coreSession;
         this.frameHandler = frameHandler;
         this.handshakeRequest = handshakeRequest;
         this.upgradeResponse = handshakeResponse;
@@ -198,7 +198,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     {
         try (SharedBlockingCallback.Blocker blocker = blocking.acquire())
         {
-            channel.close(blocker);
+            coreSession.close(blocker);
         }
     }
 
@@ -213,7 +213,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     {
         try (SharedBlockingCallback.Blocker blocker = blocking.acquire())
         {
-            channel.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), blocker);
+            coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), blocker);
         }
     }
 
@@ -253,7 +253,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     {
         if (asyncRemote == null)
         {
-            asyncRemote = new JavaxWebSocketAsyncRemote(this, channel);
+            asyncRemote = new JavaxWebSocketAsyncRemote(this, coreSession);
         }
         return asyncRemote;
     }
@@ -269,7 +269,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     {
         if (basicRemote == null)
         {
-            basicRemote = new JavaxWebSocketBasicRemote(this, channel);
+            basicRemote = new JavaxWebSocketBasicRemote(this, coreSession);
         }
         return basicRemote;
     }
@@ -357,7 +357,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public long getMaxIdleTimeout()
     {
-        return channel.getIdleTimeout(TimeUnit.MILLISECONDS);
+        return coreSession.getIdleTimeout(TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -370,7 +370,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public void setMaxIdleTimeout(long milliseconds)
     {
         getPolicy().setIdleTimeout(milliseconds);
-        channel.setIdleTimeout(milliseconds, TimeUnit.MILLISECONDS);
+        coreSession.setIdleTimeout(milliseconds, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -569,7 +569,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     @Override
     public boolean isOpen()
     {
-        return channel.isOpen();
+        return coreSession.isOpen();
     }
 
     /**
@@ -594,7 +594,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public String toString()
     {
         return String.format("%s@%x[%s,%s]", this.getClass().getSimpleName(), this.hashCode(),
-                getPolicy().getBehavior(), frameHandler);
+                coreSession.getBehavior(), frameHandler);
     }
 
     protected SharedBlockingCallback getBlocking()

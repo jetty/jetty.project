@@ -34,15 +34,9 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
-import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.Generator;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.UnitGenerator;
-import org.eclipse.jetty.websocket.core.BatchMode;
 
 public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
@@ -79,7 +73,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
             });
         }
         this.rawClient.start();
-        this.generator = new UnitGenerator(rawClient.getPolicy());
+        this.generator = new UnitGenerator(WebSocketCore.Behavior.CLIENT);
 
         CompletableFuture<FrameHandler.CoreSession> futureHandler = this.rawClient.connect(upgradeRequest);
         CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(futureOnCapture, (channel, capture) -> capture);

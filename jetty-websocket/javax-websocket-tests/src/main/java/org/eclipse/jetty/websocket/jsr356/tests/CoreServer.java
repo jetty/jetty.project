@@ -33,13 +33,11 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
-import org.eclipse.jetty.websocket.core.WSURI;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameEcho;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.WholeMessageEcho;
 
@@ -119,7 +117,7 @@ public class CoreServer extends ContainerLifeCycle
 
         public BaseNegotiator()
         {
-            this.policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+            this.policy = new WebSocketPolicy();
             this.extensionRegistry = new WebSocketExtensionRegistry();
             this.objectFactory = new DecoratedObjectFactory();
             this.bufferPool = new MappedByteBufferPool();

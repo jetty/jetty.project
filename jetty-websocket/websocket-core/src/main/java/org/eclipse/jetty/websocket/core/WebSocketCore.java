@@ -23,13 +23,11 @@ import org.eclipse.jetty.util.B64Code;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
-/**
- * Logic for working with the {@code Sec-WebSocket-Key} and <code>Sec-WebSocket-Accept</code> headers.
- * <p>
- * This is kept separate from Connection objects to facilitate difference in behavior between client and server, as well as making testing easier.
- */
-public class AcceptHash
+public final class WebSocketCore
 {
+    // Supported Spec Version
+    public static final int SPEC_VERSION = 13;
+
     /**
      * Globally Unique Identifier for use in WebSocket handshake within {@code Sec-WebSocket-Accept} and <code>Sec-WebSocket-Key</code> http headers.
      * <p>
@@ -40,7 +38,7 @@ public class AcceptHash
 
     /**
      * Concatenate the provided key with the Magic GUID and return the Base64 encoded form.
-     * 
+     *
      * @param key
      *            the key to hash
      * @return the {@code Sec-WebSocket-Accept} header response (per opening handshake spec)
@@ -59,4 +57,17 @@ public class AcceptHash
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Behavior for how the WebSocket should operate.
+     * <p>
+     * This dictated by the <a href="https://tools.ietf.org/html/rfc6455">RFC 6455</a> spec in various places, where certain behavior must be performed depending on
+     * operation as a <a href="https://tools.ietf.org/html/rfc6455#section-4.1">CLIENT</a> vs a <a href="https://tools.ietf.org/html/rfc6455#section-4.2">SERVER</a>
+     */
+    public enum Behavior
+    {
+        CLIENT,
+        SERVER
+    }
 }
+

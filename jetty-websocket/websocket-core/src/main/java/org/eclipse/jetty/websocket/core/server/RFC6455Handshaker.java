@@ -43,7 +43,7 @@ public final class RFC6455Handshaker implements Handshaker
     private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION,HttpHeader.UPGRADE.asString());
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
-    public final static int VERSION = WebSocketConstants.SPEC_VERSION;
+    public final static int VERSION = WebSocketCore.SPEC_VERSION;
 
     public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -103,7 +103,7 @@ public final class RFC6455Handshaker implements Handshaker
         // Create instance of policy that may be mutated by negotiation
         WebSocketPolicy policy = negotiator.getCandidatePolicy();
         if (policy==null)
-            policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+            policy = new WebSocketPolicy();
         negotiation.setPolicy(policy);
         
         // Negotiate the FrameHandler
@@ -138,7 +138,7 @@ public final class RFC6455Handshaker implements Handshaker
         // Update policy
         policy = negotiation.getPolicy();
         if (policy==null)
-            policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+            policy = new WebSocketPolicy();
         
         // Check if subprotocol negotiated
         String subprotocol = negotiation.getSubprotocol();
@@ -189,7 +189,7 @@ public final class RFC6455Handshaker implements Handshaker
             response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),null);
         
         // Create the Channel
-        WebSocketChannel channel = new WebSocketChannel(handler,policy,extensionStack,subprotocol);
+        WebSocketChannel channel = new WebSocketChannel(handler,WebSocketCore.Behavior.SERVER,policy,extensionStack,subprotocol);
         if (LOG.isDebugEnabled())
             LOG.debug("channel {}", channel);
         
@@ -210,7 +210,7 @@ public final class RFC6455Handshaker implements Handshaker
         baseResponse.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
         baseResponse.getHttpFields().put(UPGRADE_WEBSOCKET);
         baseResponse.getHttpFields().put(CONNECTION_UPGRADE);
-        baseResponse.getHttpFields().put(HttpHeader.SEC_WEBSOCKET_ACCEPT, AcceptHash.hashKey(negotiation.getKey()));
+        baseResponse.getHttpFields().put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketCore.hashKey(negotiation.getKey()));
 
         // See bugs.eclipse.org/485969
         if (getSendServerVersion(connector))

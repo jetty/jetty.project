@@ -95,7 +95,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
                     });
         }
         this.rawClient.start();
-        this.generator = new UnitGenerator(rawClient.getPolicy());
+        this.generator = new UnitGenerator(WebSocketCore.Behavior.CLIENT);
 
         CompletableFuture<FrameHandler.CoreSession> futureHandler = this.rawClient.connect(upgradeRequest);
         CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(futureOnCapture, (channel, capture) -> capture);

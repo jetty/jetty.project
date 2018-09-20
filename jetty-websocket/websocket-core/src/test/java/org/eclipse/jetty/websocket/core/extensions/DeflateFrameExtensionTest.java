@@ -232,7 +232,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     private void init(DeflateFrameExtension ext)
     {
-        ext.init(new ExtensionConfig(ext.getName()), WebSocketPolicy.newClientPolicy(), bufferPool);
+        ext.init(new ExtensionConfig(ext.getName()), new WebSocketPolicy(), bufferPool);
     }
 
     @Test
@@ -281,7 +281,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     @Test
     public void testGeneratedTwoFrames() throws IOException
     {
-        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+        WebSocketPolicy policy = new WebSocketPolicy();
 
         DeflateFrameExtension ext = new DeflateFrameExtension();
         init(ext);

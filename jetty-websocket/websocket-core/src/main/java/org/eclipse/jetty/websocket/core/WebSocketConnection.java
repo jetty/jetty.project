@@ -122,7 +122,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
 
-        this.random = this.policy.getBehavior() == WebSocketBehavior.CLIENT ? new Random(endp.hashCode()) : null;        
+        this.random = this.channel.getBehavior() == WebSocketCore.Behavior.CLIENT ? new Random(endp.hashCode()) : null;
     }
 
     @Override
@@ -540,7 +540,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return String.format("%s@%x[%s,p=%s,f=%s,g=%s]",
                 getClass().getSimpleName(),
                 hashCode(),
-                getPolicy().getBehavior(),
+                channel.getBehavior(),
                 parser,
                 flusher,
                 generator);
@@ -602,7 +602,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     @Override
     public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
-        if (getPolicy().getBehavior()==WebSocketBehavior.CLIENT)
+        if (channel.getBehavior()== WebSocketCore.Behavior.CLIENT)
         {
             Frame wsf = frame;
             byte[] mask = new byte[4];

@@ -35,16 +35,10 @@ public class UnitGenerator extends Generator
     private static final byte[] MASK = {0x11, 0x22, 0x33, 0x44};
     private final boolean applyMask;
     
-    public UnitGenerator(WebSocketPolicy policy)
+    public UnitGenerator(WebSocketCore.Behavior behavior)
     {
         super(new MappedByteBufferPool());
-        applyMask = (policy.getBehavior() == WebSocketBehavior.CLIENT);
-    }
-
-    @Deprecated
-    public UnitGenerator(WebSocketPolicy policy, boolean validating)
-    {
-        this(policy);
+        applyMask = (behavior == WebSocketCore.Behavior.CLIENT);
     }
     
     public ByteBuffer asBuffer(List<Frame> frames)

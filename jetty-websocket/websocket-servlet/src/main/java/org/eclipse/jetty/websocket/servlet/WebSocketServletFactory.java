@@ -22,10 +22,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 
 /**
@@ -41,7 +38,7 @@ public class WebSocketServletFactory
     public WebSocketServletFactory(ServletContextWebSocketContainer wsContainer)
     {
         this.container = wsContainer;
-        this.policy = wsContainer.getPolicy().clonePolicyAs(WebSocketBehavior.SERVER);
+        this.policy = wsContainer.getPolicy().clonePolicy();
         this.extensionRegistry = new WebSocketExtensionRegistry();
     }
 

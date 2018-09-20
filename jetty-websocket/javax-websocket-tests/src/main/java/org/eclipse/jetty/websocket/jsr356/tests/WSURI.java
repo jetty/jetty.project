@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.jsr356.tests;
 
 import java.net.URI;
 import java.net.URISyntaxException;

@@ -27,23 +27,27 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.io.SuspendToken;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.WebSocketCore;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class WebSocketSessionImpl implements Session
 {
     private final WebSocketContainerContext container;
+    private final WebSocketCore.Behavior behavior;
     private final WebSocketPolicy sessionPolicy;
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final HandshakeRequest handshakeRequest;
     private final HandshakeResponse handshakeResponse;
 
     public WebSocketSessionImpl(WebSocketContainerContext container,
+                                WebSocketCore.Behavior behavior,
                                 WebSocketPolicy sessionPolicy,
                                 JettyWebSocketRemoteEndpoint remoteEndpoint,
                                 HandshakeRequest handshakeRequest,
                                 HandshakeResponse handshakeResponse)
     {
         this.container = container;
+        this.behavior = behavior;
         this.sessionPolicy = sessionPolicy;
         this.remoteEndpoint = remoteEndpoint;
         this.handshakeRequest = handshakeRequest;
@@ -162,6 +166,6 @@ public class WebSocketSessionImpl implements Session
     @Override
     public String toString()
     {
-        return String.format("WebSocketSessionImpl[%s,to=%,d,%s,%s]", sessionPolicy.getBehavior(), sessionPolicy.getIdleTimeout(), getLocalSocketAddress(), getRemoteSocketAddress());
+        return String.format("WebSocketSessionImpl[%s,to=%,d,%s,%s]", behavior, sessionPolicy.getIdleTimeout(), getLocalSocketAddress(), getRemoteSocketAddress());
     }
 }

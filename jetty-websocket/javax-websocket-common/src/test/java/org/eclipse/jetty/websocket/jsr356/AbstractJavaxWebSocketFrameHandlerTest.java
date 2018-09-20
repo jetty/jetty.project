@@ -34,7 +34,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 public abstract class AbstractJavaxWebSocketFrameHandlerTest
 {
-    protected static WebSocketPolicy clientPolicy = WebSocketPolicy.newClientPolicy();
+    protected static WebSocketPolicy clientPolicy = new WebSocketPolicy();
     protected static DummyContainer container;
     
     @BeforeAll

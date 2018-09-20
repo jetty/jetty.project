@@ -57,7 +57,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
 {
     private static final Logger LOG = Log.getLogger(LocalServer.class);
     private final ByteBufferPool bufferPool = new MappedByteBufferPool();
-    private final WebSocketPolicy serverPolicy = WebSocketPolicy.newServerPolicy();
+    private final WebSocketPolicy serverPolicy = new WebSocketPolicy();
     private Server server;
     private ServerConnector connector;
     private LocalConnector localConnector;

@@ -58,7 +58,7 @@ public class WebSocketFrameTest
     @BeforeEach
     public void initGenerator()
     {
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WebSocketPolicy policy = new WebSocketPolicy();
         generator = new Generator(bufferPool);
     }
 

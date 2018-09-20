@@ -31,8 +31,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.core.AcceptHash;
 import org.eclipse.jetty.websocket.core.UpgradeException;
+import org.eclipse.jetty.websocket.core.WebSocketCore;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.eclipse.jetty.websocket.tests.TextMessageSocket;
@@ -217,7 +217,7 @@ public class ClientConnectTest
             // A status 200 (not upgrade), but with some RFC6455 headers.
             resp.setStatus(200);
             String key = req.getHeader("Sec-WebSocket-Key");
-            resp.setHeader("Sec-WebSocket-Accept", AcceptHash.hashKey(key));
+            resp.setHeader("Sec-WebSocket-Accept", WebSocketCore.hashKey(key));
         });
         URI wsUri = server.getWsUri().resolve("/bad-accept-200");
 
@@ -248,7 +248,7 @@ public class ClientConnectTest
             // A status 101 (switching protocol), but with "Connection: close"
             resp.setStatus(101);
             String key = req.getHeader("Sec-WebSocket-Key");
-            resp.setHeader("Sec-WebSocket-Accept", AcceptHash.hashKey(key));
+            resp.setHeader("Sec-WebSocket-Accept", WebSocketCore.hashKey(key));
             resp.setHeader("Connection", "close"); // Intentionally Invalid
         });
         URI wsUri = server.getWsUri().resolve("/bad-connection-header");
@@ -278,7 +278,7 @@ public class ClientConnectTest
             // Send Switching Protocols 101, but no 'Connection' header
             resp.setStatus(101);
             String key = req.getHeader("Sec-WebSocket-Key");
-            resp.setHeader("Sec-WebSocket-Accept", AcceptHash.hashKey(key));
+            resp.setHeader("Sec-WebSocket-Accept", WebSocketCore.hashKey(key));
             // Intentionally leave out Connection header
         });
         URI wsUri = server.getWsUri().resolve("/bad-switching-protocols-no-connection-header");

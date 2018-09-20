@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketCore;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
@@ -62,7 +62,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
 
     public WebSocketCoreClient(HttpClient httpClient)
     {
-        this(WebSocketPolicy.newClientPolicy(), httpClient);
+        this(new WebSocketPolicy(), httpClient);
     }
 
     public WebSocketCoreClient(WebSocketPolicy policy)
@@ -73,7 +73,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     public WebSocketCoreClient(WebSocketPolicy policy, HttpClient httpClient)
     {
         this.httpClient = httpClient == null ? new HttpClient() : httpClient;
-        this.policy = policy.clonePolicyAs(WebSocketBehavior.CLIENT);
+        this.policy = policy.clonePolicy();
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.objectFactory = new DecoratedObjectFactory();
     }

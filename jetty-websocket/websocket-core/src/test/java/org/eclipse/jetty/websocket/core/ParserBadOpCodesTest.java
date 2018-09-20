@@ -58,7 +58,7 @@ public class ParserBadOpCodesTest
         );
     }
 
-    private WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+    private WebSocketPolicy policy = new WebSocketPolicy();
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     @ParameterizedTest(name = "opcode={0} {1}")

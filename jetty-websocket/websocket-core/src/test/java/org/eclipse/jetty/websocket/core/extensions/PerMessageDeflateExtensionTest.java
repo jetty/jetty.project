@@ -53,7 +53,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
     private void init(PerMessageDeflateExtension ext)
     {
-        ext.init(new ExtensionConfig(ext.getName()), WebSocketPolicy.newServerPolicy(), bufferPool);
+        ext.init(new ExtensionConfig(ext.getName()), new WebSocketPolicy(), bufferPool);
     }
 
     private void assertEndsWithTail(String hexStr, boolean expectedResult)
@@ -231,7 +231,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, WebSocketPolicy.newServerPolicy(), bufferPool);
+        ext.init(config, new WebSocketPolicy(), bufferPool);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -266,7 +266,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, WebSocketPolicy.newServerPolicy(), bufferPool);
+        ext.init(config, new WebSocketPolicy(), bufferPool);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -320,7 +320,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, WebSocketPolicy.newServerPolicy(), bufferPool);
+        ext.init(config, new WebSocketPolicy(), bufferPool);
 
         // Setup capture of outgoing frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();

@@ -41,7 +41,7 @@ public class GeneratorParserRoundtripTest
     @Test
     public void testParserAndGenerator() throws Exception
     {
-        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
+        WebSocketPolicy policy = new WebSocketPolicy();
         Generator gen = new Generator(bufferPool);
         ParserCapture capture = new ParserCapture(new Parser(bufferPool));
 
@@ -76,7 +76,7 @@ public class GeneratorParserRoundtripTest
     public void testParserAndGeneratorMasked() throws Exception
     {
         Generator gen = new Generator(bufferPool);
-        ParserCapture capture = new ParserCapture(new Parser(bufferPool), true, WebSocketBehavior.SERVER);
+        ParserCapture capture = new ParserCapture(new Parser(bufferPool), true, WebSocketCore.Behavior.SERVER);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 

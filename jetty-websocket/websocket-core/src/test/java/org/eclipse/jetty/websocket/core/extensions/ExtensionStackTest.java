@@ -54,7 +54,7 @@ public class ExtensionStackTest
     public static void init()
     {
         objectFactory = new DecoratedObjectFactory();
-        policy = WebSocketPolicy.newServerPolicy();
+        policy = new WebSocketPolicy();
         bufferPool = new MappedByteBufferPool();
         stack = new ExtensionStack(new WebSocketExtensionRegistry());
     }

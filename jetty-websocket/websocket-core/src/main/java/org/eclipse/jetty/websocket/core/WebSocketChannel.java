@@ -51,6 +51,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private Logger LOG = Log.getLogger(this.getClass());
     private final static CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
 
+    private final WebSocketCore.Behavior behavior;
     private final WebSocketChannelState state = new WebSocketChannelState();
     private final WebSocketPolicy policy;
     private final FrameHandler handler;
@@ -60,14 +61,17 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
     private final boolean demanding;
     private final OpCode.Sequence outgoingSequence = new OpCode.Sequence();
 
+
     private WebSocketConnection connection;
 
     public WebSocketChannel(FrameHandler handler,
+    		WebSocketCore.Behavior behavior,
     		WebSocketPolicy policy,
     		ExtensionStack extensionStack,
     		String subprotocol)
     {
         this.handler = handler;
+        this.behavior = behavior;
         this.policy = policy;
         this.extensionStack = extensionStack;
         this.subprotocol = subprotocol;
@@ -75,7 +79,6 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         extensionStack.connect(new IncomingState(),new OutgoingState(), this);
     }
 
-    
     /**
      * @return True if the channels handling is demanding.
      */
@@ -90,15 +93,17 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         assertValid(frame);
 
         // Assert Behavior Required by RFC-6455 / Section 5.1
-        if (policy.getBehavior() == WebSocketBehavior.SERVER)
+        switch(behavior)
         {
-            if (!frame.isMasked())
-                throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
-        }
-        else if (policy.getBehavior() == WebSocketBehavior.CLIENT)
-        {
-            if (frame.isMasked())
-                throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
+            case SERVER:
+                if (!frame.isMasked())
+                    throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
+                break;
+
+            case CLIENT:
+                if (frame.isMasked())
+                    throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
+                break;
         }
     }
 
@@ -392,7 +397,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             // Exception on end-user WS-Endpoint.
             // Fast-fail & close connection with reason.
             int statusCode = CloseStatus.SERVER_ERROR;
-            if (getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
+            if (behavior == WebSocketCore.Behavior.CLIENT)
                 statusCode = CloseStatus.POLICY_VIOLATION;
 
             closeStatus = new CloseStatus(statusCode, cause.getMessage());
@@ -638,9 +643,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
 
     @Override
-    public WebSocketBehavior getBehavior()
+    public WebSocketCore.Behavior getBehavior()
     {
-        return policy.getBehavior();
+        return behavior;
     }
     
     @Override

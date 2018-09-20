@@ -25,11 +25,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.BatchMode;
 
 public class DummyChannel implements FrameHandler.CoreSession
 {
@@ -53,7 +50,7 @@ public class DummyChannel implements FrameHandler.CoreSession
     }
 
     @Override
-    public WebSocketBehavior getBehavior()
+    public WebSocketCore.Behavior getBehavior()
     {
         return null;
     }

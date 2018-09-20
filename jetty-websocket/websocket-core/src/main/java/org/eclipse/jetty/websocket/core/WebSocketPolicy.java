@@ -25,16 +25,6 @@ public class WebSocketPolicy
 {
     private static final int KB = 1024;
 
-    public static WebSocketPolicy newClientPolicy()
-    {
-        return new WebSocketPolicy(WebSocketBehavior.CLIENT);
-    }
-
-    public static WebSocketPolicy newServerPolicy()
-    {
-        return new WebSocketPolicy(WebSocketBehavior.SERVER);
-    }
-    
     /**
      * The maximum size of a text message during parsing.
      * <p>
@@ -109,16 +99,12 @@ public class WebSocketPolicy
      */
     private int outputBufferSize = 4 * KB;
 
-    /**
-     * Behavior of the websockets
-     */
-    private final WebSocketBehavior behavior;
+
 
     private boolean autoFragment = true;
     
-    public WebSocketPolicy(WebSocketBehavior behavior)
+    public WebSocketPolicy()
     {
-        this.behavior = behavior;
     }
 
     private void assertLessThan(String name, long size, String otherName, long otherSize)
@@ -161,9 +147,9 @@ public class WebSocketPolicy
         }
     }
 
-    public WebSocketPolicy clonePolicyAs(WebSocketBehavior behavior)
+    public WebSocketPolicy clonePolicy()
     {
-        WebSocketPolicy clone = new WebSocketPolicy(behavior);
+        WebSocketPolicy clone = new WebSocketPolicy();
         clone.idleTimeout = this.idleTimeout;
         clone.maxTextMessageSize = this.maxTextMessageSize;
         clone.maxTextMessageBufferSize = this.maxTextMessageBufferSize;
@@ -176,11 +162,6 @@ public class WebSocketPolicy
         return clone;
     }
 
-    public WebSocketPolicy clonePolicy()
-    {
-        return clonePolicyAs(this.behavior);
-    }
-    
     /**
      * The timeout in ms (milliseconds) for async write operations.
      * <p>
@@ -191,11 +172,6 @@ public class WebSocketPolicy
     public long getAsyncWriteTimeout()
     {
         return asyncWriteTimeout;
-    }
-
-    public WebSocketBehavior getBehavior()
-    {
-        return behavior;
     }
 
     /**
@@ -487,8 +463,7 @@ public class WebSocketPolicy
     {
         StringBuilder builder = new StringBuilder();
         builder.append("WSPolicy@").append(Integer.toHexString(hashCode()));
-        builder.append("[").append(behavior);
-        builder.append(",textSize=").append(maxTextMessageSize);
+        builder.append("[textSize=").append(maxTextMessageSize);
         builder.append(",binarySize=").append(maxBinaryMessageSize);
         builder.append(",idleTimeout=").append(idleTimeout);
         builder.append("]");

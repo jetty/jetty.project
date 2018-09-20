@@ -39,7 +39,6 @@ import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.common.WebSocketContainerContext;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 
@@ -109,7 +108,7 @@ public class ServletContextWebSocketContainer extends ContainerLifeCycle impleme
         this.bufferPool = bufferPool;
 
         if (this.policy == null)
-            this.policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+            this.policy = new WebSocketPolicy();
         if (this.objectFactory == null)
             this.objectFactory = new DecoratedObjectFactory();
         if (this.extensionRegistry == null)

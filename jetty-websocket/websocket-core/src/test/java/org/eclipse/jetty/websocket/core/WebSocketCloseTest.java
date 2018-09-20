@@ -438,7 +438,7 @@ public class WebSocketCloseTest extends WebSocketTester
             server.getBean(QueuedThreadPool.class).setName("WSCoreServer");
             ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
 
-            connector.addBean(new WebSocketPolicy(WebSocketBehavior.SERVER));
+            connector.addBean(new WebSocketPolicy());
             connector.addBean(new RFC6455Handshaker());
             connector.setPort(port);
             connector.setIdleTimeout(1000000);

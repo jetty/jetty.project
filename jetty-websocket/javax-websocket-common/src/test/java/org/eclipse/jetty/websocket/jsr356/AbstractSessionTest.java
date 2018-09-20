@@ -37,7 +37,7 @@ public abstract class AbstractSessionTest
     @BeforeAll
     public static void initSession() throws Exception
     {
-        container = new DummyContainer(WebSocketPolicy.newClientPolicy());
+        container = new DummyContainer(new WebSocketPolicy());
         container.start();
         Object websocketPojo = new DummyEndpoint();
         HandshakeRequest handshakeRequest = new HandshakeRequestAdapter();

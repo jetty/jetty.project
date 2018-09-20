@@ -149,29 +149,13 @@ public class PerMessageDeflateExtension extends CompressExtension
                 case "client_no_context_takeover":
                 {
                     params_negotiated.put("client_no_context_takeover",null);
-                    switch (policy.getBehavior())
-                    {
-                        case CLIENT:
-                            incomingContextTakeover = false;
-                            break;
-                        case SERVER:
-                            outgoingContextTakeover = false;
-                            break;
-                    }
+                    incomingContextTakeover = false;
                     break;
                 }
                 case "server_no_context_takeover":
                 {
                     params_negotiated.put("client_no_context_takeover",null);
-                    switch (policy.getBehavior())
-                    {
-                        case CLIENT:
-                            outgoingContextTakeover = false;
-                            break;
-                        case SERVER:
-                            incomingContextTakeover = false;
-                            break;
-                    }
+                    outgoingContextTakeover = false;
                     break;
                 }
                 default:

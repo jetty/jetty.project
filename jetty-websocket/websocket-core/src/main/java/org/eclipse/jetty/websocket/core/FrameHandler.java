@@ -145,7 +145,7 @@ public interface FrameHandler extends IncomingFrames
         /**
          * @return Client or Server behaviour
          */
-        WebSocketBehavior getBehavior();
+        WebSocketCore.Behavior getBehavior();
 
         /**
          * The Local Socket Address for the connection

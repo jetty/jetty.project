@@ -253,7 +253,7 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
 
         // Check the Accept hash
         String reqKey = this.getHeaders().get(HttpHeader.SEC_WEBSOCKET_KEY);
-        String expectedHash = AcceptHash.hashKey(reqKey);
+        String expectedHash = WebSocketCore.hashKey(reqKey);
         String respHash = response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_ACCEPT);
 
         if (expectedHash.equalsIgnoreCase(respHash) == false)
@@ -357,7 +357,7 @@ public abstract class WebSocketCoreClientUpgradeRequest extends HttpRequest impl
                                                    ExtensionStack extensionStack,
                                                    String negotiatedSubProtocol)
     {
-        return new WebSocketChannel(handler, upgradePolicy, extensionStack, negotiatedSubProtocol);
+        return new WebSocketChannel(handler, WebSocketCore.Behavior.CLIENT, upgradePolicy, extensionStack, negotiatedSubProtocol);
     }
 
     public abstract FrameHandler getFrameHandler(WebSocketCoreClient coreClient, WebSocketPolicy upgradePolicy, HttpResponse response);

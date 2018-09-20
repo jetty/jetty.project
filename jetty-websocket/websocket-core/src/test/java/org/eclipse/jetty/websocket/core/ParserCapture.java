@@ -47,19 +47,19 @@ public class ParserCapture
 
     public ParserCapture(Parser parser, boolean copy)
     {
-        this(parser, copy, WebSocketBehavior.CLIENT);
+        this(parser, copy, WebSocketCore.Behavior.CLIENT);
     }
     
-    public ParserCapture(Parser parser, boolean copy, WebSocketBehavior behavior)
+    public ParserCapture(Parser parser, boolean copy, WebSocketCore.Behavior behavior)
     {
         this.parser = parser;
         this.copy = copy;
 
         ByteBufferPool bufferPool = new MappedByteBufferPool();
-        WebSocketPolicy policy = new WebSocketPolicy(behavior);
+        WebSocketPolicy policy = new WebSocketPolicy();
         ExtensionStack exStack = new ExtensionStack(new WebSocketExtensionRegistry());
         exStack.negotiate(new DecoratedObjectFactory(), policy, bufferPool, new LinkedList<>());
-        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), policy, exStack, "");
+        this.channel = new WebSocketChannel(new AbstractTestFrameHandler(), behavior, policy, exStack, "");
     }
     
     public void parse(ByteBuffer buffer)
