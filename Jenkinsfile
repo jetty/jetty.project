@@ -10,8 +10,17 @@ for (def os in oss) {
   }
 }
 
-parallel builds
-
+//parallel builds
+def jdk = "foo"
+def branchName = "${env.BRANCH_NAME}"
+def title = "${env.CHANGE_TITLE}"
+echo branchName
+def buildStatus = "UNKNOWN"
+def slackColor = "danger"
+if(buildStatus=="UNSTABLE") {
+  slackColor = "warning"
+}
+//slackSend color:slackColor, message: "Build " + buildStatus + " jdk: " + jdk + " - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
 
 def getFullBuild(jdk, os) {
   return {
@@ -194,6 +203,11 @@ def notifyBuild(String buildStatus, String jdk) {
           subject: summary,
           body: detail
   )
+  def slackColor = "danger"
+  if(buildStatus=="UNSTABLE") {
+    slackColor = "warning"
+  }
+  slackSend color:slackColor, message: "Build " + buildStatus + " jdk: " + jdk + " - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
