@@ -390,7 +390,7 @@ public class WebSocketCloseTest
         server.handler.getCoreSession().demand(1);
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
         assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NO_CLOSE));
-        assertThat(server.handler.closeStatus.getReason(), containsString("Read EOF"));
+        assertThat(server.handler.closeStatus.getReason(), containsString("IOException"));
     }
 
     @Test
@@ -399,11 +399,11 @@ public class WebSocketCloseTest
         setup(State.OCLOSED);
 
         client.close();
-        assertFalse(server.handler.closed.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(server.handler.closed.await(250, TimeUnit.MILLISECONDS));
         server.handler.getCoreSession().demand(1);
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
         assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NO_CLOSE));
-        assertThat(server.handler.closeStatus.getReason(), containsString("Read EOF"));
+        assertThat(server.handler.closeStatus.getReason(), containsString("IOException"));
     }
 
     @Test
@@ -486,8 +486,8 @@ public class WebSocketCloseTest
         public void onReceiveFrame(Frame frame, Callback callback)
         {
             LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
-            receivedFrames.offer(Frame.copy(frame));
             receivedCallback.offer(callback);
+            receivedFrames.offer(Frame.copy(frame));
 
             if(frame.getOpCode() == OpCode.BINARY)
                 throw new IllegalArgumentException("onReceiveFrame throws for binary frames");

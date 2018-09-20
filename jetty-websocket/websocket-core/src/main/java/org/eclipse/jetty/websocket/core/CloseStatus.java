@@ -86,10 +86,6 @@ public class CloseStatus
     {
         this.code = statusCode;
         this.reason = reasonPhrase;
-        if (reasonPhrase != null && reasonPhrase.length() > MAX_REASON_PHRASE)
-        {
-            throw new IllegalArgumentException("Phrase exceeds maximum length of " + MAX_REASON_PHRASE);
-        }
     }
 
     public CloseStatus(Frame frame)
