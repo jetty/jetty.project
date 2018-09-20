@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
 /**
@@ -69,7 +69,7 @@ public class ServletUpgradeResponse implements HandshakeResponse
     @Override
     public String getAcceptedSubProtocol()
     {
-        return getHeader(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL);
+        return getHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString());
     }
 
     @Override
@@ -139,7 +139,7 @@ public class ServletUpgradeResponse implements HandshakeResponse
 
     public void setAcceptedSubProtocol(String protocol)
     {
-        response.setHeader(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, protocol);
+        response.setHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), protocol);
         subprotocolNegotiated = true;
     }
 
@@ -148,7 +148,7 @@ public class ServletUpgradeResponse implements HandshakeResponse
         this.extensions.clear();
         this.extensions.addAll(configs);
         String value = ExtensionConfig.toHeaderValue(configs);
-        response.setHeader(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS, value);
+        response.setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(), value);
         extensionsNegotiated = true;
     }
 

@@ -320,7 +320,7 @@ public class AbstractTestFrameHandler implements FrameHandler
                 }
                 else
                 {
-                    respond = WebSocketConstants.PROTOCOL;
+                    respond = CloseStatus.PROTOCOL;
                     reason = "invalid " + code + " close received";
                 }
                 break;

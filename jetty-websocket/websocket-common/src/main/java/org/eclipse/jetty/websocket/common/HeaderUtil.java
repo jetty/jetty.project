@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.common;
 
 import java.util.List;
 

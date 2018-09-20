@@ -38,6 +38,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
@@ -221,7 +222,7 @@ public class ServletUpgradeRequest implements HandshakeRequest
     @Override
     public String getProtocolVersion()
     {
-        String version = request.getHeader(WebSocketConstants.SEC_WEBSOCKET_VERSION);
+        String version = request.getHeader(HttpHeader.SEC_WEBSOCKET_VERSION.asString());
         if (version == null)
         {
             return Integer.toString(WebSocketConstants.SPEC_VERSION);

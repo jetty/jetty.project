@@ -23,10 +23,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.jsr356.tests.Fuzzer;
@@ -73,7 +73,7 @@ public class AnnotatedServerEndpointTest
     private void assertResponse(String message, String expectedText) throws Exception
     {
         Map<String, String> upgradeRequest = UpgradeUtils.newDefaultUpgradeRequestHeaders();
-        upgradeRequest.put(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, "echo");
+        upgradeRequest.put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), "echo");
         
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(message));

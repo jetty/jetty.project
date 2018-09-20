@@ -84,7 +84,7 @@ public class WebSocketFrameTest
     @Test
     public void testValidClose()
     {
-        Frame frame = CloseStatus.toFrame(WebSocketConstants.NORMAL);
+        Frame frame = CloseStatus.toFrame(CloseStatus.NORMAL);
         ByteBuffer actual = generateWholeFrame(generator,frame);
         String expected = "880203E8";
         assertFrameHex("Valid Close Frame",expected,actual);

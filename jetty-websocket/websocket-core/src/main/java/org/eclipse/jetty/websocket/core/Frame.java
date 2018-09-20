@@ -357,7 +357,7 @@ public class Frame
     {
         return new ReadOnlyFrame(this);
     }
-    
+
     public boolean hasRsv()
     {
         return (finRsvOp & 0x70) !=0;

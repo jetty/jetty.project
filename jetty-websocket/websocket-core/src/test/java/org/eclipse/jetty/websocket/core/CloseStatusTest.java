@@ -44,7 +44,7 @@ public class CloseStatusTest
     public void testAnonymousClose()
     {
         CloseStatus close = new CloseStatus();
-        assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NO_CODE));
+        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.NO_CODE));
         assertThat("close.reason",close.getReason(),nullValue());
 
         Frame frame = close.toFrame();
@@ -60,8 +60,8 @@ public class CloseStatusTest
     @Test
     public void testNoCode()
     {
-        CloseStatus close = new CloseStatus(WebSocketConstants.NO_CODE);
-        assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NO_CODE));
+        CloseStatus close = new CloseStatus(CloseStatus.NO_CODE);
+        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.NO_CODE));
         assertThat("close.reason",close.getReason(),nullValue());
 
         Frame frame = close.toFrame();
@@ -77,8 +77,8 @@ public class CloseStatusTest
     @Test
     public void testNoClose()
     {
-        CloseStatus close = new CloseStatus(WebSocketConstants.NO_CLOSE);
-        assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NO_CLOSE));
+        CloseStatus close = new CloseStatus(CloseStatus.NO_CLOSE);
+        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.NO_CLOSE));
         assertThat("close.reason",close.getReason(),nullValue());
 
         Frame frame = close.toFrame();
@@ -94,8 +94,8 @@ public class CloseStatusTest
     @Test
     public void testFailedTlsHandshake()
     {
-        CloseStatus close = new CloseStatus(WebSocketConstants.FAILED_TLS_HANDSHAKE);
-        assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.FAILED_TLS_HANDSHAKE));
+        CloseStatus close = new CloseStatus(CloseStatus.FAILED_TLS_HANDSHAKE);
+        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.FAILED_TLS_HANDSHAKE));
         assertThat("close.reason",close.getReason(),nullValue());
 
         Frame frame = close.toFrame();
@@ -111,8 +111,8 @@ public class CloseStatusTest
     @Test
     public void testNormal()
     {
-        CloseStatus close = new CloseStatus(WebSocketConstants.NORMAL);
-        assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NORMAL));
+        CloseStatus close = new CloseStatus(CloseStatus.NORMAL);
+        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.NORMAL));
         assertThat("close.reason",close.getReason(),nullValue());
 
         Frame frame = close.toFrame();
@@ -147,14 +147,14 @@ public class CloseStatusTest
     @Test
     public void testFromFrame()
     {
-        ByteBuffer payload = asByteBuffer(WebSocketConstants.NORMAL,null);
+        ByteBuffer payload = asByteBuffer(CloseStatus.NORMAL,null);
         assertThat("payload length", payload.remaining(), is(2));
         Frame frame = new Frame(OpCode.CLOSE);
         frame.setPayload(payload);
         
         // create from frame
         CloseStatus close = new CloseStatus(frame.getPayload());
-        assertThat("close.code",close.getCode(), Matchers.is(WebSocketConstants.NORMAL));
+        assertThat("close.code",close.getCode(), Matchers.is(CloseStatus.NORMAL));
         assertThat("close.reason",close.getReason(),nullValue());
 
         // and back again

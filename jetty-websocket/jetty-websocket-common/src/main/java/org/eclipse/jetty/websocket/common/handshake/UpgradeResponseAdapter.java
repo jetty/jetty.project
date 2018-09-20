@@ -25,14 +25,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.HeaderUtil;
+import org.eclipse.jetty.websocket.common.HeaderUtil;
 
 public class UpgradeResponseAdapter implements UpgradeResponse
 {
-    public static final String SEC_WEBSOCKET_PROTOCOL = WebSocketConstants.SEC_WEBSOCKET_PROTOCOL;
+    public static final String SEC_WEBSOCKET_PROTOCOL = HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString();
     private int statusCode;
     private String statusReason;
     private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);

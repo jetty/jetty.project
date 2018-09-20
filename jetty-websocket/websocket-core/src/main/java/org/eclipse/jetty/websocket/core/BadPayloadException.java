@@ -29,16 +29,16 @@ public class BadPayloadException extends CloseException
 {
     public BadPayloadException(String message)
     {
-        super(WebSocketConstants.BAD_PAYLOAD,message);
+        super(CloseStatus.BAD_PAYLOAD,message);
     }
 
     public BadPayloadException(String message, Throwable t)
     {
-        super(WebSocketConstants.BAD_PAYLOAD,message,t);
+        super(CloseStatus.BAD_PAYLOAD,message,t);
     }
 
     public BadPayloadException(Throwable t)
     {
-        super(WebSocketConstants.BAD_PAYLOAD,t);
+        super(CloseStatus.BAD_PAYLOAD,t);
     }
 }

@@ -61,7 +61,7 @@ public class CloseStatus
      */
     public CloseStatus()
     {
-        this(WebSocketConstants.NO_CODE);
+        this(NO_CODE);
     }
 
     /**
@@ -94,7 +94,7 @@ public class CloseStatus
     public CloseStatus(ByteBuffer payload)
     {
         // RFC-6455 Spec Required Close Frame validation.
-        int statusCode = WebSocketConstants.NO_CODE;
+        int statusCode = NO_CODE;
 
         if ((payload == null) || (payload.remaining() == 0))
         {
@@ -254,9 +254,9 @@ public class CloseStatus
         }
 
         // Specifically called out as not-transmittable?
-        if ( (statusCode == WebSocketConstants.NO_CODE) ||
-             (statusCode == WebSocketConstants.NO_CLOSE) ||
-             (statusCode == WebSocketConstants.FAILED_TLS_HANDSHAKE))
+        if ( (statusCode == NO_CODE) ||
+             (statusCode == NO_CLOSE) ||
+             (statusCode == FAILED_TLS_HANDSHAKE))
         {
             return false;
         }

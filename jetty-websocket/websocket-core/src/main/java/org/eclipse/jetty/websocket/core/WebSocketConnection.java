@@ -496,7 +496,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     @Override
     protected boolean onReadTimeout(Throwable timeout)
     {
-        channel.processError(new WebSocketTimeoutException("Timeout on Read"));
+        channel.processError(new WebSocketTimeoutException("Timeout on Read",timeout));
         return false;
     }
 

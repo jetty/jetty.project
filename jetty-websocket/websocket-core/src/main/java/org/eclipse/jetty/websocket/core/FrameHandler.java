@@ -32,6 +32,11 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>
  * This is the receiver of Parsed Frames.
+ * TODO Document here the close/error lifecycle.  Ie when is onError called?
+ * TODO will onclosed always be called? the fact that onReceivedFrame is a called
+ * TODO for all frames including control frames... and that app can respond,
+ * TODO but if not the core will on itsw behalf of CLOSE and PINGs
+ *
  * </p>
  */
 public interface FrameHandler extends IncomingFrames
@@ -81,7 +86,7 @@ public interface FrameHandler extends IncomingFrames
      * derived from the error.
      *
      * @param cause the reason for the error
-     * @throws Exception if unable to process the error. TODO: what happens if an exception occurs here?  does any error means a connection is (or will be) closed?
+     * @throws Exception if unable to process the error.
      */
     void onError(Throwable cause) throws Exception;
     
@@ -104,7 +109,6 @@ public interface FrameHandler extends IncomingFrames
     interface CoreSession extends OutgoingFrames, Attributes // TODO: want AutoCloseable (easier testing)
     {
         /**
-         * TODO: might be redundant (evaluate API usage, possible to access from HandshakeResponse concepts)
          * The negotiated WebSocket Subprotocol for this channel.
          *
          * @return the negotiated WebSocket Subprotocol for this channel.
@@ -116,7 +120,6 @@ public interface FrameHandler extends IncomingFrames
         // It should be smart about the Exception type (eg: oejwc.CloseException)
 
         /**
-         * TODO: might be redundant (evaluate API usage, possible to access from HandshakeResponse concepts)
          * The negotiated WebSocket Extension Configurations for this channel.
          *
          * @return the list of Extension Configurations for this channel.
@@ -124,8 +127,6 @@ public interface FrameHandler extends IncomingFrames
         List<ExtensionConfig> getExtensionConfig();
 
         /**
-         * TODO: need implementation - has small overlap with .fail(Throwable) proposed above
-         *
          * Issue a harsh abort of the underlying connection.
          * <p>
          * This will terminate the connection, without sending a websocket close frame.
@@ -208,7 +209,6 @@ public interface FrameHandler extends IncomingFrames
          * Initiate close handshake, no payload (no declared status code or reason phrase)
          *
          * @param callback the callback to track close frame sent (or failed)
-         * TODO: what is the expected reaction to Callback.failed() ?
          */
         void close(Callback callback);
 
@@ -218,7 +218,6 @@ public interface FrameHandler extends IncomingFrames
          * @param statusCode the status code (should be a valid status code that can be sent)
          * @param reason optional reason phrase (will be truncated automatically by implementation to fit within limits of protocol)
          * @param callback the callback to track close frame sent (or failed)
-         * TODO: what is the expected reaction to Callback.failed() ?
          */
         void close(int statusCode, String reason, Callback callback);
         
@@ -233,7 +232,4 @@ public interface FrameHandler extends IncomingFrames
          */
         void demand(long n);        
     }
-
-    // TODO: Want access to common Executor used by core for reuse in APIs (either read-only, or pushed into core) - connection has Executor now
-    
 }

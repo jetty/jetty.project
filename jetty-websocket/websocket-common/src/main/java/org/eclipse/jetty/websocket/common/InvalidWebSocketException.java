@@ -16,28 +16,23 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.common;
+
+import org.eclipse.jetty.websocket.core.WebSocketException;
 
 /**
- * Exception when a violation of policy occurs and should trigger a connection close.
- *
- * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
+ * Indicating that the provided Class is not a valid WebSocket per the chosen API.
  */
 @SuppressWarnings("serial")
-public class PolicyViolationException extends CloseException
+public class InvalidWebSocketException extends WebSocketException
 {
-    public PolicyViolationException(String message)
+    public InvalidWebSocketException(String message)
     {
-        super(WebSocketConstants.POLICY_VIOLATION,message);
+        super(message);
     }
 
-    public PolicyViolationException(String message, Throwable t)
+    public InvalidWebSocketException(String message, Throwable cause)
     {
-        super(WebSocketConstants.POLICY_VIOLATION,message,t);
-    }
-
-    public PolicyViolationException(Throwable t)
-    {
-        super(WebSocketConstants.POLICY_VIOLATION,t);
+        super(message,cause);
     }
 }

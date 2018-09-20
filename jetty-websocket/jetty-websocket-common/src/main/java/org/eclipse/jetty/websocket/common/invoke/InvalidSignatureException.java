@@ -23,7 +23,7 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
-import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.common.InvalidWebSocketException;
 
 @SuppressWarnings("serial")
 public class InvalidSignatureException extends InvalidWebSocketException

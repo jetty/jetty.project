@@ -29,17 +29,17 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.generator.UnitGenerator;
+import org.eclipse.jetty.websocket.core.UnitGenerator;
 
 public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
@@ -301,7 +301,7 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         LOG.debug("Response: {}", parsedResponse);
         
         assertThat("Is Switching Protocols", parsedResponse.getStatus(), is(101));
-        assertThat("Is Connection Upgrade", parsedResponse.get(WebSocketConstants.SEC_WEBSOCKET_ACCEPT), notNullValue());
+        assertThat("Is Connection Upgrade", parsedResponse.get(HttpHeader.SEC_WEBSOCKET_ACCEPT.asString()), notNullValue());
         assertThat("Is Connection Upgrade", parsedResponse.get("Connection"), is("Upgrade"));
         assertThat("Is WebSocket Upgrade", parsedResponse.get("Upgrade"), is("WebSocket"));
         return parsedResponse;

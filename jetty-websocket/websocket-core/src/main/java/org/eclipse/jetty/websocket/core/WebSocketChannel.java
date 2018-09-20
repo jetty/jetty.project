@@ -104,6 +104,8 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
     public void assertValidOutgoing(Frame frame) throws CloseException
     {
+        // TODO check that it is not masked, since masking is done later
+
         if (!OpCode.isKnown(frame.getOpCode()))
             throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
 
@@ -358,21 +360,21 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
         if (cause instanceof Utf8Appendable.NotUtf8Exception)
         {
-            closeStatus = new CloseStatus(WebSocketConstants.BAD_PAYLOAD, cause.getMessage());
+            closeStatus = new CloseStatus(CloseStatus.BAD_PAYLOAD, cause.getMessage());
         }
         else if (cause instanceof SocketTimeoutException)
         {
             // A path often seen in Windows
-            closeStatus = new CloseStatus(WebSocketConstants.SHUTDOWN, cause.getMessage());
+            closeStatus = new CloseStatus(CloseStatus.SHUTDOWN, cause.getMessage());
         }
         else if (cause instanceof IOException)
         {
-            closeStatus = new CloseStatus(WebSocketConstants.PROTOCOL, cause.getMessage());
+            closeStatus = new CloseStatus(CloseStatus.PROTOCOL, cause.getMessage());
         }
         else if (cause instanceof SocketException)
         {
             // A path unique to Unix
-            closeStatus = new CloseStatus(WebSocketConstants.SHUTDOWN, cause.getMessage());
+            closeStatus = new CloseStatus(CloseStatus.SHUTDOWN, cause.getMessage());
         }
         else if (cause instanceof CloseException)
         {
@@ -381,7 +383,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         }
         else if (cause instanceof WebSocketTimeoutException)
         {
-            closeStatus = new CloseStatus(WebSocketConstants.SHUTDOWN, cause.getMessage());
+            closeStatus = new CloseStatus(CloseStatus.SHUTDOWN, cause.getMessage());
         }
         else
         {
@@ -389,9 +391,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
 
             // Exception on end-user WS-Endpoint.
             // Fast-fail & close connection with reason.
-            int statusCode = WebSocketConstants.SERVER_ERROR;
+            int statusCode = CloseStatus.SERVER_ERROR;
             if (getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
-                statusCode = WebSocketConstants.POLICY_VIOLATION;
+                statusCode = CloseStatus.POLICY_VIOLATION;
 
             closeStatus = new CloseStatus(statusCode, cause.getMessage());
         }
@@ -441,7 +443,7 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             catch (Throwable t)
             {
                 LOG.warn("Error during OPEN", t);
-                processError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
+                processError(new CloseException(CloseStatus.SERVER_ERROR, t));
             }
         }
         catch (Throwable t)
@@ -480,9 +482,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
         {
             assertValidIncoming(frame);
         }
-        catch (CloseException ce)
+        catch (Throwable ex)
         {
-            callback.failed(ce);
+            callback.failed(ex);
         }
 
         extensionStack.onReceiveFrame(frame, callback);
@@ -499,9 +501,9 @@ public class WebSocketChannel implements IncomingFrames, FrameHandler.CoreSessio
             assertValidOutgoing(frame);
             outgoingSequence.check(frame.getOpCode(),frame.isFin());
         }
-        catch (CloseException ce)
+        catch (Throwable ex)
         {
-            callback.failed(ce);
+            callback.failed(ex);
         }
 
         if (frame.getOpCode() == OpCode.CLOSE)

@@ -90,8 +90,8 @@ public class ParserTest
         buffer.put(b);
         if (masked)
         {
-            MaskedByteBuffer.putMask(buffer);
-            MaskedByteBuffer.putPayload(buffer,messageBytes);
+            Generator.putMask(buffer);
+            Generator.putPayload(buffer,messageBytes);
         }
         else
         {
@@ -521,7 +521,7 @@ public class ParserTest
             frame.setFin(isLast);
             send.add(frame);
         }
-        send.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
     
         WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
@@ -551,7 +551,7 @@ public class ParserTest
         send.add(new Frame(OpCode.CONTINUATION).setPayload(",f4").setFin(false));
         send.add(new Frame(OpCode.PING).setPayload("ping-2"));
         send.add(new Frame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
-        send.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
     
         WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
@@ -844,7 +844,7 @@ public class ParserTest
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.PONG).setPayload("ping"));
         send.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
-        send.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
+        send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
@@ -1369,8 +1369,8 @@ public class ParserTest
         buf.put((byte)0x81); // text frame, fin = true
         buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
         buf.putShort((short)utf.length);
-        MaskedByteBuffer.putMask(buf);
-        MaskedByteBuffer.putPayload(buf,utf);
+        Generator.putMask(buf);
+        Generator.putPayload(buf,utf);
         buf.flip();
         
         expectedException.expect(MessageTooLargeException.class);
@@ -1396,8 +1396,8 @@ public class ParserTest
         buf.put((byte)0x81); // text frame, fin = true
         buf.put((byte)(0x80 | 0x7F)); // 0x7F == 127 (a 8 byte payload length)
         buf.putLong(utf.length);
-        MaskedByteBuffer.putMask(buf);
-        MaskedByteBuffer.putPayload(buf,utf);
+        Generator.putMask(buf);
+        Generator.putPayload(buf,utf);
         buf.flip();
         
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
@@ -1421,7 +1421,7 @@ public class ParserTest
         text.setPayload(ByteBuffer.wrap(payload));
         text.setMask(Hex.asByteArray("11223344"));
         frames.add(text);
-        frames.add(CloseStatus.toFrame(WebSocketConstants.NORMAL));
+        frames.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         WebSocketPolicy clientPolicy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
@@ -1471,8 +1471,8 @@ public class ParserTest
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
         buf.putShort((short)utf.length);
-        MaskedByteBuffer.putMask(buf);
-        MaskedByteBuffer.putPayload(buf,utf);
+        Generator.putMask(buf);
+        Generator.putPayload(buf,utf);
         buf.flip();
         
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
@@ -1492,8 +1492,8 @@ public class ParserTest
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | utf.length));
-        MaskedByteBuffer.putMask(buf);
-        MaskedByteBuffer.putPayload(buf,utf);
+        Generator.putMask(buf);
+        Generator.putPayload(buf,utf);
         buf.flip();
         
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
@@ -1518,14 +1518,14 @@ public class ParserTest
         // part 1
         buf.put((byte)0x01); // no fin + text
         buf.put((byte)(0x80 | b1.length));
-        MaskedByteBuffer.putMask(buf);
-        MaskedByteBuffer.putPayload(buf,b1);
+        Generator.putMask(buf);
+        Generator.putPayload(buf,b1);
         
         // part 2
         buf.put((byte)0x80); // fin + continuation
         buf.put((byte)(0x80 | b2.length));
-        MaskedByteBuffer.putMask(buf);
-        MaskedByteBuffer.putPayload(buf,b2);
+        Generator.putMask(buf);
+        Generator.putPayload(buf,b2);
         
         buf.flip();
         
@@ -1550,8 +1550,8 @@ public class ParserTest
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | utf.length));
-        MaskedByteBuffer.putMask(buf);
-        MaskedByteBuffer.putPayload(buf,utf);
+        Generator.putMask(buf);
+        Generator.putPayload(buf,utf);
         buf.flip();
         
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);

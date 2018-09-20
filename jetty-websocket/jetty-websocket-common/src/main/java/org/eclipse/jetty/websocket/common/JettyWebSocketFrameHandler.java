@@ -33,7 +33,6 @@ import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ReadOnlyFrame;
 import org.eclipse.jetty.websocket.core.BatchMode;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
@@ -147,7 +146,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             try
             {
-                frameHandle.invoke(new ReadOnlyFrame(frame));
+                frameHandle.invoke(frame.asReadOnly());
             }
             catch (Throwable cause)
             {

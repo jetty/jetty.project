@@ -371,7 +371,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_Close_CodeNoReason()
     {
-        CloseStatus close = new CloseStatus(WebSocketConstants.NORMAL);
+        CloseStatus close = new CloseStatus(CloseStatus.NORMAL);
         // 2 byte payload (2 bytes for status code)
         assertGeneratedBytes("880203E8", close.toFrame());
     }
@@ -379,7 +379,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_Close_CodeOkReason()
     {
-        CloseStatus close = new CloseStatus(WebSocketConstants.NORMAL, "OK");
+        CloseStatus close = new CloseStatus(CloseStatus.NORMAL, "OK");
         // 4 byte payload (2 bytes for status code, 2 more for "OK")
         assertGeneratedBytes("880403E84F4B", close.toFrame());
     }
@@ -519,7 +519,7 @@ public class GeneratorTest
         {
             frames[i] = new Frame(OpCode.PING).setPayload(String.format("ping-%d", i));
         }
-        frames[pingCount] = CloseStatus.toFrame(WebSocketConstants.NORMAL);
+        frames[pingCount] = CloseStatus.toFrame(CloseStatus.NORMAL);
 
         // Mask All Frames
         byte maskingKey[] = Hex.asByteArray("11223344");

@@ -49,17 +49,17 @@ import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.HeaderUtil;
+import org.eclipse.jetty.websocket.common.HeaderUtil;
 import org.eclipse.jetty.websocket.jsr356.server.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.jsr356.tests.LocalServer;
 import org.eclipse.jetty.websocket.jsr356.tests.Timeouts;
@@ -444,10 +444,10 @@ public class ConfiguratorTest
         FrameHandler.CoreSession channel = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            channel.sendFrame(new Frame(OpCode.TEXT).setPayload(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS), Callback.NOOP, BatchMode.OFF);
+            channel.sendFrame(new Frame(OpCode.TEXT).setPayload(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString()), Callback.NOOP, BatchMode.OFF);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Incoming Message", incomingMessage, is("Request Header [" + WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS + "]: \"identity\""));
+            assertThat("Incoming Message", incomingMessage, is("Request Header [" + HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString() + "]: \"identity\""));
         }
         finally
         {

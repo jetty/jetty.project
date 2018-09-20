@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.common;
 
 import java.lang.invoke.MethodHandle;
 
-import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.BatchMode;
 
 public class JettyWebSocketFrameHandlerMetadata
