@@ -59,7 +59,6 @@ class MetaData
 
     private final Map<String, AttributeInfo> _attributes = new HashMap<>();
     private final Map<String, OperationInfo> _operations = new HashMap<>();
-    private final Class<?> _klass;
     private final MetaData _parent;
     private final List<MetaData> _interfaces;
     private final Constructor<?> _constructor;
@@ -67,7 +66,6 @@ class MetaData
 
     MetaData(Class<?> klass, MetaData parent, List<MetaData> interfaces)
     {
-        _klass = klass;
         _parent = parent;
         _interfaces = interfaces;
         _constructor = findConstructor(klass);
@@ -284,17 +282,6 @@ class MetaData
             intf.collectMBeanOperationInfos(operationInfos);
         if (_parent != null)
             _parent.collectMBeanOperationInfos(operationInfos);
-    }
-
-    private static class ObjectInfo
-    {
-        private final String _description;
-
-        private ObjectInfo(Class<?> klass)
-        {
-            ManagedObject managedObject = klass.getAnnotation(ManagedObject.class);
-            _description = managedObject == null ? "" : managedObject.value();
-        }
     }
 
     private static class AttributeInfo
