@@ -92,9 +92,8 @@ public class ObjectMBeanUtilTest
     public void setUp()
     {
         derivedExtended = new DerivedExtended();
-        objectMBean = new ObjectMBean(derivedExtended);
         container = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        objectMBean.setMBeanContainer(container);
+        objectMBean = (ObjectMBean) container.mbeanFor(derivedExtended);
         objectMBeanInfo = objectMBean.getMBeanInfo();
     }
 
@@ -113,7 +112,7 @@ public class ObjectMBeanUtilTest
     public void testMbeanForNullCheck()
     {
         // when
-        mBean = ObjectMBean.mbeanFor(null);
+        mBean = container.mbeanFor(null);
 
         // then
         assertNull(mBean, "As we are passing null value the output should be null");
@@ -351,7 +350,7 @@ public class ObjectMBeanUtilTest
 
     private void setMBeanInfoForInvoke()
     {
-        objectMBean = (ObjectMBean)ObjectMBean.mbeanFor(derivedExtended);
+        objectMBean = (ObjectMBean)container.mbeanFor(derivedExtended);
         container.beanAdded(null,derivedExtended);
         objectMBean.getMBeanInfo();
     }

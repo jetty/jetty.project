@@ -13,3 +13,6 @@ lib/jetty-jmx-${jetty.version}.jar
 [xml]
 etc/jetty-jmx.xml
 
+[ini-template]
+## Should the MBean cache beans from other classloaders (eg WebApp Loaders)
+# jetty.jmx.cacheOtherClassLoaders=false

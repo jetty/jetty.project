@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Test;
 public class ObjectMBeanTest
 {
     private static final Logger LOG = Log.getLogger(ObjectMBeanTest.class);
-
     private static MBeanContainer container;
 
     @BeforeEach
@@ -65,11 +64,13 @@ public class ObjectMBeanTest
     public void testDerivedAttributes() throws Exception
     {
         Derived derived = new Derived();
-        ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
+        ObjectMBean mbean = (ObjectMBean)container.mbeanFor(derived);
+        MBeanInfo info = mbean.getMBeanInfo();
+        assertEquals("com.acme.Derived", info.getClassName(), "name does not match");
+        assertEquals("Test the mbean stuff", info.getDescription(), "description does not match");
 
-        ObjectMBean managed = (ObjectMBean)ObjectMBean.mbeanFor(derived.getManagedInstance());
-        mbean.setMBeanContainer(container);
-        managed.setMBeanContainer(container);
+
+        ObjectMBean managed = (ObjectMBean)container.mbeanFor(derived.getManagedInstance());
 
         container.beanAdded(null,derived);
         container.beanAdded(null,derived.getManagedInstance());
@@ -78,10 +79,6 @@ public class ObjectMBeanTest
 
         assertNotNull(mbean.getMBeanInfo());
 
-        MBeanInfo info = mbean.getMBeanInfo();
-
-        assertEquals("com.acme.Derived", info.getClassName(), "name does not match");
-        assertEquals("Test the mbean stuff", info.getDescription(), "description does not match");
 
         // for ( MBeanAttributeInfo i : info.getAttributes())
         // {
@@ -108,10 +105,7 @@ public class ObjectMBeanTest
     public void testDerivedOperations() throws Exception
     {
         Derived derived = new Derived();
-        ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
-
-        mbean.setMBeanContainer(container);
-
+        ObjectMBean mbean = (ObjectMBean)container.mbeanFor(derived);
         container.beanAdded(null,derived);
 
         MBeanInfo info = mbean.getMBeanInfo();
@@ -163,11 +157,8 @@ public class ObjectMBeanTest
     public void testDerivedObjectAttributes() throws Exception
     {
         Derived derived = new Derived();
-        ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
-
-        ObjectMBean managed = (ObjectMBean)ObjectMBean.mbeanFor(derived.getManagedInstance());
-        mbean.setMBeanContainer(container);
-        managed.setMBeanContainer(container);
+        ObjectMBean mbean = (ObjectMBean)container.mbeanFor(derived);
+        ObjectMBean managed = (ObjectMBean)container.mbeanFor(derived.getManagedInstance());
 
         assertNotNull(mbean.getMBeanInfo());
 
@@ -179,34 +170,6 @@ public class ObjectMBeanTest
         // Managed managedInstance = (Managed)mbean.getAttribute("managedInstance");
         // assertNotNull(managedInstance);
         // assertEquals("foo", managedInstance.getManaged(), "managed instance returning nonsense");
-
-    }
-
-    @Test
-    @Disabled("ignore, used in testing jconsole atm")
-    public void testThreadPool() throws Exception
-    {
-
-        Derived derived = new Derived();
-        ObjectMBean mbean = (ObjectMBean)ObjectMBean.mbeanFor(derived);
-
-        ObjectMBean managed = (ObjectMBean)ObjectMBean.mbeanFor(derived.getManagedInstance());
-        mbean.setMBeanContainer(container);
-        managed.setMBeanContainer(container);
-
-        QueuedThreadPool qtp = new QueuedThreadPool();
-
-        ObjectMBean bqtp = (ObjectMBean)ObjectMBean.mbeanFor(qtp);
-
-        bqtp.getMBeanInfo();
-
-        container.beanAdded(null,derived);
-        container.beanAdded(null,derived.getManagedInstance());
-        container.beanAdded(null,mbean);
-        container.beanAdded(null,managed);
-        container.beanAdded(null,qtp);
-
-        Thread.sleep(10000000);
 
     }
 
