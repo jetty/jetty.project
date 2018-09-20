@@ -96,7 +96,7 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
-        return JettyDistro__testSupport.checkSessionPersisted(data);
+        return __testSupport.checkSessionPersisted(data);
     }
 
 }
