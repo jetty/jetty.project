@@ -22,12 +22,7 @@ import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
+import org.eclipse.jetty.websocket.core.*;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,7 +64,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         // Manually create frame and pass into extension
         for (String q : quote)
         {
-            org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload(q);
+            Frame frame = new Frame(OpCode.TEXT).setPayload(q);
             ext.onReceiveFrame(frame, Callback.NOOP);
         }
 
@@ -110,7 +105,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         ext.setNextIncomingFrames(capture);
 
         String payload = "Are you there?";
-        org.eclipse.jetty.websocket.core.frames.Frame ping = new Frame(OpCode.PING).setPayload(payload);
+        Frame ping = new Frame(OpCode.PING).setPayload(payload);
         ext.onReceiveFrame(ping, Callback.NOOP);
 
         capture.assertFrameCount(1);
@@ -152,7 +147,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload(section);
+            Frame frame = new Frame(OpCode.TEXT).setPayload(section);
             ext.sendFrame(frame, null, BatchMode.OFF);
         }
 
@@ -223,7 +218,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload(section);
+            Frame frame = new Frame(OpCode.TEXT).setPayload(section);
             ext.sendFrame(frame, null, BatchMode.OFF);
         }
 
@@ -278,7 +273,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        org.eclipse.jetty.websocket.core.frames.Frame ping = new Frame(OpCode.PING).setPayload(payload);
+        Frame ping = new Frame(OpCode.PING).setPayload(payload);
 
         ext.sendFrame(ping, null, BatchMode.OFF);
 

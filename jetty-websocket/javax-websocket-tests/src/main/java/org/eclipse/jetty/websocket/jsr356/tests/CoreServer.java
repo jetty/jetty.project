@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
-import org.eclipse.jetty.websocket.core.util.WSURI;
+import org.eclipse.jetty.websocket.core.WSURI;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.FrameEcho;
 import org.eclipse.jetty.websocket.jsr356.tests.framehandlers.WholeMessageEcho;
 

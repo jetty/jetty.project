@@ -35,7 +35,7 @@ import java.util.function.Function;
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.jsr356.CompletableFutureCallback;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.tests.FunctionMethod;

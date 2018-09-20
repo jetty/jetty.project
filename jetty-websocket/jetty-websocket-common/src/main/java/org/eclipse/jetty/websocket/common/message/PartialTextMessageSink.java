@@ -24,7 +24,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.common.MessageSinkImpl;
-import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class PartialTextMessageSink extends MessageSinkImpl

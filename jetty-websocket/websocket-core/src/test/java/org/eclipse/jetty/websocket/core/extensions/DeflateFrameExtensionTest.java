@@ -29,12 +29,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.extensions.compress.DeflateFrameExtension;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.io.CapturedHexPayloads;
-import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.core.io.OutgoingNetworkBytesCapture;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -109,7 +103,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         OutgoingNetworkBytesCapture capture = new OutgoingNetworkBytesCapture(generator);
         ext.setNextOutgoingFrames(capture);
 
-        org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload(text);
+        Frame frame = new Frame(OpCode.TEXT).setPayload(text);
         ext.sendFrame(frame, null, BatchMode.OFF);
 
         capture.assertBytes(0, expectedHex);
@@ -379,7 +373,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         clientExtension.setNextOutgoingFrames(new OutgoingFrames()
         {
             @Override
-            public void sendFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback, BatchMode batchMode)
+            public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
             {
                 LOG.debug("outgoingFrame({})", frame);
                 serverExtension.onReceiveFrame(frame, callback);
@@ -391,7 +385,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         serverExtension.setNextIncomingFrames(new IncomingFrames()
         {
             @Override
-            public void onReceiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
+            public void onReceiveFrame(Frame frame, Callback callback)
             {
                 LOG.debug("incomingFrame({})", frame);
                 try

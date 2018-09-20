@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.junit.Assert;
 
 import java.nio.ByteBuffer;

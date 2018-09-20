@@ -22,11 +22,7 @@ import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
+import org.eclipse.jetty.websocket.core.*;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,7 +49,7 @@ public class IdentityExtensionTest extends AbstractExtensionTest
         Extension ext = new IdentityExtension();
         ext.setNextIncomingFrames(capture);
 
-        org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload("hello");
+        Frame frame = new Frame(OpCode.TEXT).setPayload("hello");
         ext.onReceiveFrame(frame, Callback.NOOP);
 
         capture.assertFrameCount(1);
@@ -83,7 +79,7 @@ public class IdentityExtensionTest extends AbstractExtensionTest
         Extension ext = new IdentityExtension();
         ext.setNextOutgoingFrames(capture);
 
-        org.eclipse.jetty.websocket.core.frames.Frame frame = new Frame(OpCode.TEXT).setPayload("hello");
+        Frame frame = new Frame(OpCode.TEXT).setPayload("hello");
         ext.sendFrame(frame, null, BatchMode.OFF);
 
         capture.assertFrameCount(1);

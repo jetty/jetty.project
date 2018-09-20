@@ -23,7 +23,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.common.test.EventQueue;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
-import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.Frame;
 
 public class ListenerFrameSocket implements WebSocketFrameListener
 {

@@ -24,10 +24,10 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,7 +65,7 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void onReceiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
+    public void onReceiveFrame(Frame frame, Callback callback)
     {
         saveFrame(frame,false);
         try
@@ -81,7 +81,7 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void sendFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback, BatchMode batchMode)
+    public void sendFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         saveFrame(frame,true);
         try
@@ -96,7 +96,7 @@ public class FrameCaptureExtension extends AbstractExtension
         }
     }
 
-    private void saveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, boolean outgoing)
+    private void saveFrame(Frame frame, boolean outgoing)
     {
         if (outputDir == null || generator == null)
         {

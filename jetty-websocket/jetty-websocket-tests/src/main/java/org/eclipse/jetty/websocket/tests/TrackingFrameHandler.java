@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.Frame;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 
@@ -93,7 +93,7 @@ public class TrackingFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onReceiveFrame(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
+    public void onReceiveFrame(Frame frame, Callback callback)
     {
         framesQueue.offer(Frame.copy(frame));
         callback.succeeded();

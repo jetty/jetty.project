@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.common;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.Frame;
 
 /**
  * Sink consumer for messages (used for multiple frames with continuations, 

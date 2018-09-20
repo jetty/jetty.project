@@ -25,11 +25,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.core.*;
 import org.hamcrest.Matchers;
 
 import java.nio.ByteBuffer;
@@ -93,7 +89,7 @@ public class ExtensionTool
 
         public void assertHasFrames(String... textFrames)
         {
-            org.eclipse.jetty.websocket.core.frames.Frame frames[] = new org.eclipse.jetty.websocket.core.frames.Frame[textFrames.length];
+            Frame frames[] = new Frame[textFrames.length];
             for (int i = 0; i < frames.length; i++)
             {
                 frames[i] = new Frame(OpCode.TEXT).setPayload(textFrames[i]);
@@ -101,7 +97,7 @@ public class ExtensionTool
             assertHasFrames(frames);
         }
 
-        public void assertHasFrames(org.eclipse.jetty.websocket.core.frames.Frame... expectedFrames)
+        public void assertHasFrames(Frame... expectedFrames)
         {
             int expectedCount = expectedFrames.length;
             assertThat("Frame Count", capture.frames.size(), is(expectedCount));

@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.frames.Frame;
 
 import java.nio.ByteBuffer;
 

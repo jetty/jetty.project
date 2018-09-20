@@ -31,11 +31,6 @@ import org.eclipse.jetty.websocket.core.Parser.ParsedFrame;
 import org.eclipse.jetty.websocket.core.extensions.Extension;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.io.FrameFlusher;
-import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 
 import java.io.IOException;
 import java.net.SocketAddress;

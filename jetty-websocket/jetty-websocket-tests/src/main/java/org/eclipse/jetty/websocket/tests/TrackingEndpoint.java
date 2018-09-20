@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
-import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.Frame;
 
 public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionImpl> implements WebSocketListener, WebSocketFrameListener
 {
@@ -98,7 +98,7 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionI
     }
     
     @Override
-    public void onWebSocketFrame(org.eclipse.jetty.websocket.core.frames.Frame frame)
+    public void onWebSocketFrame(Frame frame)
     {
         if (LOG.isDebugEnabled())
         {

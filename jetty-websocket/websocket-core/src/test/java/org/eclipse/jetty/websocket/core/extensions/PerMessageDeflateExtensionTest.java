@@ -23,14 +23,9 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.*;
 import org.eclipse.jetty.websocket.core.extensions.compress.CompressExtension;
 import org.eclipse.jetty.websocket.core.extensions.compress.PerMessageDeflateExtension;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -243,7 +238,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         ext.setNextIncomingFrames(capture);
 
         String payload = "Are you there?";
-        org.eclipse.jetty.websocket.core.frames.Frame ping = new Frame(OpCode.PING).setPayload(payload);
+        Frame ping = new Frame(OpCode.PING).setPayload(payload);
         ext.onReceiveFrame(ping, Callback.NOOP);
 
         capture.assertFrameCount(1);
@@ -332,7 +327,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        org.eclipse.jetty.websocket.core.frames.Frame ping = new Frame(OpCode.PING).setPayload(payload);
+        Frame ping = new Frame(OpCode.PING).setPayload(payload);
 
         ext.sendFrame(ping, null, BatchMode.OFF);
 

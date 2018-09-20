@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.tests;
 
-import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.Frame;
 
 /**
  * Allow Fuzzer / Generator to create bad frames for testing frame validation

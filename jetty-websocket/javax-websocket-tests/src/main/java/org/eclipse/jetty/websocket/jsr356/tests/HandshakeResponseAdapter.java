@@ -27,7 +27,7 @@ import java.util.TreeMap;
 import org.eclipse.jetty.websocket.common.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.util.HeaderUtil;
+import org.eclipse.jetty.websocket.core.HeaderUtil;
 
 public class HandshakeResponseAdapter implements HandshakeResponse
 {

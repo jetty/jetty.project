@@ -19,8 +19,6 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
  * Interface for dealing with frames outgoing to (eventually) the network layer.

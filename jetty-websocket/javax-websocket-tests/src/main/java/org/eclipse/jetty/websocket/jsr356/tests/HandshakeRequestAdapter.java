@@ -32,7 +32,7 @@ import java.util.TreeMap;
 
 import org.eclipse.jetty.websocket.common.HandshakeRequest;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.util.HeaderUtil;
+import org.eclipse.jetty.websocket.core.HeaderUtil;
 
 public class HandshakeRequestAdapter implements HandshakeRequest
 {

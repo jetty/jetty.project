@@ -28,9 +28,9 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.tests.ParserCapture;
 import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.junit.Test;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertThat;
  * Test simulating a client that talks too quickly.
  * <p>
  * This is mainly for the {@link org.eclipse.jetty.io.Connection.UpgradeTo} logic within
- * the {@link org.eclipse.jetty.websocket.core.io.WebSocketConnection} implementation.
+ * the {@link WebSocketConnection} implementation.
  * </p>
  * <p>
  * There is a class of client that will send the GET+Upgrade Request along with a few websocket frames in a single

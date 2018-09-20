@@ -20,25 +20,25 @@ package org.eclipse.jetty.websocket.jsr356.tests.framehandlers;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.AbstractFrameTypeHandler;
-import org.eclipse.jetty.websocket.core.frames.Frame;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.BatchMode;
 
 public class FrameEcho extends AbstractFrameTypeHandler
 {
     @Override
-    public void onText(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
+    public void onText(Frame frame, Callback callback)
     {
         coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
     }
 
     @Override
-    public void onBinary(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
+    public void onBinary(Frame frame, Callback callback)
     {
         coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
     }
 
     @Override
-    public void onContinuation(org.eclipse.jetty.websocket.core.frames.Frame frame, Callback callback)
+    public void onContinuation(Frame frame, Callback callback)
     {
         coreSession.sendFrame(Frame.copy(frame), callback, BatchMode.OFF);
     }
