@@ -19,18 +19,23 @@
 package org.eclipse.jetty.jmx;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -45,14 +50,150 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("The component that registers beans as MBeans")
 public class MBeanContainer implements Container.InheritedListener, Dumpable, Destroyable
 {
-    private final static Logger LOG = Log.getLogger(MBeanContainer.class.getName());
-    private final static ConcurrentMap<String, AtomicInteger> __unique = new ConcurrentHashMap<>();
+    private static final Logger LOG = Log.getLogger(MBeanContainer.class.getName());
+    private static final ConcurrentMap<String, AtomicInteger> __unique = new ConcurrentHashMap<>();
     private static final Container ROOT = new ContainerLifeCycle();
 
     private final MBeanServer _mbeanServer;
+    private final boolean _useCacheForOtherClassLoaders;
+    private final ConcurrentMap<Class, MetaData> _metaData = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, Container> _beans = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, ObjectName> _mbeans = new ConcurrentHashMap<>();
     private String _domain = null;
+
+    /**
+     * Constructs MBeanContainer
+     *
+     * @param server instance of MBeanServer for use by container
+     */
+    public MBeanContainer(MBeanServer server)
+    {
+        this(server, true);
+    }
+
+    /**
+     * Constructs MBeanContainer
+     *
+     * @param server                 instance of MBeanServer for use by container
+     * @param cacheOtherClassLoaders If true,  MBeans from other classloaders (eg WebAppClassLoader) will be cached.
+     *                               The cache is never flushed, so this should be false if some classloaders do not live forever.
+     */
+    public MBeanContainer(MBeanServer server, boolean cacheOtherClassLoaders)
+    {
+        _mbeanServer = server;
+        _useCacheForOtherClassLoaders = cacheOtherClassLoaders;
+    }
+
+    /**
+     * Retrieve instance of MBeanServer used by container
+     *
+     * @return instance of MBeanServer
+     */
+    public MBeanServer getMBeanServer()
+    {
+        return _mbeanServer;
+    }
+
+    @ManagedAttribute(value = "Whether to use the cache for MBeans loaded by other ClassLoaders", readonly = true)
+    public boolean isUseCacheForOtherClassLoaders()
+    {
+        return _useCacheForOtherClassLoaders;
+    }
+
+    /**
+     * Set domain to be used to add MBeans
+     *
+     * @param domain domain name
+     */
+    public void setDomain(String domain)
+    {
+        _domain = domain;
+    }
+
+    /**
+     * Retrieve domain name used to add MBeans
+     *
+     * @return domain name
+     */
+    @ManagedAttribute("The default ObjectName domain")
+    public String getDomain()
+    {
+        return _domain;
+    }
+
+    /**
+     * <p>Creates an ObjectMBean for the given object.</p>
+     * <p>Attempts to create an ObjectMBean for the object by searching the package
+     * and class name space. For example an object of the type:</p>
+     * <pre>
+     * class com.acme.MyClass extends com.acme.util.BaseClass implements com.acme.Iface
+     * </pre>
+     * <p>then this method would look for the following classes:</p>
+     * <ul>
+     * <li>com.acme.jmx.MyClassMBean</li>
+     * <li>com.acme.util.jmx.BaseClassMBean</li>
+     * <li>org.eclipse.jetty.jmx.ObjectMBean</li>
+     * </ul>
+     *
+     * @param o The object
+     * @return A new instance of an MBean for the object or null.
+     */
+    public Object mbeanFor(Object o)
+    {
+        return mbeanFor(this, o);
+    }
+
+    static Object mbeanFor(MBeanContainer container, Object o)
+    {
+        if (o == null)
+            return null;
+        Object mbean = findMetaData(container, o.getClass()).newInstance(o);
+        if (mbean instanceof ObjectMBean)
+            ((ObjectMBean)mbean).setMBeanContainer(container);
+        if (LOG.isDebugEnabled())
+            LOG.debug("mbeanFor {} is {}", o, mbean);
+        return mbean;
+    }
+
+    static MetaData findMetaData(MBeanContainer container, Class<?> klass)
+    {
+        if (klass == null)
+            return null;
+        MetaData metaData = getMetaData(container, klass);
+        if (metaData != null)
+            return metaData;
+        return newMetaData(container, klass);
+    }
+
+    private static MetaData getMetaData(MBeanContainer container, Class<?> klass)
+    {
+        return container == null ? null : container._metaData.get(klass);
+    }
+
+    private static MetaData newMetaData(MBeanContainer container, Class<?> klass)
+    {
+        if (klass == null)
+            return null;
+        if (klass == Object.class)
+            return new MetaData(klass, null, Collections.emptyList());
+
+        List<MetaData> interfaces = Arrays.stream(klass.getInterfaces())
+                .map(iClass -> findMetaData(container, iClass))
+                .collect(Collectors.toList());
+        MetaData metaData = new MetaData(klass, findMetaData(container, klass.getSuperclass()), interfaces);
+
+        if (container != null)
+        {
+            if (container.isUseCacheForOtherClassLoaders() || klass.getClassLoader() == container.getClass().getClassLoader())
+            {
+                MetaData existing = container._metaData.putIfAbsent(klass, metaData);
+                if (existing != null)
+                    metaData = existing;
+            }
+        }
+
+        return metaData;
+    }
 
     /**
      * Lookup an object name by instance
@@ -80,47 +221,6 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         }
         return null;
     }
-
-    /**
-     * Constructs MBeanContainer
-     *
-     * @param server instance of MBeanServer for use by container
-     */
-    public MBeanContainer(MBeanServer server)
-    {
-        _mbeanServer = server;
-    }
-
-    /**
-     * Retrieve instance of MBeanServer used by container
-     *
-     * @return instance of MBeanServer
-     */
-    public MBeanServer getMBeanServer()
-    {
-        return _mbeanServer;
-    }
-
-    /**
-     * Set domain to be used to add MBeans
-     *
-     * @param domain domain name
-     */
-    public void setDomain(String domain)
-    {
-        _domain = domain;
-    }
-
-    /**
-     * Retrieve domain name used to add MBeans
-     *
-     * @return domain name
-     */
-    public String getDomain()
-    {
-        return _domain;
-    }
-
 
     @Override
     public void beanAdded(Container parent, Object obj)
@@ -154,14 +254,13 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         try
         {
             // Create an MBean for the object.
-            Object mbean = ObjectMBean.mbeanFor(obj);
+            Object mbean = mbeanFor(obj);
             if (mbean == null)
                 return;
 
             ObjectName objectName = null;
             if (mbean instanceof ObjectMBean)
             {
-                ((ObjectMBean)mbean).setMBeanContainer(this);
                 objectName = ((ObjectMBean)mbean).getObjectName();
             }
 
@@ -256,7 +355,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out,this);
+        ContainerLifeCycle.dumpObject(out, this);
         ContainerLifeCycle.dump(out, indent, _mbeans.entrySet());
     }
 
@@ -269,6 +368,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     @Override
     public void destroy()
     {
+        _metaData.clear();
         _mbeans.values().stream()
                 .filter(Objects::nonNull)
                 .forEach(this::unregister);

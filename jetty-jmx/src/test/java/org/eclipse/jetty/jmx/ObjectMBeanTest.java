@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.jmx;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import com.acme.Derived;
-
 import java.lang.management.ManagementFactory;
 
 import javax.management.Attribute;
@@ -31,6 +25,7 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 
+import com.acme.Derived;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -38,6 +33,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ObjectMBeanTest
 {
@@ -215,14 +214,14 @@ public class ObjectMBeanTest
     {
         ObjectMBean mbean = new ObjectMBean(new Derived());
 
-        assertEquals("fullName",mbean.toVariableName("getFullName"));
-        assertEquals("fullName",mbean.toVariableName("getfullName"));
-        assertEquals("fullName",mbean.toVariableName("isFullName"));
-        assertEquals("fullName",mbean.toVariableName("isfullName"));
-        assertEquals("fullName",mbean.toVariableName("setFullName"));
-        assertEquals("fullName",mbean.toVariableName("setfullName"));
-        assertEquals("fullName",mbean.toVariableName("FullName"));
-        assertEquals("fullName",mbean.toVariableName("fullName"));
+        assertEquals("fullName",MetaData.toAttributeName("getFullName"));
+        assertEquals("fullName",MetaData.toAttributeName("getfullName"));
+        assertEquals("fullName",MetaData.toAttributeName("isFullName"));
+        assertEquals("fullName",MetaData.toAttributeName("isfullName"));
+        assertEquals("fullName",MetaData.toAttributeName("setFullName"));
+        assertEquals("fullName",MetaData.toAttributeName("setfullName"));
+        assertEquals("fullName",MetaData.toAttributeName("FullName"));
+        assertEquals("fullName",MetaData.toAttributeName("fullName"));
     }
 
 }

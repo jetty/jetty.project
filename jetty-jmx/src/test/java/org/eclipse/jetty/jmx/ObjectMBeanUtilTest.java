@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.jmx;
 
-import com.acme.Derived;
-import com.acme.DerivedExtended;
-import com.acme.DerivedManaged;
-
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +29,9 @@ import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.ReflectionException;
 
+import com.acme.Derived;
+import com.acme.DerivedExtended;
+import com.acme.DerivedManaged;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -41,7 +40,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ObjectMBeanUtilTest
 {
@@ -294,12 +296,12 @@ public class ObjectMBeanUtilTest
         setMBeanInfoForInvoke();
 
         // when
-        MBeanException e = assertThrows(MBeanException.class, ()->{
+        ReflectionException e = assertThrows(ReflectionException.class, ()->{
             objectMBean.invoke("doodle2",new Object[] {},new String[] {});
         });
 
         // then
-        assertNotNull(e, "An MBeanException must have occurred by now as doodle2() in Derived bean throwing exception");
+        assertNotNull(e, "An ReflectionException must have occurred by now as doodle2() in Derived bean is private");
     }
 
     @Test
@@ -309,12 +311,12 @@ public class ObjectMBeanUtilTest
         setMBeanInfoForInvoke();
 
         // when
-        ReflectionException e = assertThrows(ReflectionException.class, ()->{
+        MBeanException e = assertThrows(MBeanException.class, ()->{
             objectMBean.invoke("doodle1",new Object[] {},new String[] {});
         });
 
         // then
-        assertNotNull(e, "ReflectionException is null");
+        assertNotNull(e, "MBeanException is null");
     }
 
     @Test
@@ -359,6 +361,6 @@ public class ObjectMBeanUtilTest
     @Test
     public void testToVariableName()
     {
-        assertEquals("fullName",objectMBean.toVariableName("isfullName"));
+        assertEquals("fullName",MetaData.toAttributeName("isfullName"));
     }
 }
