@@ -256,7 +256,7 @@ public class LowResourcesMonitorTest
                 // Verify the new socket is still open.
                 assertTrue(_lowResourcesMonitor.isLowOnResources());
                 assertThrows( SocketTimeoutException.class, () -> input1.read());
-                
+
                 // Let the maxLowResourcesTime elapse.
                 Thread.sleep(maxLowResourcesTime);
 
