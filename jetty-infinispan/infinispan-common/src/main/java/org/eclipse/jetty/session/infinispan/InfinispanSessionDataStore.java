@@ -275,23 +275,14 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public boolean isPassivating()
     {
-        //TODO run in the _context to ensure classloader is set
-        try 
+        if (_cache.getClass().getName().contains("hotrod"))
         {
-           Class<?> remoteClass = Thread.currentThread().getContextClassLoader().loadClass("org.infinispan.client.hotrod.RemoteCache");
-           if (remoteClass.isAssignableFrom(_cache.getClass()))
-           {
-               return true;
-           }
-           return false;
+            return true;
         }
-        catch (ClassNotFoundException e)
-        {
-            return false;
-        }
+        return false;
     }
-    
-    
+
+
     
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)

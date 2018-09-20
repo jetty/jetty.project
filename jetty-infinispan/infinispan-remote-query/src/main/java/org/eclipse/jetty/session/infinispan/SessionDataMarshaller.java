@@ -25,6 +25,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Map;
 
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.server.session.SessionData;
 import org.infinispan.protostream.MessageMarshaller;
 
@@ -67,12 +68,11 @@ public class SessionDataMarshaller implements MessageMarshaller<SessionData>
         
         byte[] attributeArray = in.readBytes("attributes");
         ByteArrayInputStream bin = new ByteArrayInputStream(attributeArray);
-        ObjectInputStream oin = new ObjectInputStream(bin);
         
         Map<String, Object> attributes;
-        try
+        try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bin))
         {
-            Object o = oin.readObject();
+            Object o = ois.readObject();
             @SuppressWarnings("unchecked")
             Map<String, Object> a = Map.class.cast(o);
             attributes = a;
@@ -82,7 +82,8 @@ public class SessionDataMarshaller implements MessageMarshaller<SessionData>
             throw new IOException(e);
         }
         
-        SessionData sd = new SessionData(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs, attributes);
+        SessionData sd = new SessionData(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
+        sd.putAllAttributes(attributes);
         sd.setCookieSet(cookieSet);
         sd.setLastNode(lastNode);
         sd.setExpiry(expiry);
