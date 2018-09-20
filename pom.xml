@@ -1807,7 +1807,7 @@
     <profile>
       <id>snapshot-repositories</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <activeByDefault>false</activeByDefault>
       </activation>
       <repositories>
         <repository>

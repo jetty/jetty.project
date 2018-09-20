@@ -42,7 +42,7 @@ def getFullBuild(jdk, os) {
                     globalMavenSettingsConfig: settingsName,
                     mavenOpts: mavenOpts,
                     mavenLocalRepo: localRepo) {
-              sh "mvn -V -B clean install -DskipTests -T6 -e"
+              sh "mvn -V -B clean install -DskipTests -T6 -e -Psnapshot-repositories"
             }
           }
         }
@@ -82,7 +82,7 @@ def getFullBuild(jdk, os) {
                     //options: [invokerPublisher(disabled: false)],
                     mavenOpts: mavenOpts,
                     mavenLocalRepo: localRepo) {
-              sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -Djetty.testtracker.log=true -Dunix.socket.tmp="+env.JENKINS_HOME
+              sh "mvn -V -B install -Dmaven.test.failure.ignore=true -e -Pmongodb -T3 -Djetty.testtracker.log=true -Psnapshot-repositories -Dunix.socket.tmp="+env.JENKINS_HOME
             }
             // withMaven doesn't label..
             // Report failures in the jenkins UI
@@ -137,7 +137,7 @@ def getFullBuild(jdk, os) {
                   globalMavenSettingsConfig: settingsName,
                   mavenOpts: mavenOpts,
                   mavenLocalRepo: localRepo) {
-            sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5"
+            sh "mvn -f aggregates/jetty-all-compact3 -V -B -Pcompact3 clean install -T5 -Psnapshot-repositories"
           }
         }
       } catch(Exception e) {
