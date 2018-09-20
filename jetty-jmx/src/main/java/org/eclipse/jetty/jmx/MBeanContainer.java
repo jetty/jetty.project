@@ -54,7 +54,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     private final MBeanServer _mbeanServer;
     private final boolean _cacheOtherClassLoaders;
     private final ConcurrentMap<Class,Constructor<?>> _mbeanFor = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Class,MetaData> _mbeanInfo = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class,MetaData> _metaData = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, Container> _beans = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, ObjectName> _mbeans = new ConcurrentHashMap<>();
     private String _domain = null;
@@ -231,40 +231,42 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
 
     MBeanInfo getMBeanInfo(ObjectMBean bean)
     {
-        Class<?> m_class = bean.getClass();
         Object managed = bean.getManagedObject();
-        Class<?> o_class = managed.getClass();
-
-        MetaData metadata;
-        ClassLoader ourLoader = this.getClass().getClassLoader();
-        if (!_cacheOtherClassLoaders || m_class.getClassLoader()!=ourLoader || o_class.getClassLoader()!=ourLoader)
-            // don't cache meta data from other loaders
-            metadata = new MetaData(m_class,o_class);
+        Class[] classes;
+        if (managed.getClass()!=bean.getClass())
+            classes = new Class[] {managed.getClass(), bean.getClass()};
         else
-            metadata = _mbeanInfo.computeIfAbsent(o_class,c->new MetaData(m_class,c));
+            classes = new Class[] {managed.getClass()};
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("MBean meta {} -> {}",bean,metadata);
-
-        String desc = metadata._managedObject==null?null:metadata._managedObject.value();
-
+        String desc = null;
         List<MBeanAttributeInfo> attributes = new ArrayList<>();
-        for (int i=0; i<metadata._attributes.size();i++)
-        {
-            MBeanAttributeInfo info = bean.defineAttribute(metadata._attributes.get(i), metadata._getters.get(i));
-            if (info != null)
-                attributes.add(info);
-        }
-
         List<MBeanOperationInfo> operations = new ArrayList<>();
-        for (int i=0; i<metadata._operations.size();i++)
-        {
-            MBeanOperationInfo info = bean.defineOperation(metadata._operations.get(i), metadata._methods.get(i));
-            if (info != null)
-                operations.add(info);
-        }
 
-        return new MBeanInfo(o_class.getName(),
+        for (Class c : classes)
+        {
+            MetaData metadata = findMetaData(c);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("MBean meta {} -> {}", bean, metadata);
+
+            if (desc==null && metadata._managedObject!=null)
+                desc = metadata._managedObject.value();
+
+            for (int i = 0; i < metadata._attributes.size(); i++)
+            {
+                MBeanAttributeInfo info = bean.defineAttribute(metadata._attributes.get(i), metadata._getters.get(i));
+                if (info != null)
+                    attributes.add(info);
+            }
+
+            for (int i = 0; i < metadata._operations.size(); i++)
+            {
+                MBeanOperationInfo info = bean.defineOperation(metadata._operations.get(i), metadata._methods.get(i));
+                if (info != null)
+                    operations.add(info);
+            }
+        }
+        return new MBeanInfo(managed.getClass().getName(),
             desc,
             attributes.toArray(new MBeanAttributeInfo[attributes.size()]),
             new MBeanConstructorInfo[0],
@@ -272,6 +274,26 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             new MBeanNotificationInfo[0]);
     }
 
+    private MetaData findMetaData(Class<?> oClass)
+    {
+        if (oClass==null)
+            return null;
+
+        MetaData metaData = _metaData.get(oClass);
+        if (metaData==null)
+        {
+            metaData = new MetaData(oClass);
+
+            if (_cacheOtherClassLoaders || oClass.getClassLoader()==this.getClass().getClassLoader())
+            {
+                MetaData md = _metaData.putIfAbsent(oClass,metaData);
+                if (md!=null)
+                    metaData = md;
+            }
+        }
+
+        return metaData;
+    }
 
 
     /**
@@ -431,30 +453,6 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
                 .replace(' ', '_');
     }
 
-
-    private static List<Class<?>> findInfluences(List<Class<?>> influences, Class<?> aClass)
-    {
-        if (aClass != null)
-        {
-            if (!influences.contains(aClass))
-            {
-                // This class is a new influence
-                influences.add(aClass);
-            }
-
-            // So are the super classes
-            influences = findInfluences(influences, aClass.getSuperclass());
-
-            // So are the interfaces
-            Class<?>[] ifs = aClass.getInterfaces();
-            for (int i = 0; ifs != null && i < ifs.length; i++)
-                influences = findInfluences(influences, ifs[i]);
-        }
-        return influences;
-    }
-
-
-
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -497,7 +495,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         }
     }
 
-    private static class MetaData
+    private class MetaData
     {
         final ManagedObject _managedObject;
         final List<ManagedAttribute> _attributes = new ArrayList<>();
@@ -505,49 +503,56 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         final List<ManagedOperation> _operations = new ArrayList<>();
         final List<Method> _methods = new ArrayList<>();
 
-        MetaData(Class<?> mClass, Class<?> oClass)
+        MetaData(Class<?> oClass)
         {
-            // Find list of classes that can influence the mbean
-            List<Class<?>> influences = new ArrayList<>();
-            influences.add(mClass); // always add MBean itself
-            influences = findInfluences(influences, oClass);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Influence Count: {}", influences.size());
-
             // Process Type Annotations
             _managedObject = oClass.getAnnotation(ManagedObject.class);
 
-            // For each influence
-            for (Class<?> iClass : influences)
+            // Process Method Annotations on this class
+            for (Method method : oClass.getDeclaredMethods())
             {
-                ManagedObject typeAnnotation = iClass.getAnnotation(ManagedObject.class);
-
-                if (typeAnnotation == null)
-                    continue;
-
-                // Process Method Annotations
-                for (Method method : iClass.getDeclaredMethods())
+                ManagedAttribute methodAttributeAnnotation = method.getAnnotation(ManagedAttribute.class);
+                if (methodAttributeAnnotation != null)
                 {
-                    ManagedAttribute methodAttributeAnnotation = method.getAnnotation(ManagedAttribute.class);
-                    if (methodAttributeAnnotation != null)
-                    {
-                        _attributes.add(methodAttributeAnnotation);
-                        _getters.add(method);
-                    }
+                    _attributes.add(methodAttributeAnnotation);
+                    _getters.add(method);
+                }
 
-                    ManagedOperation methodOperationAnnotation = method.getAnnotation(ManagedOperation.class);
-                    if (methodOperationAnnotation != null)
-                    {
-                        _operations.add(methodOperationAnnotation);
-                        _methods.add(method);
-                    }
+                ManagedOperation methodOperationAnnotation = method.getAnnotation(ManagedOperation.class);
+                if (methodOperationAnnotation != null)
+                {
+                    _operations.add(methodOperationAnnotation);
+                    _methods.add(method);
+                }
+            }
+
+            // Mix in super class
+            MetaData sc = findMetaData(oClass.getSuperclass());
+            if (sc!=null)
+            {
+                _attributes.addAll(sc._attributes);
+                _getters.addAll(sc._getters);
+                _operations.addAll(sc._operations);
+                _methods.addAll(sc._methods);
+            }
+
+            // Mix in interfaces
+            Class<?>[] ifs = oClass.getInterfaces();
+            for (int i = 0; ifs != null && i < ifs.length; i++)
+            {
+                MetaData imd = findMetaData(ifs[i]);
+                if (imd!=null)
+                {
+                    _attributes.addAll(imd._attributes);
+                    _getters.addAll(imd._getters);
+                    _operations.addAll(imd._operations);
+                    _methods.addAll(imd._methods);
                 }
             }
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("MBean MetaData {} {} {}",mClass.getCanonicalName(),oClass.getCanonicalName(),_managedObject);
+                LOG.debug("MetaData {} {}",oClass.getCanonicalName(),_managedObject);
                 for (int i=0;i<_attributes.size();i++)
                     LOG.debug("      Attribute {} {}",_attributes.get(i),_getters.get(i));
                 for (int i=0;i<_operations.size();i++)

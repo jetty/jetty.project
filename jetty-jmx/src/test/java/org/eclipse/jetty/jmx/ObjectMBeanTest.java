@@ -65,6 +65,11 @@ public class ObjectMBeanTest
     {
         Derived derived = new Derived();
         ObjectMBean mbean = (ObjectMBean)container.mbeanFor(derived);
+        MBeanInfo info = mbean.getMBeanInfo();
+        assertEquals("com.acme.Derived", info.getClassName(), "name does not match");
+        assertEquals("Test the mbean stuff", info.getDescription(), "description does not match");
+
+
         ObjectMBean managed = (ObjectMBean)container.mbeanFor(derived.getManagedInstance());
 
         container.beanAdded(null,derived);
@@ -74,10 +79,6 @@ public class ObjectMBeanTest
 
         assertNotNull(mbean.getMBeanInfo());
 
-        MBeanInfo info = mbean.getMBeanInfo();
-
-        assertEquals("com.acme.Derived", info.getClassName(), "name does not match");
-        assertEquals("Test the mbean stuff", info.getDescription(), "description does not match");
 
         // for ( MBeanAttributeInfo i : info.getAttributes())
         // {
